@@ -63,8 +63,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             Vec::new()
         };
-        let ranged = ranged::loadout(content, &equipment, &quiver).ok_or(())?;
-        let weapon = swing_weapon(content, &equipment.items).ok_or(())?;
+        // An unresolved weapon loadout leaves its own stats absent. The self panel
+        // can still report independently known offence and defence values.
+        let (ranged, weapon) = match ranged::loadout(content, &equipment, &quiver) {
+            Some(Some(ranged)) => (Some(ranged), None),
+            Some(None) => (None, swing_weapon(content, &equipment.items)),
+            None => (None, None),
+        };
         let equipment_only = equipment_owner::equipped_offence(&equipment, content).ok_or(())?;
         let mantra = equipment_owner::equipped_mantra(&equipment, content).ok_or(())?;
         let now = self.owner_now();
@@ -233,7 +238,7 @@ struct Observation<'a> {
     state: &'a PlayerSpellState,
     now_micros: u64,
     mode: FightMode,
-    weapon: SwingWeapon,
+    weapon: Option<SwingWeapon>,
     ranged: Option<&'a ranged::RangedLoadout>,
     equipment_only: &'a EquippedOffence,
     offence: &'a EquippedOffence,
@@ -409,9 +414,9 @@ impl Observation<'_> {
                     }
                 }
             }
-        } else {
+        } else if let Some(weapon) = self.weapon {
             let constants = AttackConstants::checked_in().ok_or(TabWireError)?;
-            let (attack, id, skill_index) = match self.weapon {
+            let (attack, id, skill_index) = match weapon {
                 SwingWeapon::Fists => (constants.fist.attack, 11, 0),
                 SwingWeapon::Melee { attack, skill } => (
                     attack,

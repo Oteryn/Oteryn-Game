@@ -16,40 +16,48 @@ use sqlx::Row;
 
 #[test]
 fn p12c_cyclopedia_combat_postgres_dispatch_snapshot_replay_and_fences() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
-        return Ok(());
-    }
-    std::thread::Builder::new()
-        .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
-        .join()
-        .map_err(|_| "P12c combat scenario panicked")??;
-    Ok(())
+    run_case(PanelCase::ReplayAndFences)
+}
+
+#[test]
+fn self_combat_tabs_report_known_stats_with_newhaven_sorcerer_gear() -> TestResult {
+    run_case(PanelCase::StarterGear)
 }
 
 #[test]
 fn self_defence_tab_reports_weapon_base_when_extra_defence_is_unauthored() -> TestResult {
+    run_case(PanelCase::HandDefence)
+}
+
+#[derive(Clone, Copy)]
+enum PanelCase {
+    ReplayAndFences,
+    StarterGear,
+    HandDefence,
+}
+
+fn run_case(case: PanelCase) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .spawn(move || scenario(case).map_err(|error| error.to_string()))?
         .join()
-        .map_err(|_| "Hand defence scenario panicked")??;
+        .map_err(|_| "Cyclopedia combat scenario panicked")??;
     Ok(())
 }
 
-fn scenario(hand_defence_only: bool) -> TestResult {
+fn scenario(case: PanelCase) -> TestResult {
     use super::cyclopedia_fixtures::support::exchange;
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(
             admin,
-            if hand_defence_only {
-                "panel_hand_defence"
-            } else {
-                "p12c_combat"
+            match case {
+                PanelCase::ReplayAndFences => "p12c_combat",
+                PanelCase::StarterGear => "panel_newhaven_gear",
+                PanelCase::HandDefence => "panel_hand_defence",
             },
             true,
             false,
@@ -136,7 +144,7 @@ fn scenario(hand_defence_only: bool) -> TestResult {
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         deps.admitted.runtime_actor = Some(deps.actor);
-        seed(&h, hand_defence_only).await?;
+        seed(&h, case).await?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
@@ -190,11 +198,27 @@ fn scenario(hand_defence_only: bool) -> TestResult {
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(&offers, &[6, 17, CAPABILITY_CYCLOPEDIA_CHARACTER_V1])
                 .ok_or("capabilities")?;
-        if hand_defence_only {
+        if matches!(case, PanelCase::HandDefence) {
             let (status, bytes) = exchange(&owner, &mut admitted, 2, tab, &[9, 0, 0, 20]).await?;
             assert_eq!(status, CommandStatus::Accepted);
             let defence = CombatStats::decode(&bytes).map_err(debug)?;
             assert_eq!(defence.get(Stat::DefenceEquipment), Some(22));
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
+        if matches!(case, PanelCase::StarterGear) {
+            let (status, bytes) = exchange(&owner, &mut admitted, 2, tab, &[8, 0, 0, 20]).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            let offence = CombatStats::decode(&bytes).map_err(debug)?;
+            assert_eq!(offence.get(Stat::CriticalChance), Some(1_050_000));
+            assert_eq!(offence.get(Stat::AttackEquipment), None);
+            let (status, bytes) = exchange(&owner, &mut admitted, 3, tab, &[9, 0, 0, 20]).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            let defence = CombatStats::decode(&bytes).map_err(debug)?;
+            assert_eq!(defence.get(Stat::Armor), Some(i64::from(armor)));
+            assert_eq!(row_count(&h).await?, 1);
             drop(owner);
             drop(authority);
             drop(seal);
@@ -451,7 +475,7 @@ fn scenario(hand_defence_only: bool) -> TestResult {
     })
 }
 
-async fn seed(h: &Harness, hand_defence_only: bool) -> TestResult {
+async fn seed(h: &Harness, case: PanelCase) -> TestResult {
     // Only custody/effect provisioning is fixture SQL. Every observed value passes through the
     // native content, equipment and combat owners before the new writer persists it.
     let mut tx = h.pool.begin().await?;
@@ -460,20 +484,20 @@ async fn seed(h: &Harness, hand_defence_only: bool) -> TestResult {
         .await?;
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT(character_id) DO NOTHING")
         .bind(id(41).as_slice()).execute(&mut *tx).await?;
-    let weapon = if hand_defence_only {
-        "oteryn:item.tibia.i10392"
-    } else {
-        "oteryn:item.tibia.i3264"
+    let hands: &[(u8, &str, i16, i16)] = match case {
+        PanelCase::ReplayAndFences => &[(112, "oteryn:item.tibia.i3264", 6, 10)],
+        PanelCase::HandDefence => &[(112, "oteryn:item.tibia.i10392", 6, 0)],
+        PanelCase::StarterGear => &[
+            (112, "oteryn:item.tibia.i21348", 5, 0),
+            (113, "oteryn:item.tibia.i21400", 6, 0),
+        ],
     };
-    for (seed, key, slot, tier) in [
-        (
-            112_u8,
-            weapon,
-            6_i16,
-            if hand_defence_only { 0_i16 } else { 10 },
-        ),
-        (114, "oteryn:item.tibia.i6529", 4, 10),
-    ] {
+    for (seed, key, slot, tier) in
+        hands
+            .iter()
+            .copied()
+            .chain([(114, "oteryn:item.tibia.i6529", 4, 10)])
+    {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($1,'hex')::uuid)")
             .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(key).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($4,'hex')::uuid)")
