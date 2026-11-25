@@ -4,9 +4,6 @@ use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::attack::{self, AttackIntentDisposition, ChaseMode, FightMode, FightModes};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
-        return;
-    }
     let result = verdict::indexed_timeout(Duration::from_secs(20), verdict::observe(capture(clients))).await;
     match result {
         Ok(Ok(())) => evidence("SEAM_EVIDENCE e2e_all scenario=C01.client status=PASS evidence=domain-10-snapshot-and-fight-mode-delta"),
@@ -17,11 +14,12 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xc1).await?;
-    let snapshot = client
+    let initial_state = client
         .session_mut()
-        .gated_snapshot(attack::STATE_DOMAIN_ACTOR_COMBAT_STATE)
-        .ok_or("domain-10 combat snapshot absent")?
-        .clone();
+        .combat_state()
+        .ok_or("domain-10 combat snapshot absent")?;
+    let snapshot = attack::encode_actor_combat_state(initial_state)
+        .map_err(|error| format!("combat snapshot encode: {error:?}"))?;
     client.take_events();
     let modes = FightModes {
         fight_mode: FightMode::Offensive,
@@ -35,7 +33,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let state = wait_for_modes(&mut client, modes).await?;
     let delta_payload = attack::encode_actor_combat_state(&state)
         .map_err(|error| format!("combat state encode: {error:?}"))?;
-    write_capture("c01-snapshot.bin", &snapshot.payload);
+    write_capture("c01-snapshot.bin", &snapshot);
     write_capture("c01-modes.bin", &delta_payload);
     write_capture(
         "c01-expected.txt",
