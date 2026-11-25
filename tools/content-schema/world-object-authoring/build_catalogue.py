@@ -555,8 +555,8 @@ def official_shards():
 
 def qualified_shards():
     import activity_static
-    import blood_vestibule_ground
     import alawar_static
+    import blood_vestibule_ground
     import feroxa_static
     import spawn_ground
     import spawn_map_ground
