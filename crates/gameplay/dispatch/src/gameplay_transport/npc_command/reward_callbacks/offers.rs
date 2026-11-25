@@ -5,10 +5,12 @@ use std::borrow::Cow;
 use std::sync::OnceLock;
 
 const MAX_OFFERS: usize = 640;
+const SHARED_OFFERS: &str =
+    include_str!("../../../../../../../content/quests/shared-reward-offers.json");
 const SOURCES: &[&str] = &[
     // The free-account price takes precedence over the shared Hunter addon offer.
     include_str!("../../../../../../../content/quests/npc-offers/hunter-glove-sales.json"),
-    include_str!("../../../../../../../content/quests/shared-reward-offers.json"),
+    SHARED_OFFERS,
     include_str!("../../../../../../../content/quests/chosen-reward-offers.json"),
     include_str!("../../../../../../../content/quests/npc-offers/an-interest-in-botany.json"),
     include_str!("../../../../../../../content/quests/npc-offers/ape-city.json"),

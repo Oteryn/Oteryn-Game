@@ -610,22 +610,7 @@ def build():
     }
     mounts, mount_mappings = qengine_mounts.populate(ROOT, inputs, looks, mount_source, item_packet)
     mappings.extend(mount_mappings)
-    # Crystal 201189f Task Board stock: Feral Trapper, Falconer and Antelope.
-    for first_offer, family in ((0, "feral_trapper"), (3, "falconer")):
-        key = "oteryn:outfit." + family
-        for addon in range(3):
-            target = (
-                {"kind": "Outfit", "outfit_key": key}
-                if addon == 0
-                else {"kind": "Addon", "outfit_key": key, "addon": addon}
-            )
-            mappings.append(
-                {
-                    "grant_key": f"oteryn:taskboard/shop/offer-{first_offer + addon}",
-                    "target": target,
-                    "compatible_provenance": ["task-board-shop-v1"],
-                }
-            )
+    # The same stock also grants the Antelope mount.
     mappings.append(
         {
             "grant_key": "oteryn:taskboard/shop/offer-9",
@@ -3361,15 +3346,6 @@ def build():
     )
     desks = [
         (
-            "dream-warrior",
-            "dream_warrior_outfits_quest",
-            "vanys",
-            "dream_warrior",
-            250,
-            dream_ready,
-            "dream warrior outfit",
-        ),
-        (
             "issavi",
             "authored.citizen_of_issavi_outfits_quest",
             "eshaya",
@@ -3398,17 +3374,7 @@ def build():
             callbacks[-1]["sources"].append(
                 "owner:chosen-Issavi-attire-keeper-role:Eshaya:Wanted-report-s21"
             )
-    for label, quest, npc, family, level, ready, tokens, carried in [
-        (
-            "dream-warrior",
-            "dream_warrior_outfits_quest",
-            "vanys",
-            "dream_warrior",
-            250,
-            dream_ready,
-            [(30169, 5), (30168, 1)],
-            False,
-        ),
+    for label, quest, npc, family, level, ready, tokens in [
         (
             "issavi",
             "authored.citizen_of_issavi_outfits_quest",
@@ -3458,20 +3424,11 @@ def build():
                 if wiki:
                     callback["achievement"] = "oteryn:achievement/" + family
                     callback["sources"].append(wiki)
-            if carried:
-                callback["carried_item"] = f"oteryn:item.tibia.i{item}"
+            callback["carried_item"] = f"oteryn:item.tibia.i{item}"
             if label == "issavi":
                 callback["sources"].append(
                     "owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each"
                 )
-        if not carried:
-            for words, before, after in [
-                (["addon"], 0, 6),
-                (["yes"], 6, 7),
-                (["yes"], 7, 8),
-            ]:
-                source_offer(npc, words, before, after, [])
-                offers[-1]["requires"] = ready
     qualification = prefix + "makeshift_warrior/qualification"
     declarations.append(
         {
@@ -3842,6 +3799,8 @@ def build():
         ),
     ]:
         for (name, _), (other, completion) in (rewards, rewards[::-1]):
+            if name + "-complete" in by_name:
+                continue
             original = by_name[name]
             earned = next(
                 state
@@ -3870,11 +3829,19 @@ def build():
         "quest_item_disguises",
         "tools/content-schema/quest-authoring/quest_item_disguises.py",
     ).build(ROOT)
+    outfit_completions = [
+        row for row in callbacks
+        if row["key"].endswith(("-full-outfit", "-complete"))
+        and row.get("outfit") is not None
+    ]
+    shared_callbacks = [row for row in callbacks if row not in outfit_completions]
+    outfit_document = {"schema": 1, "callbacks": outfit_completions}
+    validate_callbacks(outfit_document)
     validate_callbacks(
         {
             "schema": 1,
             "tracks": declarations,
-            "callbacks": callbacks,
+            "callbacks": shared_callbacks,
             "item_disguises": item_disguises,
         }
     )
@@ -3912,11 +3879,12 @@ def build():
         "content/spells.manifest.json": (
             json.dumps(gameplay, indent=2, sort_keys=True) + "\n"
         ).encode(),
+        "content/quests/npc-callbacks/outfit-completions.json": encoded(outfit_document),
         "content/quests/shared-reward-callbacks.json": encoded(
             {
                 "schema": 1,
                 "tracks": declarations,
-                "callbacks": callbacks,
+                "callbacks": shared_callbacks,
                 "item_disguises": item_disguises,
             }
         ),

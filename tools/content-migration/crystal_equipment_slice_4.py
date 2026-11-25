@@ -494,10 +494,17 @@ def apply(root, document, order):
             if prior is None:
                 raise ValueError(f"Missing prior Arbaziloth equipment: {identifier}")
             composed = complete_arbaziloth_policy(prior, record)
-            expected = record
+            expected = copy.deepcopy(record)
+            presentation = expected["semantics"]["presentation"]["value"]
+            # A canonical blank description adds no detail to the captured equipment.
+            blank = {"state": "KNOWN", "value": ""}
+            if (
+                presentation["description"] == {"state": "UNKNOWN"}
+                and prior["semantics"]["presentation"]["value"]["description"] == blank
+            ):
+                presentation["description"] = blank
             if identifier in (49524, 49526, 49530):
                 # The canonical Global defence supersedes the donor's bonus.
-                expected = copy.deepcopy(record)
                 apply_stats(
                     expected,
                     {"Defence": details[identifier]["basic"]["Defence"]},
@@ -513,7 +520,7 @@ def apply(root, document, order):
             document["records"].append(record)
             continue
         if (
-            identifier not in EXISTING
+            (identifier not in EXISTING and identifier != 50260)
             or prior is None
             or prior["production_binding"] != record["production_binding"]
             or prior["admission"] != record["admission"]
@@ -523,7 +530,23 @@ def apply(root, document, order):
             )
         for field in ("equipment", "weapon", "protection", "skill_modifiers"):
             selected = record["semantics"][field]
-            if prior["semantics"][field] not in ({"state": "UNKNOWN"}, selected):
+            previous = prior["semantics"][field]
+            agrees = previous in ({"state": "UNKNOWN"}, selected)
+            if not agrees and identifier == 50260 and field == "equipment":
+                # Outfit boss loot already admits the Monk torso. Retain its
+                # known requirements while completing the donor pattern.
+                [old_pattern] = previous["value"]["patterns"]["value"]
+                [new_pattern] = selected["value"]["patterns"]["value"]
+                agrees = all(
+                    value == {"state": "UNKNOWN"} or new_pattern.get(key) == value
+                    for key, value in old_pattern.items()
+                )
+            elif not agrees and identifier == 50260 and field == "skill_modifiers":
+                agrees = all(
+                    value in selected["value"]["modifiers"]["value"]
+                    for value in previous["value"]["modifiers"]["value"]
+                )
+            if not agrees:
                 raise ValueError(
                     f"Crystal equipment conflicts with native {field}: {identifier}"
                 )

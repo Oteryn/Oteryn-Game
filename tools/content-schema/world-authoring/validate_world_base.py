@@ -102,7 +102,7 @@ def _init(root: str, extent: tuple[int, int], palette_size: int, scoped=None) ->
     )
 
 
-def check_region(row: dict) -> dict:
+def check_region(row: dict, *, compare_counts: bool = True) -> dict:
     """Validate one region file in isolation; runs in a worker process."""
     path = row["path"]
     result = {
@@ -187,7 +187,7 @@ def check_region(row: dict) -> dict:
                             ((x, y, z), palette, tuple(attrs["teleport"]))
                         )
         tiles += len(sector)
-    if (tiles, items) != (row["tiles"], row["items"]):
+    if compare_counts and (tiles, items) != (row["tiles"], row["items"]):
         errors.append(
             f"{path}: decoded {tiles} tiles/{items} items, index says {row['tiles']}/{row['items']}"
         )

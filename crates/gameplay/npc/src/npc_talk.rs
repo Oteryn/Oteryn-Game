@@ -46,6 +46,7 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
     include_str!("../../../../content/quests/npc-callbacks/nomads-land.json"),
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/outfit-completions.json"),
     include_str!("../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
     include_str!("../../../../content/quests/npc-callbacks/classic-quests.json"),
     include_str!("../../../../content/quests/npc-callbacks/fibula.json"),
@@ -1128,20 +1129,20 @@ impl NpcTalkBook {
                     greetings: source_dialogue
                         .and_then(|source| source.greetings.clone())
                         .unwrap_or_else(|| {
-match reference.key.as_str() {
-                        "oteryn:npc.bo_ques" | "oteryn:npc.umar" => &["djanni'hah"][..],
-                        "oteryn:npc.maryza" => &["hi maryza"],
-                        "oteryn:npc.rata_mari" => &["piedpiper", "hi", "hello", "hail"],
-                        _ => &GREETINGS[..],
-                    }
-                                .iter()
-                                .map(|word| (*word).to_owned())
-                                .chain(
-                                    regional
-                                        .into_iter()
-                                        .flat_map(|contact| contact.greet_aliases.iter().cloned()),
-                                )
-                                .collect()
+                            match reference.key.as_str() {
+                                "oteryn:npc.bo_ques" | "oteryn:npc.umar" => &["djanni'hah"][..],
+                                "oteryn:npc.maryza" => &["hi maryza"],
+                                "oteryn:npc.rata_mari" => &["piedpiper", "hi", "hello", "hail"],
+                                _ => &GREETINGS[..],
+                            }
+                            .iter()
+                            .map(|word| (*word).to_owned())
+                            .chain(
+                                regional
+                                    .into_iter()
+                                    .flat_map(|contact| contact.greet_aliases.iter().cloned()),
+                            )
+                            .collect()
                         }),
                     farewells: source_dialogue
                         .and_then(|source| source.farewells.clone())

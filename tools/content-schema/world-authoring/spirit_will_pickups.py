@@ -34,6 +34,7 @@ def overlay_outputs(outputs, root=world.ROOT):
 
     indices = {entry["source_item_id"]: i for i, entry in enumerate(index["palette"])}
     regions = {region["path"]: region for region in index["regions"]}
+    added = 0
     for x, y, z, base, item in PICKUPS:
         path = "content/world/placements/" + codec.region_name(z, x // 256, y // 256)
         original = read(path)
@@ -43,14 +44,24 @@ def overlay_outputs(outputs, root=world.ROOT):
         sector = (y // 32 % 8) * 8 + x // 32 % 8
         tiles = dict(sectors)[sector]
         ((_, _, _, house, _, entries),) = [tile for tile in tiles if tile[:2] == (x, y)]
-        expected = base + ((item,) if previous else ())
-        if house or entries != [
-            (indices[appearance], 0, None) for appearance in expected
-        ]:
+        base_entries = [(indices[appearance], 0, None) for appearance in base]
+        pickup = (indices[item], 0, None)
+        placed = entries == base_entries + [pickup]
+        if house or (not placed and (previous or entries != base_entries)):
             raise ValueError(f"Spirit pickup stack drift at {(x, y, z)}")
         if previous:
             continue
-        entries.append((indices[item], 0, None))
+        if placed:
+            # A merged region can already contain this exact stack while its
+            # shared index still describes the predecessor.
+            count = sum(len(tile[-1]) for _, tiles in sectors for tile in tiles)
+            delta = count - regions[path]["items"]
+            if delta not in (0, 1):
+                raise ValueError(f"Spirit pickup region count drift: {path}")
+            regions[path]["items"] = count
+            added += delta
+            continue
+        entries.append(pickup)
         raw = codec.encode_region(
             z,
             rx,
@@ -66,13 +77,14 @@ def overlay_outputs(outputs, root=world.ROOT):
         regions[path]["sha256"] = hashlib.sha256(raw).hexdigest()
         regions[path]["items"] += 1
         summary["bytes_on_disk"] += len(raw) - len(original)
+        added += 1
 
     if previous is None:
         index["source"][SOURCE] = evidence
-        index["totals"]["items"] += len(PICKUPS)
+        index["totals"]["items"] += added
         summary["source"] = index["source"]
         summary["totals"] = index["totals"].copy()
-        summary["palette"]["families"]["item"]["occurrences"] += len(PICKUPS)
+        summary["palette"]["families"]["item"]["occurrences"] += added
         outputs[world.INDEX] = world.canonical(index)
         outputs[world.SUMMARY] = world.canonical(summary)
 

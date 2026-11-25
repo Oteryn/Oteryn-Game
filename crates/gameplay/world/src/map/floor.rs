@@ -830,6 +830,14 @@ fn destination(
             table.mask(cell)
         },
         |at| {
+            let cell = LogicalCell {
+                x: i32::from(at.x),
+                y: i32::from(at.y),
+                z: -i32::from(at.floor),
+            };
+            if closed.suppresses_native_teleport(cell) {
+                return None;
+            }
             if doomforge_open
                 && is_doomforge_portal(
                     cells,

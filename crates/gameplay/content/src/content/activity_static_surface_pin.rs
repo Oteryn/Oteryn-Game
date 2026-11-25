@@ -1,6 +1,6 @@
 // Generated only by tools/content-schema/world-object-authoring/activity_static.py.
 pub(super) const REGISTRY_SHA256: &str =
-    "37aa289d137bada4a5665e1c6f5b961acdea2faf1680bca8934f64f70143d814";
+    "c33b7f16a23b52e42e2152621ee4376d04d6ca7327425a6ec0422b5ebff3b1f6";
 #[cfg(test)]
 pub(super) const M25_SOURCE_IDS: [u16; 76] = [
     34628, 40242, 40251, 40252, 40282, 40309, 40310, 40311, 40312, 40313, 40314, 40315, 40316,

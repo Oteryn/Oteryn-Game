@@ -146,11 +146,6 @@ impl TravelRoute {
     }
 }
 
-fn corrections() -> &'static [Correction] {
-    static CORRECTIONS: OnceLock<Vec<Correction>> = OnceLock::new();
-    CORRECTIONS.get_or_init(|| serde_json::from_str(revision_material()).unwrap_or_default())
-}
-
 /// The complete service and route key persisted by the paid travel owner.
 pub fn is_carpet_route(key: &str) -> bool {
     corrections()

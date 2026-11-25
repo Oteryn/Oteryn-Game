@@ -5,10 +5,7 @@ from __future__ import annotations
 import argparse
 import copy
 import importlib
-import first_dragon_item_profiles
 import imbuement_item_profiles
-import m01c_key_door_equipment_pin
-import qengine_reward_equipment_pin
 import json
 import os
 import re
@@ -24,6 +21,7 @@ import qready1_clock_equipment_pin
 import qready1_cradle_equipment_pin
 import qready1_craft_equipment_pin
 import questpc4_treasure_reward_equipment_pin
+from srx1_profile_updates import compact_item_record
 
 ROOT = Path(__file__).resolve().parents[2]
 TEST = (
@@ -346,10 +344,11 @@ def source_cohorts(root):
             ):
                 row["authoring"]["taxonomy"] = copy.deepcopy(taxonomy[key])
         previous = {f"oteryn:item.tibia.i{item}" for item in previous_ids}
-        document = registered_source_document(root, document)
         if module_name == "boss_reward_yield_profiles":
             from crystal_equipment_slice import complete_boss_yield_pairs
+
             complete_boss_yield_pairs(root, document)
+        document = registered_source_document(root, document)
         result.append((name, document, previous))
     return result
 
@@ -395,6 +394,15 @@ def merged_source_duplicates(root, source):
     return engine_shared
 
 
+def profile_equivalent(source, qualified):
+    if source == qualified:
+        return True
+    fields = {"attributes", "semantics", "production_binding"}
+    if qualified is None or not fields <= (source.keys() & qualified.keys()):
+        return False
+    return compact_item_record(copy.deepcopy(source)) == compact_item_record(copy.deepcopy(qualified))
+
+
 def coowner_equivalent(source, qualified):
     """Two guarded captures may name their own revision of the SAME candidate."""
     normalized = copy.deepcopy(source)
@@ -426,7 +434,7 @@ def coowner_equivalent(source, qualified):
         ):
             return False
         normalized["authoring"]["item"] = copy.deepcopy(accepted)
-    return normalized == qualified
+    return profile_equivalent(normalized, qualified)
 
 
 def keys(document):
@@ -742,7 +750,7 @@ def regenerate(
         added_keys.update(new)
         for row in document["records"]:
             key = row["production_definition"]["production_key"]
-            if key in new and actual_rows.get(key) != row:
+            if key in new and not profile_equivalent(row, actual_rows.get(key)):
                 diagnostic = {
                     "cohort": name,
                     "key": key,

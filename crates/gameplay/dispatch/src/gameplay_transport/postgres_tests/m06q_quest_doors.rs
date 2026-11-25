@@ -1286,8 +1286,8 @@ async fn level_gate(
         let doors = map.facts().doors();
         if level < u32::from(minimum_level) {
             assert_eq!(doors.revision(key), 0);
-            // Model the open pose left by a qualified player while this actor is level 69.
-            assert!(matches!(doors.toggle(key, 0, false, minimum_level, false),
+            // Model the open pose left by a qualified player while this actor is below the required level.
+            assert!(matches!(doors.toggle(key, 0, false, u32::from(minimum_level), false),
                 Some(crate::map::door::DoorUse::Toggled { open: true, .. })));
             unqualified_route = owner.item_walk_route(
                 actor,
@@ -1296,7 +1296,7 @@ async fn level_gate(
                     oteryn_protocol_oteryn::world_spatial::ActorPosition { x: 6, y: 0, floor: 7 },
                 ),
             ).await.is_ok_and(|route| route.is_some_and(|route| !route.steps.is_empty()));
-            assert!(matches!(doors.toggle(key, 1, false, minimum_level, false),
+            assert!(matches!(doors.toggle(key, 1, false, u32::from(minimum_level), false),
                 Some(crate::map::door::DoorUse::Toggled { open: false, .. })));
             let mut target = oteryn_protocol_oteryn::world_object::decode_use_intent(payload).map_err(debug)?;
             target.expected_revision = 2;
@@ -1308,7 +1308,7 @@ async fn level_gate(
     }
     let position = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
     assert_eq!((position.x, unqualified_route), (6, false),
-        "qualified USE must enter the doorway, and auto-walk must reject the same open door at level 69");
+        "qualified USE must enter the doorway, and auto-walk must reject the same open door below the required level");
     let (next, result, _) = super::item_craft_fixtures::exchange(owner, admitted, 2, &opening_payload, None).await?;
     assert_eq!(result, UseDisposition::Committed);
     assert_eq!(map.facts().doors().revision(key), 3, "replay toggled twice");

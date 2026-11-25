@@ -56,7 +56,10 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(offer["requires"], row["requires"])
 
     def test_demon_outfits_award_true_dedication_only_on_final_addon(self):
-        rewards = {row["key"].split("/")[-1]: row for row in self.callbacks["callbacks"]}
+        rewards = {
+            row["key"].split("/")[-1]: row
+            for row in self.callbacks["callbacks"] + self.outfit_completions
+        }
         self.assertIsNone(rewards["l3-demon-base"]["achievement"])
         for addon, other_bit in [("shield", 2), ("helmet", 1)]:
             with self.subTest(addon=addon):
@@ -363,6 +366,9 @@ class QuestRewards(unittest.TestCase):
     def setUpClass(cls):
         cls.outputs = q.build()
         cls.callbacks = json.loads(cls.outputs["content/quests/shared-reward-callbacks.json"])
+        cls.outfit_completions = json.loads(
+            cls.outputs["content/quests/npc-callbacks/outfit-completions.json"]
+        )["callbacks"]
         cls.l13_callbacks = json.loads(cls.outputs["content/quests/npc-callbacks/l13-outfits.json"])
         cls.author = json.loads(cls.outputs["content/cosmetics/outfits/authoring.json"])
         cls.schema = json.loads(
@@ -1007,12 +1013,14 @@ class QuestRewards(unittest.TestCase):
         )
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
-        full_outfit = [c for c in self.callbacks["callbacks"] if c["key"].endswith("-full-outfit")]
-        self.assertEqual(len(full_outfit), 18)
+        merged = self.callbacks["callbacks"] + self.outfit_completions
+        full_outfit = [c for c in merged if c["key"].endswith("-full-outfit")]
+        self.assertEqual(len(full_outfit), 14)
+        self.assertEqual(len(self.outfit_completions), 18)
         battle_mage = json.loads(
             self.outputs["content/quests/npc-callbacks/battle-mage-completions.json"]
         )
-        callbacks = [c for c in self.callbacks["callbacks"] if c not in full_outfit]
+        callbacks = [c for c in merged if c not in full_outfit]
         callbacks += self.l13_callbacks["callbacks"] + battle_mage["callbacks"]
         self.assertEqual(
             {
@@ -1058,8 +1066,8 @@ class QuestRewards(unittest.TestCase):
         }
         outfit_keys = {c["key"].rsplit("/", 1)[-1] for c in callbacks if c["outfit"] is not None}
         self.assertLessEqual(completion_variants, outfit_keys)
-        self.assertEqual(sum(c["outfit"] is not None for c in callbacks), 104)
-        self.assertEqual(sum(c["outfit"] is None for c in callbacks), 154)
+        self.assertEqual(sum(c["outfit"] is not None for c in callbacks), 109)
+        self.assertEqual(sum(c["outfit"] is None for c in callbacks), 159)
         self.assertTrue(
             any(len(c["take"]) > 1 and any(i["count"] == 100 for i in c["take"]) for c in callbacks)
         )

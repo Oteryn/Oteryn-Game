@@ -500,13 +500,12 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         for r in json.loads((root / PROFILE).read_bytes())["records"]
     }
     records = []
-    ground_only = STATIC_IDS | CORPSE_IDS | RAID_CORPSE_IDS | EXPLORER_PROPS
+    ground_only_ids = STATIC_IDS | CORPSE_IDS | RAID_CORPSE_IDS | EXPLORER_PROPS
     timed = (
         CORPSE_IDS
         | RAID_CORPSE_IDS
         | WILLI_WASP_DECAY
         | MERCHANT_SCENERY
-        | EXPLORER_CORPSES
         | {4837, 6300}
     )
     for item_id in sorted(selected):
@@ -522,7 +521,7 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
                 raise ValueError("QENGINE_REWARD_SMASHED_TRUNK_TIMER_DRIFT")
         elif (
             not flower
-            and item_id not in (CORPSE_IDS | MERCHANT_SCENERY | EXPLORER_CORPSES | {4837})
+            and item_id not in timed
             and temporal_keys
         ):
             raise ValueError("QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED")
@@ -557,8 +556,8 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
             record = lion_flower.temporal(record, definition, accepted.known_conflict)
         # These exact Ground-only props and corpse stages have canonical
         # identity-only rows; their physical facts come from the pinned sources.
-        ground_only = item_id in (STATIC_IDS | CORPSE_IDS | EXPLORER_PROPS)
-        identity_only = ground_only | WILLI_WASP_DECAY | EXPLORER_CORPSES
+        ground_only = item_id in ground_only_ids
+        identity_only = ground_only or item_id in WILLI_WASP_DECAY
         semantics = definition.get("semantics") if identity_only else definition["semantics"]
         if identity_only and (
             definition.get("kind") != "Item" or definition["identity"]["family"] != "Item"
@@ -577,7 +576,7 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         ):
             raise ValueError("QENGINE_REWARD_ITEM_STACK_CONFLICT")
         expected_destinations = (
-            ["Ground"] if item_id in ground_only else ["CharacterInventory", "Ground"]
+            ["Ground"] if ground_only else ["CharacterInventory", "Ground"]
         )
         if record["admission"]["legal_destinations"] != expected_destinations:
             raise ValueError("QENGINE_REWARD_ITEM_DESTINATION_DRIFT")
@@ -661,19 +660,28 @@ def reconcile(existing, observed):
         observed["semantics"], semantics
     ):
         raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:semantics")
-    merged["semantics"] = semantics
+    merged["semantics"] = {
+        field: value
+        for field, value in semantics.items()
+        if field in existing["semantics"] or value != {"state": "UNKNOWN"}
+    }
     attributes = dict(existing.get("attributes", {}))
+    compact_attributes = {"field_condition", "field_replaceable", "rune_consumption"}
     for key, value in observed.get("attributes", {}).items():
+        if key in compact_attributes and key not in attributes and value is None:
+            continue
         previous = attributes.get(key)
         if previous is not None and value is not None and previous != value:
             raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:attributes." + key)
         if previous is None:
             attributes[key] = value
     merged["attributes"] = attributes
-    if existing.keys() != observed.keys():
+    optional = {"production_binding_qualification"}
+    if existing.keys() - optional != observed.keys() - optional:
         raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:shape")
-    for key in existing.keys() - {"authoring", "attributes", "semantics"}:
-        if existing[key] != observed[key]:
+    identity_fields = (existing.keys() | observed.keys()) - {"authoring", "attributes", "semantics"}
+    for key in identity_fields:
+        if existing.get(key) != observed.get(key):
             raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:" + key)
     return merged
 

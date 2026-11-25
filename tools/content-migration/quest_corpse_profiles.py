@@ -31,7 +31,7 @@ CORPSE_CAPACITY_MAX = 48
 BUTTERFLY_CORPSES = {4991, 4992, 4993}
 BUTTERFLY_REMAINS = 4378
 GROUPS = ("physical", "stack", "container", "temporal", "classification")
-MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 64, 8, 256
+MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 72, 8, 256
 
 
 def item_id(reference):

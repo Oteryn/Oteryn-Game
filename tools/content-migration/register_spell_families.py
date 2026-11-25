@@ -1777,6 +1777,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         (root / house_decoration_actions.PROFILES).read_bytes()
     )
     house_decoration_actions.apply_top_order(hard_items, house_top_order)
+    from import_cyclopedia_global import apply_profile_weights
+
+    apply_profile_weights(hard_items, root)
     item_detail_source_facts.apply(root, items, item_detail_weights)
     import portable_container_profiles
     portable_container_profiles.admit(root, items, provider_order)

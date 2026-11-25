@@ -582,6 +582,7 @@ struct Document {
 
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
+    OUTFIT_COMPLETIONS,
     include_str!("../../../../../content/quests/npc-callbacks/ape-city.json"),
     include_str!("../../../../../content/quests/npc-callbacks/beginning.json"),
     include_str!("../../../../../content/quests/npc-callbacks/classic-quests.json"),
@@ -620,6 +621,9 @@ const DOCUMENTS: &[&str] = &[
     // Append Explorer Society so its corpse targets follow the retained live creature callbacks.
     include_str!("../../../../../content/quests/npc-callbacks/explorer-society.json"),
 ];
+
+const OUTFIT_COMPLETIONS: &str =
+    include_str!("../../../../../content/quests/npc-callbacks/outfit-completions.json");
 
 const WARRIOR_COMPLETIONS: &str =
     include_str!("../../../../../content/quests/npc-callbacks/warrior-completions.json");
@@ -2035,7 +2039,9 @@ pub(super) fn retain_outfit_reward_predecessor(
     let callbacks = document
         .callbacks
         .into_iter()
-        .filter(|callback| !later_outfit_reward(callback) && !callback.key.ends_with("-full-outfit"))
+        .filter(|callback| {
+            !later_outfit_reward(callback) && !callback.key.ends_with("-full-outfit")
+        })
         .filter(|callback| {
             callback.quest == QUEST
                 || callback
@@ -3066,8 +3072,10 @@ mod tests {
     -> Result<(), String> {
         let (full_outfit, shared): (Vec<_>, Vec<_>) = parse(DOCUMENTS[0])?
             .into_iter()
+            .chain(parse(OUTFIT_COMPLETIONS)?)
             .partition(|callback| callback.key.ends_with("-full-outfit"));
-        assert_eq!(full_outfit.len(), 18);
+        assert_eq!(full_outfit.len(), 14);
+        assert_eq!(parse(OUTFIT_COMPLETIONS)?.len(), 18);
         let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
         assert_eq!(qb.len(), 31);
         let added_keys = [
@@ -3991,9 +3999,9 @@ mod outfit_reward_predecessor_tests {
             // 112 retained rows, 31 QB rows, and nine Hunter callbacks.
             152
         );
-        document
-            .callbacks
-            .retain(|callback| !later_outfit_reward(callback) && !callback.key.ends_with("-full-outfit"));
+        document.callbacks.retain(|callback| {
+            !later_outfit_reward(callback) && !callback.key.ends_with("-full-outfit")
+        });
         let owned = document
             .callbacks
             .iter()

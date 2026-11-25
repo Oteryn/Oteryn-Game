@@ -8,22 +8,27 @@ PATH = "content/items/definitions/srx1-item-updates.json"
 MAX_ITEM_PROFILES = 16 * 1024 * 1024  # native_gameplay::MAX_ITEM_PROFILES
 
 
-def compact_item_provider(document, canonical):
+def compact_item_record(row):
     """Omit only facts that the native decoder defaults to the same value."""
+    attributes = row["attributes"]
+    for field in ("field_condition", "field_replaceable", "rune_consumption"):
+        if attributes.get(field) is None:
+            attributes.pop(field, None)
+    if row.get("production_binding_qualification") is None:
+        row.pop("production_binding_qualification", None)
+    # First-party constructor receipts bind the explicit raw semantics.
+    if row["production_binding"]["source_key"] != "oteryn:source.oteryn_authored":
+        row["semantics"] = {
+            field: fact
+            for field, fact in row["semantics"].items()
+            if fact != {"state": "UNKNOWN"}
+        }
+    return row
+
+
+def compact_item_provider(document, canonical):
     for row in document["records"]:
-        attributes = row["attributes"]
-        for field in ("field_condition", "field_replaceable", "rune_consumption"):
-            if attributes.get(field) is None:
-                attributes.pop(field, None)
-        if row.get("production_binding_qualification") is None:
-            row.pop("production_binding_qualification", None)
-        # First-party constructor receipts bind the explicit raw semantics.
-        if row["production_binding"]["source_key"] != "oteryn:source.oteryn_authored":
-            row["semantics"] = {
-                field: fact
-                for field, fact in row["semantics"].items()
-                if fact != {"state": "UNKNOWN"}
-            }
+        compact_item_record(row)
     return canonical(document)
 
 

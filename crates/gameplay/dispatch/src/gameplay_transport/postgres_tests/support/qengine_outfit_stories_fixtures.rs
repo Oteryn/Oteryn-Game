@@ -2972,7 +2972,15 @@ pub(super) async fn exercise(
                 assert_eq!(stored, None, "the first addon cannot write the other addon");
                 continue;
             }
-            let row: (String,i64) = sqlx::query_as("SELECT quest_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(fence.character_id.as_bytes().as_slice()).bind(&state.track).fetch_one(&h.pool).await?;
+            let row: Option<(String,i64)> = sqlx::query_as("SELECT quest_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(fence.character_id.as_bytes().as_slice()).bind(&state.track).fetch_optional(&h.pool).await?;
+            if family == "glooth-engineer"
+                && steps[step_index].0 == "second"
+                && state.track.ends_with("/glooth_engineer_outfits/addon1")
+            {
+                assert!(row.is_none(), "the high-vote second addon leaves the first untouched");
+                assert_eq!(tracks[&state.track].initial, 0);
+                continue;
+            }
             // The Demon fixture starts the unclaimed source quest at its earned reward stage.
             let value = if family == "demon" {
                 state.maximum
@@ -2981,7 +2989,7 @@ pub(super) async fn exercise(
             };
             assert_eq!(
                 row,
-                (tracks[&state.track].quest.clone(), value),
+                Some((tracks[&state.track].quest.clone(), value)),
                 "read-only parent ownership and progress retained"
             );
         }

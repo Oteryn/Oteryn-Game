@@ -195,8 +195,6 @@ def supported_claim(definition):
         )
         or numbered_key_claim(definition) is not None
         or fibula_amulet_claim(definition)
-        or panpipe_key_claim(definition)
-        or outlaw_key_claim(definition)
         or (
             definition.get("definition_profile") == "authored_variant_v1"
             and definition.get("readiness") == "waiting_implementation"
@@ -219,17 +217,14 @@ OUTLAW_KEYS = {3301: 2970, 3302: 2969, 3303: 2970, 3304: 2972}
 def source_key_claim(definition):
     return (
         key_claim(definition, 3600, 2969)
-        or panpipe_key_claim(definition)
+        or key_claim(definition, 4055, 2969)
         or outlaw_key_claim(definition)
+        or any(key_claim(definition, number, 2969) for number in (3620, 3667, 4603))
     )
 
 
 def outlaw_key_claim(definition):
     return any(key_claim(definition, number, item) for number, item in OUTLAW_KEYS.items())
-
-
-def numbered_key_claim(definition):
-    return any(key_claim(definition, number, 2969) for number in (3620, 3667, 4055, 4603))
 
 
 def fibula_amulet_claim(definition):

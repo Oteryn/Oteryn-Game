@@ -140,6 +140,7 @@ class CorpseQualification(unittest.TestCase):
             4993,
             5960,
             5962,
+            5966,
             5967,
             5968,
             5973,
@@ -156,6 +157,7 @@ class CorpseQualification(unittest.TestCase):
             6055,
             6072,
             6078,
+            7763,
             8909,
             11675,
             17445,
@@ -195,7 +197,7 @@ class CorpseQualification(unittest.TestCase):
                 number = int(corpse.grizzly.source.attrs(self.xml[number])["decayto"])
         new_keys = {f"oteryn:item.tibia.i{number}" for number in new_stages}
         self.assertTrue(new_keys <= self.plan.records.keys())
-        self.assertEqual(len(self.plan.records.keys() - new_keys), 161)
+        self.assertEqual(len(self.plan.records.keys() - new_keys), 166)
         for number in (4991, 4992, 4993):
             row = self.plan.records[f"oteryn:item.tibia.i{number}"]
             self.assertEqual(row["admission"]["legal_destinations"], ["Ground"])

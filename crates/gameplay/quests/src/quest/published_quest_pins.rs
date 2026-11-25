@@ -3,9 +3,6 @@ use super::{NpcDefinitionPredecessor, QuestStateCatalogue};
 
 type DefinitionHash = [u8; 32];
 
-const GRAVE_DANGER_PRE_ZELOS: DefinitionHash =
-    hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab");
-
 pub(super) const fn hash(hex: &[u8; 64]) -> DefinitionHash {
     const fn digit(byte: u8) -> u8 {
         if byte.is_ascii_digit() {
@@ -474,9 +471,10 @@ const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
     (
         "oteryn:quest.nightmare_outfits_quest",
         hash(b"dc94a505cae469502aacecb2886cf794f483a0a5082583c9c9fdf505f592bca2"),
-        &[hash(
-            b"34b34208aeb0321bb2a60bb20de7521a3485153d0338c1e8b71269c22e836d9d",
-        ), hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38")],
+        &[
+            hash(b"34b34208aeb0321bb2a60bb20de7521a3485153d0338c1e8b71269c22e836d9d"),
+            hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
+        ],
     ),
     (
         "oteryn:quest.the_ape_city_quest",
