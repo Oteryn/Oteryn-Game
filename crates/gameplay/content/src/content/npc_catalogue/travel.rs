@@ -466,7 +466,7 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 240);
+        assert_eq!(corrections.len(), 252);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
