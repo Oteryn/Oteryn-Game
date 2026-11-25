@@ -445,9 +445,10 @@ Owner decision 2026-11-25.
   (`oteryn-debugging` section 6). When the culprit is the last merge, the
   revert is good only when its tree equals the last green `main` tree
   (`git rev-parse <revert>^{tree}` and `git rev-parse <last-green>^{tree}`
-  are the same). When independent PRs merged after it, check instead that
-  `git diff <culprit>^ <culprit>` and `git diff <revert> <revert>^` are the
-  same diff and that the red job is green on the revert head.
+  are the same). When independent PRs merged after it, check instead that the
+  revert is a plain `git revert <culprit>` with no hand edit (`git show
+  <culprit> | git patch-id --stable` equals `git diff <revert> <revert>^ |
+  git patch-id --stable`) and that the red job is green on the revert head.
 - A forward fix is allowed only when a revert is impossible (later merges
   depend on the culprit, a migration is already applied) or the fix is
   already green on its own head. Search the open PRs for an existing fix

@@ -26,7 +26,8 @@ review is requested on a head, the head has:
   while it is red on `main` for an unrelated reason, the same rows compared
   against `main`. A PG case counts only with proof it ran against PostgreSQL
   (a route-less case returns `Ok(())` without running). Where the session
-  cannot run it (no PostgreSQL route), say so and leave it to CI;
+  cannot run it (no PostgreSQL route), say so: the coordinator runs it when it
+  has a route, otherwise CI (`heavy-tests`) does;
 - the head that will merge: a train PR is reviewed on its integrated train
   head, and a unit that lands only through the train PR gets no review of its own. A
   PR that merges on its own, a train unit merged through its own PR included,
@@ -38,7 +39,8 @@ review is requested on a head, the head has:
   included; until a lane's file exists, the lane's owning contracts in
   `docs/contracts/` and its guard tests), with the consumer map of the packet checked against the diff;
 - the pre-push list of `oteryn-coding` (*Before you push*): own PostgreSQL
-  cases proven to reach assertions, every changed literal grepped and updated,
+  cases proven to reach assertions, every changed literal grepped and each
+  real consumer in the owned paths updated (the others named),
   full tests of changed crates after any main-merge.
 
 A head that fails the gate goes back to its author, not to review.
@@ -160,7 +162,8 @@ with CI and never blocks or delays it.
   finding), at reasoning effort `high` when a P0/P1 is in a risk class and
   `medium` for any other fix (owner decision 2026-11-25), as one Codex Cloud
   packet with the same list, launched from the review owner's chat session
-  (owner rule 2026-11-25: never through the PC). Per finding it writes a red test first, reports `NOT
+  (owner rule 2026-11-25: never through the PC); when another session holds
+  the branch as its writer, the list goes to that writer instead. Per finding it writes a red test first, reports `NOT
   REPRODUCED` without a code change when the test cannot fail, then makes the
   smallest fix and reruns the test green; it changes no existing assertion,
   timeout or budget and nothing outside the listed findings. Nothing is

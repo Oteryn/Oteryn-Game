@@ -1,19 +1,19 @@
 # Batch review: catch most defects in one round
 
-Read this before you start a Codex review (§5) or hand one to a subagent. It
+Read this before you start a Codex review (`SKILL.md` §5) or hand one to a subagent. It
 explains how one review round finds most of the defects in a diff at once,
 instead of 10 findings, then 5, then 3 over several rounds.
 
 Why rounds shrink: one reviewer with one prompt stops after its first strong
 findings, and a line cap cuts the rest. Each fix also adds new code that the
 next round reviews. The rules below remove those causes. They do not change
-the limits in §5: at most 2 reviews per PR, the review never edits code, and
+the limits in `SKILL.md` §5: at most 2 reviews per PR, the review never edits code, and
 the fix runs at effort `high` for a P0/P1 in a risk class and `medium` for any
 other fix (owner decision 2026-11-25).
 
 ## 1. One round = one holistic run over the same head
 
-A "review" in §5 is one round over one exact head. By default the round is
+A "review" in `SKILL.md` §5 is one round over one exact head. By default the round is
 ONE read-only Codex Cloud run over the whole diff (owner decision 2026-11-25,
 after the calibration of the same day). The run reads the whole diff as one
 unit, opens the callers and consumers of every changed symbol outside the
@@ -37,7 +37,7 @@ lines): chunks of about 400-500 lines by file group, each chunk run with the
 whole diff as read-only context, plus the one holistic whole-diff run in the
 same round. Chunk runs alone are not a covered review. The second review
 (delta only) is one holistic run over the fix commits and the code they
-touch.
+touch, plus the astra run when the repair is in a risk class.
 
 Model and effort (owner decision 2026-11-25, calibration): every review run
 is a Codex Cloud task, read-only, model `gpt-6.2-sol` at reasoning effort
@@ -46,7 +46,8 @@ protocol, authority, durable value, migrations, several consumers) also gets
 one `gpt-6.2-astra` run at effort `high` on the same head, with the same
 prompt; the two runs together are the one covered review of that head. An
 astra P0/P1 counts only after the review owner traced it (input, caller,
-wrong result) to a REAL verdict (§3); otherwise it goes to the P2 backlog.
+wrong result) to a REAL verdict (§3); one disproved is recorded FALSE and
+closed, one that cannot be traced either way goes to the P2 backlog.
 Never review at effort `medium`: it lost recall for both models. Name the
 task `review-<tag>` (`review-<tag>-astra` for the second run). The review
 owner of `SKILL.md` §5 starts it from its own chat session with
@@ -96,7 +97,7 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
    backlog. A class fixed at one site and left at another is the main cause of the
    next round: in the retro, rounds that did not converge found one sibling
    per round.
-4. P2/P3 go to the grouped list (§4). They do not start a fix now.
+4. P2/P3 go to the grouped list (`SKILL.md` §4). They do not start a fix now.
 
 ## 4. One batch fix, one delta review, one CI cycle
 
@@ -109,14 +110,15 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
    class guard, forbidden paths).
 2. Review the fix diff yourself (§2-§3) and run the local checks.
 3. Push once. One CI cycle covers the whole batch.
-4. The second review allowed by §5 covers only the fix diff (the delta), as one holistic run, under the same rules.
+4. The second review allowed by `SKILL.md` §5 covers only the fix diff (the delta), as one holistic run (plus astra for a risk-class repair), under the same
+   rules.
 
 ## 5. When to stop
 
 The diff is done when every run of the last round finished and no
 confirmed P0/P1 is open. A failed or empty run means "not reviewed". If
 the second review still finds a
-P0/P1, §5 applies: the design is wrong; stop and report to the owner. Never
+P0/P1, `SKILL.md` §5 applies: the design is wrong; stop and report to the owner. Never
 start a third round.
 
 ## 6. For subagents and child sessions

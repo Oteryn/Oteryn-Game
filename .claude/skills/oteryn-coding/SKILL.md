@@ -134,8 +134,9 @@ or `main` (retro 2026-11-25).
 1. Run the touched module's own PostgreSQL cases and prove they reached
    their assertions: a marker the test prints after its database setup, an
    assertion output, or a deliberately red run; elapsed time alone is not
-   proof. A worker without a database route says so in its report and the
-   coordinator runs the cases (`oteryn-waves` `references/delegation.md`,
+   proof. A worker without a database route says so in its report; the
+   coordinator runs the cases when it has a route, otherwise CI
+   (`heavy-tests`) does (`oteryn-waves` `references/delegation.md`,
    item 6). A case that returned `Ok(())` without a database proves nothing.
    Run the scenario variants too: solo and party, every consumer, the error
    paths.

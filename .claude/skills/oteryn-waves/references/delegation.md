@@ -60,14 +60,15 @@ Write it as one self-contained file. Include, in this order:
 8. **Report:** at most 15 lines: result, head SHA or diff name, commands run
    with pass/fail counts, open questions with options and a recommendation,
    what is still PARTIAL, and the line `Codex review <head SHA>: ...`.
-   A Codex Cloud task's final message cannot be read back, so its packet
-   also says: "As the last step, write `.codex-status` at the repository
+   The launching session reads a Codex Cloud task's final message with
+   `poll` or `status` from its own chat. A code-writing task's packet also
+   says: "As the last step, write `.codex-status` at the repository
    root: line 1 is the `OTERYN_SETUP` line from
    `/workspace/oteryn-env/logs/setup-status` (or `OTERYN_SETUP MISSING`), line 2 is
    `RESULT DONE|PARTIAL|BLOCKED <one-line reason>`, line 3 the success
-   check with pass/fail counts." The PC collector `cxstat.sh` reads that
-   file from the diff into `codex-status.txt`; the coordinator deletes it
-   before committing. A task with status `error` and no diff died before
+   check with pass/fail counts." The launching session reads that file from
+   the task's diff and deletes it before committing. A read-only review
+   packet writes no file. A task with status `error` and no diff died before
    any work (setup, network or capacity) and is relaunched from the same
    packet.
 
@@ -111,7 +112,8 @@ file. Commands: `node .claude/skills/oteryn-waves/scripts/codex-cloud.mjs`
 `check` (environment ready), `submit --prompt-file <packet> --branch <ref>
 --title <tag> --model <model> --effort <high|medium>` (prints the thread id;
 always pass the model and effort explicitly), `poll <thread>`, `status <thread>`,
-`send <thread> --prompt-file <follow-up> --effort <high|medium>`, `list`. It calls the desktop
+`send <thread> --prompt-file <follow-up> --model <thread's model> --effort
+<high|medium>` (without `--model` a follow-up runs on `gpt-6.2-sol`), `list`. It calls the desktop
 client's internal RPC, not an official API: if it fails, report the error
 verbatim and do not retry a submit blindly.
 
