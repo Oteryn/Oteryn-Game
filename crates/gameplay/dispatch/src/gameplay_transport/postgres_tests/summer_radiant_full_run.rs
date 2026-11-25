@@ -1,4 +1,4 @@
-//! Radiant respawn, combat, and durable kill settlement on the composed owner.
+//! Radiant entry on pinned map cells, respawn, combat and durable kill settlement.
 use super::fixture::{Harness, debug, id};
 use super::kill_reward_e2e_fixtures::scenario_thread;
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -6,12 +6,15 @@ use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::{
     CharacterId, CharacterLease, GameSessionId, MovementLocalPosition, WorldId,
 };
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::gameplay_transport::kill_reward::{
     DrainOutcome, KillSink, TakeOutcome, record_creature_kill,
 };
+use crate::map::overlay::TilePos;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_items::loot_plan::{LootPlanDeathKey, plan_creature_loot};
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+use oteryn_protocol_oteryn::world_spatial::StepDirection;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::time::Duration;
 
@@ -38,24 +41,68 @@ fn summer_population_radiant_spawn_kill_claim_each() -> TestResult {
             oteryn_gameplay_quests::quest::task_board::extend(lowered.catalogue())
                 .map_err(debug)?,
         );
-        for name in [
-            "acolyte",
-            "inquisitor",
-            "paragon",
-            "templar",
-            "warden",
-            "zealot",
+        for (name, point_ordinal) in [
+            ("acolyte", 0),
+            ("inquisitor", 0),
+            ("paragon", 0),
+            // The first Templar point carries provisional scenery. Use the next
+            // authored point so the crop does not relax collision qualification.
+            ("templar", 1),
+            ("warden", 0),
+            ("zealot", 0),
         ] {
             let key = format!("oteryn:creature.radiant_{name}");
-            let respawn_ms = declarations
+            let point = declarations
                 .iter()
                 .filter_map(|shard| shard["records"].as_array())
                 .flatten()
                 .filter_map(|source| source["declaration"]["points"].as_array())
                 .flatten()
-                .find(|point| point["creature"] == key)
-                .and_then(|point| point["respawn_ms"].as_u64())
-                .ok_or_else(|| format!("{key} has no pinned respawn period"))?;
+                .filter(|point| point["creature"] == key)
+                .nth(point_ordinal)
+                .ok_or_else(|| format!("{key} has no pinned spawn point"))?;
+            let respawn_ms = point["respawn_ms"]
+                .as_u64()
+                .ok_or("pinned respawn period")?;
+            let cell = &point["cell"];
+            let spawn = TilePos {
+                x: u16::try_from(cell["x"].as_u64().ok_or("spawn x")?)?,
+                y: u16::try_from(cell["y"].as_u64().ok_or("spawn y")?)?,
+                floor: -i8::try_from(cell["floor"].as_u64().ok_or("spawn floor")?)?,
+            };
+            let bundle = super::questpc8_native_slice::world(
+                native,
+                &[(
+                    spawn.x - 2,
+                    spawn.y - 2,
+                    spawn.x + 2,
+                    spawn.y + 2,
+                    spawn.floor,
+                )],
+                &[],
+                spawn,
+            )?;
+            let (entry, approach, direction) = approach_cell(&bundle, spawn)
+                .ok_or_else(|| format!("{key} needs a walkable approach at {spawn:?}"))?;
+            let spawn_cell = runtime_cell(spawn);
+            let player_start = runtime_cell(entry);
+            let cells = bundle
+                .movement_cells(pin.qualified_room().movement_cells())
+                .map_err(debug)?;
+            let frame = bundle.frame_binding_digest(world);
+            let room = pin
+                .qualified_room()
+                .bundle_view(
+                    cells,
+                    frame,
+                    bundle.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: player_start.0,
+                        y: player_start.1,
+                        floor: player_start.2,
+                    },
+                )
+                .ok_or("qualified Radiant bundle view")?;
             let h = Harness::create_with_admission_seed(
                 admin.clone(),
                 "summer_radiant_full_run",
@@ -72,18 +119,13 @@ fn summer_population_radiant_spawn_kill_claim_each() -> TestResult {
                 .open_character_authority(&seal)
                 .await
                 .map_err(debug)?;
-            let room = pin.qualified_room().clone();
-            // Transplant one source point to the open Thalom combat tile. The
-            // bundle compiler's summer_population test covers actual map cells.
-            let player_start = (2, 11, -7);
-            let spawn_cell = (1, 11, -7);
             let mut deps = Dependencies::with_content_and_capacity(
                 ChannelContentPin::from_activation(
                     world,
                     pin.activation_sequence(),
                     active.identity().server_artifact_digest(),
                     active.identity().client_artifact_digest(),
-                    pin.frame_binding().digest(),
+                    frame,
                     room.map_revision_digest(),
                     player_start,
                 ),
@@ -107,7 +149,7 @@ fn summer_population_radiant_spawn_kill_claim_each() -> TestResult {
                 .bind(pin.activation_sequence().to_string())
                 .bind(active.identity().server_artifact_digest().as_slice())
                 .bind(active.identity().client_artifact_digest().as_slice())
-                .bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+                .bind(frame.as_slice()).execute(&h.pool).await?;
             let reward = native.reward_table().row(&key).map_err(debug)?;
             let loot_ref = reward.loot_table_ref.as_ref().ok_or("pinned loot table")?;
             // Allocate a deterministic occurrence with a positive roll, preserving the
@@ -236,22 +278,20 @@ fn summer_population_radiant_spawn_kill_claim_each() -> TestResult {
                 "{key} progression admission"
             );
             owner.refresh_quest_session(session, true).await;
-            {
-                let runtime = deps.runtime.lock().await;
-                let mut attacks = owner.states.attack.try_lock().map_err(debug)?;
-                assert_eq!(
-                    attacks.set_target(
-                        &runtime,
-                        Some(&deps.room),
-                        actor,
-                        session,
-                        owner.owner_now(),
-                        Some(target),
-                        1
-                    ),
-                    AttackIntentDisposition::Ok
-                );
-            }
+            let (moved, _) = owner.paced_step(actor, session, direction).await;
+            let position = moved
+                .moved_to
+                .ok_or_else(|| format!("{key} approach step refused: {:?}", moved.disposition))?
+                .actor_position;
+            assert_eq!(
+                (position.x, position.y, position.floor),
+                runtime_cell(approach)
+            );
+            assert_eq!(
+                owner.attack_target(actor, session, 1, Some(target)).await,
+                AttackIntentDisposition::Ok,
+                "{key} attack target"
+            );
             for _ in 0..64 {
                 owner.refresh_attack_weapon(actor, session).await;
                 owner.drain_auto_attacks().await;
@@ -385,4 +425,44 @@ fn summer_population_radiant_spawn_kill_claim_each() -> TestResult {
         }
         Ok(())
     })
+}
+
+fn runtime_cell(cell: TilePos) -> (i32, i32, i16) {
+    (i32::from(cell.x), i32::from(cell.y), -i16::from(cell.floor))
+}
+
+fn approach_cell(
+    bundle: &crate::map::boot::BundleWorld,
+    spawn: TilePos,
+) -> Option<(TilePos, TilePos, StepDirection)> {
+    if !bundle.enterable(spawn) {
+        return None;
+    }
+    for direction in [
+        StepDirection::East,
+        StepDirection::West,
+        StepDirection::North,
+        StepDirection::South,
+    ] {
+        let (dx, dy) = direction.delta();
+        let away_from_spawn = |distance| -> Option<TilePos> {
+            Some(TilePos {
+                x: u16::try_from(i32::from(spawn.x) - dx * distance).ok()?,
+                y: u16::try_from(i32::from(spawn.y) - dy * distance).ok()?,
+                floor: spawn.floor,
+            })
+        };
+        let entry = away_from_spawn(2)?;
+        let approach = away_from_spawn(1)?;
+        if [entry, approach].into_iter().all(|cell| {
+            bundle.enterable(cell)
+                && bundle
+                    .base()
+                    .tile(cell.x, cell.y, cell.floor)
+                    .is_some_and(|tile| !tile.protection_zone())
+        }) {
+            return Some((entry, approach, direction));
+        }
+    }
+    None
 }
