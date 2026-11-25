@@ -100,7 +100,7 @@ BEGIN
             ))
         )
     ) THEN RAISE EXCEPTION 'sculpture material custody changed' USING ERRCODE='23514'; END IF;
-    IF NEW.outputs->0 ? 'ground' AND NOT (
+    IF NEW.outputs->0 ? 'ground' AND NEW.recipe<>'oteryn:reward-bag.event_6570' AND NOT (
         jsonb_array_length(NEW.outputs)=1 AND NOT NEW.consume_source AND (
             (NEW.recipe='oteryn:gathering.crystal'
                 AND NEW.outputs->0->>'key' IN ('oteryn:item.tibia.i10427','oteryn:item.tibia.i10428','oteryn:item.tibia.i10429')
@@ -163,10 +163,19 @@ $arm$;
          )
      ) THEN RAISE EXCEPTION 'unqualified nested marble output' USING ERRCODE='23514'; END IF;
 $arm$);
-    -- Nested ordinals have their own monotonic check against their chosen parent.
-    arm:=$arm$((o->>'ordinal')::numeric<=(SELECT coalesce(max(placement_ordinal),0) FROM game_item_container_entries WHERE parent_item_instance_id=NEW.parent_item_instance_id)$arm$;
-    IF strpos(body,arm)=0 THEN RAISE EXCEPTION 'missing main backpack output ordinal guard'; END IF;
-    body:=replace(body,arm,'(NOT (o ? ''nested_parent'') AND '||substring(arm FROM 2));
+    -- Blue Present retains its own drop admission. Sculptures are admitted by
+    -- the recipe and custody checks above, including the backpack ordinal for
+    -- ordinary Ground sculpture outputs and the separate nested ordinal proof.
+    anchor:=$arm$IF o ? 'ground' AND (
+      NEW.recipe<>'oteryn:reward-bag.event_6570'$arm$;
+    arm:=$arm$IF o ? 'ground' AND NEW.recipe NOT IN ('oteryn:sculpture.carried','oteryn:gathering.crystal') AND (
+      NEW.recipe<>'oteryn:reward-bag.event_6570'$arm$;
+    IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing Blue Present Ground admission'; END IF;
+    body:=replace(body,anchor,arm);
+    anchor:=$arm$(NOT (o ? 'ground') AND (o->>'ordinal')::numeric<=(SELECT coalesce(max(placement_ordinal),0) FROM game_item_container_entries WHERE parent_item_instance_id=NEW.parent_item_instance_id)$arm$;
+    arm:=$arm$(NOT (o ? 'ground' AND NEW.recipe='oteryn:reward-bag.event_6570') AND NOT (o ? 'nested_parent') AND (o->>'ordinal')::numeric<=(SELECT coalesce(max(placement_ordinal),0) FROM game_item_container_entries WHERE parent_item_instance_id=NEW.parent_item_instance_id)$arm$;
+    IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing main backpack output ordinal guard'; END IF;
+    body:=replace(body,anchor,arm);
     EXECUTE replace(body,'SCULPTURE_QUIVER_KEYS',quiver_keys);
 
     body:=pg_get_functiondef('game_item_craft_complete(uuid)'::regprocedure);
@@ -178,8 +187,8 @@ $arm$);
         OR EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=x.item_instance_id)))$arm$;
     IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing craft material retirement proof'; END IF;
     body:=replace(body,anchor,arm);
-    anchor:='IF NOT EXISTS(SELECT 1 FROM game_item_instances n JOIN game_item_container_entries e USING(item_instance_id)';
-    arm:=$arm$IF o ? 'ground' THEN
+    anchor:='IF NOT EXISTS(SELECT 1 FROM game_item_instances n LEFT JOIN game_item_container_entries e USING(item_instance_id)';
+    arm:=$arm$IF o ? 'ground' AND r.recipe IN ('oteryn:sculpture.carried','oteryn:gathering.crystal') THEN
       IF NOT EXISTS (
         SELECT 1 FROM game_item_instances n JOIN game_item_ground_locations g USING(item_instance_id,world_id)
         WHERE n.item_instance_id=(o->>'item')::uuid AND n.world_id=r.world_id AND n.lifecycle=1
@@ -209,7 +218,7 @@ $arm$);
         AND (SELECT count(*) FROM game_item_nested_entries
              WHERE parent_item_instance_id=e.parent_item_instance_id)<=20
       ) THEN RAISE EXCEPTION 'marble output or nested custody mismatch' USING ERRCODE='23514'; END IF;
-    ELSIF NOT EXISTS(SELECT 1 FROM game_item_instances n JOIN game_item_container_entries e USING(item_instance_id)$arm$;
+    ELSIF NOT EXISTS(SELECT 1 FROM game_item_instances n LEFT JOIN game_item_container_entries e USING(item_instance_id)$arm$;
     IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing craft output completion'; END IF;
     body:=replace(body,anchor,arm);
     EXECUTE replace(body,'SCULPTURE_QUIVER_KEYS',quiver_keys);
@@ -225,6 +234,7 @@ $arm$);
                 SELECT 1 FROM game_item_instances i JOIN game_item_craft_records r
                     ON r.transaction_id=i.minted_transaction_id
                 WHERE i.item_instance_id=NEW.item_instance_id AND r.created_xact_id=pg_current_xact_id()
+                AND r.recipe IN ('oteryn:sculpture.carried','oteryn:gathering.crystal')
                 AND r.outputs->0 ? 'ground' AND (r.outputs->0->>'item')::uuid=i.item_instance_id
             ) THEN PERFORM game_item_craft_complete(
                 (SELECT minted_transaction_id FROM game_item_instances WHERE item_instance_id=NEW.item_instance_id)
@@ -259,7 +269,9 @@ $arm$;
         OR EXISTS (
             SELECT 1 FROM game_item_instances i JOIN game_item_craft_records r
                 ON r.transaction_id=i.minted_transaction_id
-            WHERE i.item_instance_id=p_item AND r.outputs->0 ? 'ground'
+            WHERE i.item_instance_id=p_item
+            AND r.recipe IN ('oteryn:sculpture.carried','oteryn:gathering.crystal')
+            AND r.outputs->0 ? 'ground'
             AND (r.outputs->0->>'item')::uuid=p_item
         )$arm$;
     IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing Ground pickup provenance'; END IF;

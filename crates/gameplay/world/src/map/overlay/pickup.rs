@@ -168,7 +168,7 @@ pub struct RehideError {
 }
 
 /// Re-hides after a crash every origin with a receipt for this Channel, digest and reset epoch
-/// (`taken`, from [`crate::durability::DurabilityRoot::read_map_item_mint_placements`]). Each is
+/// (`taken`, the keys from `DurabilityRoot::read_map_item_mint_placement_states`). Each is
 /// admitted whatever the budget; an overflow is counted and raises the alarm. An origin already
 /// hidden stays hidden. A key that names no top-level base entry fails closed.
 pub fn rehide_taken_origins(
