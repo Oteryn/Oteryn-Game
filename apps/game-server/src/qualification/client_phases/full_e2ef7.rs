@@ -6648,6 +6648,47 @@ fn hunt_spawn_approach(at: TilePos, point: TilePos) -> bool {
     at.floor == point.floor && at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) <= 1
 }
 
+fn forge_returnable_tiles(
+    from: TilePos,
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+) -> BTreeSet<TilePos> {
+    let mut reached = BTreeSet::from([from]);
+    let mut queue = VecDeque::from([from]);
+    let mut predecessors = BTreeMap::<TilePos, Vec<TilePos>>::new();
+    while let Some(at) = queue.pop_front() {
+        for direction in [
+            StepDirection::North,
+            StepDirection::East,
+            StepDirection::South,
+            StepDirection::West,
+        ] {
+            let Some(next) = landing(at, direction) else {
+                continue;
+            };
+            if next.x.abs_diff(from.x) > 160
+                || next.y.abs_diff(from.y) > 160
+                || next.floor.abs_diff(from.floor) > 2
+            {
+                continue;
+            }
+            predecessors.entry(next).or_default().push(at);
+            if reached.insert(next) {
+                queue.push_back(next);
+            }
+        }
+    }
+    let mut returnable = BTreeSet::from([from]);
+    queue.push_back(from);
+    while let Some(at) = queue.pop_front() {
+        for &previous in predecessors.get(&at).into_iter().flatten() {
+            if returnable.insert(previous) {
+                queue.push_back(previous);
+            }
+        }
+    }
+    returnable
+}
+
 // Visit actual compiled spawn approaches and select only a served appearance marker.
 // The native population owner chooses species/stacks; the test never classifies by name.
 async fn forge_hunt(
@@ -6765,6 +6806,37 @@ async fn forge_hunt_inner(
     let from = tile(client.position)?;
     points.retain(|point| hunt_spawn_in_route_budget(from, *point));
     let deadline = tokio::time::Instant::now() + Duration::from_secs(330);
+    // A drop or teleporter can strand the search where no unvisited spawn is reachable.
+    // Limit search stops to approaches with an ordinary STEP route back to this origin.
+    let mut approaches =
+        forge_returnable_tiles(from, |at, direction| destination(world, at, direction));
+    approaches.retain(|at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+    });
+    points.retain(|point| {
+        (-1..=1).any(|dx| {
+            (-1..=1).any(|dy| {
+                point
+                    .x
+                    .checked_add_signed(dx)
+                    .zip(point.y.checked_add_signed(dy))
+                    .is_some_and(|(x, y)| {
+                        approaches.contains(&TilePos {
+                            x,
+                            y,
+                            floor: point.floor,
+                        })
+                    })
+            })
+        })
+    });
+    evidence(&format!(
+        "acquisition step=forge-spawn-search origin={from:?} returnable_spawn_points={}",
+        points.len(),
+    ));
     let mut visits = 0;
     let target = loop {
         client.barrier().await?;
@@ -6790,11 +6862,7 @@ async fn forge_hunt_inner(
             return Err(format!("forge-selection-blocked:required={};served-marker-absent;reachable-spawn-visits={visits};budget=330s,160-tiles;no-global-absence-inferred",if fiendish{"fiendish-15"}else{"influenced-1..5"}).into());
         }
         let walk = client.walk(world, |at| {
-            points.iter().any(|point| hunt_spawn_approach(at, *point))
-                && world
-                    .base()
-                    .tile(at.x, at.y, at.floor)
-                    .is_some_and(|t| !t.protection_zone())
+            approaches.contains(&at) && points.iter().any(|point| hunt_spawn_approach(at, *point))
         });
         acquisition_step("forge-spawn-walk", walk).await?;
         let at = tile(client.position)?;
@@ -7106,6 +7174,30 @@ impl ForgeClient {
 #[cfg(test)]
 mod forge_tests {
     use super::*;
+
+    #[test]
+    fn forge_spawn_search_keeps_a_returnable_floor_route_and_excludes_one_way_drops() {
+        use StepDirection::{East, North, South, West};
+
+        let origin = TilePos { x: 10, y: 10, floor: -7 };
+        let upper = TilePos { x: 12, y: 10, floor: -6 };
+        let stairs = TilePos { x: 11, y: 11, floor: -7 };
+        let drop = TilePos { x: 10, y: 9, floor: -8 };
+        let pocket = TilePos { x: 11, y: 9, floor: -8 };
+        let landing = |at, direction| match direction {
+            East if at == origin => Some(upper),
+            South if at == upper => Some(stairs),
+            West if at == stairs => Some(origin),
+            North if at == origin => Some(drop),
+            East if at == drop => Some(pocket),
+            West if at == pocket => Some(drop),
+            _ => None,
+        };
+        assert_eq!(
+            forge_returnable_tiles(origin, landing),
+            BTreeSet::from([origin, upper, stairs]),
+        );
+    }
     #[test]
     fn forge_intervals_follow_stacks_and_saturate_at_cap() -> TestResult {
         assert_eq!(forge_dust_interval((0, 59), 5, 100)?, (5, 74));
