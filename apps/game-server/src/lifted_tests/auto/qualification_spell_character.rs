@@ -117,7 +117,7 @@ fn finite_policy_covers_every_base_vocation_level_without_extrapolation() -> Tes
 
 #[test]
 fn qualification_provision_keeps_its_turn_for_the_admission_read() -> TestResult {
-    use crate::bestiary_postgres_harness::{Harness, configured_admin, debug, runtime};
+    use crate::bestiary_postgres_harness::{Harness, debug, runtime};
     use crate::durability::{DurabilityError, DurabilityRoot, fresh_admission::FreshAdmissionStore};
     use crate::party_shared_xp_postgres_tests::committed_fresh_player;
     use sqlx::pool::PoolConnectionReturnDisposition;
@@ -125,9 +125,13 @@ fn qualification_provision_keeps_its_turn_for_the_admission_read() -> TestResult
     use std::task::Poll;
     use std::time::Duration;
 
-    let Some(admin) = configured_admin() else {
+    let Some(admin) = std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
         return Ok(());
     };
+    let admin = admin
+        .into_string()
+        .map_err(|_| "OTERYN_TEST_POSTGRES_ADMIN_URL is not valid Unicode")?;
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
