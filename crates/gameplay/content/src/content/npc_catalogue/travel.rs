@@ -586,6 +586,10 @@ mod tests {
                 "oteryn:service.travel.uzon/kazor" | "oteryn:service.travel.uzon/kazordoon" => {
                     assert_eq!(row.y, 31_941, "{}", row.key);
                 }
+                // Captain Max stands on the donor arrival cell; land on the clear tile south.
+                "oteryn:service.travel.captain_max_calassa/liberty_bay" => {
+                    assert_eq!(row.y, 32_896, "{}", row.key);
+                }
                 _ => assert_eq!(serde_json::json!(row.y), source["destination"]["y"]),
             }
             assert_eq!(serde_json::json!(row.x), source["destination"]["x"]);
