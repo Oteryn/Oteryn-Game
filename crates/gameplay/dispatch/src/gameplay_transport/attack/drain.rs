@@ -9,10 +9,14 @@ use crate::ability::creature_bite::CreatureBiteVitals;
 use crate::ability::exact_actor_resolution::{ExactActorProposal, resolve_exact_actor};
 use crate::combat_attack::{SwingPoll, player_fist_formula, player_melee_formula};
 use crate::durability::spell_owner_commit::SpellLanePermit;
-use crate::durability::{DurabilityError, task_board::BountyTalismanSnapshot};
+use crate::durability::{
+    DurabilityError, character_progression::CharacterProgressionError,
+    task_board::BountyTalismanSnapshot,
+};
 use crate::foundation::CharacterId;
 use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
+use crate::gameplay_transport::connection::AdmissionRefusal;
 use crate::gameplay_transport::kill_reward::KillSettlementQueue;
 use crate::gameplay_transport::task_board::bounty_talisman;
 use crate::spell::cast::{CharacterCastFacts, SwingSkills};
@@ -184,18 +188,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|entry| entry.state.target().is_some())
             .map(|entry| entry.session)
             .collect::<std::collections::BTreeSet<_>>();
+        let retry = crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root);
         // Talisman bonuses are optional. Keep the base swing when a holder or
         // quest row is busy.
         let mut talismans = std::collections::BTreeMap::new();
         for session in sessions {
-            if let Ok(snapshot) = self
-                .root
-                .with_periodic_lock_budget(self.bounty_talisman_for_session(session))
+            if let Ok(snapshot) = retry
+                .retry_unavailable(async || {
+                    self.root
+                        .with_periodic_lock_budget(self.bounty_talisman_for_session(session))
+                        .await
+                        .map_err(|error| match error {
+                            CharacterProgressionError::Unavailable(
+                                DurabilityError::RootUnavailable,
+                            ) => AdmissionRefusal::Unavailable,
+                            _ => AdmissionRefusal::Rejected,
+                        })
+                })
                 .await
             {
                 talismans.insert(session, snapshot);
             }
         }
+        drop(retry);
         let no_talisman = BountyTalismanSnapshot::default();
         let now = now.unwrap_or_else(|| self.owner_now());
         let needs_health_names = {

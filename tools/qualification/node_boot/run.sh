@@ -1394,11 +1394,43 @@ node_complete_assignment() {
   evidence "node registered=1 assignment=operator ungranted=refused content_activation=sequence_1 content_ungranted=refused content_replay=exact content_stale=refused readiness=true control_socket=$control_socket_mode"
 }
 
-control_socket_peer() { # a non-root peer is closed without an answer
+control_socket_peer() {
   if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
-    evidence "control_socket service_user_peer=skipped"
+    if ! timeout 30s python3 - "$BASE/run/control.sock" <<'PY'
+import json
+import socket
+import sys
+import time
+
+deadline = time.monotonic() + 25
+while True:
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
+        control.settimeout(3)
+        control.connect(sys.argv[1])
+        control.sendall(b"health\n")
+        control.shutdown(socket.SHUT_WR)
+        with control.makefile("rb") as response:
+            line = response.readline(65537)
+    if len(line) > 65536 or not line.endswith(b"\n"):
+        sys.exit("Qualification peer received an incomplete health response")
+    health = json.loads(line)
+    if not isinstance(health, dict) or type(health.get("readiness")) is not bool:
+        sys.exit("Qualification peer received invalid readiness")
+    if health["readiness"]:
+        break
+    # Health reflects the pool's current idle count, which can dip during work.
+    if time.monotonic() >= deadline:
+        sys.exit("Qualification peer did not receive ready health")
+    time.sleep(0.05)
+PY
+    then
+      fail "qualification control socket peer health"
+      return 1
+    fi
+    evidence "control_socket qualification_peer=ready"
     return 0
   fi
+  # With distinct operator and service identities, the service peer must be closed.
   sudo -u "$SERVICE_USER" python3 - "$BASE/run/control.sock" "${INTENT_OPERATIONS[0]}" <<'PY'
 import socket, sys
 s = socket.socket(socket.AF_UNIX)

@@ -92,6 +92,24 @@ pub(super) async fn drive(
     entity: EntityRef,
     scenario: i16,
 ) -> TestResult {
+    if scenario == 15 {
+        let mut tx = pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i3359','definition-r1',1,1,encode($1,'hex')::uuid)")
+            .bind(id(70).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,4,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
+            .bind(id(101).as_slice()).bind(id(42).as_slice()).bind(id(70).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        wait_live(client, Duration::from_millis(10_100)).await?;
+        set(client, 1, modes(ExpertMode::RedFist)).await?;
+        delta(client, modes(ExpertMode::RedFist)).await?;
+        target(client, 2, Some(&entity), Accepted).await?;
+        wait_live(client, Duration::from_secs(5)).await?;
+        target(client, 3, None, Accepted).await?;
+        return Ok(());
+    }
     if scenario == 14 {
         // Constraint fixture only; the companion party-skull case joins through real commands.
         let mut tx = pool.begin().await?;
