@@ -45,14 +45,14 @@ fn refresh_source_reset(projection: Option<&mut QuestCallbackProjection>, publis
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
-    pub(super) async fn execute_quest_callback(
+    pub(super) async fn execute_quest_callback<'map>(
         &self,
         permit: &SpellLanePermit,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
         session: GameSessionId,
-        map: &BundleMap,
+        map: &'map BundleMap,
         callback: &Callback,
         key: u64,
         expected_revision: u64,
@@ -63,8 +63,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         optional_pvp: Option<bool>,
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
-        scene_items: Option<super::scene_items::PreparedSceneItems>,
+        scene_publication: Option<&mut Option<super::scene_items::ScenePublication<'map>>>,
     ) -> UseDisposition {
+        // Another user may have obtained the lane after this caller's first
+        // receipt check. Only the original batch or its exact receipt can
+        // release this placement for a new close.
+        if self.scene_receipt_pending(map, key) {
+            return UseDisposition::Rejected;
+        }
         if callback.effects.encounter.is_none()
             && let Some(catalogue) = self.quest_catalogue.as_deref()
             && let Some(bindings) = catalogue.authored_bindings()
@@ -1626,11 +1632,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
             };
             if let Some(proof) = scene_moves {
-                let committed = if let Some(items) = scene_items {
-                    let Ok(staged) = runtime.stage_source_scene_relocations(proof) else {
-                        return UseDisposition::Rejected;
-                    };
-                    if !close {
+                if let Some(publication) = scene_publication {
+                    // This stage validates the original census without storing
+                    // a runtime guard or taking a stale carrier across custody I/O.
+                    if !close || runtime.stage_source_scene_relocations(proof).is_err() {
                         return UseDisposition::Rejected;
                     }
                     let Some(scene) = map.facts.stage_scene_close(
@@ -1643,48 +1648,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ) else {
                         return UseDisposition::Rejected;
                     };
-                    if !Box::pin(self.commit_scene_items(permit, items)).await {
+                    let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+                        return UseDisposition::Rejected;
+                    };
+                    // Any Character transition is already settled. The item
+                    // batch now owns reconciliation of this scene close.
+                    records.remove(&session);
+                    *publication = Some(super::scene_items::ScenePublication {
+                        map: scene,
+                        expected,
+                        fresh_effects,
+                        success_message,
+                    });
+                    return UseDisposition::Committed;
+                }
+                let committed = match runtime.commit_source_scene_relocations(proof, apply_scene) {
+                    Ok(committed) => committed,
+                    Err(error) => {
+                        #[cfg(test)]
+                        eprintln!("QUEST_SCENE_REFUSED commit close={close} error={error:?}");
+                        let _ = error;
                         return UseDisposition::Rejected;
                     }
-                    scene.publish();
-                    let (_, (positions, ())) = staged.publish();
-                    positions
-                } else {
-                    match runtime.commit_source_scene_relocations(proof, apply_scene) {
-                        Ok(committed) => committed,
-                        Err(error) => {
-                            #[cfg(test)]
-                            eprintln!("QUEST_SCENE_REFUSED commit close={close} error={error:?}");
-                            let _ = error;
-                            return UseDisposition::Rejected;
-                        }
-                    }
                 };
-                let now = self.owner_now().get();
-                for ((moved_actor, moved_session, before), after) in
-                    scene_observations.into_iter().zip(committed)
-                {
-                    if let Some(moved_session) = moved_session {
-                        states.stage_special_movement_step(
-                            runtime,
-                            map,
-                            moved_actor,
-                            moved_session,
-                            now,
-                            Some(before.position()),
-                            after.position(),
-                            optional_pvp,
-                        );
-                        states.stage_underwater_step(
-                            runtime,
-                            moved_actor,
-                            moved_session,
-                            now,
-                            underwater(map, before.position()),
-                            underwater(map, after.position()),
-                        );
-                    }
-                }
+                self.publish_scene_positions(
+                    runtime,
+                    states,
+                    map,
+                    optional_pvp,
+                    scene_observations.into_iter().zip(committed),
+                );
             } else if !merchant_projected
                 && !callback.is_read_only()
                 && !personal_claim_preserves_object

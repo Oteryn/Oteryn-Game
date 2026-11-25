@@ -14,25 +14,38 @@ pub struct SourceSceneItemMove {
     pub mint: Option<MapItemMintCandidate>,
 }
 
+/// The final exact receipt proves the result of the complete atomic batch.
+#[derive(Debug, PartialEq, Eq)]
+pub enum SourceSceneReceipt {
+    Committed,
+    Absent,
+    Conflict,
+    RecoverySuperseded,
+}
+
 #[cfg(feature = "test-support")]
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum SceneCommitFault {
     LoseCommitAck,
     RefuseReceiptRead,
+    PauseReceiptRead,
     Completed,
 }
 
 #[cfg(feature = "test-support")]
 tokio::task_local! {
     static LOST_SCENE_COMMIT_ACK: std::cell::Cell<SceneCommitFault>;
+    static SCENE_RECEIPT_PAUSE: (std::sync::Arc<tokio::sync::Notify>, std::sync::Arc<tokio::sync::Notify>);
 }
 
 #[cfg(feature = "test-support")]
 pub async fn with_lost_source_scene_commit_ack<T>(
     operation: impl std::future::Future<Output = T>,
+    receipt_started: std::sync::Arc<tokio::sync::Notify>,
+    allow_receipt: std::sync::Arc<tokio::sync::Notify>,
 ) -> T {
-    LOST_SCENE_COMMIT_ACK
-        .scope(std::cell::Cell::new(SceneCommitFault::LoseCommitAck), operation)
+    SCENE_RECEIPT_PAUSE.scope((receipt_started, allow_receipt), LOST_SCENE_COMMIT_ACK
+        .scope(std::cell::Cell::new(SceneCommitFault::LoseCommitAck), operation))
         .await
 }
 
@@ -69,10 +82,6 @@ impl DurabilityRoot {
             }
         }
         let node = node.clone();
-        let Some(last) = moves.last() else {
-            return Ok(Err(LoopMoveRefusal::Rejected));
-        };
-        let (last_command, last_request) = (last.command, last.request.clone());
         let mut commit_started = false;
         let mut context = (permit, content, &mut commit_started);
         let result = self.try_issue_semantic_pass()?
@@ -124,46 +133,59 @@ impl DurabilityRoot {
                     Err(error) => loop_error(error).map(Err),
                 }
             })).await;
-        let Err(error) = result else {
-            return result;
-        };
-        let unresolved = commit_started
-            && !matches!(error, DurabilityError::CommitRejected | DurabilityError::CommitTransactionTimeout);
-        // The final exact receipt proves the outcome of the entire atomic batch.
-        // When COMMIT was sent, keep the caller's staged scene alive until the
-        // command lock proves that receipt present or absent.
-        loop {
-            match self
-                .reconcile_source_scene_move(
-                    recovery, fence.character_id, last_command, last_request.clone(),
-                )
-                .await
-            {
-                Ok(Some(Ok(_))) => return Ok(Ok(())),
-                Ok(_) => return Err(error),
-                Err(_) if !unresolved => return Err(error),
-                Err(_) => {
-                    tokio::time::sleep(std::time::Duration::from_millis(25)).await;
-                    let _ = self.await_ready().await;
-                }
-            }
+        match result {
+            Err(error) if commit_started && !matches!(
+                error, DurabilityError::CommitRejected | DurabilityError::CommitTransactionTimeout
+            ) => Err(DurabilityError::CommitOutcomeUnknown),
+            result => result,
         }
     }
 
-    async fn reconcile_source_scene_move(
+    /// Wait for the exact batch's command lock before concluding absence.
+    /// This is historical custody evidence. It grants no scene publication authority.
+    pub async fn reconcile_source_scene_move(
         &self,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         character: CharacterId,
         command: CommandRef,
-        request: LoopMoveRequest,
-    ) -> Result<Option<Result<LoopMoveReceipt, LoopMoveRefusal>>, DurabilityError> {
+        request: &LoopMoveRequest,
+    ) -> Result<SourceSceneReceipt, DurabilityError> {
         #[cfg(feature = "test-support")]
-        if LOST_SCENE_COMMIT_ACK.try_with(|state| {
-            state.replace(SceneCommitFault::Completed) == SceneCommitFault::RefuseReceiptRead
-        }) == Ok(true) {
-            return Err(DurabilityError::RootUnavailable);
+        match LOST_SCENE_COMMIT_ACK.try_with(|state| state.get()) {
+            Ok(SceneCommitFault::RefuseReceiptRead) => {
+                LOST_SCENE_COMMIT_ACK.with(|state| state.set(SceneCommitFault::PauseReceiptRead));
+                return Err(DurabilityError::RootUnavailable);
+            }
+            Ok(SceneCommitFault::PauseReceiptRead) => {
+                LOST_SCENE_COMMIT_ACK.with(|state| state.set(SceneCommitFault::Completed));
+                let (started, allow) = SCENE_RECEIPT_PAUSE.with(Clone::clone);
+                started.notify_one();
+                allow.notified().await;
+            }
+            _ => {}
         }
-        self.reconcile_item_loop_move(recovery, character, command, request)
+        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let mut request = request;
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut request, move |holder, deadline, request| Box::pin(async move {
+                let mut tx = super::super::db::begin_semantic_transaction(holder, deadline).await?;
+                if !super::super::character_authority::recovery_fence_is_current(&mut tx, &record, true).await? {
+                    return Ok(SourceSceneReceipt::RecoverySuperseded);
+                }
+                let read: LoopResult<_> = async {
+                    let intent = intent_bytes(character, request)?;
+                    lock_loop_command(&mut tx, command).await?;
+                    committed_loop_move(&mut tx, command, character, &intent).await
+                }.await;
+                let receipt = match read {
+                    Ok(Some(Ok(_))) => SourceSceneReceipt::Committed,
+                    Ok(None) => SourceSceneReceipt::Absent,
+                    Ok(Some(Err(_))) => SourceSceneReceipt::Conflict,
+                    Err(error) => return loop_error(error).map(|_| SourceSceneReceipt::Conflict),
+                };
+                super::super::db::commit_semantic_transaction(tx, deadline).await?;
+                Ok(receipt)
+            }))
             .await
     }
 }

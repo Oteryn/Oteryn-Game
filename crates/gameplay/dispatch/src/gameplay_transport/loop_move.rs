@@ -637,6 +637,10 @@ impl LoopGroundCache {
         }
     }
 
+    pub(super) fn epoch(&self) -> Option<u64> {
+        self.state.lock().ok().map(|state| state.epoch)
+    }
+
     /// An unresolved map MINT origin is still part of the scene census even
     /// while its visual origin is hidden. None means the cache lock failed.
     pub(super) fn pending_origin(&self, key: u64) -> Option<Option<CommandRef>> {

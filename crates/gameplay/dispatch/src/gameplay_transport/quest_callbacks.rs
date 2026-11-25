@@ -105,6 +105,7 @@ struct ObservedWorldCallback {
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
+    scene_item_receipts: scene_items::SceneItemReceipts,
     #[cfg(test)]
     pub(super) delay_scene_commit_ack: std::sync::atomic::AtomicBool,
     #[cfg(test)]
@@ -597,7 +598,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Resolve a closed transport's reserved USE before the session stream can reopen.
     /// Historical receipt recovery does not grant player control or install a projection.
     pub(super) async fn reconcile_quest_callback_receipts(&self, session: GameSessionId) -> bool {
-        if !self.reconcile_soul_war_reward_receipts(session).await {
+        if !self.reconcile_scene_receipts_for_session(session).await
+            || !self.reconcile_soul_war_reward_receipts(session).await
+        {
             return false;
         }
         let pending = match self.states.quest_callbacks.records.lock() {
@@ -752,7 +755,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) fn has_pending_quest_callback(&self, session: GameSessionId) -> bool {
-        if self.states.grizzly_boss.has_pending(session) {
+        if self.states.grizzly_boss.has_pending(session)
+            || self
+                .states
+                .quest_callbacks
+                .scene_item_receipts
+                .has_session(session)
+        {
             return true;
         }
         self.states
@@ -1113,6 +1122,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             super::world_map::resolve_map_target(&source, target, |_| None::<()>).ok()?
         };
+        if !self
+            .reconcile_pending_scene_items(map, resolved.placement_key)
+            .await
+        {
+            return Some(UseOutcome::rejected());
+        }
         let mut selected = self
             .callback_content()
             .iter()
@@ -1428,6 +1443,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if scene_items.is_some() || VampireCoffinKind::for_callback(&callback.key).is_some() {
                 publication.store(true, std::sync::atomic::Ordering::Relaxed);
             }
+            let mut scene_publication = None;
+            let original_use = CommandRef::new(command.game_session_id, id);
             let result = Box::pin(self.execute_quest_callback(
                 &permit,
                 &mut runtime,
@@ -1438,19 +1455,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 callback,
                 resolved.placement_key,
                 target.expected_revision,
-                QuestCause::Use(CommandRef::new(command.game_session_id, id)),
+                QuestCause::Use(original_use),
                 fence,
                 slot.as_mut(),
                 observation.as_ref(),
                 optional_pvp,
                 read_only_gate.as_ref(),
                 selected_tool.as_ref(),
-                scene_items,
+                scene_items.as_ref().map(|_| &mut scene_publication),
             ))
             .await;
             drop(states);
             drop(runtime);
             drop(slot);
+            if let (Some(items), Some(scene)) = (scene_items, scene_publication) {
+                return self.commit_scene_items(
+                    permit, map, callback, resolved.placement_key, actor, original_use, optional_pvp, items, scene,
+                ).await;
+            }
             if matches!(result, UseDisposition::Committed | UseDisposition::Rejected)
                 && let Some(fence) = fence
                 && let Some(delivery) = self.deliver_monk_reward(actor, command, callback, fence).await

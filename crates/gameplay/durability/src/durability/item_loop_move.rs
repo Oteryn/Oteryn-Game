@@ -44,7 +44,7 @@ mod seed_drop;
 mod source_scene;
 mod subtree;
 pub use seed_drop::{SeedDropProbe, SeedDropTarget};
-pub use source_scene::SourceSceneItemMove;
+pub use source_scene::{SourceSceneItemMove, SourceSceneReceipt};
 #[cfg(feature = "test-support")]
 pub use source_scene::with_lost_source_scene_commit_ack;
 

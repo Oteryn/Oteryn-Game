@@ -1896,7 +1896,8 @@ impl BundleFacts {
     }
 
     /// Stage the exact scene projection before committing its durable item moves.
-    /// The caller retains the exclusive Channel runtime and lane until publishing it.
+    /// The map reservation survives custody I/O. Publish only after revalidating
+    /// the scene's actors under the exclusive Channel runtime.
     pub fn stage_scene_close(
         &self,
         key: u64,

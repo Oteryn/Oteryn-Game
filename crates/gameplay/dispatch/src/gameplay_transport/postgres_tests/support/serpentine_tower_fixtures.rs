@@ -116,11 +116,67 @@ pub(super) async fn exercise(
             2,
             encode_use_intent(&target).map_err(debug)?,
         );
-        let result = if command == 2 && variant == "unknown_commit" {
-            crate::durability::item_loop_move::with_lost_source_scene_commit_ack(use_lever).await?
+        let result = if command == 2 && matches!(variant, "unknown_commit" | "superseded") {
+            let started = std::sync::Arc::new(tokio::sync::Notify::new());
+            let allow = std::sync::Arc::new(tokio::sync::Notify::new());
+            let check_ownership = async {
+                tokio::time::timeout(std::time::Duration::from_secs(15), started.notified())
+                    .await
+                    .map_err(|_| "close never attempted receipt reconciliation")?;
+                let runtime_available = owner.runtime.try_lock().is_ok();
+                let spells_available = owner.states.spell_states.try_lock().is_ok();
+                let lane_available = tokio::time::timeout(
+                    std::time::Duration::ZERO,
+                    owner.spell_lane.acquire(),
+                )
+                .await
+                .is_ok_and(|permit| permit.is_ok());
+                let advanced = if variant == "superseded" {
+                    admit_successor_during_receipt_read(owner, h).await
+                } else {
+                    Ok(())
+                };
+                allow.notify_one();
+                assert_eq!(
+                    (runtime_available, spells_available, lane_available),
+                    (true, true, true),
+                    "receipt retry retained channel ownership",
+                );
+                advanced
+            };
+            let (result, checked) = tokio::join!(
+                crate::durability::item_loop_move::with_lost_source_scene_commit_ack(
+                    use_lever, started.clone(), allow.clone(),
+                ),
+                check_ownership,
+            );
+            checked?;
+            if variant == "superseded" {
+                let Err(error) = result else {
+                    return Err("superseded scene emitted a terminal USE result".into());
+                };
+                assert_eq!(error.to_string(), "no command result");
+                Vec::new()
+            } else {
+                result?
+            }
         } else {
             use_lever.await?
         };
+        if command == 2 && variant == "superseded" {
+            assert!(owner.has_pending_quest_callback(admitted.game_session_id));
+            assert_eq!(world.facts().object_revision(key), target.expected_revision);
+            let drops = owner.root.read_item_loop_ground_for_scope(fence.runtime_scope).await.map_err(debug)?;
+            assert_eq!(drops.len(), 4, "the acknowledged database commit moved every root once");
+            for wall in walls() {
+                assert!(world.facts().base_hidden(placement_key(native(wall), 1).ok_or("wall")?));
+                let landing = crate::durability::map_item_mint_audit::map_item_spatial_position(
+                    wall.x, landing.y, wall.floor,
+                );
+                assert_eq!(drops.iter().filter(|drop| drop.item.ground.spatial_position == landing).count(), 2);
+            }
+            return Ok(());
+        }
         if command == 2 && matches!(variant, "exhausted" | "capacity") {
             let drops = owner.root.read_item_loop_ground_for_scope(fence.runtime_scope)
                 .await.map_err(debug)?;
@@ -264,6 +320,33 @@ pub(super) async fn exercise(
             );
         }
     }
+    Ok(())
+}
+
+async fn admit_successor_during_receipt_read(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+) -> TestResult {
+    // Simulate the database being advanced while this owner retains its seal.
+    // The old seal cannot authorize the successor or publish a staged scene.
+    let prior = owner.character.record_for(owner.root).map_err(debug)?;
+    let digest = crate::character_recovery_fence::recovery_record_digest(&prior).map_err(debug)?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-recovery-admission', 0))")
+        .execute(&mut *tx).await?;
+    let admission = sqlx::query(
+        "INSERT INTO game_character_recovery_admissions
+           (authority_scope_id, recovery_generation, recovery_event_id, predecessor_generation,
+            predecessor_digest, issued_at, issuer_identity, reconciled_at)
+         SELECT authority_scope_id, recovery_generation + 1, game_character_uuid_v7(),
+                recovery_generation, $1, issued_at + 1, issuer_identity, reconciled_at + 1
+         FROM game_character_recovery_admissions WHERE recovery_generation = $2::numeric",
+    )
+    .bind(digest.as_slice())
+    .bind(prior.recovery_generation.to_string())
+    .execute(&mut *tx).await?;
+    assert_eq!(admission.rows_affected(), 1);
+    tx.commit().await?;
     Ok(())
 }
 

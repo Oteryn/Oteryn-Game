@@ -2,8 +2,9 @@
 use super::*;
 use crate::content::ReferenceItemField;
 use crate::durability::item_loop_move::{
-    LoopDestination, LoopGround, LoopMoveRequest, SourceSceneItemMove,
+    LoopDestination, LoopGround, LoopMoveRequest, SourceSceneItemMove, SourceSceneReceipt,
 };
+use crate::durability::{DurabilityError, SqlxFailureClass};
 use crate::gameplay_transport::{
     item_move::{LoopMove, LoopTarget},
     item_ref_admission::NativeItemWeights,
@@ -13,6 +14,90 @@ use crate::gameplay_transport::{
 use crate::map::{overlay::AddedItem, view::EntryFacts};
 use oteryn_protocol_oteryn::item_view::WorldTilePosition;
 use sha2::{Digest, Sha256};
+use std::{collections::HashMap, sync::Mutex, time::Duration};
+
+type SceneKey = ([u8; 32], u64, u64);
+const SCENE_RESOLUTION_BUDGET: Duration = Duration::from_secs(2);
+
+#[derive(Clone)]
+struct SceneReceiptIntent {
+    character: crate::domain::CharacterId,
+    original_use: CommandRef,
+    command: CommandRef,
+    request: LoopMoveRequest,
+}
+
+#[derive(Default)]
+pub(super) struct SceneItemReceipts(Mutex<HashMap<SceneKey, (SceneReceiptIntent, bool)>>);
+
+struct SceneReceiptAttempt<'a> {
+    receipts: &'a SceneItemReceipts,
+    key: SceneKey,
+    intent: SceneReceiptIntent,
+    settled: bool,
+}
+
+impl Drop for SceneReceiptAttempt<'_> {
+    fn drop(&mut self) {
+        let mut records = self
+            .receipts
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if self.settled {
+            records.remove(&self.key);
+        } else if let Some((_, busy)) = records.get_mut(&self.key) {
+            *busy = false;
+        }
+    }
+}
+
+impl SceneItemReceipts {
+    pub(super) fn has_session(&self, session: GameSessionId) -> bool {
+        self.0.lock().map_or(true, |records| {
+            records
+                .values()
+                .any(|(intent, _)| intent.original_use.game_session_id() == session)
+        })
+    }
+
+    /// Reserve one writer or receipt reader for this placement. Cancellation
+    /// leaves the exact batch receipt available for the next caller.
+    fn claim(
+        &self,
+        key: SceneKey,
+        new: Option<SceneReceiptIntent>,
+    ) -> Result<Option<SceneReceiptAttempt<'_>>, ()> {
+        use std::collections::hash_map::Entry;
+        let mut records = self.0.lock().map_err(|_| ())?;
+        let intent = match (records.entry(key), new) {
+            (Entry::Vacant(entry), Some(intent)) => {
+                entry.insert((intent.clone(), true));
+                intent
+            }
+            (Entry::Occupied(mut entry), None) if !entry.get().1 => {
+                let (intent, busy) = entry.get_mut();
+                *busy = true;
+                intent.clone()
+            }
+            (Entry::Vacant(_), None) => return Ok(None),
+            _ => return Err(()),
+        };
+        Ok(Some(SceneReceiptAttempt {
+            receipts: self,
+            key,
+            intent,
+            settled: false,
+        }))
+    }
+}
+
+pub(super) struct ScenePublication<'a> {
+    pub(super) map: crate::map::facts::PreparedSceneClose<'a>,
+    pub(super) expected: MovementPositionSnapshot,
+    pub(super) fresh_effects: bool,
+    pub(super) success_message: Option<String>,
+}
 
 pub(super) struct PreparedSceneItems {
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
@@ -315,21 +400,137 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }))
     }
 
+    fn scene_receipt_key(&self, map: &BundleMap, key: u64) -> SceneKey {
+        (map.overlay.base().digest(), self.reset_epoch, key)
+    }
+
+    pub(super) fn scene_receipt_pending(&self, map: &BundleMap, key: u64) -> bool {
+        self.states
+            .quest_callbacks
+            .scene_item_receipts
+            .0
+            .lock()
+            .map_or(true, |records| {
+                records.contains_key(&self.scene_receipt_key(map, key))
+            })
+    }
+
+    pub(super) async fn reconcile_pending_scene_items(&self, map: &BundleMap, key: u64) -> bool {
+        self.reconcile_parked_scene_items(self.scene_receipt_key(map, key))
+            .await
+    }
+
+    pub(super) async fn reconcile_scene_receipts_for_session(
+        &self,
+        session: GameSessionId,
+    ) -> bool {
+        let keys = match self.states.quest_callbacks.scene_item_receipts.0.lock() {
+            Ok(records) => records
+                .iter()
+                .filter(|(_, (intent, _))| intent.original_use.game_session_id() == session)
+                .map(|(&key, _)| key)
+                .collect::<Vec<_>>(),
+            Err(_) => return false,
+        };
+        for key in keys {
+            if !self.reconcile_parked_scene_items(key).await {
+                return false;
+            }
+        }
+        true
+    }
+
+    async fn reconcile_parked_scene_items(&self, key: SceneKey) -> bool {
+        let mut attempt = match self
+            .states
+            .quest_callbacks
+            .scene_item_receipts
+            .claim(key, None)
+        {
+            Ok(Some(attempt)) => attempt,
+            Ok(None) => return true,
+            Err(()) => return false,
+        };
+        match self.read_scene_item_receipt(&attempt.intent).await {
+            Ok(SourceSceneReceipt::Committed | SourceSceneReceipt::Absent) => {
+                self.states.loop_ground.invalidate();
+                // The original USE cannot report a closed scene: only custody
+                // was in doubt, and its staged visual publication was released.
+                let original = attempt.intent.original_use;
+                let ingress = &self.states.command_ingress;
+                if ingress.pending(original)
+                    || (ingress.reconcilable(original)
+                        && ingress
+                            .complete_quest_callback(original, UseDisposition::Rejected)
+                            .is_none())
+                {
+                    return false;
+                }
+                attempt.settled = true;
+                true
+            }
+            _ => false,
+        }
+    }
+
+    async fn read_scene_item_receipt(
+        &self,
+        intent: &SceneReceiptIntent,
+    ) -> Result<SourceSceneReceipt, DurabilityError> {
+        self.root
+            .reconcile_source_scene_move(
+                self.character,
+                intent.character,
+                intent.command,
+                &intent.request,
+            )
+            .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the scene uses the invoking actor and exact prepared map and custody inputs"
+    )]
     pub(super) async fn commit_scene_items(
         &self,
-        permit: &SpellLanePermit,
+        permit: SpellLanePermit,
+        map: &BundleMap,
+        callback: &Callback,
+        key: u64,
+        actor: ExactActorRef,
+        original_use: CommandRef,
+        optional_pvp: Option<bool>,
         prepared: PreparedSceneItems,
-    ) -> bool {
+        publication: ScenePublication<'_>,
+    ) -> UseDisposition {
         let Some(native) = self
             .active_generation
             .and_then(|generation| generation.native_gameplay())
         else {
-            return false;
+            return UseDisposition::Rejected;
         };
+        let Some(last) = prepared.moves.last() else {
+            return UseDisposition::Rejected;
+        };
+        let intent = SceneReceiptIntent {
+            character: prepared.fence.character_id,
+            original_use,
+            command: last.command,
+            request: last.request.clone(),
+        };
+        let Ok(Some(mut attempt)) = self
+            .states
+            .quest_callbacks
+            .scene_item_receipts
+            .claim(self.scene_receipt_key(map, key), Some(intent))
+        else {
+            return UseDisposition::Rejected;
+        };
+        let cache = loop_move::GroundChange(Some(&self.states.loop_ground));
         let result = self
             .root
             .commit_source_scene_item_moves(
-                permit,
+                &permit,
                 self.character,
                 self.holder,
                 prepared.fence,
@@ -337,14 +538,71 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 prepared.moves,
             )
             .await;
-        if !matches!(result, Ok(Err(_))) {
-            self.states.loop_ground.invalidate();
-        }
-        if !matches!(result, Ok(Ok(()))) {
-            #[cfg(test)]
-            eprintln!("QUEST_SCENE_ITEMS_REFUSED batch={result:?}");
-            return false;
-        }
+        drop(cache);
+        let ground_epoch = self.states.loop_ground.epoch();
+        let session = prepared.fence.game_session_id;
+        let permit = match result {
+            Ok(Ok(())) => permit,
+            Err(DurabilityError::CommitOutcomeUnknown) => {
+                drop(permit);
+                // A busy holder or lost connection may recover within one more
+                // bounded pass. The exact receipt stays reserved if it does not.
+                let mut receipt = self.read_scene_item_receipt(&attempt.intent).await;
+                if matches!(
+                    receipt,
+                    Err(DurabilityError::RootUnavailable
+                        | DurabilityError::RootPassDeadlineExceeded
+                        | DurabilityError::CommitOutcomeUnknown
+                        | DurabilityError::Database(
+                            SqlxFailureClass::Transport
+                                | SqlxFailureClass::Pool
+                                | SqlxFailureClass::RetryableStatement
+                        ))
+                ) {
+                    let _ = tokio::time::timeout(SCENE_RESOLUTION_BUDGET, self.root.await_ready())
+                        .await;
+                    receipt = self.read_scene_item_receipt(&attempt.intent).await;
+                }
+                match receipt {
+                    Ok(SourceSceneReceipt::Committed) => attempt.settled = true,
+                    Ok(SourceSceneReceipt::Absent) => {
+                        self.states.loop_ground.invalidate();
+                        attempt.settled = true;
+                        return UseDisposition::Rejected;
+                    }
+                    Ok(SourceSceneReceipt::RecoverySuperseded) => {
+                        // The successor can read the retained receipt with its
+                        // own seal. Never install this owner's staged scene.
+                        self.states.loop_ground.invalidate();
+                        return UseDisposition::Rejected;
+                    }
+                    Ok(SourceSceneReceipt::Conflict) | Err(_) => return UseDisposition::Rejected,
+                }
+                let resumed = tokio::time::timeout(SCENE_RESOLUTION_BUDGET, async {
+                    let permit = self.spell_lane_permit().await?;
+                    let current = self.current_quest_fence(session).await.ok().flatten()?;
+                    (current.item_fence() == prepared.fence).then_some(permit)
+                })
+                .await;
+                let Ok(Some(permit)) = resumed else {
+                    self.states.loop_ground.invalidate();
+                    return UseDisposition::Rejected;
+                };
+                // A later ground writer may have placed another item on an
+                // open scene cell. A fresh USE will take a new ground census.
+                let current_epoch = self.states.loop_ground.epoch();
+                self.states.loop_ground.invalidate();
+                if ground_epoch.is_none() || current_epoch != ground_epoch {
+                    return UseDisposition::Rejected;
+                }
+                permit
+            }
+            _ => {
+                attempt.settled = true;
+                return UseDisposition::Rejected;
+            }
+        };
+        attempt.settled = true;
         #[cfg(test)]
         if self
             .states
@@ -360,6 +618,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .browse_fields
                 .committed_move(item, Some(destination));
         }
-        true
+        let Ok(mut runtime) =
+            tokio::time::timeout(SCENE_RESOLUTION_BUDGET, self.runtime.lock()).await
+        else {
+            return UseDisposition::Rejected;
+        };
+        let Ok(mut states) = self.states.spell_states.try_lock() else {
+            return UseDisposition::Rejected;
+        };
+        if permit
+            .check_scope(runtime.binding().runtime_scope())
+            .is_err()
+            || runtime.binding().scope_generation() != prepared.fence.scope_ownership_generation
+            || runtime.read_actor_position(actor) != Ok(publication.expected)
+            || !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+            || states.is_dead(actor)
+            || !states.spell_idle(&runtime, actor, session)
+        {
+            return UseDisposition::Rejected;
+        }
+        let Ok(Some(proof)) =
+            self.prepare_quest_scene_moves(&runtime, &states, map, callback, true)
+        else {
+            return UseDisposition::Rejected;
+        };
+        let observations = proof.observations();
+        let Ok(positions) = runtime.commit_source_scene_relocations(proof, || {
+            publication.map.publish();
+            true
+        }) else {
+            return UseDisposition::Rejected;
+        };
+        self.publish_scene_positions(
+            &mut runtime,
+            &mut states,
+            map,
+            optional_pvp,
+            observations.into_iter().zip(positions),
+        );
+        for effect in &callback.effects {
+            map.facts
+                .emit_movement_effect(tile(effect.position), effect.effect);
+        }
+        if publication.fresh_effects
+            && let Some(speech) = &callback.effects.player_speech
+        {
+            self.states
+                .chat
+                .publish_quest_speech(&runtime, actor, session, speech);
+        }
+        if let Some(message) = publication.success_message {
+            self.states.chat.push_quest_feedback(session, &message);
+        }
+        UseDisposition::Committed
     }
 }

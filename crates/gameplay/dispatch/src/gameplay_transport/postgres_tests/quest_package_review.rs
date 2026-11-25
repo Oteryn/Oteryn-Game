@@ -57,10 +57,18 @@ fn sarina_vines_refuse_pz_locked_players_in_both_directions() -> TestResult {
 
 #[test]
 fn serpentine_close_resolves_commit_after_receipt_read_is_unavailable() -> TestResult {
+    run_serpentine("serpentine-tower-lever#unknown_commit")
+}
+
+#[test]
+fn serpentine_close_superseded_recovery_keeps_the_scene_open() -> TestResult {
+    run_serpentine("serpentine-tower-lever#superseded")
+}
+
+fn run_serpentine(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    let name = "serpentine-tower-lever#unknown_commit";
     super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || {
         world::scenario(name, super::serpentine_tower_fixtures::LEVER, false)
     })
