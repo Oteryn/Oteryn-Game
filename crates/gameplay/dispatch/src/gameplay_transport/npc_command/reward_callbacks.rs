@@ -412,6 +412,7 @@ pub(super) fn unhandled_confirmation(
     command: UseCommand,
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
+    received_at: oteryn_simulation_determinism::SemanticTimeMicros,
 ) -> bool {
     let text = intent.text.trim().to_ascii_lowercase();
     if matches!(text.as_str(), "hi" | "hello" | "bye" | "farewell") {
@@ -431,7 +432,7 @@ pub(super) fn unhandled_confirmation(
     } else {
         callback_keyword(&admission.states.chat, &context.2, &intent.text)
     };
-    if admission.has_pending_paid_confirmation(command, intent, &context) {
+    if admission.has_pending_paid_confirmation(command, intent, &context, received_at) {
         return false;
     }
     let Ok(sessions) = admission.states.npc_conversations.sessions.lock() else {

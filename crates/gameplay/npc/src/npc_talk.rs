@@ -12,12 +12,15 @@ mod dark_trails;
 mod isle_of_evil;
 mod literal_contacts;
 mod questpc7_reward_bounds;
+mod regional_contacts;
+#[cfg(test)]
+mod regional_tests;
 mod world_change_journals;
 
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
 use crate::greeting::{DEFAULT_TALK_RANGE, contains_words, words};
-use crate::greeting::{GreetingNpc, greeted_npc};
+use crate::greeting::{GreetingNpc, greeted_npc, matches_greeting};
 
 /// Words that start a conversation, until an NPC carries its own.
 const GREETINGS: [&str; 3] = ["hi", "hello", "hail"];
@@ -230,12 +233,15 @@ impl NpcTalkEntry {
         &self.offers
     }
 
+    /// Whether the message contains a greeting authored for this NPC.
+    pub fn matches_greeting(&self, text: &str) -> bool {
+        matches_greeting(&words(text), &self.greetings)
+    }
+
     /// Whether a focus message or an admitted dialogue keyword takes precedence over a default callback.
     pub fn matches_focus_or_dialogue(&self, text: &str) -> bool {
         let said = words(text);
-        self.greetings
-            .iter()
-            .any(|greeting| contains_words(&said, &words(greeting)))
+        matches_greeting(&said, &self.greetings)
             || says_any(&said, &FAREWELLS)
             || says_any(&said, &TRADE_WORDS)
             || self.dialogue_keyword(&said).is_some()
@@ -450,7 +456,13 @@ impl NpcTalkBook {
                 YASIR_JOB,
                 YASIR_NAME,
                 YASIR_PASSAGE,
-                literal_contacts::REVISION_MATERIAL,
+                format_args!(
+                    "{}\0{}\0{}\0{}",
+                    literal_contacts::REVISION_MATERIAL,
+                    literal_contacts::REGIONAL_SOURCE,
+                    regional_contacts::DATA,
+                    crate::content::npc_catalogue::subtype_trades::REGIONAL_DATA,
+                ),
             )),
             ..Self::default()
         };
@@ -502,7 +514,23 @@ impl NpcTalkBook {
                 .iter()
                 .filter_map(|reference| model.services().get(reference))
                 .any(|service| service.bank);
+            let regional_dialogue = npc
+                .bank_dialogue
+                .as_ref()
+                .filter(|_| literal_contacts::regional(&reference.key));
+            let regional = regional_contacts::get(&reference.key);
+            let regional_keywords = || {
+                regional_dialogue
+                    .into_iter()
+                    .flat_map(|dialogue| &dialogue.keywords)
+                    .filter(|keyword| {
+                        literal_keyword(keyword) && !keyword.reply[0].contains("|TIME|")
+                    })
+            };
+            let mut merged_regional_keywords = false;
             let mut journal_fallback = false;
+            let mut regional_source = false;
+            let mut regional_walkaway = None;
             let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if native_quest
                 && matches!(
                     reference.key.as_str(),
@@ -719,6 +747,38 @@ impl NpcTalkBook {
                     None,
                     keywords,
                 )
+            } else if let Some(contact) = regional.filter(|_| !bank) {
+                merged_regional_keywords = true;
+                (
+                    contact
+                        .greet
+                        .as_deref()
+                        .unwrap_or(regional_contacts::GREET)
+                        .into(),
+                    contact
+                        .farewell
+                        .as_deref()
+                        .unwrap_or(regional_contacts::FAREWELL)
+                        .into(),
+                    None,
+                    contact.keywords.clone(),
+                )
+            } else if let Some(messages) = npc
+                .bank_dialogue
+                .as_ref()
+                .and_then(|dialogue| literal_contacts::regional_messages(&reference.key, dialogue))
+            {
+                regional_source = true;
+                merged_regional_keywords = !bank;
+                regional_walkaway = messages.walkaway;
+                let passage = (!travel_routes.is_empty())
+                    .then(|| "Ask me for a passage to your destination.".into());
+                (
+                    messages.greet,
+                    messages.farewell,
+                    passage,
+                    messages.keywords,
+                )
             } else if let Some(replies) = &npc.generated_replies {
                 let mut lines: Vec<&str> = Vec::new();
                 for (_, line) in &replies.services {
@@ -837,16 +897,41 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if let Some(dialogue) = regional_dialogue {
+                let focus_line = |lines: &[String], default: &str| match lines {
+                    [line] => line.clone(),
+                    _ => default.into(),
+                };
+                (
+                    focus_line(&dialogue.greet, "Greetings, |PLAYERNAME|."),
+                    focus_line(&dialogue.farewell, "Good bye, |PLAYERNAME|."),
+                    None,
+                    regional_keywords().cloned().collect(),
+                )
             } else {
                 continue;
             };
+            let mut dialogue_keywords = dialogue_keywords;
+            if merged_regional_keywords
+                && npc.generated_replies.is_none()
+                && travel_routes.is_empty()
+            {
+                for keyword in regional_keywords() {
+                    if !dialogue_keywords
+                        .iter()
+                        .any(|existing| existing.triggers == keyword.triggers)
+                    {
+                        dialogue_keywords.push(keyword.clone());
+                    }
+                }
+            }
             book.npcs.insert(
                 reference.key.clone(),
                 NpcTalkEntry {
                     name: npc.name.clone(),
                     admitted_dialogue: !journal_fallback
                         && !matches!(reference.key.as_str(), YASIR | OROCKLE)
-                        && npc.dialogue.is_some()
+                        && (npc.dialogue.is_some() || regional.is_some())
                         && premium_services.is_empty()
                         && travel_routes.is_empty(),
                     travel_routes,
@@ -856,10 +941,21 @@ impl NpcTalkBook {
                         .iter()
                         .filter_map(|reference| model.services().get(reference))
                         .any(|service| service.bank),
-                    greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
+                    greetings: GREETINGS
+                        .iter()
+                        .map(|word| (*word).to_owned())
+                        .chain(
+                            regional
+                                .into_iter()
+                                .flat_map(|contact| contact.greet_aliases.iter().cloned()),
+                        )
+                        .collect(),
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: bank
+                        || regional_dialogue.is_some()
+                        || regional.is_some()
+                        || regional_source
                         || literal_contacts::greeting(&reference.key).is_some()
                         || reference.key == "oteryn:npc.lynda"
                         || matches!(reference.key.as_str(), YASIR | OROCKLE | DEEP_SEAS_GUARDIAN)
@@ -886,9 +982,26 @@ impl NpcTalkBook {
                             .as_ref()
                             .and_then(|dialogue| dialogue.walkaway.first().cloned())
                     } else {
-                        isle_messages
-                            .map(|messages| messages.walkaway)
+                        regional_walkaway
+                            .or_else(|| isle_messages.map(|messages| messages.walkaway))
                             .or_else(|| reward_messages.map(|messages| messages.walkaway.clone()))
+                            .or_else(|| {
+                                regional_dialogue.map(|dialogue| {
+                                    match dialogue.walkaway.as_slice() {
+                                        [line] => line.clone(),
+                                        _ => "Good bye.".into(),
+                                    }
+                                })
+                            })
+                            .or_else(|| {
+                                regional.map(|contact| {
+                                    contact
+                                        .walkaway
+                                        .as_deref()
+                                        .unwrap_or(regional_contacts::WALKAWAY)
+                                        .into()
+                                })
+                            })
                     },
                     topic_reply,
                     dialogue_keywords,
@@ -992,7 +1105,13 @@ pub fn asks_to_trade(text: &str) -> bool {
 
 /// Source-specific shop keyword; ordinary merchants retain the standard trade words.
 pub fn asks_to_trade_for(npc_key: &str, text: &str) -> bool {
-    asks_to_trade(text) || (npc_key == YASIR && says_any(&words(text), &["ariki"]))
+    let source_keyword = match npc_key {
+        YASIR => "ariki",
+        crate::content::npc_catalogue::quest_shops::ALBINIUS => "buy",
+        _ => return asks_to_trade(text),
+    };
+    let said = words(text);
+    says_any(&said, &TRADE_WORDS) || says_any(&said, &[source_keyword])
 }
 
 fn says_any(said: &[String], list: &[&str]) -> bool {
