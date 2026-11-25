@@ -66,6 +66,26 @@ owner of `SKILL.md` §5 starts it from its own chat session with
 `codex exec` on the PC and never through the PC as a launch relay. The
 native `@codex review` comment route is one run.
 
+### Choosing the runs (owner decision 2026-11-25, calibration)
+
+Every session picks the runs of a round from this table; the other rule files
+point here. "Lines" are hand-written changed lines (generated data, pins and
+regenerated registries excluded).
+
+| Situation | Runs of the round | Measured reason |
+| --- | --- | --- |
+| Code PR up to about 1500 lines, no risk class | `gpt-6.2-sol` high, one holistic run | sol found the real P1s with little noise on small and medium diffs |
+| Risk class (persistence, session fencing, protocol, authority, durable value, migrations, a symbol with several consumers) | sol high + `gpt-6.2-astra` high on the same head | astra finds cross-module seams; its P0/P1 count only after a traced REAL verdict |
+| Code diff above about 1500 lines | sol high per area + one astra high whole-diff integration run (seams) | sol alone lost a writer-key/guard seam on a large diff; astra caught it |
+| Content train or content diff above about 1500 lines | as above + one astra high content-fidelity run with external sources | astra finds real fidelity gaps; under the rubric they are P2 for the next train |
+| Small data-only PR | sol high | low risk; astra adds mostly P2 |
+| Docs, rules or skills only | sol high only | astra over-graded rule-text conflicts as P1 |
+| Delta review (second round) | sol high over the fix commits; + astra when the repair is in a risk class | small scope |
+| CI-failure fix | sol high with the failing log lines in the prompt | the log points the run at the cause |
+
+Never astra alone (it missed a known bug that sol found) and never effort
+`medium`.
+
 ## 2. The prompt: all findings, no cap
 
 The review prompt asks for every finding, with no line or count limit.
