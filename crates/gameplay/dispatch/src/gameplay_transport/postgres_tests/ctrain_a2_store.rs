@@ -24,14 +24,21 @@ fn ctrain_a2_coin_mount_belongs_to_the_buying_character() -> TestResult {
 #[test]
 fn ctrain_a2_red_skull_preserves_claimed_store_item_and_backpack() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("store-backpack-death", || {
-        run(async |admin| death_case(admin, false).await)
+        run(async |admin| death_case(admin, false, false).await)
     })
 }
 
 #[test]
 fn ctrain_a2_reconnect_finishes_legacy_store_backpack_loss() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("store-backpack-reconnect", || {
-        run(async |admin| death_case(admin, true).await)
+        run(async |admin| death_case(admin, true, false).await)
+    })
+}
+
+#[test]
+fn ctrain_a2_reconnect_drops_loot_beside_nested_store_claim() -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("nested-store-backpack-reconnect", || {
+        run(async |admin| death_case(admin, true, true).await)
     })
 }
 
@@ -195,7 +202,7 @@ async fn cosmetic_case(admin: String) -> TestResult {
     h.cleanup().await
 }
 
-async fn death_case(admin: String, legacy: bool) -> TestResult {
+async fn death_case(admin: String, legacy: bool, nested: bool) -> TestResult {
     let h =
         Harness::create_with_admission_seed(admin, "ctrain_a2_store_death", true, false).await?;
     prepare_current_session(&h).await?;
@@ -214,7 +221,10 @@ async fn death_case(admin: String, legacy: bool) -> TestResult {
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = generation.active();
     let mut admitted = open_store(&h, &deps, &mut owner, true).await?;
-    let claimed = claim_sword(&h, &owner, &mut admitted, &pin).await?;
+    let claimed = claim_sword(&h, &owner, &mut admitted, &pin, nested).await?;
+    if nested {
+        nest_claimed_sword(&h, claimed).await?;
+    }
     prepare_red_skull(&h, &authority).await?;
     let current = character_gameplay_fence::current(&owner, admitted.game_session_id, false)
         .await
@@ -271,13 +281,11 @@ async fn death_case(admin: String, legacy: bool) -> TestResult {
             .settle_source_player_death(current, request, None, None)
             .await
             .map_err(|error| format!("red-skull Store backpack settlement failed: {error:?}"))?;
-        assert!(
-            death
-                .items
-                .as_ref()
-                .ok_or("death selection")?
-                .lost
-                .is_empty()
+        // P1: One bound item protects every unbound item in the same
+        // backpack from death loss. The root selection now drops its unbound branches.
+        assert_eq!(
+            death.items.as_ref().ok_or("death selection")?.lost,
+            [id(70)]
         );
         death
     };
@@ -285,6 +293,15 @@ async fn death_case(admin: String, legacy: bool) -> TestResult {
         expected_character_revision: death.committed_character_revision,
         ..current
     };
+
+    let items_complete: bool = sqlx::query_scalar("SELECT game_player_death_items_complete($1)")
+        .bind(sqlx::types::Uuid::from_bytes(*death.occurrence.as_bytes()))
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(
+        items_complete, !legacy,
+        "pending death must require loose loot drops"
+    );
 
     let restarted = Dependencies::new()?;
     let reconnect = restarted.owner(&h, &authority);
@@ -305,18 +322,51 @@ async fn death_case(admin: String, legacy: bool) -> TestResult {
         .map_err(debug)?
         .ok_or("pending respawn")?;
 
-    let parent: sqlx::types::Uuid = sqlx::query_scalar(
+    let parent: sqlx::types::Uuid = sqlx::query_scalar(if nested {
+        "SELECT n.parent_item_instance_id FROM game_item_nested_entries n
+         JOIN game_item_container_entries e ON e.item_instance_id=n.parent_item_instance_id
+         JOIN game_item_container_slots s ON s.item_instance_id=e.parent_item_instance_id
+         JOIN game_item_bindings b ON b.item_instance_id=n.item_instance_id
+         WHERE n.item_instance_id=$1 AND e.character_id=$2 AND s.character_id=$2
+           AND b.character_id=$2 AND b.cause='STORE_PURCHASE'"
+    } else {
         "SELECT e.parent_item_instance_id FROM game_item_container_entries e
          JOIN game_item_container_slots s ON s.item_instance_id=e.parent_item_instance_id
          JOIN game_item_bindings b ON b.item_instance_id=e.item_instance_id
          WHERE e.item_instance_id=$1 AND e.character_id=$2 AND s.character_id=$2
-           AND b.character_id=$2 AND b.cause='STORE_PURCHASE'",
-    )
+           AND b.character_id=$2 AND b.cause='STORE_PURCHASE'"
+    })
     .bind(claimed)
     .bind(sqlx::types::Uuid::from_bytes(id(41)))
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(*parent.as_bytes(), id(70));
+    assert_eq!(*parent.as_bytes(), id(if nested { 72 } else { 70 }));
+    let ordinary_dropped: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_item_ground_locations
+         WHERE item_instance_id=$1 AND native_room_placement_context=$2)",
+    )
+    .bind(sqlx::types::Uuid::from_bytes(id(71)))
+    .bind(death.occurrence.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(
+        ordinary_dropped,
+        "unbound backpack sibling must drop (legacy={legacy})"
+    );
+    if nested {
+        let nested_dropped: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_item_ground_locations
+             WHERE item_instance_id=$1 AND native_room_placement_context=$2)",
+        )
+        .bind(sqlx::types::Uuid::from_bytes(id(73)))
+        .bind(death.occurrence.as_bytes().as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(
+            nested_dropped,
+            "unbound sibling inside retained bag must drop"
+        );
+    }
     eprintln!(
         "CTRAIN_A2_POSTGRES_EXECUTED: Store backpack survives death and reconnect, legacy={legacy}"
     );
@@ -332,6 +382,7 @@ async fn claim_sword(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     pin: &crate::content::NativeEntryContentPin,
+    nested: bool,
 ) -> TestResult<sqlx::types::Uuid> {
     let bought = purchase(
         owner,
@@ -341,7 +392,12 @@ async fn claim_sword(
     .await?;
     assert_eq!(bought.code, wire::StorePurchaseCode::Accepted);
     let operation = bought.operation_id.ok_or("Store delivery ID")?;
-    super::item_look_fixtures::seed_main_backpack(h, &[]).await?;
+    let entries = [
+        ("oteryn:item.tibia.i3031", 1),
+        ("oteryn:item.tibia.i2854", 1),
+    ];
+    super::item_look_fixtures::seed_main_backpack(h, &entries[..if nested { 2 } else { 1 }])
+        .await?;
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4) ON CONFLICT DO NOTHING")
         .bind(admitted.world_id.as_bytes().as_slice())
         .bind(admitted.channel_id.as_bytes().as_slice())
@@ -381,6 +437,31 @@ async fn claim_sword(
     .bind(sqlx::types::Uuid::from_bytes(id(70)))
     .fetch_one(&h.pool)
     .await?)
+}
+
+async fn nest_claimed_sword(h: &Harness, claimed: sqlx::types::Uuid) -> TestResult {
+    // Seed a nested layout after the real claim has established Store custody.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    let bag = sqlx::types::Uuid::from_bytes(id(72));
+    let gold = sqlx::types::Uuid::from_bytes(id(71));
+    let nested_gold = sqlx::types::Uuid::from_bytes(id(73));
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
+                  definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+                 SELECT $1,world_id,definition_family,definition_production_key,definition_revision_ref,
+                        quantity,lifecycle,minted_transaction_id FROM game_item_instances WHERE item_instance_id=$2")
+        .bind(nested_gold).bind(gold).execute(&mut *tx).await?;
+    sqlx::query("WITH moved AS (DELETE FROM game_item_container_entries WHERE item_instance_id=$1 RETURNING *)
+                 INSERT INTO game_item_nested_entries
+                   (item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id)
+                 SELECT item_instance_id,world_id,$2::uuid,placement_ordinal,placed_transaction_id FROM moved
+                 UNION ALL
+                 SELECT $3::uuid,world_id,$2::uuid,1,placed_transaction_id FROM moved")
+        .bind(claimed).bind(bag).bind(nested_gold).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
 }
 
 async fn prepare_red_skull(
