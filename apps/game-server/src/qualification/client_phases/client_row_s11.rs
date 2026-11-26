@@ -65,17 +65,21 @@ async fn experience_facts(
 ) -> TestResult<(Vec<wire::HighscoreRow>, wire::HighscoreRow, u32, bool)> {
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
     let rows = sqlx::query_as::<_, (String, String, i64, i64, i64, bool)>(
-        r#"WITH scores AS (
-             SELECT r.character_id, r.name, b.vocation, p.level::bigint, p.total_experience::bigint,
-                    rank() OVER (ORDER BY p.total_experience DESC) AS rank
+        r#"WITH facts AS (
+             SELECT r.character_id, r.name, b.vocation,
+                    COALESCE(p.level, birth.level)::bigint AS level,
+                    COALESCE(p.total_experience, birth.total_experience)::bigint AS total_experience
              FROM game_character_roots r
              JOIN game_character_build_state b USING (character_id)
-             JOIN game_character_progression_state p USING (character_id)
+             LEFT JOIN game_character_progression_state p USING (character_id)
+             LEFT JOIN game_character_creation_progression birth
+                 ON birth.character_id = r.character_id AND r.character_revision = 1
              WHERE r.world_id = $1::uuid AND r.lifecycle = 1 AND b.vocation <> 'none'
                AND NOT game_account_closure_detached(r.character_id)
            )
-           SELECT name, vocation, level, total_experience, rank, character_id = $2::uuid
-           FROM scores ORDER BY total_experience DESC, name COLLATE "C", character_id
+           SELECT name, vocation, level, total_experience,
+                  rank() OVER (ORDER BY total_experience DESC), character_id = $2::uuid
+           FROM facts ORDER BY total_experience DESC, name COLLATE "C", character_id
            LIMIT 51"#,
     )
     .bind(uuid_text(&clients.world))
