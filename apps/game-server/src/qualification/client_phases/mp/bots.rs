@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 
 use oteryn_dev_client::client_runtime::party as party_client;
 use oteryn_dev_client::{DevClientSession, EntityRef, SessionEvent};
-use oteryn_protocol_oteryn::{attack, logout::LogoutResult, party, target_move};
+use oteryn_protocol_oteryn::{attack, logout::LogoutResult, party, party_skull, target_move};
 
 const STEP_BUDGET: Duration = Duration::from_secs(10);
 
@@ -620,6 +620,46 @@ pub(super) async fn approach(
     })?
     .ok_or("MP peer approach has no reachable tile")?;
     walk_bot(bots, actor, world, &path).await
+}
+
+pub(super) async fn party_icons(bot: &mut Bot<'_, '_>) -> TestResult<Vec<party_skull::PartyIcon>> {
+    let payload = party_skull_query(bot, &[]).await?;
+    party_skull::decode_party_icons(&payload)
+        .map_err(|error| format!("shield decode={error:?};payload={payload:?}").into())
+}
+
+pub(super) async fn party_skull_query(
+    bot: &mut Bot<'_, '_>,
+    payload: &[u8],
+) -> TestResult<Vec<u8>> {
+    let client = bot.client()?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    tokio::time::timeout_at(deadline, async {
+        loop {
+            let reply = client
+                .session_mut()
+                .gated_command(
+                    party_skull::CAPABILITY_PARTY_SKULL_V1,
+                    party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY,
+                    payload,
+                )
+                .await?;
+            if reply.status == CommandStatus::Accepted {
+                return Ok(reply.payload);
+            }
+            if reply.status != CommandStatus::Rejected
+                || reply.payload != oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL
+            {
+                return Err(format!(
+                    "party skull query payload={payload:?};reply={reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_skull.rs:75"
+                )
+                .into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+        }
+    })
+    .await
+    .map_err(|_| "party skull query exchange deadline")?
 }
 
 pub(super) async fn party(

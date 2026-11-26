@@ -127,7 +127,9 @@ loop; the CI history named the culprit commit in minutes.
    *Reading a red check*, step 3).
 6. **Revert first on a red `main`** (owner decision 2026-11-25; `oteryn-dev`
    `references/ci-merge.md`, *Red `main`*). Revert the culprit at once; a
-   forward fix only under the two exceptions named there. The feature comes
+   forward fix only under the exceptions named there. A fix that meets the
+   hotfix conditions there skips the seam and node-boot wait of step 5 and
+   merges before its CI finishes; the post-merge run verifies it. The feature comes
    back with its fix in a new PR.
 
 ## 7. Node boot and server diagnostics

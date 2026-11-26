@@ -12,9 +12,9 @@ impl FreshAdmissionAuthority for Authority {
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         Err(AdmissionRefusal::Unavailable)
     }
-    async fn observe_pvp_status(&self, _: AdmittedSession) -> Option<PvpStatus> {
+    async fn observe_pvp_status(&self, _: AdmittedSession) -> Result<PvpStatus, crate::durability::DurabilityError> {
         self.0.set(self.0.get() + 1);
-        Some(PvpStatus {
+        Ok(PvpStatus {
             points_milli: [500, 1500, 2500],
             red_limits_milli: [3000, 5000, 10000],
             black_limits_milli: [6000, 10000, 20000],
