@@ -111,6 +111,16 @@ async fn browse_open(
     client: &mut DevClientSession,
     at: WorldTilePosition,
 ) -> TestResult<tree::ContainerView> {
+    if client
+        .session_mut()
+        .container_views()
+        .ok_or("container views absent before browse")?
+        .views
+        .iter()
+        .any(|view| view.browse.is_some_and(|page| page.position == at))
+    {
+        return Err("step=browse-prestate observed=own-tile-view-already-open".into());
+    }
     let before = view_revision(client)?;
     let payload =
         browse::encode_browse_field_intent(&browse::BrowseFieldIntent::Open { position: at })
@@ -201,12 +211,12 @@ fn carried_rope(client: &DevClientSession, rope: NonZeroU32) -> TestResult<ItemE
         .ok_or_else(|| "starter rope absent".into())
 }
 
-async fn round_trip(
+async fn drop_rope(
     client: &mut DevClientSession,
     field: &tree::ContainerView,
     at: WorldTilePosition,
     rope: NonZeroU32,
-) -> TestResult {
+) -> TestResult<ItemEntry> {
     let before = view_revision(client)?;
     let entry = carried_rope(client, rope)?;
     client.take_events();
@@ -224,8 +234,19 @@ async fn round_trip(
         .iter()
         .find(|view| view.view_id == field.view_id)
         .ok_or("browse view disappeared after ground drop")?;
-    let entry = rope_on_tile(view, at, rope, 1)?.ok_or("dropped rope absent")?;
+    rope_on_tile(view, at, rope, 1)?.ok_or_else(|| "dropped rope absent".into())
+}
 
+async fn pick_up_rope(
+    client: &mut DevClientSession,
+    field: &tree::ContainerView,
+    at: WorldTilePosition,
+    rope: NonZeroU32,
+    entry: ItemEntry,
+) -> TestResult {
+    if quantity(client, rope)? != 0 {
+        return Err("step=pickup-prestate observed=rope-already-carried".into());
+    }
     let before = view_revision(client)?;
     client.take_events();
     move_rope(
@@ -268,7 +289,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ItemMoveOutcome::NotSupported,
     )
     .await?;
-    round_trip(&mut client, &field, at, rope).await?;
+    if carried_rope(&client, rope)? != entry
+        || !client
+            .session_mut()
+            .container_views()
+            .is_some_and(|views| views.views.iter().any(|view| view == &field))
+    {
+        return Err("step=locked-browse-refusal observed=state-changed".into());
+    }
+    let dropped = drop_rope(&mut client, &field, at, rope).await?;
+    pick_up_rope(&mut client, &field, at, rope, dropped).await?;
 
     let before = view_revision(&mut client)?;
     let outcome = client
@@ -288,14 +318,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let field = browse_open(&mut client, at).await?;
     rope_on_tile(&field, at, rope, 0)?;
-    round_trip(&mut client, &field, at, rope).await?;
+    drop_rope(&mut client, &field, at, rope).await?;
+    logout(&mut client).await?;
+    drop(client);
+
+    let mut client = connect_world(clients, 0xf2).await?;
+    let ground_session = client.join_snapshot().game_session_id;
+    if ground_session == initial_session || quantity(&client, rope)? != 0 {
+        return Err("step=ground-relog observed=unexpected-session-or-carried-rope".into());
+    }
+    let field = browse_open(&mut client, at).await?;
+    let persisted = rope_on_tile(&field, at, rope, 1)?.ok_or("ground rope lost after relog")?;
+    pick_up_rope(&mut client, &field, at, rope, persisted).await?;
 
     logout(&mut client).await?;
     drop(client);
     let mut client = connect_world(clients, 0xf2).await?;
-    if client.join_snapshot().game_session_id == initial_session || quantity(&client, rope)? != 1 {
+    let restored_session = client.join_snapshot().game_session_id;
+    if restored_session == ground_session
+        || restored_session == initial_session
+        || quantity(&client, rope)? != 1
+    {
         return Err("step=fresh-admission observed=unexpected-session-or-rope-count".into());
     }
+    let field = browse_open(&mut client, at).await?;
+    rope_on_tile(&field, at, rope, 0)?;
     logout(&mut client).await?;
-    Ok("starter-rope;ground-drop=2;browse-pickup=2;virtual-destination-refused;fresh-backpack-count=1".to_owned())
+    Ok("starter-rope;ground-drop=2;browse-pickup=2;virtual-destination-refused;ground-relog=backpack-0,tile-1;pickup-relog=backpack-1,tile-0".to_owned())
 }
