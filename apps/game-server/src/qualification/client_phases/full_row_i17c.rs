@@ -1,16 +1,24 @@
-//! I17c: hotkey equip, automatic two-hand/shield swap and ammunition into the quiver.
-//! Buys a wooden shield (3412) and a two-handed Espada (3265) and equips the shield, then the
-//! two-hander: the shield must return to the backpack and the weapon must be worn. Then buys a
-//! quiver (35562) and arrows (3447): arrows before a quiver must be refused `SlotMismatch` with
-//! no change, after the quiver is worn the arrows must leave the backpack for the quiver.
+//! I17c: hotkey hand displacement and ammunition transfer into the worn quiver.
 use super::*;
-use oteryn_dev_client::DevClientSession;
+use oteryn_dev_client::{DevClientSession, ItemMoveOutcome};
+use oteryn_protocol_oteryn::item_view::EquipmentSlot;
 use sqlx::Connection;
-use std::collections::{BTreeMap, BTreeSet};
+
+const SHIELD: u32 = 3412;
+const BOW: u32 = 3350;
+const QUIVER: u32 = 35848;
+const ARROW: u32 = 3447;
+const ARROWS: u32 = 10;
+const LEVEL: u32 = 100;
+const VOCATION: &str = "paladin";
+const TAG: u8 = 0xe3;
+const INPUTS: [(u32, u32); 4] = [(SHIELD, 1), (BOW, 1), (QUIVER, 1), (ARROW, ARROWS)];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(600), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(600), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -26,158 +34,80 @@ fn token(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join("-")
 }
 
-fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
-    let mut values = BTreeMap::new();
-    for item in &client
-        .inventory()
-        .ok_or("inventory snapshot absent")?
-        .entries
-    {
-        *values.entry(item.item_definition_ref.get()).or_default() += u64::from(item.count.get());
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Custody {
+    carried: u64,
+    worn: Option<EquipmentSlot>,
+}
+
+fn custody(client: &DevClientSession, definition: std::num::NonZeroU32) -> TestResult<Custody> {
+    let inventory = client.inventory().ok_or("inventory snapshot absent")?;
+    Ok(Custody {
+        carried: inventory
+            .entries
+            .iter()
+            .filter(|item| item.item_definition_ref == definition)
+            .map(|item| u64::from(item.count.get()))
+            .sum(),
+        worn: inventory
+            .equipment
+            .iter()
+            .find(|entry| entry.item.item_definition_ref == definition)
+            .map(|entry| entry.slot),
+    })
+}
+
+fn reference(id: u32) -> TestResult<std::num::NonZeroU32> {
+    provisioning::item_reference(&provisioning::item_index()?, id)
+}
+
+fn require_custody(
+    client: &DevClientSession,
+    definition: std::num::NonZeroU32,
+    expected: Custody,
+) -> TestResult<()> {
+    let seen = custody(client, definition)?;
+    if seen != expected {
+        return Err(
+            format!("definition={definition} observed={seen:?}; expected={expected:?}").into(),
+        );
     }
-    Ok(values)
+    Ok(())
 }
 
-fn quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
-    Ok(*quantities(client)?.get(&reference.get()).unwrap_or(&0))
-}
-
-async fn wait_quantity(
+async fn await_custody(
     client: &mut DevClientSession,
-    reference: std::num::NonZeroU32,
-    expected: u64,
-) -> TestResult<u64> {
+    definition: std::num::NonZeroU32,
+    expected: Custody,
+) -> TestResult<()> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop {
-        // The expected state may already be in the snapshot: `settle` drained its event.
-        client.take_events();
-        if quantity(client, reference)? == expected {
-            return Ok(client.last_server_sequence());
-        }
+    while custody(client, definition)? != expected {
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "inventory delta timeout definition={reference} expected={expected} observed={}",
-                quantity(client, reference)?
-            )
-            .into());
+            return require_custody(client, definition, expected);
         }
         client.service_liveness(Duration::from_millis(20)).await?;
+        client.take_events();
     }
+    Ok(())
 }
 
-async fn acquire(
+async fn hotkey(
     client: &mut DevClientSession,
-    world: &BundleWorld,
-    id: u32,
-    amount: u32,
-) -> TestResult<u64> {
-    use oteryn_dev_client::client_runtime::npc_shop as runtime;
-    use oteryn_protocol_oteryn::npc_service as wire;
-    let index = provisioning::item_index()?;
-    let reference = provisioning::item_reference(&index, id)?;
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/services/trade/trade-00000-00323.json"),
-    )?)?;
-    let key = format!("oteryn:item.tibia.i{id}");
-    let sellers: BTreeSet<_> = trades["records"]
-        .as_array()
-        .ok_or("trade records absent")?
-        .iter()
-        .filter_map(|record| {
-            let declaration = &record["declaration"];
-            declaration["offers"]
-                .as_array()?
-                .iter()
-                .any(|offer| offer["direction"] == "SellToPlayer" && offer["item"]["key"] == key)
-                .then(|| declaration["identity"]["key"].as_str())
-                .flatten()?
-                .strip_prefix("oteryn:service.trade.")
-                .map(|name| format!("oteryn:npc.{name}"))
-        })
-        .collect();
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let (npc, path) = metadata
-        .npcs
-        .npcs
-        .iter()
-        .filter(|npc| sellers.contains(&npc.key))
-        .filter_map(|npc| {
-            route(world, here, |at| {
-                npc.placements
-                    .iter()
-                    .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
-            })
-            .map(|path| (npc, path))
-        })
-        .min_by_key(|(_, path)| path.len())
-        .ok_or_else(|| format!("no walk route to seller for item {id}; sellers={sellers:?}"))?;
-    walk(client, world, &path).await?;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Npc
-                    && npc.placements.iter().any(|p| {
-                        entity.position.x == i32::from(p.x)
-                            && entity.position.y == i32::from(p.y)
-                            && entity.position.floor == -i16::from(p.floor)
-                    })
-            })
-        })
-        .map(|entry| entry.entity)
-        .ok_or("seller not visible after walk")?;
-    for text in ["hi", "trade"] {
-        let reply = runtime::talk(
-            client.session_mut(),
-            &wire::NpcTalkIntent {
-                npc_actor: actor,
-                text: text.into(),
-            },
-        )
-        .await?;
-        if reply != wire::NpcIntentDisposition::Ok {
-            return Err(format!("NPC {text} reply={reply:?}").into());
-        }
-    }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
-        .await?;
-    let window = super::full_row_i14::decode_trade_window(client.selected_capabilities(), &delta.payload)?;
-    let (offer_index, offer) = window
-        .offers
-        .iter()
-        .enumerate()
-        .find(|(_, offer)| {
-            offer.side == wire::NpcTradeSide::Buy && offer.item_definition_ref == reference.get()
-        })
-        .ok_or("live seller omitted requested offer")?;
-    let before = quantity(client, reference)?;
-    client.take_events();
-    let reply = runtime::buy(
+    definition: std::num::NonZeroU32,
+    expected: ItemMoveOutcome,
+) -> TestResult<()> {
+    let seen = oteryn_dev_client::client_runtime::hotkey_equip::equip_definition(
         client.session_mut(),
-        &wire::NpcTradeIntent {
-            npc_actor: actor,
-            catalogue_revision: window.open.ok_or("trade window closed")?.1,
-            offer_index: u32::try_from(offer_index)?,
-            side: offer.side,
-            quantity: amount,
-            expected_unit_price: offer.unit_price,
-        },
+        definition,
     )
     .await?;
-    if reply != wire::NpcIntentDisposition::Ok {
+    if seen != expected {
         return Err(format!(
-            "buy item={id} reply={reply:?} price={} quantity={amount}",
-            offer.unit_price
+            "hotkey definition={definition} observed={seen:?}; expected={expected:?}"
         )
         .into());
     }
-    let expected = before + u64::from(offer.count) * u64::from(amount);
-    wait_quantity(client, reference, expected).await
+    Ok(())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -189,202 +119,189 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-async fn open_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    load_world(
-        bytes,
-        &pin,
-        WorldId::decode(&clients.world)?,
-        ChannelId::decode(&clients.channel)?,
-    )
-}
-
-fn reference(id: u32) -> TestResult<std::num::NonZeroU32> {
-    let index = provisioning::item_index()?;
-    provisioning::item_reference(&index, id)
-}
-
-fn worn(client: &DevClientSession, definition: std::num::NonZeroU32) -> Option<String> {
-    client
-        .inventory()?
-        .equipment
-        .iter()
-        .find(|entry| entry.item.item_definition_ref == definition)
-        .map(|entry| format!("{:?}", entry.slot))
-}
-
-async fn settle(
-    client: &mut DevClientSession,
-    definition: std::num::NonZeroU32,
-    want_worn: bool,
-) -> TestResult<()> {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(6);
-    loop {
-        client.take_events();
-        if worn(client, definition).is_some() == want_worn {
-            return Ok(());
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "step=settle observed=worn:{:?};wanted={want_worn}",
-                worn(client, definition)
-            )
-            .into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-    }
-}
-
-async fn hotkey(
-    client: &mut DevClientSession,
-    definition: std::num::NonZeroU32,
-) -> TestResult<oteryn_dev_client::ItemMoveOutcome> {
-    client.take_events();
-    Ok(
-        oteryn_dev_client::client_runtime::hotkey_equip::equip_definition(
-            client.session_mut(),
-            definition,
-        )
-        .await?,
-    )
-}
-
-async fn expect(
-    client: &mut DevClientSession,
-    definition: std::num::NonZeroU32,
-    step: &str,
-    want: oteryn_dev_client::ItemMoveOutcome,
-) -> TestResult<()> {
-    let outcome = hotkey(client, definition).await?;
-    if outcome != want {
-        return Err(format!("step={step} observed={outcome:?};needed={want:?}").into());
-    }
-    Ok(())
-}
-
-async fn buy(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    id: u32,
-    amount: u32,
-) -> TestResult<()> {
-    acquire(client, world, id, amount)
-        .await
-        .map(|_| ())
-        .map_err(|error| {
-            format!("step=buy-{id} observed={error};needed:player-gold-and-reachable-seller").into()
-        })
-}
-
-/// Arrows held by quivers (read-only): the quiver contents are not part of the client snapshot.
-async fn quiver_arrows(clients: &SeamClients<'_>) -> TestResult<i64> {
-    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
-    let total: i64 = sqlx::query_scalar(
-        "SELECT COALESCE(sum(a.quantity),0)::bigint FROM game_item_nested_entries e JOIN game_item_instances a ON a.item_instance_id=e.item_instance_id JOIN game_item_instances q ON q.item_instance_id=e.parent_item_instance_id WHERE a.definition_production_key='oteryn:item.tibia.i3447' AND a.lifecycle=1 AND q.definition_production_key='oteryn:item.tibia.i35562' AND q.lifecycle=1",
-    )
-    .fetch_one(&mut connection)
-    .await?;
-    Ok(total)
-}
-
 async fn relog(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
-    tag: u8,
 ) -> TestResult<DevClientSession> {
+    let previous = client.join_snapshot().game_session_id;
     logout(client).await?;
-    connect_character(clients, tag, 0).await
+    let fresh = connect_character(clients, TAG, 0).await?;
+    if fresh.join_snapshot().game_session_id == previous {
+        return Err("I17c relog reused the previous session".into());
+    }
+    Ok(fresh)
 }
 
-async fn funded_character(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
-    const GOLD: u64 = 15 + 950 + 10 * 3 + 400;
+async fn assert_build(client: &mut DevClientSession) -> TestResult<()> {
+    use oteryn_protocol_oteryn::{actor_spell, cyclopedia_character as general};
+    let selected = general_stats::selected(client);
+    let stats = client
+        .session_mut()
+        .gated_command(
+            general::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            general::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[1, 0, 0, 1],
+        )
+        .await?;
+    if stats.status != CommandStatus::Accepted {
+        return Err("I17c GeneralStats refused".into());
+    }
+    let vocation = general_stats::validate(&stats.payload, selected)?;
+    let level = u32::from_le_bytes(stats.payload[9..13].try_into()?);
+    let vitals = client.actor_vitals().ok_or("I17c actor vitals absent")?;
+    let (health, mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        VOCATION,
+        LEVEL,
+        actor_spell::MAX_VITAL_POOL,
+        actor_spell::MAX_SOUL,
+    )
+    .ok_or("I17c seeded build has no source vitals")?;
+    if vocation != general::vocation_id(VOCATION)
+        || level != LEVEL
+        || (vitals.max_health, vitals.max_mana) != (health, mana)
+    {
+        return Err(format!("I17c build observed={vocation:?}/{level}/{vitals:?}").into());
+    }
+    evidence(&format!(
+        "I17C_CHECK build={VOCATION} level={level} max_health={health} max_mana={mana}"
+    ));
+    Ok(())
+}
+
+async fn prepared_character(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
     character_prep::declare_seeded(
         "I17c.full",
-        "1395 carried gold units",
-        "authored shield, sword, arrow and quiver purchases",
+        "Paladin build, wooden shield, two-handed bow, blue quiver, ten arrows",
+        "the worn quiver requires an eligible vocation and the row verifies equipment moves",
     );
-    let mut client = connect_character(clients, 0xe3, 0).await?;
-    let original_session = client.join_snapshot().game_session_id;
-    let session = uuid_text(original_session.as_bytes());
-    // Top up the 50 starter gold using the existing bounded item profiles.
-    for profile in ["item-3035-13", "item-3031-20", "item-3031-15", "item-3031-10"] {
-        request_fixture_control(session.clone(), "--profile", profile.into()).await
-            .map_err(|error| format!("I17c funding fixture {profile}: {error}"))?;
+    let mut client = connect_character(clients, TAG, 0).await?;
+    request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        VOCATION.into(),
+    )
+    .await?;
+    for (id, count) in INPUTS {
+        character_prep::grant_item(&client, id, count).await?;
     }
-    let client = relog(&mut client, clients, 0xe3).await?;
-    if client.join_snapshot().game_session_id == original_session {
-        return Err("I17c funding read reused the original session".into());
+    let mut client = relog(&mut client, clients).await?;
+    assert_build(&mut client).await?;
+    for (id, count) in INPUTS {
+        require_custody(
+            &client,
+            reference(id)?,
+            Custody {
+                carried: u64::from(count),
+                worn: None,
+            },
+        )?;
     }
-    let gold = quantity(&client, reference(3031)?)?;
-    let platinum = quantity(&client, reference(3035)?)?;
-    if gold != 95 || platinum != 13 || gold + platinum * 100 != GOLD {
-        return Err(format!(
-            "I17c served funds: gold={gold} platinum={platinum}; expected 95 gold and 13 platinum"
-        ).into());
-    }
-    evidence(&format!("I17C_CHECK served_gold_units={GOLD} gold={gold} platinum={platinum}"));
     Ok(client)
 }
 
+// Scope the nested credit to the equipped quiver of the character driven over the wire.
+async fn quiver_arrows(clients: &SeamClients<'_>) -> TestResult<i64> {
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let count = sqlx::query_scalar(
+        "SELECT COALESCE(sum(a.quantity), 0)::bigint
+         FROM game_character_equipment_slots s
+         JOIN game_item_instances q ON q.item_instance_id = s.item_instance_id
+         JOIN game_item_nested_entries e ON e.parent_item_instance_id = q.item_instance_id
+         JOIN game_item_instances a ON a.item_instance_id = e.item_instance_id
+         WHERE s.character_id = $1::uuid
+           AND q.definition_production_key = $2 AND q.lifecycle = 1
+           AND a.definition_production_key = $3 AND a.lifecycle = 1",
+    )
+    .bind(uuid_text(&clients.characters[0]))
+    .bind(format!("oteryn:item.tibia.i{QUIVER}"))
+    .bind(format!("oteryn:item.tibia.i{ARROW}"))
+    .fetch_one(&mut connection)
+    .await?;
+    Ok(count)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    use EquipmentSlot::{LeftHand, RightHand};
+    use ItemMoveOutcome::{Moved, SlotMismatch};
+
     let identity = character_prep::dedicated_character(clients, "NODE_BOOT_I17C_ACCOUNT").await?;
     let clients = &identity.clients(clients);
-    let world = open_world(clients).await?;
-    use oteryn_dev_client::ItemMoveOutcome as Out;
-    let shield = reference(3412)?;
-    let sword = reference(3265)?;
-    let quiver = reference(35562)?;
-    let arrow = reference(3447)?;
-    let mut client = funded_character(clients).await?;
-    let shield_base = quantity(&client, shield)?;
-    buy(&mut client, world, 3412, 1).await?;
-    buy(&mut client, world, 3265, 1).await?;
-    expect(&mut client, shield, "equip-shield", Out::Moved).await?;
-    settle(&mut client, shield, true).await?;
-    expect(&mut client, sword, "equip-two-hander", Out::Moved).await?;
-    settle(&mut client, sword, true).await?;
-    settle(&mut client, shield, false).await?;
-    wait_quantity(&mut client, shield, shield_base + 1).await?;
-    buy(&mut client, world, 3447, 10).await?;
-    let before = quantity(&client, arrow)?;
-    let refused = hotkey(&mut client, arrow).await?;
-    if refused != Out::SlotMismatch
-        || quantity(&client, arrow)? != before
-        || worn(&client, arrow).is_some()
-    {
-        return Err(format!(
-            "step=arrow-without-quiver observed={refused:?};needed=SlotMismatch-and-no-change"
-        )
-        .into());
+    let [shield, bow, quiver, arrow] = [
+        reference(SHIELD)?,
+        reference(BOW)?,
+        reference(QUIVER)?,
+        reference(ARROW)?,
+    ];
+    let mut client = prepared_character(clients).await?;
+
+    let shield_carried = Custody {
+        carried: 1,
+        worn: None,
+    };
+    let off_hand = Custody {
+        carried: 0,
+        worn: Some(LeftHand),
+    };
+    let weapon_hand = Custody {
+        carried: 0,
+        worn: Some(RightHand),
+    };
+    let arrows_carried = Custody {
+        carried: u64::from(ARROWS),
+        worn: None,
+    };
+    let arrows_nested = Custody {
+        carried: 0,
+        worn: None,
+    };
+
+    hotkey(&mut client, shield, Moved).await?;
+    await_custody(&mut client, shield, off_hand).await?;
+    hotkey(&mut client, bow, Moved).await?;
+    await_custody(&mut client, bow, weapon_hand).await?;
+    await_custody(&mut client, shield, shield_carried).await?;
+
+    let before = client
+        .inventory()
+        .ok_or("I17c pre-refusal inventory absent")?
+        .clone();
+    hotkey(&mut client, arrow, SlotMismatch).await?;
+    if client.inventory() != Some(&before) {
+        return Err("I17c ammo refusal changed inventory or equipment".into());
     }
-    buy(&mut client, world, 35562, 1).await?;
-    expect(&mut client, quiver, "equip-quiver", Out::Moved).await?;
-    settle(&mut client, quiver, true).await?;
-    let quiver_before = quiver_arrows(clients).await?;
-    expect(&mut client, arrow, "arrow-into-quiver", Out::Moved).await?;
-    wait_quantity(&mut client, arrow, 0).await?;
-    // Credit side: every arrow that left the backpack must now sit in the quiver.
-    let moved = i64::try_from(before)?;
-    let credited = quiver_arrows(clients).await? - quiver_before;
-    if moved == 0 || credited != moved {
-        return Err(format!("step=arrow-into-quiver observed=backpack-debit:{moved};quiver-credit:{credited};needed=equal-and-positive").into());
+    require_custody(&client, quiver, shield_carried)?;
+    hotkey(&mut client, quiver, Moved).await?;
+    await_custody(&mut client, quiver, off_hand).await?;
+    require_custody(&client, bow, weapon_hand)?;
+    require_custody(&client, arrow, arrows_carried)?;
+    if quiver_arrows(clients).await? != 0 {
+        return Err("I17c quiver already contained arrows".into());
     }
-    let mut client = relog(&mut client, clients, 0xe3).await?;
-    if worn(&client, sword).is_none()
-        || worn(&client, quiver).is_none()
-        || quantity(&client, shield)? != shield_base + 1
-        || quantity(&client, arrow)? != 0
-    {
-        return Err("step=fresh-admission observed=swap-or-quiver-state-lost".into());
+
+    hotkey(&mut client, arrow, Moved).await?;
+    await_custody(&mut client, arrow, arrows_nested).await?;
+    let credited = quiver_arrows(clients).await?;
+    if credited != i64::from(ARROWS) {
+        return Err(format!("I17c quiver credit observed={credited}; expected={ARROWS}").into());
     }
-    let credited = quiver_arrows(clients).await? - quiver_before;
-    if credited != moved {
-        return Err(format!(
-            "step=fresh-admission observed=quiver-credit:{credited};needed={moved}"
-        )
-        .into());
+
+    let mut client = relog(&mut client, clients).await?;
+    for (item, expected) in [
+        (shield, shield_carried),
+        (bow, weapon_hand),
+        (quiver, off_hand),
+        (arrow, arrows_nested),
+    ] {
+        require_custody(&client, item, expected)?;
+    }
+    let reloaded = quiver_arrows(clients).await?;
+    if reloaded != credited {
+        return Err(
+            format!("I17c reloaded quiver observed={reloaded}; expected={credited}").into(),
+        );
     }
     logout(&mut client).await?;
-    Ok("two-hand-swap-and-arrows-to-quiver-durable".to_owned())
+    Ok(format!(
+        "shield-displaced;missing-quiver=SlotMismatch;quiver-arrows={reloaded};relog=verified"
+    ))
 }
