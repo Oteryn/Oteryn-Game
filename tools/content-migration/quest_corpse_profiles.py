@@ -17,6 +17,7 @@ from pathlib import Path
 import grizzly_shop_profiles as grizzly
 import quest_reward_item_semantics as custody
 import quest_shared_boss_corpses
+from encounter_corpse_items import RAT_STAGES
 
 ROOT = Path(__file__).resolve().parents[2]
 XML = 'imports/canary/items-xml/items.xml'
@@ -224,6 +225,13 @@ def qualify(number, definition, world, node, appearance, physical, bindings, fre
     if not fresh and 'containersize' not in grizzly.source.attrs(node):
         source['semantics']['container'] = copy.deepcopy(grizzly.source.NA)
     expected = source['semantics']
+    # The Global Dead Rat archive gives the visible stages' weight and
+    # container facts. DAT still supplies pickupability and movement.
+    if number in RAT_STAGES:
+        capacity, _, _, weight = RAT_STAGES[number]
+        expected['physical']['value']['weight'] = grizzly.source.K(weight)
+        expected['container'] = (grizzly.source.NA if capacity is None else
+                                 grizzly.source.K({'capacity': grizzly.source.K(capacity)}))
     for group in GROUPS:
         accepted = definition.get('semantics', {}).get(group, grizzly.source.U)
         if grizzly.known_conflict(accepted, expected[group]):
