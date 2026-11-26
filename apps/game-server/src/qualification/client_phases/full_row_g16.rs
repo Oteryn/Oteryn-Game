@@ -212,17 +212,11 @@ fn shrine_tile(world: &BundleWorld, start: TilePos) -> TestResult<TilePos> {
                 u8::try_from(ordinal).ok().and_then(|n| facts.base_entry(at, n, *id))
                     .is_some_and(|entry| matches!(entry.definition, MapDefinition::Item(reference) if refs.contains(&reference)))
             });
-        if shrine
-            && route(world, start, |candidate| {
-                candidate.floor == at.floor
-                    && candidate.x.abs_diff(at.x).max(candidate.y.abs_diff(at.y)) <= 1
-            })
-            .is_some()
-        {
+        if shrine {
             return Ok(at);
         }
     }
-    Err("step=shrine observed=no-reachable-daily-shrine-in-town-window".into())
+    Err("step=shrine observed=no-daily-shrine-in-town-window".into())
 }
 
 async fn walk_once(
@@ -258,7 +252,7 @@ async fn body(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
-) -> TestResult<ClaimEvidence> {
+) -> TestResult<(ClaimEvidence, (daily::DailyRewardWall, details::Details))> {
     let table = accepted(client, CAPABILITY, details::COMMAND_TYPE, &[]).await?;
     let table = details::Details::decode(&table)?;
     let initial = wall(client).await?;
@@ -280,7 +274,7 @@ async fn body(
     let path = route(world, start, |at| {
         at.floor == shrine.floor && at.x.abs_diff(shrine.x).max(at.y.abs_diff(shrine.y)) <= 1
     })
-    .ok_or("step=shrine observed=walking-route-disappeared")?;
+    .ok_or("step=shrine observed=no-route-to-selected-shrine")?;
     walk_once(client, world, &path).await?;
     let opened = client
         .session_mut()
@@ -315,7 +309,7 @@ async fn body(
         epoch: table.epoch,
         day: DAY,
     };
-    verify(client, clients, &data).await?;
+    let claimed = verify(client, clients, &data).await?;
     let reply = accepted(
         client,
         CAPABILITY,
@@ -327,8 +321,11 @@ async fn body(
     if duplicate.disposition != 2 || duplicate.transaction_id.is_some() {
         return Err(format!("step=duplicate observed={duplicate:?}").into());
     }
-    verify(client, clients, &data).await?;
-    Ok(data)
+    let after_duplicate = verify(client, clients, &data).await?;
+    if after_duplicate != claimed {
+        return Err("step=duplicate observed=reward-state-changed".into());
+    }
+    Ok((data, claimed))
 }
 
 fn matches_free_delivery(lines: &[RewardLine], premium: bool, balances: (i64, i64)) -> bool {
@@ -347,7 +344,7 @@ async fn verify(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     data: &ClaimEvidence,
-) -> TestResult {
+) -> TestResult<(daily::DailyRewardWall, details::Details)> {
     let wall = wall(client).await?;
     let table =
         details::Details::decode(&accepted(client, CAPABILITY, details::COMMAND_TYPE, &[]).await?)?;
@@ -356,7 +353,11 @@ async fn verify(
         .iter()
         .flatten()
         .filter(|receipt| {
-            receipt.epoch == data.epoch && receipt.lane_day == data.day && receipt.own_character
+            receipt.epoch == data.epoch
+                && receipt.lane_day == data.day
+                && receipt.streak == 1
+                && receipt.jokers_spent == 0
+                && receipt.own_character
         })
         .count()
         == 1;
@@ -366,6 +367,9 @@ async fn verify(
     let premium = claim_tier(clients, &data.transaction).await?;
     if claim_count(clients, data.epoch).await? != 1
         || !history_matches
+        || table.epoch != data.epoch
+        || wall.lane_day != DAY + 1
+        || wall.streak != 1
         || !wall.claimed
         || wall.claim_enabled
         || !matches_free_delivery(&lines, premium, delivered)
@@ -373,7 +377,7 @@ async fn verify(
         return Err(format!("step=verify observed=wall:{wall:?},history:{history_matches},lines:{lines:?},premium:{premium},balances:{delivered:?} needed={expected:?}").into());
     }
     evidence("G16_CHECK pg=receipt-lines-and-delivered-balances status=PASS");
-    Ok(())
+    Ok((wall, table))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -388,15 +392,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x7a, 0).await?;
+    let session_id = client.join_snapshot().game_session_id;
     let outcome = verdict::observe(body(&mut client, clients, world)).await;
     let closed = verdict::observe(finish(&mut client)).await;
-    let data = outcome?;
+    let (data, claimed) = outcome?;
     closed?;
     let mut fresh = connect_character(clients, 0x7b, 0).await?;
     let checked = verdict::observe(verify(&mut fresh, clients, &data)).await;
     let closed = verdict::observe(finish(&mut fresh)).await;
-    checked?;
-    closed
+    let persisted = checked?;
+    closed?;
+    if fresh.join_snapshot().game_session_id == session_id || persisted != claimed {
+        return Err("step=relog observed=session-not-fresh-or-reward-state-changed".into());
+    }
+    Ok(())
 }
 
 #[cfg(test)]
