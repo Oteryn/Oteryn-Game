@@ -760,6 +760,11 @@ class CloudRunSummaryTests(unittest.TestCase):
             ('1:1', 'SEAM_EVIDENCE e2e_all scenario=C12.full status=PASS\n', 'missing-verdict'),
             ('1:1', 'SEAM_EVIDENCE e2e_all scenario=C03.full status=PASS\n' * 2, 'duplicate-verdict'),
             ('1:1', 'SEAM_EVIDENCE e2e_all scenario=C03.full status=PASS\n', ''),
+            *[
+                ('252:1', f'SEAM_EVIDENCE e2e_all scenario=G20.full status={status}\n',
+                 'nonterminal-verdict')
+                for status in ('SKIPPED', 'MISSING-SERVER', 'MISSING-CLIENT')
+            ],
             ('184:1', 'SEAM_EVIDENCE e2e_capture scenario=S18.client status=CAPTURED\n', ''),
         ]
         for batch, evidence, cause in cases:

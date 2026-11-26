@@ -169,7 +169,15 @@ async fn forge_custody(
                    'forge_operations', (SELECT jsonb_agg(to_jsonb(p) ORDER BY to_jsonb(p))
                        FROM game_forge_operations p JOIN owner o USING (character_id)),
                    'forge_reservations', (SELECT jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r))
-                       FROM game_forge_reservations r JOIN owner o USING (character_id))
+                       FROM game_forge_reservations r JOIN owner o USING (character_id)),
+                   'forge_history', (SELECT jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r))
+                       FROM game_forge_history r JOIN owner o USING (character_id)),
+                   'dust_limit_reservations', (SELECT jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r))
+                       FROM game_forge_dust_limit_reservations r JOIN owner o USING (character_id)),
+                   'dust_limit_receipts', (SELECT jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r))
+                       FROM game_forge_dust_limit_receipts r JOIN owner o USING (character_id)),
+                   'dust_limit_history', (SELECT jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r))
+                       FROM game_forge_dust_limit_history r JOIN owner o USING (character_id))
                ) AS other_custody,
                COALESCE(sum(e.quantity * CASE e.definition
                    WHEN 'oteryn:item.tibia.i3031' THEN 1
@@ -310,6 +318,21 @@ const SLIVER: u32 = 37109;
 const SLIVERS_PER_CORE: u64 = 50;
 const STARTER_GOLD: i64 = 50;
 
+fn browse_metadata(item: &wire::Item, appearance: u16, definition_ref: u32) -> bool {
+    let (name, container, classification, maximum_tier) = match appearance {
+        2854 => ("backpack", true, 0, 0),
+        SWORD => ("sword", false, 1, 1),
+        _ => return false,
+    };
+    item.definition_ref == definition_ref
+        && item.appearance == u32::from(appearance)
+        && item.name == name
+        && item.container == container
+        && item.classification == classification
+        && item.tier == 0
+        && item.maximum_tier == maximum_tier
+}
+
 fn browse(
     client: &DevClientSession,
     reply: wire::Payload,
@@ -334,8 +357,13 @@ fn browse(
     let bag = page
         .items
         .iter()
-        .find(|item| item.handle == backpack.handle && item.container)
-        .ok_or("step=browse carried backpack absent from page")?
+        .find(|item| {
+            item.handle == backpack.handle
+                && backpack.appearance_id == 2854
+                && backpack.count.get() == 1
+                && browse_metadata(item, 2854, backpack.item_definition_ref.get())
+        })
+        .ok_or("step=browse carried backpack missing or wrong Forge metadata")?
         .clone();
     let swords = inventory
         .entries
@@ -352,13 +380,8 @@ fn browse(
     let find = |entry: &oteryn_protocol_oteryn::item_view::ItemEntry| {
         page.items.iter().find(|item| {
             item.handle == entry.handle
-                && item.definition_ref == entry.item_definition_ref.get()
-                && item.appearance == u32::from(SWORD)
                 && entry.count.get() == 1
-                && !item.container
-                && item.classification == 1
-                && item.tier == 0
-                && item.maximum_tier == 1
+                && browse_metadata(item, SWORD, entry.item_definition_ref.get())
         })
     };
     let (Some(one), Some(two)) = (find(one), find(two)) else {
@@ -763,7 +786,43 @@ mod tests {
         let mut appended_dust = snapshot();
         appended_dust.other_custody["dust_ledger"] = serde_json::json!([{"amount":1}]);
         assert!(check_custody(&expected, &appended_dust).is_err());
+        for table in ["forge_history", "dust_limit_reservations", "dust_limit_receipts", "dust_limit_history"] {
+            let mut changed = snapshot();
+            changed.other_custody[table] = serde_json::json!([{"unexpected": true}]);
+            assert!(check_custody(&expected, &changed).is_err(), "{table}");
+        }
+
         Ok(())
+    }
+
+    #[test]
+    fn browse_rejects_drift_in_sword_and_backpack_metadata() {
+        for (appearance, name, container, classification, maximum_tier) in
+            [(SWORD, "sword", false, 1, 1), (2854, "backpack", true, 0, 0)]
+        {
+            let expected = wire::Item {
+                handle: std::num::NonZeroU64::MIN,
+                definition_ref: 42,
+                appearance: u32::from(appearance),
+                name: name.into(),
+                container,
+                classification,
+                tier: 0,
+                maximum_tier,
+            };
+            assert!(browse_metadata(&expected, appearance, 42));
+            for wrong in [
+                wire::Item { name: "wrong".into(), ..expected.clone() },
+                wire::Item { appearance: 1, ..expected.clone() },
+                wire::Item { definition_ref: 1, ..expected.clone() },
+                wire::Item { container: !container, ..expected.clone() },
+                wire::Item { classification: 2, ..expected.clone() },
+                wire::Item { tier: 1, ..expected.clone() },
+                wire::Item { maximum_tier: 2, ..expected.clone() },
+            ] {
+                assert!(!browse_metadata(&wrong, appearance, 42));
+            }
+        }
     }
 
     #[test]

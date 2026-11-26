@@ -93,6 +93,8 @@ def validate_rows(selected, registered, verdicts):
         count = len(verdicts.get(scenario, []))
         if count != 1:
             failed = batch_failure("missing-verdict" if count == 0 else "duplicate-verdict", scenario)
+        elif verdicts[scenario][0][1] in {"SKIPPED", "MISSING-SERVER", "MISSING-CLIENT"}:
+            failed = batch_failure("nonterminal-verdict", scenario)
     # A rows-only run has no other journey groups supplying indexed verdicts.
     if os.environ.get("NODE_BOOT_E2E_ONLY", "").strip() == "rows":
         for scenario in sorted((verdicts.keys() & registered) - selected):

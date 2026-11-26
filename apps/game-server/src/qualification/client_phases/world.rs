@@ -1211,10 +1211,9 @@ pub(super) async fn journeys(
         )
         .into());
     }
-    let (result, logout, attempts, busy_timed_out) =
-        fixture_logout_retrying_busy(&mut client).await?;
+    let (result, logout, ..) = logout_once(&mut client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+        return Err(format!("first town entry logout refused: {logout}").into());
     }
     drop(client);
     {
