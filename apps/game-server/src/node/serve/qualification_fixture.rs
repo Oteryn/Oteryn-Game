@@ -51,11 +51,15 @@ const PARTY_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000017";
 const C06_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-00000000001c";
 
 #[cfg(feature = "qualification-spawn")]
+const W15C_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000020";
+
+#[cfg(feature = "qualification-spawn")]
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "s08-knight" => Some(("knight", 8)),
         "s08-sorcerer" => Some(("sorcerer", 8)),
         "s13-party" => Some(("sorcerer", 32)),
+        "w15c-sorcerer" => Some(("sorcerer", 8)),
         "w20b-light" => Some(("sorcerer", 26)),
         "c05-exiva" => Some(("sorcerer", 8)),
         "c11-unassigned" => Some((crate::durability::character_build::NO_VOCATION, 8)),
@@ -770,6 +774,7 @@ async fn prepare_build(
             | "c12-monk"
             | "c06-sorcerer"
             | "s13-party"
+            | "w15c-sorcerer"
             | "w20b-light"
             | "s08-knight"
             | "s08-sorcerer"
@@ -792,7 +797,7 @@ async fn prepare_build(
             (
                 "premium",
                 KNIGHT_ACCOUNT | MONK_ACCOUNT | HASTE_ACCOUNT | CHALLENGE_ACCOUNT | LIGHT_ACCOUNT
-                | PARTY_CASTER_ACCOUNT,
+                | PARTY_CASTER_ACCOUNT | W15C_ACCOUNT,
             ) => {
                 if !config
                     .premium_activation
@@ -808,6 +813,7 @@ async fn prepare_build(
             | ("c12-monk", MONK_ACCOUNT)
             | ("c06-sorcerer", C06_CASTER_ACCOUNT)
             | ("s13-party", PARTY_CASTER_ACCOUNT)
+            | ("w15c-sorcerer", W15C_ACCOUNT)
             | ("w20b-light", LIGHT_ACCOUNT)
             | ("s08-knight", PVP_KNIGHT_ACCOUNT)
             | ("s08-sorcerer", PVP_SORCERER_ACCOUNT) => {}
@@ -2016,6 +2022,7 @@ mod tests {
             "c12-monk",
             "c06-sorcerer",
             "premium",
+            "w15c-sorcerer",
             "item-43895-1",
             "item-6506-2",
         ] {
