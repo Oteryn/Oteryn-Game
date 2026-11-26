@@ -115,39 +115,89 @@ async fn enter_grave(client: &mut DevClientSession, world: &BundleWorld) -> Test
     }
 }
 
-async fn approach_boosted_creature(
-    client: &mut DevClientSession,
+const BRAINDEATH: &str = "oteryn:creature.braindeath";
+const BRAINDEATH_SOURCE: &str = "oteryn:spawn.x32077_y31832_z9";
+const BRAINDEATH_HOME: TilePos = TilePos {
+    x: 32075,
+    y: 31829,
+    floor: -9,
+};
+
+fn fixture_approach(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
-    creature: &str,
-) -> TestResult {
-    let from = tile(client.world_spatial().actor_position)?;
-    let points: Vec<_> = spawns
+) -> TestResult<TilePos> {
+    let home = BRAINDEATH_HOME;
+    let source = spawns
         .sources
         .iter()
-        .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
-        .filter(|(_, point)| {
-            spawns
-                .creatures
-                .get(point.creature as usize)
-                .is_some_and(|row| row.key == creature)
+        .find(|source| source.key == BRAINDEATH_SOURCE)
+        .ok_or("W13 authored spawn source absent from served bundle")?;
+    if source.floor != home.floor
+        || !source.points.iter().any(|point| {
+            point.x == home.x
+                && point.y == home.y
+                && spawns
+                    .creatures
+                    .get(point.creature as usize)
+                    .is_some_and(|row| row.key == BRAINDEATH)
         })
-        .collect();
-    let path = served_route(world, from, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
-            && points.iter().any(|(floor, point)| {
-                at.floor == *floor && at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) <= 1
-            })
-    })
-    .ok_or_else(|| {
-        format!("no connected served route from {from:?} to an authored {creature} spawn")
-    })?;
-    walk(client, world, &path).await?;
-    // Preserve the normal follow-to-melee path once within the spawn neighborhood.
-    travel_to_spawn(client, world, spawns, creature).await
+    {
+        return Err("W13 authored Braindeath spawn point absent from served bundle".into());
+    }
+    // Select one fixture cell from the map before admission or any combat.
+    // Cardinal neighbors avoid an attack across a diagonal wall.
+    [(0, -1), (1, 0), (0, 1), (-1, 0)]
+        .into_iter()
+        .map(|(dx, dy)| TilePos {
+            x: home.x.saturating_add_signed(dx),
+            y: home.y.saturating_add_signed(dy),
+            floor: home.floor,
+        })
+        .find(|at| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|ground| ground.walkable() && !ground.protection_zone())
+                && world.enterable(*at)
+                && !spawns.sources.iter().any(|source| {
+                    source.floor == at.floor
+                        && source
+                            .points
+                            .iter()
+                            .any(|point| point.x == at.x && point.y == at.y)
+                })
+        })
+        .ok_or_else(|| {
+            "W13 authored Braindeath has no walkable unoccupied cardinal approach".into()
+        })
+}
+
+async fn stage_hunter(clients: &SeamClients<'_>, approach: TilePos) -> TestResult {
+    wait_character_released(clients, 0).await?;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let changed = sqlx::query(
+        "UPDATE game_character_last_positions AS p
+         SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=write_sequence+1
+         WHERE p.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid
+           AND (p.tile_x,p.tile_y,p.tile_floor) IS DISTINCT FROM ($3,$4,$5)
+           AND NOT EXISTS (
+               SELECT 1 FROM game_durability_reconnect_sessions AS s
+               WHERE s.character_id=p.character_id AND s.world_id=p.world_id AND s.session_state<>3
+           )",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(clients.world.as_slice())
+    .bind(i32::from(approach.x))
+    .bind(i32::from(approach.y))
+    .bind(i32::from(-approach.floor))
+    .execute(&mut db)
+    .await?;
+    db.close().await?;
+    if changed.rows_affected() != 1 {
+        return Err("W13 fixture requires one different saved offline world position".into());
+    }
+    Ok(())
 }
 
 pub(super) async fn query(
@@ -216,7 +266,44 @@ async fn required_hunt(
     ))
 }
 
-async fn prepare_hunter(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
+fn braindeath_at_home(client: &DevClientSession) -> TestResult<impl PartialEq + use<>> {
+    let position = client.world_spatial().actor_position;
+    let actor = client
+        .world_entities()
+        .and_then(|entities| {
+            entities.iter().find(|entry| {
+                entry.kind == EntityKind::Creature
+                    && entry.position.floor == position.floor
+                    && entry
+                        .position
+                        .x
+                        .abs_diff(position.x)
+                        .max(entry.position.y.abs_diff(position.y))
+                        <= 1
+            })
+        })
+        .ok_or("W13 no adjacent creature at the staged position")?;
+    if tile(actor.position)? != BRAINDEATH_HOME
+        || !actor
+            .display_name
+            .is_some_and(|name| name.as_str() == Ok("Braindeath"))
+        || !matches!(
+            actor.detail,
+            oteryn_dev_client::EntityDetail::Actor {
+                health_percent: 100,
+                ..
+            }
+        )
+    {
+        return Err("W13 hunt target was not a full-health Braindeath at the authored home".into());
+    }
+    Ok(actor.entity)
+}
+
+async fn prepare_hunter(
+    clients: &SeamClients<'_>,
+    approach: TilePos,
+) -> TestResult<DevClientSession> {
     use oteryn_protocol_oteryn::{cyclopedia_character as stats, logout::LogoutResult};
 
     character_prep::declare_seeded("W13.full", "knight-level-200", "daily boost combat");
@@ -228,8 +315,16 @@ async fn prepare_hunter(clients: &SeamClients<'_>) -> TestResult<DevClientSessio
         return Err(format!("W13 preparation logout refused: {:?}", logout.result).into());
     }
     drop(initial);
+    stage_hunter(clients, approach).await?;
 
     let mut client = connect_character(clients, 0xd3, 0).await?;
+    let admitted = tile(client.world_spatial().actor_position)?;
+    if admitted != approach {
+        return Err(format!("W13 fixture position {admitted:?}, expected {approach:?}").into());
+    }
+    evidence(&format!(
+        "W13_CHECK fixture source={BRAINDEATH_SOURCE} home={BRAINDEATH_HOME:?} approach={approach:?}"
+    ));
     if client.join_snapshot().game_session_id == session {
         return Err("W13 preparation reused its original session".into());
     }
@@ -270,7 +365,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_W13_ACCOUNT").await?;
     let clients = &dedicated.clients(clients);
-    let mut client = prepare_hunter(clients).await?;
+    let approach = fixture_approach(world, &metadata.spawns)?;
+    let mut client = prepare_hunter(clients, approach).await?;
     if !client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_DAILY_BOOST_V1)
@@ -302,37 +398,32 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     evidence("W13_CHECK step=3 malformed-query-rejected");
 
-    if let Err(error) =
-        approach_boosted_creature(&mut client, world, &metadata.spawns, &selected.creature_key)
-            .await
-    {
-        if matches!(selected.boss_key.as_str(), BAELOC | NICTROS) {
-            match enter_grave(&mut client, world).await {
-                Ok(()) => evidence(
-                    "W13_CHECK Grave Danger entry verified independently of creature route",
-                ),
-                Err(entry) => evidence(&format!("W13_GRAVE_ENTRY {entry}")),
-            }
-        }
-        return Err(verdict::context(
-            format!("step-4: selected creature route/spawn observed {error}"),
-            error,
-        ));
+    if selected.creature_key != BRAINDEATH {
+        return Err(format!(
+            "W13 fixture targets Braindeath, selected {}",
+            selected.creature_key
+        )
+        .into());
     }
+    let first = braindeath_at_home(&client)?;
     required_hunt(&mut client, 4, "selected creature").await?;
     evidence("W13_CHECK step=4 selected-creature-killed-and-looted");
 
-    // A second real approach waits through the owner's respawn mechanism rather
-    // than manufacturing an actor. The bounded helper reports the missing actor.
-    approach_boosted_creature(&mut client, world, &metadata.spawns, &selected.creature_key)
-        .await
-        .map_err(|error| {
-            verdict::record_error(verdict::IndexedError::as_error(&error));
-            verdict::context(
-                format!("step-5: boosted creature respawn observed {error}"),
-                error,
-            )
-        })?;
+    // Observe a new identity at the same authored home. Do not send a combat
+    // command until the spawn has actually respawned.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(100);
+    loop {
+        if let Ok(respawned) = braindeath_at_home(&client) {
+            if respawned == first {
+                return Err("W13 respawn reused the removed actor".into());
+            }
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("W13 selected Braindeath did not respawn at its authored home".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+    }
     let step_5_observed = required_hunt(&mut client, 5, "respawned selected creature").await?;
 
     if matches!(selected.boss_key.as_str(), BAELOC | NICTROS) {
