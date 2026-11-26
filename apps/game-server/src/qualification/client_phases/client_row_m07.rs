@@ -1,19 +1,22 @@
-//! Captures M07's real WORLD_SPATIAL_ENTITIES payload for the session replay test.
+//! Verifies M07 through the live session and optionally exports its spatial delta for replay.
 use super::*;
 use oteryn_dev_client::SessionEvent;
 use oteryn_protocol_oteryn::world_object::*;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
-        return;
-    }
-    let result = verdict::observe(capture(clients)).await;
-    if let Err(error) = result {
-        evidence(&format!("M07_CLIENT_CAPTURE_ERROR {error}"));
-    }
+    let started = std::time::Instant::now();
+    let result = verdict::observe(verify_ascent(clients)).await;
+    let (status, details) = match result {
+        Ok(()) => ("PASS", "rope-ascent-spatial-and-relogin".into()),
+        Err(error) => ("FAIL", error.to_string()),
+    };
+    evidence(&format!(
+        "SEAM_EVIDENCE e2e_all scenario=M07.client status={status} seconds={:.3} evidence={details}",
+        started.elapsed().as_secs_f64(),
+    ));
 }
 
-async fn capture(clients: &SeamClients<'_>) -> TestResult {
+async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
     let bundle = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -68,7 +71,28 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             .map(|path| (spot, ordinal, path))
         })
         .ok_or("M07 client capture has no reachable rope spot")?;
-    walk(&mut client, world, &path).await?;
+    // The donor's first landing is directly south on the floor above the spot.
+    let expected = ActorPosition {
+        x: i32::from(spot.x),
+        y: i32::from(spot.y) + 1,
+        floor: -i16::from(spot.floor) - 1,
+    };
+    for direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let planned = destination(world, from, direction).ok_or("M07 route edge missing")?;
+        let step = client.step(direction).await?;
+        if step.disposition != StepDisposition::Moved
+            || step.world_spatial_delta.is_none()
+            || tile(client.world_spatial().actor_position)? != planned
+        {
+            return Err(format!(
+                "M07 route step {direction:?} from {from:?} to {planned:?}: {step:?}"
+            )
+            .into());
+        }
+        verdict::Harness::global().progress("M07 approach");
+    }
+    client.take_events();
     let before = client.world_spatial().actor_position;
     let index = provisioning::item_index()?;
     let reference = provisioning::item_reference(&index, 3003)?;
@@ -95,20 +119,18 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         use_with_position: None,
     })
     .map_err(|error| format!("M07 rope intent: {error:?}"))?;
-    let result = client
-        .session_mut()
-        .world_context_use(&payload)
-        .await?;
-    if result.status != CommandStatus::Accepted
-        || decode_use_result(&result.payload)
-            .map_err(|error| format!("M07 rope result: {error:?}"))?
-            != UseDisposition::Committed
-    {
-        return Err("M07 rope ascent refused".into());
+    let result = client.session_mut().world_context_use(&payload).await?;
+    let disposition = decode_use_result(&result.payload)
+        .map_err(|error| format!("M07 rope result: {error:?}"))?;
+    if result.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
+        return Err(format!(
+            "M07 rope ascent refused: spot={spot:?} status={:?} disposition={disposition:?}",
+            result.status
+        )
+        .into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     let delta = loop {
-        client.service_liveness(Duration::from_millis(25)).await?;
         if let Some(delta) = client
             .take_events()
             .into_iter()
@@ -126,6 +148,45 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         if tokio::time::Instant::now() >= deadline {
             return Err("M07 spatial delta deadline".into());
         }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    };
+    if delta.value.actor_position != expected || client.world_spatial().actor_position != expected {
+        return Err(format!(
+            "M07 wrong landing: spot={spot:?} expected={expected:?} delta={:?} session={:?}",
+            delta.value.actor_position,
+            client.world_spatial().actor_position,
+        )
+        .into());
+    }
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("M07 ascent logout refused".into());
+    }
+    drop(client);
+    let mut relog = connect_world(clients, 0xa7).await?;
+    if relog.world_spatial().actor_position != expected
+        || !relog.inventory().is_some_and(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .any(|entry| entry.item_definition_ref == reference && entry.count == rope.count)
+        })
+    {
+        return Err("M07 relog did not retain the landing and carried rope".into());
+    }
+    evidence(&format!(
+        "M07_CHECK relog landing={expected:?} rope_count={}",
+        rope.count
+    ));
+    if relog.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("M07 relog logout refused".into());
+    }
+
+    let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+        return Ok(());
     };
     let bytes = oteryn_protocol_oteryn::world_spatial_entities::encode_world_spatial_entities_delta_with_item_handles(&delta.value).map_err(|error| format!("M07 spatial encode: {error:?}"))?;
     let expected = format!(
@@ -141,14 +202,9 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         delta.new_revision,
         result.server_sequence
     );
-    let path = std::path::Path::new(
-        &std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("capture directory disappeared")?,
-    )
-    .to_path_buf();
-    if let Err(error) = std::fs::write(path.join("m07-spatial.bin"), bytes)
-        .and_then(|()| std::fs::write(path.join("m07-expected.txt"), expected))
-    {
-        evidence(&format!("M07_CLIENT_CAPTURE_WRITE_ERROR {error}"));
-    }
+    let path = std::path::Path::new(&directory);
+    use std::io::Write as _;
+    std::fs::File::create_new(path.join("m07-spatial.bin"))?.write_all(&bytes)?;
+    std::fs::File::create_new(path.join("m07-expected.txt"))?.write_all(expected.as_bytes())?;
     Ok(())
 }
