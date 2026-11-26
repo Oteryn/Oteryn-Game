@@ -82,17 +82,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operand: None,
         };
         let permit = self.spell_lane_permit().await.ok_or(())?;
-        if let Some(result) = self
-            .root
-            .harvest_map_item(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &NativeItemWeights(native),
-            )
+        let retry = AdmissionRetryBudget::for_command(self.root);
+        let weights = NativeItemWeights(native);
+        if let Some(result) = retry
+            .retry_command_guard(async || {
+                self.root
+                    .harvest_map_item(
+                        &permit,
+                        self.character,
+                        self.holder,
+                        fence,
+                        request.clone(),
+                        native,
+                        &weights,
+                    )
+                    .await
+            })
             .await
             .map_err(|_| ())?
         {
@@ -257,7 +262,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 request,
                 native,
-                &NativeItemWeights(native),
+                &weights,
             )
             .await
             .map_err(|_| ())?

@@ -87,8 +87,13 @@ fn write_disposition(
 ) -> Result<UseDisposition, ()> {
     match result {
         Ok(Some(disposition)) => Ok(disposition),
-        Err(DurabilityError::CommitOutcomeUnknown | DurabilityError::RootPassDeadlineExceeded) => {
-            // A sent terrain or fishing COMMIT may lack an acknowledgement. Keep its receipt replayable.
+        Err(
+            DurabilityError::Database(_)
+            | DurabilityError::CommitOutcomeUnknown
+            | DurabilityError::RootPassDeadlineExceeded,
+        ) => {
+            // A database failure during the mutation is not a gameplay refusal.
+            // Keep the USE reserved for receipt reconciliation.
             Err(())
         }
         Ok(None) | Err(_) => Ok(UseDisposition::Rejected),

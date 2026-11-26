@@ -25,11 +25,12 @@ impl SessionCommands {
         let commands = self.0.lock().ok()?;
         let mut state = commands.get(&command.game_session_id())?.lock().ok()?;
         let pending = state.pending_delivery?;
-        if !state.active
-            || pending.command != command.command_id().get()
-            || state.pending_use.is_some()
-        {
+        if !state.active || pending.command != command.command_id().get() {
             return None;
+        }
+        // Autowalk dispatches the same reserved USE again after reaching the target.
+        if let Some(original) = &state.pending_use {
+            return (original.command == command && original.wire == wire).then_some(());
         }
         state.pending_use = Some(PendingUseReceipt {
             command,
