@@ -1022,6 +1022,57 @@ impl BundleFacts {
         true
     }
 
+    /// Publish an unbound base Item's replacement and collision in one revision.
+    /// The Channel timer restores the original facts only at that revision.
+    pub fn transform_base_item_until(
+        &self,
+        key: u64,
+        expected: u64,
+        before: EntryFacts,
+        after: EntryFacts,
+        due: u64,
+    ) -> bool {
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        if self.house_tile(pos)
+            || before.bound
+            || before.pickupable
+            || !matches!(before.definition, MapDefinition::Item(_))
+            // A native wall Item can carry a Terrain classification in the base palette.
+            || !matches!(before.terrain_kind, None | Some(TerrainKind::Wall))
+            || after.pickupable
+            || self.override_blocks(after) != Some(false)
+            || expected >= u64::MAX - 1
+        {
+            return false;
+        }
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if states.key_reserved(key)
+            || states.position_reserved(pos)
+            || states.hidden.contains(&key)
+            || states.changed.get(&key).map_or(0, |(r, _)| *r) != expected
+            || !states.has_capacity(3)
+        {
+            return false;
+        }
+        let states = Arc::make_mut(&mut states);
+        let revision = expected + 1;
+        let passable = states.passable.insert(key, true);
+        states.changed.insert(key, (revision, after));
+        states.movement_decays.insert(
+            (due, key),
+            MovementDecay {
+                revision,
+                restore: before,
+                overlay: Some((false, passable)),
+            },
+        );
+        true
+    }
+
     pub fn next_movement_decay_time(&self) -> Option<u64> {
         let states = self.callbacks.lock().ok()?;
         states
