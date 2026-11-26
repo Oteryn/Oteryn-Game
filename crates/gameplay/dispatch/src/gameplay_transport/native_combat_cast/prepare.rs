@@ -371,12 +371,10 @@ async fn prepare_spatial(
             facing.map(direction),
             super::ordinary_combat::aim_point(
                 runtime,
-                states,
                 actor,
                 current.position(),
                 aim,
                 attack_target,
-                now,
             )?,
         )?),
         None => None,
