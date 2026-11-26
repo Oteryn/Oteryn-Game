@@ -840,6 +840,11 @@ const CONTENT_TRAIN_SUCCESSORS: &[(&str, DefinitionHash, DefinitionHash)] = &[
         hash(b"a9f70bb9fb2d498c4b82ff905d5b51dc774eb99e51d4701d651971dc15fb5831"),
     ),
     (
+        "oteryn:quest.the_ape_city_quest",
+        hash(b"3e8a82c701c48fb9e42db74edc6a0c3821b2f1e71dddf805b8d3553043dae44d"),
+        hash(b"36a42b73db21b6e58303c3f613656d1c9d78f8bf741152d68dc14f9d71ecaa31"),
+    ),
+    (
         "oteryn:quest.the_new_frontier_quest",
         hash(b"61034f9e3365c8817d659f8ffa59a0f21e404d2a41dfc6099a48a5cedd71018f"),
         hash(b"6aba631a049bcb9213d7192bcc98fcaf7c94ef7ce643c4c741c7f738f3e0a233"),

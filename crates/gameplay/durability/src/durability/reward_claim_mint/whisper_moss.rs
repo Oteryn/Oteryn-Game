@@ -1,5 +1,5 @@
-//! Mission-one recovery preserves the original claim and binds each replacement
-//! to the last granted moss instance. Freeze and commit check the same custody.
+//! Mission-one recovery preserves the original claim and grants one replacement
+//! per committed missing-moss dialogue.
 use super::RewardClaimMintRequest;
 use crate::domain::CharacterId;
 use sqlx::{Postgres, Transaction};
@@ -8,6 +8,7 @@ const CLAIM: &str = "oteryn:reward-claim.quest.u7_6.whisper_moss";
 const REPLACEMENT: &str = "oteryn:reward-claim.quest.u7_6.whisper_moss/replacement/";
 const ITEM: &str = "oteryn:item.tibia.i4827";
 const QUEST: &str = "oteryn:quest.the_ape_city_quest";
+const RECOVERY: &str = "oteryn:quest-progress/quest/u7_6/the_ape_city/whisper_moss_recovery";
 const MISSION: &str = "oteryn:quest-progress/quest/u7_6/the_ape_city/questline";
 
 fn is_moss(request: &RewardClaimMintRequest) -> bool {
@@ -31,24 +32,31 @@ pub(super) fn is_replacement(key: &str) -> bool {
     key.starts_with(REPLACEMENT)
 }
 
-async fn last_mint(
+async fn replacement_key(
     tx: &mut Transaction<'_, Postgres>,
     character: CharacterId,
 ) -> Result<Option<String>, sqlx::Error> {
+    // The latest missing-item reply names a one-shot claim. Committing
+    // that claim mints the moss and consumes the reset in one transaction.
     sqlx::query_scalar(
-        "SELECT r.item_instance_id::text FROM game_reward_claims c
-         JOIN game_reward_claim_mint_receipts r ON r.transaction_id=c.claimed_transaction_id
-         WHERE c.character_id=encode($1,'hex')::uuid AND c.claim_family='RewardClaim'
-           AND (c.claim_production_key=$2 OR starts_with(c.claim_production_key,$3))
-           AND NOT EXISTS (
-             SELECT 1 FROM game_reward_claims successor
-             WHERE successor.character_id=c.character_id AND successor.claim_family=c.claim_family
-               AND successor.claim_production_key=concat($3,r.item_instance_id::text)
-           ) LIMIT 1",
+        "SELECT concat($5::text, recovery.value::text)
+         FROM game_character_quest_tracks mission
+         JOIN game_character_quest_tracks recovery USING (character_id, quest_key)
+         WHERE mission.character_id=encode($1,'hex')::uuid AND mission.quest_key=$2
+           AND mission.track_key=$3 AND mission.value=1
+           AND recovery.track_key=$4 AND recovery.value>0
+           AND EXISTS (
+             SELECT 1 FROM game_reward_claims
+             WHERE character_id=mission.character_id AND claim_family='RewardClaim'
+               AND claim_production_key=$6
+           )",
     )
     .bind(character.as_bytes().as_slice())
-    .bind(CLAIM)
+    .bind(QUEST)
+    .bind(MISSION)
+    .bind(RECOVERY)
     .bind(REPLACEMENT)
+    .bind(CLAIM)
     .fetch_optional(&mut **tx)
     .await
 }
@@ -61,7 +69,7 @@ pub(super) async fn resolve(
     if let Some(key) = stored {
         return Ok(is_replacement(&key).then_some(key));
     }
-    Ok(last_mint(tx, character).await?.map(|item| format!("{REPLACEMENT}{item}")))
+    replacement_key(tx, character).await
 }
 
 pub(super) async fn permits(
@@ -70,13 +78,12 @@ pub(super) async fn permits(
     request: &RewardClaimMintRequest,
 ) -> Result<bool, sqlx::Error> {
     if !is_moss(request)
-        || request.claim.production_key.strip_prefix(REPLACEMENT)
-            != last_mint(tx, character).await?.as_deref()
+        || replacement_key(tx, character).await?.as_deref()
+            != Some(request.claim.production_key.as_str())
     {
         return Ok(false);
     }
     // Any owned moss counts, including a copy kept in a nested bag or depot.
-    // An issued live copy also blocks recovery after a drop or transfer.
     // The item fence holds the Character root for this check and the mint.
     sqlx::query_scalar(
         "WITH RECURSIVE roots(item_instance_id) AS (
@@ -92,30 +99,13 @@ pub(super) async fn permits(
            JOIN game_item_nested_entries e ON e.parent_item_instance_id=c.item_instance_id
            WHERE c.depth<16
          )
-         SELECT EXISTS (
-           SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid
-             AND quest_key=$2 AND track_key=$3 AND value=1
-         ) AND EXISTS (
-           SELECT 1 FROM game_reward_claims WHERE character_id=encode($1,'hex')::uuid
-             AND claim_family='RewardClaim' AND claim_production_key=$4
-         ) AND NOT EXISTS (
+         SELECT NOT EXISTS (
            SELECT 1 FROM custody c JOIN game_item_instances i USING(item_instance_id)
-           WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$5
-         ) AND NOT EXISTS (
-           SELECT 1 FROM game_reward_claims c
-           JOIN game_reward_claim_mint_receipts r ON r.transaction_id=c.claimed_transaction_id
-           JOIN game_item_instances i USING(item_instance_id)
-           WHERE c.character_id=encode($1,'hex')::uuid AND c.claim_family='RewardClaim'
-             AND (c.claim_production_key=$4 OR starts_with(c.claim_production_key,$6))
-             AND i.lifecycle=1
+           WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$2
          )",
     )
     .bind(character.as_bytes().as_slice())
-    .bind(QUEST)
-    .bind(MISSION)
-    .bind(CLAIM)
     .bind(ITEM)
-    .bind(REPLACEMENT)
     .fetch_one(&mut **tx)
     .await
 }

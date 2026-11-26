@@ -3043,7 +3043,7 @@
         {
           "item": {
             "family": "Item",
-            "key": "oteryn:item.tibia.i5046",
+            "key": "oteryn:item.tibia.i5086",
             "revision": "definition-r1"
           },
           "direction": "SellToPlayer",
@@ -3063,7 +3063,7 @@
         {
           "item": {
             "family": "Item",
-            "key": "oteryn:item.tibia.i5055",
+            "key": "oteryn:item.tibia.i5087",
             "revision": "definition-r1"
           },
           "direction": "SellToPlayer",
@@ -3083,7 +3083,7 @@
         {
           "item": {
             "family": "Item",
-            "key": "oteryn:item.tibia.i5056",
+            "key": "oteryn:item.tibia.i5088",
             "revision": "definition-r1"
           },
           "direction": "SellToPlayer",
@@ -3102,7 +3102,9 @@
         }
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:498-517"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:498-517",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:14546-14560",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/construction_kits.lua:38-40"
       ]
     },
     {

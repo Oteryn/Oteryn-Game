@@ -20,7 +20,7 @@ fn carlos_food_sales_advance_the_saved_tutorial_postgres() -> TestResult {
         run(async |admin| {
             for (item, sell_all) in [("oteryn:item.tibia.i3577", false), ("oteryn:item.tibia.i3582", true)] {
                 let h = Harness::create_with_admission_seed(admin.clone(), "carlos_food_sale", true, false).await?;
-                let result = exercise(&h, Some((item, sell_all))).await;
+                let result = exercise(&h, Scenario::CarlosSale { item, sell_all }).await;
                 h.cleanup().await?;
                 result?;
             }
@@ -37,14 +37,37 @@ fn ape_city_and_beginning_production_npc_progress_postgres() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("ape-city-and-beginning", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "ape_city_beginning", true, false).await?;
-            let result = exercise(&h, None).await;
+            let result = exercise(&h, Scenario::Progress).await;
             h.cleanup().await?;
             result
         })
     })
 }
 
-async fn exercise(h: &Harness, sale: Option<(&str, bool)>) -> TestResult {
+#[test]
+fn hairycles_quotes_all_three_portable_statue_kits_after_ape_city() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("hairycles-statue-kits", || {
+        run(async |admin| {
+            let h =
+                Harness::create_with_admission_seed(admin, "hairycles_statue_kits", true, false)
+                    .await?;
+            let result = exercise(&h, Scenario::HairyclesShop).await;
+            h.cleanup().await?;
+            result
+        })
+    })
+}
+
+enum Scenario<'a> {
+    Progress,
+    CarlosSale { item: &'a str, sell_all: bool },
+    HairyclesShop,
+}
+
+async fn exercise(h: &Harness, scenario: Scenario<'_>) -> TestResult {
     super::prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
@@ -64,7 +87,7 @@ async fn exercise(h: &Harness, sale: Option<(&str, bool)>) -> TestResult {
         load_embedded_quest_state("content-1").map_err(debug)?.catalogue().clone(),
     ));
     let mut admitted = deps.admitted;
-    if sale.is_some() {
+    if matches!(scenario, Scenario::CarlosSale { .. }) {
         admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
         let fence = owner.current_quest_fence(admitted.game_session_id)
             .await.map_err(|()| "sale item fence lookup")?.ok_or("sale item fence")?;
@@ -88,7 +111,7 @@ async fn exercise(h: &Harness, sale: Option<(&str, bool)>) -> TestResult {
         ],
         Some([(0, 1), (1, 1), (0, 2), (1, 2)]),
     ).await?;
-    if let Some((item, sell_all)) = sale {
+    if let Scenario::CarlosSale { item, sell_all } = scenario {
         use crate::gameplay_transport::capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities};
         use oteryn_protocol_oteryn::{npc_service::CAPABILITY_NPC_SERVICE_V1, npc_shop::CAPABILITY_NPC_SHOP_V1};
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
@@ -98,6 +121,9 @@ async fn exercise(h: &Harness, sale: Option<(&str, bool)>) -> TestResult {
         return carlos_sale(h, &mut owner, &mut admitted, carlos, item, sell_all).await;
     }
     super::qd_world_fixtures::select_talk_capabilities(&owner, &mut admitted, &[3, 6, 25])?;
+    if matches!(scenario, Scenario::HairyclesShop) {
+        return hairycles_statue_kits(h, &mut owner, &mut admitted, hairycles).await;
+    }
     let mut command = 1000;
     for (npc, phrases, track, value) in [
         (santiago, &["hi", "yes", "yes", "bye"][..], format!("{ROOK_TRACK}santiago_quest_log"), 2),
@@ -126,6 +152,93 @@ async fn exercise(h: &Harness, sale: Option<(&str, bool)>) -> TestResult {
     assert_eq!(awarded, 1);
     conversation(&mut owner, &mut admitted, hairycles, &mut command, &["mission"]).await?;
     assert_eq!(progress(h, &format!("{APE_TRACK}questline")).await?, 18);
+    Ok(())
+}
+
+async fn hairycles_statue_kits(
+    h: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+) -> TestResult {
+    use super::qengine_rewards_fixtures::talk_outcome;
+    use crate::gameplay_transport::furniture_catalog::construction_kit_to;
+    use oteryn_protocol_oteryn::npc_service::NpcTradeSide;
+    use std::num::NonZeroU32;
+
+    assert_eq!(
+        talk_outcome(owner, admitted, npc, 1, "hi")
+            .await?
+            .disposition,
+        NpcIntentDisposition::Ok
+    );
+    let locked = talk_outcome(owner, admitted, npc, 2, "trade").await?;
+    assert!(
+        locked.window.is_none_or(|window| window.offers.is_empty()),
+        "stage zero stock"
+    );
+    let track = format!("{APE_TRACK}questline");
+    let hash = owner
+        .quest_catalogue
+        .as_ref()
+        .and_then(|catalogue| catalogue.definition_hash(APE))
+        .ok_or("Ape City definition")?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_character_quest_states
+         (character_id, quest_key, pinned_content_revision, definition_hash, started_character_revision,
+          completed_character_revision, committed_character_revision)
+         VALUES (encode($1,'hex')::uuid, $2, 'content-1', $3, 2, 2, 2)",
+    ).bind(id(41).as_slice()).bind(APE).bind(hash.as_slice()).execute(&mut *tx).await?;
+    sqlx::query(
+        "INSERT INTO game_character_quest_tracks
+         (character_id, track_key, quest_key, value, committed_character_revision)
+         VALUES (encode($1,'hex')::uuid, $2, $3, 18, 2)",
+    )
+    .bind(id(41).as_slice())
+    .bind(&track)
+    .bind(APE)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    let response = talk_outcome(owner, admitted, npc, 3, "trade").await?;
+    assert_eq!(response.disposition, NpcIntentDisposition::Ok);
+    let window = response
+        .window
+        .filter(|window| window.open.is_some())
+        .ok_or("Hairycles shop window")?;
+    let runtime = owner.runtime.lock().await;
+    let index = crate::gameplay_transport::item_ref_admission::pinned_index(
+        &runtime,
+        owner.active_generation,
+    )
+    .ok_or("Hairycles item index")?;
+    let mut kits: Vec<_> = window
+        .offers
+        .iter()
+        .filter(|offer| offer.side == NpcTradeSide::Buy && offer.unit_price == 65)
+        .filter_map(|offer| index.definition_at(NonZeroU32::new(offer.item_definition_ref)?))
+        .map(|(key, _)| key)
+        .collect();
+    kits.sort_unstable();
+    assert_eq!(
+        kits,
+        [
+            "oteryn:item.tibia.i5086",
+            "oteryn:item.tibia.i5087",
+            "oteryn:item.tibia.i5088"
+        ]
+    );
+    for (kit, statue) in [(5086, 5046), (5087, 5055), (5088, 5056)] {
+        assert_eq!(construction_kit_to(kit), Some(statue));
+    }
+    eprintln!("POSTGRES_CASE_COMPLETED hairycles_statue_kits");
     Ok(())
 }
 
