@@ -2563,6 +2563,19 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(storkus_dust.len(), 212);
         for callback in storkus_dust {
+            let mission = &callback.storage[1];
+            assert_eq!(
+                (mission.minimum, mission.maximum),
+                (0, 1),
+                "{}",
+                callback.key
+            );
+            if callback.key.ends_with("/already-paid") {
+                assert!(!mission.preserve);
+                assert_eq!(mission.set, 2);
+            } else {
+                assert!(mission.preserve, "{}", callback.key);
+            }
             if !callback.take.is_empty() {
                 assert_eq!(callback.topic, 1, "{}", callback.key);
                 assert!(callback.storage[..2].iter().all(|track| track.preserve));

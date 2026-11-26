@@ -1150,7 +1150,7 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
-          "minimum": 1,
+          "minimum": 0,
           "maximum": 1,
           "set": 1,
           "preserve": true
@@ -1204,7 +1204,7 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
-          "minimum": 1,
+          "minimum": 0,
           "maximum": 1,
           "set": 1,
           "preserve": true
@@ -1245,7 +1245,7 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
-          "minimum": 1,
+          "minimum": 0,
           "maximum": 1,
           "set": 2
         },
