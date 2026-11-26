@@ -99,7 +99,7 @@ pub(super) async fn observe(
     // The view reads the same Ground owner as field casts, retirement and
     // expiry. Resolve an uncertain writer and serialize cache rebuilds before
     // borrowing runtime or issuing the bounded durable read.
-    let _permit = admission.spell_lane_permit().await?;
+    let permit = admission.spell_lane_permit().await?;
     let (at, index) = {
         let mut runtime = admission.runtime.lock().await;
         let index = item_ref_admission::pinned_index(&runtime, admission.active_generation);
@@ -108,6 +108,13 @@ pub(super) async fn observe(
             index,
         )
     };
+    if super::nomads_ritual::near_nomads(crate::foundation::MovementLocalPosition {
+        x: at.at.x,
+        y: at.at.y,
+        floor: at.at.floor.checked_neg()?,
+    }) {
+        admission.restore_nomads_rituals(&permit).await.ok()?;
+    }
     // ITEM-LOOP-1: the dropped items, read after the runtime lock is released.
     let ground = loop_move::loop_ground(admission, at.map.overlay.base(), index).await?;
     Some(at.update(view, items, Some(&ground), admission.reset_epoch))

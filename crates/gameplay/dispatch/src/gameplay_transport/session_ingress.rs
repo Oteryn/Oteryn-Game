@@ -49,13 +49,14 @@ struct PendingDelivery {
     selected: SelectedCapabilities,
     proven_native: Option<ProvenNativeReply>,
     buffered_step: bool,
+    nomads: Option<super::nomads_ritual::PendingGesture>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum ProvenNativeReply {
     ItemUse(oteryn_protocol_oteryn::world_object::UseDisposition),
     HirelingSummon(bool),
-    NomadsDrop,
+    NomadsDrop(bool),
 }
 
 impl ProvenNativeReply {
@@ -74,14 +75,18 @@ impl ProvenNativeReply {
                     payload,
                 ))
             }
-            Self::NomadsDrop => {
+            Self::NomadsDrop(moved) => {
                 use oteryn_protocol_oteryn::item_view::{
                     ItemMoveOutcome, ItemMoveSelection, encode_item_move_result_for,
                 };
                 Some((
                     false,
                     encode_item_move_result_for(
-                        ItemMoveOutcome::Moved,
+                        if moved {
+                            ItemMoveOutcome::Moved
+                        } else {
+                            ItemMoveOutcome::Rejected
+                        },
                         ItemMoveSelection::default(),
                     )
                     .ok()?,
@@ -303,17 +308,38 @@ impl SessionCommands {
     pub(super) fn complete_nomads_drop(
         &self,
         command: crate::foundation::CommandRef,
+        moved: bool,
     ) -> Option<()> {
-        self.retain_native_result(command, ProvenNativeReply::NomadsDrop)
+        self.retain_native_result(command, ProvenNativeReply::NomadsDrop(moved))
     }
 
-    pub(super) fn disconnected_original(&self, session: GameSessionId) -> Option<CommandId> {
+    pub(super) fn remember_nomads(
+        &self,
+        command: crate::foundation::CommandRef,
+        gesture: super::nomads_ritual::PendingGesture,
+    ) {
+        if let Ok(commands) = self.0.lock()
+            && let Some(entry) = commands.get(&command.game_session_id())
+            && let Ok(mut state) = entry.lock()
+            && state.active
+            && let Some(pending) = state.pending_delivery.as_mut()
+            && pending.command == command.command_id().get()
+        {
+            pending.nomads = Some(gesture);
+        }
+    }
+
+    pub(super) fn disconnected_nomads(
+        &self,
+        session: GameSessionId,
+    ) -> Option<(CommandId, super::nomads_ritual::PendingGesture)> {
         let commands = self.0.lock().ok()?;
         let state = commands.get(&session)?.lock().ok()?;
         if state.active || state.ingress.outstanding() != 1 {
             return None;
         }
-        CommandId::new(state.pending_delivery?.command).ok()
+        let pending = state.pending_delivery?;
+        Some((CommandId::new(pending.command).ok()?, pending.nomads?))
     }
 
     /// Legacy command 220 shares the lamp's native effect, but retains its own
@@ -550,6 +576,7 @@ impl SessionCommandStream {
                     selected: self.selected,
                     proven_native: None,
                     buffered_step: false,
+                    nomads: None,
                 });
                 state.reconciled_sequence = None;
                 Ok(CommandAction::Execute)

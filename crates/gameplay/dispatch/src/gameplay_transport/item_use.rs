@@ -864,7 +864,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// Release a flask fenced while the original commit result was uncertain.
-    pub(super) async fn finish_nomads_fluid(&self, command: CommandRef, item: [u8; 16]) {
+    pub(super) async fn finish_nomads_fluid(
+        &self,
+        command: CommandRef,
+        item: [u8; 16],
+        disposition: UseDisposition,
+    ) {
         let mut states = self.states.spell_states.lock().await;
         if let Some((_, _, gate)) = states
             .item_uses
@@ -875,7 +880,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             gate.unspendable.retain(|reserved| *reserved != item);
             let id = command.command_id().get();
             if gate.last.is_none_or(|(last, _)| last <= id) {
-                gate.settle(id, UseDisposition::Committed, &[]);
+                gate.settle(id, disposition, &[]);
             }
         }
     }
@@ -1018,15 +1023,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             other: None,
         };
-        let ritual = water_target
-            && i16::from(before) == nomads_ritual::WATER_SUBTYPE
-            && self.bundle_map().is_some_and(|map| {
-                self.prepare_nomads_ritual(
-                    map,
-                    crate::durability::nomads_ritual::NomadsRitualGesture::Pour,
-                )
-                .is_some()
-            });
+        let ritual = water_target && i16::from(before) == nomads_ritual::WATER_SUBTYPE;
         let disposition = self
             .commit_fluid_at(actor, &command, fence, request, splash, None, ritual)
             .await
@@ -1151,6 +1148,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ritual: bool,
     ) -> Result<UseDisposition, UseDisposition> {
         let session = command.game_session_id;
+        let bound = Duration::from_millis(ITEMUSE0_RL_04_AMBIGUOUS_MS);
+        if ritual {
+            super::nomads_ritual::PendingGesture::Pour(request.change.item_instance_id)
+                .remember(self, *command);
+        }
+        let permit = if ritual {
+            match tokio::time::timeout(bound, self.spell_lane_permit()).await {
+                Ok(Some(permit)) => Some(permit),
+                _ => return Ok(UseDisposition::Exhausted),
+            }
+        } else {
+            None
+        };
         let reserved: Vec<[u8; 16]> = std::iter::once(request.change.item_instance_id)
             .chain(request.other.as_ref().map(|other| other.item_instance_id))
             .collect();
@@ -1166,17 +1176,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let analyser_supply = restore.as_ref().map(|_| request.change.definition.clone());
         let commit = async {
-            if ritual && let Some(splash) = splash.as_ref() {
-                let permit = self
-                    .spell_lane_permit()
+            if let (Some(permit), Some(splash)) = (permit.as_ref(), splash.as_ref())
+                && self
+                    .restore_nomads_rituals(permit)
                     .await
-                    .ok_or(crate::durability::DurabilityError::Unavailable)?;
+                    .map_err(|()| crate::durability::DurabilityError::Unavailable)?
+            {
                 let physical = crate::durability::nomads_ritual::NomadsPhysical::Pour {
                     request: &request,
                     splash,
                 };
                 match self
-                    .commit_nomads_ritual(&permit, actor, *command, physical)
+                    .commit_nomads_ritual(permit, actor, *command, physical)
                     .await
                 {
                     Ok(Some(true)) => return Ok(Some(ItemFluidOutcome::Written)),
@@ -1190,7 +1201,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
                 .map(Some)
         };
-        let bound = Duration::from_millis(ITEMUSE0_RL_04_AMBIGUOUS_MS);
         let (disposition, known_commit, ambiguous) = match tokio::time::timeout(bound, commit).await
         {
             Ok(Ok(None)) => (UseDisposition::NothingToUse, false, false),

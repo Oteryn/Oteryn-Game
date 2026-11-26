@@ -60,6 +60,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("event=step_rejected_lane");
             return (StepOutcome::rejected(), None);
         };
+        let near_nomads = self
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .is_ok_and(|position| super::nomads_ritual::near_nomads(position.position()));
+        if near_nomads && self.restore_nomads_rituals(&permit).await.is_err() {
+            return (StepOutcome::rejected(), None);
+        }
         if !source_map_initialized
             || super::loop_move::reconcile_cask_collision(self)
                 .await

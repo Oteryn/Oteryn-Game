@@ -153,6 +153,10 @@ pub async fn serve_gameplay(
         .register_current_runtime()
         .await
         .map_err(|_| GameplayServeError::OwnerUnavailable)?;
+    authority
+        .sync_nomads_map()
+        .await
+        .map_err(|_| GameplayServeError::OwnerUnavailable)?;
     for template in owners.activity_templates {
         authority
             .activity_runtimes

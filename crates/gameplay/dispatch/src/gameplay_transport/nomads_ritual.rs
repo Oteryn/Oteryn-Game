@@ -19,6 +19,30 @@ use crate::map::{
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position, nomads_ritual};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
+#[derive(Clone, Copy)]
+pub(super) enum PendingGesture {
+    Drop,
+    Pour([u8; 16]),
+}
+
+pub(super) fn near_nomads(at: crate::foundation::MovementLocalPosition) -> bool {
+    let entrance = nomads_ritual::ENTRANCE;
+    at.floor == -i16::from(entrance.floor)
+        && at.x.abs_diff(i32::from(entrance.x)) <= 16
+        && at.y.abs_diff(i32::from(entrance.y)) <= 16
+}
+
+impl PendingGesture {
+    pub(super) fn remember(self, owner: &ComposedFreshAdmission<'_, '_, '_>, command: UseCommand) {
+        if let Ok(id) = CommandId::new(command.command_id) {
+            owner
+                .states
+                .command_ingress
+                .remember_nomads(CommandRef::new(command.game_session_id, id), self);
+        }
+    }
+}
+
 fn position(gesture: NomadsRitualGesture) -> Position {
     match gesture {
         NomadsRitualGesture::Drop => nomads_ritual::CRACK,
@@ -44,7 +68,7 @@ fn live_entry(map: &BundleMap, tile: TilePos, key: u64) -> Option<EntryFacts> {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) fn prepare_nomads_ritual(
+    fn prepare_nomads_ritual(
         &self,
         map: &BundleMap,
         gesture: NomadsRitualGesture,
@@ -56,7 +80,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .find(|row| row.key == gesture.callback())?;
         (super::quest_callbacks::matches(map, callback, key)
             && callback.selector.appearance == Some(live_entry(map, tile, key)?.appearance_id)
-            && super::quest_callbacks::world_requirements_match(map, callback)
             && map
                 .facts
                 .quest_callback_capacity(key, map.facts.object_revision(key), 0)
@@ -82,7 +105,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // shared state changed meanwhile, leave its flask untouched.
             return Ok((gesture == NomadsRitualGesture::Pour).then_some(false));
         }
-        let Some(fence) = self.current_quest_fence(command.game_session_id).await? else {
+        let Some(fence) = super::AdmissionRetryBudget::for_command(self.root)
+            .retry_command_guard(async || {
+                self.current_quest_fence_durable(command.game_session_id)
+                    .await
+            })
+            .await
+            .map_err(|_| ())?
+        else {
             return Ok(Some(false));
         };
         if command.item_fence != Some(fence.item_fence()) {
@@ -129,6 +159,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if self.prepare_nomads_ritual(map, gesture).is_none() {
             return Ok(Some(false));
         }
+        if gesture == NomadsRitualGesture::Pour
+            && !self
+                .root
+                .check_character_world_callback(
+                    self.character,
+                    self.holder,
+                    fence,
+                    gesture.callback(),
+                    std::sync::Arc::clone(catalogue),
+                    permit,
+                    context.clone(),
+                )
+                .await
+                .map_err(|_| ())?
+        {
+            // Arito's personal gate controls the ritual, not ordinary fluid use.
+            return Ok(None);
+        }
         let outcome = slot
             .commit_nomads_ritual(
                 self.root,
@@ -159,19 +207,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(());
             }
         }
-        if gesture == NomadsRitualGesture::Drop {
-            self.states.loop_ground.invalidate();
-        }
         #[cfg(test)]
         if interrupted_after_commit(command) {
             return Err(());
         }
-        let observed_at = self.owner_now().get();
+        if gesture == NomadsRitualGesture::Drop {
+            self.states.loop_ground.invalidate();
+        }
         let receipt = self
             .read_nomads_receipt(fence.item_fence(), reference)
             .await?
             .ok_or(())?;
-        self.publish_nomads_ritual(&receipt, observed_at)?;
+        self.publish_nomads_ritual(&receipt)?;
         Ok(Some(true))
     }
 
@@ -190,16 +237,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| ())
     }
 
-    fn publish_nomads_ritual(
-        &self,
-        receipt: &NomadsRitualReceipt,
-        observed_at: u64,
-    ) -> Result<(), ()> {
+    fn publish_nomads_ritual(&self, receipt: &NomadsRitualReceipt) -> Result<(), ()> {
         let Some(map) = self.bundle_map() else {
             return Ok(());
         };
-        if receipt.remaining_micros == 0
-            || receipt.target.reset_epoch != self.reset_epoch
+        if receipt.target.reset_epoch != self.reset_epoch
             || receipt.target.map_digest != map.overlay.base().digest()
         {
             return Ok(());
@@ -218,12 +260,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .facts
             .quest_callback_replacement(key, callback.effects.transform.ok_or(())?)
             .ok_or(())?;
-        let due = observed_at
-            .checked_add(receipt.remaining_micros)
-            .ok_or(())?;
-        if due <= self.owner_now().get() {
+        let remaining = receipt
+            .deadline
+            .saturating_duration_since(std::time::Instant::now());
+        if remaining.is_zero() {
             return Ok(());
         }
+        let due = self
+            .owner_now()
+            .get()
+            .checked_add(u64::try_from(remaining.as_micros()).map_err(|_| ())?)
+            .ok_or(())?;
         let projection = QuestCallbackProjection::TimedTransform { due, restore };
         map.facts
             .apply_quest_callback(
@@ -236,38 +283,68 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(&projection),
             )
             .then_some(())
-            .ok_or(())
+            .ok_or(())?;
+        if receipt.gesture == NomadsRitualGesture::Drop {
+            self.clear_nomads_ground(receipt.item);
+        }
+        Ok(())
+    }
+
+    fn clear_nomads_ground(&self, item: [u8; 16]) {
+        self.states.loop_ground.invalidate();
+        self.states
+            .browse_fields
+            .committed_move(super::item_view::ItemKey::Instance(item), None);
+    }
+
+    fn has_nomads_placement(&self) -> bool {
+        self.bundle_map().is_some_and(|map| {
+            target(NomadsRitualGesture::Drop)
+                .is_some_and(|(tile, key)| live_entry(map, tile, key).is_some())
+        })
+    }
+
+    pub(super) async fn sync_nomads_map(&self) -> Result<(), ()> {
+        if self.has_nomads_placement() {
+            let permit = self.spell_lane_permit().await.ok_or(())?;
+            self.restore_nomads_rituals(&permit).await?;
+        }
+        Ok(())
     }
 
     /// A rebuilt map derives both timed appearances from committed world state.
     pub(super) async fn restore_nomads_rituals(
         &self,
         permit: &SpellLanePermit,
-        scope: crate::foundation::RuntimeScopeRefV1,
-    ) -> Result<(), ()> {
-        let Some(map) = self.bundle_map() else {
-            return Ok(());
+    ) -> Result<bool, ()> {
+        let Some(map) = self.bundle_map().filter(|_| self.has_nomads_placement()) else {
+            return Ok(false);
         };
-        let Some((tile, key)) = target(NomadsRitualGesture::Drop) else {
-            return Ok(());
-        };
-        if live_entry(map, tile, key).is_none() {
-            return Ok(());
-        }
         let target = NomadsRitualTarget {
             map_digest: map.overlay.base().digest(),
             reset_epoch: self.reset_epoch,
         };
-        let observed_at = self.owner_now().get();
-        let receipts = self
-            .root
-            .active_nomads_rituals(self.character, permit, scope, target)
+        let receipts = super::AdmissionRetryBudget::for_command(self.root)
+            .retry_command_guard(async || {
+                self.root
+                    .active_nomads_rituals(self.character, permit, permit.runtime_scope(), target)
+                    .await
+            })
             .await
             .map_err(|_| ())?;
+        map.facts.expire_movement_items(self.owner_now().get());
+        let mut crack = false;
+        let mut entrance = false;
         for receipt in receipts {
-            self.publish_nomads_ritual(&receipt, observed_at)?;
+            self.publish_nomads_ritual(&receipt)?;
+            if receipt.deadline > std::time::Instant::now() {
+                match receipt.gesture {
+                    NomadsRitualGesture::Drop => crack = true,
+                    NomadsRitualGesture::Pour => entrance = true,
+                }
+            }
         }
-        Ok(())
+        Ok(crack && !entrance)
     }
 
     /// Exact command replay is independent of current item handles and splash lifetime.
@@ -281,7 +358,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command.game_session_id,
             CommandId::new(command.command_id).map_err(|_| ())?,
         );
-        let observed_at = self.owner_now().get();
         let Some(receipt) = self.read_nomads_receipt(fence, reference).await? else {
             return Ok(false);
         };
@@ -289,9 +365,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(());
         }
         let _permit = self.spell_lane_permit().await.ok_or(())?;
-        self.publish_nomads_ritual(&receipt, observed_at)?;
-        if gesture == NomadsRitualGesture::Pour {
-            self.finish_nomads_fluid(reference, receipt.item).await;
+        self.publish_nomads_ritual(&receipt)?;
+        match gesture {
+            NomadsRitualGesture::Drop => self.clear_nomads_ground(receipt.item),
+            NomadsRitualGesture::Pour => {
+                self.finish_nomads_fluid(reference, receipt.item, UseDisposition::Committed)
+                    .await
+            }
         }
         Ok(true)
     }
@@ -300,53 +380,85 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// reconnect gate. No new quest transition is run during recovery.
     pub(super) async fn recover_nomads_ingress(&self, lost: &AdmittedSession) -> bool {
         let ingress = &self.states.command_ingress;
-        let (Some(fence), Some(id)) = (
+        let (Some(fence), Some((id, pending))) = (
             lost.item_fence,
-            ingress.disconnected_original(lost.game_session_id),
+            ingress.disconnected_nomads(lost.game_session_id),
         ) else {
             return true;
         };
         let reference = CommandRef::new(lost.game_session_id, id);
-        let observed_at = self.owner_now().get();
-        let Ok(receipt) = self.read_nomads_receipt(fence, reference).await else {
-            return false;
-        };
-        let Some(receipt) = receipt else {
-            return match super::AdmissionRetryBudget::for_command(self.root)
-                .retry_command_guard(async || {
-                    self.root
-                        .read_nomads_ordinary_drop(self.character, fence, reference)
-                        .await
-                })
-                .await
-            {
-                Ok(false) => true,
-                Ok(true) => ingress.complete_nomads_drop(reference).is_some(),
-                Err(_) => false,
-            };
-        };
         let Some(_permit) = self.spell_lane_permit().await else {
             return false;
         };
-        let gesture = receipt.gesture;
-        if self.publish_nomads_ritual(&receipt, observed_at).is_err() {
+        let Ok(receipt) = self.read_nomads_receipt(fence, reference).await else {
             return false;
-        }
-        self.schedule_quest_refresh(lost.game_session_id);
-        match gesture {
-            NomadsRitualGesture::Drop => ingress.complete_nomads_drop(reference),
-            NomadsRitualGesture::Pour => {
-                self.finish_nomads_fluid(reference, receipt.item).await;
-                ingress.complete_item_use(reference, UseDisposition::Committed)
+        };
+        if let Some(receipt) = &receipt {
+            if self.publish_nomads_ritual(receipt).is_err() {
+                return false;
+            }
+            self.schedule_quest_refresh(lost.game_session_id);
+            if receipt.gesture == NomadsRitualGesture::Drop {
+                self.clear_nomads_ground(receipt.item);
             }
         }
-        .is_some()
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        match pending {
+            PendingGesture::Drop => {
+                let moved = if receipt.is_some() {
+                    true
+                } else {
+                    use crate::durability::item_loop_move::LoopMoveReplay;
+                    match budget
+                        .retry_command_guard(async || {
+                            self.root
+                                .read_item_loop_move_receipt(
+                                    self.character,
+                                    fence.character_id,
+                                    reference,
+                                )
+                                .await
+                        })
+                        .await
+                    {
+                        Ok(LoopMoveReplay::Moved) => true,
+                        Ok(LoopMoveReplay::Absent) => false,
+                        _ => return false,
+                    }
+                };
+                ingress.complete_nomads_drop(reference, moved).is_some()
+            }
+            PendingGesture::Pour(item) => {
+                let committed = if receipt.is_some() {
+                    true
+                } else {
+                    let Ok(committed) = budget
+                        .retry_command_guard(async || {
+                            self.root
+                                .read_nomads_fluid_receipt(self.character, fence, reference, item)
+                                .await
+                        })
+                        .await
+                    else {
+                        return false;
+                    };
+                    committed
+                };
+                let disposition = if committed {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Rejected
+                };
+                self.finish_nomads_fluid(reference, item, disposition).await;
+                ingress.complete_item_use(reference, disposition).is_some()
+            }
+        }
     }
 }
 
 #[cfg(test)]
 thread_local! {
-    static INTERRUPT_AFTER_COMMIT: std::cell::Cell<Option<(crate::foundation::GameSessionId, u64)>> =
+    static INTERRUPT_RITUAL: std::cell::Cell<Option<(crate::foundation::GameSessionId, u64)>> =
         const { std::cell::Cell::new(None) };
 }
 
@@ -356,7 +468,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         command: UseCommand,
     ) -> Result<(), &'static str> {
-        INTERRUPT_AFTER_COMMIT.with(|fault| {
+        INTERRUPT_RITUAL.with(|fault| {
             if fault.get().is_some() {
                 return Err("ritual fault already armed");
             }
@@ -367,8 +479,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 
 #[cfg(test)]
-pub(super) fn interrupted_after_commit(command: UseCommand) -> bool {
-    INTERRUPT_AFTER_COMMIT.with(|fault| {
+fn interrupted_after_commit(command: UseCommand) -> bool {
+    INTERRUPT_RITUAL.with(|fault| {
         if fault.get() == Some((command.game_session_id, command.command_id)) {
             fault.set(None);
             true

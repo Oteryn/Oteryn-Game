@@ -36,6 +36,12 @@ enum Case {
     OpenPour,
     ExpiredCrack,
     NoReferral,
+    RollbackDrop,
+    RollbackPour,
+    BusyLane,
+    UnpublishedDrop,
+    IneligiblePour,
+    BundleRestore,
 }
 
 #[test]
@@ -76,6 +82,36 @@ fn nomads_ritual_pour_rolls_back_after_crack_expiry() -> TestResult {
 #[test]
 fn nomads_ritual_ineligible_drop_retains_its_move_result() -> TestResult {
     scenario(Case::NoReferral)
+}
+
+#[test]
+fn nomads_ritual_rolled_back_drop_can_resume_and_retry() -> TestResult {
+    scenario(Case::RollbackDrop)
+}
+
+#[test]
+fn nomads_ritual_rolled_back_pour_releases_its_flask() -> TestResult {
+    scenario(Case::RollbackPour)
+}
+
+#[test]
+fn nomads_ritual_busy_lane_returns_retryable_use_without_debit() -> TestResult {
+    scenario(Case::BusyLane)
+}
+
+#[test]
+fn nomads_ritual_second_player_pours_after_unpublished_drop() -> TestResult {
+    scenario(Case::UnpublishedDrop)
+}
+
+#[test]
+fn nomads_ritual_ineligible_player_pours_without_opening() -> TestResult {
+    scenario(Case::IneligiblePour)
+}
+
+#[test]
+fn nomads_ritual_cold_bundle_observer_restores_the_active_entrance_timer() -> TestResult {
+    scenario(Case::BundleRestore)
 }
 
 #[test]
@@ -203,7 +239,11 @@ fn scenario(case: Case) -> TestResult {
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
-            owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(&room), Some(&room));
+            owner.rooms = if case == Case::BundleRestore {
+                crate::gameplay_transport::SeamRooms::new(None, None)
+            } else {
+                crate::gameplay_transport::SeamRooms::new(Some(&room), Some(&room))
+            };
             owner.quest_catalogue = Some(Arc::new(
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                     .map_err(debug)?
@@ -213,11 +253,7 @@ fn scenario(case: Case) -> TestResult {
             let mut admitted = deps.admitted;
             admitted.runtime_actor = Some(deps.actor);
             admitted.first_entry = FirstEntryOutcome::Positioned;
-            let fence = owner
-                .current_quest_fence(admitted.game_session_id)
-                .await
-                .map_err(|()| "fence")?
-                .ok_or("fence")?;
+            let fence = fixture_fence(&owner, admitted.game_session_id).await?;
             admitted.item_fence = Some(fence.item_fence());
             sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
@@ -299,7 +335,7 @@ fn scenario(case: Case) -> TestResult {
                 item_fence: Some(fence.item_fence()),
             };
             let command_id = admitted.continuity.next_command_id;
-            if matches!(case, Case::ExactOffering | Case::InterruptedDrop | Case::PrimedDrop | Case::NoReferral) {
+            if matches!(case, Case::ExactOffering | Case::InterruptedDrop | Case::PrimedDrop | Case::NoReferral | Case::RollbackDrop) {
                 let [offering] = place.offerings.as_slice() else {
                     return Err("one source offering".into());
                 };
@@ -329,7 +365,7 @@ fn scenario(case: Case) -> TestResult {
                 let stream = if case == Case::InterruptedDrop {
                     owner.fixture_interrupt_nomads_ritual(drop_command)?;
                     Some(reserve(&owner, &admitted)?)
-                } else if case == Case::NoReferral {
+                } else if matches!(case, Case::NoReferral | Case::RollbackDrop) {
                     Some(reserve(&owner, &admitted)?)
                 } else {
                     None
@@ -338,7 +374,24 @@ fn scenario(case: Case) -> TestResult {
                 if case == Case::ExactOffering {
                     super::journal_inventory::runtime_role(owner.root).await?;
                 }
+                if case == Case::RollbackDrop {
+                    reject_ritual_insert(&h).await?;
+                }
                 let result = route_drop(&owner, &admitted, drop_command, dropped).await?;
+                let (result, stream) = if case == Case::RollbackDrop {
+                    assert!(matches!(result, ItemMoveStep::Disconnect));
+                    assert!(consumed(&h, &place.key).await?.is_empty());
+                    assert_eq!(live_item(&h, SCIMITAR, None).await?, dropped);
+                    assert!(!on_ground(&h, dropped).await?);
+                    drop(stream);
+                    let payload = recover(&owner, &mut admitted, drop_command).await?;
+                    assert_eq!(decode_item_move_result_for(&payload, move_selection()).map_err(debug)?, ItemMoveOutcome::Rejected);
+                    allow_ritual_insert(&h).await?;
+                    let retry = command(admitted.continuity.next_command_id);
+                    (route_drop(&owner, &admitted, retry, dropped).await?, None)
+                } else {
+                    (result, stream)
+                };
                 let original = place.selector.appearance.ok_or("crack")?;
                 if let Some(stream) = stream {
                     assert_eq!(appearance(&owner, CRACK, 1)?, original);
@@ -405,16 +458,49 @@ fn scenario(case: Case) -> TestResult {
                 }
             } else {
                 let [offering] = place.offerings.as_slice() else { return Err("one source offering".into()); };
-                super::quest_world_callbacks_fixtures::input_item(&owner, fence.item_fence(), offering, 62, true).await?;
+                let source = Offering { position: Position { x: start.0, y: start.1, floor: CRACK.floor }, ..offering.clone() };
+                let from_ground = case == Case::UnpublishedDrop;
+                super::quest_world_callbacks_fixtures::input_item(&owner, fence.item_fence(), &source, 62, !from_ground).await?;
                 let scimitar = live_item(&h, SCIMITAR, None).await?;
-                assert!(matches!(route_drop(&owner, &admitted, command(10_000), scimitar).await?,
-                    ItemMoveStep::Result(ItemMoveOutcome::Moved, _)));
+                let mut observer = crate::gameplay_transport::world_map::SessionMapView::default();
+                let mut map_items = SessionItemView::resume(Default::default()).with_map_view();
+                if from_ground {
+                    assert!(on_ground(&h, scimitar).await?);
+                    owner.observe_world_map(deps.actor, &mut observer, &mut map_items).await
+                        .ok_or("source ground view")?.map_err(debug)?;
+                    assert!(map_items.table().handle(&ItemKey::Instance(scimitar)).is_some());
+                    owner.fixture_interrupt_nomads_ritual(command(10_000))?;
+                }
+                let drop_result = route_drop(&owner, &admitted, command(10_000), scimitar).await?;
+                if from_ground {
+                    assert!(matches!(drop_result, ItemMoveStep::Disconnect));
+                    assert_eq!(appearance(&owner, CRACK, 1)?, 6298);
+                } else {
+                    assert!(matches!(drop_result, ItemMoveStep::Result(ItemMoveOutcome::Moved, _)));
+                }
+                let mut pouring_player = admitted;
+                let peer = matches!(case, Case::UnpublishedDrop | Case::IneligiblePour);
+                if peer {
+                    let position = (WATER.x - 1..=WATER.x + 1).flat_map(|x|
+                        (WATER.y - 1..=WATER.y + 1).map(move |y| TilePos { x, y, floor: WATER.floor }))
+                        .find(|pos| (pos.x, pos.y) != start && (pos.x, pos.y) != (WATER.x, WATER.y)
+                            && world.enterable(*pos)).ok_or("peer water neighbour")?;
+                    pouring_player = admit_peer(&h, &owner, admitted, position).await?;
+                    if from_ground {
+                        super::rottin_rewards_fixtures::seed_tracks(&h, &owner, &pouring_player,
+                            &[(&place.storage[0].track, place.storage[0].minimum)]).await?;
+                    }
+                }
+                let pouring_actor = pouring_player.runtime_actor.ok_or("pouring actor")?;
+                let flask_fence = pouring_player.item_fence.ok_or("flask fence")?;
                 super::quest_world_callbacks_fixtures::input_item(
-                    &owner, fence.item_fence(), &Offering { position: CRACK, item: FLASK.into(), count: 1 }, 63, true,
+                    &owner, flask_fence, &Offering { position: CRACK, item: FLASK.into(), count: 1 }, 63, true,
                 ).await?;
                 let flask = live_item(&h, FLASK, None).await?;
                 let map = owner.bundle_map().ok_or("map")?;
-                assert_eq!(appearance(&owner, CRACK, 1)?, primed);
+                if !from_ground {
+                    assert_eq!(appearance(&owner, CRACK, 1)?, primed);
+                }
                 let mut neighbours = Vec::new();
                 for x in WATER.x - 1..=WATER.x + 1 {
                     for y in WATER.y - 1..=WATER.y + 1 {
@@ -436,14 +522,15 @@ fn scenario(case: Case) -> TestResult {
                 }
                 for (i, pos) in neighbours.into_iter().enumerate() {
                     let destination = MovementLocalPosition { x: i32::from(pos.x), y: i32::from(pos.y), floor: -i16::from(pos.floor) };
-                    let previous = owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position();
-                    if previous != destination {
-                        super::qengine_kill_stories_fixtures::move_actor(&owner, deps.actor, destination).await?;
+                    let previous = owner.runtime.lock().await.read_actor_position(pouring_actor).map_err(debug)?.position();
+                    if !peer && previous != destination {
+                        super::qengine_kill_stories_fixtures::move_actor(&owner, pouring_actor, destination).await?;
                     }
-                    let pour = command(command_id + u64::try_from(i)?);
+                    let pour = UseCommand { game_session_id: pouring_player.game_session_id,
+                        command_id: command_id + u64::try_from(i)?, item_fence: Some(flask_fence) };
                     ready(&owner).await?;
                     owner.root.commit_item_fluid(
-                        owner.character, owner.holder, fence.item_fence(),
+                        owner.character, owner.holder, flask_fence,
                         ItemFluidRequest {
                             command_id: 20_000 + u64::try_from(i)?,
                             transaction_id: crate::operator_files::uuid_v7()?,
@@ -463,9 +550,12 @@ fn scenario(case: Case) -> TestResult {
                     };
                     let mountain_key = key(ENTRANCE, 1)?;
                     let mountain_revision = map.facts.object_revision(mountain_key);
-                    let stream = if case == Case::InterruptedPour {
+                    let stream = if matches!(case, Case::InterruptedPour | Case::BundleRestore) {
                         owner.fixture_interrupt_nomads_ritual(pour)?;
-                        Some(reserve(&owner, &admitted)?)
+                        Some(reserve(&owner, &pouring_player)?)
+                    } else if case == Case::RollbackPour {
+                        reject_ritual_insert(&h).await?;
+                        Some(reserve(&owner, &pouring_player)?)
                     } else {
                         None
                     };
@@ -475,14 +565,41 @@ fn scenario(case: Case) -> TestResult {
                         target: UseTarget::Item(handle), use_with: None,
                         use_with_map_item: Some(MapUseTarget::Object(target)), use_with_position: None,
                     }).map_err(debug)?;
-                    let frame = oteryn_protocol_oteryn::encode_client_command(admitted.continuity.connection_generation,
+                    let frame = oteryn_protocol_oteryn::encode_client_command(pouring_player.continuity.connection_generation,
                         &oteryn_protocol_oteryn::ClientCommandValue { command_id: pour.command_id,
                             command_type: use_wire::COMMAND_TYPE_USE_INTENT, payload: &body })?;
+                    let permit = if case == Case::BusyLane {
+                        Some(owner.spell_lane_permit().await.ok_or("held spell lane")?)
+                    } else { None };
                     let result = if case == Case::ExpiredCrack {
-                        pour_after_crack_expired(&h, &owner, &mut admitted, &frame, &mut items, flask).await?
+                        pour_after_crack_expired(&h, &owner, &mut pouring_player, &frame, &mut items, flask).await?
                     } else {
-                        test_use_frame(&owner, &mut admitted, &frame, &mut items).await
+                        test_use_frame(&owner, &mut pouring_player, &frame, &mut items).await
                     };
+                    drop(permit);
+                    if matches!(case, Case::RollbackPour | Case::BusyLane) {
+                        if case == Case::RollbackPour {
+                            assert!(result.is_none());
+                            drop(stream);
+                            let payload = recover(&owner, &mut pouring_player, pour).await?;
+                            assert_eq!(use_wire::decode_use_result(&payload).map_err(debug)?, UseDisposition::Rejected);
+                            allow_ritual_insert(&h).await?;
+                        } else {
+                            assert_eq!(result.ok_or("busy lane result")?.disposition, UseDisposition::Exhausted);
+                        }
+                        assert_eq!(fluid_transitions(&h, pour).await?, 0);
+                        assert_eq!(appearance(&owner, ENTRANCE, 1)?, mountain);
+                        let next = UseCommand { command_id: pour.command_id + 1, ..pour };
+                        let frame = oteryn_protocol_oteryn::encode_client_command(pouring_player.continuity.connection_generation,
+                            &oteryn_protocol_oteryn::ClientCommandValue { command_id: next.command_id,
+                                command_type: use_wire::COMMAND_TYPE_USE_INTENT, payload: &body })?;
+                        ready(&owner).await?;
+                        assert_eq!(test_use_frame(&owner, &mut pouring_player, &frame, &mut items).await.ok_or("pour retry")?.disposition,
+                            UseDisposition::Committed);
+                        assert_eq!(fluid_transitions(&h, next).await?, 1);
+                        assert_eq!(appearance(&owner, ENTRANCE, 1)?, opened);
+                        continue;
+                    }
                     if let Some(stream) = stream {
                         assert!(result.is_none(), "the interrupted pour has no terminal result");
                         assert_eq!(appearance(&owner, ENTRANCE, 1)?, mountain);
@@ -491,10 +608,20 @@ fn scenario(case: Case) -> TestResult {
                         // The recovery result also survives disappearance of the optional splash.
                         sqlx::query("DELETE FROM game_item_fluid_splashes").execute(&h.pool).await?;
                         drop(stream);
-                        let payload = recover(&owner, &mut admitted, pour).await?;
+                        if case == Case::BundleRestore {
+                            // Both committed appearances are missing from the map image, as at bundle boot.
+                            let crack_key = key(CRACK, 1)?;
+                            assert!(map.facts.transform_movement_item(crack_key, 6298));
+                            assert_delayed_bundle_projection(&h, &owner, pouring_actor).await?;
+                            assert_eq!(appearance(&owner, CRACK, 1)?, primed);
+                            assert_eq!(appearance(&owner, ENTRANCE, 1)?, opened);
+                            let remaining = map.facts.next_movement_decay_time().ok_or("restored timer")?;
+                            assert!(remaining > owner.owner_now().get());
+                        }
+                        let payload = recover(&owner, &mut pouring_player, pour).await?;
                         assert_eq!(use_wire::decode_use_result(&payload).map_err(debug)?, UseDisposition::Committed);
                         items.as_mut().ok_or("USE item view")?.map_view(&[], |_| Ok(())).map_err(debug)?;
-                        assert_eq!(test_use_frame(&owner, &mut admitted, &frame, &mut items).await.ok_or("durable USE replay")?.disposition,
+                        assert_eq!(test_use_frame(&owner, &mut pouring_player, &frame, &mut items).await.ok_or("durable USE replay")?.disposition,
                             UseDisposition::Committed);
                     } else if case == Case::ExpiredCrack {
                         assert_eq!(result.ok_or("expiry USE result")?.disposition, UseDisposition::NothingToUse);
@@ -504,6 +631,17 @@ fn scenario(case: Case) -> TestResult {
                         continue;
                     } else {
                         assert_eq!(result.ok_or("routed USE result")?.disposition, UseDisposition::Committed);
+                    }
+                    if case == Case::IneligiblePour {
+                        assert_eq!(appearance(&owner, ENTRANCE, 1)?, mountain);
+                        assert_eq!(fluid_transitions(&h, pour).await?, 1);
+                        assert_eq!(progress(&h, &open.storage[1].track).await?, 0);
+                        continue;
+                    }
+                    if from_ground {
+                        owner.observe_world_map(deps.actor, &mut observer, &mut map_items).await
+                            .ok_or("reconciled ground view")?.map_err(debug)?;
+                        assert!(map_items.table().handle(&ItemKey::Instance(scimitar)).is_none());
                     }
                     assert_eq!(appearance(&owner, ENTRANCE, 1)?, opened, "pour from {pos:?}");
                     assert_eq!(map.facts.object_revision(mountain_key), mountain_revision + u64::from(case != Case::OpenPour || i == 0));
@@ -541,7 +679,7 @@ async fn admit_peer(
     let (session, operation) = super::activity_deadline_paging_fixtures::admit_created_member_with_operation(
         h, &source.evidence, 0, character,
     ).await?;
-    let fence = owner.current_quest_fence(session).await.map_err(|()| "peer fence")?.ok_or("peer fence")?;
+    let fence = fixture_fence(owner, session).await?;
     let actor = {
         let mut runtime = owner.runtime.lock().await;
         let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
@@ -724,6 +862,78 @@ async fn live_item(
 async fn fluid_transitions(h: &Harness, command: UseCommand) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT count(*) FROM game_item_fluid_transitions WHERE command_id=$1::text::numeric AND fluid_before=$2 AND fluid_after=0")
         .bind(command.command_id.to_string()).bind(WATER_SUBTYPE).fetch_one(&h.pool).await?)
+}
+
+async fn assert_delayed_bundle_projection(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+) -> TestResult {
+    let mut blocker = h.pool.begin().await?;
+    let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()").fetch_one(&mut *blocker).await?;
+    sqlx::query("LOCK TABLE game_nomads_ritual_gestures IN ACCESS EXCLUSIVE MODE")
+        .execute(&mut *blocker).await?;
+    // Give the entrance the next deadline, ahead of the crack's long timer.
+    sqlx::query("UPDATE game_nomads_ritual_gestures SET expires_at=clock_timestamp()+interval '5 seconds'
+                  WHERE fluid_transaction_id IS NOT NULL")
+        .execute(&mut *blocker).await?;
+    let release = async {
+        tokio::time::timeout(std::time::Duration::from_secs(1), async {
+            loop {
+                let waiting: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE $1=ANY(pg_blocking_pids(pid)))")
+                    .bind(pid).fetch_one(&h.pool).await?;
+                if waiting { break Ok::<_, sqlx::Error>(()); }
+                tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+            }
+        }).await??;
+        // This is the induced receipt latency, after PostgreSQL confirms the read is blocked.
+        tokio::time::sleep(std::time::Duration::from_millis(350)).await;
+        blocker.commit().await?;
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let mut view = crate::gameplay_transport::world_map::SessionMapView::default();
+    let mut items = SessionItemView::resume(Default::default()).with_map_view();
+    let (map_update, released) = tokio::join!(owner.observe_world_map(actor, &mut view, &mut items), release);
+    released?;
+    map_update.ok_or("cold bundle map update")?.map_err(debug)?;
+    let map = owner.bundle_map().ok_or("bundle map")?;
+    let timer = map.facts.next_movement_decay_time().ok_or("projected timer")?;
+    let projected = timer.saturating_sub(owner.owner_now().get());
+    let durable: i64 = sqlx::query_scalar(
+        "SELECT (extract(epoch FROM expires_at-clock_timestamp()) * 1000000)::bigint
+         FROM game_nomads_ritual_gestures WHERE fluid_transaction_id IS NOT NULL",
+    ).fetch_one(&h.pool).await?;
+    assert!(projected + 100_000 >= u64::try_from(durable)?,
+        "projection lost part of the still-active durable interval: {projected} vs {durable}");
+    Ok(())
+}
+
+async fn fixture_fence(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: crate::foundation::GameSessionId,
+) -> TestResult<crate::durability::character_progression::CurrentCharacterGameplayFence> {
+    ready(owner).await?;
+    crate::gameplay_transport::AdmissionRetryBudget::for_command(owner.root)
+        .retry_command_guard(async || owner.current_quest_fence_durable(session).await)
+        .await.map_err(debug)?
+        .ok_or_else(|| format!("No durable gameplay fence for session {session:?}").into())
+}
+
+async fn reject_ritual_insert(h: &Harness) -> TestResult {
+    sqlx::raw_sql(
+        "CREATE FUNCTION fixture_reject_ritual() RETURNS trigger LANGUAGE plpgsql AS
+         $$ BEGIN RAISE EXCEPTION 'fixture rollback before ritual commit'; END $$;
+         CREATE TRIGGER fixture_reject_ritual BEFORE INSERT ON game_nomads_ritual_gestures
+         FOR EACH ROW EXECUTE FUNCTION fixture_reject_ritual()",
+    ).execute(&h.pool).await?;
+    Ok(())
+}
+
+async fn allow_ritual_insert(h: &Harness) -> TestResult {
+    sqlx::query("DROP TRIGGER fixture_reject_ritual ON game_nomads_ritual_gestures")
+        .execute(&h.pool).await?;
+    Ok(())
 }
 
 async fn ready(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {

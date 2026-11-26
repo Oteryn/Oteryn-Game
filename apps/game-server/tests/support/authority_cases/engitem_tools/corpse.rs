@@ -127,8 +127,10 @@ pub(super) async fn sample(
         let runtime = &runtime;
         let intent = &intent;
         async move {
+            let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(runtime.binding().runtime_scope())
+                .await.map_err(f::debug)?;
             let proof = QuestCreatureUseProof::read_current_corpse(
-                runtime, actor, initial, command, &callback, intent, body,
+                runtime, actor, initial, command, &callback, intent, body, &permit,
             )
             .ok_or("corpse proof")?;
             let carried = QuestCarriedUse {
@@ -264,8 +266,10 @@ pub(super) async fn explorer_sample(
         let carried = &carried;
         async move {
             let command = command(ordinal)?;
+            let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(runtime.binding().runtime_scope())
+                .await.map_err(f::debug)?;
             let proof = QuestCreatureUseProof::read_current_corpse(
-                runtime, actor, fence, command, &callback, intent, body,
+                runtime, actor, fence, command, &callback, intent, body, &permit,
             ).ok_or("corpse proof")?;
             let weights = Weights(native);
             h.root.commit_fixture_quest_reward(

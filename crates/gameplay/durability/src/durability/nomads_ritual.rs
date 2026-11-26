@@ -34,7 +34,7 @@ pub struct NomadsRitualReceipt {
     pub target: NomadsRitualTarget,
     pub gesture: NomadsRitualGesture,
     pub item: [u8; 16],
-    pub remaining_micros: u64,
+    pub deadline: std::time::Instant,
 }
 
 impl NomadsRitualGesture {
@@ -304,7 +304,10 @@ pub(super) async fn lock_command(
     Ok(())
 }
 
-fn decode_receipt(row: PgRow) -> Result<NomadsRitualReceipt, DurabilityError> {
+fn decode_receipt(
+    row: PgRow,
+    sampled: std::time::Instant,
+) -> Result<NomadsRitualReceipt, DurabilityError> {
     Ok(NomadsRitualReceipt {
         target: NomadsRitualTarget {
             map_digest: row
@@ -325,8 +328,12 @@ fn decode_receipt(row: PgRow) -> Result<NomadsRitualReceipt, DurabilityError> {
             .try_get::<Vec<u8>, _>("item")?
             .try_into()
             .map_err(|_| DurabilityError::InvalidStoredState)?,
-        remaining_micros: u64::try_from(row.try_get::<i64, _>("remaining_micros")?)
-            .map_err(|_| DurabilityError::InvalidStoredState)?,
+        deadline: sampled
+            .checked_add(std::time::Duration::from_micros(
+                u64::try_from(row.try_get::<i64, _>("remaining_micros")?)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+            ))
+            .ok_or(DurabilityError::InvalidStoredState)?,
     })
 }
 
@@ -372,12 +379,46 @@ impl DurabilityRoot {
                         .bind(channel_id.as_bytes().as_slice())
                         .fetch_optional(&mut *tx)
                         .await?;
-                    let receipt = row.map(decode_receipt).transpose()?;
+                    let receipt = row.map(|row| decode_receipt(row, std::time::Instant::now())).transpose()?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(receipt)
                 })
             })
             .await
+    }
+
+    pub async fn read_nomads_fluid_receipt(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        item: [u8; 16],
+    ) -> Result<bool, DurabilityError> {
+        if command.game_session_id() != fence.game_session_id {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_command(&mut tx, command).await?;
+            let committed = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_item_fluid_transitions
+                    WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric
+                      AND character_id=encode($3,'hex')::uuid AND item_instance_id=encode($4,'hex')::uuid
+                      AND fluid_before=$5 AND fluid_after=0)",
+            )
+            .bind(command.game_session_id().as_bytes().as_slice())
+            .bind(command.command_id().get().to_string())
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(item.as_slice())
+            .bind(nomads_ritual::WATER_SUBTYPE)
+            .fetch_one(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(committed)
+        })).await
     }
 
     pub async fn active_nomads_rituals(
@@ -403,12 +444,13 @@ impl DurabilityRoot {
                 let mut tx = begin_semantic_transaction(holder, deadline).await?;
                 assert_recovery_fence(&mut tx, &recovery).await?;
                 let rows = sqlx::query(
-                    "SELECT map_digest,reset_epoch::text,move_transaction_id IS NOT NULL AS drop,
+                    "WITH sampled AS MATERIALIZED (SELECT clock_timestamp() AS at)
+                     SELECT map_digest,reset_epoch::text,move_transaction_id IS NOT NULL AS drop,
                             uuid_send(item_instance_id) AS item,
-                            greatest(0,extract(epoch FROM expires_at-clock_timestamp()) * 1000000)::bigint AS remaining_micros
-                       FROM game_nomads_ritual_gestures
+                            greatest(0,extract(epoch FROM expires_at-sampled.at) * 1000000)::bigint AS remaining_micros
+                       FROM game_nomads_ritual_gestures CROSS JOIN sampled
                       WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid
-                        AND map_digest=$3 AND reset_epoch=$4::text::numeric AND expires_at>clock_timestamp()
+                        AND map_digest=$3 AND reset_epoch=$4::text::numeric AND expires_at>sampled.at
                       ORDER BY (move_transaction_id IS NULL),expires_at DESC LIMIT 2"
                 )
                     .bind(world_id.as_bytes().as_slice())
@@ -416,7 +458,8 @@ impl DurabilityRoot {
                     .bind(target.map_digest.as_slice())
                     .bind(target.reset_epoch.to_string())
                     .fetch_all(&mut *tx).await?;
-                let receipts = rows.into_iter().map(decode_receipt).collect::<Result<_, _>>()?;
+                let sampled = std::time::Instant::now();
+                let receipts = rows.into_iter().map(|row| decode_receipt(row, sampled)).collect::<Result<_, _>>()?;
                 commit_semantic_transaction(tx, deadline).await?;
                 Ok(receipts)
             })).await

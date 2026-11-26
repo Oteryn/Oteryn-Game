@@ -2089,46 +2089,6 @@ impl DurabilityRoot {
             .await
     }
 
-    pub async fn read_nomads_ordinary_drop(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        fence: CurrentCharacterItemFence,
-        command: CommandRef,
-    ) -> Result<bool, DurabilityError> {
-        let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else {
-            return Ok(false);
-        };
-        if command.game_session_id() != fence.game_session_id {
-            return Ok(false);
-        }
-        let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| Box::pin(async move {
-                let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
-                assert_recovery_fence(&mut tx, &recovery).await?;
-                lock_loop_command(&mut tx, command).await?;
-                let moved = sqlx::query_scalar(
-                    "SELECT EXISTS(SELECT 1 FROM game_item_loop_move_receipts r
-                        JOIN game_item_loop_move_lines l USING(transaction_id)
-                       WHERE r.game_session_id=encode($1,'hex')::uuid AND r.command_id=$2::text::numeric
-                         AND r.character_id=encode($3,'hex')::uuid AND r.world_id=encode($4,'hex')::uuid
-                         AND r.channel_id=encode($5,'hex')::uuid AND l.to_kind=3
-                         AND l.to_spatial_position=$6 AND l.definition_family='Item'
-                         AND l.definition_production_key=$7)"
-                )
-                .bind(command.game_session_id().as_bytes().as_slice())
-                .bind(command.command_id().get().to_string())
-                .bind(fence.character_id.as_bytes().as_slice())
-                .bind(world_id.as_bytes().as_slice())
-                .bind(channel_id.as_bytes().as_slice())
-                .bind(super::nomads_ritual::crack_cell().as_slice())
-                .bind(oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual::SCIMITAR)
-                .fetch_one(&mut *tx).await?;
-                super::db::commit_semantic_transaction(tx, deadline).await?;
-                Ok(moved)
-            })).await
-    }
-
     /// Resolve an uncertain ordinary or elemental-arrival move against its exact request.
     /// The command lock waits out an in-flight writer before absence is returned. This
     /// historical read needs the current recovery seal, but no live item or old session

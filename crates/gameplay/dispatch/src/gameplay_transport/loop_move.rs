@@ -1063,6 +1063,12 @@ pub(super) async fn move_loop_item_with_house_capacity(
     house_capacity_v2: bool,
 ) -> LoopMoveResult {
     let refused = LoopMoveResult::Refused;
+    let crack = oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual::CRACK;
+    let nomads_drop = matches!(request.target, LoopTarget::Ground(to)
+            if (to.x, to.y, to.floor) == (i32::from(crack.x), i32::from(crack.y), i16::from(crack.floor)));
+    if nomads_drop {
+        super::nomads_ritual::PendingGesture::Drop.remember(admission, command);
+    }
     // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the move is a key-33
     // writer. `None` is retryable with no side effect while the lane is fenced.
     let Some(mut permit) = admission.spell_lane_permit().await else {
@@ -1314,12 +1320,11 @@ pub(super) async fn move_loop_item_with_house_capacity(
             },
         },
     };
-    let crack = oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual::CRACK;
-    if matches!(&seed_result, Ok(None))
-        && assembly_target.is_none()
-        && matches!(request.target, LoopTarget::Ground(to)
-            if (to.x, to.y, to.floor) == (i32::from(crack.x), i32::from(crack.y), i16::from(crack.floor)))
-    {
+    if matches!(&seed_result, Ok(None)) && assembly_target.is_none() && nomads_drop {
+        admission.states.loop_ground.invalidate();
+        if admission.restore_nomads_rituals(&permit).await.is_err() {
+            return LoopMoveResult::Unknown;
+        }
         let weights = NativeItemWeights(native).with_wheel(admission.premium_coordinator);
         let physical = crate::durability::nomads_ritual::NomadsPhysical::Drop {
             request: &loop_request,
@@ -1347,7 +1352,10 @@ pub(super) async fn move_loop_item_with_house_capacity(
                 return LoopMoveResult::Committed;
             }
             Ok(Some(false) | None) => {} // The ordinary drop still owns its typed result.
-            Err(()) => return LoopMoveResult::Unknown,
+            Err(()) => {
+                admission.states.loop_ground.invalidate();
+                return LoopMoveResult::Unknown;
+            }
         }
     }
     let committed = match seed_result {

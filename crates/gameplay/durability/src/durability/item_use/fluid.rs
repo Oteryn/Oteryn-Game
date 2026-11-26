@@ -185,6 +185,13 @@ impl DurabilityRoot {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
+                    if splash.as_ref().is_some_and(|splash| super::super::nomads_ritual::is_water_placement(&splash.placement)) {
+                        let id = crate::foundation::CommandId::new(request.command_id)
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
+                        super::super::nomads_ritual::lock_command(
+                            &mut tx, crate::foundation::CommandRef::new(fence.game_session_id, id),
+                        ).await?;
+                    }
                     match assert_item_only_fence(&mut tx, &fence, &node).await? {
                         Ok(_) => {}
                         Err(CharacterProgressionError::Unavailable(error)) => return Err(error),

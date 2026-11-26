@@ -24,7 +24,7 @@ pub(super) async fn observe(
     }
     // The lane serializes the actor's movement and Ground projection. It is not a
     // durable browse lock: each item move independently proves custody and its fence.
-    let _permit = admission.spell_lane_permit().await?;
+    let permit = admission.spell_lane_permit().await?;
     if !current(admission, fence).await? { return Some(ContainerObservation::Gone); }
     if admission.states.spell_states.lock().await.is_dead(actor) {
         return Some(ContainerObservation::Gone);
@@ -45,6 +45,9 @@ pub(super) async fn observe(
     };
     if map.overlay.base().tile(pos.x, pos.y, pos.floor).is_none() {
         return Some(ContainerObservation::Gone);
+    }
+    if super::nomads_ritual::near_nomads(crate::foundation::MovementLocalPosition { x, y, floor }) {
+        admission.restore_nomads_rituals(&permit).await.ok()?;
     }
     let native = admission.active_generation?.native_gameplay()?;
     let ground = super::loop_move::loop_ground(admission, map.overlay.base(), Some(index)).await?;
