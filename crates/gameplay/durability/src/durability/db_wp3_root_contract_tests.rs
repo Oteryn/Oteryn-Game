@@ -491,7 +491,7 @@ fn expired_commit_deadline_is_known_uncommitted_and_does_not_send_commit()
         .enable_all()
         .build()?;
     let mut commit_sent = false;
-    let result = runtime.block_on(commit_semantic_transaction_by(Instant::now(), || {
+    let result = runtime.block_on(commit_semantic_transaction_by(Instant::now(), false, || {
         commit_sent = true;
         std::future::ready(Ok(()))
     }));

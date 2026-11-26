@@ -174,6 +174,8 @@ pub mod world_reset;
 // End sorted module declarations.
 
 pub use admission_journal::AdmissionReconnectJournal;
+#[cfg(any(test, feature = "test-support"))]
+pub use db::with_stalled_commit_response;
 pub use db::{
     DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig, ForegroundDemand, HolderWaiter,
     IssuedSemanticPass, ROOT_RECOVERY_WINDOW, with_holder_trace,
