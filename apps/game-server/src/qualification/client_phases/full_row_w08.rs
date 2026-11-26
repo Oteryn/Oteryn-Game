@@ -22,6 +22,7 @@ use oteryn_protocol_oteryn::animus_mastery as wire;
 use std::collections::BTreeSet;
 
 const ACTIONS: &[&str] = &[
+    "seeded-prerequisites",
     "initial-query",
     "invalid-query-refused",
     "completion-observed",
@@ -95,7 +96,11 @@ fn evidence_token(value: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(90),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     match result {
         Ok(Ok(())) => {}
         Ok(Err(error)) => row.fail("journey", error),
@@ -134,7 +139,56 @@ async fn page(client: &mut DevClientSession) -> TestResult<wire::AnimusMasteries
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xc8).await?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W08_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    character_prep::declare_seeded(
+        "W08",
+        "knight-level=100,rat-soul-core=1",
+        "ordinary leveling and core acquisition are outside the mastery scenario",
+    );
+    let mut setup = connect_character(clients, 0xc8, 0).await?;
+    let setup_session = setup.join_snapshot().game_session_id;
+    request_fixture_control_at(
+        "NODE_BOOT_CONTROL_SOCKET",
+        uuid_text(setup_session.as_bytes()),
+        "--profile",
+        "w08-soulpit".into(),
+    )
+    .await?;
+    if setup.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("W08 fixture setup logout refused".into());
+    }
+    drop(setup);
+    let mut client = connect_character(clients, 0xc9, 0).await?;
+    if client.join_snapshot().game_session_id == setup_session {
+        return Err("W08 fixture setup reused its admission".into());
+    }
+    let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        "knight",
+        100,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    )
+    .ok_or("W08 Knight vitals unavailable")?;
+    let vitals = client.actor_vitals().ok_or("W08 admitted without vitals")?;
+    if (vitals.max_health, vitals.max_mana) != (max_health, max_mana) {
+        return Err(format!("W08 seeded Knight vitals differ: {vitals:?}").into());
+    }
+    let core = provisioning::item_reference(&provisioning::item_index()?, 47398)?;
+    let core_count: u64 = client
+        .inventory()
+        .ok_or("W08 admitted without inventory")?
+        .entries
+        .iter()
+        .filter(|entry| entry.item_definition_ref == core)
+        .map(|entry| u64::from(entry.count.get()))
+        .sum();
+    if core_count != 1 {
+        return Err(format!("W08 expected one Rat Soul Core, found {core_count}").into());
+    }
+    row.pass("seeded-prerequisites", (max_health, max_mana, core_count));
     let before = page(&mut client).await?;
     row.pass("initial-query", (&before.total, &before.keys));
 
@@ -168,7 +222,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         row.fail("fresh-admission-persistence", "logout-reply-not-accepted");
         return Ok(());
     }
-    let mut fresh = connect_world(clients, 0xc9).await?;
+    let mut fresh = connect_character(clients, 0xca, 0).await?;
     let durable = page(&mut fresh).await?;
     if durable != before {
         row.fail(
