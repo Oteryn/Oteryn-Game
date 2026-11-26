@@ -68,7 +68,7 @@ pub(super) enum Case {
     EngencTraining,
     IntenseHealingOwnSummon,
     ParalyzeMonster,
-    ParalyzePlayer,
+    ParalyzePlayer { open_pvp: bool },
     Replay,
     Protection,
     TooFar,
@@ -249,8 +249,8 @@ async fn client_cast(
             .await?;
             send_use(client, first_id, &intent, Expected::Replay).await?;
         }
-        Case::ParalyzeMonster | Case::ParalyzePlayer => {
-            if case == Case::ParalyzePlayer {
+        Case::ParalyzeMonster | Case::ParalyzePlayer { .. } => {
+            if matches!(case, Case::ParalyzePlayer { .. }) {
                 let mut modes = oteryn_protocol_oteryn::pvp_expert::ExpertFightModes::default();
                 modes.modes.secure = false;
                 modes.expert = oteryn_protocol_oteryn::pvp_expert::ExpertMode::RedFist;
@@ -261,14 +261,16 @@ async fn client_cast(
                     oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
                 );
             }
-            send_use(
-                client,
-                first_id,
-                &intent,
-                Expected::Result(UseDisposition::Committed),
-            )
-            .await?;
-            super::paralyze_rune_fixtures::assert_paralyzed(owner, victim, case).await?;
+            let refused = matches!(case, Case::ParalyzePlayer { open_pvp: false });
+            let expected = if refused {
+                UseDisposition::TargetIllegal
+            } else {
+                UseDisposition::Committed
+            };
+            send_use(client, first_id, &intent, Expected::Result(expected)).await?;
+            if !refused {
+                super::paralyze_rune_fixtures::assert_paralyzed(owner, victim, case).await?;
+            }
         }
         Case::Replay => {
             let bad = UseIntent {
@@ -537,12 +539,12 @@ async fn serve_cast(
 pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     let trained_caster = matches!(
         case,
-        Case::ParalyzeMonster | Case::ParalyzePlayer | Case::IntenseHealingOwnSummon
+        Case::ParalyzeMonster | Case::ParalyzePlayer { .. } | Case::IntenseHealingOwnSummon
     );
     let harness =
         Harness::create_with_admission_seed(admin, "rune_bridge", !trained_caster, false).await?;
     prepare_current_session(&harness).await?;
-    if case == Case::ParalyzePlayer {
+    if matches!(case, Case::ParalyzePlayer { .. }) {
         harness.seed_pvp_target().await?;
         super::appearance_change_postgres_fixtures::observer_visibility_tests::admit(&harness).await?;
     }
@@ -643,7 +645,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         runtime
             .initialize_first_entry_position(actor)
             .map_err(debug)?;
-        if case != Case::ParalyzePlayer {
+        if !matches!(case, Case::ParalyzePlayer { .. }) {
             runtime
                 .realize_native_qualification_spawn(channel_pin, target_key, target_position)
                 .map_err(debug)?;
@@ -664,7 +666,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     let mut owner = dependencies.owner(&harness, &authority);
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(Some(&room), Some(&room));
-    if case == Case::ParalyzePlayer {
+    if matches!(case, Case::ParalyzePlayer { .. }) {
         victim = Some(super::paralyze_rune_fixtures::initialize_player(&dependencies, &owner).await?);
     }
     let victim = victim.ok_or("rune target")?;
@@ -782,7 +784,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         "oteryn:item.tibia.i3152"
     } else if case == Case::EngencTraining {
         "oteryn:item.tibia.i17512"
-    } else if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
+    } else if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer { .. }) {
         "oteryn:item.tibia.i3165"
     } else {
         "oteryn:item.tibia.i3174"
@@ -814,7 +816,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         drop(seal);
         return harness.cleanup().await;
     }
-    if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
+    if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer { .. }) {
         super::paralyze_rune_fixtures::prepare_target(&owner, &harness, victim, case).await?;
         tokio::time::timeout(
             std::time::Duration::from_secs(30),
@@ -823,11 +825,12 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         .await??;
         let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
-        assert_eq!(quantity, 2, "the real rune owner consumes one charge");
-        if case == Case::ParalyzePlayer {
+        let refused = matches!(case, Case::ParalyzePlayer { open_pvp: false });
+        assert_eq!(quantity, if refused { 3 } else { 2 });
+        if matches!(case, Case::ParalyzePlayer { .. }) {
             let harm: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pvp_harm WHERE game_session_id=encode($1,'hex')::uuid AND damage=0")
                 .bind(id(50).as_slice()).fetch_one(&harness.pool).await?;
-            assert_eq!(harm, 1, "paralysis records condition-only PvP aggression");
+            assert_eq!(harm, i64::from(!refused), "only a legal cast records PvP aggression");
         }
         drop(owner);
         drop(authority);

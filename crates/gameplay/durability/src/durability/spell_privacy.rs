@@ -207,9 +207,8 @@ async fn read_exiva_decision_with_roles_in_transaction(
 ) -> Result<ExivaDecision, SpellItemError> {
     check_transaction(tx, authority).await?;
     let source = authority.character_id_bytes();
-    // Source and target security rows are read in UUID order, sharing actual
-    // admission's transaction locks. The preference writer never changes roles.
-    let rows=sqlx::query("SELECT uuid_send(character_id) AS character,staff_access FROM game_character_spell_access WHERE character_id=ANY(ARRAY[encode($1,'hex')::uuid,encode($2,'hex')::uuid]) ORDER BY character_id FOR SHARE")
+    // The control-owned read locks the projection through this transaction.
+    let rows=sqlx::query("SELECT uuid_send(character_id) AS character,staff_access FROM game_exiva_lock_staff_access(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
         .bind(source.as_slice()).bind(target.as_slice()).fetch_all(&mut **tx).await?;
     let mut caster_staff = None;
     let mut target_staff = None;

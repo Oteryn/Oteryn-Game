@@ -37,6 +37,8 @@ use oteryn_protocol_oteryn::{
 
 use std::time::Duration;
 
+pub(super) const RUNTIME_STAFF_ACCESS: u8 = 17;
+
 pub(super) fn scenario(case: u8) -> TestResult {
     scenario_in_world(case, None)
 }
@@ -294,6 +296,15 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
+    if case == RUNTIME_STAFF_ACCESS {
+        let digest = native.source_digest();
+        allow_location(&owner, target_session, digest, true).await?;
+        verify_runtime_staff_access(&h, &owner, session, target_session, digest).await?;
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
     if case == 255 {
         use oteryn_protocol_oteryn::actor_spell_v2 as wire;
         admitted.continuity.selected_capabilities =
@@ -602,6 +613,65 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             .ok_or("unequipped")?;
         assert!(vitals.health < 100, "unequipped healing {vitals:?}");
     }
+    Ok(())
+}
+
+async fn verify_runtime_staff_access(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    target_session: GameSessionId,
+    digest: [u8; 32],
+) -> TestResult {
+    use crate::durability::fresh_admission::FreshAdmissionStore;
+    use crate::durability::spell_item_transaction as items;
+    use crate::durability::spell_privacy::{ExivaDecision, read_exiva_decision_with_current_groups_in_transaction};
+
+    sqlx::query("INSERT INTO game_character_spell_access(character_id,staff_access,source_policy,source_policy_digest) VALUES(encode($1,'hex')::uuid,false,'fixture',$3),(encode($2,'hex')::uuid,true,'fixture',$3)")
+        .bind(id(41).as_slice()).bind(id(101).as_slice()).bind([1_u8; 32].as_slice()).execute(&h.pool).await?;
+
+    let fence = current_fence(owner, session).await?.item_fence();
+    let permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
+    let command = CommandRef::new(session, CommandId::new(1).map_err(debug)?);
+    let mut context = (owner, permit);
+    owner
+        .root
+        .try_issue_semantic_pass()?
+        .run_with_context(&mut context, move |holder, deadline, (owner, permit)| {
+            Box::pin(async move {
+                let mut tx = items::begin_spell_owner_transaction(holder, deadline).await?;
+                let authority = items::assert_spell_item_authority_in_transaction(
+                    &mut tx, permit, owner.root, owner.character, owner.holder, &fence, command,
+                    digest,
+                )
+                .await
+                .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+                let admissions = FreshAdmissionStore::from_root(owner.root.clone());
+                let result = read_exiva_decision_with_current_groups_in_transaction(
+                    &mut tx, &authority, id(101), &admissions, target_session,
+                )
+                .await;
+                assert!(matches!(result, Ok(ExivaDecision::HiddenStaff)), "{result:?}");
+                let can_update: bool = sqlx::query_scalar(
+                    "SELECT has_any_column_privilege(current_user,'game_character_spell_access','UPDATE')",
+                )
+                .fetch_one(&mut *tx)
+                .await?;
+                assert!(!can_update);
+                let projection_locked: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM pg_locks WHERE pid=pg_backend_pid() \
+                     AND relation='game_character_spell_access'::regclass \
+                     AND mode='ShareLock' AND granted)",
+                )
+                .fetch_one(&mut *tx)
+                .await?;
+                assert!(projection_locked, "control writes must wait until the cast ends");
+                tx.rollback().await?;
+                Ok(())
+            })
+        })
+        .await?;
     Ok(())
 }
 

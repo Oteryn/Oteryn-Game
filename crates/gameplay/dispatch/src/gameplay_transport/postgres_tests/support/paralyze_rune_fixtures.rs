@@ -116,7 +116,7 @@ pub(super) async fn prepare_target(
     let now = owner.owner_now();
     let mut runtime = owner.runtime.lock().await;
     let actor = target(&runtime, victim)?;
-    if case == Case::ParalyzePlayer {
+    if matches!(case, Case::ParalyzePlayer { .. }) {
         let mut states = owner.states.spell_states.lock().await;
         let session = GameSessionId::decode(&id(110)).map_err(debug)?;
         let state = states
@@ -145,16 +145,30 @@ pub(super) async fn prepare_target(
             .map_err(debug)?;
     }
     drop(runtime);
-    if case == Case::ParalyzePlayer {
+    if matches!(case, Case::ParalyzePlayer { .. }) {
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
-            .bind(id(101).as_slice()).execute(&harness.pool).await?;
+            .bind(id(101).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i3350','definition-r1',1,1,encode($1,'hex')::uuid)")
+            .bind(id(112).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,6,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
+            .bind(id(101).as_slice()).bind(id(42).as_slice()).bind(id(112).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
     }
-    // Open PvP permits the independently admitted player target, without war membership.
+    // Optional PvP refuses the same target in the absence of a war.
+    let world_type: i16 = if matches!(case, Case::ParalyzePlayer { open_pvp: false }) {
+        1
+    } else {
+        2
+    };
     sqlx::query("INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'policy-1')")
         .bind(id(42).as_slice()).execute(&harness.pool).await?;
-    sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'paralyze-fixture')")
-        .bind(id(42).as_slice()).execute(&harness.pool).await?;
-    if case == Case::ParalyzePlayer {
+    sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',$2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'paralyze-fixture')")
+        .bind(id(42).as_slice()).bind(world_type).execute(&harness.pool).await?;
+    if matches!(case, Case::ParalyzePlayer { .. }) {
         tokio::time::timeout(std::time::Duration::from_secs(15), async {
             loop {
                 let ready: bool = sqlx::query_scalar("SELECT r.authorization_decided_at<=floor(extract(epoch FROM clock_timestamp()))::bigint-10 FROM game_durability_fresh_admission_receipts r JOIN game_durability_reconnect_sessions s ON COALESCE(s.fresh_replay_key,s.initial_fresh_replay_key)=r.replay_key WHERE s.game_session_id=encode($1,'hex')::uuid")
@@ -202,7 +216,7 @@ pub(super) async fn assert_paralyzed(
 ) -> TestResult {
     let runtime = owner.runtime.lock().await;
     let actor = target(&runtime, victim)?;
-    if case == Case::ParalyzePlayer {
+    if matches!(case, Case::ParalyzePlayer { .. }) {
         let states = owner.states.spell_states.lock().await;
         let state = states
             .get(

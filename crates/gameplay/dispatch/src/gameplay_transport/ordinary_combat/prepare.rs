@@ -1,5 +1,6 @@
 //! Source, spatial, legality and payment phases of ordinary cast preparation.
 use super::*;
+use crate::gameplay_transport::pvp_live;
 
 struct SpatialPhase {
     position: MovementPositionSnapshot,
@@ -708,14 +709,23 @@ async fn qualify_targets(
             .iter()
             .all(|a| a.chain.is_none());
     if basic_pvp {
+        let direct_damage = profile
+            .dependencies
+            .effects
+            .iter()
+            .any(|effect| effect.operation == "damage");
         for (target, _, _) in players {
             if *target == actor {
                 continue;
             }
-            if let Ok(facts) = crate::gameplay_transport::pvp_live::legal_player(
+            if let Ok(facts) = pvp_live::legal_player(
                 tx, root, authority, runtime, states, room, objects, actor, *target, pvp_modes,
             )
             .await
+                && (!direct_damage
+                    || pvp_live::require_unarmoured_damage_target(tx, &facts)
+                        .await
+                        .is_ok())
             {
                 pvp_targets.push((*target, facts.target_black));
             }

@@ -30,5 +30,11 @@ fn parameter_spell_action_bar_named_target_real_session_postgres() -> TestResult
     scenario(255)
 }
 
+#[test]
+fn exiva_runtime_role_reads_locked_staff_access_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    scenario(super::parameter_spell_fixtures::RUNTIME_STAFF_ACCESS)
+}
+
 #[path = "parameter_spell/exiva_settings.rs"]
 mod exiva_settings;

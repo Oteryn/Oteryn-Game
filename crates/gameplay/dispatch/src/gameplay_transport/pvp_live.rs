@@ -49,7 +49,7 @@ pub(super) async fn legal_player_field(
     destination: crate::foundation::MovementLocalPosition,
 ) -> Result<storage::LivePvpFacts, SpellCastDisposition> {
     // Fields bypass secure mode, but retain current World, protection, relation,
-    // skull, tile, equipment and identity qualification on every application.
+    // skull, tile and identity qualification on every application.
     let policy = crate::durability::spell_field_policy::read_world_field_policy_in_transaction(
         tx,
         root,
@@ -182,14 +182,22 @@ async fn legal_player_at(
         marked: facts.marked,
     };
     check_pvp_legality(facts.world, &a, &t, &facts.relation).map_err(|_| reject())?;
-    if field_destination.is_none()
-        && !storage::unarmoured_pvp_target_in_transaction(tx, &facts)
-            .await
-            .map_err(|_| reject())?
-    {
-        return Err(reject());
-    }
     Ok(facts)
+}
+
+/// Direct damage currently supports targets whose equipment needs no mitigation.
+pub(super) async fn require_unarmoured_damage_target(
+    tx: &mut Transaction<'_, Postgres>,
+    facts: &storage::LivePvpFacts,
+) -> Result<(), SpellCastDisposition> {
+    if storage::unarmoured_pvp_target_in_transaction(tx, facts)
+        .await
+        .map_err(|_| SpellCastDisposition::TargetIllegal)?
+    {
+        Ok(())
+    } else {
+        Err(SpellCastDisposition::TargetIllegal)
+    }
 }
 
 /// Exact staged swing retained across a cancelled or unknown SQL COMMIT.
@@ -294,9 +302,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &mut tx, owner.root, &authority, runtime, states, room, objects, actor, target,
                     modes,
                 )
-                .await
-                .ok()
-                .map(|f| f.target_black);
+                .await;
+                let result = if let Ok(facts) = result
+                    && require_unarmoured_damage_target(&mut tx, &facts)
+                        .await
+                        .is_ok()
+                {
+                    Some(facts.target_black)
+                } else {
+                    None
+                };
                 tx.rollback().await?;
                 Ok(result)
             })
@@ -406,6 +421,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
+                    require_unarmoured_damage_target(&mut tx, &facts)
+                        .await
+                        .map_err(|_| DurabilityError::Unavailable)?;
                     if facts.target_black != expected_black {
                         return Err(DurabilityError::Unavailable);
                     }
@@ -601,6 +619,9 @@ pub(super) async fn record_spell_harm(
             modes,
         )
         .await?;
+        if !paralysis {
+            require_unarmoured_damage_target(tx, &facts).await?;
+        }
         let capture: serde_json::Value =
             serde_json::from_slice(&batch.binding).map_err(|_| SpellCastDisposition::Rejected)?;
         let expected = serde_json::json!([
