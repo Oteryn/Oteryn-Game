@@ -232,6 +232,20 @@ async fn owned_containers(
     ))
 }
 
+async fn require_retired_donor(database: &mut sqlx::PgConnection, item: &[u8]) -> TestResult {
+    let state: (i16, i64) = sqlx::query_as(
+        "SELECT lifecycle, quantity FROM game_item_instances
+         WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(item)
+    .fetch_one(database)
+    .await?;
+    if state != (2, 0) {
+        return Err(format!("I07 merge donor remains live or nonempty: {state:?}").into());
+    }
+    Ok(())
+}
+
 async fn require_routes(
     database: &mut sqlx::PgConnection,
     character: &[u8],
@@ -790,6 +804,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("I07 expected one starter food stack containing exactly one item".into());
     }
     stack.quantity += other.quantity;
+    require_retired_donor(&mut database, &other.item).await?;
     require_placements(
         &mut database,
         Storage::Corpse,
@@ -896,6 +911,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     .await?;
     require_filters(&mut database, character, false, &expected_filters).await?;
     require_routes(&mut database, character, &pouch, false, false).await?;
+    require_retired_donor(&mut database, &other.item).await?;
+    evidence("I07_MERGE_DONOR lifecycle=retired quantity=0 after_relog=true");
     let inventory = readback
         .inventory()
         .ok_or("I07 fresh client inventory snapshot absent")?;
