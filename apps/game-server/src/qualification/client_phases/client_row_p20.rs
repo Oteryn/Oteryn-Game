@@ -264,7 +264,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+    // The approach from Thais takes over 100 steps paced by the server's receipts.
+    match verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
         .await
     {
         Ok(Ok(expected)) => evidence(&format!(
