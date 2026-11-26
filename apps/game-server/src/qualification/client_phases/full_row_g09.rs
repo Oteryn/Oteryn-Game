@@ -460,10 +460,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let [(again, 1)] = durable_inventory.as_slice() else {
         return Err("step=fresh observed=expected-exactly-one-durable-watch".into());
     };
-    let result = verdict::observe(read_time(&mut fresh, *again)).await;
+    let second_minute = read_time(&mut fresh, *again)
+        .await
+        .map_err(|error| verdict::context("step=fresh-clock".into(), error))?;
     let after = carried(&fresh, definition);
     logout(&mut fresh).await?;
-    if result? == first_minute {
+    if second_minute == first_minute {
         return Err("step=fresh observed=clock-did-not-advance".into());
     }
     if after != durable_inventory {
