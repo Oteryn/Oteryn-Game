@@ -1,20 +1,29 @@
 //! W15c Killing in the Name Of (Grizzly Adams), derived from the NPC conversation owner
 //! (`gameplay_transport/npc_command/grizzly.rs`) and the quest rules (`quest/grizzly_adams/rules.rs`).
 //!
-//! 1. Walk to the authored Grizzly Adams placement, say `hi`, then `join`; assert the server's
+//! 1. Take Captain Bluebear to Port Hope and walk to the authored Grizzly Adams placement.
+//!    Say `hi`, then `join`; assert the server's
 //!    reply lines (the durable join) and `points`.
 //! 2. Ask for the lowest-level task by name; assert the exact reply: a start offer (confirmed with
 //!    `yes`, then `status` must list it), or the exact level/premium refusal.
 //! 3. Log out, obtain a fresh admission, walk back and say `hi`; the durable join must answer
 //!    `Welcome back`, and an accepted task must still be listed by `status`.
 //! 4. PASS only when a task was started and survived the fresh admission; a refusal reports FAIL
-//!    naming the precondition. Never writes state outside the real conversation.
+//!    naming the precondition. The fixture supplies only the eligible build, Premium and fare.
 use super::*;
-use oteryn_dev_client::client_runtime::npc_shop as runtime;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::npc_service as wire;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
+const CAPTAIN: &str = "oteryn:npc.captain_bluebear";
+const PORT_HOPE: TilePos = TilePos {
+    x: 32527,
+    y: 32784,
+    floor: -6,
+};
+const FARE: u64 = 160;
+const PROFILE: &str = "w15c-sorcerer";
+const LEVEL: u32 = 8;
 const NPC: &str = "oteryn:npc.grizzly_adams";
 const REFUSALS: [&str; 2] = [
     "This task requires Premium.",
@@ -22,8 +31,15 @@ const REFUSALS: [&str; 2] = [
 ];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    character_prep::declare_seeded(
+        "W15c.full",
+        "level-8-sorcerer,premium,port-hope-fare",
+        "Drive Grizzly's eligible task conversation within the row budget",
+    );
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(Outcome::Started(task))) => (
             "PASS",
@@ -87,46 +103,83 @@ fn classify(line: &str) -> TaskReply {
 }
 
 /// The catalogue's lowest-level task name; the server matches the typed text case-insensitively.
-fn first_task() -> TestResult<String> {
+fn first_task() -> TestResult<(String, u64)> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let catalogue: serde_json::Value = serde_json::from_slice(&std::fs::read(
         root.join("content/quests/killing-in-the-name-of.json"),
     )?)?;
-    catalogue["tasks"]
+    let (_, name, required) = catalogue["tasks"]
         .as_array()
         .ok_or("step=catalogue observed=no-tasks")?
         .iter()
-        .filter_map(|task| Some((task["minimum_level"].as_u64()?, task["name"].as_str()?)))
+        .filter_map(|task| {
+            Some((
+                task["minimum_level"].as_u64()?,
+                task["name"].as_str()?,
+                task["required"].as_u64(),
+            ))
+        })
         .min()
-        .map(|(_, name)| name.to_owned())
-        .ok_or_else(|| "step=catalogue observed=empty".into())
+        .ok_or("step=catalogue observed=empty")?;
+    Ok((name.to_owned(), required))
 }
 
 async fn reach(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    bytes: &[u8],
+    npcs: &oteryn_world_bundle::npc::Table,
+    key: &str,
 ) -> TestResult<EntityRef> {
-    let metadata = oteryn_world_bundle::bundle::visit(bytes, |_, _| Ok(()))?;
-    let npc = metadata
-        .npcs
+    let npc = npcs
         .npcs
         .iter()
-        .find(|npc| npc.key == NPC)
-        .ok_or("step=reach observed=no-grizzly-adams-placement-in-the-bundle")?;
+        .find(|npc| npc.key == key)
+        .ok_or_else(|| format!("step=reach npc={key} observed=no-authored-placement"))?;
+    let [placement] = npc.placements.as_slice() else {
+        return Err(format!("step=reach npc={key} expected=unique-authored-placement").into());
+    };
     let here = tile(client.world_spatial().actor_position)?;
-    let path = route(world, here, |at| {
-        npc.placements
-            .iter()
-            .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
-    })
-    .ok_or("step=reach observed=no-walk-route-from-spawn-to-grizzly-adams")?;
-    walk(client, world, &path).await?;
+    let path = find_route(
+        here,
+        |at| {
+            at.floor == placement.floor
+                && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
+        },
+        |at, direction| destination(world, at, direction),
+    )
+    .map_err(|visited| {
+        format!("step=reach npc={key} from={here:?} observed=no-walk-route visited={visited}")
+    })?;
+    let display = if key == CAPTAIN {
+        "Captain Bluebear"
+    } else {
+        "Grizzly Adams"
+    };
+    for direction in path {
+        let before = tile(client.world_spatial().actor_position)?;
+        let landing = destination(world, before, direction)
+            .ok_or("step=walk observed=missing-planned-landing")?;
+        let outcome = client.step(direction).await?;
+        if outcome.status != CommandStatus::Accepted
+            || outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || tile(client.world_spatial().actor_position)? != landing
+        {
+            return Err(format!("step=walk npc={key} from={before:?} direction={direction:?} expected={landing:?} observed={outcome:?}").into());
+        }
+        verdict::Harness::global().progress("walk");
+        tokio::time::sleep(Duration::from_millis(u64::from(outcome.step_wait_ms))).await;
+    }
     client
         .world_entities()
         .and_then(|entities| {
             entities.iter().find(|entity| {
                 entity.kind == oteryn_dev_client::EntityKind::Npc
+                    && entity
+                        .display_name
+                        .as_ref()
+                        .and_then(|name| name.as_str().ok())
+                        == Some(display)
                     && npc.placements.iter().any(|p| {
                         entity.position.x == i32::from(p.x)
                             && entity.position.y == i32::from(p.y)
@@ -135,7 +188,7 @@ async fn reach(
             })
         })
         .map(|entry| entry.entity)
-        .ok_or_else(|| "step=reach observed=grizzly-adams-not-visible-after-walk".into())
+        .ok_or_else(|| format!("step=reach npc={key} observed=not-visible-after-walk").into())
 }
 
 /// One real talk intent; returns the reply lines the server addressed to this character.
@@ -145,22 +198,40 @@ async fn say(
     text: &str,
 ) -> TestResult<Vec<String>> {
     client.take_events();
-    let reply = runtime::talk(
-        client.session_mut(),
-        &wire::NpcTalkIntent {
-            npc_actor: actor,
-            text: text.into(),
-        },
-    )
-    .await?;
-    if reply != wire::NpcIntentDisposition::Ok {
-        return Err(format!("step=say-{text} observed=disposition-{reply:?}").into());
+    let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
+        npc_actor: actor,
+        text: text.into(),
+    })
+    .map_err(|error| format!("step=say-{text} encode={error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_NPC_SERVICE_V1,
+            wire::COMMAND_TYPE_NPC_TALK_INTENT,
+            &payload,
+        )
+        .await?;
+    let disposition = wire::decode_npc_intent_result(&reply.payload)
+        .map_err(|error| format!("step=say-{text} decode={error:?}"))?;
+    if reply.status != CommandStatus::Accepted || disposition != wire::NpcIntentDisposition::Ok {
+        return Err(format!(
+            "step=say-{text} status={:?} disposition={disposition:?}",
+            reply.status
+        )
+        .into());
     }
     let mut lines = Vec::new();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
     loop {
         for event in client.take_events() {
-            if let SessionEvent::NpcConversation(delta) = event {
+            if let SessionEvent::NpcConversation(delta) = event
+                && delta.server_sequence > reply.server_sequence
+            {
+                if delta.value.open.is_some_and(|(npc, _)| npc != actor) {
+                    return Err(
+                        format!("step=say-{text} observed=conversation-for-another-npc").into(),
+                    );
+                }
                 lines.extend(delta.value.lines);
             }
         }
@@ -188,26 +259,134 @@ fn expect(lines: &[String], needle: &str, step: &str) -> TestResult {
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    let reply = client.session_mut().logout().await?;
+    if reply.status != CommandStatus::Accepted
+        || reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
-        return Err("step=logout observed=refused".into());
+        return Err(format!("step=logout observed={reply:?}").into());
     }
     Ok(())
 }
 
+async fn assert_build(client: &mut DevClientSession) -> TestResult {
+    let level = full_e2ef7::player_level(client).await?;
+    let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        "sorcerer",
+        LEVEL,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    )
+    .ok_or("step=build observed=missing-sorcerer-vitals")?;
+    if level != LEVEL
+        || !client
+            .actor_vitals()
+            .is_some_and(|vitals| vitals.max_health == max_health && vitals.max_mana == max_mana)
+    {
+        return Err(format!("step=build expected=level-{LEVEL}-hp-{max_health}-mp-{max_mana} observed=level-{level}-{:?}", client.actor_vitals()).into());
+    }
+    evidence(&format!(
+        "row=W15c.full step=build level={level} max_health={max_health} max_mana={max_mana}"
+    ));
+    Ok(())
+}
+
+fn carried_gold(
+    client: &DevClientSession,
+    coins: &[(std::num::NonZeroU32, u64)],
+) -> TestResult<u64> {
+    let inventory = client
+        .inventory()
+        .ok_or("step=fare observed=no-inventory")?;
+    Ok(inventory
+        .entries
+        .iter()
+        .map(|entry| {
+            coins
+                .iter()
+                .find(|(reference, _)| *reference == entry.item_definition_ref)
+                .map_or(0, |(_, value)| u64::from(entry.count.get()) * value)
+        })
+        .sum())
+}
+
+async fn sail_to_port_hope(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult {
+    let index = provisioning::item_index()?;
+    let coins = [
+        (provisioning::item_reference(&index, 3031)?, 1),
+        (provisioning::item_reference(&index, 3035)?, 100),
+        (provisioning::item_reference(&index, 3043)?, 10_000),
+    ];
+    let before = carried_gold(client, &coins)?;
+    if before < FARE {
+        return Err(format!("step=fare observed={before} expected=at-least-{FARE}").into());
+    }
+    let captain = reach(client, world, npcs, CAPTAIN).await?;
+    say(client, captain, "hi").await?;
+    let quote = say(client, captain, "port hope").await?;
+    let expected = format!("Do you seek a passage to port_hope for {FARE} gold?");
+    if quote.as_slice() != [expected] {
+        return Err(
+            format!("step=travel-quote observed={quote:?} expected=port-hope-{FARE}").into(),
+        );
+    }
+    if say(client, captain, "yes").await?.as_slice() != ["Set the sails!"] {
+        return Err("step=travel-confirm expected=Set-the-sails".into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    loop {
+        let position = tile(client.world_spatial().actor_position)?;
+        let gold = carried_gold(client, &coins)?;
+        if position == PORT_HOPE && gold == before - FARE {
+            evidence(&format!(
+                "row=W15c.full step=travel arrival={position:?} before_gold={before} after_gold={gold}"
+            ));
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step=travel-arrival observed={position:?}-gold-{gold} expected={PORT_HOPE:?}-gold-{}", before - FARE).into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
-        bytes.clone(),
+        bytes,
         &pin,
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let task = first_task()?;
-    let mut client = connect_world(clients, 0xe5).await?;
-    let actor = reach(&mut client, world, &bytes).await?;
+    let (task, target) = first_task()?;
+    let expected_status = format!("{task}: 0/{target}");
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_W15C_ACCOUNT").await?;
+    let scoped = identity.clients(clients);
+    let mut client = connect_character(&scoped, 0xe5, 0).await?;
+    let initial_session = client.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(initial_session.as_bytes()),
+        "--profile",
+        PROFILE.into(),
+    )
+    .await?;
+    character_prep::grant_premium(&client).await?;
+    character_prep::grant_item(&client, 3035, 2).await?;
+    logout(&mut client).await?;
+    drop(client);
+
+    let mut client = connect_character(&scoped, 0xe5, 0).await?;
+    if client.join_snapshot().game_session_id == initial_session {
+        return Err("step=build observed=reused-session".into());
+    }
+    assert_build(&mut client).await?;
+    sail_to_port_hope(&mut client, world, &metadata.npcs).await?;
+    let actor = reach(&mut client, world, &metadata.npcs, NPC).await?;
     expect(&say(&mut client, actor, "hi").await?, "join", "hi")?;
     expect(&say(&mut client, actor, "join").await?, "Welcome", "join")?;
     expect(
@@ -219,12 +398,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
     let line = reply.first().cloned().unwrap_or_default();
     let started = match classify(&line) {
         TaskReply::Offer => {
+            let expected_offer =
+                format!("Hunt {target} {task}. Do you want to start this task? Say yes or no.");
+            if line != expected_offer {
+                return Err(
+                    format!("step=task observed={line:?} expected={expected_offer:?}").into(),
+                );
+            }
             expect(
                 &say(&mut client, actor, "yes").await?,
                 "Happy hunting",
                 "confirm",
             )?;
-            expect(&say(&mut client, actor, "status").await?, &task, "status")?;
+            expect(
+                &say(&mut client, actor, "status").await?,
+                &expected_status,
+                "status",
+            )?;
             true
         }
         TaskReply::Refusal => false,
@@ -232,9 +422,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
             return Err(format!("step=task observed=unexpected-reply:{}", compact(&line)).into());
         }
     };
+    let played_session = client.join_snapshot().game_session_id;
+    let saved_position = client.world_spatial().actor_position;
     logout(&mut client).await?;
-    let mut client = connect_world(clients, 0xe5).await?;
-    let actor = reach(&mut client, world, &bytes).await?;
+    drop(client);
+    let mut client = connect_character(&scoped, 0xe5, 0).await?;
+    if client.join_snapshot().game_session_id == played_session
+        || client.world_spatial().actor_position != saved_position
+    {
+        return Err("step=fresh-admission observed=reused-session-or-wrong-position".into());
+    }
+    assert_build(&mut client).await?;
+    let actor = reach(&mut client, world, &metadata.npcs, NPC).await?;
     expect(
         &say(&mut client, actor, "hi").await?,
         "Welcome back",
@@ -243,7 +442,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
     if started {
         expect(
             &say(&mut client, actor, "status").await?,
-            &task,
+            &expected_status,
             "durable-task",
         )?;
     }
