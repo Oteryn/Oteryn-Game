@@ -6,7 +6,10 @@ use super::*;
 use oteryn_dev_client::client_runtime::combat::{CombatCommand, CombatReport, run_combat};
 use oteryn_dev_client::client_runtime::spell::SpellFeedback;
 use oteryn_dev_client::{EntityDetail, SessionEvent};
-use oteryn_protocol_oteryn::{actor_spell::SpellCastDisposition, presentation, target_move};
+use oteryn_protocol_oteryn::{
+    actor_spell::{self, SpellCastDisposition},
+    presentation, target_move,
+};
 
 const SCORCH_MANA: u32 = 8;
 const RAT_MAX_HP: u64 = 20;
@@ -142,6 +145,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(20)).await?;
     };
     client.take_events();
+    let pre_cast_sequence = client.last_server_sequence();
     let before = *client.actor_vitals().ok_or("C18a caster vitals absent")?;
     let mut feedback = SpellFeedback::default();
     let command_id = client.next_command_id();
@@ -160,9 +164,14 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("C18a Scorch cast refused: {report:?}").into());
     }
-    let after = *client
-        .actor_vitals()
-        .ok_or("C18a post-cast vitals absent")?;
+    let (vitals_sequence, vitals_payload) = first_cast_vitals(&exchange.inbound).await?;
+    if !(pre_cast_sequence < result_server_sequence && result_server_sequence < vitals_sequence) {
+        return Err(format!(
+            "C18a first stats frame is not the cast charge: before={pre_cast_sequence} reply={result_server_sequence} stats={vitals_sequence}"
+        ).into());
+    }
+    let after = actor_spell::decode_actor_vitals(&vitals_payload)
+        .map_err(|error| format!("C18a malformed cast vitals: {error:?}"))?;
     if before.mana.checked_sub(SCORCH_MANA) != Some(after.mana) || before.soul != after.soul {
         return Err("C18a Scorch did not apply its exact mana and soul costs".into());
     }
@@ -273,8 +282,8 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .clone();
     let damage_payload = received_damage_payload(&exchange.inbound, damage_sequence).await?;
 
-    // Use a fixed prefix of the return route. The temple restores mana, so the
-    // caster must stay outdoors until the ordinary combat lock clears.
+    // Use a fixed prefix of the return route. The caster stays outdoors until
+    // the ordinary combat lock clears.
     let retreat = route_avoiding(
         world,
         CAST_TILE,
@@ -311,20 +320,14 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         client.take_events();
         verdict::Harness::global().progress("wait-for-combat-lock");
     }
-    let pre_logout = client
-        .actor_vitals()
-        .ok_or("C18a missing pre-logout vitals")?;
-    if (pre_logout.mana, pre_logout.soul) != (after.mana, after.soul) {
-        return Err(format!(
-            "C18a vitals changed before logout: expected mana={} soul={}, observed mana={} soul={}",
-            after.mana, after.soul, pre_logout.mana, pre_logout.soul
-        )
-        .into());
-    }
     let (result, detail, _, _) = logout_once(&mut client).await?;
     if result != Some(LogoutResult::Accepted) {
         return Err(format!("C18a first logout refused: {detail}").into());
     }
+    let logout_vitals = *client
+        .actor_vitals()
+        .ok_or("C18a missing final logout vitals")?;
+    let logout_sequence = client.last_server_sequence();
     drop(client);
     let mut fresh = connect_character(clients, 0xcb, 1).await?;
     if fresh.join_snapshot().game_session_id == session {
@@ -334,9 +337,13 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         return Err("C18a relog did not retain the fixed outdoor tile".into());
     }
     let fresh_vitals = *fresh.actor_vitals().ok_or("C18a missing relogged vitals")?;
-    if (fresh_vitals.mana, fresh_vitals.soul) != (after.mana, after.soul) {
-        return Err(format!("C18a relog vitals differ after Scorch: expected mana={} soul={}, observed mana={} soul={}", after.mana, after.soul, fresh_vitals.mana, fresh_vitals.soul).into());
+    if (fresh_vitals.mana, fresh_vitals.soul) != (logout_vitals.mana, logout_vitals.soul) {
+        return Err(format!("C18a relog vitals differ after Scorch: expected mana={} soul={}, observed mana={} soul={}", logout_vitals.mana, logout_vitals.soul, fresh_vitals.mana, fresh_vitals.soul).into());
     }
+    evidence(&format!(
+        "SEAM_EVIDENCE c18a_mana before={} pre_cast_sequence={pre_cast_sequence} cast_sequence={result_server_sequence} charge={} vitals_sequence={vitals_sequence} logout={} logout_sequence={logout_sequence} relog={}",
+        before.mana, after.mana, logout_vitals.mana, fresh_vitals.mana
+    ));
     walk_once(&mut fresh, world, &spawn_cells, CAST_TILE).await?;
     let relogged = fresh
         .world_entities()
@@ -363,6 +370,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             "c18a-cast.json",
             result_server_sequence,
             cast_payload.as_slice(),
+        ),
+        (
+            "c18a-vitals.json",
+            vitals_sequence,
+            vitals_payload.as_slice(),
         ),
         ("c18a-health.json", health_sequence, health_payload.as_ref()),
         (
@@ -395,6 +407,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             "caster_generation": caster.generation,
             "mana_before": before.mana,
             "mana_after": after.mana,
+            "pre_cast_sequence": pre_cast_sequence,
+            "vitals_sequence": vitals_sequence,
+            "logout_sequence": logout_sequence,
+            "mana_logout": logout_vitals.mana,
+            "soul_logout": logout_vitals.soul,
             "mana_relog": fresh_vitals.mana,
             "soul_before": before.soul,
             "soul_after": after.soul,
@@ -535,4 +552,22 @@ async fn received_damage_payload(mut inbound: &[u8], sequence: u64) -> TestResul
         }
     }
     Err("C18a original damage presentation absent".into())
+}
+
+async fn first_cast_vitals(mut inbound: &[u8]) -> TestResult<(u64, Vec<u8>)> {
+    use oteryn_protocol_oteryn::{MessageType, decode_state_delta, decode_wire_envelope};
+    while !inbound.is_empty() {
+        let frame = oteryn_dev_client::native_session::read_frame(&mut inbound).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::StateDelta {
+            let delta = decode_state_delta(envelope.payload())?;
+            if delta.domain_id == actor_spell::STATE_DOMAIN_ACTOR_VITALS {
+                if delta.delta_type != actor_spell::DELTA_TYPE_ACTOR_VITALS_V1 {
+                    return Err("C18a unexpected stats delta type".into());
+                }
+                return Ok((envelope.server_sequence(), delta.payload.to_vec()));
+            }
+        }
+    }
+    Err("C18a first cast stats frame absent".into())
 }

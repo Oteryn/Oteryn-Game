@@ -204,6 +204,11 @@ struct Proof {
     mana_before: u32,
     mana_after: u32,
     mana_relog: u32,
+    mana_logout: u32,
+    soul_logout: u32,
+    pre_cast_sequence: u64,
+    vitals_sequence: u64,
+    logout_sequence: u64,
     soul_before: u32,
     soul_after: u32,
     soul_relog: u32,
@@ -235,6 +240,7 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
     use oteryn_protocol_oteryn::world_spatial_entities as wire;
     let cast: Envelope = serde_json::from_slice(&std::fs::read(root.join("c18a-cast.json"))?)?;
     let health: Envelope = serde_json::from_slice(&std::fs::read(root.join("c18a-health.json"))?)?;
+    let vitals: Envelope = serde_json::from_slice(&std::fs::read(root.join("c18a-vitals.json"))?)?;
     let damage: Envelope = serde_json::from_slice(&std::fs::read(root.join("c18a-damage.json"))?)?;
     let proof: Proof = serde_json::from_slice(&std::fs::read(root.join("c18a-proof.json"))?)?;
     verify_capture_directory(root, &proof)?;
@@ -242,6 +248,13 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
     if session_id(&cast.game_session_id)? != session
         || session_id(&health.game_session_id)? != session
         || session_id(&damage.game_session_id)? != session
+        || session_id(&vitals.game_session_id)? != session
+        || vitals.command_id != proof.command_id
+        || vitals.status != cast.status
+        || vitals.server_sequence != proof.vitals_sequence
+        || !(proof.pre_cast_sequence < cast.server_sequence
+            && cast.server_sequence < vitals.server_sequence
+            && vitals.server_sequence < proof.logout_sequence)
         || damage.command_id != proof.command_id
         || damage.status != cast.status
         || damage.server_sequence != proof.damage_sequence
@@ -262,12 +275,28 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         || proof.after >= proof.before
         || !exact_rat_loss(proof.before, proof.after, proof.damage)
         || !exact_vitals(
-            [proof.mana_before, proof.mana_after, proof.mana_relog],
-            [proof.soul_before, proof.soul_after, proof.soul_relog],
+            [
+                proof.mana_before,
+                proof.mana_after,
+                proof.mana_logout,
+                proof.mana_relog,
+            ],
+            [
+                proof.soul_before,
+                proof.soul_after,
+                proof.soul_logout,
+                proof.soul_relog,
+            ],
         )
     {
         return Err("C18a capture provenance, sequence, or health proof is invalid".into());
     }
+    let charged =
+        actor_spell::decode_actor_vitals(&vitals.payload).map_err(|error| format!("{error:?}"))?;
+    assert_eq!(
+        (charged.mana, charged.soul),
+        (proof.mana_after, proof.soul_after)
+    );
     verify_directional_intent(&std::fs::read(root.join("c18a-intent.bin"))?, proof.spell)?;
     let before = attack::decode_actor_combat_state(&proof.combat_before)
         .map_err(|error| format!("{error:?}"))?;
@@ -389,11 +418,11 @@ fn exact_rat_loss(before: u8, after: u8, damage: u64) -> bool {
         && u64::from(before).checked_sub(u64::from(after)) == damage.checked_mul(5)
 }
 
-fn exact_vitals(mana: [u32; 3], soul: [u32; 3]) -> bool {
+fn exact_vitals(mana: [u32; 4], soul: [u32; 4]) -> bool {
     mana[0].checked_sub(8) == Some(mana[1])
-        && mana[1] == mana[2]
+        && mana[2] == mana[3]
         && soul[0] == soul[1]
-        && soul[1] == soul[2]
+        && soul[2] == soul[3]
 }
 
 fn verify_damage(
@@ -450,9 +479,9 @@ fn rejects_false_c18a_damage_cost_and_aim() {
     assert!(exact_rat_loss(100, 60, 8));
     assert!(!exact_rat_loss(100, 60, 7));
     assert!(!exact_rat_loss(100, 100, 0));
-    assert!(exact_vitals([30, 22, 22], [0, 0, 0]));
-    assert!(!exact_vitals([30, 23, 23], [0, 0, 0]));
-    assert!(!exact_vitals([30, 22, 30], [0, 0, 0]));
+    assert!(exact_vitals([30, 22, 29, 29], [0, 0, 0, 0]));
+    assert!(!exact_vitals([30, 23, 29, 29], [0, 0, 0, 0]));
+    assert!(!exact_vitals([30, 22, 29, 30], [0, 0, 0, 0]));
 }
 
 #[test]
