@@ -291,6 +291,31 @@ WORK=.
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertEqual(Path(work, 'world-compile.json').read_text().strip(), command)
 
+    def test_s07_profile_adds_the_bed_region_to_the_town_rows_bundle(self):
+        profiles = section('NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"',
+                           'readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS')
+        compile_world = section('  evidence "world_profile=', '  PIN="$WORK/world.json"')
+        setup = '''set -Eeuo pipefail
+evidence() { :; }
+compile_bundle() { printf '%s\\n' "$1" "$5"; }
+WORLD_COMPILER=(compile_bundle)
+WORK=.
+'''
+        regions = {}
+        for profile in ('s07', 'town'):
+            with self.subTest(profile=profile), tempfile.TemporaryDirectory() as work:
+                result = bash(setup + profiles + compile_world, {
+                    'GAME_SOURCE': str(HERE.parents[2]),
+                    'NODE_BOOT_WORLD_PROFILE': profile,
+                    'NODE_BOOT_E2E_ONLY': 'rows',
+                }, cwd=work)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                command, region_list = Path(work, 'world-compile.json').read_text().splitlines()
+                self.assertEqual(command, 'compile-town-qualification')
+                regions[profile] = region_list.split(';')
+        self.assertNotIn('126,128', regions['town'])
+        self.assertEqual(regions['s07'], [*regions['town'], '126,128'])
+
     def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
         fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
         fixtures += section('BOOTSTRAP_ACCOUNTS=(', 'source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"')
