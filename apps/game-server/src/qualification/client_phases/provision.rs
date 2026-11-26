@@ -61,7 +61,7 @@ pub(in crate::qualification) async fn provision_profile(
         return Err("node-boot fenced build provisioning failed".into());
     }
     let (result, logout, attempts, busy_timed_out) =
-        client_world::logout_retrying_busy(&mut client).await?;
+        client_world::fixture_logout_retrying_busy(&mut client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("fixture setup logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
