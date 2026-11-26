@@ -8,15 +8,26 @@
 //!    proves the admitted hostile creature selected and committed a real attack against the player.
 //! 3. Send LOGOUT while the attack's fight lock is active and require the server's `InFight`
 //!    refusal, with the character and damaged vitals still present.
-//! 4. Escape by ordinary STEP commands, then retry LOGOUT until its reply is `Accepted`; freshly
+//! 4. Escape by ordinary STEP commands, then require the first LOGOUT to be `Accepted`; freshly
 //!    admit the same character and require a new game session plus the exact server-saved position,
 //!    current/max health, mana and soul observed immediately before logout.
 //! 5. Return to the poison spider, observe lethal damage and the granted respawn,
-//!    and verify the new durable death receipt before logging out.
+//!    and verify the new durable death receipt and respawn state after re-admission.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::logout::LogoutResult;
 use std::collections::BTreeSet;
+
+const ENCOUNTER: TilePos = TilePos {
+    x: 32462,
+    y: 32225,
+    floor: -7,
+};
+const NEW_HAVEN_RESPAWN: TilePos = TilePos {
+    x: 32536,
+    y: 32514,
+    floor: -7,
+};
 
 const LETHAL_ACTION: &str = "lethal-attack-and-respawn";
 
@@ -54,9 +65,7 @@ impl Row {
             self.invalid = true;
             return;
         }
-        evidence(&format!(
-            "W01C_CHECK {action} PASS observed={observed:?}"
-        ));
+        evidence(&format!("W01C_CHECK {action} PASS observed={observed:?}"));
     }
 
     fn is_complete(&self) -> bool {
@@ -70,25 +79,30 @@ impl Row {
             }
         }
         if let Err(error) = &result {
-            evidence(&format!("W01C_GAP step={} observed={error}", self.passed.len() + 1));
+            evidence(&format!(
+                "W01C_GAP step={} observed={error}",
+                self.passed.len() + 1
+            ));
         }
         let pass = result.is_ok() && self.is_complete();
         evidence(&format!(
             "e2e_all scenario=W01c.full status={} seconds={:.3}{}",
             if pass { "PASS" } else { "FAIL" },
             self.started.elapsed().as_secs_f64(),
-            if pass { "" } else { " evidence=runtime-observation" },
+            if pass {
+                ""
+            } else {
+                " evidence=runtime-observation"
+            },
         ));
     }
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(
-        JOURNEY_BUDGET,
-        verdict::observe(journey(&mut row, clients)),
-    )
-    .await;
+    let result =
+        verdict::indexed_timeout(JOURNEY_BUDGET, verdict::observe(journey(&mut row, clients)))
+            .await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err(format!("W01c full journey exceeded {JOURNEY_BUDGET:?}").into()),
@@ -98,6 +112,23 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    if !metadata.spawns.sources.iter().any(|source| {
+        source.floor == ENCOUNTER.floor
+            && source.points.iter().any(|point| {
+                point
+                    .x
+                    .abs_diff(ENCOUNTER.x)
+                    .max(point.y.abs_diff(ENCOUNTER.y))
+                    == 1
+                    && metadata
+                        .spawns
+                        .creatures
+                        .get(point.creature as usize)
+                        .is_some_and(|creature| creature.key == "oteryn:creature.poison_spider")
+            })
+    }) {
+        return Err("step 1: fixed encounter has no adjacent authored Poison Spider spawn".into());
+    }
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
         bytes,
@@ -107,46 +138,79 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_world(clients, 0xc1).await?;
     let first_session = client.join_snapshot().game_session_id;
-    travel_to_spawn(
-        &mut client,
-        world,
-        &metadata.spawns,
-        "oteryn:creature.poison_spider",
-    )
-    .await?;
+    if world
+        .base()
+        .tile(ENCOUNTER.x, ENCOUNTER.y, ENCOUNTER.floor)
+        .is_none_or(|tile| tile.protection_zone())
+    {
+        return Err("step 1: fixed encounter is missing or protected".into());
+    }
+    if tile(client.world_spatial().actor_position)? != TOWN {
+        return Err("step 1: character did not enter at the configured town".into());
+    }
+    walk_to(&mut client, world, ENCOUNTER).await?;
+    require_adjacent_spider(&client)?;
     row.pass(
         "admitted-and-walked-to-spawn",
         client.world_spatial().actor_position,
     );
 
-    let before = *client.actor_vitals().ok_or("step 2: admission supplied no ActorVitals snapshot")?;
+    let before = *client
+        .actor_vitals()
+        .ok_or("step 2: admission supplied no ActorVitals snapshot")?;
     let cancel = client.session_mut().attack_target(None).await?;
     if cancel.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
         return Err(format!("step 2: attack-cancel command refused: {cancel:?}").into());
     }
+    if !client
+        .session_mut()
+        .combat_state()
+        .is_some_and(|state| state.target.is_none())
+    {
+        return Err("step 2: attack cancel did not leave an empty target".into());
+    }
     client.take_events();
     let damaged = wait_for_damage(&mut client, before.health).await?;
+    require_adjacent_spider(&client)?;
     row.pass("attack-command-and-vitals-delta", (cancel, damaged));
 
+    let refusal_position = client.world_spatial().actor_position;
+    let refusal_vitals = client
+        .actor_vitals()
+        .copied()
+        .ok_or("step 3: vitals absent")?;
     let refusal = client.session_mut().logout().await?;
     if !matches!(refusal.result, Some(LogoutResult::InFight { .. })) {
-        return Err(format!("step 3: expected InFight logout refusal, observed {refusal:?}").into());
+        return Err(
+            format!("step 3: expected InFight logout refusal, observed {refusal:?}").into(),
+        );
     }
-    if client.actor_vitals().is_none_or(|vitals| vitals.health == 0) {
-        return Err("step 3: logout refusal did not retain a living damaged actor".into());
+    if refusal_vitals.health == 0
+        || refusal_vitals.health >= before.health
+        || client.actor_vitals() != Some(&refusal_vitals)
+        || client.world_spatial().actor_position != refusal_position
+        || client.join_snapshot().game_session_id != first_session
+    {
+        return Err("step 3: InFight changed the actor's position, vitals or session".into());
     }
     row.pass("in-fight-logout-refused", refusal);
 
-    let home = route(world, tile(client.world_spatial().actor_position)?, |at| at == TOWN)
-        .ok_or("step 4: no legitimate walking route away from the encounter")?;
-    walk(&mut client, world, &home).await?;
-    let saved = wait_for_logout(&mut client).await?;
+    walk_to(&mut client, world, TOWN).await?;
+    let saved = *client.actor_vitals().ok_or("step 4: vitals absent")?;
+    if saved.health == 0 || saved.health >= before.health {
+        return Err(
+            format!("step 4: expected saved damage from {before:?}, observed {saved:?}").into(),
+        );
+    }
     let saved_position = client.world_spatial().actor_position;
+    logout_once(&mut client).await?;
     row.pass("escaped-and-logout-accepted", (saved_position, saved));
     drop(client);
 
     let mut client = connect_world(clients, 0xc2).await?;
-    let observed = *client.actor_vitals().ok_or("step 5: fresh admission supplied no ActorVitals snapshot")?;
+    let observed = *client
+        .actor_vitals()
+        .ok_or("step 5: fresh admission supplied no ActorVitals snapshot")?;
     if client.join_snapshot().game_session_id == first_session
         || client.world_spatial().actor_position != saved_position
         || observed != saved
@@ -166,15 +230,52 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step=lethal-attack-and-respawn observed=no-world-map-capability source=apps/game-server/src/qualification/client_phases/death.rs:7".into());
     }
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.poison_spider")
-        .await?;
+    let second_session = client.join_snapshot().game_session_id;
+    walk_to(&mut client, world, ENCOUNTER).await?;
+    require_adjacent_spider(&client)?;
+    let encounter_vitals = *client
+        .actor_vitals()
+        .ok_or("step 6: pre-death vitals absent")?;
+    if encounter_vitals.health >= encounter_vitals.max_health {
+        return Err("step 6: pre-death vitals did not retain damage".into());
+    }
     verdict::Harness::global().bounded_wait(
         tokio::time::Instant::now() + Duration::from_secs(180),
         LETHAL_ACTION,
     );
     client_death::death(&mut client, clients).await?;
-    row.pass(LETHAL_ACTION, client.world_spatial().actor_position);
-    wait_for_logout(&mut client).await?;
+    let respawn_position = client.world_spatial().actor_position;
+    let respawn_vitals = *client
+        .actor_vitals()
+        .ok_or("step 6: respawn vitals absent")?;
+    if tile(respawn_position)? != NEW_HAVEN_RESPAWN
+        || respawn_vitals.health != encounter_vitals.max_health
+        || respawn_vitals.mana != encounter_vitals.max_mana
+    {
+        return Err(format!(
+            "step 6: wrong respawn position or vitals: {respawn_position:?} {respawn_vitals:?}"
+        )
+        .into());
+    }
+
+    logout_once(&mut client).await?;
+    drop(client);
+    let mut client = connect_world(clients, 0xc3).await?;
+    let third_session = client.join_snapshot().game_session_id;
+    if third_session == first_session
+        || third_session == second_session
+        || client.world_spatial().actor_position != respawn_position
+        || client.actor_vitals() != Some(&respawn_vitals)
+    {
+        return Err(format!(
+            "step 6: fresh admission did not retain respawn: {:?} {:?}",
+            client.world_spatial().actor_position,
+            client.actor_vitals()
+        )
+        .into());
+    }
+    logout_once(&mut client).await?;
+    row.pass(LETHAL_ACTION, (respawn_position, respawn_vitals));
     Ok(())
 }
 
@@ -203,22 +304,74 @@ async fn wait_for_damage(
     }
 }
 
-async fn wait_for_logout(
-    client: &mut DevClientSession,
-) -> TestResult<oteryn_protocol_oteryn::actor_spell::ActorVitals> {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
-    loop {
-        let saved = *client.actor_vitals().ok_or("step 4: ActorVitals disappeared before logout")?;
-        let reply = client.session_mut().logout().await?;
-        match reply.result {
-            Some(LogoutResult::Accepted) => return Ok(saved),
-            Some(LogoutResult::InFight { .. }) if tokio::time::Instant::now() < deadline => {
-                client.service_liveness(Duration::from_millis(100)).await?;
-                client.take_events();
-            }
-            _ => return Err(format!("step 4: logout did not become accepted: {reply:?}").into()),
-        }
+async fn logout_once(client: &mut DevClientSession) -> TestResult {
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(LogoutResult::Accepted) {
+        return Err(format!("W01c first logout refused: {reply:?}").into());
     }
+    Ok(())
+}
+
+fn require_adjacent_spider(client: &DevClientSession) -> TestResult {
+    let here = client.world_spatial().actor_position;
+    let mut adjacent = client
+        .world_entities()
+        .ok_or("W01c encounter: entities absent")?
+        .iter()
+        .filter(|entity| {
+            entity.kind == oteryn_dev_client::EntityKind::Creature
+                && entity.position.floor == here.floor
+                && here
+                    .x
+                    .abs_diff(entity.position.x)
+                    .max(here.y.abs_diff(entity.position.y))
+                    <= 1
+        })
+        .peekable();
+    if adjacent.peek().is_none()
+        || !adjacent.all(|entity| {
+            entity
+                .display_name
+                .is_some_and(|name| name.as_str() == Ok("Poison Spider"))
+        })
+    {
+        return Err(
+            "W01c encounter: expected adjacent Poison Spider and no other adjacent creature".into(),
+        );
+    }
+    Ok(())
+}
+
+async fn walk_to(client: &mut DevClientSession, world: &BundleWorld, goal: TilePos) -> TestResult {
+    let mut position = tile(client.world_spatial().actor_position)?;
+    let route = route(world, position, |at| at == goal)
+        .filter(|steps| !steps.is_empty())
+        .ok_or_else(|| format!("W01c no nonempty route from {position:?} to {goal:?}"))?;
+    for direction in route {
+        let expected = destination(world, position, direction)
+            .ok_or_else(|| format!("W01c step {direction:?} has no landing from {position:?}"))?;
+        let outcome = client.step(direction).await?;
+        let observed = tile(client.world_spatial().actor_position)?;
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || observed != expected
+            || observed == position
+        {
+            return Err(format!(
+                "W01c first step {direction:?} from {position:?}: expected {expected:?}, observed {observed:?} {outcome:?}"
+            ).into());
+        }
+        position = observed;
+        verdict::Harness::global().progress("walk");
+        client
+            .service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms)))
+            .await?;
+        client.take_events();
+    }
+    if position != goal {
+        return Err(format!("W01c walk ended at {position:?}, expected {goal:?}").into());
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -228,7 +381,11 @@ mod tests {
     #[test]
     fn surviving_an_attack_does_not_qualify_lethal_attack_and_respawn() {
         let mut row = Row::new();
-        for action in ACTIONS.iter().copied().filter(|action| *action != LETHAL_ACTION) {
+        for action in ACTIONS
+            .iter()
+            .copied()
+            .filter(|action| *action != LETHAL_ACTION)
+        {
             row.pass(action, ());
         }
         assert!(!row.is_complete());
