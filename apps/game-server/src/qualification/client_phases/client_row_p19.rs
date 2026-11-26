@@ -46,6 +46,8 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     let axe = provisioning::item_reference(&index, 3276)?;
     equip_fixture_axe(&mut client, axe).await?;
     let sliver = provisioning::item_reference(&index, 37109)?;
+    character_prep::grant_premium(&client).await?;
+    evidence("P19 FIXTURE premium=granted");
     if !client
         .selected_capabilities()
         .contains(&CAPABILITY_FORGE_CREATURE_V1)
@@ -118,9 +120,17 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             }
         }
         let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-        character_prep::grant_premium(&client).await?;
-        evidence("P19 FIXTURE premium=granted");
         let before = rewards(&mut client).await?;
+        if slot == 0
+            && before
+                != (Rewards {
+                    dust: 0,
+                    limit: 100,
+                    slivers: 0,
+                })
+        {
+            return Err(format!("P19 expected a fresh Forge balance, got {before:?}").into());
+        }
         if sliver_count(&client, sliver)? != before.slivers {
             return Err("P19 pre-combat backpack and Forge sliver counts disagree".into());
         }
@@ -195,21 +205,20 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         if stopped.disposition != AttackIntentDisposition::Ok {
             return Err(format!("P19 first attack stop refused: {stopped:?}").into());
         }
-        quick_loot_corpse(&mut client, corpse, stacks == 15).await?;
+        let killed = rewards(&mut client).await?;
+        let (expected_items, expected_slivers) =
+            corpse_contents(&mut client, corpse, sliver).await?;
+        quick_loot_corpse(&mut client, corpse, expected_items).await?;
         let after = rewards(&mut client).await?;
         let looted = after
             .slivers
             .checked_sub(before.slivers)
             .ok_or("P19 backpack slivers decreased after loot")?;
-        // Global dust table: https://tibia.fandom.com/wiki/Fiendish_and_Influenced_Creatures#Dust_and_Slivers
-        let minimum = (before.dust + u64::from(stacks)).min(before.limit);
-        let maximum = (before.dust + 3 * u64::from(stacks)).min(before.limit);
-        if before.dust == before.limit
-            || !(minimum..=maximum).contains(&after.dust)
-            || after.limit != before.limit
-            || (looted > 0) != (stacks == 15)
+        if !valid_reward_transition(&before, &killed, &after, stacks)
+            || looted != expected_slivers
+            || sliver_count(&client, sliver)? != after.slivers
         {
-            return Err(format!("P19 {classification} reward mismatch: {before:?} -> {after:?}, slivers looted={looted}").into());
+            return Err(format!("P19 {classification} reward mismatch: before={before:?} killed={killed:?} looted={after:?}").into());
         }
         evidence(&format!(
             "P19 rewards {classification} before={before:?} after={after:?} looted={looted}"
@@ -243,6 +252,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         ));
     }
     // Both reward proofs have completed. Release the fixture character for the runner.
+    evidence("P19 FIXTURE_CLEANUP step=logout");
     let (result, detail, attempts, _) = fixture_logout_retrying_busy(&mut client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!(
@@ -327,6 +337,77 @@ struct Rewards {
     dust: u64,
     limit: u64,
     slivers: u64,
+}
+
+fn valid_reward_transition(
+    before: &Rewards,
+    killed: &Rewards,
+    after: &Rewards,
+    stacks: u8,
+) -> bool {
+    // Global awards dust on kill and slivers through corpse loot.
+    // https://tibia.fandom.com/wiki/Fiendish_and_Influenced_Creatures#Dust_and_Slivers
+    let minimum = (before.dust + u64::from(stacks)).min(before.limit);
+    let maximum = (before.dust + 3 * u64::from(stacks)).min(before.limit);
+    let slivers = if stacks == 15 { 3..=7 } else { 0..=0 };
+    before.dust < before.limit
+        && killed.limit == before.limit
+        && after.limit == killed.limit
+        && (minimum..=maximum).contains(&killed.dust)
+        && after.dust == killed.dust
+        && killed.slivers == before.slivers
+        && after
+            .slivers
+            .checked_sub(killed.slivers)
+            .is_some_and(|gain| slivers.contains(&gain))
+}
+
+#[test]
+fn forge_rewards_reject_wrong_amount_or_phase() {
+    let before = Rewards {
+        dust: 0,
+        limit: 100,
+        slivers: 0,
+    };
+    let killed = Rewards { dust: 15, ..before };
+    for gain in [0, 2, 3, 7, 8] {
+        let after = Rewards {
+            slivers: gain,
+            ..killed
+        };
+        assert_eq!(
+            valid_reward_transition(&before, &killed, &after, 15),
+            (3..=7).contains(&gain)
+        );
+    }
+    let good = Rewards {
+        slivers: 3,
+        ..killed
+    };
+    assert!(!valid_reward_transition(&before, &before, &good, 15));
+    assert!(!valid_reward_transition(&before, &good, &good, 15));
+    assert!(!valid_reward_transition(
+        &before,
+        &killed,
+        &Rewards { limit: 101, ..good },
+        15
+    ));
+    let influenced = Rewards { dust: 3, ..before };
+    assert!(valid_reward_transition(
+        &before,
+        &influenced,
+        &influenced,
+        3
+    ));
+    assert!(!valid_reward_transition(
+        &before,
+        &influenced,
+        &Rewards {
+            slivers: 1,
+            ..influenced
+        },
+        3
+    ));
 }
 
 async fn rewards(client: &mut DevClientSession) -> TestResult<Rewards> {
@@ -492,7 +573,7 @@ async fn kill_and_observe_clear(
 async fn quick_loot_corpse(
     client: &mut DevClientSession,
     corpse: [u8; 16],
-    fiendish: bool,
+    expected_items: usize,
 ) -> TestResult {
     let payload = quick_loot::encode_quick_loot_request(&quick_loot::QuickLootRequest {
         action: quick_loot::QuickLootAction::Click,
@@ -518,12 +599,62 @@ async fn quick_loot_corpse(
         .map_err(|error| format!("P19 Quick Loot result: {error:?}"))?;
     // Global grants slivers only to fiendish creatures, with quantity based on difficulty.
     // https://tibia.fandom.com/wiki/Fiendish_and_Influenced_Creatures#Dust_and_Slivers
-    if result.items.iter().any(|item| !item.accepted) || (fiendish && result.items.is_empty()) {
+    if result.items.len() != expected_items || result.items.iter().any(|item| !item.accepted) {
         return Err(
             format!("P19 first Quick Loot did not collect the corpse items: {result:?}").into(),
         );
     }
     Ok(())
+}
+
+async fn corpse_contents(
+    client: &mut DevClientSession,
+    identity: [u8; 16],
+    sliver: NonZeroU32,
+) -> TestResult<(usize, u64)> {
+    let corpse = client
+        .world_entities()
+        .and_then(|entities| {
+            entities.iter().find(|entity| {
+                entity.entity.identity == identity && entity.kind == EntityKind::Corpse
+            })
+        })
+        .ok_or("P19 exact corpse absent before open")?;
+    let (EntityDetail::Object {
+        item_handle: Some(handle),
+        ..
+    }
+    | EntityDetail::ObjectWithAppearance {
+        item_handle: Some(handle),
+        ..
+    }) = corpse.detail
+    else {
+        return Err("P19 exact corpse has no item handle".into());
+    };
+    let use_result = client.use_item(handle).await?;
+    require_mechanic_acceptance(use_result.status, "P19 open exact corpse")?;
+    if use_result.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
+        return Err(format!("P19 first corpse open refused: {use_result:?}").into());
+    }
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            if let Some(container) = client
+                .open_container()
+                .filter(|view| view.container_handle == Some(handle))
+            {
+                let quantity = container
+                    .entries
+                    .iter()
+                    .filter(|entry| entry.item_definition_ref == sliver)
+                    .map(|entry| u64::from(entry.count.get()))
+                    .sum();
+                return TestResult::Ok((container.entries.len(), quantity));
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+        }
+    })
+    .await
+    .map_err(|_| "P19 exact corpse contents were not projected")?
 }
 
 fn confirmed_step(
