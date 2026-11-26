@@ -1579,6 +1579,26 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S; do
     [[ -z "${!knob+x}" ]] || test_env+=("$knob=${!knob}")
   done
+  local p02_captures= p02_log=
+  if [[ "$NODE_BOOT_WORLD" == 1 ]] && python3 - <<'PY_P02_SELECTED'
+import os
+import re
+import sys
+
+groups = os.getenv("NODE_BOOT_E2E_ONLY", "").strip()
+batch = os.getenv("OTERYN_E2E_ROW_BATCH", "0:15")
+bounds = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+selected = batch == "all"
+if bounds:
+    start, length = map(int, bounds.groups())
+    selected = start <= 157 < start + length
+sys.exit(not (selected and (not groups or "rows" in map(str.strip, groups.split(",")))))
+PY_P02_SELECTED
+  then
+    p02_captures="$(mktemp -d "$WORK/p02-captures.XXXXXX")" || return 1
+    p02_log="$p02_captures/seam.log"
+    test_env+=("E2E_ALL_CAPTURE_DIR=$p02_captures")
+  fi
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
   local test_dir="$PWD"
@@ -1590,6 +1610,10 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     test_command=("$NODE_BOOT_LIBTEST" "qualification::$qualification" --ignored --exact --nocapture)
   fi
   (
+    if [[ -n "$p02_log" ]]; then
+      exec 3>&1 >"$p02_log" 2>&1
+      trap 'cat "$p02_log" >&3' EXIT
+    fi
     cd "$test_dir"
     env "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \
       NODE_BOOT_SPELL_MANIFEST="$staged_manifest" \
@@ -1607,6 +1631,21 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
       "${test_command[@]}"
   )
+  if [[ -n "$p02_log" ]]; then
+    local replay=boss_encounter::e2e_p02::e2e_p02_replays_bosstiary_progress_slots_and_refusal
+    local replay_log="$p02_captures/replay.log" replay_started=$SECONDS
+    if [[ $(grep -c '^SEAM_EVIDENCE e2e_capture scenario=P02\.client status=CAPTURED ' "$p02_log") == 1 ]] &&
+      ! grep -q '^SEAM_EVIDENCE e2e_all scenario=P02\.client status=FAIL ' "$p02_log" &&
+      E2E_ALL_CAPTURE_DIR="$p02_captures" cargo +1.100.0 test --locked -p oteryn-client-ui --lib \
+        "$replay" -- --exact --nocapture 2>&1 | tee "$replay_log" &&
+      grep -Eq "^test $replay \\.\.\. ok$" "$replay_log" &&
+      grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$replay_log"; then
+      printf 'SEAM_EVIDENCE e2e_all scenario=P02.client status=PASS seconds=%s.000 evidence=live-bosstiary-replay\n' "$((SECONDS - replay_started))"
+    else
+      printf 'SEAM_EVIDENCE e2e_all scenario=P02.client status=FAIL seconds=%s.000 evidence=live-bosstiary-replay\n' "$((SECONDS - replay_started))"
+      return 1
+    fi
+  fi
 }
 
 graceful_shutdown() { # ready=false first, socket removed
