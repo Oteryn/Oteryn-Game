@@ -22,17 +22,27 @@ const GATE: TilePos = TilePos {
     y: 32235,
     floor: -7,
 };
-const APPROACH: TilePos = TilePos {
-    x: 32399,
-    y: 32235,
-    floor: -7,
-};
 
 const EXPECTED_ARRIVAL: ActorPosition = ActorPosition {
     x: 32401,
     y: 32235,
     floor: 7,
 };
+
+const APPROACH_POSITION: ActorPosition = ActorPosition {
+    x: 32399,
+    ..EXPECTED_ARRIVAL
+};
+const INTERMEDIATE: ActorPosition = ActorPosition {
+    x: 32400,
+    ..EXPECTED_ARRIVAL
+};
+const FAR_SIDE: ActorPosition = ActorPosition {
+    x: 32403,
+    ..EXPECTED_ARRIVAL
+};
+const RETREAT: [ActorPosition; 2] = [INTERMEDIATE, APPROACH_POSITION];
+const PASSAGE: [ActorPosition; 4] = [GATE_POSITION, FAR_SIDE, GATE_POSITION, EXPECTED_ARRIVAL];
 
 fn distance(a: TilePos, b: TilePos) -> u16 {
     if a.floor == b.floor {
@@ -69,9 +79,11 @@ async fn walk_to_approach(
         .into_iter()
         .find(|tile| tile.position == GATE_POSITION);
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route_live(client, world, |at| at == APPROACH)
-        .await?
-        .ok_or_else(|| format!("M02 authored gate approach is unreachable from {from:?}"))?;
+    let path = route_live(client, world, |at| {
+        tile(EXPECTED_ARRIVAL).is_ok_and(|adjacent| at == adjacent)
+    })
+    .await?
+    .ok_or_else(|| format!("M02 authored gate approach is unreachable from {from:?}"))?;
     for direction in path {
         let before = tile(client.world_spatial().actor_position)?;
         let expected =
@@ -122,24 +134,50 @@ fn passage_step_matches(
     disposition == StepDisposition::Moved && delta_position == Some(expected) && actual == expected
 }
 
-fn observe_opening(
+fn observe_gate(
     events: &[SessionEvent],
     gate: &mut Option<MapTile>,
     ordinal: u8,
     opening: &mut Option<u64>,
-) {
+    allow_open: bool,
+) -> TestResult {
     for event in events {
         if let SessionEvent::WorldMap(delta) = event {
             update_gate(gate, std::slice::from_ref(event));
-            if gate.as_ref().is_some_and(|tile| {
-                tile.items.iter().any(|item| {
-                    item.appearance_id == OPEN_GATE
-                        && matches!(item.origin, MapOrigin::BaseOrdinal { ordinal: at, .. } if at == ordinal)
-                })
-            }) {
-                opening.get_or_insert(delta.server_sequence);
+            let closed = gate
+                .as_ref()
+                .is_some_and(|tile| gate_matches(tile, ordinal, CLOSED_GATE, 0));
+            let open = gate
+                .as_ref()
+                .is_some_and(|tile| gate_matches(tile, ordinal, OPEN_GATE, 1));
+            match (*opening, closed, open) {
+                (None, true, false) => {}
+                (None, false, true) if allow_open => *opening = Some(delta.server_sequence),
+                (Some(_), false, true) => {}
+                _ => {
+                    return Err(format!(
+                        "M02 invalid gate state at sequence {}: {gate:?}",
+                        delta.server_sequence
+                    )
+                    .into());
+                }
             }
         }
+    }
+    Ok(())
+}
+
+fn step_matches(
+    disposition: StepDisposition,
+    delta_position: Option<ActorPosition>,
+    actual: ActorPosition,
+    expected: ActorPosition,
+    blocked: bool,
+) -> bool {
+    if blocked {
+        disposition == StepDisposition::Blocked && delta_position.is_none() && actual == expected
+    } else {
+        passage_step_matches(disposition, delta_position, actual, expected)
     }
 }
 
@@ -214,17 +252,17 @@ async fn journey_capture(
             "M02 approach did not observe the authored closed gate at revision zero".into(),
         );
     }
-    let stand = tile(client.world_spatial().actor_position)?;
-    if stand != APPROACH || distance(stand, GATE) != 3 {
-        return Err("M02 route missed its planned approach".into());
+    if client.world_spatial().actor_position != EXPECTED_ARRIVAL {
+        return Err("M02 route missed its closed collision position".into());
     }
-    update_gate(&mut gate, &client.take_events());
-    if !gate
-        .as_ref()
-        .is_some_and(|tile| gate_matches(tile, ordinal, CLOSED_GATE, 0))
-    {
-        return Err("M02 gate changed before far use".into());
-    }
+    let mut opening = None;
+    observe_gate(
+        &client.take_events(),
+        &mut gate,
+        ordinal,
+        &mut opening,
+        false,
+    )?;
     let map = client
         .session_mut()
         .world_map_snapshot()
@@ -237,6 +275,37 @@ async fn journey_capture(
         .ok_or("M02 sequence overflow")?;
     let capabilities = client.selected_capabilities().to_vec();
     client.session_mut().begin_qualification_capture();
+    let mut setup = Vec::new();
+    verdict::Harness::global().progress("closed-collision");
+    for (direction, expected, blocked) in [
+        (StepDirection::East, EXPECTED_ARRIVAL, true),
+        (StepDirection::West, RETREAT[0], false),
+        (StepDirection::West, RETREAT[1], false),
+    ] {
+        let step = client.step(direction).await?;
+        require_mechanic_acceptance(step.status, "M02 closed probe or retreat")?;
+        let events = client.take_events();
+        observe_gate(&events, &mut gate, ordinal, &mut opening, false)?;
+        if !step_matches(
+            step.disposition,
+            step.world_spatial_delta
+                .as_ref()
+                .map(|delta| delta.value.actor_position),
+            client.world_spatial().actor_position,
+            expected,
+            blocked,
+        ) || events.iter().any(|event| {
+            matches!(event,
+            SessionEvent::WorldSpatialEntities(delta) if delta.value.actor_position != expected)
+        }) {
+            return Err(format!(
+                "M02 closed probe or retreat {direction:?} at {expected:?}: {step:?}"
+            )
+            .into());
+        }
+        setup.push((step.command_id, step.result_server_sequence));
+    }
+    let setup_end = client.last_server_sequence();
     verdict::Harness::global().progress("far-use");
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
@@ -246,14 +315,9 @@ async fn journey_capture(
         return Err(format!("M02 far use did not commit: {result:?}").into());
     }
     let events = client.take_events();
-    let mut previous = ActorPosition {
-        x: i32::from(stand.x),
-        y: i32::from(stand.y),
-        floor: 7,
-    };
+    let mut previous = APPROACH_POSITION;
     let mut steps = Vec::new();
     let mut arrival = None;
-    let mut opening = None;
     for event in &events {
         if let SessionEvent::WorldSpatialEntities(delta) = event
             && delta.value.actor_position != previous
@@ -273,7 +337,7 @@ async fn journey_capture(
             format!("M02 expected two consecutive eastward autowalk steps, got {steps:?}").into(),
         );
     }
-    observe_opening(&events, &mut gate, ordinal, &mut opening);
+    observe_gate(&events, &mut gate, ordinal, &mut opening, true)?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while !gate
         .as_ref()
@@ -293,7 +357,7 @@ async fn journey_capture(
         }) {
             return Err("M02 actor moved while waiting for the gate update".into());
         }
-        observe_opening(&events, &mut gate, ordinal, &mut opening);
+        observe_gate(&events, &mut gate, ordinal, &mut opening, true)?;
     }
     verify_open_order(arrival, opening)?;
     let arrived = client.world_spatial().actor_position;
@@ -306,11 +370,21 @@ async fn journey_capture(
     let opening_end = client.last_server_sequence();
     let mut passage = Vec::new();
     for (direction, expected) in [
-        (StepDirection::East, GATE_POSITION),
-        (StepDirection::West, EXPECTED_ARRIVAL),
+        (StepDirection::East, PASSAGE[0]),
+        (StepDirection::East, PASSAGE[1]),
+        (StepDirection::West, PASSAGE[2]),
+        (StepDirection::West, PASSAGE[3]),
     ] {
         let step = client.step(direction).await?;
         passage.push((step.command_id, step.result_server_sequence));
+        let events = client.take_events();
+        observe_gate(&events, &mut gate, ordinal, &mut opening, true)?;
+        if events.iter().any(|event| {
+            matches!(event,
+            SessionEvent::WorldSpatialEntities(delta) if delta.value.actor_position != expected)
+        }) {
+            return Err("M02 unexpected movement during gate passage".into());
+        }
         require_mechanic_acceptance(step.status, "M02 gate passage")?;
         if !passage_step_matches(
             step.disposition,
@@ -342,7 +416,7 @@ async fn journey_capture(
         .into());
     }
     evidence(
-        "M02_GAMEPLAY_VERIFIED steps=2 gate=open revision=1 passage=east,west relog_position=32401,32235,7",
+        "M02_GAMEPLAY_VERIFIED closed_collision=blocked steps=2 gate=open revision=1 passage=east,east,west,west relog_position=32401,32235,7",
     );
     let binding = replay::Capture {
         game_session_id: uuid_text(session.as_bytes()),
@@ -351,6 +425,8 @@ async fn journey_capture(
         first_sequence,
         result_sequence: result.result_server_sequence,
         last_sequence,
+        setup: setup.try_into().map_err(|_| "M02 setup command count")?,
+        setup_end,
         opening_end,
         passage: passage
             .try_into()
@@ -386,32 +462,112 @@ fn m02_requires_intermediate_step_in_order() {
 
 #[test]
 fn m02_requires_open_appearance_at_next_revision() -> TestResult {
+    let mut gate = test_gate(CLOSED_GATE, 0);
+    assert!(gate_matches(&gate, 1, CLOSED_GATE, 0));
+    gate.items[0].appearance_id = OPEN_GATE;
+    assert!(!gate_matches(&gate, 1, OPEN_GATE, 1));
+    assert!(gate_matches(&test_gate(OPEN_GATE, 1), 1, OPEN_GATE, 1));
+    Ok(())
+}
+
+#[cfg(test)]
+fn test_gate(appearance_id: u16, object_revision: u64) -> MapTile {
     use oteryn_protocol_oteryn::world_map::{MapDefinition, MapItem};
-    let mut gate = MapTile {
+    MapTile {
         position: GATE_POSITION,
         items: vec![MapItem {
-            definition: MapDefinition::Item(std::num::NonZeroU32::new(1).ok_or("item id")?),
+            definition: MapDefinition::Item(std::num::NonZeroU32::MIN),
             count: 1,
             sub_type: 0,
             origin: MapOrigin::BaseOrdinal {
                 ordinal: 1,
-                object_revision: 0,
+                object_revision,
             },
-            appearance_id: CLOSED_GATE,
+            appearance_id,
         }],
         more: false,
         ground_speed: 150,
+    }
+}
+
+#[test]
+fn m02_rejects_open_at_wrong_revision_and_reclose_during_passage() -> TestResult {
+    use oteryn_protocol_oteryn::world_map::{MapViewHeader, WorldMapViewDelta};
+    let update = |server_sequence, appearance, revision| {
+        SessionEvent::WorldMap(oteryn_dev_client::native_session::AppliedDelta {
+            server_sequence,
+            base_revision: 1,
+            new_revision: 2,
+            value: WorldMapViewDelta {
+                header: MapViewHeader {
+                    content_generation: [0; 32],
+                    bundle_digest: [0; 32],
+                    reset_epoch: 0,
+                    origin: EXPECTED_ARRIVAL,
+                    first_visible_floor: 0,
+                },
+                tiles: vec![test_gate(appearance, revision)],
+                cleared: vec![],
+            },
+        })
     };
-    assert!(gate_matches(&gate, 1, CLOSED_GATE, 0));
-    assert!(!gate_matches(&gate, 1, OPEN_GATE, 1));
-    gate.items[0].appearance_id = OPEN_GATE;
-    assert!(!gate_matches(&gate, 1, OPEN_GATE, 1));
-    gate.items[0].origin = MapOrigin::BaseOrdinal {
-        ordinal: 1,
-        object_revision: 1,
-    };
-    assert!(gate_matches(&gate, 1, OPEN_GATE, 1));
+    let mut opening = None;
+    let mut gate = Some(test_gate(CLOSED_GATE, 0));
+    assert!(
+        observe_gate(
+            &[update(10, OPEN_GATE, 2), update(11, OPEN_GATE, 1)],
+            &mut gate,
+            1,
+            &mut opening,
+            true,
+        )
+        .is_err()
+    );
+    assert_eq!(opening, None);
+    observe_gate(
+        &[update(12, OPEN_GATE, 1)],
+        &mut gate,
+        1,
+        &mut opening,
+        true,
+    )?;
+    assert_eq!(opening, Some(12));
+    assert!(
+        observe_gate(
+            &[update(13, CLOSED_GATE, 2), update(14, OPEN_GATE, 1)],
+            &mut gate,
+            1,
+            &mut opening,
+            true,
+        )
+        .is_err()
+    );
     Ok(())
+}
+
+#[test]
+fn m02_rejects_closed_gate_that_allows_movement_and_open_gate_that_blocks_exit() {
+    assert!(step_matches(
+        StepDisposition::Blocked,
+        None,
+        EXPECTED_ARRIVAL,
+        EXPECTED_ARRIVAL,
+        true
+    ));
+    assert!(!step_matches(
+        StepDisposition::Moved,
+        Some(GATE_POSITION),
+        GATE_POSITION,
+        EXPECTED_ARRIVAL,
+        true
+    ));
+    assert!(!step_matches(
+        StepDisposition::Blocked,
+        None,
+        GATE_POSITION,
+        FAR_SIDE,
+        false
+    ));
 }
 
 #[test]

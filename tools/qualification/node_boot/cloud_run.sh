@@ -42,8 +42,25 @@ m02_replay_passed() {
   ' "$1"
 }
 
+m02_requested() {
+  PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$(dirname -- "${BASH_SOURCE[0]}")" python3 - <<'PYTHON'
+import os
+from client_replay import selected_rows
+
+try:
+    rows, _ = selected_rows(os.environ.get("OTERYN_E2E_ROW_BATCH"))
+except ValueError:
+    raise SystemExit(1)
+raise SystemExit("M02.client" not in rows)
+PYTHON
+}
+
 summarize() {
   local log=$1 group=$2 seconds=${3:-0} status=${4:-0} result rows row
+  local m02_selected=0
+  if [[ "$group" == rows ]] && m02_requested; then
+    m02_selected=1
+  fi
   result=$(awk '/^NODE_BOOT_RESULT=(NODE_BOOT_[A-Z0-9_]+|BLOCKED)([[:space:]]|$)/ {
     sub(/^NODE_BOOT_RESULT=/, "", $1)
     result = $1
@@ -55,7 +72,8 @@ summarize() {
 
   if [[ "$result" == NODE_BOOT_REPLAY_REQUIRED ]] ||
     { [[ "$result" == NODE_BOOT_PASS ]] &&
-      grep -qE '^SEAM_EVIDENCE (e2e_capture|e2e_all) scenario=M02\.client ' "$log" &&
+      { [[ "$m02_selected" == 1 ]] ||
+        grep -qE '^SEAM_EVIDENCE (e2e_capture|e2e_all) scenario=M02\.client ' "$log"; } &&
       ! m02_replay_passed "$log" 1; }; then
     result=NODE_BOOT_FAIL
   fi

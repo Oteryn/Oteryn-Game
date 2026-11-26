@@ -19,7 +19,9 @@ pub(super) struct Capture {
     pub result_sequence: u64,
     pub last_sequence: u64,
     pub opening_end: u64,
-    pub passage: [(u64, u64); 2],
+    pub passage: [(u64, u64); 4],
+    pub setup: [(u64, u64); 3],
+    pub setup_end: u64,
     pub capabilities: Vec<u32>,
     pub content_generation: [u8; 32],
     pub bundle_digest: [u8; 32],
@@ -39,17 +41,34 @@ impl Capture {
             self.last_sequence
         )
     }
+    fn commands(&self) -> [(u64, u64); 8] {
+        [
+            self.setup[0],
+            self.setup[1],
+            self.setup[2],
+            (self.command_id, self.result_sequence),
+            self.passage[0],
+            self.passage[1],
+            self.passage[2],
+            self.passage[3],
+        ]
+    }
+
     fn command_at(&self, sequence: u64) -> u64 {
-        self.passage
-            .iter()
+        if sequence > self.setup_end && sequence < self.result_sequence {
+            return self.command_id;
+        }
+        self.commands()
+            .into_iter()
             .rev()
             .find(|(_, result)| *result <= sequence)
-            .map_or(self.command_id, |(command, _)| *command)
+            .map_or(self.setup[0].0, |(command, _)| command)
     }
 
     fn is_result(&self, sequence: u64) -> bool {
-        sequence == self.result_sequence
-            || self.passage.iter().any(|(_, result)| *result == sequence)
+        self.commands()
+            .iter()
+            .any(|(_, result)| *result == sequence)
     }
 }
 
@@ -118,14 +137,17 @@ fn verify_identity(binding: &Capture, expected: &str, frames: &[Envelope]) -> Te
     if uuid_text(&uuid) != binding.game_session_id || binding.identity() != expected {
         return Err("M02 capture does not match the live run identity".into());
     }
-    if binding.command_id == 0
-        || binding.first_sequence >= binding.result_sequence
+    if binding.setup[0].0 == 0
+        || binding.first_sequence > binding.setup[0].1
+        || binding.setup[2].1 >= binding.setup_end
+        || binding.setup_end >= binding.result_sequence
         || binding.result_sequence >= binding.opening_end
         || binding.opening_end >= binding.passage[0].1
-        || binding.passage[0].1 >= binding.passage[1].1
-        || binding.passage[1].1 >= binding.last_sequence
-        || binding.command_id.checked_add(1) != Some(binding.passage[0].0)
-        || binding.passage[0].0.checked_add(1) != Some(binding.passage[1].0)
+        || binding.passage[3].1 >= binding.last_sequence
+        || binding
+            .commands()
+            .windows(2)
+            .any(|pair| pair[0].0.checked_add(1) != Some(pair[1].0) || pair[0].1 >= pair[1].1)
         || !(1..=64).contains(&frames.len())
         || binding.last_sequence.checked_sub(binding.first_sequence)
             != Some(frames.len() as u64 - 1)
@@ -178,18 +200,14 @@ async fn replay(binding: &Capture, frames: &[Envelope], wire: &[Vec<u8>]) -> Tes
         return Err("M02 replay negotiation differs from the capture".into());
     }
 
-    let approach = ActorPosition {
-        x: i32::from(APPROACH.x),
-        y: i32::from(APPROACH.y),
-        floor: 7,
-    };
-    let mut previous = approach;
+    let mut previous = EXPECTED_ARRIVAL;
     let mut steps = Vec::new();
     let mut gate = None;
     let mut arrival = None;
     let mut opening = None;
     let mut frames = frames.iter();
     let mut seeded = false;
+    let mut retreat_steps = Vec::new();
     let mut passage_steps = Vec::new();
     for body in &wire[join_end + 1..] {
         let raw = decode_wire_envelope(body)?;
@@ -198,7 +216,7 @@ async fn replay(binding: &Capture, frames: &[Envelope], wire: &[Vec<u8>]) -> Tes
             return Err("M02 original wire extends beyond the capture binding".into());
         }
         if sequence == binding.first_sequence {
-            if session.world_spatial().actor_position != approach {
+            if session.world_spatial().actor_position != EXPECTED_ARRIVAL {
                 return Err("M02 replay setup did not reach the exact approach".into());
             }
             let map = session
@@ -236,7 +254,7 @@ async fn replay(binding: &Capture, frames: &[Envelope], wire: &[Vec<u8>]) -> Tes
             let payload = if binding.capabilities.contains(&66) {
                 let (payload, refusal) = refusal_detail::split_refusal_detail(result.payload)
                     .map_err(|error| format!("M02 replay refusal detail: {error:?}"))?;
-                if refusal.is_some() {
+                if refusal.is_some() && sequence != binding.setup[0].1 {
                     return Err("M02 committed result contains refusal detail".into());
                 }
                 payload
@@ -257,7 +275,11 @@ async fn replay(binding: &Capture, frames: &[Envelope], wire: &[Vec<u8>]) -> Tes
                 )
                 .map_err(|error| format!("M02 replay STEP result: {error:?}"))?
                 .disposition
-                    == StepDisposition::Moved
+                    == if sequence == binding.setup[0].1 {
+                        StepDisposition::Blocked
+                    } else {
+                        StepDisposition::Moved
+                    }
             };
             if result.command_id != frame.command_id
                 || result.status != CommandStatus::Accepted
@@ -273,33 +295,53 @@ async fn replay(binding: &Capture, frames: &[Envelope], wire: &[Vec<u8>]) -> Tes
         if let SessionEvent::WorldSpatialEntities(delta) = &event
             && delta.value.actor_position != previous
         {
-            if sequence > binding.opening_end {
-                previous = delta.value.actor_position;
-                passage_steps.push((frame.command_id, previous));
-                continue;
-            }
-            if sequence > binding.result_sequence {
-                return Err("M02 replay moved after the USE result".into());
-            }
             previous = delta.value.actor_position;
-            steps.push(previous);
-            if previous == EXPECTED_ARRIVAL {
-                arrival = Some(sequence);
+            if sequence <= binding.setup_end {
+                retreat_steps.push((frame.command_id, previous));
+            } else if sequence > binding.opening_end {
+                passage_steps.push((frame.command_id, previous));
+            } else {
+                if sequence >= binding.result_sequence {
+                    return Err("M02 replay moved after the USE result".into());
+                }
+                steps.push(previous);
+                if previous == EXPECTED_ARRIVAL {
+                    arrival = Some(sequence);
+                }
             }
         }
-        if sequence <= binding.opening_end {
-            observe_opening(&[event], &mut gate, binding.ordinal, &mut opening);
-        }
+        observe_gate(
+            &[event],
+            &mut gate,
+            binding.ordinal,
+            &mut opening,
+            sequence > binding.setup_end,
+        )?;
     }
     if !seeded || frames.next().is_some() {
         return Err("M02 original frame stream is incomplete".into());
     }
     verify_open_order(arrival, opening)?;
-    if passage_steps
+    if opening.is_some_and(|sequence| sequence > binding.opening_end) {
+        return Err("M02 gate first opened during passage".into());
+    }
+    if retreat_steps
         != [
-            (binding.passage[0].0, GATE_POSITION),
-            (binding.passage[1].0, EXPECTED_ARRIVAL),
+            (binding.setup[1].0, RETREAT[0]),
+            (binding.setup[2].0, RETREAT[1]),
         ]
+    {
+        return Err(
+            format!("M02 closed probe moved or retreat differed: {retreat_steps:?}").into(),
+        );
+    }
+    if passage_steps
+        != binding
+            .passage
+            .map(|(command, _)| command)
+            .into_iter()
+            .zip(PASSAGE)
+            .collect::<Vec<_>>()
     {
         return Err(format!("M02 original passage steps differ: {passage_steps:?}").into());
     }
@@ -335,10 +377,12 @@ fn m02_requires_exact_capture_identity() -> TestResult {
         command_id: 7,
         character: [0; 16],
         first_sequence: 10,
-        result_sequence: 11,
-        last_sequence: 16,
-        opening_end: 12,
-        passage: [(8, 13), (9, 15)],
+        result_sequence: 16,
+        last_sequence: 26,
+        opening_end: 17,
+        passage: [(8, 18), (9, 20), (10, 22), (11, 24)],
+        setup: [(4, 10), (5, 11), (6, 13)],
+        setup_end: 14,
         capabilities: vec![],
         content_generation: [0; 32],
         bundle_digest: [0; 32],
@@ -347,7 +391,7 @@ fn m02_requires_exact_capture_identity() -> TestResult {
         ordinal: 1,
     };
     let expected = binding.identity();
-    let mut frames: Vec<_> = (10..=16)
+    let mut frames: Vec<_> = (10..=26)
         .map(|server_sequence| Envelope {
             command_id: binding.command_at(server_sequence),
             game_session_id: binding.game_session_id.clone(),

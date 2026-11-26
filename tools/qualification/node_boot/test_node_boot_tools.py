@@ -877,6 +877,19 @@ class CloudRunSummaryTests(unittest.TestCase):
                             'e2e_s18_say_and_whisper_echo_replay -- --nocapture',
                         ])
 
+    def test_m02_selected_summary_rejects_node_pass_without_row_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / 'node.log'
+            log.write_text('NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged\n')
+            for batch in ('129:1', '+128:2', 'all'):
+                with self.subTest(batch=batch):
+                    result = subprocess.run(
+                        ['bash', str(HERE / 'cloud_run.sh'), '--summarize', str(log), 'rows'],
+                        env={**os.environ, 'OTERYN_E2E_ROW_BATCH': batch},
+                        capture_output=True, text=True, check=True,
+                    )
+                    self.assertIn('CLOUD_RUN group=rows result=NODE_BOOT_FAIL', result.stdout)
+
     def test_m02_summary_requires_exactly_one_passing_replay(self):
         capture = 'SEAM_EVIDENCE e2e_capture scenario=M02.client status=CAPTURED binding=fresh\n'
         replay = ('SEAM_EVIDENCE e2e_all scenario=M02.client '
