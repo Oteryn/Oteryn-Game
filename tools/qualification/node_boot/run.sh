@@ -1193,6 +1193,13 @@ stage() { # name prerequisite... -- function
       ! python3 "$GAME_SOURCE/tools/qualification/node_boot/client_replay.py" --validate "$WORK/stage-$name.log"; then
       STATUS[$name]="FAIL(row batch)"
     fi
+    if [[ "$name" == seam_stages && "$NODE_BOOT_WORLD" == 1 ]] &&
+      [[ "$groups" == *,rows,* || "$groups" == ,, ]] &&
+      [[ "${NODE_BOOT_P04_CAPTURE_PENDING:-0}" != 1 ]] &&
+      python3 "$GAME_SOURCE/tools/qualification/node_boot/client_replay.py" --contains-p04; then
+      echo "NODE_BOOT_STAGE_FAILED $name rows=P04.client cause=shared-replay-required"
+      STATUS[$name]="FAIL(P04 shared replay required)"
+    fi
     # A FAIL row fails its stage even when the stage process exits 0, unless the row is
     # listed in known_fail_rows.txt (debt that every run prints).
     local known_fail="$GAME_SOURCE/tools/qualification/node_boot/known_fail_rows.txt" new_rows known_hit stale_rows

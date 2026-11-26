@@ -5,7 +5,10 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::raw_feature::GatedCommandResult;
 use oteryn_dev_client::client_runtime::task_board;
-use oteryn_gameplay_quests::quest::task_board::full::{SHOP_OFFERS, TaskBoardShopKind};
+use oteryn_gameplay_quests::quest::task_board::full::{
+    TaskBoardAction, TaskBoardBalances, TaskBoardContext, TaskBoardCreature, TaskBoardData,
+    TaskBoardRefusal, apply_action,
+};
 use task_board::task_board::full::{
     Reply, Request, ShopOffer, Weekly, decode_reply, encode_request,
 };
@@ -75,23 +78,44 @@ async fn expected_period(clients: &SeamClients<'_>) -> TestResult<u64> {
 }
 
 fn expected_shop() -> Vec<ShopOffer> {
-    SHOP_OFFERS
-        .iter()
-        .map(|item| ShopOffer {
-            index: item.id,
-            kind: match item.kind {
-                TaskBoardShopKind::Item => 0,
-                TaskBoardShopKind::Mount => 1,
-                TaskBoardShopKind::Outfit => 2,
-                TaskBoardShopKind::ItemDouble => 3,
-                TaskBoardShopKind::Promotion => 4,
-            },
-            price: item.points,
-            primary: u32::from(item.appearance_or_item),
-            secondary: u32::from(item.second_item.unwrap_or(0)),
-            addon: item.addon,
-            bought: false,
-        })
+    // Crystal 201189f8 data/scripts/lib/task_board_shop.lua:33–248 and the
+    // approved portable grappling-hook substitution. Values are fixture data.
+    [
+        (0, 2, 1907, 0, 0, 100000),
+        (1, 2, 1907, 0, 1, 35000),
+        (2, 2, 1907, 0, 2, 35000),
+        (3, 2, 1282, 0, 0, 100000),
+        (4, 2, 1282, 0, 1, 35000),
+        (5, 2, 1282, 0, 2, 35000),
+        (6, 1, 1908, 0, 0, 145000),
+        (7, 1, 1909, 0, 0, 145000),
+        (8, 1, 1910, 0, 0, 145000),
+        (9, 1, 1281, 0, 0, 145000),
+        (10, 0, 36753, 0, 0, 135000),
+        (11, 0, 31465, 0, 0, 75000),
+        (12, 0, 32753, 0, 0, 80000),
+        (13, 0, 32756, 0, 0, 80000),
+        (14, 0, 36748, 0, 0, 80000),
+        (15, 0, 36749, 0, 0, 50000),
+        (16, 0, 32752, 0, 0, 15000),
+        (17, 0, 32755, 0, 0, 15000),
+        (18, 0, 32754, 0, 0, 3000),
+        (19, 0, 32751, 0, 0, 3000),
+        (20, 0, 32918, 0, 0, 37500),
+        (21, 0, 32943, 0, 0, 37500),
+        (22, 3, 32795, 32796, 0, 35000),
+        (23, 4, 0, 0, 0, 100),
+    ]
+    .into_iter()
+    .map(|(index, kind, primary, secondary, addon, price)| ShopOffer {
+        index,
+        kind,
+        primary,
+        secondary,
+        addon,
+        price,
+        bought: false,
+    })
         .collect()
 }
 
@@ -119,6 +143,7 @@ fn verify_fresh_query(reply: &Reply, period: u64, shop: &[ShopOffer]) -> TestRes
         reply.soulseals,
     ) != (0, period, 0, 0, 0)
         || reply.weekly != fresh_weekly()
+        || reply.weekly_results.is_some()
         || reply.shop != shop
     {
         return Err(format!(
@@ -129,7 +154,56 @@ fn verify_fresh_query(reply: &Reply, period: u64, shop: &[ShopOffer]) -> TestRes
     Ok(())
 }
 
+fn verify_global_master_boundary() -> TestResult {
+    // Global Weekly Tasks: https://www.tibiawiki.com.br/wiki/Weekly_Tasks
+    let creatures = (0..48)
+        .map(|i| TaskBoardCreature {
+            race: format!("oteryn:creature.p04_boundary_{i}"),
+            bestiary_stars: (i % 6) as u8,
+            experience: 100,
+            preyable: true,
+            prey_exclusive: false,
+        })
+        .collect::<Vec<_>>();
+    let start = |level| {
+        let mut data = TaskBoardData::default();
+        let mut balances = TaskBoardBalances::default();
+        let result = apply_action(
+            &mut data,
+            &mut balances,
+            &TaskBoardAction::StartWeekly { difficulty: 3 },
+            &TaskBoardContext {
+                level,
+                has_vocation: true,
+                now_unix_seconds: 1_800_000_000,
+                period: 42,
+                reset_day: Some(42),
+                creatures: &creatures,
+                available_gold: 0,
+                reroll_tokens: 0,
+            },
+            &mut |_| 0,
+        );
+        (result, data, balances)
+    };
+    let (below, unchanged, balances) = start(399);
+    let (at, started, _) = start(400);
+    let board = started.weekly.map(|board| (board.difficulty, board.period, board.any_required));
+    if below != Err(TaskBoardRefusal::LevelTooLow)
+        || unchanged != TaskBoardData::default()
+        || balances != TaskBoardBalances::default()
+        || at.is_err()
+        || board != Some((3, 42, 4000))
+    {
+        return Err(format!(
+            "Global Master Weekly Tasks boundary: level 399 expected LevelTooLow, observed {below:?}; level 400 expected Master board, observed result={at:?} board={board:?}"
+        ).into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    verify_global_master_boundary()?;
     let period = expected_period(clients).await?;
     let shop = expected_shop();
     let mut client = connect_world(clients, 0x26).await?;
@@ -257,6 +331,13 @@ mod tests {
             |r| r.bounty_points += 1,
             |r| r.soulseals += 1,
             |r| r.weekly.expanded = true,
+            |r| {
+                r.weekly_results = Some(oteryn_protocol_oteryn::task_board::full::WeeklyResults {
+                    period: 20773,
+                    points: 1,
+                    soulseals: 1,
+                })
+            },
             |r| {
                 r.weekly.kills.push(KillTask {
                     race: "oteryn:creature.rat".into(),

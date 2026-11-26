@@ -152,6 +152,7 @@ def replay_cause(row, package, test, names, captures, server, log):
     if not package or not server:
         return "replay-not-run"
 
+    cargo = os.environ.get("CARGO", "cargo")
     cargo_filter = test
     test_args = ["--nocapture"]
     replay_env = None
@@ -163,11 +164,18 @@ def replay_cause(row, package, test, names, captures, server, log):
             return "capture-missing"
         cargo_filter = f"task_board::e2e_p04::{test}"
         test_args += ["--ignored", "--exact"]
-        replay_env = {**os.environ, "E2E_P04_BINDING": bindings[0]}
+        if cargo != "cargo":
+            return "replay-not-run"
+        toolchain = Path("/workspace/oteryn-env/rustup/toolchains/1.100.0-x86_64-unknown-linux-gnu/bin")
+        cargo = str(toolchain / "cargo")
+        replay_env = {**os.environ, "E2E_P04_BINDING": bindings[0],
+                      "RUSTC": str(toolchain / "rustc")}
+        replay_env.pop("RUSTC_WRAPPER", None)
+        replay_env.pop("RUSTC_WORKSPACE_WRAPPER", None)
 
     try:
         result = subprocess.run(
-            [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package,
+            [cargo, "test", "--locked", "-p", package,
              "--lib", cargo_filter, "--", *test_args],
             cwd=ROOT, env=replay_env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )

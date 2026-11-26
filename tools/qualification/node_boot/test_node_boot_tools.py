@@ -699,7 +699,7 @@ class P04ReplayTests(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, expected, result.stderr)
 
-    def test_p04_shared_replay_requires_exact_capture_and_invokes_one_test(self):
+    def test_p04_shared_replay_rejects_substitute_cargo(self):
         binding = ('session=01890f4c-3b2a-7c01-8d11-9a321b7c0004;'
                    'readmission=01890f4c-3b2a-7c01-8d11-9a321b7c0005;'
                    'query=1,10;refused=2,12;after=1,9')
@@ -708,8 +708,8 @@ class P04ReplayTests(unittest.TestCase):
         names = ('p04-query.json', 'p04-refused.json', 'p04-readmission.json', 'p04-expected.txt')
         test = 'e2e_p04_replays_query_and_refused_start_weekly'
         for evidence, count, missing, cause, invoked in [
-            (marker, 1, None, '', True),
-            (marker, 0, None, 'replay-not-run', True),
+            (marker, 1, None, 'replay-not-run', False),
+            (marker, 0, None, 'replay-not-run', False),
             (marker, 1, 'p04-readmission.json', 'capture-missing', False),
             (marker.replace('after=1,9;', ''), 1, None, 'capture-missing', False),
             (marker * 2, 1, None, 'server-failed', False),
@@ -748,6 +748,26 @@ class P04ReplayTests(unittest.TestCase):
                         f'test --locked -p oteryn-client-ui --lib task_board::e2e_p04::{test} '
                         '-- --nocapture --ignored --exact',
                     ])
+
+    def test_p04_direct_seam_rejects_unreplayed_capture(self):
+        run = function('stage')
+        start = run.index('    if [[ "$name" == seam_stages', run.index('FAIL(row batch)'))
+        end = run.index('    # A FAIL row', start)
+        guard = run[start:end]
+        for batch, pending, blocked in [('159:1', '0', True), ('158:2', '0', True),
+                                        ('all', '0', True), ('159:1', '1', False),
+                                        ('59:1', '0', False)]:
+            with self.subTest(batch=batch, pending=pending), tempfile.TemporaryDirectory() as tmp:
+                result = subprocess.run(
+                    ['bash', '-c', 'declare -A STATUS; name=seam_stages; groups=,rows,\n'
+                     + guard + '\nprintf "%s" "${STATUS[seam_stages]}"'],
+                    env={**os.environ, 'GAME_SOURCE': str(HERE.parents[2]),
+                         'NODE_BOOT_WORLD': '1', 'NODE_BOOT_P04_CAPTURE_PENDING': pending,
+                         'E2E_ALL_CAPTURE_DIR': tmp, 'OTERYN_E2E_ROW_BATCH': batch},
+                    check=True, capture_output=True, text=True,
+                )
+                self.assertEqual('cause=shared-replay-required' in result.stdout, blocked)
+                self.assertEqual('FAIL(P04 shared replay required)' in result.stdout, blocked)
 
     def test_p04_aggregate_result_follows_shared_replay(self):
         cloud = (HERE / 'cloud_run.sh').read_text()
