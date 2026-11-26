@@ -3,7 +3,7 @@
 //!    be offered (the node-boot configuration supplies the notice text).
 //! 2. A repeat query returns the same dialog while it is pending.
 //! 3. An answer carrying another dialog identity is refused and the dialog stays pending.
-//! 4. Answer the first button: the reply echoes the answer, a later query returns no dialog,
+//! 4. Answer Acknowledge: the reply echoes the answer, a later query returns no dialog,
 //!    and the identical answer replayed is acknowledged without re-opening the dialog.
 //!
 //! The modal state is scoped to the connection, so no cross-session assertion is made.
@@ -137,8 +137,11 @@ fn answer(selected: bool, dialog_id: u32, button_id: u8) -> TestResult<Vec<u8>> 
     }
 }
 
-async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> TestResult {
-    let wire::Reply::Dialog(dialog) = query(client).await? else {
+const ACKNOWLEDGE: u8 = 1;
+const CANCEL: u8 = 2;
+
+fn require_notice(reply: wire::Reply, defaults_selected: bool) -> TestResult<wire::Dialog> {
+    let wire::Reply::Dialog(dialog) = reply else {
         return Err("step=query observed=no-dialog needed=non-empty-server-motd".into());
     };
     if dialog.title != "Server notice"
@@ -146,16 +149,38 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
     {
         return Err("step=query observed=unexpected-dialog needed=configured-server-motd".into());
     }
-    let Some(button) = dialog.buttons.first().map(|button| button.0) else {
+    if dialog.buttons.is_empty() {
         return Err("step=query observed=dialog-without-buttons".into());
-    };
+    }
+    if !dialog
+        .buttons
+        .iter()
+        .map(|(id, label)| (*id, label.as_str()))
+        .eq([(ACKNOWLEDGE, "Acknowledge"), (CANCEL, "Cancel")])
+        || dialog.default_button != defaults_selected.then_some(ACKNOWLEDGE)
+        || dialog.cancel_button != Some(CANCEL)
+        || !dialog.choices.is_empty()
+        || dialog.image.is_some()
+    {
+        return Err(
+            "step=query observed=unexpected-notice-controls needed=exact-notice-descriptor".into(),
+        );
+    }
+    Ok(dialog)
+}
+
+async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> TestResult {
+    let defaults_selected = client
+        .selected_capabilities()
+        .contains(&wire::CAPABILITY_SERVER_MODAL_DEFAULTS_V1);
+    let dialog = require_notice(query(client).await?, defaults_selected)?;
     match query(client).await? {
         wire::Reply::Dialog(again) if again == dialog => {}
         other => return Err(format!("step=repeat observed={other:?}").into()),
     }
     let selected = input_selected(client);
     let wrong_id = dialog.id.checked_add(1).unwrap_or(1);
-    let wrong = answer(selected, wrong_id, button)?;
+    let wrong = answer(selected, wrong_id, ACKNOWLEDGE)?;
     let (status, payload) = send(
         client,
         CAPABILITY,
@@ -174,10 +199,10 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
         wire::Reply::Dialog(still) if still == dialog => {}
         other => return Err(format!("step=wrong-answer observed=dialog-changed:{other:?}").into()),
     }
-    let right = answer(selected, dialog.id, button)?;
+    let right = answer(selected, dialog.id, ACKNOWLEDGE)?;
     let expected_answer = wire::Answer {
         dialog_id: dialog.id,
-        button_id: button,
+        button_id: ACKNOWLEDGE,
         choice_id: None,
     };
     let payload = accepted(
@@ -222,6 +247,46 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rejects_missing_notice_and_consistently_wrong_controls() -> TestResult {
+        let notice = wire::Dialog {
+            id: 7,
+            title: "Server notice".into(),
+            message: "Welcome to the node-boot qualification world.".into(),
+            choices: Vec::new(),
+            buttons: vec![(1, "Acknowledge".into()), (2, "Cancel".into())],
+            default_button: Some(1),
+            cancel_button: Some(2),
+            image: None,
+        };
+        assert_eq!(
+            require_notice(wire::Reply::Dialog(notice.clone()), true)?,
+            notice
+        );
+        assert!(require_notice(wire::Reply::None, true).is_err());
+        let mut swapped = notice.clone();
+        swapped.buttons.swap(0, 1);
+        let mut relabeled = notice.clone();
+        relabeled.buttons[0].1 = "OK".into();
+        let mut wrong_id = notice.clone();
+        wrong_id.buttons[0].0 = 3;
+        let mut wrong_default = notice.clone();
+        wrong_default.default_button = Some(2);
+        let mut wrong_cancel = notice.clone();
+        wrong_cancel.cancel_button = Some(1);
+        for malformed in [swapped, relabeled, wrong_id, wrong_default, wrong_cancel] {
+            assert!(require_notice(wire::Reply::Dialog(malformed), true).is_err());
+        }
+        let mut legacy = notice;
+        legacy.default_button = None;
+        assert!(require_notice(wire::Reply::Dialog(legacy.clone()), true).is_err());
+        assert_eq!(
+            require_notice(wire::Reply::Dialog(legacy.clone()), false)?,
+            legacy
+        );
+        Ok(())
+    }
 
     #[test]
     fn compact_is_one_bounded_token() {
