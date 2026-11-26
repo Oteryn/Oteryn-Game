@@ -9,6 +9,10 @@ use oteryn_protocol_oteryn::charm_progression::{
 };
 use std::num::NonZeroU32;
 
+// The authored Rat approach is 208 wire steps. The client packet now runs a
+// first credited hunt to establish its baseline, then the captured hunt.
+const DEADLINE: Duration = Duration::from_secs(600);
+
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
     use std::io::Write as _;
 
@@ -72,6 +76,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("P01 client requires a zero-kill Rat baseline".into());
     }
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    verdict::Harness::global().bounded_wait(
+        tokio::time::Instant::now() + Duration::from_secs(125),
+        "baseline-rat-combat",
+    );
     client_hunt::hunt(&mut client).await?;
     let before = send(
         &mut client,
@@ -106,6 +114,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("locked ASSIGN reply {refused:?}").into());
     }
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    verdict::Harness::global().bounded_wait(
+        tokio::time::Instant::now() + Duration::from_secs(125),
+        "captured-rat-combat",
+    );
     client_hunt::hunt(&mut client).await?;
     let after = send(
         &mut client,
@@ -136,9 +148,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(clients)))
-        .await
-    {
+    match verdict::indexed_timeout(DEADLINE, verdict::observe(journey(clients))).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P01.client status=CAPTURED evidence={expected}"
         )),
