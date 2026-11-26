@@ -714,16 +714,27 @@ async fn journey(
             );
         }
         let vitals = next_vitals(&mut client, "revelation-save", result_sequence).await?;
+        // Sorcerer slots 8, 9 and 14 contribute 50 HP and 900 mana to the maxima.
+        let expected_maxima = (baseline.max_health + 50, baseline.max_mana + 900);
+        if (vitals.max_health, vitals.max_mana) != expected_maxima {
+            return Err(format!(
+                "step=revelation-save expected maxima={expected_maxima:?} observed={vitals:?}"
+            )
+            .into());
+        }
         row.pass("revelation-save", (&revealed, vitals));
         logout(&mut client).await?;
         drop(client);
         client = connect_eligible(clients, 0xd9).await?;
         let (_, retained, _) = send(&mut client, &query_request()).await?;
-        let retained_vitals =
-            relog_vitals(&mut client, vitals, "fresh-admission-revelation").await?;
-        if retained != revealed || retained_vitals != vitals {
+        // The admission entitlement is delivered over the wire. Observe the first
+        // live vitals update and compare Wheel maxima independently of regeneration.
+        let retained_vitals = next_vitals(&mut client, "fresh-admission-revelation", 0).await?;
+        if retained != revealed
+            || (retained_vitals.max_health, retained_vitals.max_mana) != expected_maxima
+        {
             return Err(format!(
-                "step=revelation-relog lost durable state: saved={revealed:?} queried={retained:?}"
+                "step=revelation-relog lost durable state: saved={revealed:?} queried={retained:?} expected_maxima={expected_maxima:?} observed={retained_vitals:?}"
             )
             .into());
         }
@@ -731,7 +742,10 @@ async fn journey(
         if retained_effects != active {
             return Err(format!("step=revelation-relog effects changed: saved={active:?} queried={retained_effects:?}").into());
         }
-        row.pass("fresh-admission-revelation", (&retained, retained_effects));
+        row.pass(
+            "fresh-admission-revelation",
+            (&retained, retained_vitals, retained_effects),
+        );
         None
     };
 
