@@ -4,6 +4,7 @@
 //! the production encoder (the same convention as C09 and S04b), preceded by an entity snapshot of
 //! the view at the segment start. The consumer is `Session::apply_state_delta` and
 //! `Session::world_entities` in `crates/session`.
+use super::full_row_w01b::is_rat;
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityDetail, EntityRef, SessionEvent, WorldSpatialEntity};
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
@@ -178,7 +179,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0x0c).await?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W01B_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    let mut client = character_prep::w01b_rat_hunter("W01b.client", clients, 0x0c).await?;
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let here = client.world_spatial().actor_position;
     let target = client
@@ -194,6 +197,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         })
         .copied()
         .ok_or("W01b client capture: no live rat")?;
+    if !is_rat(&target) {
+        return Err("W01b client capture: nearest creature is not a rat".into());
+    }
     let target_at = tile(target.position)?;
     let creatures = &metadata.spawns.creatures;
     let (spawn, respawn_ms) = metadata
@@ -299,6 +305,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if target_state(&client, target.entity).is_some() {
         return Err("W01b client capture: killed actor returned".into());
     }
+    if !is_rat(&replacement) {
+        return Err("W01b client capture: replacement at the authored point is not a rat".into());
+    }
     let respawn = Segment::begin(&client, "respawn", replacement.entity)?;
     capture("w01b-respawn-snapshot.bin", &respawn.snapshot)?;
 
@@ -320,6 +329,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         replacement.position.y,
         replacement.position.floor,
     ));
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("W01b client capture: logout refused: {logout:?}").into());
+    }
     capture("w01b-expected.txt", expected.as_bytes())?;
     Ok(expected)
 }

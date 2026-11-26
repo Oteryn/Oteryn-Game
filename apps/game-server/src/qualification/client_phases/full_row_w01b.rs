@@ -113,7 +113,7 @@ fn rat_at(
         .map(|entity| entity.entity)
 }
 
-fn is_rat(entity: &WorldSpatialEntity) -> bool {
+pub(super) fn is_rat(entity: &WorldSpatialEntity) -> bool {
     entity.kind == EntityKind::Creature
         && entity
             .display_name
@@ -164,7 +164,9 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         ChannelId::decode(&clients.channel)?,
     )?;
     progress.begin("admission");
-    let mut client = connect_world(clients, 0xb1).await?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W01B_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    let mut client = character_prep::w01b_rat_hunter("W01b.full", clients, 0xb1).await?;
     progress.begin("initial-spawn");
     travel_to_spawn(
         &mut client,
@@ -204,7 +206,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut damaged = false;
-    let mut last = spawn;
+    let mut last = target_at;
     let corpse = loop {
         for event in pump(&mut client).await? {
             if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event
@@ -282,7 +284,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     progress.pass("logout", "Accepted");
     drop(client);
     progress.begin("fresh-admission");
-    let mut fresh = connect_world(clients, 0xb2).await?;
+    let mut fresh = connect_character(clients, 0xb2, 0).await?;
     progress.begin("fresh-admission-route");
     let path = route(world, tile(fresh.world_spatial().actor_position)?, |at| {
         distance(at, spawn) <= 1

@@ -213,3 +213,69 @@ pub(super) async fn reload(
     }
     Ok(())
 }
+
+pub(super) async fn w01b_rat_hunter(
+    row: &str,
+    clients: &SeamClients<'_>,
+    tag: u8,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    use oteryn_protocol_oteryn::{actor_spell, cyclopedia_character, logout::LogoutResult};
+
+    const LEVEL: u32 = 50;
+    const VOCATION: &str = "sorcerer";
+    declare_seeded(
+        row,
+        "sorcerer-level-50",
+        "unarmed combat that clears Rat mitigation without skipping the damage delta",
+    );
+    let mut staging = connect_character(clients, tag, 0).await?;
+    let session = staging.join_snapshot().game_session_id;
+    request_fixture_control(uuid_text(session.as_bytes()), "--profile", "w01b-rat".into()).await?;
+    let logout = staging.session_mut().logout().await?;
+    if logout.result != Some(LogoutResult::Accepted) {
+        return Err(format!("W01b seed logout refused: {logout:?}").into());
+    }
+    drop(staging);
+
+    let mut client = connect_character(clients, tag, 0).await?;
+    if client.join_snapshot().game_session_id == session {
+        return Err("W01b seed reused the staging session".into());
+    }
+    let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        VOCATION,
+        LEVEL,
+        actor_spell::MAX_VITAL_POOL,
+        actor_spell::MAX_SOUL,
+    )
+    .ok_or("W01b seed has no source vitals")?;
+    let vitals = client.actor_vitals().ok_or("W01b seeded vitals absent")?;
+    if (vitals.max_health, vitals.max_mana) != (max_health, max_mana) {
+        return Err(format!("W01b seeded vitals mismatch: {vitals:?}").into());
+    }
+
+    let stats = client
+        .session_mut()
+        .gated_command(
+            cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            cyclopedia_character::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[1, 0, 0, 1],
+        )
+        .await?;
+    if stats.status != CommandStatus::Accepted {
+        return Err(format!("W01b seeded GeneralStats refused: {stats:?}").into());
+    }
+    let vocation_selected = general_stats::selected(&client);
+    let vocation = general_stats::validate(&stats.payload, vocation_selected)?;
+    let level = u32::from_le_bytes(stats.payload[9..13].try_into()?);
+    if level != LEVEL || (vocation_selected && vocation != cyclopedia_character::vocation_id(VOCATION))
+    {
+        return Err(format!(
+            "W01b seeded GeneralStats mismatch: level={level} vocation={vocation:?}"
+        )
+        .into());
+    }
+    evidence(&format!(
+        "W01B_SEEDED row={row} level={level} max_health={max_health} max_mana={max_mana}"
+    ));
+    Ok(client)
+}

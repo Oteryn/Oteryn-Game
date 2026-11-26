@@ -315,15 +315,20 @@ WORK=.
 
     def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
         fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
+        fixtures += "\n".join(line for line in RUN_TEXT.splitlines()
+                              if line.startswith(('readonly INTENT_OPERATIONS=', 'readonly INTENT_NAMES='))) + "\n"
         fixtures += section('BOOTSTRAP_ACCOUNTS=(', 'source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"')
         result = bash('set -Eeuo pipefail\nNODE_BOOT_WORLD=1\n' + fixtures
+                      + 'test "${#INTENT_OPERATIONS[@]}" -eq "${#BOOTSTRAP_ACCOUNTS[@]}"\n'
+                      + 'test "${#INTENT_NAMES[@]}" -eq "${#BOOTSTRAP_ACCOUNTS[@]}"\n'
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 30)
+        self.assertEqual(len(accounts), 31)
         self.assertEqual(len(set(accounts)), len(accounts))
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
         self.assertEqual(accounts[29], "01934f10-7c00-7000-8000-000000000021")
+        self.assertEqual(accounts[30], "01934f10-7c00-7000-8000-000000000022")
 
 
 class ReuseTests(unittest.TestCase):
