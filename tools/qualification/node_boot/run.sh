@@ -1609,6 +1609,51 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   )
 }
 
+p06_client_replay() {
+  local replay=wheel_allocation::e2e_p06::e2e_p06_replays_query_and_stale_revision_save
+  local output started=$SECONDS
+  local seam_log="$WORK/stage-$seam_stage_name.log"
+  if [[ -f "$seam_log" ]] &&
+    grep -q '^SEAM_EVIDENCE e2e_all scenario=P06[.]client status=FAIL ' "$seam_log"; then
+    return 1
+  fi
+  if [[ -f "$NODE_BOOT_P06_CAPTURE_DIR/p06-expected.txt" ]] &&
+    [[ -f "$seam_log" ]] &&
+    grep -q '^SEAM_EVIDENCE e2e_capture scenario=P06[.]client status=CAPTURED ' "$seam_log" &&
+    output="$(E2E_ALL_CAPTURE_DIR="$NODE_BOOT_P06_CAPTURE_DIR" cargo +1.100.0 test --locked \
+      -p oteryn-client-ui --lib "$replay" -- --exact)" &&
+    grep -Fxq "test $replay ... ok" <<< "$output"; then
+    printf '%s\n' "$output"
+    printf 'SEAM_EVIDENCE e2e_all scenario=P06.client status=PASS seconds=%s.000 evidence=live-capture-client-replay\n' "$((SECONDS - started))"
+  else
+    [[ -z ${output:-} ]] || printf '%s\n' "$output"
+    printf 'SEAM_EVIDENCE e2e_all scenario=P06.client status=FAIL seconds=%s.000 evidence=live-capture-client-replay-failed\n' "$((SECONDS - started))"
+    return 1
+  fi
+}
+
+# Keep this in sync with e2e_row_batch.rs and verdict::Groups so a missing capture fails.
+p06_client_selected() {
+  python3 - "${OTERYN_E2E_ROW_BATCH-0:15}" "${NODE_BOOT_E2E_ONLY:-}" <<'PY_P06_ROW'
+import re
+import sys
+
+batch, groups = sys.argv[1:]
+if groups.strip() and "rows" not in {group.strip() for group in groups.split(",")}:
+    sys.exit(1)
+match = re.fullmatch(r"([+]?[0-9]+):([+]?[0-9]+)", batch)
+if batch == "all":
+    sys.exit(0)
+if not match:
+    sys.exit(1)
+start, length = (digits.lstrip("+0") or "0" for digits in match.groups())
+if len(start) > 3 or len(length) > 20:
+    sys.exit(1)
+start, length = int(start), int(length)
+sys.exit(not (start <= 161 and 161 - start < length <= 2**64 - 1))
+PY_P06_ROW
+}
+
 graceful_shutdown() { # ready=false first, socket removed
   node_signal -TERM "$NODE_PID"
   local code=0
@@ -1815,6 +1860,12 @@ fi
 
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
+p06_client_replay_requested=0
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "$NODE_BOOT_D150_LEGACY" == 0 ]] && p06_client_selected; then
+  p06_client_replay_requested=1
+  NODE_BOOT_P06_CAPTURE_DIR="$(mktemp -d "$WORK/p06-client.XXXXXX")" || blocked p06_capture_dir_unavailable
+  export NODE_BOOT_P06_CAPTURE_DIR
+fi
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
   stage "$seam_stage_name" -- seam_stages
 else
@@ -1839,6 +1890,9 @@ else
   fi
   stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
+fi
+if [[ "$p06_client_replay_requested" == 1 ]]; then
+  stage p06_client_replay -- p06_client_replay
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then

@@ -6,40 +6,41 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::wheel_allocation::{self, WheelCommand, WheelResponse};
 use oteryn_protocol_oteryn::wheel;
+use std::{io::Write, path::PathBuf};
 
 const CORE_SLOT: usize = 20;
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P06_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+fn capture(roots: &[PathBuf], name: &str, bytes: &[u8]) -> TestResult {
+    for root in roots {
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(root.join(name))?
+            .write_all(bytes)?;
     }
+    Ok(())
 }
 
 async fn send(
     client: &mut DevClientSession,
     payload: Vec<u8>,
     name: &str,
+    roots: &[PathBuf],
 ) -> TestResult<(WheelResponse, wheel::WheelAllocationReply)> {
     let command = WheelCommand::new(wheel::COMMAND_TYPE_WHEEL_ALLOCATION, payload)
         .ok_or("Wheel runtime rejected the command")?;
     let response = wheel_allocation::send(client.session_mut(), &command).await?;
-    if !matches!(
-        response.status,
-        CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) {
+    if response.status != CommandStatus::Accepted {
         return Err(format!("{name} status={:?}", response.status).into());
     }
-    capture(&format!("p06-{name}-receipt.bin"), &response.payload);
+    capture(roots, &format!("p06-{name}-receipt.bin"), &response.payload)?;
     for (suffix, frame) in [
         ("wheel", &response.wheel),
         ("atelier", &response.atelier),
         ("resources", &response.resources),
     ] {
         if let Some(bytes) = frame {
-            capture(&format!("p06-{name}-{suffix}.bin"), bytes);
+            capture(roots, &format!("p06-{name}-{suffix}.bin"), bytes)?;
         }
     }
     let current = response
@@ -52,6 +53,14 @@ async fn send(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let roots: Vec<_> = ["E2E_ALL_CAPTURE_DIR", "NODE_BOOT_P06_CAPTURE_DIR"]
+        .into_iter()
+        .filter_map(std::env::var_os)
+        .map(PathBuf::from)
+        .collect();
+    if roots.is_empty() {
+        return Err("Wheel replay capture directory absent".into());
+    }
     let mut client = connect_world(clients, 0x28).await?;
     if !client
         .selected_capabilities()
@@ -59,9 +68,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("admission omitted Wheel capability 148".into());
     }
-    let (query, initial) = send(&mut client, vec![8, 0], "query").await?;
-    if initial.refused || query.atelier.is_none() {
-        return Err(format!("query refused or without Atelier frame: {initial:?}").into());
+    let (query, initial) = send(&mut client, vec![8, 0], "query", &roots).await?;
+    let query_receipt = wheel::decode_wheel_reply(&query.payload)
+        .map_err(|error| format!("query receipt: {error:?}"))?;
+    if initial.refused || query_receipt != initial || query.atelier.is_none() {
+        return Err(format!(
+            "query receipt or current projection disagrees: {query_receipt:?} {initial:?}"
+        )
+        .into());
     }
     let mut points = [0; 36];
     points[CORE_SLOT] = 25;
@@ -76,10 +90,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         vessels: None,
     })
     .map_err(|error| format!("save encoder: {error:?}"))?;
-    let (stale, after) = send(&mut client, payload, "stale").await?;
+    let (stale, after) = send(&mut client, payload, "stale", &roots).await?;
     let receipt = wheel::decode_wheel_reply(&stale.payload)
         .map_err(|error| format!("stale receipt: {error:?}"))?;
-    if !receipt.refused || after != initial {
+    if !receipt.refused
+        || (wheel::WheelAllocationReply {
+            refused: false,
+            ..receipt.clone()
+        }) != initial
+        || after != initial
+    {
         return Err(format!("stale save was not refused unchanged: {receipt:?} {after:?}").into());
     }
     let expected = format!(
@@ -90,12 +110,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         receipt.refused,
         after.revision
     );
-    capture("p06-expected.txt", expected.as_bytes());
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("Wheel capture logout observed {logout:?}").into());
+    }
+    capture(&roots, "p06-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";"))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P06.client status=CAPTURED evidence={expected}"
         )),

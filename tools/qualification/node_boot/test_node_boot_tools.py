@@ -389,6 +389,58 @@ class ReuseTests(unittest.TestCase):
         self.assertIn('"$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then\n  NODE_BOOT_WORLD=0 bash', RUN_TEXT)
 
 
+class P06ClientReplayTests(unittest.TestCase):
+    def test_selected_batch_includes_p06_client(self):
+        selector = function('p06_client_selected') + '\np06_client_selected\n'
+        for groups, batch, selected in (
+            ('rows', '161:1', True),
+            ('core, rows', '160:2', True),
+            ('', 'all', True),
+            ('rows', '57:1', False),
+            ('rows', '161:0', False),
+            ('rows', '161:', False),
+            ('rows', '161:18446744073709551616', False),
+            ('core', 'all', False),
+        ):
+            with self.subTest(groups=groups, batch=batch):
+                result = bash(selector, {
+                    'NODE_BOOT_E2E_ONLY': groups, 'OTERYN_E2E_ROW_BATCH': batch,
+                })
+                self.assertEqual(result.returncode, int(not selected), result.stderr)
+
+    def test_verdict_requires_fresh_capture_and_one_asserting_test(self):
+        test_name = 'wheel_allocation::e2e_p06::e2e_p06_replays_query_and_stale_revision_save'
+        command = """
+            cargo() {
+                [[ "$E2E_ALL_CAPTURE_DIR" == "$WORK" ]] || return 99
+                printf '%s\\n' "$P06_REPLAY_OUTPUT"
+                return "$P06_REPLAY_STATUS"
+            }
+            seam_stage_name=seam_stages
+        """ + function('p06_client_replay') + '\np06_client_replay\n'
+        for capture, marker, output, status, passed in (
+            (False, True, f'test {test_name} ... ok', '0', False),
+            (True, False, f'test {test_name} ... ok', '0', False),
+            (True, True, '0 passed', '0', False),
+            (True, True, f'test {test_name} ... ok', '1', False),
+            (True, True, f'test {test_name} ... ok', '0', True),
+        ):
+            with self.subTest(capture=capture, marker=marker, output=output, status=status):
+                with tempfile.TemporaryDirectory() as work:
+                    if capture:
+                        Path(work, 'p06-expected.txt').touch()
+                    Path(work, 'stage-seam_stages.log').write_text(
+                        'SEAM_EVIDENCE e2e_capture scenario=P06.client status=CAPTURED evidence=live\n'
+                        if marker else ''
+                    )
+                    result = bash(command, {
+                        'WORK': work, 'NODE_BOOT_P06_CAPTURE_DIR': work,
+                        'P06_REPLAY_OUTPUT': output, 'P06_REPLAY_STATUS': status,
+                    })
+                self.assertEqual(result.returncode, int(not passed), result.stdout + result.stderr)
+                self.assertIn('status=' + ('PASS' if passed else 'FAIL'), result.stdout)
+
+
 class SeamPassThroughTests(unittest.TestCase):
     def test_seam_runs_spawn_fence_regression_with_database_url(self):
         seam = function('seam_stages')
