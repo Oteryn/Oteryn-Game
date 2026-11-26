@@ -413,6 +413,13 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
     )?;
     accepted(
         4,
+        command(&mut client, None).await.map_err(|error| {
+            failed_error(4, error, "independent Hazard readback after selection")
+        })?,
+        [2, 2],
+    )?;
+    accepted(
+        4,
         command(&mut client, Some(1))
             .await
             .map_err(|error| failed_error(4, error, "the switch back to Hazard level 1"))?,
@@ -420,9 +427,23 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
     )?;
     accepted(
         4,
+        command(&mut client, None).await.map_err(|error| {
+            failed_error(4, error, "independent Hazard readback after selection")
+        })?,
+        [2, 1],
+    )?;
+    accepted(
+        4,
         command(&mut client, Some(2))
             .await
             .map_err(|error| failed_error(4, error, "the restoration of Hazard level 2"))?,
+        [2, 2],
+    )?;
+    accepted(
+        4,
+        command(&mut client, None).await.map_err(|error| {
+            failed_error(4, error, "independent Hazard readback after selection")
+        })?,
         [2, 2],
     )?;
     let inventory_before = client
