@@ -207,7 +207,6 @@ pub async fn send_framed<S: SessionStream>(
     Ok(format!("{label}: {text}"))
 }
 
-#[cfg(test)]
 fn project_look_result(payload: &[u8]) -> String {
     match item_look::decode_item_look_result_for(payload, ItemLookSelection { extended: true }) {
         Ok(item_look::ItemLookResult::Text(text)) => text,
@@ -216,6 +215,7 @@ fn project_look_result(payload: &[u8]) -> String {
     }
 }
 
+#[cfg(test)]
 #[path = "tests/e2e_i03.rs"]
 mod e2e_i03;
 
