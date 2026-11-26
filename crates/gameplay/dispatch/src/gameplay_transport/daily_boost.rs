@@ -1,16 +1,24 @@
 //! BOOSTED-1: the committed World/server-save choice shared by queries, kills and home spawns.
-use super::{ComposedFreshAdmission, connection::AdmittedSession};
+use super::{AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission, connection::AdmittedSession};
 use crate::content::ProjectV2AuthoringProfileData;
-use crate::durability::{DurabilityError, daily_boost::DailyBoostBinding};
+use crate::durability::{DurabilityError, SqlxFailureClass, daily_boost::DailyBoostBinding};
 use crate::foundation::RuntimeScopeRefV1;
 use oteryn_protocol_oteryn::daily_boost as wire;
 
 #[derive(Debug)]
 pub enum DailyBoostReply {
     Rejected,
-    Busy,
     Payload(Vec<u8>),
-    Unavailable,
+    Unavailable(DurabilityError),
+}
+
+pub(super) fn is_retryable(error: &DurabilityError) -> bool {
+    matches!(
+        error,
+        DurabilityError::RootUnavailable
+            | DurabilityError::RootPassDeadlineExceeded
+            | DurabilityError::Database(SqlxFailureClass::RetryableStatement)
+    )
 }
 
 pub(super) fn offered(
@@ -80,14 +88,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) async fn initialize_daily_boost(&self) -> Result<(), ()> {
-        self.load_daily_boost(false).await.map_err(|_| ())
+        self.load_daily_boost(None).await.map_err(|_| ())
     }
 
-    async fn load_daily_boost(&self, refresh: bool) -> Result<(), DurabilityError> {
+    async fn load_daily_boost(&self, deadline: Option<tokio::time::Instant>) -> Result<(), DurabilityError> {
         let Some(map) = self.bundle_map() else {
             return Ok(());
         };
-        let mut runtime = self.runtime.lock().await;
+        let runtime = self.runtime.lock().await;
         runtime
             .owner_fence()
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -101,7 +109,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(DurabilityError::Unavailable);
         }
 
-        if !refresh
+        if deadline.is_none()
             && runtime
                 .daily_boost()
                 .is_some_and(|choice| choice.reset_epoch == self.reset_epoch)
@@ -114,12 +122,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(());
         }
         drop(runtime);
-        let permit = self.try_spell_lane_permit().await?;
-        runtime = self.runtime.lock().await;
-        let binding = runtime.binding();
+        let permit = self.try_spell_lane_permit_by(deadline).await?;
+        let binding = self.runtime.lock().await.binding();
+        #[cfg(test)]
+        let held = if self
+            .states
+            .test_daily_boost_hold_once
+            .swap(false, std::sync::atomic::Ordering::Relaxed)
+        {
+            Some(self.root.try_issue_semantic_pass()?)
+        } else {
+            None
+        };
         let selection = self
             .root
-            .prepare_daily_boost(
+            .prepare_daily_boost_by(
                 self.character,
                 self.holder,
                 &permit,
@@ -130,11 +147,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     epoch: self.reset_epoch,
                 },
                 pools,
+                deadline,
             )
-            .await?;
+            .await;
+        #[cfg(test)]
+        if let Some(held) = held {
+            assert!(matches!(&selection, Err(DurabilityError::RootUnavailable)));
+            // Return the actual holder with observed readiness before the retry.
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        }
+        let selection = selection?;
+        let mut runtime = self.runtime.lock().await;
+        if runtime.binding() != binding {
+            return Err(DurabilityError::Unavailable);
+        }
         runtime
             .install_daily_boost(selection)
             .map_err(|_| DurabilityError::Unavailable)
+    }
+
+    async fn retry_daily_boost(&self) -> Result<(), DurabilityError> {
+        let budget = AdmissionRetryBudget::for_foreground_command(self.root)?;
+        loop {
+            budget.check_deadline()?;
+            let result = self.load_daily_boost(Some(budget.deadline)).await;
+            // The pass and lane permit have both been returned before waiting.
+            if !result.as_ref().is_err_and(is_retryable)
+                || !budget.retries_unavailable(AdmissionRefusal::Unavailable).await
+            {
+                return result;
+            }
+        }
     }
 
     #[cfg(test)]
@@ -192,16 +235,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return DailyBoostReply::Rejected;
         }
-        let load = self.load_daily_boost(true);
+        let load = self.retry_daily_boost();
         #[cfg(test)]
         let load = self.load_with_test_trade_contention(fence, load);
-        match load.await {
-            Ok(()) => {}
-            // The root refused checkout before this query could read or write.
-            Err(DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded) => {
-                return DailyBoostReply::Busy;
-            }
-            Err(_) => return DailyBoostReply::Unavailable,
+        if let Err(error) = load.await {
+            return DailyBoostReply::Unavailable(error);
         }
         let runtime = self.runtime.lock().await;
         if runtime.owner_fence().is_err()
@@ -227,7 +265,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             boss_key: choice.boss.clone(),
         }) {
             Ok(bytes) => DailyBoostReply::Payload(bytes),
-            Err(_) => DailyBoostReply::Unavailable,
+            Err(_) => DailyBoostReply::Unavailable(DurabilityError::InvalidStoredState),
         }
     }
 }

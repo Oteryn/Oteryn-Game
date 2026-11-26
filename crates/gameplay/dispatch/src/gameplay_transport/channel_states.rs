@@ -120,6 +120,8 @@ pub struct ChannelSessionStates {
     #[cfg(test)]
     pub(super) test_owner_time: std::sync::atomic::AtomicU64,
     #[cfg(test)]
+    pub(super) test_daily_boost_hold_once: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
     pub(super) test_daily_boost_parked_trade: std::sync::atomic::AtomicBool,
     pub(super) tibiadrome: super::tibiadrome::Drome,
     pub(super) timed_items: super::timed_item::TimedRuntime,

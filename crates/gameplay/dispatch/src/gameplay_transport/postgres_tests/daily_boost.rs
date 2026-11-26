@@ -100,7 +100,7 @@ fn daily_boost_postgres_real_dispatch_restart_and_epoch_fence() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(Scenario::Restart).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "daily boost PostgreSQL scenario panicked")??;
     Ok(())
@@ -113,7 +113,7 @@ fn selected_world_login_probe_returns_boost_and_online_before_admission() -> Tes
     };
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(Scenario::BeforeAdmission).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "world login probe PostgreSQL scenario panicked")?
         .map_err(Into::into)
@@ -205,7 +205,123 @@ async fn pre_admission_case(
     Ok(())
 }
 
-fn scenario(preadmission: bool) -> TestResult {
+#[derive(Clone, Copy)]
+enum Scenario {
+    Restart,
+    BeforeAdmission,
+    ContendedLogout,
+}
+
+#[test]
+fn daily_boost_postgres_retries_holder_answers_twice_and_allows_logout() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::item_look_fixtures::large_stack(|| scenario(Scenario::ContendedLogout))
+}
+
+async fn contended_queries_then_logout(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    use crate::foundation::{MessageType, decode_wire_envelope};
+    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+    use crate::gameplay_transport::last_position::AdmissionPosition;
+    use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
+    use oteryn_protocol_oteryn::logout::{
+        CAPABILITY_LOGOUT_V1, COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
+        encode_logout_intent,
+    };
+    use oteryn_protocol_oteryn::{
+        ClientCommandValue, decode_command_result, encode_client_command,
+    };
+
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        &crate::gameplay_transport::daily_boost::offered(
+            owner.offered_capabilities(),
+            owner.daily_boost_available(),
+        ),
+        &[CAPABILITY_LOGOUT_V1, CAPABILITY_DAILY_BOOST_V1],
+    )
+    .ok_or("Daily Boost and logout capabilities")?;
+    assert!(owner.track_restored(
+        admitted.game_session_id,
+        admitted.runtime_actor.ok_or("admitted actor")?,
+        &AdmissionPosition::FirstLogin,
+        super::fixture::fence(1)?,
+    ));
+    let generation = admitted.continuity.connection_generation;
+    let logout = encode_logout_intent();
+    let frame = |command_id, command_type, payload: &[u8]| {
+        encode_client_command(
+            generation,
+            &ClientCommandValue { command_id, command_type, payload },
+        )
+        .map_err(debug)
+    };
+    let (mut server, mut client) = tokio::io::duplex(4096);
+    let serving = async {
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        drop(server);
+        end
+    };
+    let driving = async {
+        loop {
+            let bytes = read_frame(&mut client).await?;
+            if decode_wire_envelope(&bytes).map_err(debug)?.message_type()
+                == MessageType::SnapshotCommit
+            {
+                break;
+            }
+        }
+        owner
+            .states
+            .test_daily_boost_hold_once
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+        for id in [1, 2] {
+            write_frame(&mut client, &frame(id, COMMAND_TYPE_DAILY_BOOST_QUERY, &[])?).await?;
+        }
+        let first = read_result(&mut client, 1).await?;
+        assert_eq!(read_result(&mut client, 2).await?, first);
+        let selection = owner.runtime.lock().await.daily_boost().cloned().ok_or("daily choice")?;
+        assert_eq!(first, encode_view(&DailyBoostView {
+            reset_epoch: selection.reset_epoch,
+            creature_key: selection.creature,
+            boss_key: selection.boss,
+        }).map_err(debug)?);
+        write_frame(
+            &mut client,
+            &frame(3, COMMAND_TYPE_LOGOUT_INTENT, &logout)?,
+        )
+        .await?;
+        let result = read_result(&mut client, 3).await?;
+        assert_eq!(decode_logout_result(&result).map_err(debug)?, LogoutResult::Accepted);
+        TestResult::Ok(())
+    };
+    async fn read_result(stream: &mut tokio::io::DuplexStream, id: u64) -> TestResult<Vec<u8>> {
+        loop {
+            let bytes = read_frame(stream).await?;
+            let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                assert_eq!(result.command_id, id);
+                assert_eq!(result.status, CommandStatus::Accepted, "command {id}");
+                return Ok(result.payload.to_vec());
+            }
+        }
+    }
+    let (end, result) = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        super::fixture::join_two(serving, driving),
+    )
+    .await?;
+    result?;
+    assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)), "{end:?}");
+    eprintln!("POSTGRES_W13 contended query, second query and terminal logout answered");
+    Ok(())
+}
+
+fn scenario(scenario: Scenario) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "daily_boost_wire", true, false).await?;
@@ -278,7 +394,7 @@ fn scenario(preadmission: bool) -> TestResult {
         owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
-        if preadmission {
+        if matches!(scenario, Scenario::BeforeAdmission) {
             let result = pre_admission_case(&owner, deps.admitted.world_id, &h.pool).await;
             drop(owner);
             drop(authority);
@@ -294,6 +410,14 @@ fn scenario(preadmission: bool) -> TestResult {
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
+        if matches!(scenario, Scenario::ContendedLogout) {
+            let result = contended_queries_then_logout(&owner, admitted).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
         admitted.continuity.selected_capabilities = SelectedCapabilities::NONE;
         assert_eq!(
             support::exchange(
@@ -478,8 +602,22 @@ fn scenario(preadmission: bool) -> TestResult {
             owner
                 .daily_boost_wire(admitted, 5, COMMAND_TYPE_DAILY_BOOST_QUERY, &[])
                 .await,
-            crate::gameplay_transport::daily_boost::DailyBoostReply::Unavailable
+            crate::gameplay_transport::daily_boost::DailyBoostReply::Unavailable(
+                crate::durability::DurabilityError::Unavailable
+            )
         ));
+        assert_eq!(
+            support::exchange(
+                &owner,
+                &mut admitted,
+                7,
+                COMMAND_TYPE_DAILY_BOOST_QUERY,
+                &[],
+            )
+            .await?,
+            (CommandStatus::Rejected, Vec::new()),
+            "a consumed query against a superseded epoch must receive its refusal"
+        );
         let permit = owner.spell_lane_permit().await.ok_or("new epoch permit")?;
         let mut next = binding();
         next.epoch = 1;

@@ -3,6 +3,7 @@ use super::character_authority::ReconciledCharacterAuthority;
 use super::character_progression::numeric_u64;
 use super::db::begin_type2_transaction;
 use super::runtime_scope_assignment::NodeIncarnationProof;
+use super::spell_item_transaction::SpellItemError;
 use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::RuntimeScopeRefV1;
@@ -26,13 +27,35 @@ impl DurabilityRoot {
         binding: DailyBoostBinding,
         pools: (Vec<String>, Vec<String>),
     ) -> Result<DailyBoostSelection, DurabilityError> {
+        self.prepare_daily_boost_by(authority, node, permit, binding, pools, None)
+            .await
+    }
+
+    /// Run the same fenced selection under the caller's absolute query deadline.
+    pub async fn prepare_daily_boost_by(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        permit: &SpellLanePermit,
+        binding: DailyBoostBinding,
+        pools: (Vec<String>, Vec<String>),
+        deadline: Option<tokio::time::Instant>,
+    ) -> Result<DailyBoostSelection, DurabilityError> {
+        let pass = match deadline {
+            Some(deadline) => self.try_issue_semantic_pass_by(deadline)?,
+            None => self.try_issue_semantic_pass()?,
+        };
         let mut context = (authority, node, permit);
-        self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
+        pass.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
             let (authority, node, permit) = context;
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             super::spell_item_transaction::assert_spell_item_scope_in_transaction(
                 &mut tx, permit, self, authority, node, binding.scope, binding.generation,
-            ).await.map_err(|_| DurabilityError::Unavailable)?;
+            ).await.map_err(|error| match error {
+                SpellItemError::Durability(error) => error,
+                SpellItemError::Database(error) => error.into(),
+                _ => DurabilityError::Unavailable,
+            })?;
             // Exclusive pointer lock serializes the first draw across Channels and conflicts
             // with activation. The old epoch cannot create rows during retirement.
             let active = sqlx::query("SELECT a.reset_epoch::text,e.target_digest FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid FOR UPDATE OF a")
