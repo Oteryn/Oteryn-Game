@@ -137,11 +137,12 @@ class Review(unittest.TestCase):
             for r in recipe["oteryn_recipe"]["payload"]["recipe"]["stages"]
             if r["kind"] == "use"
         ]
+        source_prices = q.golden_source_prices(q.donor_inputs()[q.GOLDEN_NPC_SOURCE])
         for document, suffixes, prices in [
             (
                 "shared-reward-callbacks",
                 ["l10-golden-base", "l10-golden-boots", "l10-golden-helmet"],
-                selected_prices,
+                source_prices,
             ),
             (
                 "npc-callbacks/questpc7-programmes",

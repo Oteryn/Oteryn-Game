@@ -2887,9 +2887,9 @@ def build():
         golden_recipe,
     )
 
-    # Both dialogue routes use the canonical commission milestone fees.
-    path, index, raw, _, prices = golden_recipe(ROOT)
-    golden_source_prices(inputs[GOLDEN_NPC_SOURCE])
+    # The L10 source dialogue charges Crystal's fees in recipe milestone order.
+    path, index, raw, _, _ = golden_recipe(ROOT)
+    prices = golden_source_prices(inputs[GOLDEN_NPC_SOURCE])
     golden = "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit"
     base = "oteryn:outfit.golden"
     golden_sources = [

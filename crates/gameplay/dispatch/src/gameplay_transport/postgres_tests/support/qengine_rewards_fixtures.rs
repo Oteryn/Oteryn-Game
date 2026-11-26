@@ -298,7 +298,11 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l8-hunter-leather" => &["leather"],
         "l8-hunter-wings" => &["chicken wing"],
         "l8-hunter-hat" => &["steel"],
-        "l8-hunter-gloves" | "l8-hunter-elane-gloves" | "elane-gloves" | "elane-gloves-sale" => &["sniper gloves"],
+        "l8-hunter-gloves"
+        | "l8-hunter-elane-gloves"
+        | "l8-hunter-elane-gloves-sale"
+        | "elane-gloves"
+        | "elane-gloves-sale" => &["sniper gloves"],
         "l8-mage-male-wand-start" => &["angelina", "yes"],
         "l8-mage-male-wands" => &["wand"],
         "l8-mage-male-sulphur" => &["sulphur"],
@@ -801,6 +805,82 @@ pub(super) async fn seed(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
+    Ok(())
+}
+
+async fn drop_quoted_glove(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    command_id: u64,
+    glove: &str,
+) -> TestResult {
+    use crate::gameplay_transport::connection::UseCommand;
+    use crate::gameplay_transport::item_move::{ItemMoveStep, item_move};
+    use crate::gameplay_transport::item_view::{ItemKey, ItemViewContinuity, SessionItemView};
+    use oteryn_protocol_oteryn::item_view::{
+        ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection, WorldTilePosition,
+        encode_item_move_intent_for,
+    };
+
+    let actor = admitted.runtime_actor.ok_or("glove seller")?;
+    let session = admitted.game_session_id;
+    let item: sqlx::types::Uuid = sqlx::query_scalar(
+        "SELECT item_instance_id FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1",
+    )
+    .bind(glove)
+    .fetch_one(&h.pool)
+    .await?;
+    let mut view = SessionItemView::resume(ItemViewContinuity::default())
+        .with_map_view()
+        .with_equip_drop();
+    let snapshot = owner
+        .observe_character_inventory(actor, session)
+        .await
+        .ok_or("inventory")?;
+    view.snapshot(snapshot, None).map_err(debug)?;
+    let source = view
+        .table()
+        .handle(&ItemKey::Instance(*item.as_bytes()))
+        .ok_or("carried glove")?;
+    let at = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
+    let selection = ItemMoveSelection {
+        equip_drop: true,
+        world_interaction: true,
+        ..Default::default()
+    };
+    let payload = encode_item_move_intent_for(
+        &ItemMoveIntent {
+            source,
+            destination: ItemMoveDestination::Ground(WorldTilePosition {
+                x: at.x,
+                y: at.y,
+                floor: at.floor,
+            }),
+        },
+        selection,
+    )
+    .map_err(debug)?;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "glove fence")?
+        .ok_or("glove fence")?;
+    let command = UseCommand {
+        game_session_id: session,
+        command_id,
+        item_fence: Some(fence.item_fence()),
+    };
+    assert!(matches!(
+        item_move(owner, actor, command, &payload, selection, false, &mut view).await,
+        ItemMoveStep::Result(ItemMoveOutcome::Moved, _)
+    ));
     Ok(())
 }
 
@@ -1337,9 +1417,18 @@ pub(super) async fn exercise(
         "qengine-rewards-backpack" => "sam-backpack",
         _ => return Err("unknown reward scenario".into()),
     };
+    let elane_sale = match name {
+        "qengine-rewards-elane-gloves-free" => {
+            Some("oteryn:quest-reward/chosen/hunter-outfits/elane-gloves-sale")
+        }
+        "qengine-rewards-elane-gloves-completed" => {
+            Some("oteryn:quest-reward/l8-hunter-elane-gloves-sale")
+        }
+        _ => None,
+    };
     let callback = oteryn_gameplay_quests::quest::reward_callbacks::load()?
         .into_iter()
-        .find(|c| c.key.ends_with(key))
+        .find(|c| elane_sale.map_or_else(|| c.key.ends_with(key), |sale| c.key == sale))
         .ok_or("callback")?;
     let mut setup = callback.clone();
     if name == "qengine-rewards-l1-yalaharian-base-palimuth-villain" {
@@ -1380,12 +1469,6 @@ pub(super) async fn exercise(
             .iter()
             .map(|state| (state.track.clone(), state.minimum))
             .collect::<Vec<_>>();
-        if name == "qengine-rewards-elane-gloves-completed" {
-            prerequisites.push((
-                "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove".into(),
-                1,
-            ));
-        }
         if setup
             .requires_completed_quests
             .iter()
@@ -1394,18 +1477,20 @@ pub(super) async fn exercise(
             // The Crone's offer reads the stage written with the completion.
             prerequisites.push((SPIRIT_STAGE.into(), SPIRIT_COMPLETED_STAGE));
         }
-        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites_and_completions(
-            h,
-            owner,
-            admitted,
-            &prerequisites,
-            &setup.requires_completed_quests,
-            150,
-        )
-        .await?;
-        owner
-            .refresh_quest_session(admitted.game_session_id, false)
-            .await;
+        if !prerequisites.is_empty() || !setup.requires_completed_quests.is_empty() {
+            super::qengine_outfit_stories_fixtures::seed_quest_prerequisites_and_completions(
+                h,
+                owner,
+                admitted,
+                &prerequisites,
+                &setup.requires_completed_quests,
+                150,
+            )
+            .await?;
+            owner
+                .refresh_quest_session(admitted.game_session_id, false)
+                .await;
+        }
     } else if !matches!(key, "outfox-helmet" | "hallowed-holy-water") {
         seed(owner, admitted, &setup, 9000).await?;
     }
@@ -1493,6 +1578,55 @@ pub(super) async fn exercise(
         );
         command += 1;
     }
+    let at = Position {
+        x: 33293,
+        y: 31677,
+        floor: -15,
+    };
+    if elane_sale.is_some() {
+        assert_eq!(
+            owner
+                .states
+                .npc_conversations
+                .fixture_quest_topic(admitted.game_session_id)?,
+            0,
+            "Elane offers information without carried gloves"
+        );
+        let glove = callback.take.first().ok_or("glove sale input")?;
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|()| "glove fence")?
+            .ok_or("glove fence")?;
+        super::quest_world_callbacks_fixtures::input_item(
+            owner,
+            fence.item_fence(),
+            &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                position: at,
+                item: glove.item.clone(),
+                count: glove.count,
+            },
+            199,
+            true,
+        )
+        .await?;
+        assert_eq!(
+            talk(owner, admitted, npc, command, "sniper gloves").await?,
+            NpcIntentDisposition::Ok,
+        );
+        command += 1;
+        assert_eq!(
+            owner
+                .states
+                .npc_conversations
+                .fixture_quest_topic(admitted.game_session_id)?,
+            callback.topic,
+            "carried gloves open a sale quote"
+        );
+        // Confirm after the quoted gloves leave carried custody.
+        drop_quoted_glove(owner, admitted, h, command, &glove.item).await?;
+        command += 1;
+    }
     let before = counts(h).await?;
     // Missing inputs must refuse without even a consumption receipt or progress change.
     if !callback.take.is_empty() || !callback.present.is_empty() {
@@ -1509,11 +1643,6 @@ pub(super) async fn exercise(
             );
         }
     }
-    let at = Position {
-        x: 33293,
-        y: 31677,
-        floor: -15,
-    };
     for (i, input) in callback.take.iter().chain(&callback.present).enumerate() {
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
@@ -1745,7 +1874,17 @@ pub(super) async fn exercise(
         );
     }
     if let Some(reward) = &callback.give {
-        let minted:(String,i64)=sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id) WHERE m.claim_production_key=$1").bind(&callback.key).fetch_one(&h.pool).await?;
+        let minted: (String, i64) = sqlx::query_as(
+            "SELECT i.definition_production_key, i.quantity
+             FROM game_quest_reward_sources s
+             JOIN game_reward_claim_mint_receipts m ON m.transaction_id = s.mint_transaction_id
+             JOIN game_item_instances i USING (item_instance_id)
+             WHERE s.transition_key = $1 AND s.cause_ordinal = $2::text::numeric",
+        )
+        .bind(&callback.key)
+        .bind(command.to_string())
+        .fetch_one(&h.pool)
+        .await?;
         assert_eq!(minted, (reward.item.clone(), i64::from(reward.count)));
     }
     if let Some(achievement) = &callback.achievement {
