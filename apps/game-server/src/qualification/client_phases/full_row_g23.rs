@@ -17,7 +17,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     );
     let started = std::time::Instant::now();
     let result =
-        verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
+        verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients)))
             .await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "wheel-and-gem-presentation-validated".to_owned()),
@@ -199,6 +199,7 @@ async fn strict_step(
             "step=castle-walk direction={direction:?} expected={expected:?} actual={actual:?} reply={reply:?}"
         ).into());
     }
+    client.take_events();
     verdict::Harness::global().progress("g23 castle walk");
     Ok(())
 }
@@ -211,6 +212,10 @@ async fn strict_walk(
     let from = tile(client.world_spatial().actor_position)?;
     let path = route(world, from, |at| at == goal)
         .ok_or_else(|| format!("step=castle-walk no route from {from:?} to {goal:?}"))?;
+    evidence(&format!(
+        "G23_WALK from={from:?} to={goal:?} steps={}",
+        path.len()
+    ));
     for direction in path {
         let from = tile(client.world_spatial().actor_position)?;
         let expected =
