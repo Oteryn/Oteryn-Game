@@ -294,7 +294,7 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
     };
     let mut speaker_lines = Vec::new();
     let mut listener_lines = Vec::new();
-    for label in ["near", "boundary", "outside-x", "outside-y"] {
+    for label in ["near", "boundary-y", "outside-y", "boundary-x", "outside-x"] {
         for (mode, suffix) in [
             (ChatSpeechMode::Say, "say"),
             (ChatSpeechMode::Whisper, "whisper"),
@@ -302,10 +302,10 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
             let text = format!("s18-{label}-{suffix}-{run}");
             speaker_lines.push(line(mode, text.clone()));
             match (label, mode) {
-                ("near", _) | ("boundary", ChatSpeechMode::Say) => {
+                ("near", _) | ("boundary-x" | "boundary-y", ChatSpeechMode::Say) => {
                     listener_lines.push(line(mode, text))
                 }
-                ("boundary", ChatSpeechMode::Whisper) => {
+                ("boundary-x" | "boundary-y", ChatSpeechMode::Whisper) => {
                     listener_lines.push(line(mode, "pspsps".into()))
                 }
                 _ => {}

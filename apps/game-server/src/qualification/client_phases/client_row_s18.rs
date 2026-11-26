@@ -325,9 +325,11 @@ async fn journey(
 
     for (dx, dy, label, audible) in [
         (1, -1, "near", true),
-        (8, -6, "boundary", true),
-        (9, -6, "outside-x", false),
-        (8, -7, "outside-y", false),
+        // The temple's north aisle and south cross-aisle give independent fixed boundaries.
+        (0, -6, "boundary-y", true),
+        (0, -7, "outside-y", false),
+        (8, 3, "boundary-x", true),
+        (9, 3, "outside-x", false),
     ] {
         let target = TilePos {
             x: origin
@@ -350,12 +352,13 @@ async fn journey(
             (ChatSpeechMode::Whisper, "whisper"),
         ] {
             let text = format!("s18-{label}-{suffix}-{run}");
-            let heard =
-                audible.then_some(if label == "boundary" && mode == ChatSpeechMode::Whisper {
+            let heard = audible.then_some(
+                if label.starts_with("boundary-") && mode == ChatSpeechMode::Whisper {
                     "pspsps"
                 } else {
                     text.as_str()
-                });
+                },
+            );
             let outcome = service_while(&mut listener, async {
                 Ok(speaker
                     .chat(&ChatIntent::Say {
@@ -506,7 +509,7 @@ async fn journey(
     }
     let capture_digest = hex(&digest.finalize());
     Ok(format!(
-        "head={head};run={run};speaker=Packet_Two;near=verified;boundary=verified;outside_x=verified;outside_y=verified;relog=verified;capture_sha256={capture_digest}"
+        "head={head};run={run};speaker=Packet_Two;near=verified;boundary_x=verified;boundary_y=verified;outside_x=verified;outside_y=verified;relog=verified;capture_sha256={capture_digest}"
     ))
 }
 
