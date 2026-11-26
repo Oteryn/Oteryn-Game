@@ -84,6 +84,14 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             {
                 continue 'session;
             }
+            if let Err(error) = outbox.restore_quick_loot(&mut session).await {
+                if publish_scope_transition(&error, &mut session, &outbox, &mut held, &mut modal) {
+                    continue 'session;
+                }
+                outbox.end(public_class(&error));
+                return;
+            }
+            publish(&mut session, &outbox, &mut held);
             for command in outbox.server_info_initial_commands() {
                 let Some(query) = oteryn_session::server_info::Query::decode(&command.payload)
                 else {

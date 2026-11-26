@@ -233,6 +233,9 @@ pub trait ItemLoopContent: ItemWeightLookup {
     fn loop_definition(&self, _reference: u32) -> Option<TypedDefinitionRef> {
         None
     }
+    fn loop_definition_ref(&self, _key: &str) -> Option<u32> {
+        None
+    }
     fn is_quiver(&self, _definition: &TypedDefinitionRef) -> bool {
         false
     }
