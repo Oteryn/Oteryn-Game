@@ -724,11 +724,14 @@ async fn qualify_targets(
     let mut legal_summons = BTreeSet::new();
     // Use the ordinary PvP spell lane. Delayed chain hits have a separate owner.
     if basic_pvp {
-        let summon_candidates: Vec<_> = creatures
+        let summon_candidates: Vec<_> = chain_creatures
             .iter()
-            .filter_map(|summon| {
+            .filter_map(|candidate| {
+                let summon = creatures
+                    .iter()
+                    .find(|summon| u64::from(summon.actor.actor_local_id()) == candidate.id)?;
                 let master = summon.state.master?;
-                let summon_tile = tiles.get(&tile(summon.position))?;
+                let summon_tile = tiles.get(&candidate.position)?;
                 let (_, _, owner) = players.iter().find(|(player, session, _)| {
                     *player == master.actor && *session == master.session
                 })?;
@@ -746,7 +749,7 @@ async fn qualify_targets(
                     && !summon_tile.solid
                     && !summon_tile.protection)
                     .then_some((
-                        summon.actor,
+                        candidate.id,
                         summon.position,
                         master,
                         owner.character_facts().level,
@@ -776,7 +779,7 @@ async fn qualify_targets(
                 .get(runtime, actor, authority.game_session_id())
                 .ok_or(SpellCastDisposition::TargetIllegal)?;
             let source_tile = (source_tile.protection_zone(), source_tile.no_pvp_zone());
-            for (summon, summon_position, master, level) in summon_candidates {
+            for (summon_id, summon_position, master, level) in summon_candidates {
                 let Ok(facts) = read_live_pvp_in_transaction(
                     tx,
                     root,
@@ -826,7 +829,7 @@ async fn qualify_targets(
                     &owner,
                     &facts.relation,
                 ) {
-                    legal_summons.insert(u64::from(summon.actor_local_id()));
+                    legal_summons.insert(summon_id);
                 }
             }
         }

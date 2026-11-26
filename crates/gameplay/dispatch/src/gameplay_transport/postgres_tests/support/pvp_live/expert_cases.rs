@@ -220,6 +220,7 @@ pub(super) async fn drive(
             runtime.initialize_first_entry_position(enemy).map_err(debug)?;
             enemy
         };
+        let before_friendly_hit = health(owner, victim).await?;
         for (character, player, command_id, expected) in [
             (41, actor, 3, Rejected),
             (101, victim, 4, Accepted),
@@ -238,6 +239,14 @@ pub(super) async fn drive(
             .await?;
             target(client, command_id, Some(&entity), expected).await?;
         }
+        tokio::time::timeout(Duration::from_secs(5), async {
+            while health(owner, victim).await? >= before_friendly_hit {
+                wait_live(client, Duration::from_millis(25)).await?;
+            }
+            Ok::<_, Box<dyn std::error::Error>>(())
+        })
+        .await
+        .map_err(|_| "shared-enemy friendly fire did not damage the party member")??;
         target(client, 5, None, Accepted).await?;
         sqlx::query("UPDATE game_character_pvp_aggression SET until_at=clock_timestamp()")
             .execute(pool)
@@ -258,7 +267,9 @@ pub(super) async fn drive(
         );
         assert!(
             sqlx::query_scalar::<_, bool>(
-                "SELECT bool_and(unjustified = (command_id = 7)) FROM game_character_pvp_harm"
+                "SELECT bool_and(unjustified = (command_id = 7))
+                     AND bool_or(command_id = 4) AND bool_or(command_id = 7)
+                 FROM game_character_pvp_harm"
             )
             .fetch_one(pool)
             .await?
