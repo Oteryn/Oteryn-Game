@@ -73,16 +73,16 @@ fn activity_player_death_postgres_partial_loss_recovers_through_empty_origin_lif
 }
 
 #[test]
-fn activity_player_death_postgres_retirement_requires_root_bounds_and_rolls_back_tree() -> TestResult
+fn activity_player_death_postgres_corpse_retirement_rejects_commit_and_resumes() -> TestResult
 {
-    run_case_with_root_bounds_fault(Case::RedSkullDrop, true)
+    run_case_with_retirement_fault(Case::RedSkullDrop, true)
 }
 
 fn run_case(case: Case) -> TestResult {
-    run_case_with_root_bounds_fault(case, false)
+    run_case_with_retirement_fault(case, false)
 }
 
-fn run_case_with_root_bounds_fault(case: Case, reject_root_bounds: bool) -> TestResult {
+fn run_case_with_retirement_fault(case: Case, reject_retirement_commit: bool) -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         eprintln!("ACTIVITY_PLAYER_DEATH POSTGRES_CASE_SKIPPED: no configured admin");
         return Ok(());
@@ -101,7 +101,7 @@ fn run_case_with_root_bounds_fault(case: Case, reject_root_bounds: bool) -> Test
                 ))
                 .map_err(|error| error.to_string())?;
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                runtime.block_on(scenario(&h, case, reject_root_bounds))
+                runtime.block_on(scenario(&h, case, reject_retirement_commit))
             }));
             let cleanup = runtime
                 .block_on(h.cleanup())
@@ -143,7 +143,7 @@ fn cell_bytes(cell: LastPositionCell) -> Vec<u8> {
     .concat()
 }
 
-async fn scenario(h: &Harness, case: Case, reject_root_bounds: bool) -> TestResult {
+async fn scenario(h: &Harness, case: Case, reject_retirement_commit: bool) -> TestResult {
     // Use the shared real admission/control fixture, choosing vocation while still
     // in its current Channel. No fabricated Instance session, assignment or receipt.
     let (_evidence, enter) = super::activity_runtime_fixtures::prepare_activity_fixture(h).await?;
@@ -554,8 +554,17 @@ async fn scenario(h: &Harness, case: Case, reject_root_bounds: bool) -> TestResu
         .root
         .read_item_loop_ground_for_scope(current.runtime_scope)
         .await?;
-    assert_eq!(ground.len(), selection.lost.len());
+    assert_eq!(ground.len(), usize::from(!selection.lost.is_empty()));
+    let corpse_id = ground.first().map(|row| row.item.item_instance_id);
+    let contents: Vec<sqlx::types::Uuid> = sqlx::query_scalar(
+        "SELECT item_instance_id FROM game_item_corpse_container_entries
+         WHERE parent_item_instance_id=$1 ORDER BY item_instance_id")
+        .bind(corpse_id.map(sqlx::types::Uuid::from_bytes)).fetch_all(&h.pool).await?;
+    let mut expected = selection.lost.clone();
+    expected.sort_unstable();
+    assert_eq!(contents.iter().map(|id| *id.as_bytes()).collect::<Vec<_>>(), expected);
     for row in &ground {
+        assert!(row.player_corpse);
         assert_eq!(row.item.runtime_scope, current.runtime_scope);
         assert_eq!(
             row.item.ground.spatial_position,
@@ -808,7 +817,7 @@ async fn scenario(h: &Harness, case: Case, reject_root_bounds: bool) -> TestResu
                 .read_item_loop_ground_for_scope(current.runtime_scope)
                 .await?
                 .len(),
-            2
+            1
         );
     }
     let proof = activity
@@ -834,88 +843,46 @@ async fn scenario(h: &Harness, case: Case, reject_root_bounds: bool) -> TestResu
     );
     drop(channel_permit);
     let permit = lane.acquire().await.map_err(|_| "spell lane unavailable")?;
-    if reject_root_bounds {
-        // Match the real driver's first-root selection: this one step cannot
-        // commit the independent necklace root before the selected tree fails.
-        let (next_root, root_uuid, world_uuid, instance_uuid): (Vec<u8>, String, String, String) = sqlx::query_as("SELECT uuid_send(g.item_instance_id),g.item_instance_id::text,g.world_id::text,g.instance_id::text FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.scope_kind=2 AND g.world_id=encode($1,'hex')::uuid AND g.instance_id=encode($2,'hex')::uuid AND i.lifecycle=1 ORDER BY g.item_instance_id LIMIT 1")
-            .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).fetch_one(&h.pool).await?;
-        assert_eq!(
-            next_root,
-            id(70).to_vec(),
-            "the real step selects the complete tree"
-        );
+    if reject_retirement_commit {
         let before = activity_retirement_rollback_snapshot(h).await?;
         assert_eq!(retirement_snapshot(h).await?, "[]");
-        let (original, body): (String, String) = sqlx::query_as("SELECT pg_get_functiondef(p.oid),p.prosrc FROM pg_proc p WHERE p.oid='game_player_death_retirement_root_bounds_proven(uuid)'::regprocedure")
-            .fetch_one(&h.pool).await?;
-        assert_eq!(original.matches(body.as_str()).count(), 1);
+        // Refuse the first real retirement at COMMIT. The marker requires its
+        // actual terminal item and audit, distinguishing this fault from a timeout.
         sqlx::raw_sql(
-            "CREATE SEQUENCE test_activity_root_bounds_reached_seq; \
-             GRANT USAGE ON SEQUENCE test_activity_root_bounds_reached_seq TO oteryn_game_runtime;",
-        )
-        .execute(&h.pool)
-        .await?;
-        // Change only this root's predicate in the disposable database, keeping
-        // its OID, security/search-path settings and original body for other roots.
-        // The nontransactional marker proves the gate saw all three real terminal
-        // items, receipts and audits; an unrelated timeout cannot satisfy it.
-        let injected_body = format!(
-            "SELECT CASE WHEN p_root='{root_uuid}'::uuid THEN CASE WHEN ( \
-               SELECT count(*)=3 FROM game_item_decay_retire_receipts r \
-               JOIN game_item_audit_outbox a ON a.item_instance_id=r.item_instance_id \
-                AND a.transaction_id=r.transaction_id AND a.event_id=r.event_id \
-                AND a.envelope_sha256=r.envelope_sha256 AND a.created_xact_id=r.created_xact_id \
-               JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id \
-                AND i.quantity=0 AND i.lifecycle=2 AND i.last_transaction_id=r.transaction_id \
-               WHERE r.cause_kind='ACTIVITY_RETIREMENT' AND r.ground_root_item_instance_id=p_root \
-                AND r.world_id='{world_uuid}'::uuid AND r.scope_kind=2 AND r.channel_id IS NULL \
-                AND r.instance_id='{instance_uuid}'::uuid AND r.created_xact_id=pg_current_xact_id() \
-             ) THEN (nextval('test_activity_root_bounds_reached_seq'::regclass) IS NULL) \
-               ELSE FALSE END ELSE ({}) END",
-            body.trim().trim_end_matches(';'),
-        );
-        let injected_definition = original.replacen(body.as_str(), &injected_body, 1);
-        // Only a captured server definition and canonical UUIDs enter this script.
-        sqlx::raw_sql(sqlx::AssertSqlSafe(injected_definition))
-            .execute(&h.pool)
-            .await?;
-        let rejected = h
-            .root
-            .retire_activity_ground_step(&permit, &authority, &h.node, &proof)
-            .await;
-        // Replay only the definition just read from this disposable migrated DB.
-        sqlx::raw_sql(sqlx::AssertSqlSafe(original))
-            .execute(&h.pool)
-            .await?;
-        assert!(
-            matches!(
-                &rejected,
-                Err(
-                    crate::durability::item_decay_retire::DecayRetireError::Unavailable(
-                        crate::durability::DurabilityError::CommitRejected
-                    )
-                )
-            ),
-            "the mandatory root bounds proof must reject the real commit: {rejected:?}"
-        );
+            "CREATE SEQUENCE test_activity_retirement_reached_seq;
+             CREATE FUNCTION test_reject_activity_retirement() RETURNS trigger
+             LANGUAGE plpgsql SECURITY DEFINER AS $$
+             BEGIN
+               IF EXISTS(SELECT 1 FROM game_item_instances i
+                  JOIN game_item_audit_outbox a USING(item_instance_id)
+                  WHERE i.item_instance_id=NEW.item_instance_id AND i.lifecycle=2
+                    AND i.quantity=0 AND i.last_transaction_id=NEW.transaction_id
+                    AND a.transaction_id=NEW.transaction_id
+                    AND a.created_xact_id=pg_current_xact_id()) THEN
+                 PERFORM nextval('test_activity_retirement_reached_seq');
+               END IF;
+               RAISE EXCEPTION 'injected activity corpse retirement commit rejection';
+             END $$;
+             CREATE CONSTRAINT TRIGGER test_reject_activity_retirement
+             AFTER INSERT ON game_item_decay_retire_receipts DEFERRABLE INITIALLY DEFERRED
+             FOR EACH ROW EXECUTE FUNCTION test_reject_activity_retirement()",
+        ).execute(&h.pool).await?;
+        let rejected = h.root.retire_activity_ground_step(&permit, &authority, &h.node, &proof).await;
+        sqlx::raw_sql(
+            "DROP TRIGGER test_reject_activity_retirement ON game_item_decay_retire_receipts;
+             DROP FUNCTION test_reject_activity_retirement()",
+        ).execute(&h.pool).await?;
+        assert!(matches!(&rejected,
+            Err(crate::durability::item_decay_retire::DecayRetireError::Unavailable(
+                crate::durability::DurabilityError::CommitRejected
+            ))
+        ), "the injected COMMIT must fail after retirement: {rejected:?}");
         let reached: (i64, bool) = sqlx::query_as(
-            "SELECT last_value,is_called FROM test_activity_root_bounds_reached_seq",
-        )
-        .fetch_one(&h.pool)
-        .await?;
-        assert_eq!(
-            reached,
-            (1, true),
-            "the actual Instance root gate must see the whole retired tree before refusing COMMIT"
-        );
-        assert_eq!(
-            activity_retirement_rollback_snapshot(h).await?,
-            before,
-            "a rejected root proof restores every item and custody edge without a receipt or audit"
-        );
+            "SELECT last_value,is_called FROM test_activity_retirement_reached_seq",
+        ).fetch_one(&h.pool).await?;
+        assert_eq!(reached, (1, true));
+        assert_eq!(activity_retirement_rollback_snapshot(h).await?, before);
         assert_eq!(retirement_snapshot(h).await?, "[]");
-        // A definite commit refusal can retire the holder. Use the existing
-        // bounded recovery before retrying the same reserved operation.
         h.root.await_ready().await.map_err(debug)?;
     }
     let mut retired = 0;
@@ -926,7 +893,7 @@ async fn scenario(h: &Harness, case: Case, reject_root_bounds: bool) -> TestResu
         .map_err(debug)?
     {
         retired += 1;
-        assert!(retired <= 4, "bounded fixture retirement must advance");
+        assert!(retired <= 5, "bounded fixture retirement must advance");
     }
     assert!(
         h.root
@@ -957,10 +924,13 @@ async fn scenario(h: &Harness, case: Case, reject_root_bounds: bool) -> TestResu
     }
     if matches!(case, Case::RedSkullDrop) {
         assert_eq!(
-            retired, 2,
-            "one atomic tree step and the separate necklace root"
+            retired, 5,
+            "the corpse, backpack, nested contents and necklace retire through the same owner"
         );
-        assert_activity_tree_audits(h, &proof, &request.death_cell.spatial_position).await?;
+        assert_activity_tree_audits(
+            h, &proof, &request.death_cell.spatial_position,
+            corpse_id.ok_or("missing player corpse")?,
+        ).await?;
     }
     let retirement_before = retirement_snapshot(h).await?;
     assert!(matches!(
@@ -1075,6 +1045,7 @@ async fn assert_activity_tree_audits(
     h: &Harness,
     proof: &RetiringActivity,
     cell: &[u8],
+    corpse: [u8; 16],
 ) -> TestResult {
     let RuntimeScopeRefV1::Instance {
         world_id,
@@ -1083,26 +1054,27 @@ async fn assert_activity_tree_audits(
     else {
         return Err("retirement proof must retain the actual Instance".into());
     };
-    let rows = sqlx::query("SELECT uuid_send(r.item_instance_id) AS item,uuid_send(r.ground_root_item_instance_id) AS root,r.created_xact_id::text AS xact,r.fence_scope_ownership_generation::text AS generation,a.envelope,uuid_send(e.parent_item_instance_id) AS actual_parent,e.placement_ordinal::text AS ordinal,i.quantity,i.lifecycle,NOT EXISTS(SELECT 1 FROM game_item_container_entries d WHERE d.item_instance_id=r.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_nested_entries n WHERE n.item_instance_id=r.item_instance_id) AS no_entries FROM game_item_decay_retire_receipts r JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id JOIN game_item_audit_outbox a ON a.item_instance_id=r.item_instance_id AND a.transaction_id=r.transaction_id AND a.event_id=r.event_id AND a.envelope_sha256=r.envelope_sha256 AND a.created_xact_id=r.created_xact_id LEFT JOIN game_player_death_retirement_edges e ON e.item_instance_id=r.item_instance_id WHERE r.cause_kind='ACTIVITY_RETIREMENT' ORDER BY r.item_instance_id LIMIT 5")
+    let rows = sqlx::query(
+        "SELECT uuid_send(r.item_instance_id) AS item,uuid_send(r.ground_root_item_instance_id) AS root,
+          r.fence_scope_ownership_generation::text AS generation,a.envelope,i.quantity,i.lifecycle,
+          NOT EXISTS(SELECT 1 FROM game_item_corpse_container_entries e WHERE e.item_instance_id=r.item_instance_id)
+          AND NOT EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.item_instance_id=r.item_instance_id)
+          AND NOT EXISTS(SELECT 1 FROM game_item_nested_entries e WHERE e.item_instance_id=r.item_instance_id) AS no_entries
+         FROM game_item_decay_retire_receipts r JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id
+         JOIN game_item_audit_outbox a ON a.item_instance_id=r.item_instance_id AND a.transaction_id=r.transaction_id
+          AND a.event_id=r.event_id AND a.envelope_sha256=r.envelope_sha256 AND a.created_xact_id=r.created_xact_id
+         WHERE r.cause_kind='ACTIVITY_RETIREMENT' ORDER BY r.item_instance_id LIMIT 6")
         .fetch_all(&h.pool).await?;
-    assert_eq!(rows.len(), 4);
-    let parents = std::collections::BTreeMap::from([(id(71), id(70)), (id(72), id(71))]);
+    assert_eq!(rows.len(), 5);
+    let parents = std::collections::BTreeMap::from([
+        (id(71), id(70)), (id(72), id(71)), (id(70), corpse), (id(75), corpse),
+    ]);
     let mut seen = std::collections::BTreeSet::new();
-    let mut tree_transactions = std::collections::BTreeSet::new();
     for row in rows {
-        let item: [u8; 16] = row
-            .try_get::<Vec<u8>, _>("item")?
-            .try_into()
+        let item: [u8; 16] = row.try_get::<Vec<u8>, _>("item")?.try_into()
             .map_err(|_| "audit item UUID")?;
         assert!(seen.insert(item));
-        let root = if item == id(75) { id(75) } else { id(70) };
-        assert_eq!(
-            row.try_get::<Vec<u8>, _>("root")?.as_slice(),
-            root.as_slice()
-        );
-        if root == id(70) {
-            tree_transactions.insert(row.try_get::<String, _>("xact")?);
-        }
+        assert_eq!(row.try_get::<Vec<u8>, _>("root")?.as_slice(), corpse.as_slice());
         let wire: Vec<u8> = row.try_get("envelope")?;
         let (envelope, event) =
             crate::durability::item_decay_retire_audit::decode_decay_retire_envelope(&wire)
@@ -1147,32 +1119,14 @@ async fn assert_activity_tree_audits(
         );
         let ground = if let Some(parent) = parents.get(&item) {
             assert!(event.ground.is_none());
-            let entry = event
-                .ground_container_entry
-                .as_ref()
-                .ok_or("actual nested custody")?;
+            let entry = event.ground_container_entry.as_ref().ok_or("actual corpse custody")?;
             assert_eq!(entry.parent_item_instance_id.as_slice(), parent.as_slice());
-            assert_eq!(
-                entry.tree_root_item_instance_id.as_deref(),
-                Some(root.as_slice())
-            );
-            assert_eq!(
-                row.try_get::<Option<Vec<u8>>, _>("actual_parent")?
-                    .as_deref(),
-                Some(parent.as_slice())
-            );
-            assert_eq!(
-                entry.placement_ordinal,
-                row.try_get::<String, _>("ordinal")?.parse::<u64>()?
-            );
-            entry.parent_ground.as_ref().ok_or("nested Ground root")?
+            assert_eq!(entry.tree_root_item_instance_id.as_deref(),
+                (*parent != corpse).then_some(corpse.as_slice()));
+            entry.parent_ground.as_ref().ok_or("corpse Ground")?
         } else {
             assert!(event.ground_container_entry.is_none());
-            assert!(
-                row.try_get::<Option<Vec<u8>>, _>("actual_parent")?
-                    .is_none()
-            );
-            event.ground.as_ref().ok_or("retired root Ground")?
+            event.ground.as_ref().ok_or("retired corpse Ground")?
         };
         assert_eq!(ground.world_id.as_slice(), world_id.as_bytes().as_slice());
         assert_eq!(ground.instance_id.as_deref(), Some(instance_id.as_slice()));
@@ -1185,12 +1139,7 @@ async fn assert_activity_tree_audits(
     }
     assert_eq!(
         seen,
-        std::collections::BTreeSet::from([id(70), id(71), id(72), id(75)])
-    );
-    assert_eq!(
-        tree_transactions.len(),
-        1,
-        "the complete death tree retires atomically"
+        std::collections::BTreeSet::from([corpse, id(70), id(71), id(72), id(75)])
     );
     Ok(())
 }

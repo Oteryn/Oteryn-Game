@@ -125,6 +125,10 @@ BEGIN
     OR (r.source_slot=9 AND NOT game_player_death_bag_proven(p_tx,r.replacement_bag_id))))
   OR (r.destination_corpse_id IS NULL AND r.operation=1 AND NOT EXISTS(SELECT 1 FROM game_item_ground_locations$arm$);
  IF body=amended THEN RAISE EXCEPTION 'player death completion Ground guard changed'; END IF;
+ body:=amended;
+ amended:=replace(body,'ON d.death_occurrence_id=r.death_occurrence_id WHERE g.item_instance_id=r.item_instance_id',
+  'ON d.death_occurrence_id=r.death_occurrence_id WHERE d.item_selection_root IS NULL AND g.item_instance_id=r.item_instance_id');
+ IF body=amended THEN RAISE EXCEPTION 'player death legacy receipt lookup changed'; END IF;
  EXECUTE amended;
 
  body:=pg_get_functiondef('game_item_corpse_container_entry_proven()'::regprocedure);

@@ -117,11 +117,19 @@ pub(in crate::durability) async fn mint_player_death_corpse(
         frozen.item_instance_id
     };
     let ordinal: i64 = sqlx::query_scalar(
-        "SELECT coalesce(max(placement_ordinal),0)::bigint+1
-           FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid",
+        "SELECT ordinal FROM generate_series(1::bigint,$2) ordinal
+         WHERE NOT EXISTS (
+          SELECT 1 FROM game_item_corpse_container_entries e
+          WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND e.placement_ordinal=ordinal
+         ) ORDER BY ordinal LIMIT 1",
     )
     .bind(corpse.as_slice())
-    .fetch_one(&mut ***tx)
-    .await?;
-    Ok((corpse, u64::try_from(ordinal).map_err(|_| DurabilityError::InvalidStoredState)?))
+    .bind(i64::from(CORPSE_CONTAINER_ENTRIES_MAX))
+    .fetch_optional(&mut ***tx)
+    .await?
+    .ok_or(PlayerDeathItemError::StaleState)?;
+    Ok((
+        corpse,
+        u64::try_from(ordinal).map_err(|_| DurabilityError::InvalidStoredState)?,
+    ))
 }

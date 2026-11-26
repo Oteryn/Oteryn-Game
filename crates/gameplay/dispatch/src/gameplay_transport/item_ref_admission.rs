@@ -177,10 +177,7 @@ pub(super) async fn observe_item_target(
     actor: ExactActorRef,
     target: ItemKey,
 ) -> Option<ItemTargetObservation> {
-    let ItemKey::Entity(identity) = target else {
-        return None;
-    };
-    let (position, corpse, index) = {
+    let (position, creature_corpse, index) = {
         let mut runtime = admission.runtime.lock().await;
         let index = pinned_index(&runtime, admission.active_generation)?;
         let position = runtime
@@ -188,14 +185,34 @@ pub(super) async fn observe_item_target(
             .read(actor)
             .ok()?
             .position();
-        (position, runtime.bound_corpse(identity), index)
+        let corpse = match target {
+            ItemKey::Entity(identity) => runtime.bound_corpse(identity),
+            _ => None,
+        };
+        (position, corpse, index)
     };
     let actor_position = ActorPosition {
         x: position.x,
         y: position.y,
         floor: position.floor,
     };
-    let Some(corpse) = corpse else {
+    let corpse = match target {
+        ItemKey::Entity(_) => creature_corpse.map(|corpse| {
+            (
+                corpse.item.item_instance_id,
+                ActorPosition {
+                    x: corpse.position.x,
+                    y: corpse.position.y,
+                    floor: corpse.position.floor,
+                },
+            )
+        }),
+        ItemKey::Instance(item) => player_corpse_position(admission, actor, item)
+            .await
+            .map(|position| (item, position)),
+        _ => return None,
+    };
+    let Some((corpse, position)) = corpse else {
         return Some(ItemTargetObservation {
             actor: actor_position,
             target: UseItemTarget::Gone,
@@ -203,7 +220,7 @@ pub(super) async fn observe_item_target(
     };
     let Some(entries) = admission
         .root
-        .read_corpse_contents(admission.character, corpse.item.item_instance_id)
+        .read_corpse_contents(admission.character, corpse)
         .await
         .ok()?
     else {
@@ -226,14 +243,27 @@ pub(super) async fn observe_item_target(
         .collect::<Option<Vec<_>>>()?;
     Some(ItemTargetObservation {
         actor: actor_position,
-        target: UseItemTarget::Corpse {
-            position: ActorPosition {
-                x: corpse.position.x,
-                y: corpse.position.y,
-                floor: corpse.position.floor,
-            },
-            contents,
-        },
+        target: UseItemTarget::Corpse { position, contents },
+    })
+}
+
+async fn player_corpse_position(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    corpse: [u8; 16],
+) -> Option<ActorPosition> {
+    let (base, index) = {
+        let mut runtime = admission.runtime.lock().await;
+        let index = pinned_index(&runtime, admission.active_generation)?;
+        let at = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)?;
+        (at.map.overlay.base().clone(), index)
+    };
+    let ground = super::loop_move::loop_ground(admission, &base, Some(index)).await?;
+    let cell = ground.player_corpse_cell(&corpse)?;
+    Some(ActorPosition {
+        x: cell.x,
+        y: cell.y,
+        floor: i16::try_from(cell.z).ok()?,
     })
 }
 
@@ -334,10 +364,22 @@ pub(super) async fn take_corpse_entry(
     {
         return Err(rejected());
     }
+    let player_corpse = match corpse {
+        ItemKey::Instance(item) => {
+            player_corpse_position(admission, actor, item)
+                .await
+                .ok_or_else(rejected)?;
+            Some(item)
+        }
+        _ => None,
+    };
     let (corpse, entry_id, native) = {
         let runtime = admission.runtime.lock().await;
         let dead = admission.states.spell_states.lock().await.is_dead(actor);
-        let (corpse, entry_id) = corpse_for_take(&runtime, dead, corpse, entry)?;
+        let (corpse, entry_id) = match (player_corpse, entry) {
+            (Some(corpse), ItemKey::Instance(entry)) if !dead => (corpse, entry),
+            _ => corpse_for_take(&runtime, dead, corpse, entry)?,
+        };
         pinned_index(&runtime, admission.active_generation).ok_or_else(rejected)?;
         let native = admission
             .active_generation
