@@ -4974,6 +4974,7 @@ dependencies = [
  "oteryn-diagnostics",
  "oteryn-foundation",
  "oteryn-session",
+ "serde_json",
  "tokio",
 ]
 

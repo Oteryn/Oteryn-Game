@@ -6,7 +6,7 @@
 //! through `Session::gated_command`, and projects the raw command result through
 //! `item_look::decode_item_look_result_for` into the popup string. A scripted peer admits a real
 //! `Session` (with the captured entity view), checks the exact intent bytes it receives, and
-//! answers with the captured server LOOK payloads.
+//! answers with unit-test LOOK fixtures.
 
 use super::*;
 use oteryn_session::{
@@ -38,15 +38,6 @@ struct Replies {
 }
 
 fn replies() -> Result<Replies, BoxError> {
-    if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let directory = std::path::Path::new(&directory);
-        return Ok(Replies {
-            own: std::fs::read(directory.join("i03-self.bin"))?,
-            item: std::fs::read(directory.join("i03-item.bin"))?,
-            refusal: std::fs::read(directory.join("i03-refusal.bin"))?,
-            expected: std::fs::read_to_string(directory.join("i03-expected.txt"))?,
-        });
-    }
     let selection = item_look::ItemLookSelection { extended: true };
     let encode = |result| {
         item_look::encode_item_look_result_for(&result, selection)
@@ -74,7 +65,7 @@ fn look_command() -> Command {
 }
 
 #[test]
-fn e2e_i03_replays_server_look_results_through_world_interaction_send() -> Result<(), BoxError> {
+fn scripted_look_checks_wire_shape_and_selection() -> Result<(), BoxError> {
     std::thread::Builder::new()
         .name("i03-look-session".into())
         .stack_size(64 << 20)
@@ -345,3 +336,70 @@ fn varint(output: &mut Vec<u8>, mut value: u64) {
 
 #[path = "tileless.rs"]
 mod tileless;
+
+#[test]
+fn e2e_i03_replays_original_look_results() -> Result<(), BoxError> {
+    let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+        return Ok(());
+    };
+    let directory = std::fs::canonicalize(directory)?;
+    let meta = std::fs::read_to_string(directory.join("i03-run.txt"))?;
+    let lines: Vec<_> = meta.lines().collect();
+    let [session, commit, capture_dir] = lines.as_slice() else {
+        return Err("invalid I03 run metadata".into());
+    };
+    let head = std::process::Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .current_dir(env!("CARGO_MANIFEST_DIR"))
+        .output()?;
+    if !head.status.success()
+        || std::str::from_utf8(&head.stdout)?.trim() != *commit
+        || directory.as_path() != std::path::Path::new(capture_dir)
+        || !session.split('-').map(str::len).eq([8, 4, 4, 4, 12])
+        || !session.bytes().all(|b| b == b'-' || b.is_ascii_hexdigit())
+    {
+        return Err("I03 capture run identity mismatch".into());
+    }
+    let mut previous = (0, 0);
+    for (file, expected) in [
+        ("i03-self.json", "You see yourself (Level 1, sorcerer)."),
+        (
+            "i03-item.json",
+            "You see backpack (Vol:20).\nImbuement slots: 1.\nIt weighs 18.00 oz.",
+        ),
+        ("i03-refusal.json", "Look refused"),
+    ] {
+        let capture: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(directory.join(file))?)?;
+        let frame = capture.as_object().ok_or("I03 capture must be an object")?;
+        let command = capture["command_id"]
+            .as_u64()
+            .ok_or("missing I03 command ID")?;
+        let sequence = capture["server_sequence"]
+            .as_u64()
+            .ok_or("missing I03 server sequence")?;
+        if frame.len() != 5
+            || capture["game_session_id"].as_str() != Some(*session)
+            || capture["status"].as_u64() != Some(CommandStatus::Accepted as u64)
+            || command <= previous.0
+            || sequence <= previous.1
+        {
+            return Err(format!("{file}: I03 envelope metadata mismatch").into());
+        }
+        let payload: Vec<u8> = serde_json::from_value(capture["payload"].clone())?;
+        assert_eq!(project_look_result(&payload), expected, "{file}");
+        if file == "i03-refusal.json" {
+            let refusal = item_look::decode_item_look_result_for(
+                &payload,
+                ItemLookSelection { extended: true },
+            )
+            .map_err(|error| format!("I03 refusal decode: {error:?}"))?;
+            assert_eq!(
+                refusal,
+                item_look::ItemLookResult::Refused(item_look::ItemLookRefusal::NotAvailable)
+            );
+        }
+        previous = (command, sequence);
+    }
+    Ok(())
+}

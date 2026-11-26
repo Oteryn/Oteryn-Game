@@ -174,16 +174,7 @@ pub async fn send_framed<S: SessionStream>(
         return Ok(format!("{label} refused"));
     }
     if command.action == Action::Look {
-        return Ok(
-            match item_look::decode_item_look_result_for(
-                &result.payload,
-                ItemLookSelection { extended: true },
-            ) {
-                Ok(item_look::ItemLookResult::Text(text)) => text,
-                Ok(item_look::ItemLookResult::Refused(_)) => "Look refused".into(),
-                Err(_) => "Look: unknown result".into(),
-            },
-        );
+        return Ok(project_look_result(&result.payload));
     }
     use world_object::UseDisposition;
     let Ok((disposition, _)) = world_object::decode_use_result_with_gate(&result.payload) else {
@@ -217,6 +208,14 @@ pub async fn send_framed<S: SessionStream>(
 }
 
 #[cfg(test)]
+fn project_look_result(payload: &[u8]) -> String {
+    match item_look::decode_item_look_result_for(payload, ItemLookSelection { extended: true }) {
+        Ok(item_look::ItemLookResult::Text(text)) => text,
+        Ok(item_look::ItemLookResult::Refused(_)) => "Look refused".into(),
+        Err(_) => "Look: unknown result".into(),
+    }
+}
+
 #[path = "tests/e2e_i03.rs"]
 mod e2e_i03;
 

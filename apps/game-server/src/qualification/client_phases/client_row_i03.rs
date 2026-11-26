@@ -2,16 +2,16 @@
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
+use oteryn_dev_client::client_runtime::world_interaction::{Target, look_payload};
 use oteryn_protocol_oteryn::item_look as wire;
 use std::num::NonZeroU64;
 
 async fn look(
     client: &mut DevClientSession,
-    target: wire::ItemLookTarget,
-) -> TestResult<(CommandStatus, Vec<u8>, wire::ItemLookResult)> {
+    target: Target,
+) -> TestResult<(oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse, wire::ItemLookResult)> {
     let selection = wire::ItemLookSelection { extended: true };
-    let request = wire::encode_item_look_intent_for(wire::ItemLookIntent { target }, selection)
-        .map_err(|error| format!("I03.client LOOK encode: {error:?}"))?;
+    let request = look_payload(&target)?;
     let reply = client
         .session_mut()
         .gated_command(
@@ -22,22 +22,31 @@ async fn look(
         .await?;
     let decoded = wire::decode_item_look_result_for(&reply.payload, selection)
         .map_err(|error| format!("I03.client LOOK decode: {error:?}"))?;
-    Ok((reply.status, reply.payload, decoded))
+    Ok((reply, decoded))
 }
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&directory).join(name), bytes) {
-        evidence(&format!(
-            "e2e_all scenario=I03.client status=CAPTURE-WRITE-ERROR evidence={name}:{error}"
-        ));
-    }
+fn capture(
+    directory: &Path,
+    name: &str,
+    session: &str,
+    reply: &oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse,
+) -> TestResult {
+    use std::io::Write;
+    let envelope = serde_json::to_vec(&serde_json::json!({
+        "command_id": reply.command_id,
+        "game_session_id": session,
+        "payload": reply.payload,
+        "server_sequence": reply.server_sequence,
+        "status": reply.status as u32,
+    }))?;
+    std::fs::File::create_new(directory.join(name))?.write_all(&envelope)?;
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let directory = std::fs::canonicalize(required("E2E_ALL_CAPTURE_DIR")?)?;
     let mut client = connect_world(clients, 0x03).await?;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let entities = client.world_entities().ok_or("I03.client own actor view missing")?;
     let own = entities
         .iter()
@@ -49,45 +58,74 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .and_then(|inventory| inventory.main_backpack)
         .ok_or("I03.client starter backpack missing")?;
 
-    let own_reply = look(&mut client, wire::ItemLookTarget::Creature(own)).await?;
+    let own_reply = look(&mut client, Target::Creature(own)).await?;
     let item_reply = look(
         &mut client,
-        wire::ItemLookTarget::Item(backpack.handle),
+        Target::Item(backpack.handle),
     )
     .await?;
     let absent = NonZeroU64::new(u64::MAX).ok_or("I03.client invalid absent handle")?;
-    let refusal_reply = look(&mut client, wire::ItemLookTarget::Item(absent)).await?;
-    if own_reply.0 != CommandStatus::Accepted
-        || item_reply.0 != CommandStatus::Accepted
-        || refusal_reply.0 != CommandStatus::Accepted
+    let inventory_before = client.inventory().ok_or("missing I03 inventory")?.clone();
+    let position_before = client.world_spatial().actor_position;
+    if inventory_before.main_backpack.iter().chain(&inventory_before.entries)
+        .any(|entry| entry.handle == absent)
+        || inventory_before.equipment.iter().any(|entry| entry.item.handle == absent)
+    {
+        return Err("I03 negative handle is already present".into());
+    }
+    let refusal_reply = look(&mut client, Target::Item(absent)).await?;
+    if own_reply.0.status != CommandStatus::Accepted
+        || item_reply.0.status != CommandStatus::Accepted
+        || refusal_reply.0.status != CommandStatus::Accepted
     {
         return Err("I03.client LOOK command was not accepted".into());
     }
     let (wire::ItemLookResult::Text(own_text), wire::ItemLookResult::Text(item_text)) =
-        (&own_reply.2, &item_reply.2)
+        (&own_reply.1, &item_reply.1)
     else {
         return Err("I03.client positive LOOK did not return text".into());
     };
-    if refusal_reply.2
+    if refusal_reply.1
         != wire::ItemLookResult::Refused(wire::ItemLookRefusal::NotAvailable)
     {
         return Err("I03.client absent item did not return NotAvailable".into());
     }
 
-    capture("i03-self.bin", &own_reply.1);
-    capture("i03-item.bin", &item_reply.1);
-    capture("i03-refusal.bin", &refusal_reply.1);
-    capture(
-        "i03-expected.txt",
-        format!("self={own_text:?}\nitem={item_text:?}\nrefusal=Look refused\n").as_bytes(),
-    );
+    if client.inventory() != Some(&inventory_before)
+        || client.world_spatial().actor_position != position_before
+    {
+        return Err("I03 absent-item LOOK changed inventory or position".into());
+    }
+    let expected_own = "You see yourself (Level 1, sorcerer).";
+    let expected_item = "You see backpack (Vol:20).\nImbuement slots: 1.\nIt weighs 18.00 oz.";
+    if own_text != expected_own || item_text != expected_item {
+        return Err(format!("I03.client unexpected LOOK text: self={own_text:?} item={item_text:?}").into());
+    }
+    let (logout, detail, _, _) = logout_once(&mut client).await?;
+    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("I03.client logout refused: {detail}").into());
+    }
+    capture(&directory, "i03-self.json", &session, &own_reply.0)?;
+    capture(&directory, "i03-item.json", &session, &item_reply.0)?;
+    capture(&directory, "i03-refusal.json", &session, &refusal_reply.0)?;
+    use std::io::Write;
+    let head = std::process::Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .current_dir(env!("CARGO_MANIFEST_DIR"))
+        .output()?;
+    if !head.status.success() {
+        return Err("I03.client capture commit unavailable".into());
+    }
+    let head = std::str::from_utf8(&head.stdout)?.trim();
+    std::fs::File::create_new(directory.join("i03-run.txt"))?
+        .write_all(format!("{session}\n{head}\n{}\n", directory.display()).as_bytes())?;
     Ok(())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result = verdict::indexed_timeout(Duration::from_secs(60), verdict::observe(journey(clients))).await;
     match result {
-        Ok(Ok(())) => evidence("e2e_all scenario=I03.client status=PASS"),
+        Ok(Ok(())) => evidence("e2e_capture scenario=I03.client status=CAPTURED"),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=I03.client status=FAIL evidence={}",
             error.to_string().replace([' ', '\n'], "_")
