@@ -9,6 +9,76 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
     encode_world_spatial_entities_snapshot,
 };
 
+use std::pin::Pin;
+use std::task::Context;
+use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
+
+type ObservedWire = Arc<std::sync::Mutex<Vec<u8>>>;
+
+struct PushWire {
+    tls: tokio_rustls::client::TlsStream<TcpStream>,
+    received: ObservedWire,
+}
+
+impl AsyncRead for PushWire {
+    fn poll_read(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
+        let this = self.get_mut();
+        let before = buf.filled().len();
+        let result = Pin::new(&mut this.tls).poll_read(cx, buf);
+        if let Poll::Ready(Ok(())) = result {
+            let mut received = this
+                .received
+                .lock()
+                .map_err(|_| io::Error::other("M04 wire capture lock"))?;
+            let bytes = &buf.filled()[before..];
+            if received.len() + bytes.len() > 16 * 1024 * 1024 {
+                return Poll::Ready(Err(io::Error::other("M04 wire capture exceeded its limit")));
+            }
+            received.extend_from_slice(bytes);
+        }
+        result
+    }
+}
+
+impl AsyncWrite for PushWire {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<io::Result<usize>> {
+        Pin::new(&mut self.get_mut().tls).poll_write(cx, buf)
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        Pin::new(&mut self.get_mut().tls).poll_flush(cx)
+    }
+
+    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        Pin::new(&mut self.get_mut().tls).poll_shutdown(cx)
+    }
+}
+
+fn observed_envelope(mut wire: &[u8], sequence: u64) -> TestResult<&[u8]> {
+    while let Some((prefix, rest)) = wire.split_first_chunk::<4>() {
+        let length = oteryn_protocol_oteryn::FrameLength::from_prefix(prefix)?.get() as usize;
+        let (frame, next) = rest
+            .split_at_checked(length)
+            .ok_or("M04 truncated wire frame")?;
+        let envelope = decode_wire_envelope(frame)?;
+        if envelope.message_type() == MessageType::StateDelta
+            && envelope.server_sequence() == sequence
+        {
+            return Ok(frame);
+        }
+        wire = next;
+    }
+    Err("M04 push envelope absent from wire capture".into())
+}
+
 const PUSH_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
     oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES,
@@ -87,8 +157,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    let received = ObservedWire::default();
     let mut pusher =
-        client_row_i12::connect_for_capture(clients, 0x94, 0, PUSH_CAPABILITIES).await?;
+        client_row_i12::connect_for_capture(clients, 0x94, 0, PUSH_CAPABILITIES, |tls| PushWire {
+            tls,
+            received: received.clone(),
+        })
+        .await?;
     let mut target = connect_character(clients, 0x95, 1).await?;
     let pusher_at = tile(pusher.world_spatial().actor_position)?;
     let path = route_avoiding(
@@ -215,16 +290,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 entities: vec![pusher_entity, predecessor],
             })
             .map_err(|error| format!("M04 predecessor encode: {error:?}"))?;
-        // The replay admits its two-player snapshot at revision 5 and sequence 40.
-        // Rebase the envelope onto that snapshot while keeping the live payload.
-        let replay_base = 5;
-        let replay_new = replay_base + (delta.new_revision - delta.base_revision);
-        let replay_sequence = 41;
+        let wire = received.lock().map_err(|_| "M04 wire capture lock")?;
+        let envelope = observed_envelope(&wire, delta.server_sequence)?;
         let expected = format!(
             "{} {} {} {} {} {} {} {}\n",
-            replay_base,
-            replay_new,
-            replay_sequence,
+            delta.base_revision,
+            delta.new_revision,
+            delta.server_sequence,
             reference
                 .identity
                 .iter()
@@ -236,6 +308,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             moved.position.floor
         );
         for (name, contents) in [
+            ("m04-envelope.bin", envelope),
             ("m04-spatial.bin", delta.payload.as_ref()),
             ("m04-predecessor.bin", predecessor_payload.as_slice()),
             ("m04-expected.txt", expected.as_bytes()),

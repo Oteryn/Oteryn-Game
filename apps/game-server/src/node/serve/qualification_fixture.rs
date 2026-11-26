@@ -12,7 +12,14 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let session = parse_operation_id(session.as_bytes())?;
     matches!(
         profile,
-        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
+        "explorer"
+            | "knight"
+            | "paladin"
+            | "sorcerer"
+            | "druid"
+            | "monk"
+            | "knight-underlevel"
+            | "i12"
     )
     .then_some((session, profile))
 }
@@ -658,6 +665,18 @@ async fn prepare_build(
     {
         return Err("qualification scope mismatch".into());
     }
+    if profile == "i12" {
+        return prepare_items(
+            root,
+            authority,
+            proof,
+            &current,
+            native,
+            deadline,
+            &[3456, 10310],
+        )
+        .await;
+    }
     let character = crate::domain::CharacterId::from_bytes(
         *current.current_character_lease().character_id().as_bytes(),
     )
@@ -706,7 +725,16 @@ async fn prepare_build(
         deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    prepare_items(
+        root,
+        authority,
+        proof,
+        &current,
+        native,
+        deadline,
+        &[3276, 3003, 3457],
+    )
+    .await
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
@@ -737,6 +765,7 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
+    item_ids: &[u32],
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -809,9 +838,7 @@ async fn prepare_items(
     let index = native
         .item_index()
         .ok_or("qualification Item index missing")?;
-    // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
-    // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+    for (ordinal, &id) in item_ids.iter().enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),
