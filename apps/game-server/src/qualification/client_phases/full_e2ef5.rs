@@ -4102,11 +4102,20 @@ async fn c16c_rat_corpse(
     );
     let corpse_ref = provisioning::item_reference(&provisioning::item_index()?, 5964)?;
     approach_melee(client, world, rat.position).await?;
+    use oteryn_protocol_oteryn::presentation::{
+        PresentationColor, PresentationEventKind, PresentationValueKind,
+    };
+    const RAT_MAX_HP: u64 = 20;
     let existing = census(client)?;
+    let attacker = own_entity(client)?;
     let mut position = creature(client, rat.entity)?.position;
     let mut health = hp(&creature(client, rat.entity)?)?;
-    let mut struck = false;
-    let mut damaged = false;
+    if health != 100 {
+        return Err(format!("C16c fixture Rat started at {health}% HP").into());
+    }
+    let mut strike_before = None;
+    let mut damage = None;
+    let mut proved_damage = false;
     let mut removed = false;
     let mut corpse = None;
     client.take_events();
@@ -4114,21 +4123,31 @@ async fn c16c_rat_corpse(
     let mut next_cast = tokio::time::Instant::now();
     while tokio::time::Instant::now() < until {
         for event in client.take_events() {
+            if let SessionEvent::Presentation(delta) = &event {
+                for event in &delta.value {
+                    if let PresentationEventKind::ValueText {
+                        kind: PresentationValueKind::DamageDealt,
+                        target,
+                        attacker: Some(owner),
+                        primary,
+                        ..
+                    } = &event.kind
+                        && *target == rat.entity
+                        && *owner == attacker
+                    {
+                        if primary.color != PresentationColor::Red || damage.replace(primary.value).is_some() {
+                            return Err("C16c expected one red damage value for the exact strike".into());
+                        }
+                    }
+                }
+            }
             let SessionEvent::WorldSpatialEntities(delta) = event else {
                 continue;
             };
             for entry in &delta.value.update {
                 if entry.entity == rat.entity {
                     position = entry.position;
-                    let next_health = hp(entry)?;
-                    if struck && next_health < health {
-                        damaged = true;
-                        evidence(&format!(
-                            "C16C_RAT_HEALTH before={health} after={next_health} sequence={}",
-                            delta.server_sequence
-                        ));
-                    }
-                    health = next_health;
+                    health = hp(entry)?;
                 }
             }
             removed |= delta.value.leave.contains(&rat.entity);
@@ -4145,17 +4164,23 @@ async fn c16c_rat_corpse(
                 }
             }
         }
-        if struck
-            && removed
-            && let Some(corpse) = corpse
+        let health_after = if removed { 0 } else { health };
+        if let (Some(before), Some(amount)) = (strike_before, damage)
+            && health_after < before
         {
-            evidence(&format!(
-                "C16C_RAT_DEATH observed_nonlethal_damage={damaged} position={position:?} corpse={:?}",
-                corpse.entity
-            ));
+            let expected = u64::from(before - health_after) * RAT_MAX_HP / 100;
+            if amount != expected {
+                return Err(format!("C16c damage wire value {amount} differs from exact Rat HP loss {expected}").into());
+            }
+            evidence(&format!("C16C_RAT_DAMAGE value={amount} before={before}% after={health_after}%"));
+            strike_before = None;
+            damage = None;
+            proved_damage = true;
+        }
+        if proved_damage && strike_before.is_none() && removed && let Some(corpse) = corpse {
             return Ok(corpse);
         }
-        if !removed && tokio::time::Instant::now() >= next_cast {
+        if strike_before.is_none() && !removed && tokio::time::Instant::now() >= next_cast {
             let target = SpellTarget::Position(SpellTargetPosition {
                 x: position.x,
                 y: position.y,
@@ -4164,20 +4189,19 @@ async fn c16c_rat_corpse(
             let outcome = client.cast_spell(index, target, false).await?;
             match outcome.disposition {
                 SpellCastDisposition::Cast => {
-                    struck = true;
+                    strike_before = Some(health);
                     evidence(&format!(
                         "C16C_STRIKE target={position:?} sequence={}",
                         outcome.result_server_sequence
                     ));
                 }
-                SpellCastDisposition::CoolingDown | SpellCastDisposition::NotEnoughMana => {}
                 _ => return Err(format!("C16c Rat Energy Strike refused: {outcome:?}").into()),
             }
             next_cast = tokio::time::Instant::now() + recast;
         }
         client.service_liveness(Duration::from_millis(25)).await?;
     }
-    Err(format!("C16c Rat kill lacks exact death evidence: cast={struck} health={health} damage={damaged} removed={removed} corpse={}", corpse.is_some()).into())
+    Err(format!("C16c Rat kill lacks exact death evidence: pending_strike={strike_before:?} health={health} damage={damage:?} removed={removed} corpse={}", corpse.is_some()).into())
 }
 
 async fn animate_corpse(
@@ -4250,9 +4274,9 @@ pub(super) async fn capture_animate_dead(
     let encounter = caster.world_spatial().actor_position;
     let mut scout = connect_character(clients, 0xd6, 0).await?;
     with_observer_liveness(&mut caster, approach_melee(&mut scout, world, encounter)).await?;
-    let (logout, detail, _, _) = with_observer_liveness(&mut caster, logout_retrying_busy(&mut scout)).await?;
-    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("C16c scout logout refused: {detail}").into());
+    let logout = with_observer_liveness(&mut caster, async { Ok(scout.session_mut().logout().await?) }).await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C16c scout first logout refused: {logout:?}").into());
     }
     drop(scout);
 
@@ -4302,15 +4326,27 @@ pub(super) async fn capture_animate_dead(
         observer.service_liveness(Duration::from_millis(50)).await?;
     };
     write_capture(files)?;
-    let expected_runes = before;
-    with_observer_liveness(&mut observer, rune_rejoin(&mut caster, clients, 0xd5, &[(reference, expected_runes)])).await?;
-    let (logout, detail, _, _) = with_observer_liveness(&mut caster, logout_retrying_busy(&mut observer)).await?;
-    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("C16c observer logout refused: {detail}").into());
+    let observer_logout = with_observer_liveness(&mut caster, async { Ok(observer.session_mut().logout().await?) }).await?;
+    if observer_logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C16c observer first logout refused: {observer_logout:?}").into());
     }
-    let (logout, detail, _, _) = logout_retrying_busy(&mut caster).await?;
-    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("C16c caster logout refused: {detail}").into());
+    let previous = caster.join_snapshot().game_session_id;
+    let position = caster.world_spatial().actor_position;
+    let caster_logout = caster.session_mut().logout().await?;
+    if caster_logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C16c caster first logout refused: {caster_logout:?}").into());
+    }
+    drop(caster);
+    let mut fresh = admit_row(clients, 0xd5, 1).await?;
+    if fresh.join_snapshot().game_session_id == previous
+        || fresh.world_spatial().actor_position != position
+        || rune_quantity(&fresh, reference)? != before
+    {
+        return Err("C16c fresh admission did not retain exact rune debit and position".into());
+    }
+    let fresh_logout = fresh.session_mut().logout().await?;
+    if fresh_logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C16c fresh first logout refused: {fresh_logout:?}").into());
     }
     Ok(())
 }

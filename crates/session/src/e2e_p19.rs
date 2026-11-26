@@ -2,7 +2,7 @@
 //!
 //! p19-appearance-snapshot.bin is the unmodified appearance snapshot payload.
 //! p19-appearance-deltas.bin uses the OTR1 little-endian transcript format
-//! documented in e2e_c16c_replay_tests.rs, with the appearance snapshot as the external
+//! documented in e2e_c16c.rs, with the appearance snapshot as the external
 //! entry. The world snapshot and world deltas are included to reconstruct
 //! visibility and appearance references, in order with the appearance deltas.
 //! p19-expected.txt records the 32 hex identity digits, decimal generation and
@@ -50,8 +50,12 @@ async fn replay_forge() -> Result<(), BoxError> {
     assert_forge(&input, &mut input.admit().await?)?;
 
     if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let input = ReplayInput::read(std::path::Path::new(&path), P19_FILES, APPEARANCE)?;
-        assert_forge(&input, &mut input.admit().await?)?;
+        let path = std::path::Path::new(&path);
+        for (directory, stacks) in [(path.to_path_buf(), 3), (path.join("fiendish"), 15)] {
+            let input = ReplayInput::read(&directory, P19_FILES, APPEARANCE)?;
+            assert_eq!(input.expected, stacks);
+            assert_forge(&input, &mut input.admit().await?)?;
+        }
     }
     Ok(())
 }

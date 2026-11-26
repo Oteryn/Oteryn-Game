@@ -81,12 +81,10 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         return Err(format!("P19 expected ineligible_forge_creature, got {refused:?}").into());
     }
     let mut observed = Vec::new();
-    for ((classification, stacks, folder), position) in [
-        ("influenced 3", 3, "influenced"),
-        ("fiendish", 15, "fiendish"),
-    ]
-    .into_iter()
-    .zip(positions)
+    for ((classification, stacks, folder), position) in
+        [("influenced 3", 3, ""), ("fiendish", 15, "fiendish")]
+            .into_iter()
+            .zip(positions)
     {
         let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
         client.take_events();
@@ -142,9 +140,9 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             first.1
         ));
         let previous = client.join_snapshot().game_session_id;
-        let (result, detail, _, _) = logout_retrying_busy(&mut client).await?;
-        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err(format!("P19 logout refused: {detail}").into());
+        let reply = client.session_mut().logout().await?;
+        if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("P19 logout refused: {reply:?}").into());
         }
         drop(client);
         client = connect_character(clients, 0x19, 0).await?;
@@ -165,9 +163,9 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             }
         }
     }
-    let (result, detail, _, _) = logout_retrying_busy(&mut client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("P19 final logout refused: {detail}").into());
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("P19 final logout refused: {reply:?}").into());
     }
     Ok(())
 }
