@@ -105,6 +105,17 @@ impl PlayView {
             }
             self.party_summons_refresh = Some(icon_now);
         }
+        let notice_refresh = {
+            let mut mailbox = super::mailbox::lock(&link.mailbox);
+            let mailbox = &mut *mailbox;
+            oteryn_client_ui::party_membership_notices::take_refresh(
+                &mailbox.party,
+                &mut mailbox.party_notice_refresh,
+            )
+        };
+        if notice_refresh {
+            link.party_request(oteryn_client_ui::party::Intent::Refresh);
+        }
         self.party_icons = party.icons;
         self.combat_target = super::mailbox::lock(&link.mailbox)
             .battle

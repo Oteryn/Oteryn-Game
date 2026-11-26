@@ -71,6 +71,13 @@ impl Mailbox {
                 })
                 .for_each(drop);
         }
+        self.party_notice_refresh = oteryn_client_ui::party_membership_notices::observed(
+            self.party_notice_refresh,
+            events
+                .iter()
+                .filter(|event| matches!(event, SessionEvent::PartyMembershipNotice(_)))
+                .count(),
+        );
         self.console_events(&events);
         self.activity_scope_events(&events);
         self.channel_list_events(&events);

@@ -332,3 +332,40 @@ fn party_roster_changes_emit_one_membership_tone() -> Result<(), Error> {
     }
     Ok(())
 }
+
+#[test]
+fn party_membership_notice_refreshes_the_party_view_through_the_play_tick() -> Result<(), Error> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::party::{CommandStatus, PartyCommand, PartyResponse};
+    use oteryn_client_ui::party::party;
+    use oteryn_session::{AppliedDelta, SessionEvent};
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    outbox.party_initialize(true, false);
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(1, 1), 7, &[])?;
+    let notice = |sequence, change| {
+        vec![SessionEvent::PartyMembershipNotice(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: sequence - 1,
+            new_revision: sequence,
+            value: party::PartyMembershipNotice { member_handle: 9, change },
+        })]
+    };
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    assert!(commands.try_recv().is_err(), "no notice, no refresh");
+    outbox.push(notice(1, party::PartyMembershipChange::Joined));
+    outbox.push(notice(2, party::PartyMembershipChange::Left));
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    assert!(matches!(commands.try_recv(), Ok(PlayCommand::Party(command)) if command == PartyCommand::query()));
+    // Two notices owe one refresh, and the pending query holds a later notice back.
+    outbox.push(notice(3, party::PartyMembershipChange::Joined));
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    assert!(commands.try_recv().is_err());
+    let bytes = party::encode_party_result(&party::PartyResult::refused(party::PartyDisposition::Ok))
+        .map_err(|error| format!("{error:?}"))?;
+    outbox.party_result(&PartyResponse { status: CommandStatus::Accepted, operation: bytes.clone(), view: Some(bytes) });
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    assert!(matches!(commands.try_recv(), Ok(PlayCommand::Party(command)) if command == PartyCommand::query()));
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

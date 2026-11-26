@@ -328,6 +328,8 @@ pub(super) struct Mailbox {
         std::collections::BTreeMap<oteryn_session::EntityRef, oteryn_session::EntityRef>,
     >,
     pub(super) party: oteryn_client_ui::party::PartyPanel,
+    /// A Party join or leave notice (capability 576) owes one Party query refresh.
+    pub(super) party_notice_refresh: bool,
     pub(super) hireling: oteryn_client_ui::hireling::HirelingPanel,
     pub(super) hireling_shutdown: bool,
     pub(super) hireling_management: oteryn_client_ui::hireling_management::Panel,
