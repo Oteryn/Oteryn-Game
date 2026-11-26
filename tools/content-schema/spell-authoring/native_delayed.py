@@ -546,5 +546,7 @@ def schemas():
     schemas["delayed_strike"]["oneOf"].append(_closed_snapshot_schema(registered))
     registered_grenade = _snapshot("divine grenade")["parameters"]
     apply_crystal_grenade_parameters(registered_grenade)
-    schemas["delayed_strike"]["oneOf"].append(_closed_snapshot_schema(registered_grenade))
+    schemas["delayed_strike"]["oneOf"].append(
+        _closed_snapshot_schema(registered_grenade)
+    )
     return schemas
