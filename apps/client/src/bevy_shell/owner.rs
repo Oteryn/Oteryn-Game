@@ -602,6 +602,10 @@ impl N07dHost {
         &self.0.play.as_ref().expect("N07d active play").view
     }
 
+    pub(crate) fn view_mut(&mut self) -> &mut PlayView {
+        &mut self.0.play.as_mut().expect("N07d active play").view
+    }
+
     pub(crate) fn poll(&mut self) {
         self.0.poll([800, 600]);
     }

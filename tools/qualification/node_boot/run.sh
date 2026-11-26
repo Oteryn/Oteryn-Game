@@ -536,8 +536,11 @@ cleanup() {
   fi
   evidence "cleanup=complete"
   evidence "result_scope world_bundle=$NODE_BOOT_WORLD spells=$NODE_BOOT_SPELLS stage=$ACTIVE_STAGE exit=$rc"
-  if [[ "${NODE_BOOT_DEFER_ROWS_RESULT:-0}" == 1 && "$result" == NODE_BOOT_PASS ]]; then
+  if [[ "$result" == NODE_BOOT_PASS && "${NODE_BOOT_DEFER_ROWS_RESULT:-0}" == 1 ]]; then
     echo "NODE_BOOT_SERVER_RESULT=$result${result_mode:-}"
+  elif [[ "$result" == NODE_BOOT_PASS && "${n07d_replay_required:-0}" == 1 ]]; then
+    echo "NODE_BOOT_RESULT=BLOCKED reason=n07d_client_replay_requires_cloud_run${result_mode:-}"
+    rc=2
   else
     echo "NODE_BOOT_RESULT=$result${result_mode:-}"
   fi
@@ -1179,6 +1182,10 @@ stage() { # name prerequisite... -- function
   echo "::endgroup::"
   if [[ $rc == 0 ]]; then
     STATUS[$name]=PASS
+    if [[ "$name" == seam_stages ]] &&
+      grep -Eq '^SEAM_EVIDENCE e2e_capture scenario=N07d[.]client status=CAPTURED([[:space:]]|$)' "$WORK/stage-$name.log"; then
+      n07d_replay_required=1
+    fi
     # Row batches must report every selected row even when Rust exits 0.
     local groups=",${NODE_BOOT_E2E_ONLY:-},"
     groups=${groups//[[:space:]]/}

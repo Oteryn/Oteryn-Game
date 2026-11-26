@@ -914,6 +914,21 @@ class CloudRunSummaryTests(unittest.TestCase):
                             'e2e_s18_say_and_whisper_echo_replay -- --nocapture',
                         ])
 
+    def test_direct_n07d_server_pass_requires_client_replay(self):
+        source = (HERE / "run.sh").read_text()
+        start = source.index('\n', source.index('  evidence "result_scope ')) + 1
+        end = source.index('  exit "$rc"', start) + len('  exit "$rc"')
+        command = ('result=NODE_BOOT_PASS; n07d_replay_required=1; rc=0; '
+                   'result_mode=" mode=unprivileged"; unset NODE_BOOT_DEFER_ROWS_RESULT;\n')
+        result = subprocess.run(
+            ['bash', '-c', command + source[start:end]], capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(
+            result.stdout.strip(),
+            'NODE_BOOT_RESULT=BLOCKED reason=n07d_client_replay_requires_cloud_run mode=unprivileged',
+        )
+
     def test_cloud_publishes_rows_result_after_replay(self):
         cloud = (HERE / 'cloud_run.sh').read_text()
         summary = cloud[cloud.index('summarize()'):cloud.index('if [[ ${1:-} == --summarize')]

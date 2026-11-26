@@ -248,9 +248,11 @@ async fn verify(
     let (link, commands, outbox) = crate::play::play_channel();
     host.admit(open(&session)?, link);
     let view = host.view();
-    assert_projected_ground(view, &map, &walkable)?;
+    let first_colors = assert_projected_ground(view, &map, &walkable)?;
+    host.view_mut().set_live_map(&map)?;
+    assert_eq!(super::lock(&host.view().minimap).cells, first_colors, "N07d repeated snapshot changed exploration");
     {
-        let minimap = super::lock(&view.minimap);
+        let minimap = super::lock(&host.view().minimap);
         assert_eq!(
             minimap.cells.len().to_string(),
             value(expected, "walkable")?
@@ -261,6 +263,39 @@ async fn verify(
         x: origin.x + 1,
         ..origin
     };
+    let key = oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(16)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Alt)
+            .with(oteryn_input_actions::Modifier::Shift),
+        repeat: false,
+    };
+    let marker = Marker {
+        x: origin.x,
+        y: origin.y,
+        floor: origin.floor,
+        label: "Mark".into(),
+        color: 0,
+    };
+    assert!(super::lock(&host.view().minimap).markers.is_empty());
+    host.route(key);
+    let view = host.view();
+    assert_eq!(super::lock(&view.minimap).markers, [marker.clone()]);
+    let cache_path = super::lock(&view.minimap)
+        .path()
+        .ok_or("N07d missing live cache binding")?;
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            host.poll();
+            if super::lock(&host.view().minimap).save_task.is_none() && Saved::read_from(&cache_path)?.is_some_and(|saved| saved.markers == [marker.clone()]) {
+                return Ok::<_, Error>(());
+            }
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    }).await??;
+    // Pin the periodic-save deadline so only logout can write the next terrain update.
+    super::lock(&host.view().minimap).retry_delay = Duration::from_secs(3600);
+    let view = host.view();
     let worker = tokio::spawn(crate::play::run_session(session, commands, outbox));
     let (_, _, _, zoom, tracking) = view.minimap_camera();
     assert_eq!(view.minimap_camera(), (origin.x, origin.y, origin.floor, zoom, true));
@@ -280,24 +315,6 @@ async fn verify(
         Ok::<_, Error>(())
     }).await??;
     check_reply(&step, &first_id, first.command_id).await?;
-    let key = oteryn_input_actions::NormalizedInputEvent::Key {
-        code: oteryn_input_actions::KeyCode::new(16)?,
-        state: oteryn_input_actions::ButtonState::Pressed,
-        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Alt)
-            .with(oteryn_input_actions::Modifier::Shift),
-        repeat: false,
-    };
-    let marker = Marker {
-        x: destination.x,
-        y: destination.y,
-        floor: destination.floor,
-        label: "Mark".into(),
-        color: 0,
-    };
-    assert!(super::lock(&host.view().minimap).markers.is_empty());
-    host.route(key);
-    let view = host.view();
-    assert_eq!(super::lock(&view.minimap).markers, [marker.clone()]);
     let retained: BTreeSet<_> = walkable
         .iter()
         .copied()
@@ -310,10 +327,16 @@ async fn verify(
         "N07d needs ground that the relog viewport cannot reconstruct"
     );
     let union: BTreeSet<_> = moved_ground.union(&retained).copied().collect();
+    let view = host.view();
     let remembered = super::lock(&view.minimap).cells.clone();
-    let cache_path = super::lock(&view.minimap)
-        .path()
-        .ok_or("N07d missing live cache binding")?;
+    for key in &retained {
+        assert_eq!(remembered.get(key), first_colors.get(key), "N07d movement changed retained colour at {key:?}");
+    }
+    assert!(moved_ground.difference(&walkable).next().is_some(), "N07d needs newly explored cells");
+    let before_logout = std::fs::read(&cache_path)?;
+    let before = Saved::read_from(&cache_path)?.ok_or("N07d baseline save missing")?;
+    assert!(moved_ground.difference(&walkable).all(|&(floor, x, y)| !before.cells.iter().any(|cell| cell[..3] == [i32::from(floor), x, y])));
+    assert!(super::lock(&view.minimap).cells_dirty, "N07d movement needs a pending save at logout");
     assert_remembered_cells(&super::lock(&view.minimap), &union);
     check_reply(&logout, &first_id, step.command_id + 1).await?;
     host.logout();
@@ -331,10 +354,11 @@ async fn verify(
             tokio::time::sleep(Duration::from_millis(5)).await;
         }
     }).await?;
-    assert!(
-        cache_path.is_file(),
-        "N07d live view exit did not save exploration"
-    );
+    assert_ne!(std::fs::read(&cache_path)?, before_logout, "N07d logout did not flush newly explored terrain");
+    let saved = Saved::read_from(&cache_path)?.ok_or("N07d logout cache missing")?;
+    let expected_disk: BTreeSet<_> = remembered.iter().map(|(&(floor, x, y), &color)| [i32::from(floor), x, y, i32::from(color)]).collect();
+    assert_eq!(saved.cells.into_iter().collect::<BTreeSet<_>>(), expected_disk);
+    assert_eq!(saved.markers, [marker.clone()]);
 
     let (client, mut peer) = tokio::io::duplex(second.payload.len());
     let second_wire = second.payload.clone();
@@ -359,10 +383,52 @@ async fn verify(
     host.admit(open(&relogged)?, crate::play::play_channel().0);
     let reopened = host.view();
     assert_projected_ground(reopened, &relogged_map, &moved_ground)?;
-    let minimap = super::lock(&reopened.minimap);
+    let mut minimap = super::lock(&reopened.minimap);
     assert_eq!(minimap.cells, remembered);
     assert_eq!(minimap.markers, [marker]);
+    check_markers(&mut minimap, origin.x, origin.y, origin.floor)?;
+    assert_eq!(minimap.cells, remembered);
+    drop(minimap);
+    let (&(_, x, y), &color) = first_colors
+        .iter()
+        .find(|(key, _)| key.0 == destination.floor && retained.contains(key))
+        .ok_or("N07d needs retained terrain on the actor floor")?;
+    host.view_mut().navigate_minimap(crate::play::MinimapNavigation::Centre)?;
+    host.view_mut().navigate_minimap(crate::play::MinimapNavigation::Pan(
+        x - destination.x, y - destination.y,
+    ))?;
+    let grid = oteryn_client_ui::minimap::view()?;
+    let center = grid.tile_to_screen(oteryn_renderer::TileCoord::new(15, 12));
+    assert_sidebar_tile(&crate::bevy_shell::n07d_sidebar_pixels(host.view().scene()), center, palette_rgba(color));
     Ok(())
+}
+
+#[cfg(bevy_shell)]
+fn assert_sidebar_tile(pixels: &[[u8; 4]], at: [f32; 2], rgba: [u8; 4]) {
+    use oteryn_client_ui::minimap::{COLUMNS, TILE_PX};
+    for y in at[1] as u32..at[1] as u32 + TILE_PX {
+        for x in at[0] as u32..at[0] as u32 + TILE_PX {
+            assert_eq!(pixels[(y * COLUMNS * TILE_PX + x) as usize], rgba,
+                "N07d final sidebar pixel at ({x}, {y})");
+        }
+    }
+}
+
+#[cfg(bevy_shell)]
+#[should_panic(expected = "N07d final sidebar pixel")]
+#[test]
+fn n07d_rejects_a_later_overpaint_on_correct_terrain() {
+    use oteryn_client_ui::minimap::{COLUMNS, ROWS, TILE_PX};
+    let expected = palette_rgba(6);
+    let mut pixels = vec![expected; (COLUMNS * ROWS * TILE_PX * TILE_PX) as usize];
+    assert_sidebar_tile(&pixels, [0., 0.], expected);
+    pixels[1] = palette_rgba(7);
+    assert_sidebar_tile(&pixels, [0., 0.], expected);
+}
+
+#[cfg(bevy_shell)]
+fn palette_rgba(color: u8) -> [u8; 4] {
+    [(color / 36 % 6) * 51, (color / 6 % 6) * 51, (color % 6) * 51, 255]
 }
 
 #[cfg(bevy_shell)]
@@ -383,7 +449,7 @@ fn assert_projected_ground(
     view: &crate::play::PlayView,
     map: &WorldMapViewSnapshot,
     expected: &BTreeSet<CellPosition>,
-) -> Result<(), Error> {
+) -> Result<BTreeMap<CellPosition, u8>, Error> {
     let memory = &view.scene.minimap_memory;
     assert!(memory.binding.is_some());
     assert_eq!(memory, &view.local.preferences.minimap);
@@ -420,7 +486,9 @@ fn assert_projected_ground(
     let scene = view.scene();
     let grid = oteryn_client_ui::minimap::view()?;
     let rendered: Vec<_> = crate::bevy_shell::n07d_sidebar_colors(scene).collect();
+    let pixels = crate::bevy_shell::n07d_sidebar_pixels(scene);
     let mut verified_pixels = 0;
+    let mut expected_colors = BTreeMap::new();
     for tile in &map.tiles {
         let pos = tile.position;
         let key = (pos.floor, pos.x, pos.y);
@@ -437,19 +505,66 @@ fn assert_projected_ground(
                 color = index;
             }
         }
+        expected_colors.insert(key, color);
         assert_eq!(minimap.cells.get(&key), Some(&color), "N07d terrain colour at {key:?}");
         let cell = oteryn_renderer::TileCoord::new(pos.x - map.header.origin.x + 15, pos.y - map.header.origin.y + 12);
         if pos.floor == map.header.origin.floor && grid.contains(cell) {
             let at = grid.tile_to_screen(cell);
-            let rgba = [(color / 36 % 6) * 51, (color / 6 % 6) * 51, (color % 6) * 51, 255];
-            assert!(
-                rendered.contains(&(at, rgba)),
-                "N07d missing rendered terrain pixel at {key:?} with RGBA {rgba:?}, observed {:?}", rendered.iter().filter(|(position, _)| *position == at).collect::<Vec<_>>()
-            );
+            let rgba = palette_rgba(color);
+            let overlay = minimap.markers.iter().find(|marker| (marker.floor, marker.x, marker.y) == key);
+            let colors: Vec<_> = rendered.iter().filter(|(position, _)| *position == at).map(|(_, pixel)| *pixel).collect();
+            let mut expected = vec![rgba];
+            if let Some(marker) = overlay {
+                expected.push(palette_rgba([180, 5, 30, 210][usize::from(marker.color)]));
+            }
+            assert_eq!(colors, expected, "N07d sidebar paint order at {key:?}");
+            let away_from_own_glyph = (pos.x - map.header.origin.x).abs() > 1
+                || (pos.y - map.header.origin.y).abs() > 1;
+            if away_from_own_glyph && !view.entities.iter().any(|entity| entity.position == pos) {
+                assert_sidebar_tile(&pixels, at, expected[expected.len() - 1]);
+            }
             verified_pixels += 1;
         }
     }
     assert!(verified_pixels > 0, "N07d needs visible pinned terrain to verify");
+    Ok(expected_colors)
+}
+
+#[cfg(bevy_shell)]
+fn check_markers(minimap: &mut Minimap, x: i32, y: i32, floor: i16) -> Result<(), Error> {
+    minimap.follow(x, y, floor);
+    assert_eq!(minimap.position(15, 12), Some((x, y, floor)));
+
+    // Markers are edited at that position; an invalid edit leaves them unchanged.
+    minimap.edit_marker(x, y, floor, "Depot".into(), 2)?;
+    let marker = Marker {
+        x,
+        y,
+        floor,
+        label: "Depot".into(),
+        color: 2,
+    };
+    assert_eq!(minimap.markers.first(), Some(&marker));
+    assert_eq!(minimap.markers.len(), 1);
+    minimap.edit_marker(x, y, floor, "Temple".into(), 1)?;
+    assert_eq!(
+        minimap.markers,
+        [Marker {
+            label: "Temple".into(),
+            color: 1,
+            ..marker
+        }]
+    );
+    let kept = minimap.markers.clone();
+    assert!(
+        minimap
+            .edit_marker(x, y, -5, "Invalid floor".into(), 0)
+            .is_err()
+    );
+    assert!(minimap.edit_marker(x, y, floor, "  ".into(), 0).is_err());
+    assert_eq!(minimap.markers, kept);
+    minimap.remove_marker(x, y, floor)?;
+    assert!(minimap.markers.is_empty());
     Ok(())
 }
 
