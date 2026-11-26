@@ -344,6 +344,23 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
             "fresh admission after staging logout",
         ));
     }
+    let vitals = client.actor_vitals().ok_or_else(|| {
+        failed(
+            1,
+            "missing_actor_vitals",
+            "derived level-500 knight maxima on the wire",
+        )
+    })?;
+    if (vitals.max_health, vitals.max_mana) != (7565, 2550) {
+        return Err(failed(
+            1,
+            format!(
+                "max_health={},max_mana={}",
+                vitals.max_health, vitals.max_mana
+            ),
+            "level-500 knight maxima of 7565 health and 2550 mana",
+        ));
+    }
     if tile(client.world_spatial().actor_position).is_ok_and(|at| {
         at == (TilePos {
             x: 33548,
