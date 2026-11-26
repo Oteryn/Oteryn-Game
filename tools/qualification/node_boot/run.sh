@@ -1141,6 +1141,24 @@ stage_rows() { grep -oE "e2e_all scenario=[^ ]+ status=$2( |$)" "$1" | sed -E 's
 # Row ids listed in the known-failure file (first field, comments skipped); a missing file lists none.
 known_rows() { [[ -f $1 ]] && grep -vE '^[[:space:]]*(#|$)' "$1" | awk '{print $1}' || true; }
 
+w20a_replay() {
+  local stage_log=$1 capture_dir=$2 started=$SECONDS
+  local case_name=tests::e2e_w20a::e2e_w20a_world_clock_replay output
+  if grep -q '^SEAM_EVIDENCE e2e_all scenario=W20a\.client status=FAIL ' "$stage_log"; then
+    return 0 # Preserve the indexed journey or cleanup failure.
+  fi
+  if grep -q '^SEAM_EVIDENCE e2e_capture scenario=W20a\.client status=CAPTURED ' "$stage_log" &&
+    output=$(E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked \
+      -p oteryn-session --lib "$case_name" -- --exact) &&
+    grep -Fxq "test $case_name ... ok" <<< "$output"; then
+    printf '%s\n' "$output"
+    printf 'SEAM_EVIDENCE e2e_all scenario=W20a.client status=PASS seconds=%s evidence=live-capture-replayed\n' "$((SECONDS - started))"
+  else
+    printf '%s\n' "${output:-}"
+    printf 'SEAM_EVIDENCE e2e_all scenario=W20a.client status=FAIL seconds=%s evidence=live-capture-replay-failed\n' "$((SECONDS - started))"
+  fi
+}
+
 stage() { # name prerequisite... -- function
   local name=$1; shift
   local prerequisites=()
@@ -1164,8 +1182,19 @@ stage() { # name prerequisite... -- function
     start_runtime_diagnostics "${name}_pvp" "$WORK/pvp-node.log"
   fi
   set +e
+  local w20a_capture_dir=
+  if [[ "$name" == seam_stages && "$NODE_BOOT_WORLD" == 1 ]]; then
+    w20a_capture_dir="${E2E_ALL_CAPTURE_DIR:-}"
+    if [[ -z "$w20a_capture_dir" ]]; then
+      w20a_capture_dir=$(mktemp -d "$WORK/w20a-capture.XXXXXX") || fail "create W20a capture directory"
+    fi
+  fi
   ( set -Eeuo pipefail; source "$VARS"; "$@" ) 2>&1 | tee "$WORK/stage-$name.log"
   local rc=${PIPESTATUS[0]}
+  if [[ "$rc" == 0 && -n "$w20a_capture_dir" ]] &&
+    grep -Fxq 'SEAM_EVIDENCE W20A_CAPTURE_STARTED' "$WORK/stage-$name.log"; then
+    w20a_replay "$WORK/stage-$name.log" "$w20a_capture_dir" 2>&1 | tee -a "$WORK/stage-$name.log"
+  fi
   stop_runtime_diagnostics
   pg_observability_dump "$name" "$rc"
   set -e
@@ -1543,6 +1572,9 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   sleep 6
   local qualification=node_boot_seam_against_running_node
   local test_env=()
+  if [[ -n "${w20a_capture_dir:-}" ]]; then
+    test_env+=("NODE_BOOT_W20A_CAPTURE_DIR=$w20a_capture_dir")
+  fi
   if [[ "${NODE_BOOT_D150_LEGACY:-0}" == 1 ]]; then
     test_env+=("NODE_BOOT_D150_LEGACY=1")
   fi

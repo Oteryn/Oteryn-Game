@@ -13,15 +13,19 @@ use oteryn_protocol_oteryn::world_clock::{
 // At constant light, the pacer only publishes on the next Tibian hour (150 real seconds).
 const CLOCK_DELTA_WAIT: Duration =
     Duration::from_millis(60 * crate::world_clock::TIBIAN_MINUTE_MS + 15_000);
-const JOURNEY_WAIT: Duration = Duration::from_millis(2 * CLOCK_DELTA_WAIT.as_millis() as u64 + 30_000);
+const JOURNEY_WAIT: Duration =
+    Duration::from_millis(2 * CLOCK_DELTA_WAIT.as_millis() as u64 + 30_000);
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
+    use std::io::Write;
+
+    let Some(root) = std::env::var_os("NODE_BOOT_W20A_CAPTURE_DIR")
+        .or_else(|| std::env::var_os("E2E_ALL_CAPTURE_DIR"))
+    else {
+        return Err("step=capture directory missing".into());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W20A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::File::create_new(Path::new(&root).join(name))?.write_all(bytes)?;
+    Ok(())
 }
 
 fn advances_revision(previous: u64, base: u64, next: u64) -> bool {
@@ -30,7 +34,10 @@ fn advances_revision(previous: u64, base: u64, next: u64) -> bool {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x96).await?;
-    if !client.selected_capabilities().contains(&CAPABILITY_WORLD_LIGHT_V1) {
+    if !client
+        .selected_capabilities()
+        .contains(&CAPABILITY_WORLD_LIGHT_V1)
+    {
         return Err("step=admission world light capability 19 not selected".into());
     }
     let snapshot = client
@@ -38,7 +45,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .gated_snapshot(STATE_DOMAIN_WORLD_CLOCK)
         .ok_or("step=snapshot domain 18 absent")?;
     let (snapshot_revision, snapshot_payload) = (snapshot.revision, snapshot.payload.clone());
-    let first = decode_world_clock(&snapshot_payload).map_err(|error| format!("step=snapshot decode {error:?}"))?;
+    let first = decode_world_clock(&snapshot_payload)
+        .map_err(|error| format!("step=snapshot decode {error:?}"))?;
+    if first.light_color != 215
+        || first.tibian_minute >= 1_440
+        || first.light_level != crate::world_clock::light_level(u32::from(first.tibian_minute))
+    {
+        return Err(format!("step=snapshot clock={first:?}").into());
+    }
     let mut expected = format!(
         "snapshot_revision={snapshot_revision}\nsnapshot={}:{}:{}\n",
         first.tibian_minute, first.light_level, first.light_color
@@ -68,12 +82,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             );
         };
         let clock = delta.value;
-        if !advances_revision(previous, delta.base_revision, delta.new_revision) || clock.light_color != 215 || clock.tibian_minute >= 1_440 {
-            return Err(format!("step=delta{step} base={} new={} clock={clock:?}", delta.base_revision, delta.new_revision).into());
+        if !advances_revision(previous, delta.base_revision, delta.new_revision)
+            || clock.light_color != 215
+            || clock.tibian_minute >= 1_440
+            || clock.tibian_minute == last.tibian_minute
+            || clock.light_level != crate::world_clock::light_level(u32::from(clock.tibian_minute))
+        {
+            return Err(format!(
+                "step=delta{step} base={} new={} clock={clock:?}",
+                delta.base_revision, delta.new_revision
+            )
+            .into());
         }
         let payload = encode_world_clock(clock)
             .map_err(|error| format!("step=delta{step} encode {error:?}"))?;
-        capture(&format!("w20a-delta{step}.bin"), &payload);
+        capture(&format!("w20a-delta{step}.bin"), &payload)?;
         expected.push_str(&format!(
             "delta{step}={}:{}:{}\ndelta{step}_sequence={}\ndelta{step}_base={}\ndelta{step}_new={}\n",
             clock.tibian_minute, clock.light_level, clock.light_color, delta.server_sequence, delta.base_revision, delta.new_revision
@@ -81,18 +104,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         previous = delta.new_revision;
         last = clock;
     }
-    capture("w20a-snapshot.bin", &snapshot_payload);
-    capture("w20a-expected.txt", expected.as_bytes());
+    capture("w20a-snapshot.bin", &snapshot_payload)?;
+    capture("w20a-expected.txt", expected.as_bytes())?;
     let logout = client.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=logout observed={logout:?} need=Accepted").into());
     }
-    Ok(format!("minute={}..{} light={}", first.tibian_minute, last.tibian_minute, last.light_level))
+    Ok(format!(
+        "minute={}..{} light={}",
+        first.tibian_minute, last.tibian_minute, last.light_level
+    ))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    evidence("W20A_CAPTURE_STARTED");
     match verdict::indexed_timeout(JOURNEY_WAIT, verdict::observe(journey(clients))).await {
-        Ok(Ok(observed)) => evidence(&format!("e2e_all scenario=W20a.client status=CAPTURED evidence={observed}")),
+        Ok(Ok(observed)) => evidence(&format!(
+            "e2e_all scenario=W20a.client status=CAPTURED evidence={observed}"
+        )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W20a.client status=FAIL evidence={}",
             error.to_string().replace(' ', "_")
@@ -100,7 +129,6 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Err(_) => evidence("e2e_all scenario=W20a.client status=FAIL evidence=timeout"),
     }
 }
-
 
 #[cfg(test)]
 mod tests {

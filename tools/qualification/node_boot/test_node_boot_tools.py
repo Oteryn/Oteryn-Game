@@ -658,6 +658,40 @@ class PgObserveTests(unittest.TestCase):
         self.assertIn('cp -R "$PG_OBS" "$NODE_BOOT_FAILURE_LOG_DIR/postgres-world', RUN_TEXT)
 
 
+class ClockReplayTests(unittest.TestCase):
+    def test_w20a_pass_requires_a_live_capture_and_the_exact_replay(self):
+        helper = RUN_TEXT[RUN_TEXT.index('w20a_replay()'):RUN_TEXT.index('stage() { # name')]
+        fake_cargo = textwrap.dedent('''
+            cargo() {
+                [[ "$E2E_ALL_CAPTURE_DIR" == "$capture_dir" ]] || return 1
+                printf '%s\\n' "$REPLAY_OUTPUT"
+                return "$REPLAY_STATUS"
+            }
+        ''')
+        captured = 'SEAM_EVIDENCE e2e_capture scenario=W20a.client status=CAPTURED evidence=clock\n'
+        replay_ok = 'test tests::e2e_w20a::e2e_w20a_world_clock_replay ... ok'
+        failed = 'SEAM_EVIDENCE e2e_all scenario=W20a.client status=FAIL seconds=0\n'
+        with tempfile.TemporaryDirectory() as temp:
+            log = Path(temp, 'stage.log')
+            for evidence, replay_output, replay_status, verdict in (
+                (captured, replay_ok, '0', 'PASS'),
+                (captured, 'running 0 tests', '0', 'FAIL'),
+                (captured, replay_ok, '1', 'FAIL'),
+                ('', replay_ok, '0', 'FAIL'),
+                (captured + failed, replay_ok, '0', None),
+            ):
+                with self.subTest(evidence=evidence, replay_output=replay_output, replay_status=replay_status):
+                    log.write_text(evidence)
+                    result = subprocess.run(
+                        ['bash', '-c', helper + fake_cargo + '\nw20a_replay "$1" "$2"',
+                         'test', str(log), temp],
+                        env={**os.environ, 'REPLAY_OUTPUT': replay_output, 'REPLAY_STATUS': replay_status},
+                        check=True, capture_output=True, text=True,
+                    )
+                    verdicts = re.findall(r'^SEAM_EVIDENCE .* status=(PASS|FAIL) ', result.stdout, re.M)
+                    self.assertEqual(verdicts, [] if verdict is None else [verdict])
+
+
 class CloudRunSummaryTests(unittest.TestCase):
     def test_cloud_uses_first_eligible_work_parent(self):
         cloud = (HERE / "cloud_run.sh").read_text()
