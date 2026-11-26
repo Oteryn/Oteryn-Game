@@ -7,7 +7,7 @@ import time
 import uuid
 
 
-PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "knight-underlevel", "premium", "w10-primal")
+PROFILES = ("druid", "explorer", "i12", "knight", "knight-underlevel", "monk", "paladin", "premium", "sorcerer", "w10-primal")
 CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
 SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+\n")
 
