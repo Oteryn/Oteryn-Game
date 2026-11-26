@@ -68,7 +68,8 @@ pub(super) async fn reward_premium(
     h: &super::fixture::Harness,
     claim: &str,
 ) -> TestResult<Option<SpellPremiumCoordinator>> {
-    if !claim.starts_with("oteryn:reward-claim.quest.u7_8.the_shattered_isles.")
+    if claim != "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_oasis"
+        && !claim.starts_with("oteryn:reward-claim.quest.u7_8.the_shattered_isles.")
         && !claim.starts_with("oteryn:reward-claim.quest.u8_54.the_new_frontier.")
     {
         return Ok(None);
