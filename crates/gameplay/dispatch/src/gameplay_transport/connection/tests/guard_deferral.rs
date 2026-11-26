@@ -261,7 +261,11 @@ fn guard_case(
                                 );
                             }
                             oteryn_protocol_oteryn::pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT => {
-                                assert_eq!(results[0].payload, oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL);
+                                assert_eq!(results[0].payload, &[0x08, 0x06]);
+                                assert_eq!(
+                                    oteryn_protocol_oteryn::attack::decode_attack_intent_result(results[0].payload),
+                                    Ok(oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected)
+                                );
                             }
                             _ => assert!(results[0].payload.is_empty()),
                         }
