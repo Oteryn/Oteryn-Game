@@ -723,6 +723,68 @@ impl Drop for SourceBossLeverProjection {
     }
 }
 
+/// A timed scene creation holds the source and its output tile across durable I/O.
+pub struct PreparedTimedScene<'a> {
+    callbacks: &'a Mutex<Arc<CallbackStates>>,
+    key: u64,
+    after: (u64, EntryFacts),
+    position: TilePos,
+    creation: Option<(EntryId, EntryFacts, bool)>,
+    reset: MovementDecay,
+    published: bool,
+}
+
+impl PreparedTimedScene<'_> {
+    fn release(&self, states: &mut CallbackStates) {
+        states.reserved.remove(&self.key);
+        states.reserved_positions.remove(&self.position);
+        if self.creation.is_some() {
+            states.scene_reserved_capacity -= 2;
+        }
+    }
+
+    pub fn publish(mut self, due: u64) {
+        let mut states = self
+            .callbacks
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let states = Arc::make_mut(&mut states);
+        self.release(states);
+        if let Some((id, facts, passable)) = self.creation {
+            states
+                .movement_items
+                .entry(self.position)
+                .or_default()
+                .push(view::ComposedEntry {
+                    source: view::EntrySource::Added(id),
+                    facts,
+                });
+            states.scene_items.insert(
+                (self.position, self.key, facts.appearance_id),
+                (id, passable),
+            );
+        }
+        states.changed.insert(self.key, self.after);
+        states
+            .movement_decays
+            .insert((due, self.key), self.reset.clone());
+        self.published = true;
+    }
+}
+
+impl Drop for PreparedTimedScene<'_> {
+    fn drop(&mut self) {
+        if self.published {
+            return;
+        }
+        let mut states = self
+            .callbacks
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        self.release(Arc::make_mut(&mut states));
+    }
+}
+
 /// An unpublished scene holds its exact keys, new entry ids and overlay capacity.
 pub struct PreparedSceneClose<'a> {
     callbacks: &'a Mutex<Arc<CallbackStates>>,
@@ -1958,6 +2020,80 @@ impl BundleFacts {
         )
     }
 
+    /// Stage a single scene creation and its source reset before charging the offering.
+    pub fn stage_timed_scene_creation(
+        &self,
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+        projection: &QuestCallbackProjection,
+    ) -> Option<PreparedTimedScene<'_>> {
+        let QuestCallbackProjection::Scene {
+            mutations,
+            remove_self: false,
+            source_reset: Some((due, _)),
+        } = projection
+        else {
+            return None;
+        };
+        let [
+            QuestSceneMutation::Create {
+                position,
+                facts,
+                passable,
+                ..
+            },
+        ] = mutations.as_slice()
+        else {
+            return None;
+        };
+        // The transformed source must still have a revision available for its reset.
+        expected.checked_add(2)?;
+        let mut current = self.callbacks.lock().ok()?;
+        let mut staged = Arc::clone(&current);
+        if !Self::project_quest_callback(
+            &mut staged,
+            key,
+            expected,
+            after,
+            &[],
+            &[],
+            false,
+            Some(projection),
+        ) {
+            return None;
+        }
+        let identity = (*position, key, facts.appearance_id);
+        let creation = if current.scene_items.contains_key(&identity) {
+            None
+        } else {
+            Some((staged.scene_items.get(&identity)?.0, *facts, *passable))
+        };
+        let after = *staged.changed.get(&key)?;
+        let reset = staged.movement_decays.get(&(*due, key))?.clone();
+        if reset.revision != after.0 {
+            return None;
+        }
+        let current = Arc::make_mut(&mut current);
+        current.movement_sequence = staged.movement_sequence;
+        // The two reservation entries account for the source revision and its timer.
+        current.reserved.insert(key);
+        current.reserved_positions.insert(*position);
+        if creation.is_some() {
+            // Reserve the new movement item and its scene index entry.
+            current.scene_reserved_capacity += 2;
+        }
+        Some(PreparedTimedScene {
+            callbacks: &self.callbacks,
+            key,
+            after,
+            position: *position,
+            creation,
+            reset,
+            published: false,
+        })
+    }
+
     /// Stage the exact scene projection before committing its durable item moves.
     /// The map reservation survives custody I/O. Publish only after revalidating
     /// the scene's actors under the exclusive Channel runtime.
@@ -2464,6 +2600,8 @@ pub enum QuestSceneMutation {
         position: TilePos,
         facts: EntryFacts,
         passable: bool,
+        /// Accept an existing entry only if this scene owns it and its facts match.
+        reuse_existing: bool,
     },
 }
 
@@ -2557,10 +2695,27 @@ fn project_scene(
                 position,
                 facts,
                 passable,
+                reuse_existing,
             } => {
                 let identity = (*position, owner, facts.appearance_id);
-                if states.scene_items.contains_key(&identity) {
-                    return false;
+                if let Some(&(id, existing_passable)) = states.scene_items.get(&identity) {
+                    if !reuse_existing
+                        || existing_passable != *passable
+                        || states.hidden.contains(&id.get())
+                        || !states.movement_items.get(position).is_some_and(|entries| {
+                            entries.iter().any(|entry| {
+                                entry.source == view::EntrySource::Added(id)
+                                    && states
+                                        .changed
+                                        .get(&id.get())
+                                        .map_or(entry.facts, |(_, changed)| *changed)
+                                        == *facts
+                            })
+                        })
+                    {
+                        return false;
+                    }
+                    continue;
                 }
                 let Some(sequence) = states.movement_sequence.checked_add(1) else {
                     return false;
@@ -2615,6 +2770,7 @@ mod primal_pod_removal_tests {
                 position: tile,
                 facts: entry,
                 passable: false,
+                reuse_existing: false,
             }],
             remove_self: false,
             source_reset: None,
@@ -2889,6 +3045,7 @@ mod lifecycle_tests {
                 position,
                 facts: item,
                 passable: true,
+                reuse_existing: false,
             }],
             remove_self: false,
             source_reset: Some((deadline, resting)),
@@ -2896,11 +3053,95 @@ mod lifecycle_tests {
         assert!(facts.apply_quest_callback(1, 0, lever, &[], &[], false, Some(&projection)));
         assert_eq!(facts.expire_movement_items(deadline - 1), 0);
         assert_eq!(facts.expire_movement_items(deadline), 1);
+        assert!(!facts.apply_quest_callback(1, 2, lever, &[], &[], false, Some(&projection)));
         let state = facts.callbacks.lock().map_err(|_| "callback lock")?;
         assert_eq!(state.changed.get(&1), Some(&(2, resting)));
         let entries = state.movement_items.get(&position).ok_or("scene item")?;
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].facts, item);
+        Ok(())
+    }
+
+    #[test]
+    fn source_scene_item_can_be_reused_after_lever_reset() -> Result<(), String> {
+        let facts = BundleFacts::default();
+        let resting = EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 1,
+            blocks_projectile: false,
+            pickupable: false,
+            bound: true,
+            count: 1,
+            sub_type: 0,
+        };
+        let lever = EntryFacts {
+            appearance_id: 2,
+            ..resting
+        };
+        let item = EntryFacts {
+            appearance_id: 3,
+            ..resting
+        };
+        let position = TilePos {
+            x: 1,
+            y: 2,
+            floor: -7,
+        };
+        let deadline = 4_000_000;
+        let create = |passable| QuestCallbackProjection::Scene {
+            mutations: vec![QuestSceneMutation::Create {
+                position,
+                facts: item,
+                passable,
+                reuse_existing: true,
+            }],
+            remove_self: false,
+            source_reset: Some((deadline, resting)),
+        };
+        let projection = create(true);
+        assert!(facts.apply_quest_callback(1, 0, lever, &[], &[], false, Some(&projection)));
+        assert_eq!(facts.expire_movement_items(deadline - 1), 0);
+        assert_eq!(facts.expire_movement_items(deadline), 1);
+        assert!(facts.apply_quest_callback(1, 2, lever, &[], &[], false, Some(&projection)));
+        {
+            let state = facts.callbacks.lock().map_err(|_| "callback lock")?;
+            assert_eq!(state.changed.get(&1), Some(&(3, lever)));
+            let entries = state.movement_items.get(&position).ok_or("scene item")?;
+            assert_eq!(entries.len(), 1);
+            assert_eq!(entries[0].facts, item);
+        }
+        assert_eq!(facts.expire_movement_items(deadline), 1);
+        let original = facts.movement_item_entries();
+
+        assert!(
+            facts
+                .stage_timed_scene_creation(1, 4, lever, &create(false))
+                .is_none()
+        );
+
+        let reserve = || facts.stage_timed_scene_creation(1, 4, lever, &projection);
+        let abandoned = reserve().ok_or("reserve scene with existing item")?;
+        assert!(reserve().is_none());
+        assert!(!facts.apply_quest_callback(2, 0, lever, &[], &[], false, Some(&projection)));
+        assert_eq!(facts.object_revision(1), 4);
+        drop(abandoned);
+
+        let stage = reserve().ok_or("reserve scene again")?;
+        assert!(facts.apply_quest_callback(3, 0, lever, &[], &[], false, None));
+        let published_due = 2 * deadline;
+        stage.publish(published_due);
+        assert_eq!(facts.object_revision(1), 5);
+        assert_eq!(facts.object_revision(3), 1);
+        assert_eq!(facts.next_movement_decay_time(), Some(published_due));
+        assert_eq!(facts.expire_movement_items(published_due - 1), 0);
+        assert_eq!(facts.expire_movement_items(published_due), 1);
+        assert_eq!(facts.object_revision(1), 6);
+        let current = facts.movement_item_entries();
+        assert_eq!(current.len(), 1);
+        assert_eq!(current[0].0, position);
+        assert_eq!(current[0].1.source, original[0].1.source);
+        assert_eq!(current[0].1.facts, item);
         Ok(())
     }
 

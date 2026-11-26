@@ -5,6 +5,8 @@ use crate::durability::quest_world_callback::paid_projection::PaidArrival;
 use crate::foundation::SourceStepCommitProof;
 use crate::map::facts::{QuestCallbackProjection, QuestSceneMutation};
 
+pub(super) const DREAD_LORD_SCROLL: &str = "oteryn:quest-callback/dreamer-dread-lord-scroll";
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn paid_arrival(
         &self,
@@ -36,7 +38,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &BundleMap,
     ) -> Option<()> {
         let source_loaded = self.callback_content().iter().any(|callback| {
-            callback.key == "oteryn:quest-callback/dreamer-dread-lord-scroll"
+            callback.key == DREAD_LORD_SCROLL
                 && callback.selector.native.as_ref().is_some_and(|source| {
                     let pos = tile(source.position);
                     map.overlay.base().tile(pos.x, pos.y, pos.floor).is_some()
@@ -111,6 +113,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 position,
                 facts,
                 passable: edit.passable?,
+                reuse_existing: false,
             }],
             remove_self: false,
             source_reset: None,
