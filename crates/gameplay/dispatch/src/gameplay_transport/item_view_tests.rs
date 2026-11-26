@@ -720,7 +720,7 @@ mod connection {
     struct ViewAuthority {
         inventory: RefCell<Option<InventoryItems>>,
         inventory_reads: Cell<u32>,
-        targets: RefCell<VecDeque<Option<ItemTargetObservation>>>,
+        targets: RefCell<VecDeque<Result<ItemTargetObservation, ItemTargetError>>>,
         target_reads: RefCell<Vec<ItemKey>>,
         step_to: Option<ActorPosition>,
         after_use: Option<InventoryItems>,
@@ -739,7 +739,10 @@ mod connection {
         }
 
         fn targets(self, targets: Vec<Option<ItemTargetObservation>>) -> Self {
-            *self.targets.borrow_mut() = targets.into();
+            *self.targets.borrow_mut() = targets
+                .into_iter()
+                .map(|target| target.ok_or(ItemTargetError::Stale))
+                .collect();
             self
         }
     }
@@ -803,9 +806,12 @@ mod connection {
             &self,
             _actor: ExactActorRef,
             target: ItemKey,
-        ) -> Option<ItemTargetObservation> {
+        ) -> Result<ItemTargetObservation, ItemTargetError> {
             self.target_reads.borrow_mut().push(target);
-            self.targets.borrow_mut().pop_front().flatten()
+            self.targets
+                .borrow_mut()
+                .pop_front()
+                .unwrap_or(Err(ItemTargetError::Stale))
         }
     }
 
@@ -1086,6 +1092,34 @@ mod connection {
             let ended = ended(end)?;
             assert_eq!(ended.item_view, mirror.continuity());
             assert_eq!(ended.item_view.container_revision, 4);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn resume_snapshot_closes_the_carried_corpse_on_a_stale_or_busy_read() -> TestResult {
+        run(async {
+            use crate::durability::{DurabilityError, item_transfer::ItemTransferError};
+
+            let carried = ItemViewContinuity {
+                open_corpse: Some(corpse(7)),
+                ..ItemViewContinuity::default()
+            };
+            let mut mirror = SessionItemView::resume(carried);
+            let domains = mirror.snapshot(inventory(&[1]), None).expect("snapshot");
+            for failure in [
+                ItemTargetError::Stale,
+                ItemTargetError::ReadFailed(ItemTransferError::Unavailable(
+                    DurabilityError::RootUnavailable,
+                )),
+            ] {
+                let authority = ViewAuthority::new(Some(inventory(&[1])));
+                authority.targets.borrow_mut().push_back(Err(failure));
+                let (end, frames) = serve(&authority, session(selected(carried))?, &[]).await?;
+                assert_eq!(frames, snapshot(Some(&domains)));
+                assert_eq!(*authority.target_reads.borrow(), [corpse(7)]);
+                assert_eq!(ended(end)?.item_view, mirror.continuity());
+            }
             Ok(())
         })
     }

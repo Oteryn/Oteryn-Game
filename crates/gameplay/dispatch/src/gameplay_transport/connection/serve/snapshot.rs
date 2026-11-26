@@ -266,7 +266,7 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
             ));
         };
         let reopen = match view.carried_open_corpse() {
-            Some(key) => authority.observe_item_target(actor, key).await,
+            Some(key) => authority.observe_item_target(actor, key).await.ok(),
             None => None,
         };
         let snapshot = view.snapshot(inventory, reopen);

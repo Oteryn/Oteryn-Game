@@ -424,8 +424,11 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
         &self,
         _actor: ExactActorRef,
         _target: ItemKey,
-    ) -> Option<ItemTargetObservation> {
-        self.item_target.borrow().clone()
+    ) -> Result<ItemTargetObservation, crate::gameplay_transport::item_view::ItemTargetError> {
+        self.item_target
+            .borrow()
+            .clone()
+            .ok_or(crate::gameplay_transport::item_view::ItemTargetError::Stale)
     }
 
     async fn observe_achievement_notices(

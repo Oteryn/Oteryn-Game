@@ -2118,8 +2118,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         target: item_view::ItemKey,
-    ) -> Option<item_view::ItemTargetObservation> {
+    ) -> Result<item_view::ItemTargetObservation, item_view::ItemTargetError> {
         item_ref_admission::observe_item_target(self, actor, target).await
+    }
+
+    async fn observe_item_target_for_use(
+        &self,
+        actor: ExactActorRef,
+        target: item_view::ItemKey,
+    ) -> Result<item_view::ItemTargetObservation, item_view::ItemTargetError> {
+        item_ref_admission::observe_item_target_for_use(self, actor, target).await
     }
 
     /// MAP-ITEM-REF-1 Part B: command 9's corpse-entry TRANSFER into the main backpack.

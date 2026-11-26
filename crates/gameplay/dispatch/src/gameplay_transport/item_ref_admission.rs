@@ -13,7 +13,7 @@ use super::capabilities::{
 };
 use super::connection::UseCommand;
 use super::item_view::{
-    InventoryItems, ItemKey, ItemTargetObservation, UseItemTarget, ViewItem,
+    InventoryItems, ItemKey, ItemTargetError, ItemTargetObservation, UseItemTarget, ViewItem,
     inventory_from_backpack,
 };
 use super::world_spatial::{ActorPosition, ChannelEntity, VisibleKind};
@@ -168,26 +168,35 @@ pub(super) fn visible_corpses(
         .collect()
 }
 
-/// MAP-ITEM-REF-1 Part B: `USE` on a domain-1 object (ITEM-MOVE-WIRE-0 §4.3). Only a bound corpse
-/// is an item target; an unbound or vanished one is `Gone`, so no corpse Item id is ever made up.
-/// Its contents are the durable corpse entries, each named by the pinned index; any it does not
-/// name, or a failed read, is `None` (`STALE`).
+/// Resolve the bound corpse and read its named entries under the durable recovery fence.
 pub(super) async fn observe_item_target(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     target: ItemKey,
-) -> Option<ItemTargetObservation> {
+) -> Result<ItemTargetObservation, ItemTargetError> {
     let (position, creature_corpse, index) = {
         let mut runtime = admission.runtime.lock().await;
-        let index = pinned_index(&runtime, admission.active_generation)?;
+        let index = pinned_index(&runtime, admission.active_generation)
+            .ok_or(ItemTargetError::ProjectionUnavailable)?;
         let position = runtime
             .borrow_movement_position()
             .read(actor)
-            .ok()?
+            .map_err(|_| ItemTargetError::Stale)?
             .position();
         let corpse = match target {
-            ItemKey::Entity(identity) => runtime.bound_corpse(identity),
-            _ => None,
+            ItemKey::Entity(identity) => match runtime.bound_corpse(identity) {
+                Some(corpse) => Some(corpse),
+                None if admission
+                    .source_volatile_entities(&runtime)
+                    .iter()
+                    .any(|item| item.identity == identity) =>
+                {
+                    return Err(ItemTargetError::NotACorpse);
+                }
+                None => return Err(ItemTargetError::Stale),
+            },
+            ItemKey::Instance(_) => None,
+            _ => return Err(ItemTargetError::NotACorpse),
         };
         (position, corpse, index)
     };
@@ -196,8 +205,9 @@ pub(super) async fn observe_item_target(
         y: position.y,
         floor: position.floor,
     };
-    let corpse = match target {
-        ItemKey::Entity(_) => creature_corpse.map(|corpse| {
+    let (corpse, position) = match target {
+        ItemKey::Entity(_) => {
+            let corpse = creature_corpse.ok_or(ItemTargetError::Stale)?;
             (
                 corpse.item.item_instance_id,
                 ActorPosition {
@@ -206,29 +216,16 @@ pub(super) async fn observe_item_target(
                     floor: corpse.position.floor,
                 },
             )
-        }),
-        ItemKey::Instance(item) => player_corpse_position(admission, actor, item)
-            .await
-            .map(|position| (item, position)),
-        _ => return None,
+        }
+        ItemKey::Instance(item) => (item, player_corpse_position(admission, actor, item).await?),
+        _ => return Err(ItemTargetError::NotACorpse),
     };
-    let Some((corpse, position)) = corpse else {
-        return Some(ItemTargetObservation {
-            actor: actor_position,
-            target: UseItemTarget::Gone,
-        });
-    };
-    let Some(entries) = admission
+    let entries = admission
         .root
         .read_corpse_contents(admission.character, corpse)
         .await
-        .ok()?
-    else {
-        return Some(ItemTargetObservation {
-            actor: actor_position,
-            target: UseItemTarget::Gone,
-        });
-    };
+        .map_err(ItemTargetError::ReadFailed)?
+        .ok_or(ItemTargetError::Stale)?;
     let contents = entries
         .iter()
         .map(|entry| {
@@ -240,30 +237,71 @@ pub(super) async fn observe_item_target(
                 sub_type: 0,
             })
         })
-        .collect::<Option<Vec<_>>>()?;
-    Some(ItemTargetObservation {
+        .collect::<Option<Vec<_>>>()
+        .ok_or(ItemTargetError::ProjectionUnavailable)?;
+    Ok(ItemTargetObservation {
         actor: actor_position,
         target: UseItemTarget::Corpse { position, contents },
     })
+}
+
+/// Explicit USE is foreground work. Retry the whole observation to recheck the binding and
+/// reach inputs after waiting for the holder, all within the existing command read budget.
+pub(super) async fn observe_item_target_for_use(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    target: ItemKey,
+) -> Result<ItemTargetObservation, ItemTargetError> {
+    let retry = super::AdmissionRetryBudget::for_command(admission.root);
+    tokio::time::timeout_at(retry.deadline, async {
+        loop {
+            let result = observe_item_target(admission, actor, target).await;
+            if !result
+                .as_ref()
+                .is_err_and(|error| error.is_transient_read())
+                || !retry
+                    .retries_unavailable(super::AdmissionRefusal::Unavailable)
+                    .await
+            {
+                return result;
+            }
+        }
+    })
+    .await
+    .unwrap_or(Err(ItemTargetError::ReadFailed(
+        ItemTransferError::Unavailable(
+            crate::durability::DurabilityError::RootPassDeadlineExceeded,
+        ),
+    )))
 }
 
 async fn player_corpse_position(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     corpse: [u8; 16],
-) -> Option<ActorPosition> {
+) -> Result<ActorPosition, ItemTargetError> {
     let (base, index) = {
         let mut runtime = admission.runtime.lock().await;
-        let index = pinned_index(&runtime, admission.active_generation)?;
-        let at = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)?;
+        let index = pinned_index(&runtime, admission.active_generation)
+            .ok_or(ItemTargetError::ProjectionUnavailable)?;
+        let at = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)
+            .ok_or(ItemTargetError::ProjectionUnavailable)?;
         (at.map.overlay.base().clone(), index)
     };
-    let ground = super::loop_move::loop_ground(admission, &base, Some(index)).await?;
-    let cell = ground.player_corpse_cell(&corpse)?;
-    Some(ActorPosition {
+    let ground = super::loop_move::loop_ground(admission, &base, Some(index))
+        .await
+        .ok_or(ItemTargetError::ProjectionUnavailable)?;
+    let cell = ground.player_corpse_cell(&corpse).ok_or_else(|| {
+        if ground.ground_entry(&corpse).is_some() {
+            ItemTargetError::NotACorpse
+        } else {
+            ItemTargetError::InstanceNotOnGround
+        }
+    })?;
+    Ok(ActorPosition {
         x: cell.x,
         y: cell.y,
-        floor: i16::try_from(cell.z).ok()?,
+        floor: i16::try_from(cell.z).map_err(|_| ItemTargetError::ProjectionUnavailable)?,
     })
 }
 
@@ -368,7 +406,7 @@ pub(super) async fn take_corpse_entry(
         ItemKey::Instance(item) => {
             player_corpse_position(admission, actor, item)
                 .await
-                .ok_or_else(rejected)?;
+                .map_err(|_| rejected())?;
             Some(item)
         }
         _ => None,

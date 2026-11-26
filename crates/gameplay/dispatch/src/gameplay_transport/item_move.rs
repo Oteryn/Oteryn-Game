@@ -548,7 +548,7 @@ async fn take_from_corpse<A: FreshAdmissionAuthority>(
         return ItemMoveStep::Result(ItemMoveOutcome::NotSupported, Vec::new());
     };
     match authority.observe_item_target(actor, corpse).await {
-        Some(ItemTargetObservation {
+        Ok(ItemTargetObservation {
             actor: position,
             target:
                 UseItemTarget::Corpse {
@@ -597,7 +597,7 @@ pub(super) async fn moved<A: FreshAdmissionAuthority>(
     };
     let mut deltas = Vec::new();
     if let Some(corpse) = view.continuity().open_corpse {
-        let observation = authority.observe_item_target(actor, corpse).await;
+        let observation = authority.observe_item_target(actor, corpse).await.ok();
         match view.open_corpse_committed(observation) {
             Ok(delta) => deltas.extend(delta),
             Err(_) => return ItemMoveStep::Disconnect,

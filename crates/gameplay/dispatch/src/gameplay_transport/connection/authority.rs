@@ -1,6 +1,7 @@
 //! The connection authority contract and production composition.
 
 use super::*;
+use crate::gameplay_transport::item_view::ItemTargetError;
 
 mod composed;
 
@@ -1127,14 +1128,22 @@ pub trait FreshAdmissionAuthority {
         self.move_loop_item(actor, command, request)
     }
 
-    /// ITEM-VIEW-1b: the Channel owner's view of the item a `USE` handle resolved to, with the
-    /// actor's position, read together. `None` when it cannot be observed (`STALE_STATE`).
+    /// ITEM-VIEW-1b: the item a handle resolved to and the actor's position, read together.
     fn observe_item_target(
         &self,
         _actor: ExactActorRef,
         _target: ItemKey,
-    ) -> impl Future<Output = Option<ItemTargetObservation>> {
-        async { None }
+    ) -> impl Future<Output = Result<ItemTargetObservation, ItemTargetError>> {
+        async { Err(ItemTargetError::NotACorpse) }
+    }
+
+    /// Explicit USE may wait for a busy holder within the command read budget.
+    fn observe_item_target_for_use(
+        &self,
+        actor: ExactActorRef,
+        target: ItemKey,
+    ) -> impl Future<Output = Result<ItemTargetObservation, ItemTargetError>> {
+        self.observe_item_target(actor, target)
     }
 
     fn look_item(

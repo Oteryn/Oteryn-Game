@@ -470,8 +470,12 @@ impl FreshAdmissionAuthority for MoveAuthority {
         &self,
         _actor: ExactActorRef,
         _target: ItemKey,
-    ) -> Option<ItemTargetObservation> {
-        self.targets.borrow_mut().pop_front().flatten()
+    ) -> Result<ItemTargetObservation, crate::gameplay_transport::item_view::ItemTargetError> {
+        self.targets
+            .borrow_mut()
+            .pop_front()
+            .flatten()
+            .ok_or(crate::gameplay_transport::item_view::ItemTargetError::Stale)
     }
 
     async fn committed_item_move(

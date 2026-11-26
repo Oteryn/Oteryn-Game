@@ -8,6 +8,7 @@ use super::super::{
     decode_use_intent_target,
 };
 use super::Dispatch;
+use transport::item_view::ItemTargetError;
 use oteryn_protocol_oteryn::ClientCommandView;
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
@@ -521,7 +522,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                             || (carried_entry && !view.is_main_backpack(&key)
                                 && view.equipped_slot(&key).is_none()));
                 let observation = match key.filter(|_| container.is_none() && !consumable) {
-                    Some(key) => authority.observe_item_target(actor, key).await,
+                    Some(key) => Some(authority.observe_item_target_for_use(actor, key).await),
                     None => None,
                 };
                 match (item_view.as_mut(), key, observation) {
@@ -563,7 +564,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                             delta,
                         )
                     }
-                    (Some(view), Some(key), Some(observation)) => {
+                    (Some(view), Some(key), Some(Ok(observation))) => {
                         let opened = view.open(key, observation);
                         admitted.continuity.item_view = view.continuity();
                         let Ok((decision, delta)) = opened else {
@@ -571,6 +572,21 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         };
                         Dispatch::UseItem(decision, delta)
                     }
+                    (Some(view), Some(key), Some(Err(ItemTargetError::InstanceNotOnGround)))
+                        if carried_entry
+                            || view.is_main_backpack(&key)
+                            || view.is_backpack_entry(&key)
+                            || view.equipped_slot(&key).is_some()
+                            || view.open_corpse_of(&key).is_some() =>
+                    {
+                        Dispatch::UseItem(OpenDecision::NothingToUse, None)
+                    }
+                    (_, _, Some(Err(ItemTargetError::NotACorpse))) => {
+                        Dispatch::UseItem(OpenDecision::NothingToUse, None)
+                    }
+                    (_, _, Some(Err(
+                        ItemTargetError::ReadFailed(_) | ItemTargetError::ProjectionUnavailable,
+                    ))) => Dispatch::Use(UseOutcome::rejected()),
                     _ => Dispatch::UseItem(OpenDecision::StaleState, None),
                 }
             }

@@ -148,6 +148,33 @@ pub struct ItemTargetObservation {
     pub target: UseItemTarget<Vec<ViewItem>>,
 }
 
+/// A resolved item handle can still outlive its world target or its read.
+#[derive(Debug)]
+pub enum ItemTargetError {
+    NotACorpse,
+    InstanceNotOnGround,
+    Stale,
+    ProjectionUnavailable,
+    ReadFailed(crate::durability::item_transfer::ItemTransferError),
+}
+
+impl ItemTargetError {
+    pub(super) fn is_transient_read(&self) -> bool {
+        use crate::durability::{
+            DurabilityError, SqlxFailureClass, item_transfer::ItemTransferError,
+        };
+        matches!(
+            self,
+            Self::ReadFailed(ItemTransferError::Unavailable(
+                DurabilityError::RootUnavailable
+                    | DurabilityError::RootPassDeadlineExceeded
+                    | DurabilityError::Unavailable
+                    | DurabilityError::Database(SqlxFailureClass::RetryableStatement)
+            ))
+        )
+    }
+}
+
 /// The item view part of one GameSession's continuity.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ItemViewContinuity {
