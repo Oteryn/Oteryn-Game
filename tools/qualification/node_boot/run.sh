@@ -1633,7 +1633,8 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       -- --exact --nocapture > "$replay_log" 2>&1 \
       && grep -q '^test tests::e2e_c17b::invisibility_visibility_payload_removes_target_and_rejects_replay \.\.\. ok$' "$replay_log"; then
       cat "$replay_log"
-      printf 'SEAM_EVIDENCE e2e_all scenario=C17b.client status=PASS evidence=fresh-client-replay\n'
+      printf 'SEAM_EVIDENCE e2e_all scenario=C17b.client status=FAIL evidence=client-replay-rebuilds-wire-envelope\n'
+      return 1
     else
       [[ ! -f "$replay_log" ]] || cat "$replay_log"
       printf 'SEAM_EVIDENCE e2e_all scenario=C17b.client status=FAIL evidence=client-replay\n'
