@@ -134,11 +134,19 @@ fn within(a: TilePos, b: TilePos, range: u32) -> bool {
     a.floor == b.floor && u32::from(a.x.abs_diff(b.x).max(a.y.abs_diff(b.y))) <= range
 }
 
+fn gold_balance(client: &DevClientSession, gold: std::num::NonZeroU32) -> u64 {
+    carried(client, gold)
+        .into_iter()
+        .map(|(_, count)| u64::from(count))
+        .sum()
+}
+
 async fn buy_watch(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     watch: std::num::NonZeroU32,
     gold: std::num::NonZeroU32,
+    starter_gold: u64,
 ) -> TestResult {
     use oteryn_dev_client::client_runtime::npc_shop;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -277,7 +285,7 @@ async fn buy_watch(
         .into());
     }
     if !carried(client, watch).is_empty()
-        || !matches!(carried(client, gold).as_slice(), [(_, PRICE)])
+        || gold_balance(client, gold) != starter_gold + u64::from(PRICE)
     {
         return Err("step=buy observed=inventory-changed-before-purchase".into());
     }
@@ -304,7 +312,7 @@ async fn buy_watch(
             .into_iter()
             .any(|event| matches!(event, oteryn_dev_client::SessionEvent::Inventory(_)))
             && matches!(carried(client, watch).as_slice(), [(_, 1)])
-            && carried(client, gold).is_empty()
+            && gold_balance(client, gold) == starter_gold
         {
             evidence(&format!(
                 "G09_CHECK step=buy status=PASS watch={WATCH} price={PRICE}"
@@ -330,20 +338,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let definition = provisioning::item_reference(&index, WATCH)?;
     let gold = provisioning::item_reference(&index, GOLD)?;
     let mut client = connect_character(clients, 0xcd, 0).await?;
-    if !carried(&client, definition).is_empty() || !carried(&client, gold).is_empty() {
-        return Err("step=fixture observed=watch-or-gold-already-present".into());
+    if !carried(&client, definition).is_empty() {
+        return Err("step=fixture observed=watch-already-present".into());
     }
+    let starter_gold = gold_balance(&client, gold);
     character_prep::grant_item(&client, GOLD, PRICE).await?;
     logout(&mut client).await?;
     drop(client);
 
     let mut client = connect_character(clients, 0xce, 0).await?;
     if !carried(&client, definition).is_empty()
-        || !matches!(carried(&client, gold).as_slice(), [(_, PRICE)])
+        || gold_balance(&client, gold) != starter_gold + u64::from(PRICE)
     {
         return Err("step=fixture observed=expected-only-purchase-gold".into());
     }
-    buy_watch(&mut client, clients, definition, gold).await?;
+    buy_watch(&mut client, clients, definition, gold, starter_gold).await?;
     let inventory = carried(&client, definition);
     let [(handle, 1)] = inventory.as_slice() else {
         return Err("step=fixture observed=expected-exactly-one-served-watch".into());
@@ -358,7 +367,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     drop(client);
     let mut fresh = connect_character(clients, 0xcf, 0).await?;
     if fresh.join_snapshot().game_session_id == previous_session
-        || !carried(&fresh, gold).is_empty()
+        || gold_balance(&fresh, gold) != starter_gold
     {
         return Err("step=fresh observed=stale-session-or-gold-debit-lost".into());
     }
