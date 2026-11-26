@@ -291,6 +291,27 @@ WORK=.
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertEqual(Path(work, 'world-compile.json').read_text().strip(), command)
 
+    def test_grave_danger_region_follows_w13_row_selection(self):
+        profile = section('NODE_BOOT_WORLD_PROFILE=', 'readonly NODE_BOOT_WORLD_PROFILE')
+        script = 'set -Eeuo pipefail\n' + profile + 'printf "%s\\n" "$WORLD_REGIONS"\n'
+        for batch, groups, authored in [
+            ('35:1', 'rows', True),
+            ('30:6', 'rows', True),
+            ('all', '', True),
+            ('30:5', 'rows', False),
+            ('297:1', 'rows', False),
+            ('35:1', 'core', False),
+        ]:
+            with self.subTest(batch=batch, groups=groups):
+                result = bash(script, {
+                    'GAME_SOURCE': str(HERE.parents[2]),
+                    'NODE_BOOT_E2E_ONLY': groups,
+                    'OTERYN_E2E_ROW_BATCH': batch,
+                })
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                regions = result.stdout.strip().split(';')
+                self.assertEqual(regions.count('130,122'), int(authored))
+
     def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
         fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
         fixtures += section('BOOTSTRAP_ACCOUNTS=(', 'source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"')

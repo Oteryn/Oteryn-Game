@@ -172,6 +172,17 @@ case "$NODE_BOOT_WORLD_PROFILE" in
     case ",${selected_groups//[[:space:]]/}," in
       ,,|*,rows,*) WORLD_REGIONS+=";131,122" ;;
     esac
+    # Grave Danger's authored lever and room occupy region 130,122.
+    case ",${selected_groups//[[:space:]]/}," in
+      ,,|*,rows,*)
+        w13_batch="${OTERYN_E2E_ROW_BATCH:-0:15}"
+        if [[ "$w13_batch" == all ]] ||
+          { [[ "$w13_batch" =~ ^\+?0*([0-9]{1,9}):\+?0*([0-9]{1,9})$ ]] &&
+            (( 10#${BASH_REMATCH[1]} <= 35 && 35 - 10#${BASH_REMATCH[1]} < 10#${BASH_REMATCH[2]} )); }; then
+          WORLD_REGIONS+=";130,122"
+        fi
+        ;;
+    esac
     ;;
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
   *) blocked invalid_world_profile ;;

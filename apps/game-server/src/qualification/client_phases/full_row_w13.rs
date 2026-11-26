@@ -18,7 +18,137 @@
 use super::*;
 use oteryn_dev_client::client_runtime::raw_feature;
 use oteryn_dev_client::client_ui::daily_boost::{self, DailyBoostPanel, Intent};
-use oteryn_protocol_oteryn::daily_boost as wire;
+use oteryn_dev_client::{DevClientSession, EntityKind};
+use oteryn_protocol_oteryn::{boss_encounter as boss, daily_boost as wire};
+
+const BAELOC: &str = "oteryn:creature.sir_baeloc";
+const NICTROS: &str = "oteryn:creature.sir_nictros";
+const GRAVE_LEVER: &str = "oteryn:boss.sir_nictros";
+
+// Crystal actions_sir_baeloc_sir_nictros_lever.lua. The authored entry
+// selects the two-actor encounter through the Sir Nictros lever key.
+fn grave_slot(at: TilePos) -> bool {
+    at.floor == -13 && at.y == 31_413 && (33_424..=33_428).contains(&at.x)
+}
+
+fn served_route(
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+) -> Option<Vec<StepDirection>> {
+    find_route(from, goal, |at, direction| {
+        let next = destination(world, at, direction)?;
+        // W13 searches only connected, served cells, with a row-local envelope
+        // that includes the Grave Danger room and the served Braindeath spawns.
+        (next.x.abs_diff(from.x) <= 1_200
+            && next.y.abs_diff(from.y) <= 1_200
+            && next.floor.abs_diff(from.floor) <= 8)
+            .then_some(next)
+    })
+    .ok()
+}
+
+async fn enter_grave(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = served_route(world, from, grave_slot).ok_or_else(|| {
+        format!("step-6: no connected served route from {from:?} to the Grave Danger lever slots")
+    })?;
+    walk(client, world, &path).await?;
+    verdict::Harness::global().progress("grave-lever");
+    let origin = client.join_snapshot().game_session_id;
+    let payload = boss::encode_boss_key(GRAVE_LEVER).map_err(|error| format!("{error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            boss::CAPABILITY_BOSS_ENCOUNTER_V1,
+            boss::COMMAND_TYPE_BOSS_LEVER,
+            &payload,
+        )
+        .await?;
+    let decoded = boss::decode_boss_activity_reply(&reply.payload);
+    let Ok(boss::BossActivityReply::Accepted { handoff, .. }) = decoded else {
+        return Err(format!(
+            "step-6: Grave Danger lever returned {:?}: {decoded:?}",
+            reply.status
+        )
+        .into());
+    };
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step-6: Grave Danger handoff status {:?}", reply.status).into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    loop {
+        let current = client.join_snapshot().game_session_id;
+        if current != origin {
+            let scope = client
+                .session_mut()
+                .activity_scope()
+                .ok_or("step-6: missing Grave Danger scope")?;
+            if scope.handoff != handoff
+                || scope.source_session != *origin.as_bytes()
+                || scope.session != *current.as_bytes()
+                || !matches!(
+                    scope.scope,
+                    oteryn_protocol_oteryn::activity_scope::ActivityScope::Instance { .. }
+                )
+            {
+                return Err(format!("step-6: wrong Grave Danger handoff {scope:?}").into());
+            }
+            if client.world_entities().is_some_and(|view| {
+                ["Sir Baeloc", "Sir Nictros"].iter().all(|name| {
+                    view.iter().any(|actor| {
+                        actor.kind == EntityKind::Creature
+                            && actor
+                                .display_name
+                                .is_some_and(|display| display.as_str() == Ok(*name))
+                    })
+                })
+            }) {
+                evidence("W13_CHECK step=6 native-Grave-Danger-handoff-and-boss-pair");
+                return Ok(());
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step-6: Grave Danger handoff did not expose both authored bosses".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+}
+
+async fn approach_boosted_creature(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    creature: &str,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let points: Vec<_> = spawns
+        .sources
+        .iter()
+        .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
+        .filter(|(_, point)| {
+            spawns
+                .creatures
+                .get(point.creature as usize)
+                .is_some_and(|row| row.key == creature)
+        })
+        .collect();
+    let path = served_route(world, from, |at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+            && points.iter().any(|(floor, point)| {
+                at.floor == *floor && at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) <= 1
+            })
+    })
+    .ok_or_else(|| {
+        format!("no connected served route from {from:?} to an authored {creature} spawn")
+    })?;
+    walk(client, world, &path).await?;
+    // Preserve the normal follow-to-melee path once within the spawn neighborhood.
+    travel_to_spawn(client, world, spawns, creature).await
+}
 
 pub(super) async fn query(
     client: &mut oteryn_dev_client::DevClientSession,
@@ -64,9 +194,13 @@ async fn required_hunt(
         .inventory()
         .cloned()
         .ok_or_else(|| format!("step-{step}: {target} hunt had no inventory before combat"))?;
-    client_hunt::hunt(client)
-        .await
-        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step-{step}: {target} combat/loot observed {error}"), error) })?;
+    client_hunt::hunt(client).await.map_err(|error| {
+        verdict::record_error(verdict::IndexedError::as_error(&error));
+        verdict::context(
+            format!("step-{step}: {target} combat/loot observed {error}"),
+            error,
+        )
+    })?;
     let after = client
         .inventory()
         .cloned()
@@ -124,32 +258,51 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     evidence("W13_CHECK step=3 malformed-query-rejected");
 
-    travel_to_spawn(
-        &mut client,
-        world,
-        &metadata.spawns,
-        &selected.creature_key,
-    )
-    .await
-    .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step-4: selected creature route/spawn observed {error}"), error) })?;
+    if let Err(error) =
+        approach_boosted_creature(&mut client, world, &metadata.spawns, &selected.creature_key)
+            .await
+    {
+        if matches!(selected.boss_key.as_str(), BAELOC | NICTROS) {
+            match enter_grave(&mut client, world).await {
+                Ok(()) => evidence(
+                    "W13_CHECK Grave Danger entry verified independently of creature route",
+                ),
+                Err(entry) => evidence(&format!("W13_GRAVE_ENTRY {entry}")),
+            }
+        }
+        return Err(verdict::context(
+            format!("step-4: selected creature route/spawn observed {error}"),
+            error,
+        ));
+    }
     required_hunt(&mut client, 4, "selected creature").await?;
     evidence("W13_CHECK step=4 selected-creature-killed-and-looted");
 
     // A second real approach waits through the owner's respawn mechanism rather
     // than manufacturing an actor. The bounded helper reports the missing actor.
-    travel_to_spawn(
-        &mut client,
-        world,
-        &metadata.spawns,
-        &selected.creature_key,
-    )
-    .await
-    .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step-5: boosted creature respawn observed {error}"), error) })?;
+    approach_boosted_creature(&mut client, world, &metadata.spawns, &selected.creature_key)
+        .await
+        .map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            verdict::context(
+                format!("step-5: boosted creature respawn observed {error}"),
+                error,
+            )
+        })?;
     let step_5_observed = required_hunt(&mut client, 5, "respawned selected creature").await?;
 
+    if matches!(selected.boss_key.as_str(), BAELOC | NICTROS) {
+        enter_grave(&mut client, world).await?;
+        return Err("step-6: native Grave Danger entry verified, selected boss loot and respawn evidence still required".into());
+    }
     travel_to_spawn(&mut client, world, &metadata.spawns, &selected.boss_key)
         .await
-        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step-6: selected boss route/spawn observed {error}"), error) })?;
+        .map_err(|error| {
+            verdict::context(
+                format!("step-6: selected boss route/spawn observed {error}"),
+                error,
+            )
+        })?;
     let step_6_observed = required_hunt(&mut client, 6, "selected boss").await?;
 
     // The player protocol currently exposes neither the XP award nor which
@@ -184,7 +337,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients)))
+            .await;
     let (status, gap) = match result {
         Ok(Ok(())) => ("PASS", None),
         Ok(Err(error)) => ("FAIL", Some(error.to_string())),
