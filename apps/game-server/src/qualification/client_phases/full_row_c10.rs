@@ -101,11 +101,48 @@ async fn bed_command(client: &mut DevClientSession, handle: ItemHandle) -> TestR
         .map_err(|error| format!("step bed command: malformed reply={error:?} bytes={:?}", reply.payload).into())
 }
 
-async fn soul_spell(client: &mut DevClientSession) -> TestResult<spell_wire::SpellCatalogEntry> {
+pub(super) async fn prepare_caster(
+    clients: &SeamClients<'_>,
+    row: &str,
+    tag: u8,
+) -> TestResult<DevClientSession> {
+    const LEVEL: u32 = 20;
+    character_prep::declare_seeded(row, "sorcerer-level-20,blank-runes", "soul-costing rune cast");
+    let mut initial = connect_character(clients, tag, 0).await?;
+    let prior = initial.join_snapshot().game_session_id;
+    request_fixture_control(uuid_text(prior.as_bytes()), "--profile", "c10-sorcerer".into()).await?;
+    character_prep::grant_item(&initial, 3147, if row == "C10.full" { 2 } else { 1 }).await?;
+    let logout = initial.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C10 preparation logout refused: {logout:?}").into());
+    }
+    drop(initial);
+
+    let mut client = connect_character(clients, tag, 0).await?;
+    let (_, level) = progress(&mut client).await?;
+    let (max_health, max_mana, max_soul) = oteryn_gameplay_characters::vitals::maxima(
+        "sorcerer",
+        LEVEL,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    ).ok_or("C10 missing Sorcerer vitals formula")?;
+    let vitals = client.actor_vitals().ok_or("C10 seeded admission missing vitals")?;
+    if client.join_snapshot().game_session_id == prior || level != LEVEL
+        || (vitals.max_health, vitals.max_mana, vitals.soul) != (max_health, max_mana, max_soul)
+        || vitals.mana < 120
+    {
+        return Err(format!("C10 seeded admission level={level} vitals={vitals:?}").into());
+    }
+    evidence(&format!("C10_SEEDED row={row} level={level} vitals={vitals:?}"));
+    Ok(client)
+}
+
+pub(super) async fn soul_spell(client: &mut DevClientSession) -> TestResult<spell_wire::SpellCatalogEntry> {
     let snapshot = client.session_mut().gated_snapshot(spell_wire::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
         .ok_or("step soul debit: admitted spell catalogue missing")?;
-    let catalog = spell_wire::decode_catalog(&snapshot.payload)
+    let mut catalog = spell_wire::decode_catalog(&snapshot.payload)
         .map_err(|e| format!("step soul debit: catalogue reply={e:?}"))?;
+    catalog.retain(|spell| spell.words == "adori min vis" && spell.mana == 120 && spell.soul == 1);
     let vitals = client.actor_vitals().ok_or("step=soul-debit observed=no-vitals")?;
     select_soul_spell(&catalog, vitals.mana, vitals.soul).cloned().ok_or_else(|| {
         let candidates: Vec<_> = catalog.iter().filter(|spell| spell.rune_item.is_none() && spell.soul > 0)
@@ -131,7 +168,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let generation = load_world_generation(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let world = &generation.bundle;
-    let mut client = connect_world(clients, 0xca)
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_C10_FULL_ACCOUNT").await?;
+    let caster_clients = identity.clients(clients);
+    let clients = &caster_clients;
+    let mut client = prepare_caster(clients, "C10.full", 0xca)
         .await
         .map_err(|error| admission_error("initial-admission", error))?;
     let spell = soul_spell(&mut client).await?;
@@ -299,7 +339,7 @@ async fn sleep_at_bed(client: &mut DevClientSession, bed: TilePos, digest: [u8; 
     Ok(())
 }
 
-fn soul_window_target<'a>(
+pub(super) fn soul_window_target<'a>(
     world: &BundleWorld,
     spawns: &'a oteryn_world_bundle::spawn::Table,
     rewards: &crate::content::creature_reward::CreatureRewardTable,
@@ -449,7 +489,7 @@ async fn wait_soul(client: &mut DevClientSession, from: u32, wanted: impl Fn(u32
     }
 }
 
-async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
+pub(super) async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
     let reply = client.session_mut().gated_command(
         wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
@@ -464,7 +504,7 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
 
 async fn fresh_admission(row: &mut Row, clients: &SeamClients<'_>, prior: crate::foundation::GameSessionId, before: oteryn_protocol_oteryn::actor_spell::ActorVitals, before_sleep_command: tokio::time::Instant, started: tokio::time::Instant) -> TestResult {
     let elapsed = started.elapsed();
-    let mut client = connect_world(clients, 0xcb)
+    let mut client = connect_character(clients, 0xcb, 0)
         .await
         .map_err(|error| admission_error("fresh-admission", error))?;
     let after = client.actor_vitals().copied().ok_or("step=saved-rest observed=no-join-vitals")?;
@@ -476,14 +516,14 @@ async fn fresh_admission(row: &mut Row, clients: &SeamClients<'_>, prior: crate:
     {
         return Err(format!("step=saved-rest elapsed={elapsed:?} need=exactly-one-food-credit before={before:?} after={after:?}").into());
     }
-    let (logout, detail, _, _) = logout_retrying_busy(&mut client).await?;
-    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
         || client.take_events().into_iter().any(|event| matches!(event, SessionEvent::ActorVitals(delta) if delta.value != after))
     {
-        return Err(format!("step=saved-rest-replay observed={detail}; need=logout-without-online-vitals-change").into());
+        return Err(format!("step=saved-rest-replay observed={logout:?}; need=logout-without-online-vitals-change").into());
     }
     drop(client);
-    let replay = connect_world(clients, 0xcc).await.map_err(|error| admission_error("saved-rest-replay", error))?;
+    let replay = connect_character(clients, 0xcc, 0).await.map_err(|error| admission_error("saved-rest-replay", error))?;
     if replay.join_snapshot().game_session_id == session
         || replay.join_snapshot().game_session_id == prior || replay.actor_vitals() != Some(&after)
     {

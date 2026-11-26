@@ -4,7 +4,7 @@
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::actor_spell::{self, SpellCastDisposition, SpellTarget};
-use oteryn_protocol_oteryn::actor_spell_catalog as spell_wire;
+use super::full_row_c10::{prepare_caster, progress, soul_spell, soul_window_target};
 use std::num::NonZeroU32;
 use std::path::Path;
 use std::time::Duration;
@@ -33,42 +33,46 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
+    let generation = load_world_generation(
         bytes,
         &pin,
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xc1).await?;
+    let world = &generation.bundle;
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_C10_CLIENT_ACCOUNT").await?;
+    let caster_clients = identity.clients(clients);
+    let mut client = prepare_caster(&caster_clients, "C10.client", 0xc1).await?;
     let before = client.actor_vitals().copied().ok_or("C10 client vitals absent")?;
-    let catalog = client
-        .session_mut()
-        .gated_snapshot(spell_wire::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
-        .ok_or("C10 client spell catalogue absent")?;
-    let spell = spell_wire::decode_catalog(&catalog.payload)
-        .map_err(|error| format!("C10 client catalogue: {error:?}"))?
-        .into_iter()
-        .find(|spell| spell.available && spell.rune_item.is_none() && spell.soul > 0)
-        .ok_or("C10 client has no available soul spell")?;
+    let spell = soul_spell(&mut client).await?;
     let index = NonZeroU32::new(spell.cast_index).ok_or("C10 client zero cast index")?;
     let cast = client.cast_spell(index, SpellTarget::None, false).await?;
     if cast.disposition != SpellCastDisposition::Cast {
         return Err(format!("C10 client cast reply: {cast:?}").into());
     }
-    let debit = wait_soul(&mut client, |soul| soul == before.soul.saturating_sub(spell.soul), Duration::from_secs(5)).await?;
+    let expected = before.soul.checked_sub(spell.soul).ok_or("C10 client insufficient soul")?;
+    let debit = cast.actor_vitals_delta
+        .filter(|delta| delta.value.soul == expected)
+        .ok_or("C10 client cast did not carry the exact soul debit")?;
     let refused = client.cast_spell(index, SpellTarget::None, false).await?;
     if refused.disposition != SpellCastDisposition::CoolingDown
         || client.actor_vitals() != Some(&debit.value)
     {
         return Err(format!("C10 client cooldown changed state: {refused:?}").into());
     }
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    let (xp_before, level) = progress(&mut client).await?;
+    let creature = soul_window_target(world, &metadata.spawns, &generation.rewards,
+        tile(client.world_spatial().actor_position)?, level)?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, creature).await?;
     client_hunt::hunt(&mut client)
         .await
         .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("C10 client hunt: {error}"), error) })?;
+    let (xp_after, _) = progress(&mut client).await?;
+    if xp_after.checked_sub(xp_before).is_none_or(|earned| earned < u64::from(level)) {
+        return Err(format!("C10 client kill {creature} observed xp={xp_before}->{xp_after}, need at least {level}").into());
+    }
     let regenerated = wait_soul(&mut client, |soul| soul == debit.value.soul + 1, Duration::from_secs(130)).await?;
-    capture(&before, &debit, &regenerated);
-    Ok(())
+    capture(&before, &debit, &regenerated)
 }
 
 async fn wait_soul(
@@ -97,9 +101,9 @@ fn capture(
     before: &actor_spell::ActorVitals,
     debit: &oteryn_dev_client::AppliedDelta<actor_spell::ActorVitals>,
     regenerated: &oteryn_dev_client::AppliedDelta<actor_spell::ActorVitals>,
-) {
+) -> TestResult {
     let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
     let write = || -> TestResult {
         let path = Path::new(&path);
@@ -121,7 +125,5 @@ fn capture(
         )?;
         Ok(())
     };
-    if let Err(error) = write() {
-        evidence(&format!("C10_CLIENT_CAPTURE_WRITE_ERROR {error}"));
-    }
+    write()
 }
