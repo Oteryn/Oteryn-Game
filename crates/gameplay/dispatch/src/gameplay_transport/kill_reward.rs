@@ -3254,7 +3254,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .bind_kill_notices(&self.states.server_messages);
         let now_ms = self.owner_now().get() / 1_000;
         for receipt in receipts {
-            states.sounds.record_spell_damage(runtime, receipt);
+            if states.presentations.is_none() {
+                states.sounds.record_spell_damage(runtime, receipt);
+            }
             let sink = KillSink {
                 prey: Some(states),
                 activity: &activity,

@@ -37,6 +37,18 @@ fn result(disposition: UseDisposition, fresh: bool) -> MapHarvestResult {
 }
 
 impl DurabilityRoot {
+    pub async fn map_harvest_receipt_exists(
+        &self,
+        command: CommandRef,
+        deadline: tokio::time::Instant,
+    ) -> Result<bool, DurabilityError> {
+        self.retained_receipt_exists(
+            "SELECT EXISTS(SELECT 1 FROM game_terrain_tool_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)",
+            command,
+            deadline,
+        ).await
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub async fn harvest_map_item<C: ItemLoopContent>(
         &self,
@@ -71,6 +83,10 @@ impl DurabilityRoot {
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
                 .fetch_optional(&mut **tx).await?;
             if let Some((intent, character, no_tool)) = previous {
+                if assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence,
+                    Some(request.command), context.1.loop_content_digest()).await.is_err() {
+                    return Ok(Some(result(UseDisposition::Rejected, false)));
+                }
                 let disposition = if intent == request.intent && character == fence.character_id.as_bytes() && no_tool {
                     UseDisposition::Committed
                 } else { UseDisposition::Rejected };

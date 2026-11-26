@@ -334,7 +334,11 @@ fn apply_due_under_current_owners(
                 .presentations
                 .as_mut()
                 .ok_or(Error::InvalidPayload)?
-                .install_preflighted((*resolved.presentation).clone(), &receipt.batch);
+                .install_preflighted(
+                    (*resolved.presentation).clone(),
+                    &receipt.batch,
+                    resolved.magnitude.analyser_element(),
+                );
         }
         if let Some(resolved) = proofs
             .iter()
@@ -348,7 +352,11 @@ fn apply_due_under_current_owners(
                 .presentations
                 .as_mut()
                 .ok_or(Error::InvalidPayload)?
-                .install_preflighted((*resolved.presentation).clone(), &receipt.batch);
+                .install_preflighted(
+                    (*resolved.presentation).clone(),
+                    &receipt.batch,
+                    resolved.magnitude.analyser_element(),
+                );
         }
     }
     Ok(report)

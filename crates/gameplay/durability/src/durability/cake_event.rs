@@ -308,6 +308,18 @@ impl DurabilityRoot {
 }
 
 impl DurabilityRoot {
+    pub async fn world_cake_receipt_exists(
+        &self,
+        command: CommandRef,
+        deadline: tokio::time::Instant,
+    ) -> Result<bool, DurabilityError> {
+        self.retained_receipt_exists(
+            "SELECT EXISTS(SELECT 1 FROM game_cake_bite_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)",
+            command,
+            deadline,
+        ).await
+    }
+
     /// Probe immutable command history before the current map can hide the eaten
     /// placement. Current session/node authority is re-proved; no old actor is restored.
     #[allow(clippy::too_many_arguments)]
@@ -319,7 +331,7 @@ impl DurabilityRoot {
         command: CommandRef,
         intent: Vec<u8>,
         content: [u8; 32],
-        candidate: bool,
+        deadline: tokio::time::Instant,
     ) -> Result<Option<UseDisposition>, DurabilityError> {
         if command.game_session_id() != fence.game_session_id {
             return Ok(Some(UseDisposition::StaleState));
@@ -328,14 +340,9 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move{
+        self.try_issue_semantic_pass_by(deadline)?.run(move|holder,deadline|Box::pin(async move{
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&record).await?;
-            if !candidate {
-                let historical:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_cake_bite_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)")
-                    .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_one(&mut *tx).await?;
-                if !historical{commit_semantic_transaction(tx,deadline).await?;return Ok(None)}
-            }
             if assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(command),content).await.is_err(){return Ok(Some(UseDisposition::StaleState))}
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:cake-command:'||encode($1,'hex')||':'||$2,0))")
                 .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).execute(&mut *tx).await?;

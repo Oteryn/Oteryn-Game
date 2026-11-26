@@ -813,7 +813,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     callback.effects.scripted_teleport,
                 ) {
                     Ok(proof) => Some(proof),
-                    Err(_) => return UseDisposition::NotPossible,
+                    Err(error) => {
+                        let from = expected.position();
+                        let to = local(to);
+                        // The typed movement error remains available here. The wire
+                        // disposition is the existing world-object refusal.
+                        super::super::operator_event(&format!(
+                            "event=quest_teleport_refused callback={} source={},{},{} destination={},{},{} error={error:?}",
+                            callback.key, from.x, from.y, from.floor, to.x, to.y, to.floor,
+                        ));
+                        return UseDisposition::NotPossible;
+                    }
                 },
                 None => None,
             }
