@@ -23,11 +23,9 @@ fn w05clock_bundle_placement_uses_world_weekday() -> Result<(), Box<dyn std::err
             let directory = tempfile::tempdir()?;
             let file = directory.path().join("offset-ms");
             let now = wall_time()?;
-            // Advance to noon tomorrow so the qualification day is stable around UTC midnight.
-            std::fs::write(
-                &file,
-                (DAY_MS + DAY_MS / 2 - now.rem_euclid(DAY_MS)).to_string(),
-            )?;
+            // Keep the weekdays distinct even when the wall clock crosses midnight during setup.
+            let offset = 2 * DAY_MS + DAY_MS / 2 - now.rem_euclid(DAY_MS);
+            std::fs::write(&file, offset.to_string())?;
             let status = child.env(CLOCK_FILE, &file).status()?;
             assert!(status.success(), "qualification-clock placement: {status}");
         }

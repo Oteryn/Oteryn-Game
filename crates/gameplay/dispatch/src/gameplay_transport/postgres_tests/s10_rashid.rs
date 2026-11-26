@@ -32,10 +32,9 @@ fn with_world_clocks(name: &str, scenario: impl FnOnce() -> TestResult) -> TestR
         let directory = tempfile::tempdir()?;
         let file = directory.path().join("offset-ms");
         let now = crate::gameplay_transport::npc_trade_command::unix_ms_now();
-        std::fs::write(
-            &file,
-            (DAY_MS + DAY_MS / 2 - now.rem_euclid(DAY_MS)).to_string(),
-        )?;
+        // Keep the weekdays distinct even when the wall clock crosses midnight during setup.
+        let offset = 2 * DAY_MS + DAY_MS / 2 - now.rem_euclid(DAY_MS);
+        std::fs::write(&file, offset.to_string())?;
         let status = child.env(CLOCK_FILE, &file).status()?;
         assert!(status.success(), "qualification-clock dispatch: {status}");
     }
