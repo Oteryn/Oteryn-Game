@@ -221,6 +221,8 @@ async fn exchange_wire(
                         result.status,
                         if expect_switch {
                             CommandStatus::Accepted
+                        } else if replay_refusal && reply.is_some() {
+                            CommandStatus::DuplicateReplay
                         } else {
                             CommandStatus::Rejected
                         },
