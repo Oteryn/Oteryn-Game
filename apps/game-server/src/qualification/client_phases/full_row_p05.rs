@@ -627,12 +627,13 @@ pub(super) async fn funded_buyer(
     let platinum = provisioning::item_reference(&definitions, 3035)?;
     let gold = provisioning::item_reference(&definitions, 3031)?;
     let crystal = provisioning::item_reference(&definitions, 3043)?;
-    if client.inventory().is_none()
-        || [gold, platinum, crystal]
-            .into_iter()
-            .any(|coin| item_count(&client, coin) != 0)
-    {
-        return Err("P05 fixture buyer must start with an empty purse".into());
+    let starter_gold = item_count(&client, gold);
+    let starter_platinum = item_count(&client, platinum);
+    let starter_crystal = item_count(&client, crystal);
+    if (starter_gold, starter_platinum, starter_crystal) != (50, 0, 0) {
+        return Err(format!(
+            "P05 fixture buyer has gold={starter_gold} platinum={starter_platinum} crystal={starter_crystal}; expected the Newhaven starter purse"
+        ).into());
     }
     // Each distinct grant fits the existing fixture's per-request cap of 20.
     for count in [20, 19, 11] {
@@ -645,12 +646,12 @@ pub(super) async fn funded_buyer(
     let fresh = connect_character(clients, tag, 0).await?;
     if fresh.join_snapshot().game_session_id == session
         || item_count(&fresh, platinum) != 50
-        || item_count(&fresh, gold) != 0
+        || item_count(&fresh, gold) != starter_gold
         || item_count(&fresh, crystal) != 0
     {
         return Err("P05 fixture budget missing on fresh admission".into());
     }
-    evidence("P05_CHECK step=funding status=PASS spendable_gold=5000");
+    evidence("P05_CHECK step=funding status=PASS starter_gold=50 fixture_gold=5000 spendable_gold=5050");
     Ok(fresh)
 }
 
