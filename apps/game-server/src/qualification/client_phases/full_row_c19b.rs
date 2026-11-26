@@ -48,9 +48,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 }
 
 async fn release(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    let (result, detail, _, _) = logout_retrying_busy(client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("C19b logout refused: {detail}").into());
+    let outcome = client.session_mut().logout().await?;
+    if outcome.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C19b logout refused: {outcome:?}").into());
     }
     Ok(())
 }
