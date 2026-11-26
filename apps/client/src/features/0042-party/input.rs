@@ -17,6 +17,25 @@ impl PlayLink {
         }
     }
 
+    pub(in crate::play) fn party_notice_refresh(&self, now: std::time::Instant) {
+        use oteryn_client_ui::party::PartyCommand;
+        use oteryn_client_ui::party_membership_notices::take_refresh;
+
+        let mut mailbox = lock(&self.mailbox);
+        let mailbox = &mut *mailbox;
+        if !mailbox.party_initialized || mailbox.scope_pending || mailbox.activity_reset_commands {
+            return;
+        }
+        if take_refresh(&mailbox.party, &mut mailbox.party_notice_refresh, now) {
+            let command = PartyCommand::query();
+            if self.commands.send(PlayCommand::Party(command.clone())).is_ok() {
+                mailbox.party.pending = Some(command);
+            } else {
+                mailbox.party_notice_refresh.cancel_query();
+            }
+        }
+    }
+
     pub fn open_party(&self) {
         self.party_request(Intent::Refresh);
         self.open_shared_party();

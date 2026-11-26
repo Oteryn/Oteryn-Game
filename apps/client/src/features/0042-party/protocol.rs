@@ -1,9 +1,16 @@
 use crate::play::{Outbox, mailbox::lock};
-use oteryn_client_runtime::party::PartyResponse;
+use std::time::Instant;
+use oteryn_client_runtime::party::{CommandStatus, PartyResponse, party::COMMAND_TYPE_PARTY_QUERY};
 
 impl Outbox {
     pub(in crate::play) fn party_initialize(&self, selected: bool, chat_selected: bool) {
         let mut mailbox = lock(&self.0);
+        mailbox.party_initialized = true;
+        if selected {
+            mailbox.party_notice_refresh.cancel_query();
+        } else {
+            mailbox.party_notice_refresh = Default::default();
+        }
         let panel = &mut mailbox.party;
         panel.selected = selected;
         panel.chat_selected = chat_selected;
@@ -21,6 +28,7 @@ impl Outbox {
     }
 
     pub(in crate::play) fn party_result(&self, response: &PartyResponse) {
+        let received_at = Instant::now();
         let mut mailbox = lock(&self.0);
         let members = |panel: &oteryn_client_ui::party::PartyPanel| {
             panel.state.as_ref().map(|state| {
@@ -32,7 +40,27 @@ impl Outbox {
             })
         };
         let before = members(&mailbox.party);
-        if oteryn_client_ui::party_list::apply_result(&mut mailbox.party, response) {
+        let query = mailbox
+            .party
+            .pending
+            .as_ref()
+            .is_some_and(|command| command.kind == COMMAND_TYPE_PARTY_QUERY);
+        let feedback = mailbox.party.feedback;
+        let applied = oteryn_client_ui::party_list::apply_result(&mut mailbox.party, response);
+        if query {
+            if mailbox.party_notice_refresh.automatic_pending() {
+                mailbox.party.feedback = feedback;
+            }
+            mailbox.party_notice_refresh.finish_query(
+                applied
+                    && matches!(
+                        response.status,
+                        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+                    ),
+                received_at,
+            );
+        }
+        if applied {
             mailbox.refresh_party_summons();
         }
         let after = members(&mailbox.party);
@@ -73,7 +101,19 @@ impl Outbox {
                 .await?;
             oteryn_client_runtime::party::shared_response(&outcome, view.view)
         } else {
-            session.party(request).await?
+            let started = Instant::now();
+            let result = session.party(request).await;
+            if request.kind == COMMAND_TYPE_PARTY_QUERY
+                && matches!(
+                    result,
+                    Err(oteryn_session::SessionError::ScopeChanged
+                        | oteryn_session::SessionError::ActivityScopeChanged)
+                )
+            {
+                // The session reads the handoff only after writing this query.
+                lock(&self.0).party_notice_refresh.finish_query(false, started);
+            }
+            result?
         };
         self.party_result(&response);
         Ok(())

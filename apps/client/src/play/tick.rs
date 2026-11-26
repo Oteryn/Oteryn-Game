@@ -88,6 +88,7 @@ impl PlayView {
             link.party_skull_request(oteryn_client_ui::party_skull::Intent::Query);
             self.party_icons_refresh = Some(icon_now);
         }
+        link.party_notice_refresh(icon_now);
         if self
             .entities
             .iter()

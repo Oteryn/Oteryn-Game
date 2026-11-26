@@ -332,3 +332,185 @@ fn party_roster_changes_emit_one_membership_tone() -> Result<(), Error> {
     }
     Ok(())
 }
+
+#[test]
+fn party_membership_notice_refreshes_the_party_view_through_the_play_tick() -> Result<(), Error> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::party::{CommandStatus, PartyCommand, PartyResponse};
+    use oteryn_client_ui::party::party;
+    use oteryn_session::{AppliedDelta, SessionEvent};
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    outbox.party_initialize(true, false);
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(1, 1), 7, &[])?;
+    let notice = |sequence, change| {
+        vec![SessionEvent::PartyMembershipNotice(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: sequence - 1,
+            new_revision: sequence,
+            value: party::PartyMembershipNotice { member_handle: 9, change },
+        })]
+    };
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    assert!(commands.try_recv().is_err(), "no notice, no refresh");
+    outbox.push(notice(1, party::PartyMembershipChange::Joined));
+    outbox.push(notice(2, party::PartyMembershipChange::Left));
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    assert!(matches!(commands.try_recv(), Ok(PlayCommand::Party(command)) if command == PartyCommand::query()));
+    // Two notices owe one refresh, and the pending query holds a later notice back.
+    outbox.push(notice(3, party::PartyMembershipChange::Joined));
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    assert!(commands.try_recv().is_err());
+    let bytes = party::encode_party_result(&party::PartyResult::refused(party::PartyDisposition::Ok))
+        .map_err(|error| format!("{error:?}"))?;
+    outbox.party_result(&PartyResponse { status: CommandStatus::Accepted, operation: bytes.clone(), view: Some(bytes) });
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    assert!(matches!(commands.try_recv(), Ok(PlayCommand::Party(command)) if command == PartyCommand::query()));
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+fn push_party_leave(outbox: &crate::play::Outbox, revision: u64) {
+    use oteryn_client_runtime::party::party::{PartyMembershipChange, PartyMembershipNotice};
+    use oteryn_session::{AppliedDelta, SessionEvent};
+
+    outbox.push(vec![SessionEvent::PartyMembershipNotice(AppliedDelta {
+        server_sequence: revision,
+        base_revision: revision - 1,
+        new_revision: revision,
+        value: PartyMembershipNotice {
+            member_handle: 9,
+            change: PartyMembershipChange::Left,
+        },
+    })]);
+}
+
+fn party_response(
+    disposition: oteryn_client_runtime::party::party::PartyDisposition,
+) -> Result<oteryn_client_runtime::party::PartyResponse, Error> {
+    use oteryn_client_runtime::party::{CommandStatus, PartyResponse, party};
+
+    // A holder deadline is an accepted wire command with an unavailable Party result.
+    let bytes = party::encode_party_result(&party::PartyResult::refused(disposition))
+        .map_err(|error| format!("{error:?}"))?;
+    Ok(PartyResponse {
+        status: CommandStatus::Accepted,
+        operation: bytes.clone(),
+        view: Some(bytes),
+    })
+}
+
+#[test]
+fn party_notice_refusal_retries_after_delay_and_acceptance_clears_refresh() -> Result<(), Error> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::party::{PartyCommand, party::PartyDisposition};
+    use std::time::{Duration, Instant};
+
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    outbox.party_initialize(true, false);
+    push_party_leave(&outbox, 1);
+
+    let now = Instant::now();
+    link.party_notice_refresh(now);
+    assert_eq!(commands.try_recv()?, PlayCommand::Party(PartyCommand::query()));
+    let before_refusal = Instant::now();
+    outbox.party_result(&party_response(PartyDisposition::Unavailable)?);
+    let after_refusal = Instant::now();
+
+    link.party_notice_refresh(before_refusal + Duration::from_millis(999));
+    assert!(commands.try_recv().is_err());
+    link.party_notice_refresh(after_refusal + Duration::from_secs(1));
+    assert_eq!(commands.try_recv()?, PlayCommand::Party(PartyCommand::query()));
+    outbox.party_result(&party_response(PartyDisposition::Ok)?);
+    assert!(link.party_panel().state.is_some());
+
+    link.party_notice_refresh(now + Duration::from_secs(2));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn party_notice_retry_delay_starts_at_refusal() -> Result<(), Error> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::party::{PartyCommand, party::PartyDisposition};
+    use std::time::{Duration, Instant};
+
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    outbox.party_initialize(true, false);
+    push_party_leave(&outbox, 1);
+    link.party_notice_refresh(Instant::now() - Duration::from_secs(2));
+    assert_eq!(commands.try_recv()?, PlayCommand::Party(PartyCommand::query()));
+
+    let refused = party_response(PartyDisposition::Unavailable)?;
+    let before_refusal = Instant::now();
+    outbox.party_result(&refused);
+    let after_refusal = Instant::now();
+    link.party_notice_refresh(before_refusal + Duration::from_millis(999));
+    assert!(commands.try_recv().is_err(), "retry was due before one second from refusal");
+    link.party_notice_refresh(after_refusal + Duration::from_secs(1));
+    assert_eq!(commands.try_recv()?, PlayCommand::Party(PartyCommand::query()));
+    Ok(())
+}
+
+#[test]
+fn party_notice_retry_budget_ends_and_a_new_notice_renews_it() -> Result<(), Error> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::party::{PartyCommand, party::PartyDisposition};
+    use std::time::{Duration, Instant};
+
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    outbox.party_initialize(true, false);
+    push_party_leave(&outbox, 1);
+    let now = Instant::now();
+    let mut failed = party_response(PartyDisposition::Ok)?;
+    failed.view = None;
+
+    let mut later = now;
+    for _ in 0..3 {
+        link.party_notice_refresh(later);
+        assert_eq!(commands.try_recv()?, PlayCommand::Party(PartyCommand::query()));
+        outbox.party_result(&failed);
+        later = Instant::now() + Duration::from_secs(1);
+    }
+    link.party_notice_refresh(later);
+    assert!(commands.try_recv().is_err());
+    push_party_leave(&outbox, 2);
+    link.party_notice_refresh(later);
+    assert_eq!(commands.try_recv()?, PlayCommand::Party(PartyCommand::query()));
+    Ok(())
+}
+
+#[test]
+fn party_notice_auto_refresh_preserves_user_action_feedback() -> Result<(), Error> {
+    use crate::combat_input::PlayCommand;
+    use crate::play::{PlayView, mailbox::lock};
+    use oteryn_client_runtime::party::{PartyCommand, party::PartyDisposition};
+    use oteryn_client_ui::party::Intent;
+
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    outbox.party_initialize(true, false);
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(1, 1), 7, &[])?;
+    link.party_request(Intent::Leave);
+    assert!(matches!(commands.try_recv()?, PlayCommand::Party(command) if command != PartyCommand::query()));
+    push_party_leave(&outbox, 1);
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    assert!(commands.try_recv().is_err());
+
+    outbox.party_result(&party_response(PartyDisposition::LogoutBlocked)?);
+    lock(&outbox.0).party.server_feedback = Some("Party action refused during logout".into());
+    let before = link.party_panel();
+    assert!(before.feedback.is_some());
+
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    assert_eq!(commands.try_recv()?, PlayCommand::Party(PartyCommand::query()));
+    let pending = link.party_panel();
+    assert_eq!(pending.feedback, before.feedback);
+    assert_eq!(pending.server_feedback, before.server_feedback);
+
+    outbox.party_result(&party_response(PartyDisposition::Ok)?);
+    let after = link.party_panel();
+    assert_eq!(after.feedback, before.feedback);
+    assert_eq!(after.server_feedback, before.server_feedback);
+    assert!(after.state.is_some());
+    Ok(())
+}

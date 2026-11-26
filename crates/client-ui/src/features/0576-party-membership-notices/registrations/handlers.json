@@ -2,14 +2,21 @@
   "mechanic": "0576-party-membership-notices",
   "kind": "handlers",
   "id": "0576-party-membership-notices-push",
-  "status": "unsupported",
+  "status": "supported",
   "commands": [],
-  "reason": "This branch delivers the server and protocol support. The native client integration is maintained separately.",
+  "direction": "server_to_client",
   "not_applicable": {
-    "state": "The existing feature continues to own its client state.",
+    "state": "Notices owe one refresh of the existing Party window state.",
     "protocol": "Join and leave deltas carrying an opaque Party member handle.",
-    "view": "Display is owned by the native client integration.",
+    "view": "The existing Party window shows the refreshed membership.",
     "input": "This capability carries unsolicited server output.",
     "settings": "The capability has no client setting."
-  }
+  },
+  "capability": 576,
+  "entry": "protocol.rs::observed",
+  "push_messages": [
+    "SessionEvent::PartyMembershipNotice"
+  ],
+  "reducer": "protocol.rs::take_refresh",
+  "test": "protocol.rs::notices_owe_one_refresh_until_the_party_query_is_free"
 }
