@@ -5,6 +5,9 @@ use oteryn_protocol_oteryn::actor_spell::{self, ActorVitals, SpellCastDispositio
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::item_view::EquipmentSlot;
 use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
+use oteryn_protocol_oteryn::world_spatial::{
+    ActorPosition, StepDirection, StepDisposition, decode_step_intent_profile,
+};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::cell::Cell;
 use std::io;
@@ -33,6 +36,8 @@ struct Witness {
     before_sequence: u64,
     before_bytes: usize,
     vitals: ActorVitals,
+    traveled: Vec<StepDirection>,
+    cast_tile: ActorPosition,
 }
 
 fn hex<const N: usize>(value: &str) -> Result<[u8; N], BoxError> {
@@ -74,10 +79,24 @@ fn read_witness(root: &Path, text: &str) -> Result<Witness, BoxError> {
         damage,
         before_sequence,
         before_bytes,
+        traveled,
+        x,
+        y,
+        floor,
     ] = values.as_slice()
     else {
         return Err("malformed C12 capture provenance".into());
     };
+    if !(1..=512).contains(&traveled.len()) {
+        return Err("C12 original movement count outside bounds".into());
+    }
+    let traveled = traveled
+        .bytes()
+        .map(|value| {
+            let direction = value.checked_sub(b'0').ok_or("C12 invalid movement")?;
+            decode_step_intent_profile(&[8, direction], true).map_err(|_| "C12 invalid movement")
+        })
+        .collect::<Result<_, _>>()?;
     let witness = Witness {
         prior: hex(prior)?,
         session: hex(session)?,
@@ -95,6 +114,12 @@ fn read_witness(root: &Path, text: &str) -> Result<Witness, BoxError> {
         damage: damage.parse()?,
         before_sequence: before_sequence.parse()?,
         before_bytes: before_bytes.parse()?,
+        traveled,
+        cast_tile: ActorPosition {
+            x: x.parse()?,
+            y: y.parse()?,
+            floor: floor.parse()?,
+        },
         vitals: ActorVitals {
             health: health.parse()?,
             max_health: max_health.parse()?,
@@ -161,8 +186,9 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
     admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
     admission.deadline = Duration::from_secs(2);
     let mut session = Session::admit(wire, admission).await?;
+    let steps_and_premium = u64::try_from(witness.traveled.len())? + 1;
     if session.join_snapshot().game_session_id.as_bytes() != &witness.session
-        || session.next_command_id().checked_add(1) != Some(witness.attack_command)
+        || session.next_command_id().checked_add(steps_and_premium) != Some(witness.attack_command)
     {
         return Err("original C12 admission does not match capture provenance".into());
     }
@@ -201,7 +227,6 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
         .ok_or("captured C12 Premium response malformed")?;
     assert_eq!(overview.state, premium_overview::State::Active);
     assert!(overview.valid_for_us > 0);
-    assert_eq!(session.next_command_id(), witness.attack_command);
     let catalog = session
         .spell_catalog()?
         .ok_or("captured C12 spell catalogue absent")?;
@@ -214,6 +239,25 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
                 && entry.rune_item.is_none()
                 && entry.cast_index == witness.spell.get())
     );
+    assert_ne!(session.world_spatial().actor_position, witness.cast_tile);
+    for direction in witness.traveled {
+        let before = session.world_spatial().actor_position;
+        let command = session.next_command_id();
+        let step = session.step(direction).await?;
+        assert_eq!(step.command_id, command);
+        assert_eq!(step.status, CommandStatus::Accepted);
+        assert_eq!(step.disposition, StepDisposition::Moved);
+        let moved = step
+            .world_spatial_delta
+            .ok_or("captured C12 movement delta absent")?;
+        assert_ne!(moved.value.actor_position, before);
+        assert_eq!(
+            session.world_spatial().actor_position,
+            moved.value.actor_position
+        );
+    }
+    assert_eq!(session.world_spatial().actor_position, witness.cast_tile);
+    assert_eq!(session.next_command_id(), witness.attack_command);
     assert_eq!(
         session
             .combat_state()
@@ -221,15 +265,28 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
             .target,
         None
     );
-    let entities = session
-        .world_entities()
-        .ok_or("captured C12 entity projection absent")?;
-    assert!(entities.get(&witness.target).is_some());
-    let own = entities
-        .iter()
-        .find(|entry| entry.entity.identity == *entities.own_identity())
-        .ok_or("captured C12 caster entity absent")?
-        .entity;
+    let own = loop {
+        let entities = session
+            .world_entities()
+            .ok_or("captured C12 entity projection absent")?;
+        if entities.get(&witness.target).is_some_and(|entry| {
+            let at = witness.cast_tile;
+            entry.position.floor == at.floor
+                && entry
+                    .position
+                    .x
+                    .abs_diff(at.x)
+                    .max(entry.position.y.abs_diff(at.y))
+                    == 1
+        }) {
+            break entities
+                .iter()
+                .find(|entry| entry.entity.identity == *entities.own_identity())
+                .ok_or("captured C12 caster entity absent")?
+                .entity;
+        }
+        session.wait_for_events(Duration::from_secs(2)).await?;
+    };
     let attack = session.attack_target(Some(&witness.target)).await?;
     assert_eq!(attack.command_id, witness.attack_command);
     assert_eq!(attack.status, CommandStatus::Accepted);
@@ -314,16 +371,18 @@ fn c12_capture_provenance_refuses_stale_or_mismatched_fields() -> Result<(), Box
     let prior = "01a218115a6578e2a6913d169380b741";
     let target = "00000000000000000000000000000009";
     let current = format!(
-        "/current-run\n{session} {prior} 3 4 5 2 42 {target} 1 27000 120 305 305 70 210 100 0 0 48 3 26013\n"
+        "/current-run\n{session} {prior} 7 4 5 6 42 {target} 1 27000 120 305 305 70 210 100 0 0 48 3 26013 1234 32295 32334 8\n"
     );
     let witness = read_witness(run, &current)?;
-    assert_eq!(witness.command, 3);
+    assert_eq!(witness.command, 7);
     assert_eq!(witness.delta_sequence, 5);
+    assert_eq!(witness.traveled.len(), 4);
     for invalid in [
         current.replace("/current-run", "/previous-run"),
         current.replace(prior, session),
-        current.replace(" 3 4 5 2 ", " 3 5 4 2 "),
+        current.replace(" 7 4 5 6 ", " 7 5 4 6 "),
         current.replace(" 305 305 70 210 ", " 305 305 120 210 "),
+        current.replace(" 1234 32295 ", " 1934 32295 "),
     ] {
         assert!(read_witness(run, &invalid).is_err());
     }

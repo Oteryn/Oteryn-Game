@@ -5,6 +5,7 @@ use oteryn_dev_client::native_session::{Admission, Session};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+use oteryn_protocol_oteryn::world_spatial_entities::EntityKind;
 use std::io::{self, Write};
 use std::num::NonZeroU32;
 use std::path::PathBuf;
@@ -40,7 +41,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         accounts,
         characters,
         definition,
-        target,
+        route,
         previous,
         position: prior_position,
     } = full_row_c12::prepare_client_capture(clients).await?;
@@ -100,6 +101,10 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             "C12 fresh admission did not retain exactly one weapon in the right hand".into(),
         );
     }
+    if tile(session.world_spatial().actor_position)? != prior_position {
+        return Err("C12.client old position was not retained across relog".into());
+    }
+    evidence("C12_CLIENT_EQUIPPED item=50271 right_hand_count=1 fresh_session=true");
     full_row_c12::require_current_premium(&mut session).await?;
     let catalog = session
         .spell_catalog()?
@@ -113,31 +118,38 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("C12 Greater Tiger Clash unavailable after equipped relog: learned={} required_level={}", spell.learned, spell.level).into());
     }
     let spell = NonZeroU32::new(spell.cast_index).ok_or("C12 spell index is zero")?;
-    let position = session.world_spatial().actor_position;
-    if tile(position)? != prior_position {
-        return Err("C12.client old position was not retained across relog".into());
+    let mut traveled = String::new();
+    for (direction, expected) in route {
+        let before = tile(session.world_spatial().actor_position)?;
+        let step = session.step(direction).await?;
+        require_mechanic_acceptance(step.status, "C12.client STEP")?;
+        let actual = tile(session.world_spatial().actor_position)?;
+        if step.disposition != StepDisposition::Moved
+            || step.world_spatial_delta.is_none()
+            || actual != expected
+            || actual == before
+        {
+            return Err(format!(
+                "C12.client STEP {direction:?} from={before:?} expected={expected:?} actual={actual:?}: {step:?}"
+            )
+            .into());
+        }
+        traveled.push(char::from(b'0' + direction as u8));
+        verdict::Harness::global().progress("client-hunt");
+        session
+            .service_liveness_discarding_events(Duration::from_millis(u64::from(step.step_wait_ms)))
+            .await?;
     }
+    let position = session.world_spatial().actor_position;
+    let target = visible_hunt_target(&mut session).await?;
     let entities = session
         .world_entities()
         .ok_or("C12 fresh entity projection absent")?;
-    let victim = entities
-        .get(&target)
-        .ok_or("C12 original target absent after fresh admission")?;
     let own = entities
         .iter()
         .find(|entry| entry.entity.identity == *entities.own_identity())
         .ok_or("C12 fresh caster entity absent")?
         .entity;
-    if victim.position.floor != position.floor
-        || victim
-            .position
-            .x
-            .abs_diff(position.x)
-            .max(victim.position.y.abs_diff(position.y))
-            != 1
-    {
-        return Err("C12 original target is not adjacent after fresh admission".into());
-    }
     if session
         .combat_state()
         .ok_or("C12 fresh combat state absent")?
@@ -227,7 +239,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     }
     let earlier = hex_bytes(previous.as_bytes());
     let expected = format!(
-        "{}\n{session_id} {earlier} {command} {result_sequence} {sequence} {attack_id} {spell} {target_identity} {target_generation} {definition} {before} {health} {max_health} {mana} {max_mana} {soul} {harmony} {serene} {damage} {before_sequence} {before_bytes}\n",
+        "{}\n{session_id} {earlier} {command} {result_sequence} {sequence} {attack_id} {spell} {target_identity} {target_generation} {definition} {before} {health} {max_health} {mana} {max_mana} {soul} {harmony} {serene} {damage} {before_sequence} {before_bytes} {traveled} {x} {y} {floor}\n",
         root.display(),
         attack_id = attack.command_id,
         target_generation = target.generation,
@@ -238,6 +250,9 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         soul = vitals.soul,
         harmony = vitals.harmony,
         serene = u8::from(vitals.serene),
+        x = position.x,
+        y = position.y,
+        floor = position.floor,
     );
     let bytes = received
         .lock()
@@ -252,6 +267,46 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         "C12_CAPTURE session={session_id} command={command} result_sequence={result_sequence} delta_sequence={sequence}"
     ));
     Ok(())
+}
+
+async fn visible_hunt_target<S: oteryn_dev_client::native_session::SessionStream>(
+    session: &mut Session<S>,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
+    loop {
+        {
+            let at = session.world_spatial().actor_position;
+            let entities = session
+                .world_entities()
+                .ok_or("C12 client hunt entity projection absent")?;
+            let mut matching = entities.iter().filter(|entry| {
+                entry.kind == EntityKind::Creature
+                    && entry.position.floor == at.floor
+                    && entry
+                        .position
+                        .x
+                        .abs_diff(at.x)
+                        .max(entry.position.y.abs_diff(at.y))
+                        == 1
+                    && entry.display_name.is_some_and(|name| {
+                        name.as_str()
+                            .is_ok_and(|name| name == full_row_c12::CLIENT_TARGET_NAME)
+                    })
+            });
+            if let Some(entry) = matching.next() {
+                if matching.next().is_some() {
+                    return Err("C12 client hunt saw multiple adjacent Tarantulas".into());
+                }
+                return Ok(entry.entity);
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C12 client hunt did not see the authored Tarantula".into());
+        }
+        session
+            .service_liveness_discarding_events(Duration::from_millis(50))
+            .await?;
+    }
 }
 
 fn write_packet(root: &Path, name: &str, bytes: &[u8]) -> TestResult {

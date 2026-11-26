@@ -1286,12 +1286,66 @@ pub(super) struct ClientCaptureSetup {
     pub accounts: Vec<String>,
     pub characters: Vec<[u8; 16]>,
     pub definition: NonZeroU32,
-    pub target: oteryn_dev_client::EntityRef,
+    pub route: Vec<(StepDirection, TilePos)>,
     pub previous: oteryn_protocol_oteryn::GameSessionId,
     pub position: TilePos,
 }
 
-// The capture starts on the fresh admission whose equipped state the client row proves.
+pub(super) const CLIENT_TARGET_NAME: &str = "Tarantula";
+const CLIENT_TARGET_KEY: &str = "oteryn:creature.tarantula";
+const CLIENT_TARGET_SPAWN: TilePos = TilePos {
+    x: 32294,
+    y: 32333,
+    floor: -8,
+};
+const CLIENT_CAST_TILE: TilePos = TilePos {
+    x: 32295,
+    y: 32334,
+    floor: -8,
+};
+
+fn client_cast_route(
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    from: TilePos,
+) -> TestResult<Vec<(StepDirection, TilePos)>> {
+    let authored = spawns.sources.iter().any(|source| {
+        source.floor == CLIENT_TARGET_SPAWN.floor
+            && source.points.iter().any(|point| {
+                point.x == CLIENT_TARGET_SPAWN.x
+                    && point.y == CLIENT_TARGET_SPAWN.y
+                    && spawns
+                        .creatures
+                        .get(point.creature as usize)
+                        .is_some_and(|creature| creature.key == CLIENT_TARGET_KEY)
+            })
+    });
+    if !authored || from == CLIENT_CAST_TILE {
+        return Err("C12.client authored hunt spawn or starting position differs".into());
+    }
+    let profiles = creature_profiles()?;
+    if profiles
+        .get(CLIENT_TARGET_KEY)
+        .is_none_or(|profile| profile.health != 225 || profile.display_name != CLIENT_TARGET_NAME)
+    {
+        return Err("C12.client authored Tarantula profile differs".into());
+    }
+    let path = route(world, from, |at| at == CLIENT_CAST_TILE)
+        .ok_or("C12.client no route to the authored Tarantula cast tile")?;
+    let mut at = from;
+    path.into_iter()
+        .map(|direction| {
+            let landed = destination(world, at, direction)
+                .filter(|landed| *landed != at)
+                .ok_or("C12.client planned movement has no changed landing")?;
+            at = landed;
+            Ok((direction, landed))
+        })
+        .collect::<Result<_, &'static str>>()
+        .map_err(Into::into)
+}
+
+// Relog with the weapon equipped before approaching the hostile spawn.
 pub(super) async fn prepare_client_capture(
     clients: &SeamClients<'_>,
 ) -> TestResult<ClientCaptureSetup> {
@@ -1330,18 +1384,19 @@ pub(super) async fn prepare_client_capture(
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let profiles = creature_profiles()?;
-    let hunt = select_hunt(&client, world, &metadata.spawns, &profiles)?;
-    hunt.approach(&mut client).await?;
-    let target = hunt.wait_visible_target(&mut client).await?;
     let previous = client.join_snapshot().game_session_id;
     let position = tile(client.world_spatial().actor_position)?;
+    let route = client_cast_route(world, &metadata.spawns, position)?;
+    evidence(&format!(
+        "C12_CLIENT_HUNT spawn={CLIENT_TARGET_SPAWN:?} stand={CLIENT_CAST_TILE:?} steps={}",
+        route.len()
+    ));
     logout(&mut client).await?;
     Ok(ClientCaptureSetup {
         accounts,
         characters,
         definition,
-        target,
+        route,
         previous,
         position,
     })
