@@ -1,8 +1,10 @@
-//! Verify the first visible Forge binding for each exact fixture creature.
+//! Verify live Forge marker lifecycle, combat rewards and fresh-admission custody.
 use super::*;
-use oteryn_dev_client::SessionEvent;
 use oteryn_dev_client::native_session::AppearanceUpdate;
+use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, EntityRef, SessionEvent};
 use oteryn_protocol_oteryn::appearance::CAPABILITY_FORGE_CREATURE_V1;
+use oteryn_protocol_oteryn::{container_tree as containers, item_forge, item_view as items};
+use std::num::NonZeroU32;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     let result = verdict::indexed_timeout(
@@ -12,7 +14,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     .await;
     match result {
         Ok(Ok(())) => evidence(
-            "e2e_all scenario=P19.client status=PASS evidence=first-appearance-influenced-3-and-fiendish-15",
+            "e2e_all scenario=P19.client status=PASS evidence=first-marker-kill-clear-and-exact-durable-dust-and-slivers",
         ),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=P19.client status=FAIL evidence={error}"
@@ -23,7 +25,29 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
 
 async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     let capture = required("E2E_ALL_CAPTURE_DIR")?;
-    let mut client = connect_character(clients, 0x19, 0).await?;
+    let dedicated =
+        character_prep::dedicated_character(clients, "NODE_BOOT_C11_KNIGHT_ACCOUNT").await?;
+    let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
+    let clients = &SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
+    character_prep::declare_seeded("P19.client", "knight,premium", "Forge combat and rewards");
+    let mut client = character_prep::Seeded {
+        profile: "knight",
+        reason: "Forge combat qualification",
+    }
+    .connect(clients, 0x19, 1)
+    .await?;
+    character_prep::grant_premium(&client).await?;
+    evidence("P19 FIXTURE premium=granted");
+    character_prep::reload(&mut client, clients).await?;
+    full_e2ef7::require_current_light_premium(&mut client).await?;
+    let index = provisioning::item_index()?;
+    let axe = provisioning::item_reference(&index, 3276)?;
+    equip_fixture_axe(&mut client, axe).await?;
+    let sliver = provisioning::item_reference(&index, 37109)?;
     if !client
         .selected_capabilities()
         .contains(&CAPABILITY_FORGE_CREATURE_V1)
@@ -58,59 +82,49 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         .take(2)
         .collect::<Vec<_>>()
     };
-    let start = tile(client.world_spatial().actor_position)?;
-    let path = route(world, start, |at| cells(at).len() == 2)
-        .ok_or("P19 no approach with two open spawn tiles")?;
-    for direction in path {
-        let origin = tile(client.world_spatial().actor_position)?;
-        let expected = destination(world, origin, direction).ok_or("P19 route has no landing")?;
-        let movement = client.step(direction).await?;
-        let actual = tile(client.world_spatial().actor_position)?;
-        if !confirmed_step(
-            movement.disposition,
-            movement.world_spatial_delta.is_some(),
-            actual,
-            expected,
-        ) {
-            return Err(format!(
-                "P19 first movement {direction:?} from {origin:?}: disposition={:?} expected={expected:?} actual={actual:?}",
-                movement.disposition,
-            ).into());
-        }
-        if movement.step_wait_ms != 0 {
-            let wait = Duration::from_millis(u64::from(movement.step_wait_ms));
-            let until = tokio::time::Instant::now() + wait;
-            while let Some(remaining) = until.checked_duration_since(tokio::time::Instant::now()) {
-                client.service_liveness(remaining).await?;
+    let approach = |at: TilePos| {
+        cells(at).len() == 2
+            && world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+    };
+    for (classification, stacks, folder, slot) in
+        [("influenced 3", 3, "", 0), ("fiendish", 15, "fiendish", 1)]
+    {
+        let path = route(
+            world,
+            tile(client.world_spatial().actor_position)?,
+            approach,
+        )
+        .ok_or("P19 FIXTURE_PLACEMENT no approach with two open spawn tiles")?;
+        move_first_attempt(&mut client, world, path).await?;
+        let positions = cells(tile(client.world_spatial().actor_position)?);
+        let position = *positions
+            .get(slot)
+            .ok_or("P19 FIXTURE_PLACEMENT spawn tile absent")?;
+        if slot == 0 {
+            let refused = request_fixture_control(
+                uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+                "--spawn-forge",
+                format!(
+                    "oteryn:creature.druid_familiar {} {} {} fiendish",
+                    position.x, position.y, position.floor
+                ),
+            )
+            .await;
+            if refused.as_ref().err().map(String::as_str) != Some("ineligible_forge_creature") {
+                return Err(
+                    format!("P19 expected ineligible_forge_creature, got {refused:?}").into(),
+                );
             }
         }
-    }
-    let at = client.world_spatial().actor_position;
-    let positions = cells(tile(at)?);
-    if positions.len() != 2 {
-        return Err("P19 reached an approach without two open spawn tiles".into());
-    }
-    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let refused = request_fixture_control(
-        session.clone(),
-        "--spawn-forge",
-        format!(
-            "oteryn:creature.druid_familiar {} {} {} fiendish",
-            positions[0].x, positions[0].y, positions[0].floor
-        ),
-    )
-    .await;
-    if refused.as_ref().err().map(String::as_str) != Some("ineligible_forge_creature") {
-        return Err(format!("P19 expected ineligible_forge_creature, got {refused:?}").into());
-    }
-    let mut observed = Vec::new();
-    for ((classification, stacks, folder), position) in
-        [("influenced 3", 3, ""), ("fiendish", 15, "fiendish")]
-            .into_iter()
-            .zip(positions)
-    {
         let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+        let before = rewards(&mut client, sliver).await?;
         client.take_events();
+        evidence(&format!(
+            "P19 FIXTURE classification={classification} placement={position:?}"
+        ));
         let reply = request_fixture_control(
             session.clone(),
             "--spawn-forge",
@@ -168,40 +182,306 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         for (name, bytes) in files {
             std::fs::write(directory.join(name), bytes)?;
         }
-        observed.push((exact, stacks));
         evidence(&format!(
             "P19_FORGE entity={exact:?} forge_stacks={stacks} sequence={}",
             first
         ));
-        let previous = client.join_snapshot().game_session_id;
-        let reply = client.session_mut().logout().await?;
-        if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err(format!("P19 logout refused: {reply:?}").into());
+        let corpse = kill_and_observe_clear(&mut client, exact).await?;
+        let looted = loot_slivers(&mut client, corpse, sliver, stacks == 15).await?;
+        let after = rewards(&mut client, sliver).await?;
+        // Global dust table: https://tibia.fandom.com/wiki/Fiendish_and_Influenced_Creatures#Dust_and_Slivers
+        let minimum = (before.dust + u64::from(stacks)).min(before.limit);
+        let maximum = (before.dust + 3 * u64::from(stacks)).min(before.limit);
+        if before.dust == before.limit
+            || !(minimum..=maximum).contains(&after.dust)
+            || after.limit != before.limit
+            || before.slivers.checked_add(looted) != Some(after.slivers)
+        {
+            return Err(format!("P19 {classification} reward mismatch: {before:?} -> {after:?}, slivers looted={looted}").into());
         }
+        evidence(&format!(
+            "P19 rewards {classification} before={before:?} after={after:?} looted={looted}"
+        ));
+        let retreat = route(world, tile(client.world_spatial().actor_position)?, |at| {
+            is_logout_rest_tile(world, at)
+        })
+        .ok_or("P19 FIXTURE_PLACEMENT no route to protection zone for fresh admission")?;
+        move_first_attempt(&mut client, world, retreat).await?;
+        let at = client.world_spatial().actor_position;
+        let previous = client.join_snapshot().game_session_id;
+        require_logout(&mut client).await?;
         drop(client);
-        client = connect_character(clients, 0x19, 0).await?;
+        client = connect_character(clients, 0x19, 1).await?;
         if client.join_snapshot().game_session_id == previous
             || client.world_spatial().actor_position != at
         {
-            return Err("P19 fresh admission did not resume the saved observation position".into());
+            return Err(
+                "P19 fresh admission did not restore the saved position in a new session".into(),
+            );
         }
-        let appearances = client.session_mut().visible_appearances();
-        for &(entity, stacks) in &observed {
-            if !appearances
+        let restored = rewards(&mut client, sliver).await?;
+        if restored != after {
+            return Err(format!(
+                "P19 fresh rewards mismatch: expected={after:?} observed={restored:?}"
+            )
+            .into());
+        }
+        evidence(&format!(
+            "P19 rewards {classification} fresh_admission={restored:?}"
+        ));
+    }
+    require_logout(&mut client).await
+}
+
+async fn equip_fixture_axe(client: &mut DevClientSession, axe: NonZeroU32) -> TestResult {
+    let inventory = client.inventory().ok_or("P19 fixture inventory absent")?;
+    if inventory
+        .equipment
+        .iter()
+        .any(|entry| entry.item.item_definition_ref == axe)
+    {
+        return Ok(());
+    }
+    let source = inventory
+        .entries
+        .iter()
+        .find(|item| item.item_definition_ref == axe)
+        .ok_or("P19 fixture axe absent")?
+        .handle;
+    evidence("P19 FIXTURE weapon=axe");
+    let reply = client
+        .move_item(&items::ItemMoveIntent {
+            source,
+            destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::LeftHand),
+        })
+        .await?;
+    require_mechanic_acceptance(reply.status, "P19 equip fixture axe")?;
+    if reply.outcome != items::ItemMoveOutcome::Moved {
+        return Err(format!("P19 fixture axe equip refused: {reply:?}").into());
+    }
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while !client.inventory().is_some_and(|inventory| {
+            inventory
+                .equipment
                 .iter()
-                .any(|entry| entry.entity.entity == entity && entry.forge_stacks == Some(stacks))
-            {
-                return Err(
-                    format!("P19 fresh admission lacks {entity:?} with stacks={stacks}").into(),
-                );
+                .any(|entry| entry.item.item_definition_ref == axe)
+        }) {
+            client.service_liveness(Duration::from_millis(100)).await?;
+        }
+        TestResult::Ok(())
+    })
+    .await?
+}
+
+async fn require_logout(client: &mut DevClientSession) -> TestResult {
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("P19 first logout refused: {reply:?}").into());
+    }
+    Ok(())
+}
+
+async fn move_first_attempt(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: Vec<StepDirection>,
+) -> TestResult {
+    for direction in path {
+        let origin = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, origin, direction).ok_or("P19 route has no landing")?;
+        let movement = client.step(direction).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if !confirmed_step(
+            movement.disposition,
+            movement.world_spatial_delta.is_some(),
+            actual,
+            expected,
+        ) {
+            return Err(format!(
+                "P19 FIXTURE_PLACEMENT first movement {direction:?} from {origin:?}: disposition={:?} expected={expected:?} actual={actual:?}",
+                movement.disposition,
+            ).into());
+        }
+        if movement.step_wait_ms != 0 {
+            let wait = Duration::from_millis(u64::from(movement.step_wait_ms));
+            let until = tokio::time::Instant::now() + wait;
+            while let Some(remaining) = until.checked_duration_since(tokio::time::Instant::now()) {
+                client.service_liveness(remaining).await?;
             }
         }
     }
-    let reply = client.session_mut().logout().await?;
-    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("P19 final logout refused: {reply:?}").into());
+    Ok(())
+}
+
+#[derive(Debug, PartialEq, Eq, serde::Deserialize)]
+struct Rewards {
+    #[serde(rename = "current_dust")]
+    dust: u64,
+    #[serde(rename = "dust_limit")]
+    limit: u64,
+    #[serde(skip)]
+    slivers: u64,
+}
+
+async fn rewards(client: &mut DevClientSession, sliver: NonZeroU32) -> TestResult<Rewards> {
+    let reply = client
+        .session_mut()
+        .gated_command(
+            item_forge::CAPABILITY_ITEM_FORGE_V1,
+            item_forge::COMMAND_TYPE_FORGE_DUST_QUERY,
+            &[],
+        )
+        .await?;
+    require_mechanic_acceptance(reply.status, "P19 Forge dust balance")?;
+    let mut result: Rewards = serde_json::from_slice(&reply.payload)?;
+    result.slivers = client
+        .inventory()
+        .ok_or("P19 inventory absent")?
+        .entries
+        .iter()
+        .filter(|entry| entry.item_definition_ref == sliver)
+        .map(|entry| u64::from(entry.count.get()))
+        .sum();
+    Ok(result)
+}
+
+async fn kill_and_observe_clear(
+    client: &mut DevClientSession,
+    target: EntityRef,
+) -> TestResult<items::ItemHandle> {
+    use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+    let entities = client.world_entities().ok_or("P19 spatial view absent")?;
+    let mut position = entities
+        .get(&target)
+        .ok_or("P19 target absent before attack")?
+        .position;
+    let existing: std::collections::BTreeSet<_> =
+        entities.iter().map(|entity| entity.entity).collect();
+    client.take_events();
+    let attack = client.session_mut().attack_target(Some(&target)).await?;
+    require_mechanic_acceptance(attack.status, "P19 attack")?;
+    if attack.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("P19 first attack refused: {attack:?}").into());
     }
-    Err("BLOCKED-SERVER P19 fixture sets the Forge classification directly; native selection, live marker removal and durable reward outcomes are unproved".into())
+    tokio::time::timeout(Duration::from_secs(55), async {
+        let mut left = false;
+        let mut cleared = None;
+        let mut corpse = None;
+        loop {
+            for event in client.wait_for_events(Duration::from_secs(55)).await? {
+                match event {
+                    SessionEvent::Appearance(delta) => {
+                        if let AppearanceUpdate::Mappings(mappings) = delta.value
+                            && mappings.forgets.contains(&target)
+                        {
+                            cleared = Some(delta.server_sequence);
+                        }
+                    }
+                    SessionEvent::WorldSpatialEntities(delta) => {
+                        if let Some(entity) = delta
+                            .value
+                            .update
+                            .iter()
+                            .find(|entry| entry.entity == target)
+                        {
+                            position = entity.position;
+                        }
+                        left |= delta.value.leave.contains(&target);
+                        if left {
+                            for entity in delta.value.enter.iter().chain(&delta.value.update) {
+                                if entity.kind == EntityKind::Corpse
+                                    && entity.position == position
+                                    && !existing.contains(&entity.entity)
+                                    && let EntityDetail::Object {
+                                        item_handle: Some(handle),
+                                        ..
+                                    } = entity.detail
+                                {
+                                    corpse = Some(handle);
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            if let (Some(handle), Some(sequence)) = (corpse, cleared) {
+                evidence(&format!(
+                    "P19 marker-cleared entity={target:?} sequence={sequence}"
+                ));
+                return TestResult::Ok(handle);
+            }
+        }
+    })
+    .await
+    .map_err(|_| format!("P19 exact kill, corpse or marker clear missing for {target:?}"))?
+}
+
+async fn loot_slivers(
+    client: &mut DevClientSession,
+    corpse: items::ItemHandle,
+    sliver: NonZeroU32,
+    fiendish: bool,
+) -> TestResult<u64> {
+    let outcome = client
+        .session_mut()
+        .container_view(containers::ContainerViewIntent::Open {
+            handle: corpse,
+            replace_view: None,
+        })
+        .await?;
+    if outcome != Some(containers::ContainerViewOutcome::Opened) {
+        return Err(format!("P19 first corpse-open refused: {outcome:?}").into());
+    }
+    let (view_id, loot) = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            if let Some(view) = client.session_mut().container_views().and_then(|views| {
+                views
+                    .views
+                    .iter()
+                    .find(|view| view.container_handle == corpse)
+            }) {
+                return TestResult::Ok((
+                    view.view_id,
+                    view.entries
+                        .iter()
+                        .copied()
+                        .filter(|entry| entry.item_definition_ref == sliver)
+                        .collect::<Vec<_>>(),
+                ));
+            }
+            client.service_liveness(Duration::from_millis(100)).await?;
+        }
+    })
+    .await??;
+    let count: u64 = loot.iter().map(|entry| u64::from(entry.count.get())).sum();
+    // Global grants slivers only to fiendish creatures, with quantity based on difficulty.
+    // https://tibia.fandom.com/wiki/Fiendish_and_Influenced_Creatures#Dust_and_Slivers
+    if (count > 0) != fiendish {
+        return Err(
+            format!("P19 unexpected corpse sliver count {count}, fiendish={fiendish}").into(),
+        );
+    }
+    for entry in loot {
+        let reply = client
+            .move_item(&items::ItemMoveIntent {
+                source: entry.handle,
+                destination: items::ItemMoveDestination::MainBackpack,
+            })
+            .await?;
+        require_mechanic_acceptance(reply.status, "P19 loot sliver")?;
+        if reply.outcome != items::ItemMoveOutcome::Moved {
+            return Err(format!("P19 first sliver move refused: {reply:?}").into());
+        }
+    }
+    let outcome = client
+        .session_mut()
+        .container_view(containers::ContainerViewIntent::Close { view_id })
+        .await?;
+    if outcome != Some(containers::ContainerViewOutcome::Closed) {
+        return Err(format!("P19 first corpse-close refused: {outcome:?}").into());
+    }
+    Ok(count)
 }
 
 fn confirmed_step(
