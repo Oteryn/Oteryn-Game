@@ -62,15 +62,25 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
     })?;
     let mut client = connect_world(clients, 0xa7).await?;
     let from = tile(client.world_spatial().actor_position)?;
-    let (spot, ordinal, path) = spots
-        .into_iter()
-        .find_map(|(spot, ordinal)| {
-            route(world, from, |at| {
-                at.floor == spot.floor && at.x.abs_diff(spot.x).max(at.y.abs_diff(spot.y)) <= 1
+    let (spot, ordinal, path) = route_work(&mut client, move || {
+        spots
+            .into_iter()
+            // A route stays within 160 tiles and two floors of its origin.
+            // The spot may be one tile beyond its reachable approach.
+            .filter(|(spot, _)| {
+                spot.x.abs_diff(from.x) <= 161
+                    && spot.y.abs_diff(from.y) <= 161
+                    && spot.floor.abs_diff(from.floor) <= 2
             })
-            .map(|path| (spot, ordinal, path))
-        })
-        .ok_or("M07 client capture has no reachable rope spot")?;
+            .find_map(|(spot, ordinal)| {
+                route(world, from, |at| {
+                    at.floor == spot.floor && at.x.abs_diff(spot.x).max(at.y.abs_diff(spot.y)) <= 1
+                })
+                .map(|path| (spot, ordinal, path))
+            })
+            .ok_or_else(|| "M07 client capture has no reachable rope spot".to_owned())
+    })
+    .await?;
     // The donor's first landing is directly south on the floor above the spot.
     let expected = ActorPosition {
         x: i32::from(spot.x),
