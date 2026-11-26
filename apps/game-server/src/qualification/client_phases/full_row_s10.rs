@@ -1,7 +1,8 @@
 //! S10 player scenario, derived from the S10 matrix/audit row and its native owners
 //! (`paid_travel.rs`, `npc_actor.rs`, `npc_voice.rs`, and `npc_trade_command.rs`):
 //!
-//! 1. Walk from the admitted position to an authored paid-travel NPC; say `hi`, send a
+//! 1. Walk from the admitted position to an authored paid-travel NPC, using the Thais dock
+//!    ladder when boarding Captain Bluebear's ship. Say `hi`, send a
 //!    destination keyword, and assert the accepted command replies and quoted fare.
 //! 2. Send `yes` without enough carried money and assert the NPC's insufficient-funds
 //!    refusal, with no relocation or inventory delta.
@@ -22,10 +23,18 @@ use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 use oteryn_gameplay_entities::rashid_schedule::RashidDestination;
 use oteryn_protocol_oteryn::npc_service as wire;
 
+const BLUEBEAR: &str = "oteryn:npc.captain_bluebear";
+const THAIS_DOCK_LADDER: TilePos = TilePos {
+    x: 32321,
+    y: 32211,
+    floor: -7,
+};
+const THAIS_DOCK_LADDER_APPEARANCE: u16 = 1948;
+
 // Paid arrivals from content/services/travel/travel-00000-00056.json, in the runtime frame.
 const TRAVEL_NPCS: &[(&str, &str, &str, u64, ActorPosition)] = &[
     (
-        "oteryn:npc.captain_bluebear",
+        BLUEBEAR,
         "port hope",
         "Port Hope",
         160,
@@ -36,7 +45,7 @@ const TRAVEL_NPCS: &[(&str, &str, &str, u64, ActorPosition)] = &[
         },
     ),
     (
-        "oteryn:npc.captain_bluebear",
+        BLUEBEAR,
         "edron",
         "Edron",
         160,
@@ -228,7 +237,15 @@ async fn approach(
     world: &crate::map::boot::BundleWorld,
     npc: &oteryn_world_bundle::npc::Npc,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| npc.placements.iter().any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3))
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = match walking_approach(world, from, npc) {
+        Some(path) => Some(path),
+        None if npc.key == BLUEBEAR => {
+            board_thais_ship(client, world, from).await?;
+            walking_approach(world, tile(client.world_spatial().actor_position)?, npc)
+        }
+        None => None,
+    }
         .ok_or_else(|| format!("step approach-{}: no legitimate walking route inside the compiled town window; need authored reachable placement/travel chain", npc.key))?;
     walk(client, world, &path).await?;
     actor_at(client, npc).ok_or_else(|| {
@@ -238,6 +255,73 @@ async fn approach(
         )
         .into()
     })
+}
+
+fn walking_approach(
+    world: &BundleWorld,
+    from: TilePos,
+    npc: &oteryn_world_bundle::npc::Npc,
+) -> Option<Vec<StepDirection>> {
+    route(world, from, |at| {
+        npc.placements
+            .iter()
+            .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
+    })
+}
+
+fn dock_ladder(world: &BundleWorld, from: TilePos) -> Option<(Vec<StepDirection>, u8)> {
+    let ladder = THAIS_DOCK_LADDER;
+    let ground = world.base().tile(ladder.x, ladder.y, ladder.floor)?;
+    let ordinal = ground
+        .depths()
+        .iter()
+        .filter(|depth| **depth == 0)
+        .enumerate()
+        .filter_map(|(ordinal, _)| u8::try_from(ordinal).ok())
+        .find(|ordinal| ground.appearance(*ordinal) == Some(THAIS_DOCK_LADDER_APPEARANCE))?;
+    let path = route(world, from, |at| {
+        at.floor == ladder.floor && at.x.abs_diff(ladder.x).max(at.y.abs_diff(ladder.y)) <= 1
+    })?;
+    Some((path, ordinal))
+}
+
+async fn board_thais_ship(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    from: TilePos,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    let ladder = THAIS_DOCK_LADDER;
+    let (path, ordinal) =
+        dock_ladder(world, from).ok_or("step=dock-ladder need=reachable-authored-Thais-ladder")?;
+    walk(client, world, &path).await?;
+    let key = crate::map::view::placement_key(ladder, ordinal)
+        .ok_or("step=dock-ladder need=placement-key")?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let used = client.use_object(&placement, 0).await?;
+    if used.status != CommandStatus::Accepted || used.disposition != UseDisposition::Committed {
+        return Err(format!("step=dock-ladder need=committed-USE observed={used:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let landed = tile(client.world_spatial().actor_position)?;
+        if landed.floor == ladder.floor + 1
+            && landed.x.abs_diff(ladder.x).max(landed.y.abs_diff(ladder.y)) == 1
+        {
+            evidence(&format!(
+                "S10_CHECK step=dock-ladder status=PASS landing={landed:?}"
+            ));
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "step=dock-ladder need=served-upstairs-landing observed={landed:?}"
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
 }
 
 async fn approach_rashid(
@@ -415,10 +499,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             keyword != "port hope" || expected_rashid.city == "Wednesday"
         })
         .find_map(|&(key, keyword, display, fare, arrival)| {
-            metadata.npcs.npcs.iter().find(|npc| npc.key == key)
-                .filter(|npc| route(world, here, |at| npc.placements.iter().any(|p| {
-                    p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3
-                })).is_some())
+            metadata
+                .npcs
+                .npcs
+                .iter()
+                .find(|npc| npc.key == key)
+                .filter(|npc| {
+                    walking_approach(world, here, npc).is_some()
+                        || key == BLUEBEAR && dock_ladder(world, here).is_some()
+                })
                 .map(|npc| (key, keyword, display, fare, arrival, npc))
         })
         .ok_or_else(|| {
