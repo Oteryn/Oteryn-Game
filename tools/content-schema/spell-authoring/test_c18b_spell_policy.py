@@ -24,7 +24,25 @@ GLOBAL_HEADERS = (
 )
 BARRAGE_HEADERS = (
     ("Divine Barrage", "targeting", "needs_target", False, True, "needTarget", 32),
+    (
+        "Divine Barrage",
+        "targeting",
+        "cast_at_position",
+        False,
+        True,
+        "needPosition",
+        31,
+    ),
     ("Ethereal Barrage", "targeting", "needs_target", False, True, "needTarget", 34),
+    (
+        "Ethereal Barrage",
+        "targeting",
+        "cast_at_position",
+        False,
+        True,
+        "needPosition",
+        33,
+    ),
 )
 
 
@@ -156,6 +174,11 @@ class C18bSpellPolicyTests(unittest.TestCase):
                 if name not in names:
                     continue
                 with self.subTest(catalog=label, name=name):
+                    for expected_name, section, field, _, expected, _, _ in HEADERS:
+                        if expected_name == name:
+                            self.assertEqual(
+                                row["bundle"]["spell"][section][field], expected
+                            )
                     self.assertEqual(
                         validate(
                             row["bundle"],
