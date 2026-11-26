@@ -110,8 +110,8 @@ def verify_source(crystal: Path) -> None:
         raise ValueError("Primal source appearance closure incomplete")
 
 
-def corpse_definition(definition, capacity, duration, target, movable, weight=0):
-    """Existing non-pickupable corpse Item policy; keep unrelated groups unknown."""
+def corpse_definition(definition, capacity, duration, target, movable, weight=0, *, pickupable=False):
+    """Build known corpse Item facts and keep unrelated groups unknown."""
     replacement = {
         "kind": "Item", "identity": copy.deepcopy(definition["identity"]),
         "client_projection": definition["client_projection"],
@@ -121,7 +121,7 @@ def corpse_definition(definition, capacity, duration, target, movable, weight=0)
     replacement["semantics"]["physical"] = {"state": "KNOWN", "value": {
         "weight": {"state": "KNOWN", "value": weight},
         "movable": {"state": "KNOWN", "value": movable},
-        "pickupable": {"state": "KNOWN", "value": False},
+        "pickupable": {"state": "KNOWN", "value": pickupable},
     }}
     replacement["semantics"]["stack"] = {"state": "KNOWN", "value": {
         "stackable": {"state": "KNOWN", "value": False},
