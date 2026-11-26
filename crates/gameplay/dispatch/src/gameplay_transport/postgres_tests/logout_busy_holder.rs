@@ -37,7 +37,7 @@ fn scenario(
 ) -> TestResult {
     kill_reward_e2e_fixtures::scenario_thread::run_async(async move |_| {
         let h =
-            Harness::create_with_admission_seed(&admin, "logout_busy_holder", true, false).await?;
+            Harness::create_with_admission_seed(admin, "logout_busy_holder", true, false).await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
