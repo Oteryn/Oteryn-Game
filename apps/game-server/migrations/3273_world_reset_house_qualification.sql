@@ -25,6 +25,22 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION game_world_reset_house_qualified(UUID,JSONB) FROM PUBLIC;
 
+-- Reuse the same House guard from Rust without granting access to custody.
+-- The runtime already has SELECT on the reset jobs returned here.
+CREATE FUNCTION game_world_reset_house_preflight(p_world UUID,p_epoch NUMERIC)
+RETURNS SETOF game_world_reset_jobs LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE job game_world_reset_jobs%ROWTYPE;
+BEGIN
+ SELECT * INTO job FROM game_world_reset_jobs WHERE world_id=p_world AND reset_epoch=p_epoch FOR UPDATE;
+ IF NOT FOUND THEN RETURN; END IF;
+ LOCK TABLE game_house_properties,game_house_ownership,game_house_tiles,game_item_house_interior_locations IN SHARE MODE;
+ IF game_world_reset_house_qualified(p_world,job.target_house_tiles) THEN
+  RETURN NEXT job;
+ END IF;
+END $$;
+REVOKE ALL ON FUNCTION game_world_reset_house_preflight(UUID,NUMERIC) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_world_reset_house_preflight(UUID,NUMERIC) TO oteryn_game_runtime;
+
 -- Extend the installed CREATE OR REPLACE definitions, retaining their transaction
 -- boundaries, search paths, ACLs and the Berlin calendar change from 0562.
 DO $$
@@ -37,6 +53,7 @@ DECLARE
  new_lock CONSTANT TEXT := 'LOCK TABLE game_house_properties,game_house_ownership,game_house_tiles,game_item_house_interior_locations IN SHARE MODE;';
 BEGIN
  EXECUTE format('ALTER FUNCTION game_world_reset_house_qualified(UUID,JSONB) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+ EXECUTE format('ALTER FUNCTION game_world_reset_house_preflight(UUID,NUMERIC) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 
  FOREACH procedure IN ARRAY ARRAY[
   'game_world_reset_publish(uuid,numeric,bytea,text,bytea,bytea,bytea,jsonb,numeric)'::regprocedure,
