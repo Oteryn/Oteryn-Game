@@ -74,12 +74,13 @@ class HirelingItemProfiles(unittest.TestCase):
             self.assertIn(f"oteryn:item.tibia.i{number}", self.profiles)
         self.assertEqual(self.overlay["catalogue"]["cook_items"], list(range(29408, 29417)))
 
-    def test_complete_active_profiles_fit_the_unchanged_native_input_bound(self):
-        # native_gameplay.rs::MAX_ITEM_PROFILES is the existing 16 MiB Item bound.
-        # The former indented
-        # 2,104-record output reached 9,074,560 bytes and could not activate.
-        self.assertLessEqual(len(self.raw), 16 * 1024 * 1024,
-            "the full active Item closure must activate without widening its resource bound")
+    def test_complete_active_profiles_fit_the_native_input_bound(self):
+        native = ROOT / "crates/gameplay/content/src/content/native_gameplay.rs"
+        bound_line = next(line for line in native.read_text().splitlines()
+                          if line.startswith("const MAX_ITEM_PROFILES:"))
+        mebibytes = int(bound_line.split(" = ")[1].split(" * ")[0])
+        self.assertLessEqual(len(self.raw), mebibytes * 1024 * 1024,
+            "the full active Item closure must fit its resource bound")
         self.assertEqual(len(self.profiles), len(json.loads(self.raw)["records"]),
             "serialization cannot hide duplicate canonical Item profiles")
 

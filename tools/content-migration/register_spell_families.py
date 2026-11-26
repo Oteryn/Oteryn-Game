@@ -1827,9 +1827,11 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import forge_item_profiles
 
     forge_item_profiles.project(items, forge_item_profiles.owners(root))
-    # The complete source closure must fit native_gameplay's existing 8 MiB
-    # Item-profile input bound. Only the final active serialization is compact;
-    # record order/values are unchanged and donor captures stay readable.
+    # Apply exact Crystal deadline chains after the other Item owners have supplied
+    # custody and collision facts. The generated provider is the runtime source.
+    import crystal_item_decay
+
+    crystal_item_decay.apply(root, items, provider_order)
     generated[item_path] = spell_import.canonical_bytes(items)
     # Late custody sources may still carry writable facts with unresolved targets.
     writable_item_profiles.apply_native(

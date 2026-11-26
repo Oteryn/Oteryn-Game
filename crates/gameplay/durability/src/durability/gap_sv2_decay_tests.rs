@@ -103,7 +103,8 @@ impl ItemLoopContent for Content {
         if !bag
             && !matches!(
                 item.production_key.as_str(),
-                "oteryn:item.tibia.i901001"
+                "oteryn:item.tibia.i2923"
+                    | "oteryn:item.tibia.i901001"
                     | "oteryn:item.tibia.i901002"
                     | "oteryn:item.tibia.i901003"
             )
@@ -238,6 +239,21 @@ fn scenario(custody: ChainCustody) -> TestResult {
                 immovable_block_solid: false,
             },
         ];
+        if custody == ChainCustody::Ground {
+            let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+            let (controller, _) =
+                oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(
+                    world, None,
+                );
+            let native = controller.active().and_then(|active| active.native_gameplay())
+                .ok_or("native Content")?;
+            item = xdecay_chain(native, 2921, false)?;
+            assert_eq!(item.decay_chain.len(), 4);
+            item.content_generation_digest = [7; 32];
+            for stage in item.decay_chain.iter_mut().take(2) {
+                stage.duration_millis = 1;
+            }
+        }
         let request = spell_request(
             &origin,
             801,
@@ -258,11 +274,14 @@ fn scenario(custody: ChainCustody) -> TestResult {
             .map_err(debug)?;
         tx.commit().await?;
         drop(permit);
-        assert_eq!(h.count("game_spell_field_temporal_schedules").await?, 2);
-        // Wait for the actual database deadline; each drain is explicitly limited to one stage.
+        assert_eq!(
+            h.count("game_spell_field_temporal_schedules").await?,
+            if custody == ChainCustody::Ground { 4 } else { 2 }
+        );
+        // Wait for the original second deadline. Each drain opens one due stage.
         tokio::time::timeout(std::time::Duration::from_secs(5), async {
             loop {
-                let due: bool = sqlx::query_scalar("SELECT max(expires_at_unix_ms)<=floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_spell_field_temporal_schedules")
+                let due: bool = sqlx::query_scalar("SELECT max(expires_at_unix_ms)<=floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_spell_field_temporal_schedules WHERE source_stage=2")
                     .fetch_one(&h.pool).await?;
                 if due { break Ok::<(), sqlx::Error>(()); }
                 tokio::task::yield_now().await;
@@ -358,7 +377,12 @@ fn scenario(custody: ChainCustody) -> TestResult {
         assert_eq!(drain(h).await?, 0);
         let stored: (String, String, i64) = sqlx::query_as("SELECT definition_production_key,state_revision::text,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(id(180).as_slice()).fetch_one(&h.pool).await?;
-        assert_eq!(stored, ("oteryn:item.tibia.i901003".into(), if depot {"7"} else {"5"}.into(), 1));
+        let successor = if custody == ChainCustody::Ground {
+            "oteryn:item.tibia.i2925"
+        } else {
+            "oteryn:item.tibia.i901003"
+        };
+        assert_eq!(stored, (successor.into(), if depot {"7"} else {"5"}.into(), 1));
         if custody == ChainCustody::Ground {
             let receipt: (i16, bool, bool) = sqlx::query_as(
                 "SELECT custody_kind, character_id IS NULL, game_session_id IS NULL
@@ -460,4 +484,162 @@ fn gap_sv2_i05_postgres_ground_chain_survives_scope_takeover() -> TestResult {
         eprintln!("GAP-SV2 I05 PostgreSQL ordinary ground chain takeover PASS in {:?}", started.elapsed());
         Ok(())
     })
+}
+
+fn xdecay_chain(
+    native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+    id: u32,
+    field: bool,
+) -> TestResult<crate::durability::spell_items_abi::QualifiedItemDefinition> {
+    use crate::durability::native_world_items::{qualify_source_field_chain, qualify_source_item_chain};
+    use crate::durability::spell_items_abi::QualifiedItemDefinition;
+    let policy = native
+        .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+        .ok_or_else(|| format!("missing qualified native decay source {id}"))?;
+    let item = QualifiedItemDefinition::from_native_policy(policy)?;
+    let chain = if field {
+        qualify_source_field_chain(native, item)
+    } else {
+        qualify_source_item_chain(native, item)
+    }
+    .map_err(debug)?;
+    assert!(!chain.decay_chain.is_empty(), "empty source chain for {id}");
+    Ok(chain)
+}
+
+#[test]
+fn xdecay_inventory_qualifies_every_reported_world_chain() -> TestResult {
+    let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+    let (controller, _) =
+        oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(
+            world, None,
+        );
+    let native = controller
+        .active()
+        .and_then(|active| active.native_gameplay())
+        .ok_or("native Content")?;
+    let inventory: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../tools/content-migration/samples/crystal-item-decay-inventory.json"
+    ))?;
+    let rows = inventory["records"].as_array().ok_or("Item decay census")?;
+    for row in rows {
+        let kind = row["kind"].as_str().ok_or("Item decay kind")?;
+        if row["after"] != "qualified and runnable"
+            || matches!(kind, "corpses" | "rings and amulets with duration" | "other worn items")
+        {
+            continue;
+        }
+        let source = u32::try_from(row["id"].as_u64().ok_or("Item decay ID")?)?;
+        xdecay_chain(native, source, matches!(kind, "fields" | "magic walls and similar"))?;
+    }
+    Ok(())
+}
+
+#[test]
+fn xdecay_postgres_fire_field_advances_a_source_stage() -> TestResult {
+    xdecay_postgres_stage(2118, 200_000, Some(2119), true)
+}
+
+#[test]
+fn xdecay_postgres_lit_torch_advances_a_source_stage() -> TestResult {
+    xdecay_postgres_stage(2921, 600_000, Some(2923), false)
+}
+
+#[test]
+fn xdecay_postgres_ice_cream_retires_at_its_deadline() -> TestResult {
+    xdecay_postgres_stage(229, 120_000, None, false)
+}
+
+#[test]
+fn xdecay_postgres_magic_wall_retires_at_its_deadline() -> TestResult {
+    xdecay_postgres_stage(2128, 20_000, None, true)
+}
+
+#[test]
+fn xdecay_postgres_energy_net_retires_at_its_deadline() -> TestResult {
+    xdecay_postgres_stage(9150, 60_000, None, false)
+}
+
+fn xdecay_postgres_stage(
+    source: u32,
+    duration: u32,
+    target_id: Option<u32>,
+    field: bool,
+) -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            run("xdecay_source_stage", async |h| {
+                let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+                let (controller, _) =
+                    oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(
+                        world, None,
+                    );
+                let native = controller
+                    .active()
+                    .and_then(|active| active.native_gameplay())
+                    .ok_or("native Content")?;
+                let mut definition = xdecay_chain(native, source, field)?;
+                let first = definition.decay_chain.first_mut().ok_or("source stage")?;
+                let successor = target_id.map(|id| format!("oteryn:item.tibia.i{id}"));
+                assert_eq!(first.duration_millis, duration);
+                assert_eq!(
+                    first.target.as_ref().map(|reference| &reference.production_key),
+                    successor.as_ref()
+                );
+                let blocks_movement = first.blocks_movement;
+                let blocks_projectile = first.blocks_projectile;
+                // Compress the first interval only after checking the exact source
+                // policy. Both scheduling and advancement still use the production DB owner.
+                first.duration_millis = 1;
+                definition.content_generation_digest = [7; 32];
+                let (_runtime, origin) = spell_origin(h)?;
+                let request = spell_request(
+                    &origin,
+                    801,
+                    166,
+                    vec![SpellItemOperation::MintGround {
+                        item_instance_id: id(180),
+                        definition,
+                        quantity: 1,
+                        placement: ground_placement(&target()),
+                        lifetime_millis: None,
+                        blocks_movement,
+                        blocks_projectile,
+                        description: None,
+                    }],
+                )?;
+                let mut tx = h.pool.begin().await?;
+                let (permit, current) = player_authority(&mut tx, h, request.command).await?;
+                apply_spell_items_in_transaction(&mut tx, &current, &request, &SpellFieldOrigin::System)
+                    .await.map_err(debug)?;
+                tx.commit().await?;
+                drop(permit);
+                tokio::time::timeout(std::time::Duration::from_secs(5), async {
+                    loop {
+                        if drain(h).await? == 1 {
+                            return Ok::<(), Box<dyn std::error::Error>>(());
+                        }
+                        tokio::task::yield_now().await;
+                    }
+                }).await??;
+                let stored: (String, i16, i64) = sqlx::query_as(
+                    "SELECT definition_production_key,lifecycle,quantity FROM game_item_instances
+                     WHERE item_instance_id=encode($1,'hex')::uuid",
+                ).bind(id(180).as_slice()).fetch_one(&h.pool).await?;
+                match successor {
+                    Some(key) => assert_eq!(stored, (key, 1, 1)),
+                    None => assert_eq!(stored, (format!("oteryn:item.tibia.i{source}"), 2, 0)),
+                }
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "source decay worker panicked")?
+        .map_err(Into::into)
 }

@@ -453,7 +453,6 @@ fn qualify_source_chain(
         if (!field_only && qualified.field_class != SpellFieldClass::NotField)
             || qualified.definition != current
             || (!qualified.ground_destination && (field_only || !qualified.inventory_destination))
-            || qualified.stack_maximum != 1
             || qualified.container_capacity.is_some()
             || qualified.content_generation_digest != content.source_digest()
         {
@@ -477,6 +476,13 @@ fn qualify_source_chain(
             item.decay_chain = stages;
             return Ok(item);
         };
+        if qualified.stack_maximum != 1 {
+            return Err(
+                crate::durability::spell_item_transaction::SpellItemError::Rejected(
+                    "stacked Item decay stage unsupported",
+                ),
+            );
+        }
         let blocks = record.attributes.blocks_movement.ok_or(
             crate::durability::spell_item_transaction::SpellItemError::Rejected(
                 "field source movement unknown",

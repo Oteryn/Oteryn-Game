@@ -192,3 +192,48 @@ fn i05_trader_custody_keeps_unhosted_ring_equipment_closed() {
         assert!(weights.full_timed_values(&definition).is_some());
     }
 }
+
+#[test]
+fn xdecay_worn_crystal_rows_resolve_through_the_equipment_owner()
+-> Result<(), Box<dyn std::error::Error>> {
+    let controller = native();
+    let native = native_state(&controller);
+    let capture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../tools/content-migration/samples/crystal-item-decay-source.json"
+    ))?;
+    let report: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../tools/content-migration/samples/crystal-item-decay-inventory.json"
+    ))?;
+    let rows = capture["records"]
+        .as_array()
+        .ok_or("Crystal decay capture")?;
+    for row in report["records"]
+        .as_array()
+        .ok_or("Crystal decay inventory")?
+    {
+        if row["after"] != "qualified and runnable" || row["projected"] != true {
+            continue;
+        }
+        let active = row["id"].as_u64().ok_or("active id")?;
+        let source = rows
+            .iter()
+            .find(|source| source["id"] == active)
+            .ok_or("source row")?;
+        let Some(base) = source["equip_base"].as_u64() else {
+            continue;
+        };
+        let definition = typed_of(native, u32::try_from(base)?).ok_or("inactive definition")?;
+        let equipped = equipped_definition(native, &definition).ok_or("equipped form")?;
+        assert_eq!(equipped.production_key, key(u32::try_from(active)?));
+        let (budget, target) = facts(native, &definition).ok_or("worn budget")?;
+        let seconds: u64 = source["duration"].as_str().ok_or("duration")?.parse()?;
+        assert_eq!(budget.full.remaining_ms(), Some(seconds * 1_000), "{base}");
+        let target_id: u32 = source["decayTo"].as_str().ok_or("target")?.parse()?;
+        assert_eq!(
+            target.map(|target| target.definition.production_key),
+            (target_id != 0).then(|| key(target_id)),
+            "{base}"
+        );
+    }
+    Ok(())
+}

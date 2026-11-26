@@ -20,6 +20,7 @@ REPORT = 'tools/content-migration/samples/crystal-item-decay-inventory.json'
 MANIFEST = 'content/spells.manifest.json'
 PROFILES = 'content/items/definitions/spell-native-profiles.json'
 UPDATES = 'content/items/definitions/srx1-item-updates.json'
+FIELDS = 'tools/content-schema/spell-authoring/samples/native-field-profiles.json'
 K, NA, U = source.K, source.NA, source.U
 ABSOLUTE = 'DURABLE_ABSOLUTE_DEADLINE'
 ACTIVE = 'AUTHORITATIVE_ACTIVE_TIME_BUDGET'
@@ -61,7 +62,8 @@ def capture(xml, appearances):
         (child.get('value') for child in nodes[base_id].findall('./attribute/attribute')
          if child.get('key', '').lower() == 'slot'), None))
         for base_id, a in attrs.items() if 'transformequipto' in a}
-    relevant = timed | {int(attrs[i]['decayto']) for i in timed if 'decayto' in attrs[i]
+    relevant = timed | {base for active, (base, slot) in equip_pairs.items() if active in timed and slot} | {
+        int(attrs[i]['decayto']) for i in timed if 'decayto' in attrs[i]
                         and int(attrs[i]['decayto']) > 0}
     physical = {
         r['server_item_id']: r for r in source.policies(appearances, xml, relevant & objects.keys())
@@ -124,6 +126,11 @@ def name_key(identifier):
     return f'oteryn:item.tibia.i{identifier}'
 
 
+def item_ref(canonical, identifier):
+    return {k: v for k, v in canonical[name_key(identifier)]['identity'].items()
+            if k in ('key', 'revision')}
+
+
 def read(path):
     return json.loads(path.read_bytes())
 
@@ -150,7 +157,7 @@ def status(profile, item, profiles):
             return False
     if item['kind'] in ('rings and amulets with duration', 'other worn items'):
         return (mode == ACTIVE
-                and item['id'] not in (3049, 3052, 3098)
+                and item.get('equip_base') not in (3049, 3052, 3098)
                 and item.get('equip_base') is not None
                 and name_key(item['equip_base']) in profiles)
     if mode != ABSOLUTE:
@@ -163,16 +170,30 @@ def status(profile, item, profiles):
         seen.add(ref['production_key'])
         fact = profile.get('semantics', {}).get('temporal', U)
         if fact == NA:
-            return bool(len(seen) > 1 and not item.get('field'))
+            if len(seen) == 1 or item.get('field'):
+                return False
+            sem = profile['semantics']
+            cls = sem.get('classification', U)
+            return (sem.get('container', U).get('state') != 'KNOWN'
+                    and (cls == NA or value(cls, {}).get('item_type', U) not in (U, K('MAGIC_FIELD')))
+                    and value(value(sem.get('physical', U), {}).get('movable', U)) is not None)
         time = value(fact, {})
         if (value(time.get('consumption_mode', U)) != ABSOLUTE
                 or value(time.get('duration', U), 0) <= 0
                 or value(time.get('stop_duration', U)) is not False):
             return False
-        if item['kind'] != 'corpses' and (profile['admission']['stack_class'] != 'NonStackable'
-                or profile.get('semantics', {}).get('container', U).get('state') == 'KNOWN'
-                or any(profile['attributes'].get(flag) is None for flag in BLOCKERS)):
-            return False
+        if item['kind'] != 'corpses':
+            sem = profile['semantics']
+            classification = sem.get('classification', U)
+            item_type = value(classification, {}).get('item_type', U)
+            if (classification != NA and item_type == U
+                    or value(item_type) == 'MAGIC_FIELD' and not item.get('field')
+                    or item.get('field') and value(item_type) != 'MAGIC_FIELD'
+                    or value(value(sem.get('physical', U), {}).get('movable', U)) is None
+                    or profile['admission']['stack_class'] != 'NonStackable'
+                    or sem.get('container', U).get('state') == 'KNOWN'
+                    or any(profile['attributes'].get(flag) is None for flag in BLOCKERS)):
+                return False
         target = time['decay_target']
         if target == NA:
             return True
@@ -198,9 +219,12 @@ def project(root, document):
                 if b['disposition'] == 'EXACT' and b['external_id'].isdecimal()}
     holds = load_admissions(root)
     before = index_profiles(document)
+    field_conditions = {r['source']['server_item_id']: r for r in read(root / FIELDS)['profiles']
+                        if r['source']['server'] == 'canary'}
     admitted = {}
+    worn = {}
 
-    def can_admit(row, terminal):
+    def can_admit(row, terminal, worn_form=False):
         identifier = row['id']
         key = name_key(identifier)
         d = canonical.get(key)
@@ -218,10 +242,10 @@ def project(root, document):
             old = temporal(current)
             # Respect a complete published profile, including verified Global
             # overrides. Existing active-time/charge owners retain their state.
-            if value(old.get('consumption_mode', U)) == ACTIVE:
+            if value(old.get('consumption_mode', U)) == ACTIVE and not worn_form:
                 return False
         # A new magic field needs its exact source condition/collision profile.
-        return not row['field'] or bool(current and current['attributes'].get('field_condition'))
+        return not row['field'] or row['id'] in field_conditions
 
     def chain(start):
         result = {}
@@ -263,6 +287,36 @@ def project(root, document):
         if (row.get('inventory') and row['kind'] not in
                 ('corpses', 'rings and amulets with duration', 'other worn items')):
             admitted.update(chain(i))
+        elif row['kind'] in ('rings and amulets with duration', 'other worn items'):
+            base_id = row.get('equip_base')
+            target = int(row['decayTo'] or -1)
+            if (not base_id or row.get('de_equip') != base_id or target < 0
+                    or base_id in (3049, 3052, 3098)
+                    or status(before.get(name_key(i)), row, before)):
+                continue
+            base = before.get(name_key(base_id)) or canonical.get(name_key(base_id), {})
+            equipment = base.get('semantics', {}).get('equipment', U)
+            patterns = value(value(equipment, {}).get('patterns', U), [])
+            if (not patterns or not any(
+                    value(pattern['primary_slot']) and value(pattern['level']) is not None
+                    and value(pattern['vocations']) is not None for pattern in patterns)
+                    or any(not can_admit(rows[form], terminal=False, worn_form=True)
+                           for form in (i, base_id))
+                    or (target and (target not in rows
+                                    or not can_admit(rows[target], terminal=True)))):
+                continue
+            worn[i] = (equipment, 'DEEQUIP', base_id)
+            worn[base_id] = (equipment, 'EQUIP', i)
+            admitted[i] = K({
+                'consumption_mode': K(ACTIVE),
+                'decay_target': K(item_ref(canonical, target)) if target else NA,
+                'duration': K(duration(row)),
+                'stop_duration': K(True),
+            })
+            # The host takes the budget from the active form on equip.
+            admitted[base_id] = NA
+            if target and name_key(target) not in before:
+                admitted[target] = NA
 
     for i, temporal_fact in sorted(admitted.items()):
         key = name_key(i)
@@ -287,6 +341,13 @@ def project(root, document):
             }
         semantics = record['semantics']
         semantics['temporal'] = temporal_fact
+        if i in worn:
+            equipment, transform_kind, target = worn[i]
+            semantics['equipment'] = equipment
+            targets = value(semantics.get('use_transform', U), {}).get('targets', [])
+            targets = [edge for edge in targets if edge['kind'] != transform_kind]
+            targets.append({'kind': transform_kind, 'target': K(item_ref(canonical, target))})
+            semantics['use_transform'] = K({'targets': targets})
         stack = semantics.get('stack', U)
         if not row['stack']:
             semantics['stack'] = K({'stackable': K(False), 'stack_max': NA})
@@ -299,7 +360,14 @@ def project(root, document):
             'pickupable': K(physical['pickupable']),
             'weight': old_physical.get('weight', K(row['weight']) if 'weight' in row else U),
         })
-        if not row['field'] and semantics.get('classification', U) == U:
+        if row['field']:
+            semantics['classification'] = K({'item_type': K('MAGIC_FIELD'), 'capabilities': U})
+            record['attributes']['field_condition'] = field_conditions[i]
+            # A movable or projectile-blocking field already has an owner's exact
+            # profile. The newly admitted ordinary fire is replaceable in Crystal.
+            if record['attributes'].get('field_replaceable') is None:
+                record['attributes']['field_replaceable'] = True
+        elif value(semantics.get('classification', U), {}).get('item_type', U) == U:
             semantics['classification'] = K({'item_type': NA, 'capabilities': U})
         order = row['top_order']
         flags = {
@@ -317,7 +385,7 @@ def project(root, document):
     return list(before.values()), admitted
 
 
-def gap(row):
+def gap(row, rows):
     if row['kind'] == 'corpses':
         return 'separate corpse owner'
     if row.get('container'):
@@ -328,6 +396,13 @@ def gap(row):
         return 'worn-duration pair or equipment effect is unqualified'
     if row.get('tile'):
         return 'terrain replacement uses a separate owner'
+    seen = set()
+    cursor = row
+    while cursor and duration(cursor):
+        if cursor['id'] in seen:
+            return 'cyclic source chain cannot use the finite stage receipt owner'
+        seen.add(cursor['id'])
+        cursor = rows.get(int(cursor['decayTo'] or -1))
     if row.get('stack'):
         return 'stacked decay lacks split and merge deadline proofs'
     return 'native Item, collision facts, or chain target unqualified'
@@ -354,7 +429,7 @@ def inventory(root, before, after, projected):
             result[label] = state
             counts[item['kind']][label][state] += 1
         if result['after'] != 'qualified and runnable':
-            result['gap'] = gap(item)
+            result['gap'] = gap(item, rows)
         result['projected'] = identifier in projected
         results.append(result)
     return {'revision': REVISION, 'counts': dict(sorted(counts.items())),
@@ -362,7 +437,8 @@ def inventory(root, before, after, projected):
                 'eligibility': 'src/items/item.cpp:3377-3392',
                 'removal': 'src/items/decay/decay.cpp:184-194',
                 'container_custody': ['src/game/game.cpp:2626-2637',
-                    'src/items/containers/container.cpp:87-106', 'src/items/containers/container.hpp:310'],
+                    'src/items/item.cpp:496-501', 'src/items/containers/container.cpp:87-106',
+                    'src/items/containers/container.hpp:310'],
             },
             'records': sorted(results, key=lambda r: (r['kind'], r['id']))}
 
@@ -377,6 +453,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--xml', type=Path)
     parser.add_argument('--appearances', type=Path)
+    parser.add_argument('--project', action='store_true',
+                        help='report expected provider state before PC regeneration')
     args = parser.parse_args()
     if bool(args.xml) != bool(args.appearances):
         parser.error('--xml and --appearances must be supplied together')
@@ -389,10 +467,16 @@ def main():
         for path in (PROFILES, UPDATES)
     )
     before = base_profiles | base_updates
-    after = index_profiles(read(ROOT / PROFILES)) | index_profiles(read(ROOT / UPDATES))
+    if args.project:
+        records, _ = project(ROOT, {'records': list(base_profiles.values())})
+        after = index_profiles({'records': records}) | base_updates
+    else:
+        after = index_profiles(read(ROOT / PROFILES)) | index_profiles(read(ROOT / UPDATES))
     projected = {r['id'] for r in captured(ROOT).values()
                  if before.get(name_key(r['id'])) != after.get(name_key(r['id']))}
-    (ROOT / REPORT).write_bytes(render(inventory(ROOT, before, after, projected)))
+    report = inventory(ROOT, before, after, projected)
+    report['after_basis'] = 'projected' if args.project else 'published profiles'
+    (ROOT / REPORT).write_bytes(render(report))
 
 
 if __name__ == '__main__':
