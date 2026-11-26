@@ -62,6 +62,7 @@ const REGISTRATION_REJECTED: &str = "OTN01";
 const COMMAND_VERSION: u8 = 1;
 const STATE_ASSIGNED: i16 = 1;
 const STATE_REVOKED: i16 = 2;
+const SLOT_OPEN_RECONCILE_ATTEMPTS: usize = 2;
 const SCOPE_KIND_CHANNEL: i16 = 1;
 const SCOPE_KIND_ACTIVITY: i16 = 3;
 const CHANNEL_SCOPE_TAG: u8 = 1;
@@ -948,6 +949,101 @@ enum Dispatch {
     Ambiguous,
 }
 
+// Inject only the writer-slot open COMMIT result, so PostgreSQL tests can exercise
+// both durable outcomes through the ordinary open and pass-retirement paths.
+#[cfg(any(test, feature = "test-support"))]
+#[doc(hidden)]
+#[derive(Clone, Copy)]
+pub enum SlotOpenCommitFault {
+    Committed,
+    RolledBack,
+}
+
+#[cfg(any(test, feature = "test-support"))]
+tokio::task_local! {
+    static SLOT_OPEN_COMMIT_FAULT: std::cell::Cell<Option<SlotOpenCommitFault>>;
+}
+
+#[cfg(any(test, feature = "test-support"))]
+#[doc(hidden)]
+pub async fn with_slot_open_commit_fault<T>(
+    fault: SlotOpenCommitFault,
+    open: impl std::future::Future<Output = T>,
+) -> T {
+    SLOT_OPEN_COMMIT_FAULT
+        .scope(std::cell::Cell::new(Some(fault)), async {
+            let result = open.await;
+            SLOT_OPEN_COMMIT_FAULT.with(|fault| {
+                assert!(fault.get().is_none(), "slot open did not reach COMMIT");
+            });
+            result
+        })
+        .await
+}
+
+async fn commit_writer_slot_open(
+    tx: Transaction<'_, Postgres>,
+    deadline: std::time::Instant,
+) -> Result<(), DurabilityError> {
+    #[cfg(any(test, feature = "test-support"))]
+    if let Ok(Some(fault)) = SLOT_OPEN_COMMIT_FAULT.try_with(std::cell::Cell::take) {
+        match fault {
+            SlotOpenCommitFault::Committed => commit_semantic_transaction(tx, deadline).await?,
+            SlotOpenCommitFault::RolledBack => tx.rollback().await?,
+        }
+        return Err(DurabilityError::CommitOutcomeUnknown);
+    }
+    commit_semantic_transaction(tx, deadline).await
+}
+
+async fn open_writer_slot(
+    root: &DurabilityRoot,
+    registration: Arc<str>,
+    reconcile: bool,
+) -> Result<Option<OperationKey>, DurabilityError> {
+    root.try_issue_semantic_pass()?
+        .run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                let read_slot = || {
+                    sqlx::query_scalar::<_, Option<Vec<u8>>>(
+                        "SELECT operation_key FROM game_runtime_scope_assignment_slots \
+                         WHERE writer_registration = $1",
+                    )
+                    .bind(&*registration)
+                };
+                // A present row with a NULL key is an existing empty slot.
+                let existing = if reconcile {
+                    read_slot().fetch_optional(&mut *tx).await?
+                } else {
+                    None
+                };
+                let occupied = match existing {
+                    Some(occupied) => {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        occupied
+                    }
+                    None => {
+                        sqlx::query(
+                            "INSERT INTO game_runtime_scope_assignment_slots (writer_registration) \
+                             VALUES ($1) ON CONFLICT DO NOTHING",
+                        )
+                        .bind(&*registration)
+                        .execute(&mut *tx)
+                        .await?;
+                        let occupied = read_slot().fetch_one(&mut *tx).await?;
+                        commit_writer_slot_open(tx, deadline).await?;
+                        occupied
+                    }
+                };
+                occupied
+                    .map(|key| operation_key_from_stored(&key))
+                    .transpose()
+            })
+        })
+        .await
+}
+
 impl RuntimeScopeAssignmentWriter {
     /// Restore durable slot custody before admitting any work. An occupied slot
     /// from a prior incarnation must be reconciled first.
@@ -973,33 +1069,17 @@ impl RuntimeScopeAssignmentWriter {
                 return Err(AssignmentError::Unsupported);
             }
         }
-        let restore = registration.clone();
-        let occupied = root
-            .try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    sqlx::query(
-                        "INSERT INTO game_runtime_scope_assignment_slots (writer_registration) \
-                         VALUES ($1) ON CONFLICT DO NOTHING",
-                    )
-                    .bind(&*restore)
-                    .execute(&mut *tx)
-                    .await?;
-                    let occupied: Option<Vec<u8>> = sqlx::query_scalar(
-                        "SELECT operation_key FROM game_runtime_scope_assignment_slots \
-                         WHERE writer_registration = $1",
-                    )
-                    .bind(&*restore)
-                    .fetch_one(&mut *tx)
-                    .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
-                    occupied
-                        .map(|key| operation_key_from_stored(&key))
-                        .transpose()
-                })
-            })
-            .await?;
+        let mut slot = open_writer_slot(&root, registration.clone(), false).await;
+        for _ in 0..SLOT_OPEN_RECONCILE_ATTEMPTS {
+            if !matches!(slot, Err(DurabilityError::CommitOutcomeUnknown)) {
+                break;
+            }
+            // The failed pass retires its holder. Replenish it through the
+            // existing readiness window before taking a fresh semantic pass.
+            root.await_ready().await?;
+            slot = open_writer_slot(&root, registration.clone(), true).await;
+        }
+        let occupied = slot?;
         let shared = {
             let mut registry = writer_registry()
                 .lock()

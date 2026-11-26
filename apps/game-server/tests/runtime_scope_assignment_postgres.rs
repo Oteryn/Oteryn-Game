@@ -32,7 +32,7 @@ use durability::runtime_scope_assignment::{
     AssignmentReceipt, AssignmentRejection, AssignmentRequest, AssignmentState, BootstrapSecret,
     ControlActor, LaunchBinding, MAX_IDENTITY_BYTES, MAX_PENDING_COMMANDS, NodeIncarnationProof,
     NodeRegistrationFact, OperationKey, ReconcileOutcome, RegistrationError,
-    RuntimeScopeAssignmentWriter,
+    RuntimeScopeAssignmentWriter, SlotOpenCommitFault, with_slot_open_commit_fault,
 };
 use durability::{DurabilityError, DurabilityRoot};
 use foundation::admission_authority_publication::{
@@ -162,6 +162,96 @@ async fn ready_root(url: &str) -> Result<DurabilityRoot, DurabilityError> {
     let root = DurabilityRoot::connect_test_runtime(url)?;
     assert!(root.maintain_ready_once().await?);
     Ok(root)
+}
+
+fn run_slot_open_postgres<F>(test_name: &'static str, body: F) -> TestResult
+where
+    F: for<'a> FnOnce(
+            &'a Database,
+        )
+            -> std::pin::Pin<Box<dyn std::future::Future<Output = TestResult> + 'a>>
+        + Send
+        + 'static,
+{
+    if !configured() {
+        skipped();
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || run(test_name, body).map_err(|error| error.to_string()))?
+        .join()
+        .unwrap_or_else(|panic| std::panic::resume_unwind(panic))?;
+    Ok(())
+}
+
+#[test]
+fn slot_open_reconciles_committed_insert() -> TestResult {
+    run_slot_open_postgres("slot_committed", |database| {
+        Box::pin(async move {
+            let pool = database.pool().await?;
+            // Publish the occupied key only at COMMIT, after the original pass
+            // selected NULL. The recovered key must come from a fresh read.
+            sqlx::raw_sql(
+                "CREATE FUNCTION occupy_slot_at_commit() RETURNS trigger LANGUAGE plpgsql AS $$
+                 BEGIN
+                     UPDATE game_runtime_scope_assignment_slots
+                        SET operation_key = decode(repeat('01', 32), 'hex'),
+                            command = decode('01', 'hex'), checkpointed_at = 0
+                      WHERE writer_registration = NEW.writer_registration;
+                     RETURN NULL;
+                 END;
+                 $$;
+                 CREATE CONSTRAINT TRIGGER occupy_slot_at_commit
+                 AFTER INSERT ON game_runtime_scope_assignment_slots
+                 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+                 EXECUTE FUNCTION occupy_slot_at_commit()",
+            )
+            .execute(&pool)
+            .await?;
+
+            let root = ready_root(&database.url).await?;
+            let writer = with_slot_open_commit_fault(
+                SlotOpenCommitFault::Committed,
+                RuntimeScopeAssignmentWriter::open(root, "writer-a"),
+            )
+            .await
+            .map_err(|error| format!("open after committed slot insert: {error:?}"))?;
+            // A different root keeps the comparison independent of the in-memory queue.
+            let clean =
+                RuntimeScopeAssignmentWriter::open(ready_root(&database.url).await?, "writer-a")
+                    .await
+                    .map_err(|error| format!("clean open: {error:?}"))?;
+            assert_eq!(clean.unreconciled(), Some(key(1)));
+            assert_eq!(writer.unreconciled(), clean.unreconciled());
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn slot_open_reconciles_rolled_back_insert() -> TestResult {
+    run_slot_open_postgres("slot_rolled_back", |database| {
+        Box::pin(async move {
+            let root = ready_root(&database.url).await?;
+            let writer = with_slot_open_commit_fault(
+                SlotOpenCommitFault::RolledBack,
+                RuntimeScopeAssignmentWriter::open(root, "writer-a"),
+            )
+            .await
+            .map_err(|error| format!("open after rolled-back slot insert: {error:?}"))?;
+            let pool = database.pool().await?;
+            let occupied: Option<Vec<u8>> = sqlx::query_scalar(
+                "SELECT operation_key FROM game_runtime_scope_assignment_slots
+                 WHERE writer_registration = 'writer-a'",
+            )
+            .fetch_one(&pool)
+            .await?;
+            assert_eq!(occupied, None);
+            assert_eq!(writer.unreconciled(), None);
+            Ok(())
+        })
+    })
 }
 
 async fn ensure_ready(root: &DurabilityRoot) -> TestResult {
