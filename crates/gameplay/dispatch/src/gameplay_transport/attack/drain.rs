@@ -1747,6 +1747,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(target) = states.get(runtime, hit.target, target_session) else {
             return;
         };
+        let health_before = target.vitals().health;
         let mut after_equipment = |magnitude: u32, kind: crate::player_lethal::PlayerHitKind| {
             use crate::content::ReferenceResistanceKind as Kind;
             use crate::player_lethal::PlayerHitKind;
@@ -1866,6 +1867,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(true) => {
                 if !hit.extension {
                     publish_hit_sound(states, runtime, content, hit.actor, &hit.weapon);
+                }
+                if hit.weapon.ranged.is_none()
+                    && let Some(health_after) = states
+                        .get(runtime, hit.target, target_session)
+                        .map(|target| target.vitals().health)
+                {
+                    states.sounds.record_damage(
+                        runtime,
+                        hit.actor,
+                        hit.target,
+                        crate::foundation::OwnerDamageResult {
+                            applied: true,
+                            health_before: i64::from(health_before),
+                            health_after: i64::from(health_after),
+                        },
+                    );
                 }
                 train_pvp_swing(states, runtime, content, &hit, magnitude, now, trained);
             }
