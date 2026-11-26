@@ -20,6 +20,11 @@ use std::collections::BTreeSet;
 
 const LETHAL_ACTION: &str = "lethal-attack-and-respawn";
 
+// The live town route takes about 150 seconds per traversal. Budget for all
+// three walks, the World load and admission, and the existing combat and
+// logout deadlines. The wire and no-progress deadlines still apply.
+const JOURNEY_BUDGET: Duration = Duration::from_secs(900);
+
 const ACTIONS: &[&str] = &[
     "admitted-and-walked-to-spawn",
     "attack-command-and-vitals-delta",
@@ -79,10 +84,14 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(
+        JOURNEY_BUDGET,
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     row.finish(match result {
         Ok(result) => result,
-        Err(_) => Err("journey timeout after real player commands; server supplied no required next frame".into()),
+        Err(_) => Err(format!("W01c full journey exceeded {JOURNEY_BUDGET:?}").into()),
     });
 }
 
