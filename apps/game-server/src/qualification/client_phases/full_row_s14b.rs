@@ -236,8 +236,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         "leader-remove",
         "listing-still-browsable",
     )?;
-    logout(&mut member).await?;
-    logout(&mut lead).await?;
+    logout(&mut member, "member-logout").await?;
+    logout(&mut lead, "leader-logout").await?;
     Ok((
         "PASS",
         "browse-request-cancel-and-listing-removal-validated".to_owned(),
@@ -248,7 +248,9 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -283,12 +285,16 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let (result, detail, attempts, timed_out) = logout_retrying_busy(client).await?;
+async fn logout(client: &mut DevClientSession, step: &str) -> TestResult {
+    let outcome = client
+        .session_mut()
+        .logout()
+        .await
+        .map_err(|error| format!("step={step};observed={error}"))?;
     expect(
-        result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
-        "logout",
-        (detail, attempts, timed_out),
+        outcome.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
+        step,
+        outcome,
     )
 }
 
