@@ -83,6 +83,10 @@ where
                 Err(_) => Err(ServeEnd::ControlLost("server_message_timeout")),
             };
         }
+        Next::PartyNotice => {
+            super::party_membership::refresh(stream, authority, session).await?;
+            return Ok(None);
+        }
         Next::Serene => {
             refresh::serene(stream, authority, session).await?;
             return Ok(None);
@@ -198,9 +202,6 @@ where
                 )
                 .await
                 .ok_or(ServeEnd::Disconnected)?;
-                super::party_membership::refresh(stream, authority, session)
-                    .await
-                    .ok_or(ServeEnd::Disconnected)?;
                 super::native_cues::refresh(stream, authority, session).await?;
                 achievement_notices::refresh(stream, authority, session).await
             };

@@ -570,11 +570,12 @@ pub trait FreshAdmissionAuthority {
         None
     }
 
+    /// A deferred read leaves the connection's mailbox available for another attempt.
     fn take_party_membership_notices(
         &self,
         _admitted: AdmittedSession,
-    ) -> impl Future<Output = Vec<crate::durability::world_party::MembershipNotice>> {
-        async { Vec::new() }
+    ) -> impl Future<Output = Option<Vec<crate::durability::world_party::MembershipNotice>>> {
+        async { Some(Vec::new()) }
     }
 
     /// PARITY-EVENT-CALLBACKS-1: the Channel's currently due server-save countdown minute.

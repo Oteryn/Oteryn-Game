@@ -273,13 +273,14 @@ async fn all_ready() -> TestResult {
         &mut session.visibility_refresh,
         &mut session.combat_refresh,
         &mut session.npc_refresh,
+        &mut session.party_notice_refresh,
     ] {
         let mut ready = tokio::time::interval(SERENE_EVALUATION);
         ready.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         *timer = Some(ready);
     }
     // Input stays ready throughout two rotations, including a slow input owner turn.
-    for command in 1..=13 {
+    for command in 1..=15 {
         write_frame(&mut client, &step_frame(command)?).await?;
     }
     for _ in 0..2 {
@@ -290,6 +291,7 @@ async fn all_ready() -> TestResult {
             Next::Visibility,
             Next::Combat,
             Next::Npc,
+            Next::PartyNotice,
         ] {
             let selected = next(&mut server, &authority, &mut session).await;
             assert_eq!(
