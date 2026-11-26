@@ -2,15 +2,18 @@ use super::TestResult;
 
 use super::fixture::{Harness, debug};
 
+use crate::durability::DurabilityRoot;
 use crate::durability::item_decay_retire::CorpseDecayFence;
 
 use crate::durability::item_mint::{
     GroundPlacement, ItemMintCause, ItemMintOutcome, ItemMintRequest, TypedDefinitionRef,
 };
 
-use crate::gameplay_transport::ComposedFreshAdmission;
+use crate::gameplay_transport::{
+    ComposedFreshAdmission, source_item_cycle::SOURCE_OWNER_SWEEP_COMPLETE,
+};
 
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 pub(super) async fn qualify(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
@@ -107,19 +110,37 @@ pub(super) async fn qualify(
         vec![corpse.clone()]
     );
 
-    // Move only the fixture's durable clock anchor, using the same maintenance technique as
-    // corpse_decay_postgres_cases. The production deadline checks and writer stay enabled.
+    // Let the real Item deadline pass finish the transforms before testing
+    // terminal retirement. Rebase the durable clock without changing durations.
+    let item = corpse.item.item_instance_id;
+    let lifetime: i64 = sqlx::query_scalar(
+        "SELECT game_corpse_retirement_deadline(item_instance_id) - materialized_at
+         FROM game_item_mint_receipts WHERE item_instance_id = encode($1,'hex')::uuid",
+    )
+    .bind(item.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    set_corpse_age(h, item, lifetime - 30_000).await?;
+    sweep_until(owner, async || {
+        Ok(current_definition(h, item).await? == "oteryn:item.tibia.i3996")
+    })
+    .await?;
+    set_corpse_age(h, item, lifetime).await?;
+    // Ordinary Ground has no materialization deadline. Age its creation
+    // receipt by the same amount to keep it as the retirement control.
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("UPDATE game_item_mint_receipts SET materialized_at = floor(extract(epoch FROM clock_timestamp())*1000)::bigint - 61000 WHERE item_instance_id = encode($1,'hex')::uuid")
-        .bind(corpse.item.item_instance_id.as_slice())
-        .execute(&mut *tx).await?;
-    // Ordinary Ground has no materialization deadline column: age its creation receipt only.
-    sqlx::query("UPDATE game_item_mint_receipts SET occurred_at = floor(extract(epoch FROM clock_timestamp())*1000)::bigint - 61000 WHERE item_instance_id = encode($1,'hex')::uuid")
-        .bind(ground.as_slice())
-        .execute(&mut *tx).await?;
+    sqlx::query(
+        "UPDATE game_item_mint_receipts
+         SET occurred_at = floor(extract(epoch FROM clock_timestamp())*1000)::bigint - $2
+         WHERE item_instance_id = encode($1,'hex')::uuid",
+    )
+    .bind(ground.as_slice())
+    .bind(lifetime)
+    .execute(&mut *tx)
+    .await?;
     tx.commit().await?;
 
     if reconcile {
@@ -143,29 +164,14 @@ pub(super) async fn qualify(
             .map_err(debug)?;
         assert_eq!(owner.runtime.lock().await.visible_corpses().len(), 1);
     }
-    owner.clock_origin = owner
-        .clock_origin
-        .checked_sub(Duration::from_secs(2))
-        .ok_or("owner clock")?;
-    // Run the same timer loop serve_gameplay polls, with no client packet or connection tick.
-    let stop = oteryn_foundation::CancellationToken::new();
-    let observe = async {
-        loop {
-            if retire_count(h).await? == children + 1
-                && owner.runtime.lock().await.visible_corpses().is_empty()
-            {
-                stop.cancel();
-                return Ok::<_, Box<dyn std::error::Error>>(());
-            }
-            tokio::time::sleep(Duration::from_millis(25)).await;
+    for _ in 0..MAX_SWEEPS {
+        owner_sweep(owner).await?;
+        if retire_count(h).await? == children + 1
+            && owner.runtime.lock().await.visible_corpses().is_empty()
+        {
+            break;
         }
-    };
-    tokio::time::timeout(Duration::from_secs(15), async {
-        let (_, result) =
-            super::fixture::join_two(owner.run_source_owner_cycles(&stop), observe).await;
-        result
-    })
-    .await??;
+    }
     assert_eq!(retire_count(h).await?, children + 1);
     let remaining: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_item_corpse_container_entries")
@@ -197,12 +203,8 @@ pub(super) async fn qualify(
             .bound_corpse(corpse.identity)
             .is_none()
     );
-    // A subsequent item clock pass cannot emit another retirement for any of these items.
-    owner.clock_origin = owner
-        .clock_origin
-        .checked_sub(Duration::from_secs(2))
-        .ok_or("owner clock")?;
-    owner.tick_timed_items().await;
+    // A subsequent owner sweep cannot emit another retirement.
+    owner_sweep(owner).await?;
     assert_eq!(retire_count(h).await?, children + 1);
     Ok(())
 }
@@ -213,4 +215,199 @@ async fn retire_count(h: &Harness) -> TestResult<i64> {
             .fetch_one(&h.pool)
             .await?,
     )
+}
+
+pub(super) async fn qualify_first_transform(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+) -> TestResult {
+    let corpse = owner
+        .runtime
+        .lock()
+        .await
+        .visible_corpses()
+        .into_iter()
+        .next()
+        .ok_or("committed Rat corpse")?;
+    let item = corpse.item.item_instance_id;
+    let fresh = "oteryn:item.tibia.i5964";
+    let target = "oteryn:item.tibia.i3994";
+    assert_eq!(corpse.item.production_key, fresh);
+    let schedule: (i64, i64, String, String) = sqlx::query_as(
+        "SELECT p.duration_millis, p.expires_at_unix_ms - m.materialized_at,
+                p.definition_production_key, p.target_production_key
+         FROM game_item_mint_receipts m JOIN game_spell_field_temporal_schedules p
+           ON p.item_instance_id = m.item_instance_id AND p.source_transaction_id = m.transaction_id
+         WHERE m.item_instance_id = encode($1,'hex')::uuid AND m.draw_ordinal = 0
+           AND p.source_ordinal = 0 AND p.source_stage = 1",
+    )
+    .bind(item.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(schedule, (10_000, 10_000, fresh.into(), target.into()));
+
+    // nb_runtime inherits this role on a node. Apply it to the existing root's
+    // single physical holder; the admin pool only moves fixture timestamps
+    // and observes committed rows.
+    super::journal_inventory::runtime_role(owner.root).await?;
+    let grants: (bool, bool, bool) = sqlx::query_as(
+        "SELECT has_column_privilege('oteryn_game_runtime', 'game_item_instances', 'definition_family', 'UPDATE'),
+                has_column_privilege('oteryn_game_runtime', 'game_item_instances', 'definition_production_key', 'UPDATE'),
+                has_column_privilege('oteryn_game_runtime', 'game_item_instances', 'definition_revision_ref', 'UPDATE')",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(grants, (false, true, true));
+
+    // PostgreSQL is the deadline authority. Rebase only this fixture's timestamps
+    // and let the actual background loop read and write under its normal guards.
+    set_corpse_age(h, item, -30_000).await?;
+    owner_sweep(owner).await?;
+    assert_eq!(current_definition(h, item).await?, fresh);
+    assert_eq!(transform_count(h, item).await?, 0);
+
+    set_corpse_age(h, item, schedule.0).await?;
+    sweep_until(owner, async || {
+        Ok(current_definition(h, item).await? == target)
+    })
+    .await?;
+    for _ in 0..MAX_SWEEPS {
+        owner_sweep(owner).await?;
+        if owner
+            .runtime
+            .lock()
+            .await
+            .visible_corpses()
+            .iter()
+            .any(|corpse| {
+                corpse.item.item_instance_id == item && corpse.item.production_key == target
+            })
+        {
+            break;
+        }
+    }
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .visible_corpses()
+            .iter()
+            .any(|corpse| corpse.item.item_instance_id == item
+                && corpse.item.production_key == target),
+        "the runtime projects the committed stage"
+    );
+    assert_eq!(transform_count(h, item).await?, 1);
+
+    // The fixture pool has one holder. Verify it retained the restricted
+    // role, so replacing the connection cannot turn this into an admin test.
+    let role: String = owner
+        .root
+        .try_issue_semantic_pass()?
+        .run(|holder, _| {
+            Box::pin(async move {
+                Ok(sqlx::query_scalar("SELECT current_user::text")
+                    .fetch_one(&mut **holder)
+                    .await?)
+            })
+        })
+        .await?;
+    assert_eq!(role, "oteryn_game_runtime");
+    let proven: bool = sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1 FROM game_spell_field_temporal_receipts r
+            JOIN game_spell_field_temporal_schedules p USING (item_instance_id, source_stage)
+            JOIN game_spell_field_temporal_audit a USING (transaction_id, event_id)
+            JOIN game_item_instances i USING (item_instance_id)
+            JOIN game_item_ground_locations g USING (item_instance_id)
+            WHERE r.item_instance_id = encode($1,'hex')::uuid AND r.source_stage = 1
+              AND r.occurred_at_unix_ms >= p.expires_at_unix_ms
+              AND i.last_transaction_id = r.transaction_id AND i.lifecycle = 1
+              AND i.definition_production_key = p.target_production_key
+              AND r.source_stack_ordinal = g.stack_ordinal
+         )",
+    )
+    .bind(item.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(
+        proven,
+        "the stage receipt and audit committed with the same Ground item"
+    );
+    eprintln!(
+        "RAT_CORPSE_OWNER_TICK_REACHED first_stage_ms={}",
+        schedule.0
+    );
+    Ok(())
+}
+
+const MAX_SWEEPS: usize = 8;
+
+async fn sweep_until(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    mut observed: impl AsyncFnMut() -> TestResult<bool>,
+) -> TestResult {
+    for _ in 0..MAX_SWEEPS {
+        owner_sweep(owner).await?;
+        if observed().await? {
+            return Ok(());
+        }
+    }
+    Err("no committed corpse transform after bounded owner sweeps".into())
+}
+
+async fn owner_sweep(owner: &mut ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(Duration::from_secs(2))
+        .ok_or("owner clock")?;
+    let wake = owner.states.spell_states.lock().await.owner_wake.clone();
+    let swept = Arc::new(tokio::sync::Notify::new());
+    let stop = oteryn_foundation::CancellationToken::new();
+    wake.notify_one();
+    tokio::time::timeout(Duration::from_secs(15), async {
+        let cycle = DurabilityRoot::with_background_holder(
+            SOURCE_OWNER_SWEEP_COMPLETE
+                .scope(Arc::clone(&swept), owner.run_source_owner_cycles(&stop)),
+        );
+        let observe = async {
+            swept.notified().await;
+            stop.cancel();
+        };
+        super::fixture::join_two(cycle, observe).await;
+    })
+    .await
+    .map_err(|_| "Channel owner did not complete the Item deadline sweep")?;
+    Ok(())
+}
+
+async fn set_corpse_age(h: &Harness, item: [u8; 16], age_ms: i64) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    let delta: i64 = sqlx::query_scalar(
+        "SELECT materialized_at - floor(extract(epoch FROM clock_timestamp())*1000)::bigint + $2
+         FROM game_item_mint_receipts WHERE item_instance_id = encode($1,'hex')::uuid",
+    )
+    .bind(item.as_slice())
+    .bind(age_ms)
+    .fetch_one(&mut *tx)
+    .await?;
+    sqlx::query("UPDATE game_item_mint_receipts SET materialized_at = materialized_at - $2 WHERE item_instance_id = encode($1,'hex')::uuid")
+        .bind(item.as_slice()).bind(delta).execute(&mut *tx).await?;
+    sqlx::query("UPDATE game_spell_field_temporal_schedules SET expires_at_unix_ms = expires_at_unix_ms - $2 WHERE item_instance_id = encode($1,'hex')::uuid")
+        .bind(item.as_slice()).bind(delta).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn current_definition(h: &Harness, item: [u8; 16]) -> TestResult<String> {
+    Ok(sqlx::query_scalar("SELECT definition_production_key FROM game_item_instances WHERE item_instance_id = encode($1,'hex')::uuid")
+        .bind(item.as_slice()).fetch_one(&h.pool).await?)
+}
+
+async fn transform_count(h: &Harness, item: [u8; 16]) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT count(*) FROM game_spell_field_temporal_receipts WHERE item_instance_id = encode($1,'hex')::uuid")
+        .bind(item.as_slice()).fetch_one(&h.pool).await?)
 }
