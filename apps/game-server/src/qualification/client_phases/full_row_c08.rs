@@ -214,7 +214,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
 
     let (spell, mana_cost) = antidote(&mut client)?;
-    let dispel_site = walk_to_poison_site(&mut client, world, "dispel").await?;
+    let dispel_site = walk_to_dispel_site(&mut client, world).await?;
     let sampled = tokio::time::Instant::now();
     let remaining = poison_remaining(&mut client).await?
         .ok_or("step=dispel observed=poison-expired-before-cast need=live-poison-at-isolated-site")?;
@@ -511,6 +511,44 @@ fn require_isolated_poison_site(
         ).into());
     }
     Ok(())
+}
+
+async fn walk_to_dispel_site(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+) -> TestResult<ActorPosition> {
+    const DISPEL_SITE: TilePos = TilePos {
+        x: 32452,
+        y: 32225,
+        floor: -7,
+    };
+    let basis = spatial_basis::current(client)?;
+    let site = basis.position(DISPEL_SITE);
+    if !world
+        .base()
+        .tile(DISPEL_SITE.x, DISPEL_SITE.y, DISPEL_SITE.floor)
+        .is_some_and(|tile| {
+            !tile.protection_zone() && tile.ground().is_some() && tile.ids().len() == 1
+        })
+    {
+        return Err("C08 authored dispel site is not bare ground outside protection".into());
+    }
+    let from = tile(client.world_spatial().actor_position)?;
+    let occupied = c08_visible_occupants(client);
+    let path = route_avoiding(
+        world,
+        from,
+        |at| at == DISPEL_SITE,
+        |at| !occupied.contains(&at),
+    )
+    .ok_or("C08 authored dispel site is unreachable")?;
+    evidence(&format!(
+        "C08_SITE stage=dispel site={site:?} steps={}",
+        path.len()
+    ));
+    walk_c08(client, world, &path).await?;
+    require_isolated_poison_site(client, site, "dispel")?;
+    Ok(site)
 }
 
 async fn walk_to_poison_site(
