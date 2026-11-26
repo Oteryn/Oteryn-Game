@@ -1445,14 +1445,19 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   fi
   # The bootstrap evidence ages past five seconds, so each admission fetches its own.
   sleep 6
-  local qualification=node_boot_seam_against_running_node
+  local qualification=qualification::node_boot_seam_against_running_node
+  local test_filter=(--ignored --exact --nocapture)
   local test_env=()
   if [[ "${NODE_BOOT_D150_LEGACY:-0}" == 1 ]]; then
     test_env+=("NODE_BOOT_D150_LEGACY=1")
   fi
   if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
-    qualification=node_boot_spells_against_running_node
+    qualification=qualification::node_boot_spells_against_running_node
     test_env=("RUST_MIN_STACK=${RUST_MIN_STACK:-16777216}")
+    if [[ "${NODE_BOOT_FORGE_FIXTURE_PROOF:-0}" == 1 ]]; then
+      qualification=lifted_tests_auto::qualification_forge_spawn::qualification_forge_spawn_first_appearance_carries_explicit_classification
+      test_filter=(--exact --nocapture)
+    fi
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
     test_env+=("NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
@@ -1477,11 +1482,11 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
   local test_dir="$PWD"
   local test_command=(cargo +1.100.0 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
-    "qualification::$qualification" -- --ignored --exact --nocapture)
+    "$qualification" -- "${test_filter[@]}")
   if [[ -n "${NODE_BOOT_LIBTEST:-}" ]]; then
     # Cargo runs each test with its package directory as the working directory.
     test_dir="$GAME_SOURCE/apps/game-server"
-    test_command=("$NODE_BOOT_LIBTEST" "qualification::$qualification" --ignored --exact --nocapture)
+    test_command=("$NODE_BOOT_LIBTEST" "$qualification" "${test_filter[@]}")
   fi
   (
     cd "$test_dir"
