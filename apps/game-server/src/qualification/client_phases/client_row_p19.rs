@@ -40,10 +40,6 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     }
     .connect(clients, 0x19, 1)
     .await?;
-    character_prep::grant_premium(&client).await?;
-    evidence("P19 FIXTURE premium=granted");
-    character_prep::reload(&mut client, clients).await?;
-    full_e2ef7::require_current_light_premium(&mut client).await?;
     let index = provisioning::item_index()?;
     let axe = provisioning::item_reference(&index, 3276)?;
     equip_fixture_axe(&mut client, axe).await?;
@@ -120,6 +116,8 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             }
         }
         let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+        character_prep::grant_premium(&client).await?;
+        evidence("P19 FIXTURE premium=granted");
         let before = rewards(&mut client, sliver).await?;
         client.take_events();
         evidence(&format!(
@@ -374,6 +372,12 @@ async fn kill_and_observe_clear(
                         if let AppearanceUpdate::Mappings(mappings) = delta.value
                             && mappings.forgets.contains(&target)
                         {
+                            if !left {
+                                return Err(format!(
+                                    "P19 marker for {target:?} cleared before its spatial leave"
+                                )
+                                .into());
+                            }
                             cleared = Some(delta.server_sequence);
                         }
                     }
