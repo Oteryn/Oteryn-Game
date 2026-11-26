@@ -289,6 +289,39 @@ async fn relog(
     connect_character(clients, tag, 0).await
 }
 
+async fn expect_bag_helmet(
+    client: &mut DevClientSession,
+    bag: oteryn_protocol_oteryn::item_view::ItemHandle,
+    helmet: std::num::NonZeroU32,
+    expected: bool,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        if let Some(view) = client
+            .open_container()
+            .filter(|view| view.container_handle == Some(bag))
+        {
+            let matches = if expected {
+                matches!(view.entries.as_slice(), [item] if item.item_definition_ref == helmet && item.count.get() == 1)
+            } else {
+                view.entries.is_empty()
+            };
+            if matches {
+                return Ok(());
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "step=bag-contents needed=helmet:{expected};observed={:?}",
+                client.open_container()
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     use oteryn_dev_client::ItemMoveOutcome as Out;
     let identity = character_prep::dedicated_character(clients, "NODE_BOOT_I17A_ACCOUNT").await?;
@@ -357,6 +390,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         })
         .map(|item| item.handle)
         .ok_or("step=bag observed=no-bag-handle")?;
+    let used = client.use_item(bag_handle).await?;
+    if used.status != oteryn_protocol_oteryn::CommandStatus::Accepted
+        || used.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+    {
+        return Err(format!("step=open-bag observed={used:?}").into());
+    }
+    expect_bag_helmet(&mut client, bag_handle, helmet, false).await?;
     let helmet_handle = client
         .inventory()
         .and_then(|inventory| {
@@ -378,17 +418,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("step=into-pouch observed={:?};needed=Moved", moved.outcome).into());
     }
     wait_quantity(&mut client, helmet, 0).await?;
+    expect_bag_helmet(&mut client, bag_handle, helmet, true).await?;
     let carried = client.selected_capabilities().contains(&180);
     let outcome = hotkey(&mut client, helmet).await?;
     if !carried {
-        let unchanged = worn(&client, helmet).is_none();
+        if outcome != Out::NotSupported
+            || worn(&client, helmet).is_some()
+            || quantity(&client, helmet)? != 0
+        {
+            return Err(format!(
+                "step=pouch-refusal observed={outcome:?};needed=NotSupported-and-unchanged"
+            )
+            .into());
+        }
+        expect_bag_helmet(&mut client, bag_handle, helmet, true).await?;
         logout(&mut client).await?;
-        return Err(format!("step=equip-from-pouch observed={outcome:?};unchanged={unchanged};needed:capability-180-carried-selection").into());
+        return Err(format!("step=equip-from-pouch observed={outcome:?};unchanged=true;needed:capability-180-carried-selection").into());
     }
     if outcome != Out::Moved {
         return Err(format!("step=equip-from-pouch observed={outcome:?};needed=Moved").into());
     }
     settle(&mut client, helmet, true).await?;
+    if worn(&client, helmet).as_deref() != Some("Head") || quantity(&client, helmet)? != 0 {
+        return Err("step=equip-from-pouch observed=wrong-helmet-custody".into());
+    }
+    expect_bag_helmet(&mut client, bag_handle, helmet, false).await?;
     let session = client.join_snapshot().game_session_id;
     let mut client = relog(&mut client, clients, 0xe1).await?;
     if client.join_snapshot().game_session_id == session {
@@ -398,6 +452,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("step=fresh-admission observed=helmet-not-worn".into());
     }
     expect(&mut client, helmet, "restore", Out::Moved).await?;
+    settle(&mut client, helmet, false).await?;
+    wait_quantity(&mut client, helmet, 1).await?;
+    let session = client.join_snapshot().game_session_id;
+    let mut client = relog(&mut client, clients, 0xe1).await?;
+    if client.join_snapshot().game_session_id == session
+        || worn(&client, helmet).is_some()
+        || quantity(&client, helmet)? != 1
+    {
+        return Err("step=restore-relog needed=fresh-session-with-one-helmet-in-backpack".into());
+    }
     logout(&mut client).await?;
     Ok("equipped-from-backpack-and-pouch-and-durable".to_owned())
 }
