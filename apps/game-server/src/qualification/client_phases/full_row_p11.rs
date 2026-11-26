@@ -311,6 +311,13 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
             .map(|row| row.entity)
             .collect();
         client.take_events();
+        evidence(&format!(
+            "P11_COMBAT attack_start session={} command={} after_sequence={} target={:?}",
+            uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+            client.next_command_id(),
+            client.last_server_sequence(),
+            target.entity
+        ));
         let reply = client
             .session_mut()
             .attack_target(Some(&target.entity))
@@ -379,6 +386,12 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
                     })
                     .ok_or("P11 fixture potions exhausted")?
                     .handle;
+                evidence(&format!(
+                    "P11_COMBAT potion_use session={} command={} after_sequence={} item={POTION_ID} hp={health} count={before}",
+                    uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+                    client.next_command_id(),
+                    client.last_server_sequence()
+                ));
                 let result = client.use_item(handle).await?;
                 if result.disposition
                     != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
