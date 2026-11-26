@@ -28,6 +28,22 @@ select_work_parent() {
   return 1
 }
 
+finish_p04_replay() {
+  local log=$1 status=$2
+  if grep -aq '^NODE_BOOT_RESULT=' "$log"; then
+    if grep -aq '^NODE_BOOT_RESULT=NODE_BOOT_PASS' "$log"; then
+      echo 'NODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged' | tee -a "$log"
+    fi
+    return 1
+  fi
+  if [[ "$status" == 0 && $(grep -acx 'NODE_BOOT_P04_CAPTURE_READY=1' "$log") == 1 ]]; then
+    echo 'NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged' | tee -a "$log"
+  else
+    echo 'NODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged' | tee -a "$log"
+    return 1
+  fi
+}
+
 summarize() {
   local log=$1 group=$2 seconds=${3:-0} status=${4:-0} result rows row
   result=$(awk '/^NODE_BOOT_RESULT=(NODE_BOOT_[A-Z0-9_]+|BLOCKED)([[:space:]]|$)/ {
@@ -55,10 +71,6 @@ summarize() {
       if (tolower(reason) ~ /password|postgres:\/\/|postgresql:\/\/|secret|token|key=/) reason = ""
       gsub(/\|/, "_", reason)
       printf "%s|%s|%s\n", row, verdict, reason
-    }
-    $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" && $3 == "scenario=P04.client" &&
-      $4 ~ /^status=(PASS|FAIL)$/ && $5 ~ /^evidence=(live_client_replay|seam_exit)$/ && NF == 5 {
-      printf "P04.client|%s|%s\n", substr($4, 8), substr($5, 10)
     }
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
       $3 ~ /^scenario=[[:alnum:]_.-]+\.client$/ && $4 ~ /^replay=[[:alnum:]_]+$/ &&
@@ -130,18 +142,21 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
-  capture_env=()
+  capture_env=(NODE_BOOT_P04_CAPTURE_PENDING=0)
+  p04_pending=0
   if [[ "$group" == rows ]]; then
     capture_dir=$(mktemp -d "$work_dir/captures.XXXXXX") || blocked capture_dir_unavailable
-    capture_env=(E2E_ALL_CAPTURE_DIR="$capture_dir")
+    capture_env+=(E2E_ALL_CAPTURE_DIR="$capture_dir")
+    if python3 tools/qualification/node_boot/client_replay.py --contains-p04; then
+      p04_pending=1
+      capture_env+=(NODE_BOOT_P04_CAPTURE_PENDING=1)
+    fi
   fi
   env "${capture_env[@]}" NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
-    NODE_BOOT_P04_ARTIFACT_ROOT="$work_dir/$index-p04" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
-  grep -aE '^SEAM_EVIDENCE e2e_all scenario=P04[.]client status=(PASS|FAIL) evidence=(live_client_replay|seam_exit)$' "$log" || true
   if [[ "$group" == rows ]]; then
     E2E_ALL_CAPTURE_DIR="$capture_dir" python3 tools/qualification/node_boot/client_replay.py "$log" \
       | tee -a "$log"
@@ -149,6 +164,9 @@ for group in "$@"; do
     if (( replay_pipeline[0] != 0 || replay_pipeline[1] != 0 )); then
       status=1
     fi
+  fi
+  if [[ "$p04_pending" == 1 ]]; then
+    finish_p04_replay "$log" "$status" || status=$?
   fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1

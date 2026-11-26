@@ -539,7 +539,15 @@ cleanup() {
   fi
   evidence "cleanup=complete"
   evidence "result_scope world_bundle=$NODE_BOOT_WORLD spells=$NODE_BOOT_SPELLS stage=$ACTIVE_STAGE exit=$rc"
-  echo "NODE_BOOT_RESULT=$result${result_mode:-}"
+  if [[ "$result" == NODE_BOOT_PASS && "${NODE_BOOT_P04_CAPTURE_PENDING:-0}" == 1 ]]; then
+    if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+      echo NODE_BOOT_P04_CAPTURE_READY=1
+    else
+      echo NODE_BOOT_P04_PREREQUISITE_READY=1
+    fi
+  else
+    echo "NODE_BOOT_RESULT=$result${result_mode:-}"
+  fi
   exit "$rc"
 }
 trap cleanup EXIT
@@ -1602,18 +1610,9 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     test_dir="$GAME_SOURCE/apps/game-server"
     test_command=("$NODE_BOOT_LIBTEST" "qualification::$qualification" --ignored --exact --nocapture)
   fi
-  local -a seam_runner=(env)
-  if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
-    source "$GAME_SOURCE/tools/qualification/node_boot/p04_client_replay.sh"
-    if p04_selected "${NODE_BOOT_E2E_ONLY:-}"; then
-      local p04_artifacts="${NODE_BOOT_P04_ARTIFACT_ROOT:-$WORK/p04}"
-      mkdir -- "$p04_artifacts"
-      seam_runner=(p04_seam_with_replay "$p04_artifacts/captures" "$p04_artifacts/seam.log" env)
-    fi
-  fi
   (
     cd "$test_dir"
-    "${seam_runner[@]}" "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \
+    env "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \
       NODE_BOOT_SPELL_MANIFEST="$staged_manifest" \
       NODE_BOOT_CONTROL_SOCKET="$BASE/run/control.sock" \
       NODE_BOOT_ADDRESS="127.0.0.1:${NODE_BOOT_GAME_PORT:-17181}" \

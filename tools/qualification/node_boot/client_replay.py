@@ -104,6 +104,16 @@ def capture_names(row, source):
     return set(re.findall(rf'"({row}[-_.][\w.-]+\.(?:bin|txt|json))"', source))
 
 
+P04_TEST = "e2e_p04_replays_query_and_refused_start_weekly"
+UUID7 = r"[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+P04_BINDING = re.compile(
+    r"^SEAM_EVIDENCE e2e_capture scenario=P04[.]client status=CAPTURED evidence="
+    rf"(?P<binding>session={UUID7};readmission={UUID7};query=[1-9][0-9]*,[1-9][0-9]*;"
+    r"refused=[1-9][0-9]*,[1-9][0-9]*;after=[1-9][0-9]*,[1-9][0-9]*);",
+    re.MULTILINE,
+)
+
+
 def replay_targets():
     targets = {}
     for package in PACKAGES:
@@ -125,6 +135,10 @@ def replay_targets():
         "oteryn-client", "e2e_e09_real_mail_outcomes_replay_into_mail_panel",
         capture_names("e09", mail.read_text()),
     )]
+    targets["e2e_p04"] = [(
+        "oteryn-client-ui", P04_TEST,
+        {"p04-query.json", "p04-refused.json", "p04-readmission.json", "p04-expected.txt"},
+    )]
     return targets
 
 
@@ -138,11 +152,24 @@ def replay_cause(row, package, test, names, captures, server, log):
     if not package or not server:
         return "replay-not-run"
 
+    cargo_filter = test
+    test_args = ["--nocapture"]
+    replay_env = None
+    if row == "P04":
+        if server != [("e2e_capture", "CAPTURED")]:
+            return "server-failed"
+        bindings = P04_BINDING.findall(log.read_text(errors="replace"))
+        if len(bindings) != 1:
+            return "capture-missing"
+        cargo_filter = f"task_board::e2e_p04::{test}"
+        test_args += ["--ignored", "--exact"]
+        replay_env = {**os.environ, "E2E_P04_BINDING": bindings[0]}
+
     try:
         result = subprocess.run(
             [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package,
-             "--lib", test, "--", "--nocapture"],
-            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+             "--lib", cargo_filter, "--", *test_args],
+            cwd=ROOT, env=replay_env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
     except OSError:
         return "replay-not-run"
@@ -184,16 +211,6 @@ def main(log, batch, validate=False):
     targets = replay_targets()
     failed = False
     for scenario in rows:
-        if scenario == "P04.client":
-            # P04's exact replay is part of its seam stage so the inner result
-            # is gated on it. Confirm that one final verdict without replaying.
-            marker = "SEAM_EVIDENCE e2e_all scenario=P04.client status=PASS evidence=live_client_replay"
-            if server_rows.get(scenario) != [("e2e_all", "PASS")] or (
-                log.read_text(errors="replace").splitlines().count(marker) != 1
-            ):
-                batch_failure("inline-replay-failed", scenario)
-                failed = True
-            continue
         row = scenario.removesuffix(".client")
         module = f"e2e_{row.lower()}"
         matches = targets.get(module, [])
@@ -207,5 +224,11 @@ def main(log, batch, validate=False):
 
 if __name__ == "__main__":
     args = sys.argv[1:]
+    if args == ["--contains-p04"]:
+        try:
+            selected, _ = selected_rows(os.environ.get("OTERYN_E2E_ROW_BATCH"))
+        except ValueError:
+            sys.exit(1)
+        sys.exit("P04.client" not in selected)
     validate = args[0] == "--validate"
     sys.exit(main(Path(args[-1]), os.environ.get("OTERYN_E2E_ROW_BATCH"), validate))

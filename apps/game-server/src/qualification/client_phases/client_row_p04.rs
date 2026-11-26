@@ -3,6 +3,7 @@
 //! `crates/client-ui/src/features/0072-task-board`.
 use super::*;
 use oteryn_dev_client::DevClientSession;
+use oteryn_dev_client::client_runtime::raw_feature::GatedCommandResult;
 use oteryn_dev_client::client_runtime::task_board;
 use oteryn_gameplay_quests::quest::task_board::full::{SHOP_OFFERS, TaskBoardShopKind};
 use task_board::task_board::full::{
@@ -12,7 +13,7 @@ use task_board::task_board::full::{
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
     use std::io::Write as _;
 
-    let root = required("E2E_P04_CAPTURE_DIR")?;
+    let root = required("E2E_ALL_CAPTURE_DIR")?;
     let mut file = std::fs::File::create_new(Path::new(&root).join(name))?;
     file.write_all(bytes)?;
     Ok(())
@@ -22,8 +23,8 @@ async fn send(
     client: &mut DevClientSession,
     action: u8,
     selection: u16,
-    name: Option<&str>,
-) -> TestResult<Reply> {
+    name: &str,
+) -> TestResult<(Reply, GatedCommandResult)> {
     let payload = encode_request(&Request {
         action,
         selection,
@@ -42,19 +43,20 @@ async fn send(
         return Err(format!("task-board action={action} status={:?}", result.status).into());
     }
     let session = client.join_snapshot().game_session_id;
-    let mut captured = format!(
-        "{} {} {} {}\n",
-        uuid_text(session.as_bytes()),
-        result.command_id,
-        result.server_sequence,
-        result.status as u8,
-    )
-    .into_bytes();
-    captured.extend_from_slice(&result.payload);
-    if let Some(name) = name {
-        capture(name, &captured)?;
-    }
-    decode_reply(&result.payload).map_err(|error| format!("reply decode: {error:?}").into())
+    capture(name, &frame_envelope(session.as_bytes(), &result)?)?;
+    let reply =
+        decode_reply(&result.payload).map_err(|error| format!("reply decode: {error:?}"))?;
+    Ok((reply, result))
+}
+
+fn frame_envelope(session: &[u8; 16], result: &GatedCommandResult) -> serde_json::Result<Vec<u8>> {
+    serde_json::to_vec(&serde_json::json!({
+        "command_id": result.command_id,
+        "game_session_id": uuid_text(session),
+        "payload": result.payload,
+        "server_sequence": result.server_sequence,
+        "status": result.status as u32,
+    }))
 }
 
 async fn expected_period(clients: &SeamClients<'_>) -> TestResult<u64> {
@@ -131,9 +133,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let period = expected_period(clients).await?;
     let shop = expected_shop();
     let mut client = connect_world(clients, 0x26).await?;
-    let initial = send(&mut client, 4, 0, Some("p04-query.bin")).await?;
+    let (initial, query_frame) = send(&mut client, 4, 0, "p04-query.json").await?;
     verify_fresh_query(&initial, period, &shop)?;
-    let refused = send(&mut client, 5, 3, Some("p04-refused.bin")).await?;
+    let (refused, refused_frame) = send(&mut client, 5, 3, "p04-refused.json").await?;
     let mut unchanged = refused.clone();
     unchanged.refusal = 0;
     if refused.refusal != 3 || unchanged != initial {
@@ -157,9 +159,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     drop(client);
     let mut fresh = connect_world(clients, 0x26).await?;
-    if fresh.join_snapshot().game_session_id == admitted
-        || send(&mut fresh, 4, 0, None).await? != initial
-    {
+    let readmission = fresh.join_snapshot().game_session_id;
+    let (after, after_frame) = send(&mut fresh, 4, 0, "p04-readmission.json").await?;
+    if readmission == admitted || after != initial {
         return Err("P04 client refusal changed the board after readmission".into());
     }
     if fresh.session_mut().logout().await?.result
@@ -167,7 +169,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("P04 client verification logout was refused".into());
     }
-    Ok(format!("session={session};{}", expected.replace('\n', ";")))
+    Ok(format!(
+        "session={session};readmission={};query={},{};refused={},{};after={},{};{}",
+        uuid_text(readmission.as_bytes()),
+        query_frame.command_id,
+        query_frame.server_sequence,
+        refused_frame.command_id,
+        refused_frame.server_sequence,
+        after_frame.command_id,
+        after_frame.server_sequence,
+        expected.replace('\n', ";"),
+    ))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -188,6 +200,29 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 mod tests {
     use super::*;
     use task_board::task_board::full::{Bounty, DeliveryTask, KillTask, TalismanPath};
+
+    #[test]
+    fn p04_writer_preserves_the_five_original_frame_fields() -> TestResult {
+        let session = v7(4, 2);
+        let raw = GatedCommandResult {
+            command_id: 11,
+            status: CommandStatus::Rejected,
+            server_sequence: 31,
+            payload: vec![0, 255, 2],
+        };
+        let envelope: serde_json::Value = serde_json::from_slice(&frame_envelope(&session, &raw)?)?;
+        assert_eq!(
+            envelope,
+            serde_json::json!({
+                "command_id": 11,
+                "game_session_id": uuid_text(&session),
+                "payload": [0, 255, 2],
+                "server_sequence": 31,
+                "status": 2,
+            })
+        );
+        Ok(())
+    }
 
     #[test]
     fn p04_fresh_expectations_reject_self_consistent_wrong_replies() -> TestResult {

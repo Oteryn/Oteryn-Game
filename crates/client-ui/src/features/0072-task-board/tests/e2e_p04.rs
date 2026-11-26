@@ -9,6 +9,7 @@ type Error = Box<dyn std::error::Error>;
 struct Captured {
     query: GatedCommandResult,
     refused: GatedCommandResult,
+    readmission: GatedCommandResult,
     expected: String,
 }
 
@@ -62,44 +63,107 @@ fn fixture() -> Result<Captured, Error> {
     Ok(Captured {
         query: result(CommandStatus::Accepted, &encode(&reply(0))?),
         refused: result(CommandStatus::Accepted, &encode(&reply(3))?),
+        readmission: result(CommandStatus::Accepted, &encode(&reply(0))?),
         expected: "period=2913\npoints=40\nbounty_points=7\nsoulseals=2\nstarted=false\nkills=0\ndeliveries=0\nshop_count=1\nshop_first=0,1,25\nrefusal=3\n".into(),
     })
 }
 
 fn captured() -> Result<Captured, Error> {
     let path =
-        std::env::var_os("E2E_P04_CAPTURE_DIR").ok_or("live capture directory is required")?;
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("live capture directory is required")?;
     let path = std::path::Path::new(&path);
-    let session = std::env::var("E2E_P04_SESSION")?;
-    let query = read_live_result(&path.join("p04-query.bin"), &session)?;
-    let refused = read_live_result(&path.join("p04-refused.bin"), &session)?;
+    let binding = std::env::var("E2E_P04_BINDING")?;
+    let mut fields = binding.split(';');
+    let mut field = |key: &str| -> Result<&str, Error> {
+        fields
+            .next()
+            .and_then(|entry| entry.split_once('='))
+            .filter(|(name, _)| *name == key)
+            .map(|(_, value)| value)
+            .ok_or_else(|| format!("missing replay binding {key}").into())
+    };
+    let session = field("session")?;
+    let after_session = field("readmission")?;
+    if !is_uuid7(session) || !is_uuid7(after_session) || session == after_session {
+        return Err("P04 requires two distinct UUIDv7 sessions".into());
+    }
+    let query = read_live_result(&path.join("p04-query.json"), session, field("query")?)?;
+    let refused = read_live_result(&path.join("p04-refused.json"), session, field("refused")?)?;
+    let readmission = read_live_result(
+        &path.join("p04-readmission.json"),
+        after_session,
+        field("after")?,
+    )?;
+    assert_eq!(fields.next(), None);
     assert_eq!(query.command_id.checked_add(1), Some(refused.command_id));
-    assert!(query.server_sequence > 0 && refused.server_sequence > query.server_sequence);
+    assert!(refused.server_sequence > query.server_sequence);
+    for frame in [&query, &refused, &readmission] {
+        assert_eq!(frame.status, CommandStatus::Accepted);
+    }
     Ok(Captured {
         query,
         refused,
+        readmission,
         expected: std::fs::read_to_string(path.join("p04-expected.txt"))?,
     })
 }
 
-fn read_live_result(path: &std::path::Path, session: &str) -> Result<GatedCommandResult, Error> {
-    let bytes = std::fs::read(path)?;
-    let newline = bytes
-        .iter()
-        .position(|&byte| byte == b'\n')
-        .ok_or("missing result header")?;
-    let mut fields = std::str::from_utf8(&bytes[..newline])?.split(' ');
-    assert_eq!(fields.next(), Some(session));
-    let command_id = fields.next().ok_or("missing command id")?.parse()?;
-    let server_sequence = fields.next().ok_or("missing server sequence")?.parse()?;
-    let status: u8 = fields.next().ok_or("missing command status")?.parse()?;
-    assert_eq!(status, CommandStatus::Accepted as u8);
-    assert_eq!(fields.next(), None);
+fn is_uuid7(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    bytes.len() == 36
+        && bytes[14] == b'7'
+        && matches!(bytes[19], b'8' | b'9' | b'a' | b'b')
+        && bytes.iter().enumerate().all(|(index, byte)| {
+            if matches!(index, 8 | 13 | 18 | 23) {
+                *byte == b'-'
+            } else {
+                matches!(*byte, b'0'..=b'9' | b'a'..=b'f')
+            }
+        })
+}
+
+fn read_live_result(
+    path: &std::path::Path,
+    session: &str,
+    frame: &str,
+) -> Result<GatedCommandResult, Error> {
+    let (command_id, server_sequence) = frame.split_once(',').ok_or("missing frame binding")?;
+    parse_live_result(
+        &std::fs::read(path)?,
+        session,
+        command_id.parse()?,
+        server_sequence.parse()?,
+    )
+}
+
+fn parse_live_result(
+    bytes: &[u8],
+    session: &str,
+    command_id: u64,
+    server_sequence: u64,
+) -> Result<GatedCommandResult, Error> {
+    let envelope: serde_json::Value = serde_json::from_slice(bytes)?;
+    if envelope.as_object().is_none_or(|object| object.len() != 5)
+        || envelope["game_session_id"].as_str() != Some(session)
+        || command_id == 0
+        || envelope["command_id"].as_u64() != Some(command_id)
+        || server_sequence == 0
+        || envelope["server_sequence"].as_u64() != Some(server_sequence)
+    {
+        return Err("P04 frame did not match the live session, command and sequence".into());
+    }
+    let status = match envelope["status"].as_u64() {
+        Some(1) => CommandStatus::Accepted,
+        Some(2) => CommandStatus::Rejected,
+        Some(3) => CommandStatus::DuplicateReplay,
+        Some(4) => CommandStatus::DuplicateOutcomeExpired,
+        _ => return Err("P04 frame has unknown command status".into()),
+    };
     Ok(GatedCommandResult {
         command_id,
-        status: CommandStatus::Accepted,
+        status,
         server_sequence,
-        payload: bytes[newline + 1..].to_vec(),
+        payload: serde_json::from_value(envelope["payload"].clone())?,
     })
 }
 
@@ -218,12 +282,44 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
     assert_eq!(unchanged, weekly);
     assert!(panel_text(&panel).ends_with("The server refused: level too low for this difficulty"));
 
+    let mut fresh = TaskBoardPanel {
+        selected: true,
+        ..TaskBoardPanel::default()
+    };
+    full_request(&mut fresh, FullIntent::Refresh).ok_or("readmission query request")?;
+    apply_full_result(&mut fresh, &captured.readmission);
+    assert!(!fresh.pending);
+    assert_eq!(fresh.feedback, None);
+    assert_eq!(fresh.weekly.as_ref(), Some(&weekly));
+
     assert_invalid_results(&mut panel, &refused)
 }
 
 #[test]
 fn p04_unit_projection_checks_rendering_and_invalid_results() -> Result<(), Error> {
     verify_replay(fixture()?)
+}
+
+#[test]
+fn p04_envelope_parser_requires_exact_binding_and_shape() -> Result<(), Error> {
+    let session = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
+    let mut envelope = serde_json::json!({
+        "command_id": 7,
+        "game_session_id": session,
+        "payload": [0, 255],
+        "server_sequence": 12,
+        "status": 2,
+    });
+    let bytes = serde_json::to_vec(&envelope)?;
+    let parsed = parse_live_result(&bytes, session, 7, 12)?;
+    assert_eq!(parsed.status, CommandStatus::Rejected);
+    assert_eq!(parsed.payload, [0, 255]);
+    assert!(parse_live_result(&bytes, session, 8, 12).is_err());
+    assert!(parse_live_result(&bytes, session, 7, 11).is_err());
+    assert!(parse_live_result(&bytes, "wrong session", 7, 12).is_err());
+    envelope["extra"] = serde_json::Value::Null;
+    assert!(parse_live_result(&serde_json::to_vec(&envelope)?, session, 7, 12).is_err());
+    Ok(())
 }
 
 fn assert_invalid_results(panel: &mut TaskBoardPanel, refused: &Reply) -> Result<(), Error> {
