@@ -1,9 +1,9 @@
 use super::*;
 #[test]
 fn returner_real_dispatch_qualifies_native_history_and_claims_once() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario_mode(false, 2).map_err(|e| e.to_string()))?
@@ -43,6 +43,7 @@ pub(super) async fn case(
     admitted: &mut AdmittedSession,
 ) -> TestResult {
     use wire::returner::{CLAIM, QUERY};
+    super::super::journal_inventory::runtime_role(&h.root).await?;
     assert_eq!(
         query(owner, admitted).await?.state,
         0,
@@ -55,7 +56,35 @@ pub(super) async fn case(
         0,
         "a thirty-day break is not twelve months"
     );
-    sqlx::raw_sql("ALTER TABLE game_character_session_ends DISABLE TRIGGER game_character_session_ends_immutable; UPDATE game_character_session_ends SET ended_at_us=extract(epoch FROM TIMESTAMPTZ '2024-01-01 00:00:00+00')::bigint*1000000; ALTER TABLE game_character_session_ends ENABLE TRIGGER game_character_session_ends_immutable").execute(&h.pool).await?;
+    // S7 aged the same terminal predecessor by thirteen months. Keep the
+    // evidence relative to the real successor and scope the edit to this history.
+    let mut history = h.pool.begin().await?;
+    sqlx::raw_sql("SET CONSTRAINTS ALL IMMEDIATE;
+        ALTER TABLE game_durability_reconnect_sessions DISABLE TRIGGER game_training_session_clock;
+        ALTER TABLE game_character_session_ends DISABLE TRIGGER game_character_session_ends_immutable")
+        .execute(&mut *history).await?;
+    let updated = sqlx::query(
+        "WITH predecessor AS (
+            UPDATE game_durability_reconnect_sessions p
+            SET training_created_at_us=extract(epoch FROM
+                (to_timestamp(s.training_created_at_us/1000000.0)-interval '13 months 1 day'))::bigint*1000000
+            FROM game_durability_reconnect_sessions s
+            WHERE p.game_session_id=encode($1,'hex')::uuid AND s.game_session_id=encode($2,'hex')::uuid
+              AND p.session_state=3 AND p.account_id=s.account_id AND p.character_id=s.character_id
+            RETURNING p.game_session_id,p.character_id,p.training_created_at_us
+         )
+         UPDATE game_character_session_ends e SET ended_at_us=p.training_created_at_us+1000000
+         FROM predecessor p WHERE p.game_session_id=e.game_session_id AND p.character_id=e.character_id",
+    )
+    .bind(id(49).as_slice())
+    .bind(id(50).as_slice())
+    .execute(&mut *history)
+    .await?;
+    assert_eq!(updated.rows_affected(), 1);
+    sqlx::raw_sql("ALTER TABLE game_character_session_ends ENABLE TRIGGER game_character_session_ends_immutable;
+        ALTER TABLE game_durability_reconnect_sessions ENABLE TRIGGER game_training_session_clock")
+        .execute(&mut *history).await?;
+    history.commit().await?;
     let offer = query(owner, admitted).await?;
     assert_eq!(offer.state, 1);
     let offer = offer.id.ok_or("entitlement")?;
@@ -88,7 +117,20 @@ pub(super) async fn case(
     .await?;
     let values = results(&bytes)?;
     assert_eq!(values.len(), 3);
-    assert_eq!(values[0].2[1], 1, "{values:?}");
+    assert_eq!(
+        values[0].1,
+        crate::foundation::CommandStatus::Accepted,
+        "{values:?}"
+    );
+    assert_eq!(
+        values[0].2,
+        wire::DailyRewardResult {
+            disposition: 1,
+            transaction_id: Some(offer)
+        }
+        .encode()
+        .map_err(debug)?
+    );
     assert_eq!(values[1].2, [8, 2]);
     assert_eq!(wire::returner::Reply::decode(&values[2].2)?.state, 2);
     let delivered:(i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_returner_reward_entitlements),(SELECT count(*) FROM game_returner_reward_claims),(SELECT sum(i.quantity)::bigint FROM game_returner_reward_claims c JOIN game_item_instances i USING(item_instance_id))").fetch_one(&h.pool).await?;
