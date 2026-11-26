@@ -109,6 +109,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
+        evidence("e2e_all scenario=S07.client status=FAIL evidence=missing-capture-directory");
         return;
     }
     match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await {
