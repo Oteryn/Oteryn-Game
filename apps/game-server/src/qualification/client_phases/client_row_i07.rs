@@ -36,7 +36,45 @@ fn write_capture(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
     std::fs::File::create_new(path)?.write_all(bytes)
 }
 
+async fn require_filters(
+    database: &mut sqlx::PgConnection,
+    character: &[u8; 16],
+    expected_mode: bool,
+    expected: &[(bool, &str)],
+) -> TestResult {
+    let mode: Option<bool> = sqlx::query_scalar(
+        "SELECT accept_only FROM game_character_quick_loot_settings
+         WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(character.as_slice())
+    .fetch_optional(&mut *database)
+    .await?;
+    let filters: Vec<(bool, String)> = sqlx::query_as(
+        "SELECT accepted, item_production_key FROM game_character_quick_loot_filters
+         WHERE character_id=encode($1,'hex')::uuid ORDER BY accepted, item_production_key LIMIT 3",
+    )
+    .bind(character.as_slice())
+    .fetch_all(database)
+    .await?;
+    if mode.unwrap_or(false) != expected_mode
+        || !filters
+            .iter()
+            .map(|(accept, key)| (*accept, key.as_str()))
+            .eq(expected.iter().copied())
+    {
+        return Err(format!(
+            "I07 durable filters expected mode={expected_mode} entries={expected:?}; observed mode={mode:?} entries={filters:?}"
+        ).into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    use sqlx::Connection as _;
+    const FILTERS: [(bool, &str); 2] = [
+        (false, "oteryn:item.tibia.i3031"),
+        (true, "oteryn:item.tibia.i3350"),
+    ];
     let capture_dir = std::env::var_os("E2E_ALL_CAPTURE_DIR")
         .ok_or("I07 requires a fresh E2E_ALL_CAPTURE_DIR")?;
     let capture_dir = Path::new(&capture_dir);
@@ -44,6 +82,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let skip_reference = provisioning::item_reference(&index, 3031)?.get();
     let accept_reference = provisioning::item_reference(&index, 3350)?.get();
     let mut client = connect_world(clients, 0x07).await?;
+    let character = &clients.characters[1];
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    require_filters(&mut database, character, false, &[]).await?;
     let mut skip = request(QuickLootAction::FilterAdd);
     skip.filter_mode = Some(QuickLootFilterMode::Skip);
     skip.filter_definition_ref = Some(skip_reference);
@@ -75,6 +116,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             )
             .into());
         }
+        if index == 0 {
+            require_filters(&mut database, character, false, &FILTERS[..1]).await?;
+        } else if index == 1 {
+            require_filters(&mut database, character, true, &FILTERS).await?;
+        }
         if reply.status == CommandStatus::Accepted {
             item_count = decode_quick_loot_result(&reply.payload)
                 .map_err(|error| format!("quick-loot reply: {error:?}"))?
@@ -92,6 +138,28 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )?;
         write_capture(&capture_dir.join(format!("i07-{key}.bin")), &reply.payload)?;
     }
+    let original_session = client.join_snapshot().game_session_id;
+    let logout = client.session_mut().logout().await?;
+    if logout.status != CommandStatus::Accepted
+        || logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err(format!("I07 first logout refused: {logout:?}").into());
+    }
+    drop(client);
+    let mut fresh = connect_world(clients, 0x07).await?;
+    if fresh.join_snapshot().game_session_id == original_session {
+        return Err("I07 relog reused its original session".into());
+    }
+    require_filters(&mut database, character, true, &FILTERS).await?;
+    let logout = fresh.session_mut().logout().await?;
+    if logout.status != CommandStatus::Accepted
+        || logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err(format!("I07 post-readback logout refused: {logout:?}").into());
+    }
+    evidence(
+        "I07_FILTER_CUSTODY prestate=empty skip=3031 accept=3350 mode=accept fresh_session=true",
+    );
     write_capture(
         &capture_dir.join("i07-expected.txt"),
         format!(
