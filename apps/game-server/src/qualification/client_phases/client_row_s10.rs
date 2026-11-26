@@ -5,18 +5,21 @@
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef};
 use oteryn_protocol_oteryn::npc_service as wire;
+use std::io::Write as _;
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S10_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    std::fs::File::create_new(root.join(name))
+        .and_then(|mut file| file.write_all(bytes))
+        .map_err(|error| format!("S10 client capture: write {name}: {error}"))?;
+    Ok(())
 }
 
 fn identity(npc: EntityRef) -> String {
-    let hex: String = npc.identity.iter().map(|byte| format!("{byte:02x}")).collect();
+    let hex: String = npc
+        .identity
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     format!("{hex}:{}", npc.generation)
 }
 
@@ -25,6 +28,7 @@ async fn talk(
     npc: EntityRef,
     text: &str,
     previous: &mut Option<u64>,
+    capture_dir: &Path,
 ) -> TestResult<(String, u64)> {
     tokio::time::sleep(Duration::from_millis(260)).await;
     let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
@@ -32,33 +36,22 @@ async fn talk(
         text: text.into(),
     })
     .map_err(|error| format!("step={text} encode: {error:?}"))?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    let reply = loop {
-        let reply = client
-            .session_mut()
-            .gated_command(
-                wire::CAPABILITY_NPC_SERVICE_V1,
-                wire::COMMAND_TYPE_NPC_TALK_INTENT,
-                &payload,
-            )
-            .await?;
-        if reply.status != CommandStatus::Accepted {
-            return Err(format!("step={text} command status {:?}", reply.status).into());
-        }
-        let disposition = wire::decode_npc_intent_result(&reply.payload)
-            .map_err(|error| format!("step={text} result: {error:?}"))?;
-        if disposition == wire::NpcIntentDisposition::RateLimited
-            && tokio::time::Instant::now() < deadline
-        {
-            client.service_liveness(Duration::from_millis(50)).await?;
-            client.take_events();
-            continue;
-        }
-        if disposition != wire::NpcIntentDisposition::Ok {
-            return Err(format!("step={text} observed {disposition:?}").into());
-        }
-        break reply;
-    };
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_NPC_SERVICE_V1,
+            wire::COMMAND_TYPE_NPC_TALK_INTENT,
+            &payload,
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step={text} command status {:?}", reply.status).into());
+    }
+    let disposition = wire::decode_npc_intent_result(&reply.payload)
+        .map_err(|error| format!("step={text} result: {error:?}"))?;
+    if disposition != wire::NpcIntentDisposition::Ok {
+        return Err(format!("step={text} observed {disposition:?}").into());
+    }
     let delta = loop {
         let delta = client
             .session_mut()
@@ -69,7 +62,11 @@ async fn talk(
         }
     };
     if previous.is_some_and(|new| new != delta.base_revision) {
-        return Err(format!("step={text} conversation revision gap at {}", delta.base_revision).into());
+        return Err(format!(
+            "step={text} conversation revision gap at {}",
+            delta.base_revision
+        )
+        .into());
     }
     *previous = Some(delta.new_revision);
     let conversation = wire::decode_npc_conversation(&delta.payload)
@@ -77,7 +74,11 @@ async fn talk(
     if conversation.open.map(|(actor, _)| actor) != Some(npc) || conversation.lines.is_empty() {
         return Err(format!("step={text} different conversation {conversation:?}").into());
     }
-    capture(&format!("s10-{text}-conversation.bin"), &delta.payload);
+    capture(
+        capture_dir,
+        &format!("s10-{text}-conversation.bin"),
+        &delta.payload,
+    )?;
     Ok((
         format!(
             "{text}\t{}\t{}\t{}\t{}\t{}\t{}\n",
@@ -92,7 +93,7 @@ async fn talk(
     ))
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -132,8 +133,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .ok_or("S10 client capture: Rashid not visible")?;
     let mut previous = None;
     let result: TestResult<String> = async {
-        let (mut expected, _) = talk(&mut client, actor, "hi", &mut previous).await?;
-        let (line, reply_sequence) = talk(&mut client, actor, "trade", &mut previous).await?;
+        let (mut expected, _) = talk(&mut client, actor, "hi", &mut previous, capture_dir).await?;
+        let (line, reply_sequence) =
+            talk(&mut client, actor, "trade", &mut previous, capture_dir).await?;
         expected.push_str(&line);
         let window_delta = loop {
             let delta = client
@@ -165,7 +167,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                 offer.side, offer.item_definition_ref, offer.count, offer.unit_price
             ));
         }
-        capture("s10-trade-window.bin", &window_delta.payload);
+        capture(capture_dir, "s10-trade-window.bin", &window_delta.payload)?;
         expected.push_str(&format!(
             "trade\t{}\t{}\t{}\t{}\t{}\t{}\n",
             wire::STATE_DOMAIN_NPC_TRADE_WINDOW,
@@ -175,7 +177,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             identity(actor),
             lines.join("\u{1f}")
         ));
-        capture("s10-expected.txt", expected.as_bytes());
+        capture(capture_dir, "s10-expected.txt", expected.as_bytes())?;
         Ok(format!("offers={}", window.offers.len()))
     }
     .await;
@@ -184,10 +186,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
+    let Some(capture_dir) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+        evidence("e2e_all scenario=S10.client status=FAIL evidence=capture_directory_missing");
         return;
-    }
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    };
+    match verdict::indexed_timeout(
+        Duration::from_secs(120),
+        verdict::observe(journey(clients, Path::new(&capture_dir))),
+    )
+    .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=S10.client status=CAPTURED evidence={observed}"
         )),
@@ -197,4 +205,19 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         )),
         Err(_) => evidence("e2e_all scenario=S10.client status=FAIL evidence=timeout"),
     }
+}
+
+#[test]
+fn capture_refuses_existing_files_and_missing_directories() -> TestResult {
+    let root = std::env::temp_dir().join(format!("oteryn-s10-capture-{}", std::process::id()));
+    std::fs::create_dir(&root)?;
+    let result = (|| -> TestResult {
+        capture(&root, "frame.bin", b"first")?;
+        assert!(capture(&root, "frame.bin", b"second").is_err());
+        assert_eq!(std::fs::read(root.join("frame.bin"))?, b"first");
+        assert!(capture(&root.join("missing"), "frame.bin", b"dropped").is_err());
+        Ok(())
+    })();
+    std::fs::remove_dir_all(&root)?;
+    result
 }
