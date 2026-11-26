@@ -878,6 +878,24 @@ fi # NODE_BOOT_REUSE_STACK == 0
 start_pg_sampler
 
 ops() { "${as_operator[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
+npc_catalogue_args=()
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  npc_project_sha256="$(python3 - "$GAME_SOURCE/deploy/synology-game/npc-data.pin.json" <<'PY_NPC_PIN'
+import json
+import re
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as source:
+    pin = json.load(source)
+digest = pin.get("project_sha256")
+if pin.get("schema") != "OTERYN_NPC_DATA_PIN/v1" or not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+    raise SystemExit("invalid generated NPC project pin")
+print(digest)
+PY_NPC_PIN
+  )" || fail "NPC project pin unavailable"
+  npc_catalogue_args=(--npc-data-project "$GAME_SOURCE/content/world"
+    --npc-data-sha256 "$npc_project_sha256")
+fi
 launch_node() { # PID variable, config, log
   # Detached from the stage's output pipe, so the stage ends while it serves.
   (

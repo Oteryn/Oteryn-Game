@@ -207,6 +207,11 @@ impl<S: SessionStream> Session<S> {
             write_frame(&mut self.stream, &frame),
         )
         .await?;
+        crate::framing::trace_client_frame(
+            &frame,
+            self.connection_generation,
+            &self.selected_capabilities,
+        );
 
         loop {
             let (message_type, server_sequence, result_payload) =
