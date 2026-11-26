@@ -3,16 +3,11 @@
 //! `crates/client-runtime/src/features/local-spell-action-bar/protocol.rs::run_cast`.
 
 use super::*;
-use oteryn_dev_client::client_runtime::{
-    combat::{CombatCommand, CombatReport, run_combat},
-    spell::SpellFeedback,
-};
+use oteryn_dev_client::client_runtime::spell::{SpellFeedback, cast_selected};
 use oteryn_dev_client::{EntityDetail, SessionEvent};
 use oteryn_protocol_oteryn::{
     actor_spell::{self, SpellCastDisposition},
-    attack,
-    presentation::{PresentationEventKind, PresentationValueKind},
-    target_move,
+    attack, target_move,
 };
 
 const WORDS: &str = "exevo infir flam hur";
@@ -123,7 +118,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         return Err("C18a turn away from the selected Rat was refused".into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
-    let own = loop {
+    let health_before = loop {
         let entities = client
             .world_entities()
             .ok_or("C18a has no post-turn entity projection")?;
@@ -131,15 +126,21 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             .iter()
             .find(|entry| &entry.entity.identity == entities.own_identity())
             .ok_or("C18a has no own entity projection")?;
-        if own.position != here
-            || !entities
-                .iter()
-                .any(|entry| entry.entity == target && entry.position == rat.position)
-        {
+        let selected = entities
+            .iter()
+            .find(|entry| entry.entity == target)
+            .ok_or("C18a selected Rat generation left visibility during the turn")?;
+        if own.position != here || selected.position != rat.position {
             return Err("C18a caster or selected Rat moved during the turn".into());
         }
         if matches!(own.detail, EntityDetail::Actor { direction, .. } if direction == facing) {
-            break own.entity;
+            let EntityDetail::Actor { health_percent, .. } = selected.detail else {
+                return Err("C18a selected Rat has no creature health".into());
+            };
+            if health_percent == 0 {
+                return Err("C18a selected Rat has zero health before the cast".into());
+            }
+            break health_percent;
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("C18a did not observe the caster facing away from the selected Rat".into());
@@ -147,19 +148,20 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(20)).await?;
     };
     client.take_events();
-    let sequence = client.last_server_sequence();
+    if client
+        .session_mut()
+        .combat_state()
+        .and_then(|state| state.target)
+        != Some(target)
+    {
+        return Err("C18a cast requires the same selected Rat generation after turning".into());
+    }
     let before = *client.actor_vitals().ok_or("C18a caster vitals absent")?;
     let mut feedback = SpellFeedback::default();
-    let report = run_combat(
-        client.session_mut(),
-        &mut feedback,
-        CombatCommand::Cast(spell),
-    )
-    .await?;
-    if !matches!(&report, CombatReport::Cast(SpellCastDisposition::Cast))
-        || feedback.text() != Some("Spell cast")
-    {
-        return Err(format!("C18a Scorch cast refused: {report:?}").into());
+    let cast = cast_selected(client.session_mut(), &mut feedback, spell, true).await?;
+    require_mechanic_acceptance(cast.status, "C18a aimed Scorch")?;
+    if cast.disposition != SpellCastDisposition::Cast || feedback.text() != Some("Spell cast") {
+        return Err(format!("C18a Scorch cast refused: {:?}", cast.disposition).into());
     }
     let after = *client
         .actor_vitals()
@@ -170,40 +172,40 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         return Err("C18a Scorch did not apply its exact mana and soul costs".into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
-    let mut observed = Vec::new();
-    loop {
-        if client.take_events().iter().any(|event| {
-            let SessionEvent::Presentation(delta) = event else { return false };
-            if delta.server_sequence <= sequence {
-                return false;
+    'observe: loop {
+        for event in client.take_events() {
+            let SessionEvent::WorldSpatialEntities(delta) = event else {
+                continue;
+            };
+            if delta.server_sequence <= cast.result_server_sequence {
+                continue;
             }
-            for event in &delta.value {
-                let relevant = match event.kind {
-                    PresentationEventKind::ValueText { target: victim, .. } => victim == target,
-                    PresentationEventKind::SpellWords { caster, .. } => caster == own,
-                    _ => false,
-                };
-                if relevant && observed.len() < 8 {
-                    observed.push((delta.server_sequence, event.decision_ordinal, event.kind));
-                }
+            if delta.value.leave.contains(&target) {
+                return Err(format!(
+                    "C18a selected Rat left visibility without a health-loss delta: command={} reply_sequence={} delta_sequence={} target={target:?}",
+                    cast.command_id, cast.result_server_sequence, delta.server_sequence
+                ).into());
             }
-            delta.value.iter().any(|damage| {
-                matches!(damage.kind, PresentationEventKind::ValueText {
-                    kind: PresentationValueKind::DamageDealt, target: victim, primary, ..
-                } if victim == target && primary.value > 0)
-                    && delta.value.iter().any(|words| {
-                        words.decision_ordinal == damage.decision_ordinal
-                            && matches!(words.kind, PresentationEventKind::SpellWords { caster, .. } if caster == own)
-                    })
-            })
-        }) {
-            break;
+            if let Some(updated) = delta
+                .value
+                .update
+                .iter()
+                .find(|entry| entry.entity == target)
+                && let EntityDetail::Actor { health_percent, .. } = updated.detail
+                && health_percent < health_before
+            {
+                evidence(&format!(
+                    "SEAM_EVIDENCE c18a_health command={} reply_sequence={} delta_sequence={} target={target:?} before={health_before} after={health_percent}",
+                    cast.command_id, cast.result_server_sequence, delta.server_sequence
+                ));
+                break 'observe;
+            }
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(
-                "C18a aimed Scorch did not damage the selected Rat in the spell presentation"
-                    .into(),
-            );
+            return Err(format!(
+                "C18a no WorldSpatialEntities health-loss delta after accepted Scorch: command={} reply_sequence={} target={target:?} before={health_before}",
+                cast.command_id, cast.result_server_sequence
+            ).into());
         }
         client.service_liveness(Duration::from_millis(20)).await?;
     }
