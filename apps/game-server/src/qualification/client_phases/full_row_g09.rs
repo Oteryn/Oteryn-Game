@@ -349,7 +349,7 @@ async fn talk(
 fn lubo_greeting_matches(lines: &[String]) -> bool {
     lines
         == [
-            "Welcome to my adventurer shop, Pocket Watch Player! What do you need? Ask me for a {trade} to look at my wares.",
+            "Welcome to my adventurer shop, Pocket Watch Player! What do you need?",
         ]
 }
 
@@ -824,7 +824,13 @@ mod tests {
     }
 
     #[test]
-    fn greeting_rejects_nonblank_substitution() {
+    fn greeting_requires_exact_global_text() {
+        assert!(lubo_greeting_matches(&[
+            "Welcome to my adventurer shop, Pocket Watch Player! What do you need?".into()
+        ]));
+        assert!(!lubo_greeting_matches(&[
+            "Welcome to my adventurer shop, Pocket Watch Player! What do you need? Ask me for a {trade} to look at my wares.".into()
+        ]));
         assert!(!lubo_greeting_matches(&[
             "Welcome, Pocket Watch Player!".into()
         ]));
