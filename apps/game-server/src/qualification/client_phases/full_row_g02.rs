@@ -28,13 +28,9 @@ const CASTLE_APPROACH: TilePos = TilePos {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result =
-        verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
-            .await;
-    let (status, detail) = match result {
-        Ok(Ok(())) => ("PASS", "named-build-code-saved-and-durable".to_owned()),
-        Ok(Err(error)) => ("FAIL", token(&error.to_string())),
-        Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
+    let (status, detail) = match verdict::observe(journey(clients)).await {
+        Ok(()) => ("PASS", "named-build-code-saved-and-durable".to_owned()),
+        Err(error) => ("FAIL", token(&error.to_string())),
     };
     evidence(&format!(
         "e2e_all scenario=G02.full status={status} seconds={:.3} evidence={detail}",
@@ -278,9 +274,25 @@ async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_G02_ACCOUNT").await?;
-    let clients = &identity.clients(clients);
-    let mut client = prepare(clients).await?;
+    // The castle approach uses every server-issued step delay. Keep its time outside
+    // the original 120-second Wheel verification budget.
+    let (identity, client) = verdict::indexed_timeout(Duration::from_secs(300), async {
+        let identity =
+            character_prep::dedicated_character(clients, "NODE_BOOT_G02_ACCOUNT").await?;
+        let client = prepare(&identity.clients(clients)).await?;
+        TestResult::Ok((identity, client))
+    })
+    .await
+    .map_err(|error| verdict::context("step=prepare observed=timeout".into(), error))??;
+    verdict::indexed_timeout(
+        Duration::from_secs(120),
+        verify(&identity.clients(clients), client),
+    )
+    .await
+    .map_err(|error| verdict::context("step=journey observed=timeout".into(), error))?
+}
+
+async fn verify(clients: &SeamClients<'_>, mut client: DevClientSession) -> TestResult {
     let mut panel = admitted_panel(&client);
     if !panel.selected {
         return Err("step=admit observed=wheel-capability-not-selected".into());
