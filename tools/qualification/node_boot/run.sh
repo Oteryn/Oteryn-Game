@@ -1843,6 +1843,19 @@ ORDER BY r.account_id;
 SQL
 )"
   [[ "$births" == "knight|${INTERPRETATION[3]}|1"$'\n'"sorcerer|${INTERPRETATION[3]}|1" ]] || pvp_fail "PvP bootstrap vocation, starter or account projection readback"
+  # MP01 fights in Thais. Seed the victim's hometown before first admission
+  # so the real death/respawn flow returns within walking range of the fight.
+  local victim_town
+  victim_town="$(psql_admin "$PVP_DATABASE" <<SQL
+INSERT INTO game_character_home_towns (character_id, town_id)
+SELECT character_id, 8 FROM game_character_roots
+WHERE world_id = '$PVP_WORLD_ID' AND account_id = '${PVP_ACCOUNT_IDS[1]}'
+ON CONFLICT (character_id) DO NOTHING;
+SELECT h.town_id FROM game_character_home_towns h JOIN game_character_roots r USING (character_id)
+WHERE r.world_id = '$PVP_WORLD_ID' AND r.account_id = '${PVP_ACCOUNT_IDS[1]}';
+SQL
+)"
+  [[ "$victim_town" == 8 ]] || pvp_fail "PvP victim Thais hometown readback"
   evidence "pvp_characters=2 world=$PVP_WORLD_ID source=platform_intents path=pvp_control_socket retry=idempotent contract=4 starter=${INTERPRETATION[3]} births=knight,sorcerer projection_revision=1"
 }
 

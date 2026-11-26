@@ -119,6 +119,8 @@ pub struct ChannelSessionStates {
     /// Per-owner simulation clock control for native timer scenarios, never SQL time.
     #[cfg(test)]
     pub(super) test_owner_time: std::sync::atomic::AtomicU64,
+    #[cfg(test)]
+    pub(super) test_daily_boost_parked_trade: std::sync::atomic::AtomicBool,
     pub(super) tibiadrome: super::tibiadrome::Drome,
     pub(super) timed_items: super::timed_item::TimedRuntime,
     /// PAR-P12a: Characters whose level, tracked kill or boss kill may have changed a title

@@ -17,6 +17,7 @@ use super::{
 use crate::ability::AbilityOccurrence;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{QualifiedNativeEntryRoom, SpellTileLookupError};
+use crate::durability::DurabilityError;
 use crate::durability::character_build::{
     BuildChangeRequest, BuildOccurrence, CommittedBuildChange,
 };
@@ -320,20 +321,30 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         &self,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Option<SpellLanePermit>> + Send + '_>>
     {
+        Box::pin(async move { self.try_spell_lane_permit().await.ok() })
+    }
+
+    pub(in crate::gameplay_transport) fn try_spell_lane_permit(
+        &self,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<SpellLanePermit, DurabilityError>> + Send + '_>,
+    > {
         Box::pin(async move {
             let permit = match self.spell_lane.acquire().await {
                 Ok(permit) => permit,
                 Err(unresolved) => self.resolve_unresolved_spell_commit(unresolved).await,
             };
-            if permit.has_unresolved()
-                || !self.resolve_player_trades(&permit).await
-                || !self.resolve_primal_pod_steps(&permit).await
+            if permit.has_unresolved() {
+                return Err(DurabilityError::Unavailable);
+            }
+            self.resolve_player_trades(&permit).await?;
+            if !self.resolve_primal_pod_steps(&permit).await
                 || !self.resolve_cloak_blood_steps(&permit).await
                 || !self.resolve_spite_steps(&permit).await
             {
-                return None;
+                return Err(DurabilityError::Unavailable);
             }
-            Some(permit)
+            Ok(permit)
         })
     }
     /// Resumes the parked writer's own retained retry path under the lane (§1.6): it installs a
