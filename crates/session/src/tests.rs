@@ -4,6 +4,8 @@ mod account_achievements_tests;
 mod activity_handoff_tests;
 #[path = "tests/activity_scope.rs"]
 mod activity_scope_tests;
+#[path = "tests/admission_snapshot_tests.rs"]
+mod admission_snapshot_tests;
 #[path = "tests/analyser.rs"]
 mod analyser_tests;
 mod appearance_session_tests;
@@ -56,7 +58,7 @@ mod e2e_e03;
 mod e2e_i06;
 #[path = "tests/e2e_i08.rs"]
 mod e2e_i08;
-#[path = "tests/e2e_i09.rs"]
+#[path = "tests/e2e_i09_tests.rs"]
 mod e2e_i09;
 #[path = "tests/e2e_i12.rs"]
 mod e2e_i12;

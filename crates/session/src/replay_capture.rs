@@ -63,6 +63,11 @@ impl<S> Session<S> {
 
 pub(super) const C16C_FILES: [&str; 3] =
     ["c16c-snapshot.bin", "c16c-deltas.bin", "c16c-expected.txt"];
+pub(super) const C16D_FILES: [&str; 3] = [
+    "c16d-entities.bin",
+    "c16d-expected.txt",
+    "c16d-capabilities.bin",
+];
 pub(super) const P19_FILES: [&str; 3] = [
     "p19-appearance-snapshot.bin",
     "p19-appearance-deltas.bin",
@@ -83,6 +88,12 @@ const ENTITY_CAPABILITIES: &[u32] = &[
     guild_emblem::CAPABILITY_GUILD_EMBLEM_V1,
 ];
 
+struct ReplayContext<'a> {
+    selected: Vec<u32>,
+    refs: Vec<u32>,
+    snapshots: Vec<&'a GatedSnapshot>,
+}
+
 impl<S: SessionStream> Session<S> {
     /// Serialize the three C16c capture files as (file name, bytes) pairs.
     /// Call after observing the summoned creature enter and while it is still visible.
@@ -99,6 +110,41 @@ impl<S: SessionStream> Session<S> {
             return None;
         }
         self.replay_files(C16C_FILES, summon, entity.kind as u8, false)
+    }
+
+    /// Serialize the three C16d capture files as (file name, bytes) pairs.
+    /// Call after admission. `c16d-entities.bin` contains the retained snapshot and
+    /// `c16d-expected.txt` its own actor's decimal appearance reference and newline.
+    /// `c16d-capabilities.bin` contains OTR1 snapshot metadata, including negotiated
+    /// entity capabilities and any companion snapshots needed to admit it.
+    /// Returns `None` if the world snapshot or matching replay context is unavailable.
+    pub fn c16d_capture_files(&self) -> Option<[(&'static str, Vec<u8>); 3]> {
+        let world = self.replay.world_snapshot.as_deref()?;
+        let context = self.replay_context(world, false)?;
+        let (snapshot, _) =
+            world_spatial_entities::decode_world_spatial_entities_snapshot_with_fields(
+                &world.payload,
+                world_spatial_entities::EntityFields::selected(&context.selected),
+            )
+            .ok()?;
+        let actor = snapshot
+            .entities
+            .iter()
+            .find(|entity| entity.entity.identity == snapshot.own_identity)?;
+        let (EntityDetail::Actor { appearance_ref, .. }
+        | EntityDetail::ActorWithIcons { appearance_ref, .. }) = actor.detail
+        else {
+            return None;
+        };
+
+        Some([
+            (C16D_FILES[0], world.payload.clone()),
+            (C16D_FILES[1], format!("{appearance_ref}\n").into_bytes()),
+            (
+                C16D_FILES[2],
+                context.transcript(self.replay.world_sequence, world.domain_id)?,
+            ),
+        ])
     }
 
     /// Serialize the three P19 capture files as (file name, bytes) pairs.
@@ -123,60 +169,24 @@ impl<S: SessionStream> Session<S> {
         forge: bool,
     ) -> Option<[(&'static str, Vec<u8>); 3]> {
         let world = self.replay.world_snapshot.as_deref()?;
-        let mut snapshots = vec![world];
-        let mut selected = self
-            .selected_capabilities()
-            .iter()
-            .copied()
-            .filter(|id| ENTITY_CAPABILITIES.contains(id))
-            .collect::<Vec<_>>();
+        let context = self.replay_context(world, forge)?;
         let mut deltas = Vec::new();
         append_chain(&mut deltas, world, self.raw_world_entity_deltas())?;
-        let mut refs = Vec::new();
         let mut primary = world;
-        if forge || selected.contains(&actor_motion::CAPABILITY_ACTOR_MOTION_V1) {
-            let appearance = self.gated_snapshot(appearance::STATE_DOMAIN_APPEARANCE)?;
-            // Cross-domain validation needs a common starting state.
-            if self.replay.appearance_sequence != Some(self.replay.world_sequence) {
-                return None;
-            }
-            selected.push(appearance::CAPABILITY_APPEARANCE_V1);
-            snapshots.push(appearance);
+        if let Some(appearance) = context
+            .snapshots
+            .iter()
+            .copied()
+            .find(|snapshot| snapshot.domain_id == appearance::STATE_DOMAIN_APPEARANCE)
+        {
             append_chain(&mut deltas, appearance, self.raw_appearance_deltas())?;
-            refs = appearance_state::item_references(self.appearance.as_ref()?).unwrap_or_default();
             if forge {
-                selected.push(appearance::CAPABILITY_FORGE_CREATURE_V1);
                 primary = appearance;
             }
         }
-        if selected.contains(&world_clock::CAPABILITY_WORLD_LIGHT_V1) {
-            snapshots.push(self.gated_snapshot(world_clock::STATE_DOMAIN_WORLD_CLOCK)?);
-        }
-        selected.sort_unstable();
         deltas.sort_unstable_by_key(|(_, delta)| delta.server_sequence);
 
-        let mut transcript = b"OTR1".to_vec();
-        transcript.extend(self.replay.world_sequence.to_le_bytes());
-        for list in [&selected, &refs] {
-            transcript.extend(u32::try_from(list.len()).ok()?.to_le_bytes());
-            for value in list {
-                transcript.extend(value.to_le_bytes());
-            }
-        }
-        transcript.extend(u32::try_from(snapshots.len()).ok()?.to_le_bytes());
-        for snapshot in snapshots {
-            transcript.extend(snapshot.domain_id.to_le_bytes());
-            transcript.extend(snapshot.revision.to_le_bytes());
-            transcript.extend(snapshot.snapshot_type.to_le_bytes());
-            append_bytes(
-                &mut transcript,
-                if snapshot.domain_id == primary.domain_id {
-                    &[]
-                } else {
-                    &snapshot.payload
-                },
-            )?;
-        }
+        let mut transcript = context.transcript(self.replay.world_sequence, primary.domain_id)?;
         for (domain, delta) in deltas {
             let frame = oteryn_protocol_oteryn::encode_state_delta(
                 1,
@@ -201,6 +211,71 @@ impl<S: SessionStream> Session<S> {
             (names[1], transcript),
             (names[2], line.into_bytes()),
         ])
+    }
+
+    fn replay_context<'a>(
+        &'a self,
+        world: &'a GatedSnapshot,
+        forge: bool,
+    ) -> Option<ReplayContext<'a>> {
+        let mut snapshots = vec![world];
+        let mut selected = self
+            .selected_capabilities()
+            .iter()
+            .copied()
+            .filter(|id| ENTITY_CAPABILITIES.contains(id))
+            .collect::<Vec<_>>();
+        let mut refs = Vec::new();
+        if forge || selected.contains(&actor_motion::CAPABILITY_ACTOR_MOTION_V1) {
+            let appearance = self.gated_snapshot(appearance::STATE_DOMAIN_APPEARANCE)?;
+            // Cross-domain validation needs a common starting state.
+            if self.replay.appearance_sequence != Some(self.replay.world_sequence) {
+                return None;
+            }
+            selected.push(appearance::CAPABILITY_APPEARANCE_V1);
+            snapshots.push(appearance);
+            refs = appearance_state::item_references(self.appearance.as_ref()?).unwrap_or_default();
+            if forge {
+                selected.push(appearance::CAPABILITY_FORGE_CREATURE_V1);
+            }
+        }
+        if selected.contains(&world_clock::CAPABILITY_WORLD_LIGHT_V1) {
+            snapshots.push(self.gated_snapshot(world_clock::STATE_DOMAIN_WORLD_CLOCK)?);
+        }
+        selected.sort_unstable();
+        Some(ReplayContext {
+            selected,
+            refs,
+            snapshots,
+        })
+    }
+}
+
+impl ReplayContext<'_> {
+    fn transcript(&self, sequence: u64, primary_domain: u32) -> Option<Vec<u8>> {
+        let mut transcript = b"OTR1".to_vec();
+        transcript.extend(sequence.to_le_bytes());
+        for list in [&self.selected, &self.refs] {
+            transcript.extend(u32::try_from(list.len()).ok()?.to_le_bytes());
+            for value in list {
+                transcript.extend(value.to_le_bytes());
+            }
+        }
+        transcript.extend(u32::try_from(self.snapshots.len()).ok()?.to_le_bytes());
+        for snapshot in &self.snapshots {
+            transcript.extend(snapshot.domain_id.to_le_bytes());
+            transcript.extend(snapshot.revision.to_le_bytes());
+            transcript.extend(snapshot.snapshot_type.to_le_bytes());
+            append_bytes(
+                &mut transcript,
+                if snapshot.domain_id == primary_domain {
+                    &[]
+                } else {
+                    &snapshot.payload
+                },
+            )?;
+        }
+        Some(transcript)
     }
 }
 
