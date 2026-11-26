@@ -78,12 +78,9 @@ async fn accepted(
 }
 
 async fn finish(client: &mut DevClientSession) -> TestResult {
-    let (result, reply, attempts, timed_out) = logout_retrying_busy(client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!(
-            "step=logout observed={reply};attempts={attempts};busy-timeout={timed_out}"
-        )
-        .into());
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={reply:?} needed=first-attempt-accepted").into());
     }
     Ok(())
 }
@@ -144,11 +141,16 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
     let wire::Reply::Dialog(dialog) = query(client).await? else {
         return Err("step=query observed=no-dialog needed=non-empty-server-motd".into());
     };
+    if dialog.title != "Server notice"
+        || dialog.message != "Welcome to the node-boot qualification world."
+    {
+        return Err("step=query observed=unexpected-dialog needed=configured-server-motd".into());
+    }
     let Some(button) = dialog.buttons.first().map(|button| button.0) else {
         return Err("step=query observed=dialog-without-buttons".into());
     };
     match query(client).await? {
-        wire::Reply::Dialog(again) if format!("{again:?}") == format!("{dialog:?}") => {}
+        wire::Reply::Dialog(again) if again == dialog => {}
         other => return Err(format!("step=repeat observed={other:?}").into()),
     }
     let selected = input_selected(client);
@@ -161,19 +163,23 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
         &wrong,
     )
     .await?;
-    if status == CommandStatus::Accepted
-        && matches!(
-            decode_reply(selected, &payload),
-            Ok(wire::Reply::Answered(_))
+    if status != CommandStatus::Rejected || !payload.is_empty() {
+        return Err(format!(
+            "step=wrong-answer observed=status:{status:?},payload-len:{} needed=empty-rejection",
+            payload.len()
         )
-    {
-        return Err("step=wrong-answer observed=accepted-for-unknown-dialog".into());
+        .into());
     }
     match query(client).await? {
-        wire::Reply::Dialog(still) if still.id == dialog.id => {}
+        wire::Reply::Dialog(still) if still == dialog => {}
         other => return Err(format!("step=wrong-answer observed=dialog-changed:{other:?}").into()),
     }
     let right = answer(selected, dialog.id, button)?;
+    let expected_answer = wire::Answer {
+        dialog_id: dialog.id,
+        button_id: button,
+        choice_id: None,
+    };
     let payload = accepted(
         client,
         CAPABILITY,
@@ -182,8 +188,7 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
     )
     .await?;
     match decode_reply(selected, &payload) {
-        Ok(wire::Reply::Answered(given))
-            if given.dialog_id == dialog.id && given.button_id == button => {}
+        Ok(wire::Reply::Answered(given)) if given == expected_answer => {}
         other => return Err(format!("step=answer observed={other:?}").into()),
     }
     if !matches!(query(client).await?, wire::Reply::None) {
@@ -197,7 +202,7 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
     )
     .await?;
     match decode_reply(selected, &payload) {
-        Ok(wire::Reply::Answered(_)) => {}
+        Ok(wire::Reply::Answered(given)) if given == expected_answer => {}
         other => return Err(format!("step=replay observed={other:?}").into()),
     }
     if !matches!(query(client).await?, wire::Reply::None) {
