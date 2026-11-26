@@ -135,6 +135,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     position: at,
                     facts,
                     passable,
+                    reuse_existing: callback.key == super::paid_projection::DREAD_LORD_SCROLL,
                 },
                 _ => return Err(UseDisposition::Rejected),
             });

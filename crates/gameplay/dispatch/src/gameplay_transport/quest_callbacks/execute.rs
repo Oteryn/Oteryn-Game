@@ -1193,6 +1193,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let coffin = VampireCoffinKind::for_callback(&callback.key);
         let mut recover_ordinary_coffin = false;
+        let paid_scene = if callback.key == super::paid_projection::DREAD_LORD_SCROLL {
+            let (Some(projection), Some(delay)) =
+                (projection.as_ref(), callback.effects.reset_after_ms)
+            else {
+                return UseDisposition::Rejected;
+            };
+            if !durable
+                || close
+                || scene_moves.is_some()
+                || !passages.is_empty()
+                || !replacements.is_empty()
+            {
+                return UseDisposition::Rejected;
+            }
+            let Some(scene) =
+                map.facts
+                    .stage_timed_scene_creation(key, expected_revision, after, projection)
+            else {
+                return UseDisposition::Rejected;
+            };
+            Some((scene, u64::from(delay) * 1_000))
+        } else {
+            None
+        };
         if durable {
             let (Some(fence), Some(slot), Some(catalogue)) =
                 (fence, slot, self.quest_catalogue.as_ref())
@@ -1634,7 +1658,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Durable admission may wait on PostgreSQL. Start source reset/regrowth
             // at publication, so commit latency cannot consume its visible lifetime.
             // Readset projections carry the same timer for the Children lever owner.
-            if !close && let Some(delay) = callback.effects.reset_after_ms {
+            if paid_scene.is_none()
+                && !close
+                && let Some(delay) = callback.effects.reset_after_ms
+            {
                 let Some(published_due) =
                     self.owner_now().get().checked_add(u64::from(delay) * 1_000)
                 else {
@@ -1723,7 +1750,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     projection.as_ref(),
                 )
             };
-            if let Some(proof) = scene_moves {
+            if let Some((scene, delay)) = paid_scene {
+                scene.publish(self.owner_now().get().saturating_add(delay));
+            } else if let Some(proof) = scene_moves {
                 if let Some(publication) = scene_publication {
                     // This stage validates the original census without storing
                     // a runtime guard or taking a stale carrier across custody I/O.

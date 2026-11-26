@@ -241,6 +241,15 @@ pub(super) async fn exercise_dread_lord(
     assert_eq!(pull(owner, admitted, resting_lever).await?, UseDisposition::Rejected);
     assert_eq!(counts(harness).await?, after);
     assert_eq!(ground_outputs(owner)?, 1);
+
+    assert_eq!(pull(owner, &mut peer, resting_lever).await?, UseDisposition::Committed);
+    assert_eq!(counts(harness).await?, (after.0 + 1, after.1 + 1));
+    assert_eq!(ground_outputs(owner)?, 1, "the second claim reuses the scene item");
+    let map = owner.bundle_map().ok_or("map")?;
+    let second_due = map.facts.next_movement_decay_time().ok_or("second lever deadline")?;
+    assert_eq!(map.facts.expire_movement_items(second_due - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(second_due), 1);
+    assert_eq!(ground_outputs(owner)?, 1);
     let after_mints: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources")
         .fetch_one(&harness.pool).await?;
     assert_eq!(after_mints, before_mints);
