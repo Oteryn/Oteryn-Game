@@ -389,6 +389,69 @@ class ReuseTests(unittest.TestCase):
         self.assertIn('"$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then\n  NODE_BOOT_WORLD=0 bash', RUN_TEXT)
 
 
+class S01ClientReplayTests(unittest.TestCase):
+    def test_selection_matches_the_indexed_world_row(self):
+        for world, spells, legacy, groups, batch, selected in (
+            (1, 0, 0, 'rows', '179:1', True),
+            (1, 0, 0, 'core, rows', '+0178:2', True),
+            (1, 0, 0, '', 'all', True),
+            (1, 0, 0, 'rows', '178:1', False),
+            (1, 0, 0, 'rows', '179:0', False),
+            (1, 0, 0, 'rows', '', False),
+            (1, 0, 0, 'f4', '179:1', False),
+            (0, 0, 0, 'rows', '179:1', False),
+            (0, 1, 0, 'rows', '179:1', False),
+            (1, 0, 1, 'rows', '179:1', False),
+        ):
+            with self.subTest(world=world, spells=spells, legacy=legacy, groups=groups, batch=batch):
+                result = bash(f'''
+                    set -Eeuo pipefail
+                    source "{HERE / 's01_client_replay.sh'}"
+                    NODE_BOOT_WORLD={world} NODE_BOOT_SPELLS={spells} NODE_BOOT_D150_LEGACY={legacy}
+                    NODE_BOOT_E2E_ONLY={groups!r} OTERYN_E2E_ROW_BATCH={batch!r}
+                    s01_client_selected
+                ''')
+                self.assertEqual(result.returncode, int(not selected), result.stderr)
+
+    def test_verdict_requires_one_live_capture_and_one_exact_replay(self):
+        marker = 'SEAM_EVIDENCE e2e_capture scenario=S01.client status=CAPTURED evidence=party\n'
+        with tempfile.TemporaryDirectory() as temp:
+            log = Path(temp, 'stage-seam_stages.log')
+            for captures, outcome, expected in (
+                (0, 'pass', 'live-capture-missing-or-duplicate'),
+                (2, 'pass', 'live-capture-missing-or-duplicate'),
+                (1, 'zero', 'replay-test-did-not-run'),
+                (1, 'error', 'replay-test-failed'),
+                (1, 'pass', 'live-party-ui-replay'),
+            ):
+                with self.subTest(captures=captures, outcome=outcome):
+                    log.write_text(marker * captures)
+                    result = bash(f'''
+                        set -Eeuo pipefail
+                        source "{HERE / 's01_client_replay.sh'}"
+                        WORK={temp!r} NODE_BOOT_S01_CAPTURE_DIR="$WORK/fresh"
+                        cargo() {{
+                            echo TEST_CARGO_CALLED
+                            [[ "$E2E_ALL_CAPTURE_DIR" == "$WORK/fresh" ]] || return 4
+                            [[ "$*" == *'--lib party::e2e_s01::party_replay_invite_join_and_leadership_pass -- --exact' ]] || return 5
+                            case {outcome} in
+                                error) return 6 ;;
+                                zero) echo 'test result: ok. 0 passed; 0 failed; 0 ignored;' ;;
+                                pass)
+                                    echo 'test party::e2e_s01::party_replay_invite_join_and_leadership_pass ... ok'
+                                    echo 'test result: ok. 1 passed; 0 failed; 0 ignored;'
+                                    ;;
+                            esac
+                        }}
+                        E2E_ALL_CAPTURE_DIR="$WORK/stale" s01_client_replay
+                    ''')
+                    passed = expected == 'live-party-ui-replay'
+                    self.assertEqual(result.returncode, int(not passed), result.stderr)
+                    self.assertEqual('TEST_CARGO_CALLED' in result.stdout, captures == 1)
+                    self.assertIn(f'scenario=S01.client status={"PASS" if passed else "FAIL"}', result.stdout)
+                    self.assertIn(f'evidence={expected}', result.stdout)
+
+
 class SeamPassThroughTests(unittest.TestCase):
     def test_seam_runs_spawn_fence_regression_with_database_url(self):
         seam = function('seam_stages')

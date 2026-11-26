@@ -5,14 +5,23 @@ use super::*;
 use oteryn_dev_client::client_runtime::party as runtime;
 use oteryn_dev_client::{DevClientSession, EntityRef};
 use runtime::party::{PartyDisposition, PartyIntent};
+use std::io::Write as _;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
+    if let Some(root) = std::env::var_os("NODE_BOOT_S01_CAPTURE_DIR") {
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(Path::new(&root).join(name))?
+            .write_all(bytes)?;
+    }
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
         evidence(&format!("S01_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
     }
+    Ok(())
 }
 
 fn own(client: &DevClientSession) -> TestResult<EntityRef> {
@@ -80,7 +89,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("invitation mismatch: {:?}", invited.result).into());
     };
     let inviter = invitation.name.clone();
-    capture("s01-invitations.bin", &invited.view);
+    capture("s01-invitations.bin", &invited.view)?;
 
     let joined = send(&mut peer, Some(PartyIntent::Accept(invitation.handle))).await?;
     if joined.result.members.len() != 2 || !joined.result.invitations.is_empty() {
@@ -90,8 +99,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("join has no non-leader member".into());
     };
     let joiner_name = joiner.name.clone();
-    capture("s01-joined-op.bin", &joined.operation);
-    capture("s01-joined-view.bin", &joined.view);
+    capture("s01-joined-op.bin", &joined.operation)?;
+    capture("s01-joined-view.bin", &joined.view)?;
 
     let leader_view = send(&mut leader, None).await?;
     let Some(member) = leader_view.result.members.iter().find(|m| !m.leader) else {
@@ -106,8 +115,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("leadership did not pass".into());
     }
-    capture("s01-passed-op.bin", &passed.operation);
-    capture("s01-passed-view.bin", &passed.view);
+    capture("s01-passed-op.bin", &passed.operation)?;
+    capture("s01-passed-view.bin", &passed.view)?;
     send(&mut leader, Some(PartyIntent::Leave)).await?;
     let _ = leader.session_mut().logout().await?;
     let _ = peer.session_mut().logout().await?;
@@ -116,7 +125,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         joined.result.members.len(),
         joined.result.shared_xp_enabled
     );
-    capture("s01-expected.txt", expected.as_bytes());
+    capture("s01-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";").replace(' ', "_"))
 }
 
