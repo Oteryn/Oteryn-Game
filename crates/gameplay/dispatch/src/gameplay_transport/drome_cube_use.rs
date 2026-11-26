@@ -74,6 +74,35 @@ async fn probe_read<T>(
     }
 }
 
+fn log_probe_failure(command: UseCommand, stage: &'static str) {
+    crate::gameplay_transport::operator_event(&format!(
+        "event=drome_use_probe_failed stage={stage} command_id={}",
+        command.command_id,
+    ));
+}
+
+/// Probe failures can terminalize a refusal. Lost authority and unknown
+/// writes keep their existing close and recovery semantics.
+enum ProbeFailure {
+    Refused(&'static str),
+    Fence(&'static str),
+    UnresolvedWrite,
+}
+
+const PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
+
+async fn probe_read<T>(
+    deadline: tokio::time::Instant,
+    budget: &AdmissionRetryBudget<'_>,
+    stage: &'static str,
+    read: impl AsyncFnMut() -> Result<T, ItemUseError>,
+) -> Result<T, ProbeFailure> {
+    match tokio::time::timeout_at(deadline, retry_owner_read(budget, read)).await {
+        Ok(Ok(value)) => Ok(value),
+        Ok(Err(_)) | Err(_) => Err(ProbeFailure::Refused(stage)),
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn dispatch_drome_use(
         &self,
@@ -83,6 +112,62 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         shown_definition: Option<std::num::NonZeroU32>,
     ) -> Result<Option<UseOutcome>, ()> {
+        use crate::durability::item_use::concoction::kooldown_aid::KOOLDOWN_AID_KEY;
+        let definition = match intent.target {
+            UseTarget::ItemByDefinition(definition) => Some(definition),
+            UseTarget::Item(_) => shown_definition,
+            _ => return Ok(None),
+        };
+        // Display definitions select a route. The pinned catalogue establishes
+        // their identity, and the selected owner still checks current custody.
+        // A retired or unresolved handle can still name an exact receipt.
+        let key = if let Some(definition) = definition {
+            let runtime = self.runtime.lock().await;
+            pinned_index(&runtime, self.active_generation)
+                .and_then(|index| index.definition_at(definition))
+                .map(|(key, _)| key)
+        } else {
+            None
+        };
+        let deadline = tokio::time::Instant::now() + PROBE_TIMEOUT;
+        let result = async {
+            if key.is_none_or(|key| key == KOOLDOWN_AID_KEY)
+                && let Some(outcome) = self
+                    .use_kooldown_aid_impl(actor, command, &intent, source, deadline)
+                    .await?
+            {
+                return Ok(Some(outcome));
+            }
+            if key.is_none_or(|key| key == DROME_CUBE_KEY) {
+                return self
+                    .use_drome_cube_impl(actor, command, intent, source, deadline)
+                    .await;
+            }
+            Ok(None)
+        }
+        .await;
+        match result {
+            Ok(result) => Ok(result),
+            Err(ProbeFailure::Refused(stage)) => {
+                log_probe_failure(command, stage);
+                Ok(Some(outcome(UseDisposition::Rejected)))
+            }
+            Err(ProbeFailure::Fence(stage)) => {
+                log_probe_failure(command, stage);
+                Err(())
+            }
+            Err(ProbeFailure::UnresolvedWrite) => Err(()),
+        }
+    }
+
+    async fn use_drome_cube_impl(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: UseIntent,
+        source: Option<ItemKey>,
+        deadline: tokio::time::Instant,
+    ) -> Result<Option<UseOutcome>, ProbeFailure> {
         use crate::durability::item_use::concoction::kooldown_aid::KOOLDOWN_AID_KEY;
         let definition = match intent.target {
             UseTarget::ItemByDefinition(definition) => Some(definition),

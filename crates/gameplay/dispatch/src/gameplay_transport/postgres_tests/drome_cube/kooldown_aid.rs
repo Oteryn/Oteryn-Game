@@ -45,6 +45,7 @@ pub(super) async fn run(
             stale,
             intent.clone(),
             Some(ItemKey::Instance(id(110))),
+            None,
         )
         .await
         .map_err(|_| "stale fence outcome")?
@@ -84,6 +85,7 @@ pub(super) async fn run(
                 },
                 intent.clone(),
                 None,
+                None,
             )
             .await
             .is_err()
@@ -118,7 +120,7 @@ pub(super) async fn run(
     let later = armed(after)?;
     install(owner, actor, session, later.clone()).await?;
     let replay = owner
-        .use_drome_cube(actor, command(2)?, intent.clone(), None)
+        .use_drome_cube(actor, command(2)?, intent.clone(), None, None)
         .await
         .map_err(|_| "historical outcome")?
         .ok_or("historical receipt")?;
@@ -128,7 +130,7 @@ pub(super) async fn run(
     let mut changed = intent.clone();
     changed.target = UseTarget::Item(NonZeroU64::new(4).ok_or("changed handle")?);
     let conflict = owner
-        .use_drome_cube(actor, command(2)?, changed, None)
+        .use_drome_cube(actor, command(2)?, changed, None, None)
         .await
         .map_err(|_| "conflicting receipt outcome")?
         .ok_or("conflicting receipt")?;

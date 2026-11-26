@@ -13,13 +13,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         test_faults::lose_next_ack();
     }
 
-    pub(in crate::gameplay_transport) async fn use_kooldown_aid_impl(
+    pub(in super::super) async fn use_kooldown_aid_impl(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
         intent: &UseIntent,
         source: Option<ItemKey>,
-    ) -> Result<Option<UseOutcome>, ()> {
+        deadline: tokio::time::Instant,
+    ) -> Result<Option<UseOutcome>, ProbeFailure> {
         if intent.use_with.is_some()
             || intent.use_with_map_item.is_some()
             || intent.use_with_position.is_some()
@@ -34,15 +35,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         };
         if fence.game_session_id != command.game_session_id {
-            return Ok(Some(outcome(UseDisposition::Rejected)));
+            return Err(ProbeFailure::Fence("kooldown_session_fence"));
         }
         let command_ref = CommandRef::new(
             command.game_session_id,
-            CommandId::new(command.command_id).map_err(|_| ())?,
+            CommandId::new(command.command_id)
+                .map_err(|_| ProbeFailure::Refused("kooldown_command_id"))?,
         );
-        let binding: [u8; 32] =
-            Sha256::digest(encode_item_use_intent(intent).map_err(|_| ())?).into();
-        let _permit = self.spell_lane_permit().await.ok_or(())?;
+        let binding: [u8; 32] = Sha256::digest(
+            encode_item_use_intent(intent).map_err(|_| ProbeFailure::Refused("kooldown_intent"))?,
+        )
+        .into();
+        let _permit = tokio::time::timeout_at(deadline, self.spell_lane_permit())
+            .await
+            .ok()
+            .flatten()
+            .ok_or(ProbeFailure::Refused("kooldown_permit"))?;
+        let budget = AdmissionRetryBudget::for_command(self.root);
         let pending = {
             let runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
@@ -51,19 +60,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .gate(&runtime, actor, command.game_session_id)
                 .and_then(|gate| gate.cube_pending.clone())
         };
-        match self
-            .root
-            .read_kooldown_aid_receipt(self.character, fence, command_ref, binding)
-            .await
+        if probe_read(deadline, &budget, "kooldown_receipt", async || {
+            self.root
+                .read_kooldown_aid_receipt(self.character, fence, command_ref, binding)
+                .await
+        })
+        .await?
         {
-            Ok(true) => {
-                self.finish_kooldown_aid(actor, command, binding, UseDisposition::Committed)
-                    .await?;
-                return Ok(Some(outcome(UseDisposition::Committed)));
-            }
-            Ok(false) => {}
-            Err(ItemUseError::Unavailable(_)) => return Err(()),
-            Err(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
+            self.finish_kooldown_aid(actor, command, binding, UseDisposition::Committed)
+                .await?;
+            return Ok(Some(outcome(UseDisposition::Committed)));
         }
         if let Some(pending) = pending.as_ref()
             && pending.request.kind == ItemUseKind::Concoction
@@ -72,13 +78,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if pending.binding() != Some(binding) {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
-            if !self.cube_actor_live(actor, command.game_session_id).await {
-                return Err(());
-            }
+            self.check_cube_actor(actor, command.game_session_id)
+                .await?;
             return self
                 .commit_kooldown_attempt(actor, command, pending.request.clone(), binding)
                 .await
-                .map(|result| Some(outcome(result)));
+                .map(|result| Some(outcome(result)))
+                .map_err(|()| ProbeFailure::UnresolvedWrite);
+        }
+        if matches!(intent.target, UseTarget::Item(_)) && source.is_none() {
+            return Ok(None);
         }
         let native = match self
             .active_generation
@@ -110,15 +119,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => None,
         };
-        let inventory = match self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
-            .await
-        {
-            Ok(inventory) => inventory,
-            Err(ItemUseError::Unavailable(_)) => return Err(()),
-            Err(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
-        };
+        let inventory = probe_read(deadline, &budget, "kooldown_inventory", async || {
+            self.root
+                .read_item_use_inventory(self.character, self.holder, fence)
+                .await
+        })
+        .await?;
         let Some(bag) = inventory.backpack.as_ref() else {
             return Ok(None);
         };
@@ -141,9 +147,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if pending.is_some() {
             return Ok(Some(outcome(UseDisposition::Exhausted)));
         }
-        if !self.cube_actor_live(actor, command.game_session_id).await {
-            return Ok(Some(outcome(UseDisposition::Rejected)));
-        }
+        self.check_cube_actor(actor, command.game_session_id)
+            .await?;
         let reserved = {
             let runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
@@ -190,9 +195,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             content_revision: inventory.content_revision.clone(),
             ruleset_revision: inventory.ruleset_revision.clone(),
             sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
-            transaction_id: crate::operator_files::uuid_v7().map_err(|_| ())?,
-            event_id: crate::operator_files::uuid_v7().map_err(|_| ())?,
-            occurred_at_unix_ms: super::super::super::unix_ms()?,
+            transaction_id: crate::operator_files::uuid_v7()
+                .map_err(|_| ProbeFailure::Refused("kooldown_prepare"))?,
+            event_id: crate::operator_files::uuid_v7()
+                .map_err(|_| ProbeFailure::Refused("kooldown_prepare"))?,
+            occurred_at_unix_ms: super::super::super::unix_ms()
+                .map_err(|()| ProbeFailure::Refused("kooldown_prepare"))?,
             server_build_id: SERVER_BUILD_ID.into(),
             source_item_instance_id: source_id,
             source_definition: entry.item.definition.clone(),
@@ -216,6 +224,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.commit_kooldown_attempt(actor, command, request, binding)
             .await
             .map(|result| Some(outcome(result)))
+            .map_err(|()| ProbeFailure::UnresolvedWrite)
     }
 
     async fn commit_kooldown_attempt(
@@ -269,7 +278,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         self.finish_kooldown_aid(actor, command, binding, disposition)
-            .await?;
+            .await
+            .map_err(|_| ())?;
         Ok(disposition)
     }
 
@@ -281,7 +291,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         binding: [u8; 32],
         disposition: UseDisposition,
-    ) -> Result<(), ()> {
+    ) -> Result<(), ProbeFailure> {
         {
             let runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
@@ -302,25 +312,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.finish_cube(actor, command, disposition).await;
             return Ok(());
         }
-        let fence = command.item_fence.ok_or(())?;
+        let fence = command
+            .item_fence
+            .ok_or(ProbeFailure::Fence("kooldown_replay_fence"))?;
         // Re-prove the current item fence even when the receipt's source is consumed.
         // Fresh-admission reconciliation also requires admission-origin receipts;
         // it is not the item-only continuation contract.
-        self.root
-            .read_item_use_inventory(self.character, self.holder, fence)
-            .await
-            .map_err(|_| ())?;
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        match tokio::time::timeout(
+            PROBE_TIMEOUT,
+            retry_owner_read(&budget, async || {
+                self.root
+                    .read_item_use_inventory(self.character, self.holder, fence)
+                    .await
+            }),
+        )
+        .await
+        {
+            Ok(Ok(_)) => {}
+            Ok(Err(ItemUseError::AuthorityRejected)) => {
+                return Err(ProbeFailure::Fence("kooldown_replay_fence"));
+            }
+            Ok(Err(_)) | Err(_) => return Err(ProbeFailure::Refused("kooldown_replay_inventory")),
+        }
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         if runtime.owner_fence().is_err()
             || !runtime
                 .player_control_facts(actor, command.game_session_id)
                 .is_ok_and(|facts| facts.control_loss.is_none())
-            || states.is_dead(actor)
+        {
+            return Err(ProbeFailure::Fence("kooldown_replay_actor"));
+        }
+        if states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, command.game_session_id)
             || pinned_index(&runtime, self.active_generation).is_none()
         {
-            return Err(());
+            return Err(ProbeFailure::Refused("kooldown_replay_actor_state"));
         }
         let actor_index = states
             .actors
@@ -328,7 +356,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .position(|(present, session, _)| {
                 *present == actor && *session == command.game_session_id
             })
-            .ok_or(())?;
+            .ok_or(ProbeFailure::Refused("kooldown_replay_actor_state"))?;
         // The source-qualified reset helper is intentionally independent of casting Focus:
         // it must not spend Harmony, heal, arm a stance or rearm any spell cooldown.
         if !states
@@ -338,7 +366,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(());
         }
-        let (_, _, state) = states.actors.get_mut(actor_index).ok_or(())?;
+        let (_, _, state) = states
+            .actors
+            .get_mut(actor_index)
+            .ok_or(ProbeFailure::Refused("kooldown_replay_actor_state"))?;
         clear_kooldown_cooldowns(&mut state.cooldowns, self.owner_now());
         states.owner_wake.notify_one();
         drop(states);
