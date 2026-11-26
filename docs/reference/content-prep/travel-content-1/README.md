@@ -6,6 +6,8 @@ Five origin-specific fares are corrected: Junkar from Robson’s Isle to Kazordo
 
 Premium follows route-scoped wiki rules where established: the five Free Account cities, Premium-only magic carpets and other regular ship routes, plus Maris’s explicit Premium requirement. The permissive donor premium=false flag and fare differences remain visible in the [195-route cross-check](source-correction-check.json). Donor-only observations are labelled OTS_HYPOTHESIS_ONLY and are not current Global proof.
 
+Captain Bluebear's Edron and Port Hope routes use the coordinator-approved Crystal `201189f8` setting of `premium: false`. The cross-check preserves the original selection for those routes. [Crystal route definitions](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/captain_bluebear.lua#L60-L79)
+
 Reference data stays staged for the coordinator because generated World Bundle pins are outside this task. Native world/channel mapping, runtime activation and controlled Global continuity remain separate. Kendra remains a historical 20th-anniversary service.
 
 ## Superseded materialization report

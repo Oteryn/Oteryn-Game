@@ -487,7 +487,13 @@ mod tests {
             };
             assert_eq!(row.keyword, keyword);
             assert_eq!(serde_json::json!(row.price), source["selected_fare"]);
-            assert_eq!(serde_json::json!(row.premium), source["selected_premium"]);
+            // Crystal 201189f8 captain_bluebear.lua:60-79 admits both routes without Premium.
+            let premium = match row.key.as_str() {
+                "oteryn:service.travel.captain_bluebear/edron"
+                | "oteryn:service.travel.captain_bluebear/port_hope" => &source["donor_premium"],
+                _ => &source["selected_premium"],
+            };
+            assert_eq!(&serde_json::json!(row.premium), premium);
             match row.key.as_str() {
                 // The native Marapur landing is one tile north of the donor destination.
                 "oteryn:service.travel.melian/marapur"
