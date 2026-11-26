@@ -9,6 +9,7 @@ cd -- "$ROOT" || exit 1
 RUN="$(mktemp -d "$ROOT/.e2e-all.XXXXXX")" || exit 1
 mkdir "$RUN/captures" || exit 1
 export E2E_ALL_CAPTURE_DIR="$RUN/captures"
+export M01_CAPTURE_RUN="$(git rev-parse HEAD)-${RUN##*/}"
 readonly CARGO="${CARGO:-cargo}"
 node_status=0
 client_status=0
