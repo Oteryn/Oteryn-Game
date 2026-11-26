@@ -681,6 +681,13 @@ class PgObserveTests(unittest.TestCase):
         self.assertIn('cp -R "$PG_OBS" "$NODE_BOOT_FAILURE_LOG_DIR/postgres-world', RUN_TEXT)
 
 
+class NodeBootNpcStagingTests(unittest.TestCase):
+    def test_world_setup_stages_one_npc_project(self):
+        source = (HERE / "run.sh").read_text()
+        self.assertEqual(source.count("\n  node_boot_stage_npc_data\n"), 1)
+        self.assertNotIn('python3 "$GAME_SOURCE/deploy/synology-game/stage_npc_data.py"', source)
+
+
 class CloudRunSummaryTests(unittest.TestCase):
     def test_cloud_uses_first_eligible_work_parent(self):
         cloud = (HERE / "cloud_run.sh").read_text()
