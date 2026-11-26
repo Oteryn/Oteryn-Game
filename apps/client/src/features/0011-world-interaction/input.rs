@@ -186,6 +186,31 @@ impl PlayView {
         if !current.entries.iter().any(|(_, entry)| *entry == action) {
             return false;
         }
+        // Command 85 is the only imbuement route the server serves: a shrine USE opens the
+        // panel and queries the selected item; the server checks shrine reach on command 85.
+        if matches!(action, Action::Use | Action::Open)
+            && matches!(
+                menu.target,
+                oteryn_client_runtime::world_interaction::Target::Object(_)
+            )
+            && let Some(tile) = menu.tile
+            && let Some(crate::play::GroundItem::Map { item, .. }) =
+                self.scene.item_target_at(tile)
+            && crate::play::feature_0068_imbue::input::is_imbuing_shrine(item.appearance_id)
+            && mailbox.imbue.selected
+            && !mailbox.imbue_shutdown
+            && !mailbox.world_input_blocked()
+        {
+            crate::play::feature_0068_imbue::input::enqueue(
+                &mut mailbox,
+                &link.commands,
+                oteryn_client_ui::imbue::Intent::Refresh,
+            );
+            mailbox.imbue.open = true;
+            mailbox.world_context.feedback = None;
+            mailbox.world_context.feedback_at = None;
+            return true;
+        }
         if matches!(action, Action::UseWith | Action::UseRune) {
             let oteryn_client_runtime::world_interaction::Target::Item(source) = menu.target else {
                 return false;
