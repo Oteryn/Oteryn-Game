@@ -13,7 +13,6 @@ use oteryn_protocol_oteryn::{
     attack::{ChaseMode, FightMode, FightModes},
     cyclopedia_character as character,
     party::PartyIntent,
-    party_skull,
 };
 
 /// Hunt target (key, shown name, base XP), spawned next to the leader through provision.py --spawn. Experience is the
@@ -425,30 +424,13 @@ async fn clear_fight(bots: &mut [Bot<'_, '_>]) -> TestResult {
     }
 }
 
-async fn icons(bot: &mut Bot<'_, '_>) -> TestResult<Vec<party_skull::PartyIcon>> {
-    let reply = bot
-        .client()?
-        .session_mut()
-        .gated_command(
-            party_skull::CAPABILITY_PARTY_SKULL_V1,
-            party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY,
-            &[],
-        )
-        .await?;
-    if reply.status != CommandStatus::Accepted {
-        return Err(format!("shield reply={reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_skull.rs:75").into());
-    }
-    party_skull::decode_party_icons(&reply.payload)
-        .map_err(|e| format!("shield decode={e:?};reply={reply:?}").into())
-}
-
 async fn out_of_range(
     bots: &mut [Bot<'_, '_>],
     world: &BundleWorld,
     started: tokio::time::Instant,
 ) -> TestResult<(String, [u64; 3])> {
     let own = bots[0].own()?;
-    let active = icons(&mut bots[0]).await?;
+    let active = bots::party_icons(&mut bots[0]).await?;
     if !active
         .iter()
         .any(|icon| icon.entity == own && icon.shield == 6)
@@ -461,7 +443,7 @@ async fn out_of_range(
     })?
     .ok_or("no walkable tile outside Crystal 30-tile range")?;
     bots::walk_bot(bots, 2, world, &path).await?;
-    let reply = icons(&mut bots[0]).await?;
+    let reply = bots::party_icons(&mut bots[0]).await?;
     if !reply
         .iter()
         .any(|icon| icon.entity == own && icon.shield == 10)
@@ -469,7 +451,7 @@ async fn out_of_range(
         return Err(format!("inactive leader shield absent;reply={reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_skull.rs:31;Crystal party.cpp:562").into());
     }
     let peer = bots[2].own()?;
-    let peer_reply = icons(&mut bots[2]).await?;
+    let peer_reply = bots::party_icons(&mut bots[2]).await?;
     if !peer_reply
         .iter()
         .any(|icon| icon.entity == peer && icon.shield == 7)
@@ -933,7 +915,7 @@ async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> T
         return Err("underlevel probe lacked an active leader on the same target".into());
     }
     let own = bots[3].own()?;
-    let view = icons(&mut bots[3]).await?;
+    let view = bots::party_icons(&mut bots[3]).await?;
     let leader = tile(bots[0].client()?.world_spatial().actor_position)?;
     let low = tile(bots[3].client()?.world_spatial().actor_position)?;
     if low.floor != leader.floor
