@@ -55,8 +55,17 @@ summarize() {
       if (tolower(reason) ~ /password|postgres:\/\/|postgresql:\/\/|secret|token|key=/) reason = ""
       gsub(/\|/, "_", reason)
       printf "%s|%s|%s\n", row, verdict, reason
+    }
+    $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
+      $3 ~ /^scenario=[[:alnum:]_.-]+\.client$/ && $4 ~ /^replay=[[:alnum:]_]+$/ &&
+      $5 ~ /^status=(PASS|FAIL)$/ {
+      reason = ($6 ~ /^cause=(capture-missing|replay-not-run|replay-failed|server-failed)$/ ? substr($6, 7) : "")
+      printf "%s|%s|%s\n", substr($3, 10), substr($5, 8), reason
     }' < "$log") || return 1
 
+  if [[ "$result" == NODE_BOOT_PASS ]] && grep -qE '^[^|]+\.client\|FAIL\|' <<< "$rows"; then
+    result=NODE_BOOT_FAIL
+  fi
   grep -aE '^NODE_BOOT_PORTS ([A-Z_]+=[0-9]+ ?)+$' "$log" | sort -u || true
   printf 'CLOUD_RUN group=%s result=%s seconds=%s\nROWS-BEGIN\n' "$group" "$result" "$seconds"
   [[ -z "$rows" ]] || printf '%s\n' "$rows"
@@ -117,11 +126,24 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
-  NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
+  capture_env=()
+  if [[ "$group" == rows ]]; then
+    capture_dir=$(mktemp -d "$work_dir/captures.XXXXXX") || blocked capture_dir_unavailable
+    capture_env=(E2E_ALL_CAPTURE_DIR="$capture_dir")
+  fi
+  env "${capture_env[@]}" NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
+  if [[ "$group" == rows ]]; then
+    E2E_ALL_CAPTURE_DIR="$capture_dir" python3 tools/qualification/node_boot/client_replay.py "$log" \
+      | tee -a "$log"
+    replay_pipeline=("${PIPESTATUS[@]}")
+    if (( replay_pipeline[0] != 0 || replay_pipeline[1] != 0 )); then
+      status=1
+    fi
+  fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   grep -E '^SEAM_EVIDENCE e2e_all scenario=W(04|05c|10|13)[.]client status=(PASS|FAIL) seconds=[0-9]+[.]000 evidence=live-capture-replay$' "$log" || true
   [[ "$status" == 0 ]] || failed=1

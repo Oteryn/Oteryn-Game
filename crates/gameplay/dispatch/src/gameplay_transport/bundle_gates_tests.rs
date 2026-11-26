@@ -1092,7 +1092,8 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/dawnport_trial.rs", 1),
     // Q6's condition-potion fixture supplies only combat; its qualified room stays None.
     ("gameplay_transport/postgres_tests/condition_potions.rs", 1),
-    // W05d's native Cake tile fixture supplies combat only, never qualification.
+    // W05d's native Cake tile fixtures supply combat only, never qualification.
+    ("gameplay_transport/postgres_tests/cake_bridge.rs", 1),
     ("gameplay_transport/postgres_tests/cake_phases.rs", 1),
     ("gameplay_transport/postgres_tests/cyclopedia_tracker.rs", 1),
     // The map-base cask fixture supplies the pinned Bundle combat room only.

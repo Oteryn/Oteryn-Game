@@ -795,8 +795,13 @@ async fn prepare_build(
         match (profile, account.as_str()) {
             (
                 "premium",
-                KNIGHT_ACCOUNT | MONK_ACCOUNT | HASTE_ACCOUNT | CHALLENGE_ACCOUNT | LIGHT_ACCOUNT
-                | PARTY_CASTER_ACCOUNT | "01934f10-7c00-7000-8000-000000000021",
+                KNIGHT_ACCOUNT
+                | MONK_ACCOUNT
+                | HASTE_ACCOUNT
+                | CHALLENGE_ACCOUNT
+                | LIGHT_ACCOUNT
+                | PARTY_CASTER_ACCOUNT
+                | "01934f10-7c00-7000-8000-000000000021",
             ) => {
                 if !config
                     .premium_activation

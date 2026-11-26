@@ -372,6 +372,7 @@ pub struct NativeItemAttributes {
     /// Explicit activated source/config policy; absence stays Unknown.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rune_consumption: Option<NativeRuneConsumption>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub field_replaceable: Option<bool>,
     pub has_height: Option<bool>,
     /// Crystal items.cpp:203-208: clip/top/bottom select orders 1/3/2.

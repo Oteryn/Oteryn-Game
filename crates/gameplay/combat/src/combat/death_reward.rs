@@ -278,6 +278,8 @@ impl CapturedRewardPrincipal {
 /// channel guards are released.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ProjectedCreatureDeathFacts {
+    /// Live World robbery firing proven by the exact Channel spawn receipt.
+    pub bank_robbery: Option<[u8; 16]>,
     /// Captured daily selection on the lethal turn; retries preserve this multiplier.
     pub boosted_boss: bool,
     /// Server wall clock captured by the lethal producer for durable slot history.
@@ -319,6 +321,7 @@ pub fn capture_projected_death_facts(
         .unwrap_or(principal.character);
     let (occurrence, _) = owner.reward_occurrence(actor, *principal.character.as_bytes())?;
     Ok(ProjectedCreatureDeathFacts {
+        bank_robbery: None,
         boosted_boss: false,
         died_at_unix_ms: 0,
         death,
@@ -466,6 +469,7 @@ async fn settle_loot(
     inflight_before_this_death: usize,
     committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
     corpse_source: Option<TypedDefinitionRef>,
+    bank_robbery: Option<[u8; 16]>,
     tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
 ) -> Result<Option<CommittedCorpseLoot>, CombatDeathRewardLootError> {
     let (corpse_item, loot_table_ref) = match (corpse_item, loot_table_ref) {
@@ -585,7 +589,10 @@ async fn settle_loot(
         .freeze_item_mint(session.authority, session.node, corpse_request)
         .await
         .map_err(CombatDeathRewardLootError::Corpse)?;
-    if tutorial_corruptor.is_some() || plan.entries.iter().any(|entry| entry.parent.is_some()) {
+    if bank_robbery.is_some()
+        || tutorial_corruptor.is_some()
+        || plan.entries.iter().any(|entry| entry.parent.is_some())
+    {
         let mut children = Vec::with_capacity(plan.entries.len());
         for entry in &plan.entries {
             let parent = match entry.parent {
@@ -637,6 +644,7 @@ async fn settle_loot(
                 top_damage_character_id,
                 ground.boss_spawn.clone(),
                 tutorial_corruptor,
+                bank_robbery,
             )
             .await
             .map_err(CombatDeathRewardLootError::Corpse)?;
@@ -886,6 +894,7 @@ async fn settle_creature_death_rewards_inner<const N: usize>(
         input.inflight_loot_mints_before_this_death,
         &mut committed_loot,
         corpse_source,
+        facts.bank_robbery,
         input.tutorial_corruptor.clone(),
     )
     .await;

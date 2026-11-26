@@ -76,6 +76,7 @@ serde.workspace = true
 sha2.workspace = true
 serde_json = { workspace = true, features = ["raw_value"] }
 rustls.workspace = true
+webpki = { package = "rustls-webpki", version = "=0.103.16", default-features = false, features = ["alloc"] }
 sqlx.workspace = true
 time = { version = "=0.3.55", optional = true }
 tokio = { workspace = true, features = ["macros", "signal"] }
