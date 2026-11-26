@@ -2,7 +2,7 @@
 use super::*;
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::world_event::bank_robbery::{
-    Conversation, HandIn, Phase, RecognizedBag, ReturnReceipt, banker_city,
+    Conversation, HandIn, Phase, RecognizedBag, banker_city,
 };
 use crate::foundation::{CommandId, CommandRef};
 
@@ -26,69 +26,30 @@ pub(super) fn interested(key: &str) -> bool {
     banker_city(key).is_some()
 }
 
+// Hideouts follow the Bank Robbery walkthrough in the Tibia Fandom archive.
 pub(super) fn clue(key: &str) -> &'static str {
     match banker_city(key) {
         Some("thais") => {
-            "HELP! We have been robbed! I can't give you any gold until the robber has been brought to justice or we have received a compensation from the king. I think the robbers ran towards the Ancient Temple."
+            "The bank has closed until we get the gold back. The thieves were last seen heading for the Ancient Temple."
         }
         Some("carlin") => {
-            "I'm really sorry, but I can't serve you right now. Maybe you can help find the robber? He ran off into the direction of the ghostlands."
+            "The robber emptied our vault and fled toward the Ghostlands. I can't take care of any banking until we recover the gold."
         }
         Some("venore") => {
-            "Those Shadowthorn elves have gone too far this time! Unless someone finds and kills those elves I can't do anything for you."
+            "The Shadowthorn elves raided the bank. Look for them in Shadowthorn if you can help. Our counters are closed until the gold comes back."
         }
         Some("ab_dendriel") => {
-            "HELP! We have been robbed! I fear they hauled it into the Kazordoon mines. I can't serve you until we have gold again."
+            "The dwarves took our gold into the mines near Kazordoon. We need it back before I can reopen the bank."
         }
         _ => "Sorry, not possible.",
     }
 }
 
-fn recognition(key: &str) -> &'static str {
-    match banker_city(key) {
-        Some("thais") => {
-            "I'm sorry, but we have been robb- hey, what's that bag? Have you hunted down the bank robbers?"
-        }
-        Some("carlin") => {
-            "*Sob*... *sniff*... Ohhhh!! All that shiny glittering gold! Have you caught the bank robbers?"
-        }
-        Some("venore") => "Those Shadowthorn elves have - wait a minute. Is that the missing gold?",
-        _ => {
-            "I'm sorry, but we still can't... wait. What's that big bag over your shoulder? Have you caught the bank robbers?"
-        }
-    }
-}
-
-fn reopened(key: &str) -> &'static str {
-    match banker_city(key) {
-        Some("thais") => {
-            "The filthy bank robber has been brought to justice and almost all gold has been returned. We are back in business!"
-        }
-        Some("carlin") => {
-            "I can't believe it - the bank robber has actually been caught and the gold been returned. I'm so relieved. How may I serve you?"
-        }
-        Some("venore") => {
-            "Ha, those lousy elves got what they deserved. All the robbed money has been returned to the bank. What can I do for you?"
-        }
-        _ => {
-            "Those dwarven scumbags have been caught and the gold from the bank robbery was returned. I can fulfil your bank business as usual."
-        }
-    }
-}
-
-fn paid(key: &str) -> &'static str {
-    match banker_city(key) {
-        Some("thais") => {
-            "Hey, awesome. Good job. Here's some gold for all your work. Thanks to you we can open the bank again."
-        }
-        Some("carlin") => {
-            "Thank you so much! I feel much safer now knowing those robbers have been caught. Here's a little something for your effort. We can open the bank again!"
-        }
-        _ => {
-            "Thank you! Maybe you humans aren't all too bad. Here's a little something for your effort. We can open the bank again!"
-        }
-    }
-}
+const RECOGNITION: &str = "Wait, what's that bag? Did you recover the stolen gold?";
+const REOPENED: &str =
+    "We've recovered the stolen gold, and the bank is back in business. How can I help?";
+const PAID: &str =
+    "Good job tracking down the thieves. Please take this reward. The bank can reopen now.";
 
 fn take(
     admission: &super::super::ComposedFreshAdmission<'_, '_, '_>,
@@ -162,7 +123,7 @@ pub(super) async fn talk(
             )
             .await;
         return match result {
-            Ok(Some(receipt)) => {
+            Ok(Some(_)) => {
                 #[cfg(test)]
                 if admission
                     .states
@@ -180,7 +141,7 @@ pub(super) async fn talk(
                 {
                     return Some(held_bank_outcome());
                 }
-                Some(completion(intent, &receipt))
+                Some(completion(intent))
             }
             Ok(None) => reply("Sorry, not possible."),
             Err(CharacterProgressionError::Unavailable(_)) => Some(held_bank_outcome()),
@@ -213,16 +174,16 @@ pub(super) async fn talk(
             && let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
         {
             sessions.entry(command.game_session_id).or_default().robbery = Some(bag);
-            return reply(recognition(&key));
+            return reply(RECOGNITION);
         }
         return reply(clue(&key));
     }
     (greeting && state.phase == Phase::Returned)
-        .then(|| NpcConversations::bank_reply(intent, reopened(&key).into()))
+        .then(|| NpcConversations::bank_reply(intent, REOPENED.into()))
 }
 
-fn completion(intent: &NpcTalkIntent, receipt: &ReturnReceipt) -> NpcTalkOutcome {
-    let mut outcome = NpcConversations::bank_reply(intent, paid(&receipt.npc_key).into());
+fn completion(intent: &NpcTalkIntent) -> NpcTalkOutcome {
+    let mut outcome = NpcConversations::bank_reply(intent, PAID.into());
     outcome.inventory_changed = true;
     outcome
 }
@@ -255,7 +216,7 @@ pub(super) async fn replay(
                 npc_actor: receipt.npc,
                 text: String::new(),
             };
-            let mut outcome = completion(&intent, &receipt);
+            let mut outcome = completion(&intent);
             let runtime = admission.runtime.lock().await;
             if admission
                 .states
