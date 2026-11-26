@@ -58,19 +58,10 @@ fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
     Ok(result)
 }
 
-/// The server's answer to a USE of an item the character does not carry.
-fn describe(status: CommandStatus, payload: &[u8]) -> String {
-    let split = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(payload);
-    let disposition = split
-        .ok()
-        .and_then(|(body, _)| use_wire::decode_use_result(body).ok());
-    format!("status:{status:?},disposition:{disposition:?}")
-}
-
 async fn use_by_definition(
     client: &mut DevClientSession,
     reference: std::num::NonZeroU32,
-) -> TestResult<(CommandStatus, String)> {
+) -> TestResult<(CommandStatus, use_wire::UseDisposition)> {
     let payload = use_wire::encode_item_use_intent(&use_wire::UseIntent {
         target: use_wire::UseTarget::ItemByDefinition(reference),
         use_with: None,
@@ -79,7 +70,11 @@ async fn use_by_definition(
     })
     .map_err(|error| format!("step=use observed=encode-{error:?}"))?;
     let reply = client.session_mut().world_context_use(&payload).await?;
-    Ok((reply.status, describe(reply.status, &reply.payload)))
+    let (body, _) = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&reply.payload)
+        .map_err(|error| format!("step=refused-use observed=refusal-detail-{error:?}"))?;
+    let disposition = use_wire::decode_use_result(body)
+        .map_err(|error| format!("step=refused-use observed=decode-{error:?}"))?;
+    Ok((reply.status, disposition))
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -168,14 +163,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         if before.contains_key(&reference.get()) {
             return Err(format!("step=refused-use observed=unexpected-carried-{label}").into());
         }
-        let (status, text) = use_by_definition(&mut client, reference).await?;
-        if status == CommandStatus::Accepted && text.contains("Committed") {
-            return Err(format!("step=use-{label} observed=committed-without-item:{text}").into());
+        let (status, disposition) = use_by_definition(&mut client, reference).await?;
+        if (status, disposition)
+            != (
+                CommandStatus::Accepted,
+                use_wire::UseDisposition::NothingToUse,
+            )
+        {
+            return Err(format!("step=refused-use-{label} expected=Accepted/NothingToUse observed={status:?}/{disposition:?}").into());
         }
         client.service_liveness(Duration::from_millis(100)).await?;
-    }
-    if quantities(&client)? != before {
-        return Err("step=refused-use observed=inventory-changed".into());
+        if quantities(&client)? != before {
+            return Err(format!("step=refused-use-{label} observed=inventory-changed").into());
+        }
     }
 
     character_prep::grant_item(&client, ICE_FLOWER_SEEDS, 1)
