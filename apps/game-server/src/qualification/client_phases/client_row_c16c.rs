@@ -257,7 +257,15 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
         corpse.entity
     ));
     // A fresh observer starts its retained replay window at the cast site.
-    let mut observer = connect_character(clients, 0xd7, 0).await?;
+    let mut observer =
+        full_e2ef5::with_observer_liveness(&mut client, connect_character(clients, 0xd7, 0))
+            .await?;
+    if observer
+        .world_entities()
+        .is_none_or(|view| view.get(&corpse.entity).is_none())
+    {
+        return Err("C16c fresh replay observer cannot see the exact Rat corpse".into());
+    }
     full_e2ef5::cast_rune(&mut client, spell, rune, None, Some(corpse.position)).await?;
     let files = verdict::indexed_timeout(Duration::from_secs(5), async {
         loop {
