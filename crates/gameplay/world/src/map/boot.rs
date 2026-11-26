@@ -20,6 +20,8 @@ use crate::content::{
 };
 use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
 use crate::movement::speed::{EngineeringGroundSpeed, GroundSpeedSource};
+use oteryn_gameplay_content::content::{ProjectV2SpawnEligibility, ProjectV2SpawnPeriod};
+use oteryn_gameplay_entities::carrier::ActivationSpawnPoint;
 use oteryn_world_bundle::bundle;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
@@ -603,14 +605,8 @@ fn enterable(base: &WorldBase, blocked: &BTreeSet<TilePos>, pos: TilePos) -> boo
 
 pub(super) use crate::content::bundle_spell_tiles::tile_pos;
 
-/// SPAWN-1b (Codex P1 on #1981): one bundle spawn source as the Channel runtime realizes it
-/// (the carrier's `ActivationSpawnSourceFacts`): its points in authored order, each its
-/// placement cell `(x, y, z)`, respawn delay (ms), creature key, initial health and creature
-/// profile `blocked_by_nearby_players`, and the source's occupancy retry interval (ms).
-pub type BundleSpawnFacts = (Vec<BundleSpawnPointFacts>, u64);
-
-/// SPAWN-1b: one point of a [`BundleSpawnFacts`] (the carrier's `ActivationSpawnPointFacts`).
-pub type BundleSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool);
+/// One bundle source: ordered placement points and the source's occupancy retry interval (ms).
+pub type BundleSpawnFacts = (Vec<ActivationSpawnPoint>, u64);
 
 pub type BundleBossSpawnFacts = (
     String,
@@ -622,19 +618,22 @@ pub type BundleBossSpawnFacts = (
 /// CREATURE-AI-0 §6.3: the occupancy retry interval of a bundle spawn (the D116 value).
 pub const BUNDLE_OCCUPANCY_RETRY_MS: u64 = 5_000;
 
-/// CREATURE-AI-0 §6.1: each bundle source is one runtime source (one `CREATUREAI0-RL-02`
-/// count), in canonical (source key, point ordinal) order, whatever creatures and respawn
-/// delays its points mix. A point whose creature has a period other than `All` is outside the
-/// activation set, and a source left with no point is not activated. `profile` gives a
-/// creature key's initial health and `blocked_by_nearby_players`; a creature it does not serve
-/// refuses the whole family (`None`). The point direction is not realized yet.
+/// Each ordinary bundle source retains its authored points in order, including timed ones.
 pub fn table_activation_spawns(
     table: &oteryn_world_bundle::spawn::Table,
     profile: impl Fn(&str) -> Option<(u64, bool)>,
 ) -> Option<Vec<BundleSpawnFacts>> {
+    table_activation_spawns_with_eligibility(table, profile, |_| None)
+}
+
+pub fn table_activation_spawns_with_eligibility(
+    table: &oteryn_world_bundle::spawn::Table,
+    profile: impl Fn(&str) -> Option<(u64, bool)>,
+    eligibility: impl Fn(&str) -> Option<ProjectV2SpawnEligibility>,
+) -> Option<Vec<BundleSpawnFacts>> {
     use oteryn_world_bundle::spawn::Period;
     // Each creature's profile is resolved once, on its first active point.
-    let mut profiles: Vec<Option<(u64, bool)>> = vec![None; table.creatures.len()];
+    let mut profiles = vec![None; table.creatures.len()];
     let mut out = Vec::with_capacity(table.sources.len());
     for source in &table.sources {
         let z = i16::from(source.floor).checked_neg()?;
@@ -642,21 +641,36 @@ pub fn table_activation_spawns(
         for point in &source.points {
             let index = usize::try_from(point.creature).ok()?;
             let creature = table.creatures.get(index)?;
-            if creature.period != Period::All || point.boss_policy.is_some() {
+            if point.boss_policy.is_some() {
                 continue;
             }
             let resolved = profiles.get_mut(index)?;
-            let (health, blockable) = match *resolved {
+            let (health, blockable, spawn_eligibility) = match *resolved {
                 Some(known) => known,
-                None => *resolved.insert(profile(&creature.key)?),
+                None => {
+                    let (health, blockable) = profile(&creature.key)?;
+                    let mut spawn_eligibility = eligibility(&creature.key);
+                    // The current bundle format encodes All and Night. The qualified
+                    // creature profile adds Day and the source's underground exception.
+                    if creature.period == Period::Night {
+                        spawn_eligibility = Some(ProjectV2SpawnEligibility {
+                            period: ProjectV2SpawnPeriod::Night,
+                            ignore_period_underground: spawn_eligibility
+                                .is_some_and(|policy| policy.ignore_period_underground),
+                            blocked_by_nearby_players: blockable,
+                        });
+                    }
+                    *resolved.insert((health, blockable, spawn_eligibility))
+                }
             };
-            points.push((
-                (i32::from(point.x), i32::from(point.y), z),
-                u64::from(point.respawn_ms),
-                creature.key.clone(),
-                health,
+            points.push(ActivationSpawnPoint {
+                position: (i32::from(point.x), i32::from(point.y), z),
+                respawn_ms: u64::from(point.respawn_ms),
+                creature: creature.key.clone(),
+                initial_health: health,
                 blockable,
-            ));
+                eligibility: spawn_eligibility,
+            });
         }
         if !points.is_empty() {
             out.push((points, BUNDLE_OCCUPANCY_RETRY_MS));
@@ -698,14 +712,24 @@ impl BundleWorld {
         &self,
         profile: impl Fn(&str) -> Option<(u64, bool)>,
     ) -> Option<Vec<BundleSpawnFacts>> {
-        let mut sources = table_activation_spawns(&self.spawns, &profile)?;
+        self.activation_spawns_with_eligibility(profile, |_| None)
+    }
+
+    pub fn activation_spawns_with_eligibility(
+        &self,
+        profile: impl Fn(&str) -> Option<(u64, bool)>,
+        eligibility: impl Fn(&str) -> Option<ProjectV2SpawnEligibility>,
+    ) -> Option<Vec<BundleSpawnFacts>> {
+        let mut sources =
+            table_activation_spawns_with_eligibility(&self.spawns, &profile, eligibility)?;
         if !self.base.active_layers().is_empty() {
             // A layer may replace previously admitted ground. Recheck the composed map
             // before handing ordinary source points to the creature owner.
             for (points, _) in &mut sources {
-                points.retain(|((x, y, z), _, _, _, _)| {
+                points.retain(|point| {
+                    let (x, y, z) = point.position;
                     let (Ok(x), Ok(y), Ok(floor)) =
-                        (u16::try_from(*x), u16::try_from(*y), i8::try_from(-*z))
+                        (u16::try_from(x), u16::try_from(y), i8::try_from(-z))
                     else {
                         return false;
                     };
@@ -1206,9 +1230,9 @@ pub mod tests {
     };
 
     /// SPAWN-1b (Codex P1 on #1981): a bundle source stays one runtime source whatever its
-    /// points mix; night points and sources left with no point are outside the activation.
+    /// points mix, including timed points and sources comprised entirely of them.
     #[test]
-    fn spawn1b_keeps_each_bundle_source_whole_and_skips_night_creatures() {
+    fn spawn1b_keeps_each_bundle_source_whole_including_timed_points() {
         use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
         let point = |creature, x, respawn_ms| Point {
             creature,
@@ -1255,6 +1279,7 @@ pub mod tests {
         let profile = |key: &str| {
             calls.set(calls.get() + 1);
             match key {
+                "oteryn:creature.bat" => Some((30, false)),
                 "oteryn:creature.rat" => Some((20, false)),
                 "oteryn:creature.wolf" => Some((35, true)),
                 _ => None,
@@ -1262,22 +1287,34 @@ pub mod tests {
         };
         let facts = table_activation_spawns(&table, profile).expect("facts");
         let rat = |x, respawn_ms| {
-            (
+            ActivationSpawnPoint::from((
                 (x, 5, 7),
                 respawn_ms,
                 "oteryn:creature.rat".to_string(),
                 20,
                 false,
-            )
+            ))
         };
         let wolf = |x, z, respawn_ms| {
-            (
+            ActivationSpawnPoint::from((
                 (x, 5, z),
                 respawn_ms,
                 "oteryn:creature.wolf".to_string(),
                 35,
                 true,
-            )
+            ))
+        };
+        let bat = |x| ActivationSpawnPoint {
+            position: (x, 5, 7),
+            respawn_ms: 60_000,
+            creature: "oteryn:creature.bat".into(),
+            initial_health: 30,
+            blockable: false,
+            eligibility: Some(ProjectV2SpawnEligibility {
+                period: ProjectV2SpawnPeriod::Night,
+                ignore_period_underground: false,
+                blocked_by_nearby_players: false,
+            }),
         };
         assert_eq!(
             facts,
@@ -1285,17 +1322,19 @@ pub mod tests {
                 (
                     vec![
                         rat(1, 60_000),
+                        bat(2),
                         rat(3, 60_000),
                         wolf(4, 7, 30_000),
                         rat(5, 30_000)
                     ],
                     BUNDLE_OCCUPANCY_RETRY_MS,
                 ),
+                (vec![bat(6)], BUNDLE_OCCUPANCY_RETRY_MS),
                 (vec![wolf(7, 6, 45_000)], BUNDLE_OCCUPANCY_RETRY_MS),
             ]
         );
-        // Each served creature's profile is read once; the night creature's never.
-        assert_eq!(calls.get(), 2);
+        // Each served creature's profile is read once.
+        assert_eq!(calls.get(), 3);
         // A creature the content does not serve refuses the family.
         assert!(table_activation_spawns(&table, |_| None).is_none());
         assert!(
@@ -1343,7 +1382,7 @@ pub mod tests {
         let order: Vec<(&str, i32)> = facts[0]
             .0
             .iter()
-            .map(|point| (point.2.as_str(), point.0.0))
+            .map(|point| (point.creature.as_str(), point.position.0))
             .collect();
         assert_eq!(
             order,
@@ -1953,7 +1992,7 @@ pub mod tests {
             .ok_or("source admission")?;
         assert_eq!(sources.len(), 1);
         assert_eq!(sources[0].0.len(), 1);
-        assert_eq!(sources[0].0[0].0, (3, 0, 7));
+        assert_eq!(sources[0].0[0].position, (3, 0, 7));
         let world_id = WorldId::decode(&id(1))?;
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world_id,

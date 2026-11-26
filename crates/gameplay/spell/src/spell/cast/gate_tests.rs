@@ -180,6 +180,105 @@ fn a_gated_cast_in_a_protection_zone_is_refused_by_the_gate_not_the_zone() {
 }
 
 #[test]
+fn c04_protection_zone_returns_rejected_disposition() {
+    use crate::spell::native_combat::{Direction, ElementalStance, NativeCombatFacts};
+
+    let book = book();
+    let spell = book.spoken("exevo vis lux").expect("energy beam").spell;
+    let state = druid();
+    let caster = state.caster(state.owned_harmony_multiplier(spell).expect("harmony"));
+    let pz = operational(true);
+    let facts = NativeCombatFacts {
+        now_ms: 1,
+        stage: 0,
+        inputs: crate::spell::formula::FormulaInputs {
+            level: caster.level,
+            magic_level: caster.magic_level,
+            base_power: spell.base_power,
+            attack_skill: caster.attack_skill,
+            attack_value: caster.attack_value,
+            attack_factor: caster.attack_factor,
+            shielding_skill: caster.shielding_skill,
+            shield_defense: caster.shield_defense,
+        },
+        maximum_mana: caster.max_mana,
+        caster: 1,
+        caster_position: pz.caster_position,
+        area_origin: pz.caster_position,
+        area_sight_origin: pz.caster_position,
+        direction: Direction::North,
+        explicit_target: None,
+        attacked_target: None,
+        targets: Vec::new(),
+        clear_sight: Default::default(),
+        floor_change_tiles: Default::default(),
+        elemental_stance: ElementalStance::None,
+        incoming_hit: None,
+    };
+    assert_eq!(
+        prepare_native_owner_cast_with_caster(
+            &state,
+            spell,
+            &pz,
+            crate::spell::native::Facts::Combat(&facts),
+            at(1),
+            &mut |_, maximum| maximum,
+            &caster,
+        )
+        .map(|_| ()),
+        Err(SpellCastDisposition::Rejected)
+    );
+}
+
+#[test]
+fn c04_light_healing_arms_the_shared_healing_cooldown() {
+    use crate::ability::{AbilityOccurrence, RevisionSet};
+
+    let book = book();
+    let state = druid();
+    let open = operational(false);
+    let cast = |state: &PlayerSpellState, spell: &SpellDefinition, now| {
+        let caster = state.caster(state.owned_harmony_multiplier(spell).expect("harmony"));
+        let revisions = RevisionSet::new(
+            "ruleset:r1",
+            "content:r1",
+            "world:r1",
+            "formula:r1",
+            "simulation:r1",
+        )
+        .expect("revisions");
+        prepare_source_self_cast_with_caster(
+            state,
+            spell,
+            &book,
+            &open,
+            &caster,
+            CastContext {
+                caster: "actor:c04",
+                owner_scope: "channel-owner",
+                occurrence: AbilityOccurrence::new("spell-cast:c04", revisions)
+                    .expect("occurrence"),
+                now,
+                draw: &mut |_, maximum| maximum,
+            },
+        )
+    };
+    let light = book.spoken("exura").expect("light healing").spell;
+    let healed = cast(&state, light, at(1)).expect("light healing").next;
+    let intense = book.spoken("exura gran").expect("intense healing").spell;
+    assert_eq!(healed.cooldowns.spell_ready_at(&intense.key), None);
+    assert_eq!(
+        cast(&healed, intense, at(2)).map(|_| ()),
+        Err(SpellCastDisposition::CoolingDown)
+    );
+    let ready_at = healed
+        .cooldowns
+        .group_ready_at("healing")
+        .expect("healing timer");
+    assert!(cast(&healed, intense, ready_at).is_ok());
+}
+
+#[test]
 fn a_protection_zone_refuses_an_aggressive_cast_before_its_cooldown_and_mana() {
     // Canary Spell::playerSpellCheck: the zone answers before the cooldowns, level and mana.
     let book = book();

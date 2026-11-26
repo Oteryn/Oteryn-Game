@@ -9,7 +9,10 @@
     "https://tibia.fandom.com/wiki/Little_Corym_Charlatan",
     "imports/canary/items-xml/items.xml#17449-17450",
     "content/creatures/definitions/spell-native-profiles.json#exact-ordinary-creature-corpse-bindings",
-    "imports/canary/items-xml/items.xml#corpse-capacity-and-decay"
+    "imports/canary/items-xml/items.xml#corpse-capacity-and-decay",
+    "imports/canary/items-xml/items.xml#16388-16393",
+    "imports/canary/items-xml/items.xml#12686-12703",
+    "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L36910"
   ],
   "capacity_projections": [
     {
@@ -20,24 +23,269 @@
         "imports/canary/items-xml/items.xml#5999",
         "crates/gameplay/domain/src/domain/loot_data.rs#CORPSE_CONTAINER_ENTRIES_MAX"
       ]
+    },
+    {
+      "item": "oteryn:item.tibia.i7091",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/dragons/frost_dragon.lua#L33",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L18729"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i7344",
+      "source_capacity": 52,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/vermins/crystal_spider.lua#L34",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L19204"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i7893",
+      "source_capacity": 60,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/quests/the_inquisition/golgordan.lua#L28",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L21281"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i15868",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/magicals/armadile.lua#L32",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L33909"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i15872",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/plants/humongous_fungus.lua#L32",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L33928"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i15911",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/constructs/orewalker.lua#L32",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L33999"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i15991",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/quests/dangerous_depth/gnome_pack_crawler.lua#L19",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L34036"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i16071",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humanoids/lost_berserker.lua#L32",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L34104"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i16083",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/plants/hideous_fungus.lua#L32",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L34163"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i18030",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humans/adept_of_the_cult.lua#L32",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L36692"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i18070",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humans/crazed_beggar.lua#L32",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L36910"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i18110",
+      "source_capacity": 60,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humans/enlightened_of_the_cult.lua#L32",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L37130"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i18134",
+      "source_capacity": 60,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humans/hero.lua#L33",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L37261"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i18142",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humans/ice_witch.lua#L33",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L37305"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i18190",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/event_creatures/memory_creatures/memory_of_a_pirate.lua#L19",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L37565"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i18194",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humans/pirate_corsair.lua#L32",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L37587"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i18198",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humans/pirate_cutthroat.lua#L32",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L37609"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i18202",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humans/pirate_marauder.lua#L32",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L37631"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i18210",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humans/priestess.lua#L32",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L37675"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i18230",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humans/stalker.lua#L34",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L37784"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i18281",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humans/dark_monk.lua#L32",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L38064"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i20996",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/quests/cults_of_tibia/animated_moohtant.lua#L19",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L41636"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i21004",
+      "source_capacity": 50,
+      "native_capacity": 48,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humanoids/execowtioner.lua#L33",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L41678"
+      ]
     }
   ],
   "loot_creatures": {
+    "oteryn:creature.adept_of_the_cult": 18030,
+    "oteryn:creature.animated_moohtant": 20996,
+    "oteryn:creature.armadile": 15868,
     "oteryn:creature.behemoth": 5999,
     "oteryn:creature.bonebeast": 6030,
+    "oteryn:creature.bride_of_night": 18210,
+    "oteryn:creature.crazed_beggar": 18070,
+    "oteryn:creature.crazed_dwarf": 6007,
+    "oteryn:creature.crystal_spider": 7344,
+    "oteryn:creature.dark_monk": 18281,
     "oteryn:creature.dipthrah": 6031,
+    "oteryn:creature.dwarf": 6007,
     "oteryn:creature.dworc_voodoomaster": 6055,
+    "oteryn:creature.enlightened_of_the_cult": 18110,
+    "oteryn:creature.execowtioner": 21004,
     "oteryn:creature.faun": 25815,
+    "oteryn:creature.frost_dragon": 7091,
+    "oteryn:creature.glooth_powered_minotaur": 20996,
+    "oteryn:creature.gnome_pack_crawler": 15991,
+    "oteryn:creature.golgordan": 7893,
+    "oteryn:creature.hero": 18134,
+    "oteryn:creature.hideous_fungus": 16083,
+    "oteryn:creature.humongous_fungus": 15872,
+    "oteryn:creature.humorless_fungus": 16083,
+    "oteryn:creature.ice_witch": 18142,
+    "oteryn:creature.latrivan": 7893,
+    "oteryn:creature.lost_berserker": 16071,
+    "oteryn:creature.lucifuga_aranea": 7344,
+    "oteryn:creature.madareth": 7893,
+    "oteryn:creature.magma_crawler": 15991,
     "oteryn:creature.mahrdis": 6025,
+    "oteryn:creature.memory_of_a_fungus": 15872,
+    "oteryn:creature.memory_of_a_hero": 18134,
+    "oteryn:creature.memory_of_a_pirate": 18190,
     "oteryn:creature.merlkin": 6044,
+    "oteryn:creature.moohtant": 20996,
     "oteryn:creature.morguthis": 6025,
     "oteryn:creature.omruc": 6025,
+    "oteryn:creature.orewalker": 15911,
+    "oteryn:creature.pirate_buccaneer": 18190,
+    "oteryn:creature.pirate_corsair": 18194,
+    "oteryn:creature.pirate_cutthroat": 18198,
+    "oteryn:creature.pirate_marauder": 18202,
+    "oteryn:creature.priestess": 18210,
     "oteryn:creature.rahemos": 6031,
+    "oteryn:creature.reflection_of_mawhawk": 21004,
     "oteryn:creature.rotworm": 5967,
     "oteryn:creature.souleater": 11675,
+    "oteryn:creature.stalker": 18230,
     "oteryn:creature.thalas": 6025,
     "oteryn:creature.tortoise": 6072,
     "oteryn:creature.undead_gladiator": 8909,
-    "oteryn:creature.vashresamun": 6025
+    "oteryn:creature.vashresamun": 6025,
+    "oteryn:creature.zugurosh": 7893
   }
 }

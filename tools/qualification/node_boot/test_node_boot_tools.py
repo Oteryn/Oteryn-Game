@@ -14,6 +14,7 @@ import textwrap
 import time
 import tomllib
 import unittest
+from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parent
 # NODE_BOOT_RUN_SH runs the run.sh tests against another copy (a saved baseline).
@@ -51,6 +52,29 @@ KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
 class KnobTests(unittest.TestCase):
+    def test_world_node_launch_passes_pinned_npc_catalogue(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            node = base / 'bin' / 'oteryn-game-server'
+            node.parent.mkdir()
+            node.write_text('#!/bin/bash\nprintf "%s\\n" "$@" >&2\n')
+            node.chmod(0o755)
+            digest = 'a' * 64
+            result = bash(function('launch_node') + '''
+                set -Eeuo pipefail
+                as_service=()
+                NODE_GAMEPLAY_ENV=()
+                NODE_NPC_ARGS=(--npc-data-project "$BASE/npc-data/content/world" --npc-data-sha256 "$NPC_DIGEST")
+                launch_node pid "$BASE/node.toml" "$BASE/node.log"
+                wait "$pid"
+            ''', {'BASE': temporary, 'NODE_BOOT_UNPRIVILEGED': '0', 'NPC_DIGEST': digest})
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((base / 'node.log').read_text().splitlines(), [
+                'serve', '--config', str(base / 'node.toml'),
+                '--npc-data-project', str(base / 'npc-data' / 'content' / 'world'),
+                '--npc-data-sha256', digest,
+            ])
+
     def preflight_bin(self, temporary):
         bin_dir = Path(temporary, 'bin')
         bin_dir.mkdir()
@@ -662,6 +686,41 @@ class PgObserveTests(unittest.TestCase):
 
 
 class CloudRunSummaryTests(unittest.TestCase):
+    def test_every_registered_selector_maps_to_a_verdict(self):
+        replay = load('client_replay')
+        source = (replay.PHASES / 'world.rs').read_text()
+        indices = re.findall(r'\be2e_row_selected\s*\(\s*(\d+)\s*\)', source)
+        self.assertTrue(indices)
+        self.assertEqual(len(set(indices)), len(indices))
+        selected, registered = replay.selected_rows('all')
+        self.assertEqual(selected, registered)
+        self.assertEqual(len(registered), len(indices))
+        for index in indices:
+            with self.subTest(index=index):
+                rows, _ = replay.selected_rows(f'{index}:1')
+                self.assertEqual(len(rows), 1)
+                scenario, = rows
+                self.assertIsNotNone(replay.SERVER_ROW.match(
+                    f'SEAM_EVIDENCE e2e_all scenario={scenario} status=PASS'
+                ))
+
+    def test_legacy_greet_ten_selector_requires_one_verdict(self):
+        replay = load('client_replay')
+        with tempfile.TemporaryDirectory() as tmp, patch.object(replay, 'PHASES', Path(tmp)):
+            world = Path(tmp, 'world.rs')
+            world.write_text('if e2e_row_selected(306) {\n'
+                             '    full_e2ef20::greet_ten(clients, world, &metadata.npcs).await;\n'
+                             '}\n')
+            log = Path(tmp, 'rows.log')
+            line = 'SEAM_EVIDENCE e2e_all scenario=NPC-GREET-10.full status=FAIL\n'
+            for count in (0, 1, 2):
+                with self.subTest(count=count):
+                    log.write_text(line * count)
+                    self.assertEqual(replay.main(log, '306:1', validate=True), int(count != 1))
+            world.write_text(world.read_text().replace('::greet_ten', '::unknown'))
+            with self.assertRaisesRegex(RuntimeError, 'unmapped row selector'):
+                replay.selected_rows('306:1')
+
     def test_cloud_uses_first_eligible_work_parent(self):
         cloud = (HERE / "cloud_run.sh").read_text()
         helper = cloud[cloud.index("select_work_parent()"):cloud.index("summarize()")]
@@ -686,6 +745,153 @@ class CloudRunSummaryTests(unittest.TestCase):
             result = subprocess.run(["bash", "-c", command, "test", temp],
                                     check=True, capture_output=True, text=True)
             self.assertEqual(result.stdout.strip(), str(work.resolve()))
+    def test_qualification_shared_logout_has_explicit_fixture_retry_path(self):
+        world = HERE.parents[2] / 'apps/game-server/src/qualification/client_phases/world.rs'
+        source = world.read_text()
+        self.assertIn('async fn logout_once(', source)
+        self.assertIn('async fn fixture_logout_retrying_busy_observed(', source)
+        self.assertIn('FIXTURE_RETRY step=logout reason=busy', source)
+
+    def test_selected_batch_requires_its_own_unique_verdict(self):
+        cases = [
+            ('0:0', '', 'empty-batch'),
+            ('900:1', '', 'empty-batch'),
+            ('184', '', 'malformed-batch'),
+            ('1:1', '', 'missing-verdict'),
+            ('1:1', 'SEAM_EVIDENCE e2e_all scenario=C12.full status=PASS\n', 'missing-verdict'),
+            ('1:1', 'SEAM_EVIDENCE e2e_all scenario=C03.full status=PASS\n' * 2, 'duplicate-verdict'),
+            ('1:1', 'SEAM_EVIDENCE e2e_all scenario=C03.full status=PASS\n', ''),
+            ('184:1', 'SEAM_EVIDENCE e2e_capture scenario=S18.client status=CAPTURED\n', ''),
+        ]
+        for batch, evidence, cause in cases:
+            with self.subTest(batch=batch, cause=cause), tempfile.TemporaryDirectory() as tmp:
+                log = Path(tmp) / 'node.log'
+                log.write_text(evidence)
+                result = subprocess.run(
+                    [sys.executable, str(HERE / 'client_replay.py'), '--validate', str(log)],
+                    env={**os.environ, 'OTERYN_E2E_ROW_BATCH': batch},
+                    capture_output=True, text=True,
+                )
+                self.assertEqual(result.returncode, int(bool(cause)), result.stderr)
+                if cause:
+                    self.assertIn(f'cause={cause}', result.stdout)
+                self.assertEqual(result.stderr, '')
+
+    def test_world_seam_stage_rejects_invalid_batch_and_missing_verdict(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            (work / 'vars').touch()
+            stage_test = textwrap.dedent('''\
+                set -euo pipefail
+                declare -a ORDER
+                declare -A STATUS
+                VARS="$WORK/vars"
+                NODE_BOOT_WORLD=1
+                NODE_BOOT_SPELLS=0
+                evidence() { :; }
+                start_runtime_diagnostics() { :; }
+                stop_runtime_diagnostics() { :; }
+                pg_observability_dump() { :; }
+                ''')
+            stage_test += '\n'.join(function(name) for name in ('stage_rows', 'known_rows', 'stage'))
+            stage_test += '\nstage seam_stages -- true\nprintf "STAGE_STATUS=%s\\n" "${STATUS[seam_stages]}"\n'
+            for batch, cause in (
+                ('0:0', 'empty-batch'),
+                ('invalid', 'malformed-batch'),
+                ('1:1', 'missing-verdict scenario=C03.full'),
+            ):
+                with self.subTest(batch=batch):
+                    result = bash(stage_test, env={
+                        'WORK': tmp, 'GAME_SOURCE': str(HERE.parents[2]),
+                        'NODE_BOOT_E2E_ONLY': 'rows', 'OTERYN_E2E_ROW_BATCH': batch,
+                    })
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn(f'NODE_BOOT_ROW_BATCH=FAIL cause={cause}', result.stdout)
+                    self.assertIn('STAGE_STATUS=FAIL(row batch)', result.stdout)
+
+            for group, status in (('', 'FAIL(row batch)'), ('core', 'PASS')):
+                with self.subTest(group=group):
+                    result = bash('unset OTERYN_E2E_ROW_BATCH\n' + stage_test, env={
+                        'WORK': tmp, 'GAME_SOURCE': str(HERE.parents[2]),
+                        'NODE_BOOT_E2E_ONLY': group,
+                    })
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn(f'STAGE_STATUS={status}', result.stdout)
+
+    def test_client_replay_verdicts(self):
+        cases = [
+            (False, 0, 1, 'PASS', 'FAIL cause=capture-missing', False),
+            (True, 0, 0, 'PASS', 'FAIL cause=replay-not-run', True),
+            (True, 1, 0, 'PASS', 'FAIL cause=replay-failed', True),
+            (True, 0, 2, 'PASS', 'FAIL cause=replay-failed', True),
+            (True, 0, 1, None, 'FAIL cause=replay-not-run', False),
+            (True, 0, 1, 'FAIL', 'FAIL cause=server-failed', True),
+            (True, 0, 1, 'CAPTURED', 'PASS', True),
+            (True, 0, 1, 'PASS', 'PASS', True),
+        ]
+        for capture, exit_code, count, server, verdict, called in cases:
+            with self.subTest(capture=capture, exit_code=exit_code, count=count, server=server):
+                with tempfile.TemporaryDirectory() as tmp:
+                    work = Path(tmp)
+                    captures = work / 'captures'
+                    captures.mkdir()
+                    (captures / 'n07d-stale-for-s18.bin').write_bytes(b'unrelated')
+                    (captures / 's18-say.bin').write_bytes(b'fresh')
+                    if capture:
+                        for name in ('s18-whisper.bin', 's18-expected.txt'):
+                            (captures / name).write_bytes(b'fresh')
+                    log = work / 'node.log'
+                    kind = 'e2e_capture' if server == 'CAPTURED' else 'e2e_all'
+                    log.write_text(
+                        f'SEAM_EVIDENCE {kind} scenario=S18.client status={server}\n'
+                        if server else ''
+                    )
+                    cargo = work / 'cargo'
+                    cargo.write_text(
+                        '#!/bin/bash\n'
+                        'printf "%s\\n" "$E2E_ALL_CAPTURE_DIR" "$*" >> "${0}.calls"\n'
+                        'echo "test tests::e2e_s18::e2e_s18_say_and_whisper_echo_replay ... ok"\n'
+                        f'echo "test result: ok. {count} passed; 0 failed; 0 ignored"\n'
+                        f'exit {exit_code}\n'
+                    )
+                    cargo.chmod(0o700)
+                    result = subprocess.run(
+                        [sys.executable, str(HERE / 'client_replay.py'), str(log)],
+                        env={**os.environ, 'E2E_ALL_CAPTURE_DIR': str(captures),
+                             'CARGO': str(cargo), 'OTERYN_E2E_ROW_BATCH': '184:1'},
+                        capture_output=True, text=True,
+                    )
+                    self.assertEqual(result.returncode, int(verdict != 'PASS'), result.stderr)
+                    self.assertEqual(result.stdout.strip(),
+                                     'SEAM_EVIDENCE e2e_all scenario=S18.client '
+                                     f'replay=e2e_s18_say_and_whisper_echo_replay status={verdict}')
+                    calls = work / 'cargo.calls'
+                    self.assertEqual(calls.exists(), called)
+                    if called:
+                        self.assertEqual(calls.read_text().splitlines(), [
+                            str(captures),
+                            'test --locked -p oteryn-session --lib '
+                            'e2e_s18_say_and_whisper_echo_replay -- --nocapture',
+                        ])
+
+    def test_summary_counts_client_replay_verdict_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / 'node.log'
+            log.write_text(
+                'SEAM_EVIDENCE e2e_all scenario=S18.client status=PASS seconds=1.000\n'
+                'SEAM_EVIDENCE e2e_all scenario=S18.client replay=e2e_s18 status=FAIL cause=replay-not-run\n'
+                'SEAM_EVIDENCE e2e_capture scenario=N07d.client status=CAPTURED\n'
+                'SEAM_EVIDENCE e2e_all scenario=N07d.client replay=e2e_n07d status=PASS\n'
+                'NODE_BOOT_RESULT=NODE_BOOT_PASS\n'
+            )
+            result = subprocess.run(
+                ['bash', str(HERE / 'cloud_run.sh'), '--summarize', str(log), 'rows'],
+                capture_output=True, text=True, check=True,
+            )
+            self.assertEqual(result.stdout.splitlines(), [
+                'CLOUD_RUN group=rows result=NODE_BOOT_FAIL seconds=0',
+                'ROWS-BEGIN', 'S18.client|FAIL|replay-not-run', 'N07d.client|PASS|', 'ROWS-END',
+            ])
 
     def test_summary_uses_full_row_verdicts_and_limits_filtered_diagnostics(self):
         result = subprocess.run(

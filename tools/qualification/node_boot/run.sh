@@ -190,6 +190,7 @@ readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
 NODE_ACTIVATION_WAIT_SECONDS="$(node_activation_wait_seconds "$NODE_BOOT_WORLD" "$NODE_BOOT_SPELLS")"
 NODE_GAMEPLAY_ENV=()
+NODE_NPC_ARGS=()
 if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
   # Default: the canonical imported book. The r21 reference artifact stays selectable explicitly.
   NODE_BOOT_SPELL_MANIFEST="${NODE_BOOT_SPELL_MANIFEST:-$GAME_SOURCE/content/spells.manifest.json}"
@@ -896,7 +897,8 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2" "${NODE_NPC_ARGS[@]}"
+    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" \
+      serve --config "$2" "${NODE_NPC_ARGS[@]}"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"
 }
@@ -1180,6 +1182,14 @@ stage() { # name prerequisite... -- function
   echo "::endgroup::"
   if [[ $rc == 0 ]]; then
     STATUS[$name]=PASS
+    # Row batches must report every selected row even when Rust exits 0.
+    local groups=",${NODE_BOOT_E2E_ONLY:-},"
+    groups=${groups//[[:space:]]/}
+    if [[ "$name" == seam_stages && "$NODE_BOOT_WORLD" == 1 ]] &&
+      [[ "$groups" == *,rows,* || "$groups" == ,, ]] &&
+      ! python3 "$GAME_SOURCE/tools/qualification/node_boot/client_replay.py" --validate "$WORK/stage-$name.log"; then
+      STATUS[$name]="FAIL(row batch)"
+    fi
     # A FAIL row fails its stage even when the stage process exits 0, unless the row is
     # listed in known_fail_rows.txt (debt that every run prints).
     local known_fail="$GAME_SOURCE/tools/qualification/node_boot/known_fail_rows.txt" new_rows known_hit stale_rows
@@ -1589,13 +1599,6 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S; do
     [[ -z "${!knob+x}" ]] || test_env+=("$knob=${!knob}")
   done
-  local c17b_capture=""
-  local -a test_command_output=(/dev/null)
-  if [[ "${NODE_BOOT_E2E_ONLY:-}" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 106:1 ]]; then
-    c17b_capture="$(mktemp -d "$WORK/c17b.XXXXXX")" || return 1
-    test_env+=("E2E_ALL_CAPTURE_DIR=$c17b_capture")
-    test_command_output=("$c17b_capture/seam.log")
-  fi
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
   local test_dir="$PWD"
@@ -1623,24 +1626,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
       WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
       "${test_command[@]}"
-  ) | tee "${test_command_output[@]}" || return $?
-  if [[ -n "$c17b_capture" ]]; then
-    local replay_log="$WORK/c17b-replay.log"
-    if grep -q '^SEAM_EVIDENCE e2e_all scenario=C17b.client status=CAPTURED ' "$c17b_capture/seam.log" \
-      && ! grep -q 'SEAM_EVIDENCE e2e_all scenario=C17b.client status=FAIL' "$c17b_capture/seam.log" \
-      && E2E_ALL_CAPTURE_DIR="$c17b_capture" cargo +1.100.0 test --locked -p oteryn-session --lib \
-      tests::e2e_c17b::invisibility_visibility_payload_removes_target_and_rejects_replay \
-      -- --exact --nocapture > "$replay_log" 2>&1 \
-      && grep -q '^test tests::e2e_c17b::invisibility_visibility_payload_removes_target_and_rejects_replay \.\.\. ok$' "$replay_log"; then
-      cat "$replay_log"
-      printf 'SEAM_EVIDENCE e2e_all scenario=C17b.client status=FAIL evidence=client-replay-rebuilds-wire-envelope\n'
-      return 1
-    else
-      [[ ! -f "$replay_log" ]] || cat "$replay_log"
-      printf 'SEAM_EVIDENCE e2e_all scenario=C17b.client status=FAIL evidence=client-replay\n'
-      return 1
-    fi
-  fi
+  )
 }
 
 graceful_shutdown() { # ready=false first, socket removed
@@ -1660,7 +1646,8 @@ restart_without_supersession() { # fails at S2 custody, never ready
   ops authorization issue --file launch-b.json --binding node-boot-b
   write_node_config launch-b.json
   local code=0
-  "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" "${NODE_NPC_ARGS[@]}" 2> "$WORK/restart.log" || code=$?
+  "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" \
+    serve --config "$BASE/node/node.toml" "${NODE_NPC_ARGS[@]}" 2> "$WORK/restart.log" || code=$?
   cat "$WORK/restart.log"
   [[ $code == 13 ]] || fail "restart without supersession exit=$code"
   local line node revision

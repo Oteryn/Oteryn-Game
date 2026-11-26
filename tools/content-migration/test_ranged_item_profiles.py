@@ -17,9 +17,13 @@ def item(attributes, nested="", item_id='id="1"', name="test"):
 
 
 class RangedItemProfilesTest(unittest.TestCase):
+    def test_chiller_lowers_as_a_rod(self):
+        profiles, _, _ = ranged.source_profiles(ranged.ROOT)
+        self.assertEqual(profiles[21350]['kind'], 'ROD')
+
     def test_pinned_categories_and_samples(self):
         profiles, held, counts = ranged.source_profiles(ranged.ROOT)
-        self.assertEqual(counts, {"DISTANCE": 58, "THROWING": 15, "AMMUNITION": 25, "WAND": 34, "ROD": 32})
+        self.assertEqual(counts, json.loads((ranged.ROOT / ranged.REPORT).read_bytes())['counts'])
         self.assertEqual(len(profiles), 163)
         self.assertEqual([(row['item_id'], row['profile']['range_cells']) for row in held], [(49522, 8)])
         for item_id, kind, attack, distance in [(3350, 'DISTANCE', 0, 6), (3349, 'DISTANCE', 0, 5), (3277, 'THROWING', 25, 3)]:

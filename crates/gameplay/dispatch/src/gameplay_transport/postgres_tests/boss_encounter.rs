@@ -1086,7 +1086,8 @@ fn scenario(history_probe: HistoryProbe) -> TestResult {
                                         production_key: "oteryn:item.tibia.i3031".into(),
                                         revision_ref: "definition-r1".into(),
                                     },
-                                    quantity: 1
+                                    quantity: 1,
+                                    parent_ordinal: None,
                                 };
                                 2
                             ]

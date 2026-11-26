@@ -326,6 +326,7 @@ fn travel_route(key: &str) -> oteryn_gameplay_content::content::npc_catalogue::t
             required_quest_tracks: Vec::new(),
         },
         keyword: "qworld".into(),
+        crystal_callback: false,
         postman: false,
         carpet: false,
         held: false,

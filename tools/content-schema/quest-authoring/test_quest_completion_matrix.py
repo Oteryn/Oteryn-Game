@@ -77,7 +77,7 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             [row["key"] for row in by_title["To Outfox a Fox Quest"]["canonical"]],
         )
         self.assertEqual(
-            "REWARD_CLAIM_USE_PENDING",
+            "REWARD_CLAIM_USE_ENABLED",
             by_title["To Outfox a Fox Quest"]["work_state"],
         )
         reward_only = [
@@ -146,7 +146,25 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         )
         self.assertEqual("NATIVE_BINDINGS_PENDING", legion_helmet["implementation_state"])
         self.assertEqual("NOT_ASSESSED", legion_helmet["playable_verification"])
-        owner_enabled = enabled + 2
+        enabled_owners = {
+            row["wiki_title"]
+            for row in self.result["records"]
+            if (row["reward_claim_owner"] or {}).get("state") == "REWARD_CLAIM_USE_ENABLED"
+        }
+        self.assertEqual(
+            {
+                "Newhaven Legion Helmet Quest",
+                "Power Ring Quest",
+                "Silver Amulet Quest",
+                "Time Ring Quest",
+                "To Outfox a Fox Quest",
+                "Troll Cave Quest",
+                "Vampire Hunter Quest",
+                "Wedding Ring Quest",
+            },
+            enabled_owners,
+        )
+        owner_enabled = len(enabled_owners)
         self.assertEqual(
             {
                 "REWARD_CLAIM_DATA_PENDING": 3,

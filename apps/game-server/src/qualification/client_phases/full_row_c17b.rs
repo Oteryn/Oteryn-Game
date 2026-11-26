@@ -179,9 +179,9 @@ async fn wait_visible(
     }
 }
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
-    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("step=logout observed={reply:?} need=accepted-logout").into());
+    let (result, detail, _, _) = logout_once(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={detail} need=accepted-logout").into());
     }
     Ok(())
 }
@@ -279,8 +279,8 @@ impl<'a> Staging<'a> {
                 destination(self.world, from, direction).ok_or("C17b planned landing absent")?;
             let outcome = client.step(direction).await?;
             let actual = tile(client.world_spatial().actor_position)?;
-            if outcome.status != CommandStatus::Accepted
-                || outcome.disposition != StepDisposition::Moved
+            require_mechanic_acceptance(outcome.status, "C17b STEP")?;
+            if outcome.disposition != StepDisposition::Moved
                 || outcome.world_spatial_delta.is_none()
                 || outcome.step_wait_ms == 0
                 || actual != expected
@@ -483,8 +483,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let cast = caster
         .cast_spell(spell_index(&book)?, SpellTarget::None, false)
         .await?;
-    if cast.status != CommandStatus::Accepted
-        || cast.disposition != SpellCastDisposition::Cast
+    require_mechanic_acceptance(cast.status, "C17b.full Invisibility")?;
+    if cast.disposition != SpellCastDisposition::Cast
         || cast.actor_vitals_delta.as_ref().is_none_or(|d| {
             d.server_sequence == 0 || before.mana.checked_sub(cost) != Some(d.value.mana)
         })

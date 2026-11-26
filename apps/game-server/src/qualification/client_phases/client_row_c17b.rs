@@ -2,12 +2,6 @@
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
-use oteryn_protocol_oteryn::world_spatial_entities::{
-    EntityFields, EntityLights, WorldSpatialEntitiesSnapshot,
-    encode_world_spatial_entities_delta_with_fields,
-    encode_world_spatial_entities_snapshot_with_fields,
-};
-
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if let Err(error) = verdict::observe(journey(clients)).await {
         evidence(&format!(
@@ -53,20 +47,7 @@ fn spell_index() -> TestResult<std::num::NonZeroU32> {
         .ok_or_else(|| "C17b.client Invisibility spell absent".into())
 }
 
-fn write_capture(directory: &Path, name: &str, bytes: &[u8]) -> TestResult {
-    use std::io::Write;
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(directory.join(name))?
-        .write_all(bytes)?;
-    Ok(())
-}
-
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR")
-        .ok_or("C17b.client capture directory absent")?;
-    let directory = Path::new(&directory);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -79,8 +60,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_C17B_ACCOUNT").await?;
     let caster_clients = fixture.clients(clients);
     let book = full_row_c17b::spell_book()?;
-    let spell = book.spoken("utana vid").ok_or("C17b.client spell absent")?.spell;
-    let mut caster = full_row_c17b::seeded_caster(&caster_clients, "C17b.client", 0xc1, spell).await?;
+    let spell = book
+        .spoken("utana vid")
+        .ok_or("C17b.client spell absent")?
+        .spell;
+    let mut caster =
+        full_row_c17b::seeded_caster(&caster_clients, "C17b.client", 0xc1, spell).await?;
     let mut observer = connect_character(clients, 0xc2, 0).await?;
     full_row_c17b::Staging::new(world, &metadata.spawns)
         .encounter(&mut caster, &mut observer)
@@ -92,37 +77,28 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if entities.get(&caster_ref).is_none() {
         return Err("C17b.client caster was not initially visible".into());
     }
-    let fields = EntityFields::selected(observer.selected_capabilities());
-    let snapshot = WorldSpatialEntitiesSnapshot {
-        content_generation: observer.world_spatial().content_generation,
-        actor_position: observer.world_spatial().actor_position,
-        own_identity: *entities.own_identity(),
-        entities: entities.iter().copied().collect(),
-    };
-    let snapshot_payload = encode_world_spatial_entities_snapshot_with_fields(
-        &snapshot,
-        fields,
-        &EntityLights::new(),
-    )
-    .map_err(|error| format!("C17b.client snapshot encode: {error:?}"))?;
     observer.take_events();
     let cast = caster
         .cast_spell(spell_index()?, SpellTarget::None, false)
         .await?;
-    if cast.status != CommandStatus::Accepted || cast.disposition != SpellCastDisposition::Cast {
+    require_mechanic_acceptance(cast.status, "C17b.client Invisibility")?;
+    if cast.disposition != SpellCastDisposition::Cast {
         return Err(format!("C17b.client Invisibility cast refused: {cast:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let removed = loop {
         observer.service_liveness(Duration::from_millis(50)).await?;
-        let found = observer.take_events().into_iter().find_map(|event| match event {
-            SessionEvent::WorldSpatialEntities(delta)
-                if delta.value.leave.contains(&caster_ref) =>
-            {
-                Some(delta)
-            }
-            _ => None,
-        });
+        let found = observer
+            .take_events()
+            .into_iter()
+            .find_map(|event| match event {
+                SessionEvent::WorldSpatialEntities(delta)
+                    if delta.value.leave.contains(&caster_ref) =>
+                {
+                    Some(delta)
+                }
+                _ => None,
+            });
         if let Some(delta) = found {
             break delta;
         }
@@ -130,34 +106,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             return Err("C17b.client visibility leave delta absent".into());
         }
     };
-    let delta_payload = encode_world_spatial_entities_delta_with_fields(
-        &removed.value,
-        fields,
-        &EntityLights::new(),
-    )
-    .map_err(|error| format!("C17b.client delta encode: {error:?}"))?;
-    write_capture(directory, "c17b-snapshot.bin", &snapshot_payload)?;
-    write_capture(directory, "c17b-invisible.bin", &delta_payload)?;
-    write_capture(
-        directory,
-        "c17b-expected.txt",
-        format!(
-            "{} {} {} {} {}\n",
-            removed.base_revision,
-            removed.new_revision,
-            removed.server_sequence,
-            caster_ref
-                .identity
-                .iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect::<String>(),
-            caster_ref.generation
-        )
-        .as_bytes(),
-    )?;
-    evidence(&format!(
-        "SEAM_EVIDENCE e2e_all scenario=C17b.client status=CAPTURED cast_sequence={} leave_sequence={}",
+    Err(format!(
+        "original-frame-capture-unavailable cast_sequence={} leave_sequence={}",
         cast.result_server_sequence, removed.server_sequence
-    ));
-    Ok(())
+    )
+    .into())
 }

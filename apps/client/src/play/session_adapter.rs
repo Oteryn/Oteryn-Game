@@ -378,6 +378,13 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         &mut self,
         request: &oteryn_client_runtime::server_mechanic::ServerMechanicCommand,
     ) -> Result<oteryn_client_runtime::server_mechanic::ServerMechanicResponse, SessionError> {
+        use oteryn_client_runtime::world_interaction::world_object as wire;
+        if request.capability == wire::CAPABILITY_ITEM_USE_V1
+            && request.command_type == wire::COMMAND_TYPE_USE_INTENT
+            && self.is_selected(wire::CAPABILITY_ITEM_USE_V1)
+        {
+            return self.world_context_use(&request.payload).await;
+        }
         self.gated_command(request.capability, request.command_type, &request.payload)
             .await
     }
