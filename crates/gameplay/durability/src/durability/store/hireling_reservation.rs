@@ -9,7 +9,7 @@ use super::super::runtime_scope_assignment::NodeIncarnationProof;
 use super::super::{DurabilityError, DurabilityRoot};
 use super::codec::PurchaseRequest;
 use super::hireling_model::{HirelingStoreAction, HirelingStorePurchase};
-use super::purchase::record_request;
+use super::purchase::{lock_request, record_request};
 use super::storage::{
     PurchaseRequestState, StoreDurabilityError, account_matches, assert_store_fence,
 };
@@ -46,6 +46,7 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
+            lock_request(&mut tx, &request).await?;
             if !assert_store_fence(&mut tx, &fence, &node, Some(origin_channel)).await? || !account_matches(&mut tx, &fence, &request.account_id).await? {
                 return Ok(Err(StoreDurabilityError::AuthorityRejected));
             }
@@ -162,9 +163,9 @@ pub(super) async fn apply_effect(
         HirelingStoreAction::Hire { name, sex: chosen } => {
             // The Inbox owner has minted in this same transaction; a failed final source
             // capacity check rolls back that mint and leaves the paid reservation retryable.
-            let inbox:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_character_inbox_locations WHERE character_id=encode($1,'hex')::uuid")
-                .bind(character.as_slice()).fetch_one(&mut **tx).await?;
-            if inbox > 20 {
+            // This reservation is replaced by the item just minted. All other
+            // pending Store purchases retain their slots.
+            if super::hireling_capacity::inbox_occupancy(tx, &character).await? - 1 > 20 {
                 return Err(StoreDurabilityError::AuthorityRejected);
             }
             grant_store_hireling(

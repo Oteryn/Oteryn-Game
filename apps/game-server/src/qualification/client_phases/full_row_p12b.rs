@@ -4,7 +4,6 @@
 //! survive terminal logout and fresh admission before another refresh.
 use super::*;
 use oteryn_dev_client::DevClientSession;
-use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::cyclopedia_character::{
     Badge, CAPABILITY_CYCLOPEDIA_CHARACTER_V1, COMMAND_TYPE_CYCLOPEDIA_BADGES,
 };
@@ -12,6 +11,7 @@ use sqlx::Connection;
 
 // Native Cyclopedia contract: a total level over 500 earns Global Player grade 1.
 // Keep the expected wire ID independent of the production eligibility evaluator.
+pub(super) const ROW_INDEX: usize = 278;
 const EXPECTED_BADGES: [u8; 1] = [9];
 const SEEDED_LEVEL: i64 = 501;
 const SEEDED_EXPERIENCE: i64 = 2_070_900_000;
@@ -47,11 +47,7 @@ async fn reply_badges(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
             &[],
         )
         .await?;
-    expect(
-        reply.status == CommandStatus::Accepted,
-        "badges",
-        reply.status,
-    )?;
+    require_mechanic_acceptance(reply.status, "badges")?;
     Ok(decode_badges(&reply.payload).map_err(|error| format!("step=decode;observed={error}"))?)
 }
 
@@ -232,12 +228,8 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
-    expect(
-        reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
-        "logout",
-        reply.result,
-    )
+    let (result, detail, _, _) = logout_once(client).await?;
+    expect(result == Some(LogoutResult::Accepted), "logout", detail)
 }
 
 #[cfg(test)]

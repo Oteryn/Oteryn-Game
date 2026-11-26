@@ -1,0 +1,1379 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u9_1/their_masters_voice_world_change/slime_gobbler_received",
+      "quest": "oteryn:quest.their_masters_voice",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1871-1876"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/their-masters-voice-slime-gobbler",
+      "quest": "oteryn:quest.their_masters_voice",
+      "npc": "oteryn:npc.servant_sentry",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/their_masters_voice_world_change/slime_gobbler_received",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i12077",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this Slime Gobbler. It eats slime fungus."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/servant_sentry.lua:56-89"
+      ],
+      "requires": []
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-ahmet-documents",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.ahmet",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7866",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here are the documents. Keep their origin to yourself."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ahmet.lua:109-142"
+      ],
+      "requires": [],
+      "fee": {
+        "gold": 1000,
+        "include_bank": true
+      },
+      "required_claims": [
+        "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_oasis"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-ahmet-nomad",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.ahmet",
+      "keywords": [
+        "documents"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Defeat a nomad at the northern oasis and then we can talk about forged documents."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ahmet.lua:107-117"
+      ],
+      "requires": []
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-carina-necklace",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.carina",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7940",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i7939",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is the necklace."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carina.lua:61-77"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "fee": {
+        "gold": 5000,
+        "include_bank": true
+      },
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-chantalle-key",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.chantalle",
+      "keywords": [
+        "key"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7939",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i7934",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The necklace for the key. We have a deal."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chantalle.lua:61-70"
+      ],
+      "requires": [],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i7939",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-enroll",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Welcome to the guild. Ask me for a mission when you are ready."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:145-153,224-228"
+      ],
+      "requires": []
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-herbert-letter",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.herbert",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7940",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You may deliver the letter to Chantalle."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/herbert.lua:61-77"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "fee": {
+        "gold": 1000,
+        "include_bank": true
+      },
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-mission-01",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission01",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Bring me ten elephant tusks from around Port Hope."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:63-70,154-160"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-mission-02",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission02",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Climb the vines at Sarina's shop in Carlin and open the chest with a lock pick."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:71-83,161-167"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-mission-03",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission03",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Oswald handles invitations to the King's ball. Bring one back for the guild."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:84-94,168-176"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 3,
+          "maximum": 3
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-mission-04",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ask Ahmet for forged documents. Get a disguise from Percybald and trade the papers to Nurik for the Mina Losa."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:95-108,177-183"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 4,
+          "maximum": 4
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-mission-05",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission05",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Find the smugglers north of Port Hope and recover the golden goblet they owe us."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:109-119,184-190"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 5,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-mission-06",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Find a way into Theodore Loveless' room in Liberty Bay and bring me his goldfish."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:120-130,191-197"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 6,
+          "maximum": 6
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-mission-07",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission07",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Find something in the Venore guard barracks that we can use to pressure a guard."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:131-140,198-210"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-mission-08",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission08",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7873",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this note to the lowest level of the Dark Cathedral. Put it on the wall between the two trophies."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:141-152,211-222"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 8,
+          "maximum": 8
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-oswald-invitation",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.oswald",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission03",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7933",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is your invitation."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/oswald.lua:94-118"
+      ],
+      "requires": [],
+      "fee": {
+        "gold": 1000,
+        "include_bank": true
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-report-01",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission01",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3044",
+          "count": 10
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The guild will find a buyer for that ivory."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:63-70,154-160"
+      ],
+      "requires": []
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-report-02",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission02",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i227",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Our client will be pleased to have the vase."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:71-83,161-167"
+      ],
+      "requires": []
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-report-03",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission03",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7933",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "We can take it from here. Ask me for your next assignment."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:84-94,168-176"
+      ],
+      "requires": []
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-report-04",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7871",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The Mina Losa is ours. Ask me about your next assignment."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:95-108,177-183"
+      ],
+      "requires": []
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-report-05",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission05",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7870",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The smugglers have paid their debt."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:109-119,184-190"
+      ],
+      "requires": [],
+      "required_claims": [
+        "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.golden_goblet"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-report-06",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7936",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The goldfish will fetch a handsome ransom."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:120-130,191-197"
+      ],
+      "requires": []
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-report-07",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission07",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7935",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "This letter will do. One more assignment and you can trade with Black Bert."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:131-140,198-210"
+      ],
+      "requires": [],
+      "required_claims": [
+        "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.compromising_letter"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-report-08",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission08",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/door",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You may trade with Black Bert upstairs and choose one reward in the room to the left."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:141-152,211-222"
+      ],
+      "requires": [],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-snake-eye-referral",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.snake_eye",
+      "keywords": [
+        "documents"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ask Ahmet in Ankrahmun. He is the best forger I know."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/snake_eye.lua:67-70"
+      ],
+      "requires": []
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-percybald-disguise",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "backstage"
+      ],
+      "topic": 42,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7865",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You know your way around the theatre. Take this disguise kit."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/percybald.lua:70-97:sha256:b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-guild-nurik-painting",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.nurik",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7866",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i7871",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The bridge is mine! Here is the Mina Losa."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nurik.lua:56-101:sha256:b030adfffbfb99b9ce407d858e4b2cf143f5f86b5a6b3b341a814bce9d1f0328"
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i7865",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/inquisition-eclipse-start",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission02",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Seek the coven on the Big Old One. Use this holy water on the brew and bring back the grimoire. Ask Uzon about eclipse."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/henricus.lua:103-113:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/inquisition-eclipse-report",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission02",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7874",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The grimoire confirms the coven is finished. Ask me for your next assignment."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/henricus.lua:276-285:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/inquisition-vampire-hunt-referral",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Report to Storkus near Kazordoon. He needs help tracking a vampire lord."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/henricus.lua:120-128:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/inquisition-vampire-hunt-dust/collect",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 21
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5905",
+          "count": 20
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5905",
+          "minimum": 20,
+          "maximum": 4294967295
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "That is all the vampire dust I need. Ask me about your next mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:121-141:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/inquisition-vampire-hunt-dust/accept",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 10,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Bring me twenty ounces of vampire dust."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:198-202:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/inquisition-vampire-hunt-dust/already-paid",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust",
+          "minimum": 21,
+          "maximum": 21,
+          "set": 21,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The dust is paid. Ask me about your next mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:60-72:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/inquisition-vampire-hunt-count",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Find the Count in the Green Claw Swamp. Open his coffin and bring me his ring."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:74-84:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/inquisition-vampire-hunt-ring",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 8,
+          "maximum": 9,
+          "set": 10
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
+          "minimum": 3,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7924",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The ring is proof enough. Report the hunt to Henricus."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:85-98:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/inquisition-vampire-hunt-report",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I accept your report. Storkus can now accept your Vampire Lord Tokens."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/henricus.lua:225-232:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
+      ]
+    }
+  ]
+}

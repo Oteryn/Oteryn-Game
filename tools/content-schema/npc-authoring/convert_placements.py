@@ -11,8 +11,8 @@ Optional block_solid_contacts admits only source-backed solid-object contacts;
 the compiler still checks walls, floor changes and other terrain hazards.
 Explicit placement_adjustments choose adjacent clear native ground while retaining
 the donor cell. Pinned placement overrides preserve their own evidence and replace
-only a scoped candidate's placement hypothesis. The source is OTS_HYPOTHESIS_ONLY
-migration evidence: only normalized facts are written. Unadmitted keys and
+the placement hypothesis of a scoped, admitted NPC. Explicit Wiki BR cells are
+qualified against the retained page. The source is OTS_HYPOTHESIS_ONLY migration evidence: only normalized facts are written. Unadmitted keys and
 out-of-range positions fail closed.
 
     python convert_placements.py [--check]
@@ -27,18 +27,22 @@ import hashlib
 import json
 import sys
 from collections import defaultdict
+from collections.abc import Set
 from pathlib import Path
 
 import native_contacts
+import regional_placements
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 OUT = ROOT / "content/world/npc-placements"
 CANDIDATES = HERE / "samples/promotion-candidates-v1.json"
+WIKI_BR = ROOT / "imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json"
 SCOPE = HERE / "npc_placement_scope.json"
 NPCS = ROOT / "content/npcs/definitions"
 FRAME = "global-target-2026-09-27"
 from chosen_placement_adjustments import choose_cell
+from mainland_contacts import CONTACTS, contacts as mainland_contacts
 SHARD_SIZE = 500
 SOURCES = {
     "canary": ("opentibiabr/canary", "47dfd51f45280a59a1d3e50ba7edd573d7234446", "oteryn:source.canary"),
@@ -71,12 +75,19 @@ def cell_of(position: dict) -> tuple[int, int, int]:
     return x, y, z
 
 
-def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
-    """Explicit pinned schedules supersede migration placement hypotheses, not definitions."""
+def apply_placement_overrides(candidates: dict, scope: dict, admitted: Set[str] = frozenset()) -> dict:
+    """Explicit pinned positions can add or replace a scoped placement hypothesis."""
     result = copy.deepcopy(candidates)
-    for key, override in scope.get("placement_overrides", {}).items():
-        if key not in scope["npcs"] or key not in result:
-            raise ValueError("placement override requires a scoped candidate")
+    overrides = scope.get("placement_overrides", {})
+    new_contacts = scope.get("new_placement_overrides", [])
+    explicit = set(new_contacts)
+    if (len(explicit) != len(new_contacts)
+            or not explicit <= set(overrides)
+            or explicit & candidates.keys()):
+        raise ValueError("new placement overrides must introduce distinct pinned NPC contacts")
+    for key, override in overrides.items():
+        if key not in scope["npcs"] or (key not in result and key not in admitted and key not in explicit):
+            raise ValueError("placement override requires a scoped candidate or admitted NPC")
         source, placements = override["source"], override["placements"]
         if (source.get("origin") not in SOURCES
                 or not re.fullmatch(r"[0-9a-f]{40}", source.get("revision", ""))
@@ -99,8 +110,17 @@ def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
                 raise ValueError("ambiguous native placement override")
             cells.add(cell)
         repository, _, source_key = SOURCES[source["origin"]]
-        result[key]["placements"] = copy.deepcopy(placements)
-        result[key]["placement_override_provenance"] = [{
+        for alias in override.get("supersedes_unscoped", []):
+            if alias in scope["npcs"] or alias not in result:
+                raise ValueError("placement override can only supersede an unscoped alias")
+            old = result[alias]["placements"]
+            retained = [p for p in old if cell_of(p["position"]) not in cells]
+            if retained == old:
+                raise ValueError("superseded alias has no matching cell")
+            result[alias]["placements"] = retained
+        candidate = result.setdefault(key, {"identity": {"key": key}})
+        candidate["placements"] = copy.deepcopy(placements)
+        candidate["placement_override_provenance"] = [{
             "origin": source["origin"], "repository": repository,
             "revision": source["revision"], "source_key": source_key,
             "source_row": source["path"], "source_sha256": source["sha256"],
@@ -109,6 +129,65 @@ def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
                              "rule": "EXPLICIT_PINNED_NATIVE_PLACEMENTS", "basis": override["basis"]}],
         }]
     return result
+
+
+def apply_wiki_br_contacts(candidates: dict, scope: dict, facts: bytes) -> None:
+    """Resolve explicitly selected coordinates against the retained Wiki BR revision."""
+    pages = {page["pageid"]: page for page in json.loads(facts)["pages"]}
+    for key, contact in scope["wiki_br_contacts"].items():
+        candidate = candidates.get(key)
+        if (key not in scope["npcs"] or candidate is None
+                or "placement_override_provenance" in candidate):
+            raise ValueError("Wiki BR contact requires a scoped candidate")
+        page = pages.get(contact["pageid"])
+        if (page is None or page["name"].casefold() != candidate["name"].casefold()
+                or page["removed"]):
+            raise ValueError(f"{key}: Wiki BR contact identity or lifecycle mismatch")
+        cells = contact["cells"]
+        if (not isinstance(cells, list) or not 1 <= len(cells) <= 16
+                or any(not isinstance(cell, list) or len(cell) != 3
+                       or any(type(coordinate) is not int for coordinate in cell)
+                       or cell not in page["positions"] for cell in cells)
+                or len({tuple(cell) for cell in cells}) != len(cells)):
+            raise ValueError(f"{key}: Wiki BR contact position missing from retained revision")
+        candidate["placements"] = [
+            {"position": dict(zip(("x", "y", "z"), cell)), "direction": None,
+             "origin": "native_wiki_br"}
+            for cell in cells
+        ]
+        candidate["native_provenance"] = {
+            "origin": "native_wiki_br",
+            "repository": "www.tibiawiki.com.br",
+            "pageid": page["pageid"],
+            "revid": page["revid"],
+            "source_sha256": page["sha256"],
+            "direction_note": "No source direction; north is the project default",
+        }
+
+
+def apply_wiki_br_cells(candidates: dict, scope: dict) -> None:
+    """Use an explicitly chosen, retained Wiki cell for an occurrence absent from donor XML."""
+    selections = scope.get("wiki_br_cells", {})
+    if not selections:
+        return
+    pages = defaultdict(list)
+    for page in json.loads(WIKI_BR.read_text())["pages"]:
+        pages[page["name"].casefold()].append(page)
+    for key, position in selections.items():
+        if key not in scope["npcs"] or key in scope.get("placement_overrides", {}):
+            raise ValueError("Wiki position requires a scoped NPC without a donor override")
+        candidate = candidates[key]
+        source_pages = pages[candidate["name"].casefold()]
+        if len(source_pages) != 1 or list(cell_of(position)) not in source_pages[0]["positions"]:
+            raise ValueError(f"{key}: position is absent from the retained Wiki page")
+        page = source_pages[0]
+        candidate["placements"] = [{"position": position, "direction": None, "origin": "native_wiki_br"}]
+        candidate["native_provenance"] = {
+            "origin": "native_wiki_br", "repository": "www.tibiawiki.com.br",
+            "source_sha256": page["sha256"], "revid": page["revid"], "pageid": page["pageid"],
+            "url": f"https://www.tibiawiki.com.br/index.php?oldid={page['revid']}",
+            "direction_note": "North is the project default when the source supplies no facing.",
+        }
 
 
 def apply_authored_placements(candidates: dict, scope: dict, admitted: set[str], root: Path = ROOT) -> dict:
@@ -155,6 +234,8 @@ def apply_authored_placements(candidates: dict, scope: dict, admitted: set[str],
 
 
 def provenance(candidate: dict, placement: dict) -> list[dict]:
+    if "regional_provenance" in placement:
+        return [placement["regional_provenance"]]
     if "placement_override_provenance" in candidate:
         return copy.deepcopy(candidate["placement_override_provenance"])
     if placement.get("origin") == "native_wiki_br":
@@ -201,7 +282,8 @@ def provenance(candidate: dict, placement: dict) -> list[dict]:
 
 def convert() -> dict[str, str]:
     report = json.loads(CANDIDATES.read_text())
-    candidates = {c["identity"]["key"]: c for c in report["candidates"]}
+    donor_candidates = {c["identity"]["key"]: c for c in report["candidates"]}
+    candidates = donor_candidates.copy()
     scope = json.loads(SCOPE.read_text())
     native = native_contacts.candidates(NPCS, scope.get("native_contacts", []))
     if set(native) & set(candidates):
@@ -209,9 +291,14 @@ def convert() -> dict[str, str]:
     if not set(native) <= set(scope["npcs"]):
         raise ValueError("native_contacts names an unscoped NPC")
     candidates.update(native)
-    candidates = apply_placement_overrides(candidates, scope)
     admitted = admitted_keys()
+    candidates = apply_placement_overrides(candidates, scope, admitted)
+    wiki_br_facts = WIKI_BR.read_bytes() if scope.get("wiki_br_contacts") else b""
+    if wiki_br_facts:
+        apply_wiki_br_contacts(candidates, scope, wiki_br_facts)
+    apply_wiki_br_cells(candidates, scope)
     candidates = apply_authored_placements(candidates, scope, admitted)
+    regional_placements.apply(candidates, donor_candidates, scope, admitted, ROOT)
     npcs = sorted(scope["npcs"])
     if len(set(npcs)) != len(npcs):
         sys.exit("the scope lists an NPC twice")
@@ -240,7 +327,10 @@ def convert() -> dict[str, str]:
     adjustments = scope.get("placement_adjustments", {})
     if not isinstance(adjustments, dict) or not set(adjustments) <= set(npcs):
         sys.exit("placement_adjustments names an unscoped NPC")
-    if any(len(candidates[npc]["placements"]) != 1 for npc in adjustments):
+    if any(
+        sum("regional_provenance" not in row for row in candidates[npc]["placements"]) != 1
+        for npc in adjustments
+    ):
         sys.exit("chosen adjacent placement requires a unique retained source cell")
     adjusted_cells = set()
 
@@ -280,8 +370,12 @@ def convert() -> dict[str, str]:
                     held.append(entry)
                 continue
             choice_evidence = None
-            if npc in adjustments:
-                cell, choice_evidence = choose_cell(ROOT, cell, adjustments[npc], set(occupancy) | adjusted_cells)
+            if npc in adjustments and "regional_provenance" not in placement:
+                occupied = {
+                    point for point, occupants in occupancy.items()
+                    if set(occupants) != {(npc, direction.upper())}
+                }
+                cell, choice_evidence = choose_cell(ROOT, cell, adjustments[npc], occupied | adjusted_cells)
                 adjusted_cells.add(cell)
             x, y, z = cell
             key = f"oteryn:npc_placement.{local_name(npc)}.x{x}_y{y}_z{z}"
@@ -292,6 +386,8 @@ def convert() -> dict[str, str]:
                 existing = records[key]["declaration"]
                 if existing["direction"] != direction:
                     sys.exit(f"{key}: two directions at one cell")
+                if placement.get("block_solid_contact"):
+                    existing["block_solid_contact"] = True
                 for row in rows:
                     if row not in existing["provenance"]:
                         existing["provenance"].append(row)
@@ -303,6 +399,7 @@ def convert() -> dict[str, str]:
                     "identity": {"key": key, "revision": "definition-r1"},
                     "npc": npc,
                     "provenance": rows,
+                    **({"block_solid_contact": True} if placement.get("block_solid_contact") else {}),
                 }
             }
     for record in records.values():
@@ -315,7 +412,10 @@ def convert() -> dict[str, str]:
     assert all(h["reason"] in REASONS for h in held)
     held.sort(key=dump)
 
-    ordered = [records[k] for k in sorted(records)]
+    original = [records[k] for k in sorted(records)]
+    mainland = mainland_contacts(admitted, original, donor_candidates, ROOT)
+    placed.update(record["declaration"]["npc"] for record in mainland)
+    ordered = sorted(original + mainland, key=lambda row: row["declaration"]["identity"]["key"])
     files, shards = {}, []
     for start in range(0, len(ordered), SHARD_SIZE):
         part = ordered[start : start + SHARD_SIZE]
@@ -340,6 +440,12 @@ def convert() -> dict[str, str]:
             "inputs": {
                 "candidates_sha256": hashlib.sha256(CANDIDATES.read_bytes()).hexdigest(),
                 "scope_sha256": hashlib.sha256(SCOPE.read_bytes()).hexdigest(),
+                **({"wiki_br_facts_sha256": hashlib.sha256(wiki_br_facts).hexdigest()}
+                   if wiki_br_facts else {}),
+                "mainland_contacts_sha256": hashlib.sha256(CONTACTS.read_bytes()).hexdigest(),
+                "regional_placements_sha256": hashlib.sha256(
+                    regional_placements.SELECTION.read_bytes()
+                ).hexdigest(),
                 **({"native_contacts_sha256": hashlib.sha256(dump(native).encode()).hexdigest()}
                    if native else {}),
             },

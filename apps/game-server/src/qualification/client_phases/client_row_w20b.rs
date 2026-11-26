@@ -60,7 +60,7 @@ async fn prepare_player_caster(
         && let Err(error) = full_e2ef7::require_current_light_premium(&mut client).await
     {
         // The packet capture reuses this Character after the full journey.
-        let cleanup = logout_retrying_busy(&mut client).await;
+        let cleanup = fixture_logout_retrying_busy(&mut client).await;
         if !matches!(cleanup, Ok((Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted), ..))) {
             return Err(format!("{error}; personal-light preflight logout: {cleanup:?}").into());
         }

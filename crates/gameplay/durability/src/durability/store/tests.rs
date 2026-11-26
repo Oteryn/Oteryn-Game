@@ -57,6 +57,7 @@ fn plan(seed: u8) -> TestResult<DeliveryPlan> {
     use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
     use crate::foundation::{CommandId, CommandRef};
     Ok(DeliveryPlan {
+        purchase_request_id: None,
         account_id: id(40),
         character_id: id(harness::CHARACTER),
         world_id: id(harness::WORLD),
@@ -132,6 +133,46 @@ async fn apply(
     h.root
         .apply_store_delivery(&authority, &h.node, id(operation), plan, fence)
         .await
+}
+
+#[test]
+fn store_postgres_interrupted_preparation_can_retry_with_a_new_command() -> TestResult {
+    std::thread::Builder::new()
+        .name("store-prepared-retry".into())
+        .stack_size(64 << 20)
+        .spawn(|| interrupted_preparation().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Store preparation retry thread panicked")??;
+    Ok(())
+}
+
+fn interrupted_preparation() -> TestResult {
+    run("store_prepared_retry", async |h| {
+        let mut plan = plan(80)?;
+        let fence = harness::fence(1)?;
+        sqlx::raw_sql(
+            "CREATE FUNCTION fail_store_write() RETURNS trigger LANGUAGE plpgsql AS
+             $$ BEGIN RAISE EXCEPTION 'interruption after Inbox preparation'; END; $$;
+             CREATE TRIGGER fail_store_write BEFORE INSERT ON store_delivery_receipts
+             FOR EACH ROW EXECUTE FUNCTION fail_store_write();",
+        ).execute(&h.pool).await?;
+        assert!(apply(h, 90, plan.clone(), fence).await.is_err());
+        let prepared: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_reward_claim_inbox_mint_reservations",
+        ).fetch_one(&h.pool).await?;
+        assert_eq!(prepared, 1);
+        sqlx::query("DROP TRIGGER fail_store_write ON store_delivery_receipts")
+            .execute(&h.pool).await?;
+        plan.command = crate::foundation::CommandRef::new(
+            fence.game_session_id, crate::foundation::CommandId::new(81).map_err(debug)?,
+        );
+        let committed = apply(h, 90, plan.clone(), fence).await.map_err(debug)?;
+        assert_eq!(apply(h, 90, plan, fence).await.map_err(debug)?, committed);
+        let deliveries: i64 = sqlx::query_scalar("SELECT count(*) FROM store_delivery_receipts")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(deliveries, 1);
+        Ok(())
+    })
 }
 
 #[test]

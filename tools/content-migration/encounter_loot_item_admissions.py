@@ -43,12 +43,16 @@ def facts(root=ROOT, ids=None, *, allow_containers=False, xml_override=None):
             raw[path] = historical_binding_bytes(raw[path], BINDINGS_SHA)
         if hashlib.sha256(raw[path]).hexdigest() != digest:
             raise ValueError('ENCOUNTER_LOOT_SOURCE_PIN')
+    independent_source = None
     if xml_override is not None:
-        # Exact retained Crystal summer source for the newer portable trophy.
+        # Exact retained Crystal summer source for the portable trophy and outfit items.
         # The ordinary Canary pin and all other source guards above stay mandatory.
-        if set(ids) != {44158} or hashlib.sha256(xml_override).hexdigest() != '13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece':
+        from outfit_reward_item_profiles import SOURCE_ROWS
+        if set(ids) not in ({44158}, set(SOURCE_ROWS)) or hashlib.sha256(xml_override).hexdigest() != '13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece':
             raise ValueError('ENCOUNTER_LOOT_ALTERNATE_XML_SCOPE_OR_PIN')
         raw[XML] = xml_override
+        if set(ids) == set(SOURCE_ROWS):
+            independent_source = ('00ce02a57ca5a12e48f32a3476e37471167e4c3f', xml_override)
     xml = source.xml_index(raw[XML])
     objects = source.engine_items.load_appearance_objects(raw[CLIENT])
     physical = {r['server_item_id']: r for r in source.policies(raw[CLIENT], raw[XML], ids)}
@@ -57,7 +61,8 @@ def facts(root=ROOT, ids=None, *, allow_containers=False, xml_override=None):
     for item in sorted(ids):
         profile = source.profile(item, xml[item], objects[item], physical[item], bindings, None)
         bound = source.bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1',
-                                      'records': [profile]}, bindings, {item})['records'][0]
+                                      'records': [profile]}, bindings, {item},
+                                     independent_crystal_source=independent_source)['records'][0]
         if bound['admission']['legal_destinations'] != ['CharacterInventory', 'Ground']:
             raise ValueError('ENCOUNTER_LOOT_NOT_PORTABLE')
         if not allow_containers and bound['semantics']['container'] != {'state': 'NOT_APPLICABLE'}:

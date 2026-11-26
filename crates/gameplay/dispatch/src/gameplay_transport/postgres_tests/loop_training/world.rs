@@ -9,6 +9,7 @@ pub(super) fn training_world(
     index: &ItemDefinitionIndex,
     admitted: crate::gameplay_transport::connection::AdmittedSession,
     flags: [u32; 2],
+    house: u32,
 ) -> TestResult<BundleWorld> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     let keys = [
@@ -67,7 +68,7 @@ pub(super) fn training_world(
         x,
         y: 0,
         flags,
-        house: 0,
+        house: if x == 0 { 0 } else { house },
         zones: vec![],
         items: items
             .into_iter()
@@ -78,13 +79,17 @@ pub(super) fn training_world(
             })
             .collect(),
     };
+    let mut tiles = vec![tile(1, flags[0], vec![0]), tile(2, flags[1], vec![0, 1, 2])];
+    if house != 0 {
+        tiles.insert(0, tile(0, flags[0], vec![0]));
+    }
     let bytes = write(
         &manifest,
         &[Sector {
             floor: -7,
             sx: 0,
             sy: 0,
-            tiles: vec![tile(1, flags[0], vec![0]), tile(2, flags[1], vec![0, 1, 2])],
+            tiles,
         }],
         &Default::default(),
     )
