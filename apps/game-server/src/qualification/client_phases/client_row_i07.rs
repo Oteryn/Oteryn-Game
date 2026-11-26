@@ -109,6 +109,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let pouch_id = pouch_id(clients).await?;
     let mut client = connect_world(clients, 0x07).await?;
     let session = client.join_snapshot().game_session_id;
+    character_prep::grant_premium(&client).await?;
+    evidence("I07_FIXTURE premium=active");
     let items = provisioning::item_index()?;
     let skip_ref = provisioning::item_reference(&items, 3031)?.get();
     let accept_ref = provisioning::item_reference(&items, 3350)?.get();

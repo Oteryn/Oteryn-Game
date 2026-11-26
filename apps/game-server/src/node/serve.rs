@@ -3057,6 +3057,7 @@ async fn control_loop(
     config: &NodeConfig,
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
     spawn: Option<qualification_fixture::SpawnOwners<'_>>,
+    premium: Option<&crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator>,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -3086,7 +3087,7 @@ async fn control_loop(
                 ),
                 Some(request) if request.starts_with(b"qualify ") => (
                     Box::pin(qualification_fixture::prepare(
-                        root, authority, proof, config, native, &request,
+                        root, authority, proof, config, native, premium, &request,
                     ))
                     .await
                     .to_owned(),
