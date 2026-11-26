@@ -4,6 +4,7 @@ use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_gameplay_items::concoctions::{ALL, Concoction};
 use oteryn_gameplay_items::drome_cube::DROME_CUBE_KEY;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
+use oteryn_protocol_oteryn::presentation::{self, ActorCooldown, ActorCooldownKind};
 use oteryn_protocol_oteryn::{tutorial_notices::TutorialNotice, world_object as wire};
 use std::collections::BTreeMap;
 use std::num::NonZeroU32;
@@ -108,6 +109,140 @@ async fn cast_wand(client: &mut DevClientSession, spell: NonZeroU32) -> TestResu
     Ok(())
 }
 
+async fn assert_conjure_cooldowns(
+    client: &mut DevClientSession,
+    spell: NonZeroU32,
+    cast_started: tokio::time::Instant,
+) -> TestResult<[ActorCooldown; 2]> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        for event in client.take_events() {
+            if let SessionEvent::ActorCooldowns(frame) = event {
+                let now = frame.value.server_now_ms;
+                // Global: https://www.tibiawiki.com.br/wiki/Conjure_Wand_of_Darkness
+                // The frame samples server time after commit. Both cooldowns share the cast time.
+                let entries = frame.value.entries.as_slice();
+                let [spell_entry, group_entry] = entries else {
+                    return Err(format!(
+                        "W09 cooldown entry count diverged sequence={} frame={:?}",
+                        frame.server_sequence, frame.value
+                    )
+                    .into());
+                };
+                let elapsed_ms =
+                    u64::try_from(cast_started.elapsed().as_millis())?.saturating_add(1);
+                let group_remaining = group_entry.expires_at_ms.checked_sub(now);
+                if (spell_entry.kind, spell_entry.id) != (ActorCooldownKind::Spell, spell.get())
+                    || (group_entry.kind, group_entry.id) != (ActorCooldownKind::Group, 3)
+                    || spell_entry
+                        .expires_at_ms
+                        .checked_sub(group_entry.expires_at_ms)
+                        != Some(1_798_000)
+                    || !group_remaining.is_some_and(|ms| {
+                        ms > 0 && (2_000_u64.saturating_sub(elapsed_ms)..=2_000).contains(&ms)
+                    })
+                {
+                    return Err(format!(
+                        "W09 cooldown update diverged sequence={} frame={:?} cast_elapsed_ms={elapsed_ms}",
+                        frame.server_sequence, frame.value
+                    ).into());
+                }
+                evidence(&format!(
+                    "W09_CHECK cooldown-update sequence={} spell_ms=1800000 support_ms=2000",
+                    frame.server_sequence
+                ));
+                return Ok([*spell_entry, *group_entry]);
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "W09 cooldown update missing through sequence={}",
+                client.last_server_sequence()
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+}
+
+async fn reconnect_cooldowns(
+    client: DevClientSession,
+    scope: &SeamClients<'_>,
+    expected: [ActorCooldown; 2],
+) -> TestResult<DevClientSession> {
+    let session = client.join_snapshot().game_session_id;
+    let sequence = client.last_server_sequence();
+    let next_command = client.next_command_id();
+    let generation = platform_generation(scope.descriptor, &scope.accounts[0]).await?;
+    let (nonce, _) = fresh_grant_material(0xd2)?;
+    let credential = sign_recovery(
+        scope.recovery,
+        &scope.accounts[0],
+        &scope.characters[0],
+        &scope.world,
+        generation,
+        now_seconds()?,
+        nonce,
+    );
+    let previous = client.disconnect();
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    while !matches!(
+        session_loss_row(scope.url, *session.as_bytes()).await?,
+        Some((1, _, _))
+    ) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("W09 transport never became reconnectable".into());
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    let mut resumed = oteryn_dev_client::resume_session(
+        oteryn_dev_client::RecoveryTransport {
+            address: scope.address,
+            server_name: "localhost",
+            root_certificate: scope.certificate,
+            deadline: Duration::from_secs(20),
+        },
+        previous,
+        oteryn_dev_client::Recovery {
+            reconnect_material: credential.as_bytes(),
+            schema_revision: 1,
+            client_build_id: "oteryn-dev-client/world-qualification",
+            deadline: Duration::from_secs(20),
+            appearance_items: None,
+        },
+    )
+    .await?;
+    let resumed_sequence = resumed.last_server_sequence();
+    let cooldowns = resumed
+        .session_mut()
+        .gated_snapshot(presentation::STATE_DOMAIN_ACTOR_COOLDOWNS)
+        .ok_or("W09 reconnect omitted ACTOR_COOLDOWNS")
+        .and_then(|snapshot| {
+            presentation::decode_actor_cooldowns(&snapshot.payload)
+                .map_err(|_| "W09 reconnect sent malformed ACTOR_COOLDOWNS")
+        })?;
+    let active: Vec<_> = expected
+        .into_iter()
+        .filter(|entry| entry.expires_at_ms > cooldowns.server_now_ms)
+        .collect();
+    if resumed.join_snapshot().game_session_id != session
+        || resumed_sequence <= sequence
+        || resumed.next_command_id() != next_command
+        || !active
+            .iter()
+            .any(|entry| entry.kind == ActorCooldownKind::Spell)
+        || cooldowns.entries != active
+    {
+        return Err(format!(
+            "W09 reconnect cooldown replay diverged sequence={resumed_sequence} frame={cooldowns:?} expected={active:?}"
+        ).into());
+    }
+    evidence(&format!(
+        "W09_CHECK cooldown-reconnect sequence={resumed_sequence} spell-deadline=preserved"
+    ));
+    Ok(resumed)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let cube_id = character_prep::item_id(DROME_CUBE_KEY)?;
     let aid_id = Concoction::KooldownAid.item_id();
@@ -137,6 +272,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "w09-kooldown".into(),
     )
     .await?;
+    use_item(
+        &mut client,
+        aid,
+        (CommandStatus::Accepted, wire::UseDisposition::NothingToUse),
+    )
+    .await?;
+    if quantities(&client)? != expected {
+        return Err("W09 missing Aid refusal changed inventory".into());
+    }
     character_prep::grant_item(&client, cube_id, 1).await?;
     character_prep::grant_item(&client, aid_id, 2).await?;
     logout(&mut client).await?;
@@ -144,6 +288,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if client.join_snapshot().game_session_id == preparation_session {
         return Err("W09 preparation reused its original session".into());
     }
+    evidence("FIXTURE row=W09.full input=premium");
     character_prep::grant_premium(&client).await?;
     let level = full_e2ef7::player_level(&mut client).await?;
     let vitals = client.actor_vitals().ok_or("W09 seeded vitals missing")?;
@@ -167,7 +312,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             .ok_or("W09 Conjure Wand of Darkness missing from native book")?
             .cooldown_micros,
     );
-    // Crystal 201189f8, data/scripts/spells/conjuring/conjure_wand_of_darkness.lua:12.
+    // Global: https://www.tibiawiki.com.br/wiki/Conjure_Wand_of_Darkness
     if natural_cooldown != Duration::from_secs(1800) {
         return Err(format!("W09 unexpected donor spell cooldown: {natural_cooldown:?}").into());
     }
@@ -179,10 +324,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("W09 requires a main backpack with no Wand of Darkness".into());
     }
+    client.take_events();
     let first_cast = tokio::time::Instant::now();
     cast_wand(&mut client, spell).await?;
     *expected.entry(wand).or_default() += 1;
+    let cooldowns = assert_conjure_cooldowns(&mut client, spell, first_cast).await?;
     wait_inventory(&mut client, &expected).await?;
+    let mut client = reconnect_cooldowns(client, &scope, cooldowns).await?;
+    if quantities(&client)? != expected {
+        return Err("W09 reconnect changed the first conjure inventory".into());
+    }
+    evidence(
+        "GAP row=W09.full status=BLOCKED-CONTRACT check=spell-and-group-cooldowns-survive-full-logout",
+    );
     let before = client
         .actor_vitals()
         .copied()
