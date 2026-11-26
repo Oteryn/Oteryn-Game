@@ -739,10 +739,11 @@ async fn logout(bot: &mut Bot<'_, '_>) -> TestResult {
     };
     tokio::time::timeout_at(deadline, async {
         loop {
-            let (result, reply, attempts, busy_timed_out) = logout_retrying_busy_observed(bot.client()?, Some(&mut observe)).await?;
+            let (result, reply, attempts, busy_timed_out) = fixture_logout_retrying_busy_observed(bot.client()?, Some(&mut observe)).await?;
             match result {
                 Some(LogoutResult::Accepted) => { bot.session = None; return Ok(()); }
                 Some(LogoutResult::InFight { .. }) => {
+                    evidence("FIXTURE_RETRY step=mp-combat-logout reason=in-fight");
                     bot.client()?.service_liveness(Duration::from_millis(50)).await?;
                     bot.client()?.take_events();
                     if tokio::time::Instant::now() >= activity_due {

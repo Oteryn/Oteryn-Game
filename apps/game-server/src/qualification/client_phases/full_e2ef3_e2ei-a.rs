@@ -64,7 +64,7 @@ pub(super) async fn relogin_starter(
 async fn relogin(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult<()> {
     let session = client.join_snapshot().game_session_id;
     let position = client.world_spatial().actor_position;
-    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(client).await?;
+    let (result, logout, attempts, busy_timed_out) = logout_once(client).await?;
     if result != Some(LogoutResult::Accepted) {
         return Err(format!(
             "logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}"

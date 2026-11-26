@@ -414,10 +414,11 @@ async fn logout(client: &mut DevClientSession, world: &BundleWorld) -> TestResul
     walk(client, world, &safe).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
-        let reply = logout_retrying_busy(client).await?.0;
+        let reply = logout_once(client).await?.0;
         match reply {
             Some(LogoutResult::Accepted) => return Ok(()),
             Some(LogoutResult::InFight { .. }) if tokio::time::Instant::now() < deadline => {
+                evidence("FIXTURE_RETRY step=c11-combat-logout reason=in-fight");
                 client.service_liveness(Duration::from_millis(250)).await?;
                 client.take_events();
             }

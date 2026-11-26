@@ -396,7 +396,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass(7, "spike STEP damaged actor and closed trap; exit reopened trap");
     observe_step_tile(&mut client, world, &bytes, &PRESSURE, "pressure-tile").await?;
     row.pass(8, "pressure tile changed on STEP entry and restored on exit");
-    if logout_retrying_busy(&mut client).await?.0 != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+    if logout_once(&mut client).await?.0 != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("step=cleanup observed=final-logout-refused".into());
     }
     Ok(())

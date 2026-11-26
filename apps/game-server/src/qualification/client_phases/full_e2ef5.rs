@@ -260,7 +260,7 @@ async fn say(
         .await?)
 }
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(client).await?;
+    let (result, logout, attempts, busy_timed_out) = super::logout_once(client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!(
             "C17c logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}"

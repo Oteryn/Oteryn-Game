@@ -610,6 +610,13 @@ class PgObserveTests(unittest.TestCase):
 
 
 class CloudRunSummaryTests(unittest.TestCase):
+    def test_qualification_shared_logout_has_explicit_fixture_retry_path(self):
+        world = HERE.parents[2] / 'apps/game-server/src/qualification/client_phases/world.rs'
+        source = world.read_text()
+        self.assertIn('async fn logout_once(', source)
+        self.assertIn('async fn fixture_logout_retrying_busy_observed(', source)
+        self.assertIn('FIXTURE_RETRY step=logout reason=busy', source)
+
     def test_selected_batch_requires_its_own_unique_verdict(self):
         cases = [
             ('0:0', '', 'empty-batch'),
