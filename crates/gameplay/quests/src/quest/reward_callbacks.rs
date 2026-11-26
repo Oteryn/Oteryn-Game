@@ -739,10 +739,10 @@ fn append_storkus_dust_deposits(callbacks: &mut Vec<RewardCallback>) -> Result<(
     Ok(())
 }
 
-/// Crystal storkus.lua:121-141 displays the deposit and the remaining amount.
+/// The report unlocks at 21 because accepting the mission starts the counter at 1.
 #[must_use]
 pub fn storkus_dust_reply(count: u16, saved: i64) -> String {
-    let remaining = 20 - saved;
+    let remaining = 21 - saved;
     if remaining > 0 {
         format!("Ye've brought me {count} vampire dusts. Ye' need to bring {remaining} more.")
     } else {
