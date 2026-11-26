@@ -1036,7 +1036,32 @@ async fn prepare_p04_delivery(
         };
         generation_item_facts(native, &definition).map_err(qualification_build::debug)
     };
-    let item = facts(id)?;
+    let reference = std::num::NonZeroU32::new(id).ok_or("P04 delivery item reference is zero")?;
+    let (key, revision) = index
+        .definition_at(reference)
+        .ok_or("P04 delivery item not in active index")?;
+    let delivery_item = oteryn_gameplay_quests::quest::task_board::full::DELIVERY_ITEMS
+        .iter()
+        .any(|entry| {
+            native
+                .item_policy_for_source_id(u32::from(entry.item_id))
+                .is_some_and(|policy| {
+                    let definition = &policy.record().production_definition;
+                    definition.production_key == key && definition.revision_ref == revision
+                })
+        });
+    if !delivery_item {
+        return Err("P04 item is not in the active delivery catalogue".into());
+    }
+    let item = generation_item_facts(
+        native,
+        &TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: key.into(),
+            revision_ref: revision.into(),
+        },
+    )
+    .map_err(qualification_build::debug)?;
     let maximum = match item.stack {
         ItemStackClass::NonStackable => 1,
         ItemStackClass::Stackable { proven_maximum } => proven_maximum.unwrap_or(100),
