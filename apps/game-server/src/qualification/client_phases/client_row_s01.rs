@@ -142,31 +142,67 @@ fn check_state(sent: &Sent, members: &[(&str, bool)], inviter: Option<&str>) -> 
     Ok(())
 }
 
+#[cfg(test)]
+mod notice_tests {
+    use super::*;
+    use runtime::party::PartyMembershipChange::Joined;
+
+    #[test]
+    fn joined_notice_must_follow_the_action_watermark() {
+        assert!(check_notice(10, 10, Joined, Some(&Joined)).is_err());
+        assert!(check_notice(10, 11, Joined, Some(&Joined)).is_ok());
+        assert!(check_notice(10, 11, Joined, None).is_err());
+    }
+}
+
+fn check_notice(
+    watermark: u64,
+    sequence: u64,
+    kind: runtime::party::PartyMembershipChange,
+    expected: Option<&runtime::party::PartyMembershipChange>,
+) -> TestResult {
+    if sequence <= watermark || expected != Some(&kind) {
+        return Err(format!("S01 unexpected notice: change={kind:?} sequence={sequence} watermark={watermark} expected={expected:?}").into());
+    }
+    Ok(())
+}
+
 async fn expect_notices(
     client: &mut DevClientSession,
+    actor: &str,
+    watermark: u64,
     expected: &[runtime::party::PartyMembershipChange],
 ) -> TestResult {
-    let mut seen = Vec::new();
-    tokio::time::timeout(Duration::from_secs(12), async {
-        let mut events = client.take_events();
-        loop {
-            for event in events {
-                if let oteryn_dev_client::SessionEvent::PartyMembershipNotice(delta) = event {
-                    seen.push(delta.value.change);
-                    evidence(&format!("S01_NOTICE change={:?} sequence={}", delta.value.change, delta.server_sequence));
-                }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
+    let mut remaining = expected;
+    let mut events = client.take_events();
+    let mut domains = std::collections::BTreeSet::new();
+    loop {
+        for event in events {
+            domains.insert(event.domain_id());
+            if let oteryn_dev_client::SessionEvent::PartyMembershipNotice(delta) = event {
+                check_notice(watermark, delta.server_sequence, delta.value.change, remaining.first())?;
+                remaining = &remaining[1..];
+                evidence(&format!(
+                    "S01_NOTICE actor={actor} change={:?} sequence={} watermark={watermark}",
+                    delta.value.change, delta.server_sequence
+                ));
             }
-            if !expected.starts_with(&seen) {
-                return Err(format!("S01 party notice mismatch: expected={expected:?} observed={seen:?}").into());
-            }
-            if seen == expected {
-                return Ok(());
-            }
-            events = client.wait_for_events(Duration::from_secs(12)).await?;
         }
-    })
-    .await
-    .map_err(|_| format!("S01 party notice deadline: expected={expected:?} observed={seen:?}"))?
+        if remaining.is_empty() {
+            return Ok(());
+        }
+        let budget = deadline.saturating_duration_since(tokio::time::Instant::now());
+        match client.wait_for_events(budget).await {
+            Ok(next) => events = next,
+            Err(error) => {
+                return Err(format!(
+                    "S01 party notice wait failed: actor={actor} expected={remaining:?} watermark={watermark} last_sequence={} decoded_domains={domains:?} error={error}",
+                    client.last_server_sequence()
+                ).into());
+            }
+        }
+    }
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -192,15 +228,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("S01 fixed step to {destination:?} failed: {step:?}").into());
     }
 
+    let peer_before_invite = peer.last_server_sequence();
     send(&mut leader, Some(PartyIntent::Invite(own(&peer)?))).await?;
-    expect_notices(&mut peer, &[Invited]).await?;
+    expect_notices(&mut peer, "peer", peer_before_invite, &[Invited]).await?;
     let invited = send(&mut peer, None).await?;
     check_state(&invited, &[], Some("Packet One"))?;
     let invitation = &invited.result.invitations[0];
 
+    let leader_before_join = leader.last_server_sequence();
+    let peer_before_join = peer.last_server_sequence();
     let joined = send(&mut peer, Some(PartyIntent::Accept(invitation.handle))).await?;
-    expect_notices(&mut leader, &[Joined]).await?;
-    expect_notices(&mut peer, &[Joined]).await?;
+    expect_notices(&mut leader, "leader", leader_before_join, &[Joined]).await?;
+    expect_notices(&mut peer, "peer", peer_before_join, &[Joined]).await?;
     let before_pass = [("Packet One", true), ("Packet Two", false)];
     check_state(&joined, &before_pass, None)?;
 
@@ -222,13 +261,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let peer_view = send(&mut peer, None).await?;
     check_state(&peer_view, &after_pass, None)?;
 
+    let leader_before_leave = leader.last_server_sequence();
+    let peer_before_leave = peer.last_server_sequence();
     check_state(
         &send(&mut leader, Some(PartyIntent::Leave)).await?,
         &[],
         None,
     )?;
-    expect_notices(&mut leader, &[Left, Disbanded]).await?;
-    expect_notices(&mut peer, &[Left, Disbanded]).await?;
+    expect_notices(&mut leader, "leader", leader_before_leave, &[Left, Disbanded]).await?;
+    expect_notices(&mut peer, "peer", peer_before_leave, &[Left, Disbanded]).await?;
     check_state(&send(&mut peer, None).await?, &[], None)?;
     for client in [&mut leader, &mut peer] {
         let logout = client.session_mut().logout().await?;
