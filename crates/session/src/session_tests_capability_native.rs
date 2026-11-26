@@ -118,17 +118,18 @@ fn selected_mechanic_panels_have_raw_command_routes() -> Result<(), BoxError> {
                             .command_type,
                         40
                     );
-                    write_frame(
-                        &mut server,
-                        &encode_command_result(1, 41, 7, CommandStatus::Accepted, b"guild")?,
-                    )
-                    .await?;
-                    Ok::<(), BoxError>(())
+                    let result =
+                        encode_command_result(1, 41, 7, CommandStatus::Accepted, b"guild")?;
+                    write_frame(&mut server, &result).await?;
+                    Ok::<_, BoxError>(result)
                 });
                 let mut session = Session::admit(client, admission_with(&[40])?).await?;
                 assert!(session.is_selected(40));
-                assert_eq!(session.gated_command(40, 40, b"").await?.payload, b"guild");
-                peer.await??;
+                let (result, frame) = session.gated_command_with_frame(40, 40, b"").await?;
+                assert_eq!(result.payload, b"guild");
+                assert_eq!(frame, peer.await??);
+                assert_eq!(decode_gated_result_frame(&frame)?, result);
+                assert!(decode_gated_result_frame(&frame[..frame.len() - 1]).is_err());
                 Ok(())
             })?
         })?

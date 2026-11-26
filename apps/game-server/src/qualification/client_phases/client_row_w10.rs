@@ -1,6 +1,7 @@
 //! Live Hazard unlock, selection, refusal and durable reload evidence.
 use super::*;
 use oteryn_dev_client::client_runtime::boss_encounter as wire;
+use sha2::{Digest, Sha256};
 use std::io::Write;
 
 fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
@@ -8,20 +9,6 @@ fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
         .and_then(|mut file| file.write_all(bytes))
         .map_err(|error| format!("W10_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"))?;
     Ok(())
-}
-
-async fn hazard(
-    client: &mut oteryn_dev_client::DevClientSession,
-    payload: &[u8],
-) -> TestResult<oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse> {
-    Ok(client
-        .session_mut()
-        .gated_command(
-            wire::CAPABILITY_BOSS_ENCOUNTER_V1,
-            wire::hazard::COMMAND_TYPE_HAZARD,
-            payload,
-        )
-        .await?)
 }
 
 async fn probe(
@@ -33,7 +20,14 @@ async fn probe(
     expected: &[u8],
 ) -> TestResult {
     let session = client.join_snapshot().game_session_id;
-    let reply = hazard(client, request).await?;
+    let (reply, frame) = client
+        .session_mut()
+        .gated_command_with_frame(
+            wire::CAPABILITY_BOSS_ENCOUNTER_V1,
+            wire::hazard::COMMAND_TYPE_HAZARD,
+            request,
+        )
+        .await?;
     if status == CommandStatus::Accepted {
         require_mechanic_acceptance(reply.status, name)?;
     }
@@ -52,17 +46,22 @@ async fn probe(
         &format!("w10-{name}-status.bin"),
         &(reply.status as u32).to_be_bytes(),
     )?;
+    capture(root, &format!("w10-{name}-frame.bin"), &frame)?;
     let binding = serde_json::json!({
         "session_id": uuid_text(session.as_bytes()),
         "command_id": reply.command_id,
         "server_sequence": reply.server_sequence,
         "status": reply.status as u32,
+        "frame_sha256": format!("{:x}", Sha256::digest(&frame)),
+        "request_sha256": format!("{:x}", Sha256::digest(request)),
     });
     capture(
         root,
         &format!("w10-{name}.status.json"),
         &serde_json::to_vec(&binding)?,
-    )
+    )?;
+    evidence(&format!("w10_frame key={name} provenance={binding}"));
+    Ok(())
 }
 
 async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
@@ -175,8 +174,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &[2, 2],
     )
     .await?;
-    // Keep the replay manifest absent until this journey can provide the original frames.
     logout(&mut client).await?;
+    capture(
+        root,
+        "w10-expected.txt",
+        b"query_unlocked=2\nquery_selected=1\nselect_unlocked=2\nselect_selected=2\n",
+    )?;
     Ok("hazard=2/1->2/2;level3=rejected;unchanged=2/2;relog=2/2".into())
 }
 
@@ -185,7 +188,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         .await
     {
         Ok(Ok(observed)) => evidence(&format!(
-            "e2e_all scenario=W10.client status=FAIL evidence=original-command-result-frame-unavailable journey={observed}"
+            "e2e_capture scenario=W10.client status=CAPTURED evidence={observed}"
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W10.client status=FAIL evidence={error}"

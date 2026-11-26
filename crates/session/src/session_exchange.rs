@@ -209,7 +209,7 @@ impl<S: SessionStream> Session<S> {
         .await?;
 
         loop {
-            let (message_type, server_sequence, result_payload) =
+            let (message_type, server_sequence, result_payload, frame) =
                 self.read_sequenced_push("CommandResult").await?;
             if message_type == MessageType::StateDelta {
                 // Pushed before the result (the session never predicts the next frame's domain).
@@ -259,6 +259,7 @@ impl<S: SessionStream> Session<S> {
                 status: result.status,
                 server_sequence,
                 payload: result.payload.to_vec(),
+                frame,
             });
         }
     }

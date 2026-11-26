@@ -10,7 +10,7 @@ impl<S: SessionStream> Session<S> {
         label: &'static str,
         expected: MessageType,
     ) -> Result<(u64, Vec<u8>), SessionError> {
-        let (message_type, server_sequence, payload) = self.read_sequenced_push(label).await?;
+        let (message_type, server_sequence, payload, _) = self.read_sequenced_push(label).await?;
         if message_type != expected {
             return Err(SessionError::UnexpectedMessage {
                 expected,
@@ -25,7 +25,7 @@ impl<S: SessionStream> Session<S> {
     pub(super) async fn read_sequenced_push(
         &mut self,
         label: &'static str,
-    ) -> Result<(MessageType, u64, Vec<u8>), SessionError> {
+    ) -> Result<(MessageType, u64, Vec<u8>, Vec<u8>), SessionError> {
         let frame = self.read_post_admission(label).await?;
         let envelope = decode_wire_envelope(&frame)?;
         let message_type = envelope.message_type();
@@ -39,7 +39,12 @@ impl<S: SessionStream> Session<S> {
             });
         }
         let server_sequence = self.next_sequence(&envelope)?;
-        Ok((message_type, server_sequence, envelope.payload().to_vec()))
+        Ok((
+            message_type,
+            server_sequence,
+            envelope.payload().to_vec(),
+            frame,
+        ))
     }
 
     /// Requires `envelope`'s `server_sequence` to be exactly the last applied one plus one and

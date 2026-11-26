@@ -7,6 +7,26 @@ pub mod world_context;
 #[path = "features/0064-target-move/protocol.rs"]
 mod target_move;
 
+/// Validates a captured post-admission server frame and decodes its gated result.
+pub fn decode_gated_result_frame(frame: &[u8]) -> Result<GatedCommandResult, SessionError> {
+    let envelope = decode_wire_envelope(frame)?;
+    envelope.validate(Direction::ServerToClient, true)?;
+    let actual = envelope.message_type();
+    if actual != MessageType::CommandResult {
+        return Err(SessionError::UnexpectedMessage {
+            expected: MessageType::CommandResult,
+            actual,
+        });
+    }
+    let result = decode_command_result(envelope.payload())?;
+    Ok(GatedCommandResult {
+        command_id: result.command_id,
+        status: result.status,
+        server_sequence: envelope.server_sequence(),
+        payload: result.payload.to_vec(),
+    })
+}
+
 impl<S: SessionStream> Session<S> {
     /// Sends a command type owned by `capability` and returns its raw `CommandResult`. Refused
     /// before anything is sent when the capability is not selected or does not own the type.
@@ -16,6 +36,18 @@ impl<S: SessionStream> Session<S> {
         command_type: u32,
         payload: &[u8],
     ) -> Result<GatedCommandResult, SessionError> {
+        self.gated_command_with_frame(capability, command_type, payload)
+            .await
+            .map(|(result, _)| result)
+    }
+
+    /// Returns the correlated result and its unchanged server envelope bytes.
+    pub async fn gated_command_with_frame(
+        &mut self,
+        capability: u32,
+        command_type: u32,
+        payload: &[u8],
+    ) -> Result<(GatedCommandResult, Vec<u8>), SessionError> {
         self.ensure_usable()?;
         let owned = gated_routes()
             .any(|(id, commands, _)| id == capability && commands.contains(&command_type));
@@ -24,6 +56,7 @@ impl<S: SessionStream> Session<S> {
         }
         let outcome = self.send_and_read_result(command_type, payload).await;
         let result = self.poison_on_error(outcome)?;
+        let frame = result.frame;
         let result = GatedCommandResult {
             command_id: result.command_id,
             status: result.status,
@@ -35,6 +68,6 @@ impl<S: SessionStream> Session<S> {
             let handoff = self.house_handoff(payload, &result).await;
             self.poison_on_error(handoff)?;
         }
-        Ok(result)
+        Ok((result, frame))
     }
 }

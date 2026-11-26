@@ -2,11 +2,12 @@
 //! `protocol/auxiliary.rs` (Hazard projection).
 //!
 //! Under `E2E_ALL_CAPTURE_DIR`, the keys are `initial`, `query`, `select`, `locked`,
-//! `unchanged` and `relog`, in that order. Each key has four files:
+//! `unchanged` and `relog`, in that order. Each live key has five files:
 //!
 //! - `w10-<key>-request.bin` is the raw Hazard request (empty query or one level byte).
 //! - `w10-<key>-status.bin` is exactly four bytes, the protocol-oteryn CommandStatus
 //!   as a big-endian u32 (Accepted=1, Rejected=2, DuplicateReplay=3, DuplicateOutcomeExpired=4).
+//! - `w10-<key>-frame.bin` is the original validated server envelope.
 //! - `w10-<key>.bin` is the raw reply (unlocked byte then selected byte, or empty on refusal).
 //! - `w10-<key>.status.json` is a JSON object with the writer's hyphenated `session_id` UUID,
 //!   positive u64 `command_id` and `server_sequence`, and numerical `status` matching
@@ -19,7 +20,7 @@
 use super::*;
 use oteryn_client_runtime::{
     boss_encounter::hazard,
-    raw_feature::{CommandStatus, GatedCommandResult},
+    raw_feature::{CommandStatus, GatedCommandResult, decode_gated_result_frame},
 };
 use std::{fs, path::Path};
 
@@ -88,9 +89,27 @@ impl Probe {
             },
         })
     }
+    fn load_original(root: &Path, key: &str) -> Result<Self, Error> {
+        let mut probe = Self::load(root, key)?;
+        let frame = fs::read(root.join(format!("w10-{key}-frame.bin")))?;
+        let result = decode_gated_result_frame(&frame)?;
+        if result.command_id != probe.reply.command_id
+            || result.server_sequence != probe.reply.server_sequence
+            || result.status != probe.reply.status
+            || result.payload != probe.reply.payload
+        {
+            return Err(format!("{key}: original frame disagrees with capture provenance").into());
+        }
+        probe.reply = result;
+        Ok(probe)
+    }
 }
 
 fn replay(root: Option<&Path>) -> Result<(), Error> {
+    replay_probes(root, false)
+}
+
+fn replay_probes(root: Option<&Path>, original: bool) -> Result<(), Error> {
     let mut panel = BossEncounterPanel {
         selected: true,
         ..BossEncounterPanel::default()
@@ -119,6 +138,7 @@ fn replay(root: Option<&Path>) -> Result<(), Error> {
         let (unlocked, selected) = hazard_state;
         let expected_payload: &[u8] = if refused { &[] } else { &[unlocked, selected] };
         let probe = match root {
+            Some(root) if original => Probe::load_original(root, key)?,
             Some(root) => Probe::load(root, key)?,
             None => fixture(index, level, status, expected_payload.to_vec()),
         };
@@ -297,9 +317,11 @@ fn fixture(index: usize, level: Option<u8>, status: CommandStatus, payload: Vec<
 }
 
 #[test]
+#[ignore = "run by node boot with current live W10 frames"]
 fn e2e_w10_replays_hazard_state_selection_and_locked_refusal() -> Result<(), Error> {
-    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR");
-    replay(root.as_deref().map(Path::new))
+    let root =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("missing current W10 capture directory")?;
+    replay_probes(Some(Path::new(&root)), true)
 }
 
 struct TempDir(std::path::PathBuf);

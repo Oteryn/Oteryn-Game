@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Gate the cloud wrapper's selected client rows on their fresh Rust replays."""
 
+import hashlib
+import json
 import os
 from pathlib import Path
 import re
@@ -28,6 +30,10 @@ PACKAGES = (
     "apps/client", "crates/session", "crates/client-ui", "crates/client-runtime",
     "crates/client-domain", "tools/dev-client",
 )
+
+
+W10_KEYS = ("initial", "query", "select", "locked", "unchanged", "relog")
+W10_TEST = "e2e_w10_replays_hazard_state_selection_and_locked_refusal"
 
 
 def selected_rows(batch):
@@ -98,6 +104,8 @@ def replay_targets():
     for package in PACKAGES:
         for path in (ROOT / package / "src").rglob("e2e_*.rs"):
             module = path.stem
+            if module == "e2e_w10":
+                continue
             source = path.read_text()
             if "E2E_ALL_CAPTURE_DIR" not in source:
                 continue
@@ -114,7 +122,35 @@ def replay_targets():
         "oteryn-client", "e2e_e09_real_mail_outcomes_replay_into_mail_panel",
         capture_names("e09", mail.read_text()),
     )]
+    targets["e2e_w10"] = [(
+        "oteryn-client-ui", W10_TEST,
+        {"w10-expected.txt"} | {
+            f"w10-{key}{suffix}" for key in W10_KEYS
+            for suffix in ("-frame.bin", ".status.json", "-status.bin")
+        },
+    )]
     return targets
+
+
+def w10_provenance_matches(captures, log):
+    live = re.compile(r"^SEAM_EVIDENCE w10_frame key=(\w+) provenance=(\{.*\})$")
+    records = [(match[1], match[2]) for line in log.read_text().splitlines()
+               if (match := live.fullmatch(line))]
+    if [key for key, _ in records] != list(W10_KEYS):
+        return False
+    try:
+        for key, record in records:
+            prefix = captures / f"w10-{key}"
+            binding = json.loads(prefix.with_suffix(".status.json").read_text())
+            if binding != json.loads(record):
+                return False
+            for suffix, field in (("-frame.bin", "frame_sha256"), ("-request.bin", "request_sha256")):
+                payload = prefix.with_name(prefix.name + suffix).read_bytes()
+                if hashlib.sha256(payload).hexdigest() != binding[field]:
+                    return False
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+    return True
 
 
 def replay_cause(row, package, test, names, captures, server, log):
@@ -127,10 +163,17 @@ def replay_cause(row, package, test, names, captures, server, log):
     if not package or not server:
         return "replay-not-run"
 
+    test_args = ["--nocapture"]
+    if row == "W10":
+        if server != [("e2e_capture", "CAPTURED")]:
+            return "server-failed"
+        if not w10_provenance_matches(captures, log):
+            return "replay-failed"
+        test_args.append("--ignored")
     try:
         result = subprocess.run(
             [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package,
-             "--lib", test, "--", "--nocapture"],
+             "--lib", test, "--", *test_args],
             cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
     except OSError:

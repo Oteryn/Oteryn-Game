@@ -4,7 +4,7 @@ pub use oteryn_session::actor_motion;
 pub use oteryn_session::property_services::house_rotation;
 pub use oteryn_session::property_services::house_wrap;
 pub use oteryn_session::property_services::{staff, staff_tools};
-pub use oteryn_session::{CommandStatus, GatedCommandResult};
+pub use oteryn_session::{CommandStatus, GatedCommandResult, decode_gated_result_frame};
 use oteryn_session::{Session, SessionError, SessionStream};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
