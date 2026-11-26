@@ -72,7 +72,7 @@ async fn preview(
             response.status as u32,
             super::client_row_p20::hex(&Sha256::digest(&response.payload)),
         ));
-        if let Some(directory) = std::env::var_os("G20_CAPTURE_DIR") {
+        if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
             let file = std::fs::File::create_new(Path::new(&directory).join("g20-funded.json"))?;
             serde_json::to_writer(
                 file,

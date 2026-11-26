@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gate the cloud wrapper's selected client rows on their fresh Rust replays."""
+"""Gate node boot's selected client rows on their fresh Rust replays."""
 
 import hashlib
 import json
@@ -206,7 +206,7 @@ def g20_replay_cause(captures, server, log):
     )
 
 
-def main(log, batch, validate=False, *, g20_only=False, clients_only=False):
+def main(log, batch, validate=False):
     try:
         selected, registered = selected_rows(batch)
     except ValueError:
@@ -217,14 +217,13 @@ def main(log, batch, validate=False, *, g20_only=False, clients_only=False):
     if validate:
         return validate_rows(selected, registered, server_rows)
 
-    rows = sorted(scenario for scenario in selected if scenario.endswith(".client") and not g20_only)
-    run_g20 = "G20.full" in selected and not clients_only
-    if not rows and not run_g20:
+    rows = sorted(scenario for scenario in selected if scenario.endswith(".client"))
+    if not rows and "G20.full" not in selected:
         return 0
     captures = Path(os.environ["E2E_ALL_CAPTURE_DIR"])
-    targets = replay_targets() if rows else {}
+    targets = replay_targets()
     failed = False
-    if run_g20:
+    if "G20.full" in selected:
         cause = g20_replay_cause(captures, server_rows.get("G20.full"), log)
         verdict = f"FAIL cause={cause}" if cause else "PASS"
         print(f"SEAM_EVIDENCE e2e_replay scenario=G20.full status={verdict}")
@@ -244,5 +243,4 @@ def main(log, batch, validate=False, *, g20_only=False, clients_only=False):
 if __name__ == "__main__":
     args = sys.argv[1:]
     validate = args[0] == "--validate"
-    sys.exit(main(Path(args[-1]), os.environ.get("OTERYN_E2E_ROW_BATCH"), validate,
-                  g20_only=args[0] == "--g20-only", clients_only=args[0] == "--clients-only"))
+    sys.exit(main(Path(args[-1]), os.environ.get("OTERYN_E2E_ROW_BATCH"), validate))
