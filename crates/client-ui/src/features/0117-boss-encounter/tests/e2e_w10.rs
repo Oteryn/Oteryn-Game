@@ -8,9 +8,10 @@
 //! - `w10-<key>-status.bin` is exactly four bytes, the protocol-oteryn CommandStatus
 //!   as a big-endian u32 (Accepted=1, Rejected=2, DuplicateReplay=3, DuplicateOutcomeExpired=4).
 //! - `w10-<key>.bin` is the raw reply (unlocked byte then selected byte, or empty on refusal).
-//! - `w10-<key>.status.json` is a JSON object with the writer's `session_id` string,
+//! - `w10-<key>.status.json` is a JSON object with the writer's hyphenated `session_id` UUID,
 //!   positive u64 `command_id` and `server_sequence`, and numerical `status` matching
 //!   the binary status. The first five probes share a session and relog uses a fresh one.
+//!   Both IDs and sequences strictly increase within a session.
 //!
 //! `w10-expected.txt` is UTF-8 with four LF-terminated decimal key=value lines in this
 //! order: `query_unlocked=2`, `query_selected=1`, `select_unlocked=2`, `select_selected=2`.
@@ -28,9 +29,21 @@ const INITIAL: &str = "00000000-0000-0000-0000-000000000001";
 const RELOG: &str = "00000000-0000-0000-0000-000000000002";
 const EXPECTED: &str = "query_unlocked=2\nquery_selected=1\nselect_unlocked=2\nselect_selected=2\n";
 
+fn decode_session_id(value: &str) -> Option<u128> {
+    let mut parts = value.split('-');
+    let id = [8, 4, 4, 4, 12].into_iter().try_fold(0_u128, |id, width| {
+        let part = parts.next()?;
+        if part.len() != width || !part.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+            return None;
+        }
+        Some((id << (width * 4)) | u128::from_str_radix(part, 16).ok()?)
+    })?;
+    parts.next().is_none().then_some(id)
+}
+
 struct Probe {
     request: Vec<u8>,
-    session_id: String,
+    session_id: u128,
     reply: GatedCommandResult,
 }
 
@@ -65,9 +78,8 @@ impl Probe {
             request: fs::read(root.join(format!("{prefix}-request.bin")))?,
             session_id: binding["session_id"]
                 .as_str()
-                .filter(|id| !id.is_empty())
-                .ok_or_else(|| format!("{prefix}: missing session_id"))?
-                .into(),
+                .and_then(decode_session_id)
+                .ok_or_else(|| format!("{prefix}: invalid session_id UUID"))?,
             reply: GatedCommandResult {
                 command_id: positive("command_id")?,
                 server_sequence: positive("server_sequence")?,
@@ -83,7 +95,9 @@ fn replay(root: Option<&Path>) -> Result<(), Error> {
         selected: true,
         ..BossEncounterPanel::default()
     };
-    let mut session = String::new();
+    let mut session = 0;
+    let mut previous_command_id = 0;
+    let mut previous_server_sequence = 0;
     let mut observed = String::new();
     for (index, (key, level, hazard_state)) in [
         ("initial", None, (1, 1)),
@@ -109,16 +123,33 @@ fn replay(root: Option<&Path>) -> Result<(), Error> {
             None => fixture(index, level, status, expected_payload.to_vec()),
         };
         match key {
-            "initial" => session.clone_from(&probe.session_id),
+            "initial" => session = probe.session_id,
             "relog" => {
-                assert_ne!(probe.session_id, session, "{key}");
+                if probe.session_id == session {
+                    return Err("relog: reused the original session UUID".into());
+                }
                 panel = BossEncounterPanel {
                     selected: true,
                     ..BossEncounterPanel::default()
                 };
             }
-            _ => assert_eq!(probe.session_id, session, "{key}"),
+            _ => {
+                assert_eq!(probe.session_id, session, "{key}");
+                if probe.reply.command_id <= previous_command_id {
+                    return Err(
+                        format!("{key}: command_id did not increase within the session").into(),
+                    );
+                }
+                if probe.reply.server_sequence <= previous_server_sequence {
+                    return Err(format!(
+                        "{key}: server_sequence did not increase within the session"
+                    )
+                    .into());
+                }
+            }
         }
+        previous_command_id = probe.reply.command_id;
+        previous_server_sequence = probe.reply.server_sequence;
         let selection = hazard::decode_request(&probe.request)?;
         assert_eq!(selection, level.map(u16::from), "{key}");
         let intent = match selection {
@@ -181,6 +212,56 @@ fn replay(root: Option<&Path>) -> Result<(), Error> {
 }
 
 #[test]
+fn e2e_w10_keeps_base_level_one_selection_and_refusal_without_bounds() -> Result<(), Error> {
+    let mut panel = BossEncounterPanel {
+        selected: true,
+        ..BossEncounterPanel::default()
+    };
+    let query = fixture(0, None, CommandStatus::Accepted, vec![1, 1]);
+    let command = request(&mut panel, Intent::HazardQuery).ok_or("hazard query request")?;
+    assert_eq!(command.capability, 117);
+    assert_eq!(command.kind, hazard::COMMAND_TYPE_HAZARD);
+    assert!(command.payload.is_empty());
+    assert!(apply_result(&mut panel, &query.reply));
+    assert_eq!(query.reply.payload, [1, 1]);
+    assert_eq!(panel.summary, "Hazard: 1 | Unlocked: 1");
+    assert_eq!(panel.feedback, None);
+
+    let select = fixture(1, Some(1), CommandStatus::Accepted, vec![1, 1]);
+    panel.fields[2] = "1".into();
+    let command = request(&mut panel, Intent::HazardSelect).ok_or("hazard select request")?;
+    assert_eq!(command.payload, [1]);
+    assert!(apply_result(&mut panel, &select.reply));
+    assert_eq!(panel.summary, "Hazard: 1 | Unlocked: 1");
+    let confirmed = panel.summary.clone();
+
+    panel.fields[2] = "2".into();
+    assert!(request(&mut panel, Intent::HazardSelect).is_none());
+    panel.hazard = None;
+    let command = request(&mut panel, Intent::HazardSelect).ok_or("locked select request")?;
+    assert_eq!(command.payload, [2]);
+    let refusal = fixture(2, Some(2), CommandStatus::Rejected, Vec::new());
+    assert!(!apply_result(&mut panel, &refusal.reply));
+    assert_eq!(panel.hazard, None);
+    assert_eq!(
+        panel.feedback,
+        Some("The server refused the boss status query")
+    );
+    assert_eq!(panel.summary, confirmed);
+    assert!(!panel.pending);
+
+    request(&mut panel, Intent::HazardQuery).ok_or("hazard query request")?;
+    let invalid = fixture(3, None, CommandStatus::Accepted, vec![1, 2]);
+    assert!(!apply_result(&mut panel, &invalid.reply));
+    assert_eq!(
+        panel.feedback,
+        Some("The server returned invalid boss data")
+    );
+    assert_eq!(panel.summary, confirmed);
+    Ok(())
+}
+
+#[test]
 fn e2e_w10_rejects_hazard_reply_with_selected_above_unlocked() -> Result<(), Error> {
     let mut panel = BossEncounterPanel {
         selected: true,
@@ -205,7 +286,7 @@ fn e2e_w10_rejects_hazard_reply_with_selected_above_unlocked() -> Result<(), Err
 fn fixture(index: usize, level: Option<u8>, status: CommandStatus, payload: Vec<u8>) -> Probe {
     Probe {
         request: level.into_iter().collect(),
-        session_id: if index < 5 { INITIAL } else { RELOG }.into(),
+        session_id: if index < 5 { 1 } else { 2 },
         reply: GatedCommandResult {
             command_id: 17 + index as u64,
             server_sequence: 304 + index as u64,
@@ -221,15 +302,15 @@ fn e2e_w10_replays_hazard_state_selection_and_locked_refusal() -> Result<(), Err
     replay(root.as_deref().map(Path::new))
 }
 
-#[test]
-fn e2e_w10_replays_session_bound_capture() -> Result<(), Error> {
-    struct TempDir(std::path::PathBuf);
-    impl Drop for TempDir {
-        fn drop(&mut self) {
-            let _ = fs::remove_dir_all(&self.0);
-        }
-    }
+struct TempDir(std::path::PathBuf);
 
+impl Drop for TempDir {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
+
+fn write_capture() -> Result<TempDir, Error> {
     let nonce = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
         .as_nanos();
@@ -248,8 +329,9 @@ fn e2e_w10_replays_session_bound_capture() -> Result<(), Error> {
     .enumerate()
     {
         let prefix = format!("w10-{key}");
-        let command_id = 0x101 + index as u64;
-        let server_sequence = 0x10001 + 2 * index as u64;
+        let offset = if key == "relog" { 0 } else { index as u64 };
+        let command_id = 0x101 + offset;
+        let server_sequence = 0x10001 + 2 * offset;
         let session_id = if key == "relog" { RELOG } else { INITIAL };
         fs::write(root.0.join(format!("{prefix}-request.bin")), request)?;
         fs::write(
@@ -271,5 +353,57 @@ fn e2e_w10_replays_session_bound_capture() -> Result<(), Error> {
         assert_eq!(probe.reply.server_sequence, server_sequence);
     }
     fs::write(root.0.join("w10-expected.txt"), EXPECTED)?;
-    replay(Some(&root.0))
+    Ok(root)
+}
+
+#[test]
+fn e2e_w10_replays_session_bound_capture() -> Result<(), Error> {
+    replay(Some(&write_capture()?.0))
+}
+
+#[test]
+fn e2e_w10_rejects_reused_session_reply() -> Result<(), Error> {
+    let root = write_capture()?;
+    fs::copy(
+        root.0.join("w10-select.status.json"),
+        root.0.join("w10-unchanged.status.json"),
+    )?;
+    let result = replay(Some(&root.0));
+    assert_eq!(
+        result.err().map(|error| error.to_string()).as_deref(),
+        Some("unchanged: command_id did not increase within the session")
+    );
+    Ok(())
+}
+
+#[test]
+fn e2e_w10_rejects_invalid_relog_uuid() -> Result<(), Error> {
+    let root = write_capture()?;
+    let path = root.0.join("w10-relog.status.json");
+    let mut binding: serde_json::Value = serde_json::from_slice(&fs::read(&path)?)?;
+    binding["session_id"] = "unknown".into();
+    fs::write(path, serde_json::to_vec(&binding)?)?;
+    let result = replay(Some(&root.0));
+    assert_eq!(
+        result.err().map(|error| error.to_string()).as_deref(),
+        Some("w10-relog: invalid session_id UUID")
+    );
+    Ok(())
+}
+
+#[test]
+fn e2e_w10_rejects_reused_server_sequence_with_new_command_id() -> Result<(), Error> {
+    let root = write_capture()?;
+    let locked: serde_json::Value =
+        serde_json::from_slice(&fs::read(root.0.join("w10-locked.status.json"))?)?;
+    let path = root.0.join("w10-unchanged.status.json");
+    let mut binding: serde_json::Value = serde_json::from_slice(&fs::read(&path)?)?;
+    binding["server_sequence"] = locked["server_sequence"].clone();
+    fs::write(path, serde_json::to_vec(&binding)?)?;
+    let result = replay(Some(&root.0));
+    assert_eq!(
+        result.err().map(|error| error.to_string()).as_deref(),
+        Some("unchanged: server_sequence did not increase within the session")
+    );
+    Ok(())
 }
