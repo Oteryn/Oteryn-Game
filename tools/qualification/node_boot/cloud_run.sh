@@ -114,7 +114,7 @@ replay_p04_client() {
   local log=$1 captures=$2 replay_log="$1.p04-replay"
   local test_name=task_board::e2e_p04::e2e_p04_replays_query_and_refused_start_weekly
   local verdict=FAIL
-  if [[ $(grep -ac '^SEAM_EVIDENCE e2e_all scenario=P04.client status=CAPTURED evidence=' "$log") == 1 ]] &&
+  if [[ $(grep -ac '^SEAM_EVIDENCE e2e_capture scenario=P04.client status=CAPTURED evidence=' "$log") == 1 ]] &&
      ! grep -aqE '^(SEAM_EVIDENCE e2e_all scenario=P04.client status=FAIL|SEAM_EVIDENCE P04_CLIENT_CAPTURE_WRITE_ERROR)' "$log" &&
      E2E_ALL_CAPTURE_DIR="$captures" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test_name" \
        -- --exact > "$replay_log" 2>&1 &&

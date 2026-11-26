@@ -672,7 +672,7 @@ class CloudRunSummaryTests(unittest.TestCase):
                 [[ "$*" == *' -- --exact' ]] || return 2
                 printf '%s\n' "$test_output"
             }
-            marker='SEAM_EVIDENCE e2e_all scenario=P04.client status=CAPTURED evidence=query'
+            marker='SEAM_EVIDENCE e2e_capture scenario=P04.client status=CAPTURED evidence=query'
             : > node.log
             if replay_p04_client node.log "$PWD/captures"; then exit 1; fi
             [[ ! -e replay-attempted ]] || exit 1
