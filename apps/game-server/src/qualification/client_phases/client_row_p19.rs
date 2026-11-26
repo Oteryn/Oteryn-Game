@@ -127,13 +127,16 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
                 for event in client.wait_for_events(Duration::from_secs(15)).await? {
                     match event {
                         SessionEvent::Appearance(delta) => {
-                            if let AppearanceUpdate::Mappings(mappings) = delta.value
-                                && let Some(binding) = mappings.upserts.iter().find(|entry| entry.entity == exact)
-                            {
-                                if binding.forge_stacks != Some(stacks) {
-                                    return Err(format!("P19 {classification} wire binding was {:?}", binding.forge_stacks).into());
+                            if let AppearanceUpdate::Mappings(mappings) = delta.value {
+                                if mappings.forgets.contains(&exact) {
+                                    first_binding = None;
                                 }
-                                first_binding.get_or_insert(delta.server_sequence);
+                                if let Some(binding) = mappings.upserts.iter().find(|entry| entry.entity == exact) {
+                                    if binding.forge_stacks != Some(stacks) {
+                                        return Err(format!("P19 {classification} wire binding was {:?}", binding.forge_stacks).into());
+                                    }
+                                    first_binding.get_or_insert(delta.server_sequence);
+                                }
                             }
                         }
                         SessionEvent::WorldSpatialEntities(delta)

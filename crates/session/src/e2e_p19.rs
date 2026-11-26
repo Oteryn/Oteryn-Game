@@ -49,6 +49,25 @@ async fn replay_forge() -> Result<(), BoxError> {
         "P19 spatial entry preceded its exact marker"
     );
 
+    let mut forgotten = forge_fixture()?;
+    let (appearance, _, _) = appearance_fixture::snapshot()?;
+    let forget = appearance::Mappings {
+        context: appearance.catalogue.context,
+        upserts: vec![],
+        forgets: vec![fixture.entity],
+    }
+    .encode()
+    .map_err(|error| format!("{error:?}"))?;
+    forgotten
+        .deltas
+        .insert(1, encode_state_delta(1, 42, APPEARANCE, 2, 3, 1, &forget)?);
+    let rejected = assert_forge(&forgotten, &mut forgotten.admit().await?)
+        .expect_err("a marker withdrawn before spatial entry must fail replay");
+    assert_eq!(
+        rejected.to_string(),
+        "P19 spatial entry preceded its exact marker"
+    );
+
     let mut session = fixture.admit().await?;
     let corrupt = encode_state_delta(1, 41, APPEARANCE, 1, 2, 1, &[0])?;
     assert!(matches!(
@@ -92,14 +111,18 @@ fn assert_forge(input: &ReplayInput, session: &mut Session<DuplexStream>) -> Res
     for event in input.apply(session)? {
         match event {
             SessionEvent::Appearance(delta) => {
-                if let AppearanceUpdate::Mappings(mappings) = delta.value
-                    && let Some(binding) = mappings
+                if let AppearanceUpdate::Mappings(mappings) = delta.value {
+                    if mappings.forgets.contains(&input.entity) {
+                        stacks = None;
+                    }
+                    if let Some(binding) = mappings
                         .upserts
                         .iter()
                         .find(|entry| entry.entity == input.entity)
-                {
-                    stacks = binding.forge_stacks;
-                    assert_eq!(stacks, Some(input.expected));
+                    {
+                        stacks = binding.forge_stacks;
+                        assert_eq!(stacks, Some(input.expected));
+                    }
                 }
             }
             SessionEvent::WorldSpatialEntities(delta)
