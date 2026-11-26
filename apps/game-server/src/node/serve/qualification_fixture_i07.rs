@@ -105,11 +105,11 @@ pub(super) async fn seed(
     .await
     .map_err(qualification_build::debug)?;
 
-    let cause = |purpose: &str, ordinal| {
+    let cause = |death_slot, purpose: &str, ordinal| {
         ItemMintCause::for_test_scope(
             scope,
             fence.scope_ownership_generation,
-            u32::MAX - 7,
+            death_slot,
             1,
             TypedDefinitionRef {
                 family: "LootTable".into(),
@@ -121,58 +121,31 @@ pub(super) async fn seed(
         )
     };
     let permit = SpellLanePermit::of_fresh_scope(scope).await?;
-    let mut corpse = root
-        .freeze_item_mint(
-            authority,
-            proof,
-            ItemMintRequest {
-                cause: cause(CORPSE_MATERIALIZATION_PURPOSE_KEY, 0),
-                item: item(5973)?,
-                quantity: 1,
-                ground: GroundPlacement {
-                    spatial_position:
-                        crate::durability::map_item_mint_audit::map_item_spatial_position(
-                            // Item custody uses the runtime floor, which is +7 at the town tile.
-                            32369, 32238, 7,
-                        ),
-                    corpse_ref: transaction_id.to_vec(),
-                    map_revision: "qualification-v1".into(),
-                    content_revision: inventory.content_revision.clone(),
-                    native_room_placement_context: transaction_id.to_vec(),
-                },
-                content_revision: inventory.content_revision.clone(),
-                ruleset_revision: inventory.ruleset_revision.clone(),
-                sim_revision: "qualification-v1".into(),
-            },
-        )
-        .await
-        .map_err(qualification_build::debug)?;
-    let ItemMintOutcome::Committed(corpse) = root
-        .commit_corpse_mint(
-            &permit,
-            authority,
-            proof,
-            &mut corpse,
-            *character.as_bytes(),
-        )
-        .await
-        .map_err(qualification_build::debug)?
-    else {
-        return Err("I07 fixture corpse did not commit".into());
-    };
-    for (ordinal, id, quantity) in [(1, 3031, 7), (2, 3350, 1), (3, 3577, 1)] {
-        let mut entry = root
-            .freeze_corpse_loot_mint(
+    for (death_slot, items) in [
+        (
+            u32::MAX - 7,
+            &[(1, 3031, 7), (2, 3357, 1), (3, 3577, 1)][..],
+        ),
+        (u32::MAX - 8, &[(1, 3578, 1)][..]),
+    ] {
+        let mut corpse = root
+            .freeze_item_mint(
                 authority,
                 proof,
-                CorpseLootMintRequest {
-                    cause: cause("oteryn:qualification.i07.entry", ordinal),
-                    item: item(id)?,
-                    quantity,
-                    placement: CorpseContainerPlacement {
-                        corpse_item_instance_id: corpse.item_instance_id,
-                        placement_ordinal: ordinal,
-                        fluid_subtype: None,
+                ItemMintRequest {
+                    cause: cause(death_slot, CORPSE_MATERIALIZATION_PURPOSE_KEY, 0),
+                    item: item(5973)?,
+                    quantity: 1,
+                    ground: GroundPlacement {
+                        spatial_position:
+                            crate::durability::map_item_mint_audit::map_item_spatial_position(
+                                // Item custody uses the runtime floor, which is +7 at the town tile.
+                                32369, 32238, 7,
+                            ),
+                        corpse_ref: [transaction_id.as_slice(), &death_slot.to_be_bytes()].concat(),
+                        map_revision: "qualification-v1".into(),
+                        content_revision: inventory.content_revision.clone(),
+                        native_room_placement_context: transaction_id.to_vec(),
                     },
                     content_revision: inventory.content_revision.clone(),
                     ruleset_revision: inventory.ruleset_revision.clone(),
@@ -181,13 +154,48 @@ pub(super) async fn seed(
             )
             .await
             .map_err(qualification_build::debug)?;
-        if !matches!(
-            root.commit_corpse_loot_mint(&permit, authority, proof, &mut entry)
+        let ItemMintOutcome::Committed(corpse) = root
+            .commit_corpse_mint(
+                &permit,
+                authority,
+                proof,
+                &mut corpse,
+                *character.as_bytes(),
+            )
+            .await
+            .map_err(qualification_build::debug)?
+        else {
+            return Err("I07 fixture corpse did not commit".into());
+        };
+        for &(ordinal, id, quantity) in items {
+            let mut entry = root
+                .freeze_corpse_loot_mint(
+                    authority,
+                    proof,
+                    CorpseLootMintRequest {
+                        cause: cause(death_slot, "oteryn:qualification.i07.entry", ordinal),
+                        item: item(id)?,
+                        quantity,
+                        placement: CorpseContainerPlacement {
+                            corpse_item_instance_id: corpse.item_instance_id,
+                            placement_ordinal: ordinal,
+                            fluid_subtype: None,
+                        },
+                        content_revision: inventory.content_revision.clone(),
+                        ruleset_revision: inventory.ruleset_revision.clone(),
+                        sim_revision: "qualification-v1".into(),
+                    },
+                )
                 .await
-                .map_err(qualification_build::debug)?,
-            ItemMintOutcome::Committed(_)
-        ) {
-            return Err("I07 fixture corpse entry did not commit".into());
+                .map_err(qualification_build::debug)?;
+            if !matches!(
+                root.commit_corpse_loot_mint(&permit, authority, proof, &mut entry)
+                    .await
+                    .map_err(qualification_build::debug)?,
+                ItemMintOutcome::Committed(_)
+            ) {
+                return Err("I07 fixture corpse entry did not commit".into());
+            }
         }
     }
     Ok(())
