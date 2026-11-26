@@ -12,8 +12,12 @@
 //!    START then STOP; expect the persisted reduced charge count rather than the full definition
 //!    count, proving both durable charge recovery and that the old exercise run did not resume.
 use super::*;
-use oteryn_dev_client::DevClientSession;
-use oteryn_protocol_oteryn::{item_view::ItemHandle, loop_training as wire};
+use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_protocol_oteryn::{
+    item_view::ItemHandle,
+    loop_training as wire,
+    world_map::{MapDefinition, MapOrigin, MapTile},
+};
 
 const EXERCISE_SWORD: u32 = 28552;
 
@@ -191,35 +195,113 @@ fn dummy_distance(at: TilePos, dummy: TilePos) -> Option<u16> {
     (at.floor == dummy.floor).then(|| at.x.abs_diff(dummy.x).max(at.y.abs_diff(dummy.y)))
 }
 
-fn visible_dummy(
-    client: &mut DevClientSession,
-    select: impl Fn(TilePos) -> bool,
-) -> TestResult<(ItemHandle, TilePos)> {
-    use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin};
+struct DummyView {
+    target: ActorPosition,
+    origin: ActorPosition,
+    tile: Option<MapTile>,
+}
 
-    let index = provisioning::item_index()?;
-    let refs: std::collections::BTreeSet<_> = (28558..=28565)
-        .map(|id| provisioning::item_reference(&index, id))
-        .collect::<TestResult<_>>()?;
-    let map = client
-        .session_mut()
-        .world_map_snapshot()
-        .ok_or("world-map snapshot missing")?;
-    for map_tile in &map.tiles {
-        let at = tile(map_tile.position)?;
-        if !select(at) {
-            continue;
-        }
-        for item in &map_tile.items {
-            if let (MapDefinition::Item(reference), MapOrigin::Handle(handle)) =
-                (item.definition, item.origin)
-                && refs.contains(&reference)
-            {
-                return Ok((handle, at));
+impl DummyView {
+    fn admitted(client: &mut DevClientSession, target: TilePos) -> TestResult<Self> {
+        let target = ActorPosition {
+            x: i32::from(target.x),
+            y: i32::from(target.y),
+            floor: -i16::from(target.floor),
+        };
+        let map = client
+            .session_mut()
+            .world_map_snapshot()
+            .ok_or("world-map admission snapshot missing")?;
+        Ok(Self {
+            target,
+            origin: map.header.origin,
+            tile: map.tiles.into_iter().find(|tile| tile.position == target),
+        })
+    }
+
+    fn observe(&mut self, client: &mut DevClientSession) {
+        for event in client.take_events() {
+            match event {
+                SessionEvent::WorldMap(delta) => {
+                    self.origin = delta.value.header.origin;
+                    if delta.value.cleared.contains(&self.target) {
+                        self.tile = None;
+                    }
+                    if let Some(tile) = delta
+                        .value
+                        .tiles
+                        .into_iter()
+                        .find(|tile| tile.position == self.target)
+                    {
+                        self.tile = Some(tile);
+                    }
+                }
+                SessionEvent::WorldMapSnapshot(snapshot) => {
+                    self.origin = snapshot.value.header.origin;
+                    self.tile = snapshot
+                        .value
+                        .tiles
+                        .into_iter()
+                        .find(|tile| tile.position == self.target);
+                }
+                _ => {}
             }
         }
     }
-    Err("step=exercise-dummy need=visible-authored-dummy-handle-at-planned-position".into())
+
+    async fn handle(&mut self, client: &mut DevClientSession) -> TestResult<ItemHandle> {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            self.observe(client);
+            if self.origin == client.world_spatial().actor_position {
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!(
+                    "current world-map origin missing for planned dummy {:?}",
+                    self.target
+                )
+                .into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+        }
+        let index = provisioning::item_index()?;
+        let refs = (28558..=28565)
+            .map(|id| provisioning::item_reference(&index, id))
+            .collect::<TestResult<Vec<_>>>()?;
+        let item = self.tile.as_ref().and_then(|tile| {
+            tile.items.iter().find(|item| {
+                matches!(item.definition, MapDefinition::Item(reference) if refs.contains(&reference))
+            })
+        }).ok_or_else(|| format!("live map missing authored exercise dummy at {:?}", self.target))?;
+        match item.origin {
+            MapOrigin::Handle(handle) => Ok(handle),
+            origin => Err(format!("exercise dummy at {:?} has live map origin {origin:?}; need a handle for EXERCISE_TRAINING", self.target).into()),
+        }
+    }
+}
+
+async fn walk_to_probe(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+    dummy: &mut DummyView,
+) -> TestResult {
+    for &direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, from, direction).ok_or("planned STEP has no landing")?;
+        let outcome = client.step(direction).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || actual != expected
+        {
+            return Err(format!("exercise STEP {direction:?} from={from:?} expected={expected:?} actual={actual:?}: {outcome:?}").into());
+        }
+        verdict::Harness::global().progress("walk");
+        dummy.observe(client);
+    }
+    Ok(())
 }
 
 fn dummy_positions(bytes: &[u8]) -> TestResult<std::collections::BTreeSet<TilePos>> {
@@ -296,19 +378,27 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
         ChannelId::decode(&clients.channel)?,
     )?;
     let (weapon, full, range) = carried_weapon(&client)?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| {
         positions
             .iter()
             .any(|dummy| dummy_distance(at, *dummy) == Some(1))
     })
     .ok_or("no player-walkable route to authored exercise dummy; need=reachable dummy placement")?;
-    walk(&mut client, world, &path).await?;
-    let nearby = tile(client.world_spatial().actor_position)?;
-    let (_, target) = visible_dummy(&mut client, |at| dummy_distance(nearby, at) == Some(1))?;
+    let nearby = path.iter().try_fold(from, |at, &direction| {
+        destination(world, at, direction).ok_or("planned exercise route has no landing")
+    })?;
+    let target = positions
+        .into_iter()
+        .find(|&target| dummy_distance(nearby, target) == Some(1))
+        .ok_or("planned destination has no adjacent exercise dummy")?;
+    let mut dummy_view = DummyView::admitted(&mut client, target)?;
+    walk_to_probe(&mut client, world, &path, &mut dummy_view).await?;
+    dummy_view.handle(&mut client).await?;
     let outside = route(world, nearby, |at| dummy_distance(at, target) == Some(range + 1))
         .ok_or("step=exercise-dummy-range need=reachable-tile-just-outside-weapon-range; source:crates/gameplay/dispatch/src/gameplay_transport/loop_training/exercise.rs:454")?;
-    walk(&mut client, world, &outside).await?;
-    let (dummy, _) = visible_dummy(&mut client, |at| at == target)?;
+    walk_to_probe(&mut client, world, &outside, &mut dummy_view).await?;
+    let dummy = dummy_view.handle(&mut client).await?;
     let stopped_before_range_probe =
         command(&mut client, wire::ExerciseIntent::Status, Accepted).await?;
     let refused = command(
@@ -327,8 +417,8 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
         at == nearby
     })
     .ok_or("step=exercise-dummy-range no route back to the legal use tile")?;
-    walk(&mut client, world, &back).await?;
-    let (dummy, _) = visible_dummy(&mut client, |at| at == target)?;
+    walk_to_probe(&mut client, world, &back, &mut dummy_view).await?;
+    let dummy = dummy_view.handle(&mut client).await?;
     let running = command(
         &mut client,
         wire::ExerciseIntent::Start { weapon, dummy },
@@ -381,7 +471,9 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
         return Err(format!("fresh-admission STATUS={relogged:?}; need stopped state").into());
     }
     let (weapon, _, _) = carried_weapon(&client)?;
-    let (dummy, _) = visible_dummy(&mut client, |at| at == target)?;
+    let dummy = DummyView::admitted(&mut client, target)?
+        .handle(&mut client)
+        .await?;
     let restored = command(
         &mut client,
         wire::ExerciseIntent::Start { weapon, dummy },
