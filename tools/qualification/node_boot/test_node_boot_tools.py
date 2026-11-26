@@ -50,6 +50,54 @@ def bash(script, env=None, cwd=None):
 KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
+class C20cReplayTests(unittest.TestCase):
+    def test_c20c_replay_requires_the_selected_packet_and_one_native_test(self):
+        with tempfile.TemporaryDirectory() as temp:
+            capture = Path(temp, "capture")
+            capture.mkdir()
+            fake = Path(temp, "cargo")
+            fake.write_text(
+                "#!/bin/sh\n"
+                "test -s \"$E2E_ALL_CAPTURE_DIR/c20c-death-protection.bin\" || exit 1\n"
+                "printf 'test result: ok. %s passed; 0 failed; 0 ignored;\\n' \"$REPLAY_COUNT\"\n"
+            )
+            fake.chmod(0o755)
+            (capture / "seam.log").touch()
+            (capture / "c20c-death-protection.bin").write_bytes(b"wire")
+            (capture / "c20c-expected.txt").write_text("expected")
+
+            def run(batch, count):
+                return bash(
+                    'source "$REPLAY_HELPER"; c20c_replay "$CAPTURE"',
+                    env={
+                        "PATH": f'{temp}:{os.environ["PATH"]}',
+                        "REPLAY_HELPER": str(HERE / "c20c.sh"),
+                        "CAPTURE": str(capture),
+                        "REPLAY_COUNT": str(count),
+                        "NODE_BOOT_E2E_ONLY": "rows",
+                        "OTERYN_E2E_ROW_BATCH": batch,
+                    },
+                )
+
+            missing = run("111:1", 1)
+            self.assertEqual(missing.returncode, 1)
+            self.assertIn("selected-packet-verification-missing", missing.stdout)
+            (capture / "seam.log").write_text(
+                "SEAM_EVIDENCE C20c_CHECK packet-and-fresh-admission PASS\n"
+            )
+            skipped = run("110:1", 1)
+            self.assertEqual(skipped.returncode, 0)
+            self.assertEqual(skipped.stdout, "")
+            zero = run("110:2", 0)
+            self.assertEqual(zero.returncode, 1)
+            self.assertIn("native-client-replay-not-executed", zero.stdout)
+            for batch in ["111:1", "000110:02", "all"]:
+                with self.subTest(batch=batch):
+                    passed = run(batch, 1)
+                    self.assertEqual(passed.returncode, 0, passed.stderr)
+                    self.assertIn("scenario=C20c.client status=PASS", passed.stdout)
+
+
 class KnobTests(unittest.TestCase):
     def preflight_bin(self, temporary):
         bin_dir = Path(temporary, 'bin')

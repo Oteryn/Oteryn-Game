@@ -1083,7 +1083,7 @@ fn progress_frame(payload: &[u8], vocation_selected: bool) -> TestResult<(u64, u
     Ok((xp, level))
 }
 
-async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
+pub(super) async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
     let reply = client
         .session_mut()
@@ -1487,7 +1487,7 @@ fn blessing_frame(payload: &[u8]) -> TestResult<Vec<String>> {
     Ok(keys)
 }
 
-async fn blessings(client: &mut DevClientSession) -> TestResult<Vec<String>> {
+pub(super) async fn blessings(client: &mut DevClientSession) -> TestResult<Vec<String>> {
     blessing_frame(&tab(client, 6).await?)
 }
 
@@ -2459,6 +2459,16 @@ async fn observed_pvp_death(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult<((u64, u32), (u64, u32))> {
+    drive_pvp_death(victim, attacker, world, spawns, false).await
+}
+
+pub(super) async fn drive_pvp_death(
+    victim: &mut DevClientSession,
+    attacker: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    require_first_attack: bool,
+) -> TestResult<((u64, u32), (u64, u32))> {
     use oteryn_protocol_oteryn::{attack, pvp_expert as wire};
     let target = pvp_meet(victim, attacker, world, spawns).await?;
     let view = attacker
@@ -2536,11 +2546,14 @@ async fn observed_pvp_death(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let mut damaged = false;
     let mut player_hit = false;
-    let mut last_attack = String::new();
+    let mut attack = attacker.session_mut().attack_target(Some(&target)).await?;
+    if require_first_attack
+        && (attack.status != CommandStatus::Accepted
+            || attack.disposition != attack::AttackIntentDisposition::Ok)
+    {
+        return Err(format!("first PvP attack refused: {attack:?}").into());
+    }
     loop {
-        let attack = attacker.session_mut().attack_target(Some(&target)).await?;
-        last_attack.clear();
-        last_attack.push_str(&format!("{attack:?}"));
         victim.service_liveness(Duration::from_millis(50)).await?;
         attacker.service_liveness(Duration::from_millis(50)).await?;
         if victim.world_entities().is_some_and(|view| {
@@ -2595,7 +2608,10 @@ async fn observed_pvp_death(
             break;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("PvP player prerequisite/encounter blocked: required both level>=8, Open policy, legal damage and lethal hit; incoming_damage={damaged} matching_player_damage_frame={player_hit} last={last_attack} victim_build={before:?}").into());
+            return Err(format!("PvP player prerequisite/encounter blocked: required both level>=8, Open policy, legal damage and lethal hit; incoming_damage={damaged} matching_player_damage_frame={player_hit} last={attack:?} victim_build={before:?}").into());
+        }
+        if !require_first_attack {
+            attack = attacker.session_mut().attack_target(Some(&target)).await?;
         }
     }
     attacker.session_mut().attack_target(None).await?;

@@ -58,6 +58,8 @@ readonly PVP_CHANNEL_ID=01934f10-7c03-7002-805b-3b1122334402
 readonly PVP_ACCOUNT_IDS=(01934f10-7c00-7000-8000-000000000005 01934f10-7c00-7000-8000-000000000006)
 readonly PVP_INTENT_OPERATIONS=(01934f10-7c04-7005-805b-3b1122334405 01934f10-7c04-7006-805b-3b1122334406)
 readonly PVP_INTENT_NAMES=("Arena One" "Arena Two")
+readonly C20C_PVP_ACCOUNT=01934f10-7c00-7000-8000-000000000024
+readonly C20C_PVP_OPERATION=01934f10-7c04-7024-805b-3b1122334424
 readonly PVP_DATABASE=oteryn_node_boot_pvp
 readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
@@ -377,7 +379,7 @@ fi
 # Seed only this run's extra synthetic accounts through the same portal binary
 # and disposable environment as the upstream harness and composition.py.
 seed_mp_accounts() {
-  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$C10_FULL_ACCOUNT" "$C10_CLIENT_ACCOUNT" "$C20D_ACCOUNT" "$C19B_ACCOUNT" <<'PY_MP_SEED'
+  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$C10_FULL_ACCOUNT" "$C10_CLIENT_ACCOUNT" "$C20D_ACCOUNT" "$C19B_ACCOUNT" "$C20C_PVP_ACCOUNT" <<'PY_MP_SEED'
 import json
 from pathlib import Path
 import secrets
@@ -400,6 +402,8 @@ seed("world", {"worldId": world, "name": "Open PvP", "region": "local"})
 row_accounts = {}
 for account in accounts:
     credentials = {"email": f"nb-{account}@example.invalid", "password": secrets.token_urlsafe(48)}
+    if account == accounts[-1]:
+        credentials["email"] = "q_c20c@example.invalid"
     seed("account", {"accountId": account, **credentials})
     if account.endswith(("000000000016", "00000000001c", "00000000001d")):
         row_accounts[account] = credentials
@@ -1522,6 +1526,8 @@ SQL
   evidence "d150_starter_history=registered historical=nb-starter-1 current=${INTERPRETATION[3]}"
 }
 
+source "$GAME_SOURCE/tools/qualification/node_boot/c20c.sh"
+
 seam_stages() { # §4.6 every #823 stage against the node's own port
   if [[ "${NODE_BOOT_D150_LEGACY:-0}" == 0 ]] &&
     [[ -z "${NODE_BOOT_LIBTEST:-}" || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
@@ -1579,6 +1585,12 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       "NODE_BOOT_PVP_CHANNEL_ID=$PVP_CHANNEL_ID" "NODE_BOOT_PVP_ACCOUNT_ID=${PVP_ACCOUNT_IDS[0]}"
       "NODE_BOOT_PVP_SECOND_ACCOUNT_ID=${PVP_ACCOUNT_IDS[1]}")
   fi
+  local c20c_capture= c20c_seam_log=/dev/null
+  if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+    c20c_capture="$(mktemp -d "$WORK/c20c.XXXXXX")"
+    c20c_seam_log="$c20c_capture/seam.log"
+    test_env+=("NODE_BOOT_C20C_PVP_ACCOUNT=$C20C_PVP_ACCOUNT" "NODE_BOOT_C20C_CAPTURE=$c20c_capture")
+  fi
   # Row selection, fail-fast and the no-progress watchdog belong to the seam harness.
   local knob
   for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S; do
@@ -1611,7 +1623,10 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
       WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
       "${test_command[@]}"
-  )
+  ) | tee "$c20c_seam_log"
+  if [[ -n "$c20c_capture" ]]; then
+    c20c_replay "$c20c_capture"
+  fi
 }
 
 graceful_shutdown() { # ready=false first, socket removed
@@ -1802,6 +1817,10 @@ ORDER BY r.account_id;
 SQL
 )"
   [[ "$births" == "knight|${INTERPRETATION[3]}|1"$'\n'"sorcerer|${INTERPRETATION[3]}|1" ]] || pvp_fail "PvP bootstrap vocation, starter or account projection readback"
+  python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
+    "$WORK" "$C20C_PVP_ACCOUNT" "$PVP_WORLD_ID" "$C20C_PVP_OPERATION" "${INTERPRETATION[@]}" "Blessing Witness" Sorcerer
+  pvp_ops character bootstrap --socket "$PVP_BASE/run/control.sock" --operation-id "$C20C_PVP_OPERATION"
+  [[ "$(echo "SELECT count(*) FROM game_character_roots WHERE world_id='$PVP_WORLD_ID'" | psql_admin "$PVP_DATABASE")" == 3 ]] || pvp_fail "PvP World Characters including C20c"
   evidence "pvp_characters=2 world=$PVP_WORLD_ID source=platform_intents path=pvp_control_socket retry=idempotent contract=4 starter=${INTERPRETATION[3]} births=knight,sorcerer projection_revision=1"
 }
 

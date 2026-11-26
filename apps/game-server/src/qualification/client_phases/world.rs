@@ -8,6 +8,9 @@ use std::path::Path;
 #[path = "full_e2ef3.rs"]
 mod full_e2ef3;
 
+#[path = "full_e2ef6.rs"]
+mod full_e2ef6;
+
 #[path = "general_stats.rs"]
 mod general_stats;
 
