@@ -1,8 +1,8 @@
-//! Party join and leave notices (domain 57, capability 576) refresh the Party window through
-//! the existing Party query; the notice itself carries only an opaque member handle.
+//! Party membership notices (domain 57, capability 576) refresh the Party window through
+//! the existing Party query. Each notice carries a change and an opaque member handle.
 use crate::party::PartyPanel;
 
-/// Whether a refresh is still owed after `notices` new join or leave notices arrived.
+/// Whether a refresh is still owed after `notices` new membership notices arrived.
 pub fn observed(waiting: bool, notices: usize) -> bool {
     waiting || notices > 0
 }

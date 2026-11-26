@@ -369,3 +369,61 @@ fn party_membership_notice_refreshes_the_party_view_through_the_play_tick() -> R
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn party_invited_and_disbanded_notices_refresh_the_panel_through_the_play_tick() -> Result<(), Error> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::party::{CommandStatus, PartyCommand, PartyResponse};
+    use oteryn_client_ui::party::{panel_text, party};
+    use oteryn_session::{AppliedDelta, SessionEvent};
+
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    outbox.party_initialize(true, false);
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(1, 1), 7, &[])?;
+    let empty = party::PartyResult::refused(party::PartyDisposition::Ok);
+    let mut invited = empty.clone();
+    invited.invitations.push(party::PartyEntry {
+        channel: None,
+        list: Vec::new(),
+        handle: 9,
+        name: "Aurelia".into(),
+        leader: false,
+        expires_at: 1_900_000_000,
+        party_spell_remaining_ms: None,
+    });
+    invited.members.push(party::PartyEntry {
+        channel: None,
+        list: Vec::new(),
+        handle: 7,
+        name: "Friend".into(),
+        leader: true,
+        expires_at: 0,
+        party_spell_remaining_ms: None,
+    });
+
+    for (sequence, change, state) in [
+        (1, party::PartyMembershipChange::Invited, invited),
+        (2, party::PartyMembershipChange::Disbanded, empty),
+    ] {
+        outbox.push(vec![SessionEvent::PartyMembershipNotice(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: sequence - 1,
+            new_revision: sequence,
+            value: party::PartyMembershipNotice { member_handle: 9, change },
+        })]);
+        view.tick(&link).map_err(|error| format!("{error:?}"))?;
+        assert!(matches!(commands.try_recv(), Ok(PlayCommand::Party(command)) if command == PartyCommand::query()));
+        let bytes = party::encode_party_result(&state).map_err(|error| format!("{error:?}"))?;
+        outbox.party_result(&PartyResponse {
+            status: CommandStatus::Accepted,
+            operation: bytes.clone(),
+            view: Some(bytes),
+        });
+        let panel = link.party_panel();
+        let text = panel_text(&panel);
+        assert_eq!(panel.state, Some(state));
+        assert_eq!(text.contains("Invitation: Aurelia"), sequence == 1);
+        assert_eq!(text.contains("Leader: Friend"), sequence == 1);
+    }
+    Ok(())
+}

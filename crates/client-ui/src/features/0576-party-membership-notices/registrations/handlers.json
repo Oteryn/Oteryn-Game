@@ -7,8 +7,8 @@
   "direction": "server_to_client",
   "not_applicable": {
     "state": "Notices owe one refresh of the existing Party window state.",
-    "protocol": "Join and leave deltas carrying an opaque Party member handle.",
-    "view": "The existing Party window shows the refreshed membership.",
+    "protocol": "Joined, Left, Invited, and Disbanded deltas carrying an opaque Party member handle.",
+    "view": "The existing Party window shows the refreshed members and invitations.",
     "input": "This capability carries unsolicited server output.",
     "settings": "The capability has no client setting."
   },
