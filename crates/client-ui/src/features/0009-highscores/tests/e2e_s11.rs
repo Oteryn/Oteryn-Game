@@ -195,9 +195,9 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
         own
     );
 
-    // Submit the reserved category to the reducer while retaining the visible page.
+    // Submit an unregistered category while retaining the visible page.
     let kept = panel.reply.clone();
-    panel.category = 15;
+    panel.category = 18;
     let refusal = request(&mut panel, Action::Refresh).ok_or("s11 refusal query not produced")?;
     let (refused_session, refused) = live_reply(
         root,

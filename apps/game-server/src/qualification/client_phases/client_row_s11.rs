@@ -176,14 +176,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err(format!("step=persisted-ranking expected_rows={} expected_own={} observed_rows={} observed_own={} snapshot={}", expected_rows.len(), row_text(&expected_own), page.rows.len(), page.own_row.is_some(), page.snapshot_id).into());
     }
-    // Goshnar's Taint is reserved (15). Loyalty (13) is served with capability 498.
+    // Global lists Goshnar's Taint and Loyalty as supported Highscores categories.
+    // Probe unregistered wire category 18. https://tibia.fandom.com/wiki/Highscores
     let (refused, error_code, refusal_payload) = exchange(
         &mut client,
         "refused",
         wire::HighscoresQuery {
             world: None,
             details: true,
-            category: 15,
+            category: 18,
             ..query
         },
     )
