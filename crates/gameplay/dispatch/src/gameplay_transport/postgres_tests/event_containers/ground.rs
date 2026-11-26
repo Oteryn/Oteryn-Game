@@ -394,7 +394,7 @@ fn scenario(case: Case) -> TestResult {
         };
         assert!(
             restarted
-                .use_reward_bag(deps.actor, request, ItemKey::Instance(source))
+                .use_reward_bag(deps.actor, request, &crate::gameplay_transport::item_ref_admission::UseSourceHint::new(Some(ItemKey::Instance(source))))
                 .await
                 .is_none()
         );

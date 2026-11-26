@@ -200,18 +200,40 @@ pub(super) async fn replay(
         return None;
     }
     let (fence, reference) = retained_bank_key(&command).ok().flatten()?;
-    match admission
-        .root
-        .reconcile_bank_robbery_return(
-            admission.character,
-            admission.holder,
-            fence,
-            reference,
-            intent.cloned(),
-        )
+    match super::probe_npc_receipt(
+        admission,
+        command,
+        crate::durability::NpcTalkReceipt::BankRobberyReturn,
+        "bank_robbery_receipt",
+    )
+    .await
+    {
+        Ok(false) => return None,
+        Ok(true) => {}
+        Err(disposition) if intent.is_some() => return Some(NpcTalkOutcome::only(disposition)),
+        Err(_) => return Some(held_bank_outcome()),
+    }
+    let budget = crate::gameplay_transport::AdmissionRetryBudget::for_command(admission.root);
+    match budget
+        .retry_command_guard(async || {
+            match admission
+                .root
+                .reconcile_bank_robbery_return(
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    reference,
+                    intent.cloned(),
+                )
+                .await
+            {
+                Err(CharacterProgressionError::Unavailable(error)) => Err(error),
+                result => Ok(result),
+            }
+        })
         .await
     {
-        Ok(Some(receipt)) => {
+        Ok(Ok(Some(receipt))) => {
             let intent = NpcTalkIntent {
                 npc_actor: receipt.npc,
                 text: String::new(),
@@ -235,8 +257,11 @@ pub(super) async fn replay(
             }
             Some(outcome)
         }
-        Ok(None) => None,
-        Err(CharacterProgressionError::Unavailable(_)) => Some(held_bank_outcome()),
-        Err(_) => Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected)),
+        Ok(Ok(None)) => None,
+        Err(error) if intent.is_some() && super::npc_holder_busy(&error) => Some(
+            NpcTalkOutcome::only(super::busy_disposition(command, "bank_robbery_replay")),
+        ),
+        Err(_) => Some(held_bank_outcome()),
+        Ok(Err(_)) => Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected)),
     }
 }

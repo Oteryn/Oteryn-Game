@@ -367,8 +367,16 @@ pub(super) async fn apply(
         .revision_sequencer
         .acquire(item_fence.character_id)
         .await;
-    let Ok(Some(fence)) = admission.current_quest_fence(command.game_session_id).await else {
-        return unknown();
+    let holder_budget =
+        crate::gameplay_transport::AdmissionRetryBudget::for_command(admission.root);
+    let fence = match super::npc_gameplay_fence(admission, command, "endgame_fence", &holder_budget)
+        .await
+    {
+        Ok(fence) => fence,
+        Err(NpcIntentDisposition::RateLimited) => {
+            return NpcTalkOutcome::only(NpcIntentDisposition::RateLimited);
+        }
+        Err(_) => return unknown(),
     };
     if fence.item_fence() != item_fence {
         return rejected();

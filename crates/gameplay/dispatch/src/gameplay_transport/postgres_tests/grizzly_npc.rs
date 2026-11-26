@@ -35,6 +35,15 @@ fn grizzly_npc_wire_task_xp_crosses_level_50_and_unlocks_live_promotion() -> Tes
 }
 
 #[test]
+fn grizzly_npc_holder_contention_replies_without_disconnect_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("grizzly-npc-short-holder-wait", || scenario(7))?;
+    super::kill_reward_e2e_fixtures::scenario_thread::run("grizzly-npc-exhausted-holder-wait", || scenario(8))
+}
+
+#[test]
 fn questpc8_grizzly_production_placement_native_join_and_task() -> TestResult {
     let started = std::time::Instant::now();
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

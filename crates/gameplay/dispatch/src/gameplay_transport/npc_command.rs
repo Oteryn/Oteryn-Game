@@ -34,6 +34,112 @@ use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 
 pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpdate};
 
+fn npc_holder_busy(error: &crate::durability::DurabilityError) -> bool {
+    matches!(
+        error,
+        crate::durability::DurabilityError::RootUnavailable
+            | crate::durability::DurabilityError::RootPassDeadlineExceeded
+    )
+}
+
+pub(super) fn busy_disposition(
+    command: super::connection::UseCommand,
+    stage: &'static str,
+) -> NpcIntentDisposition {
+    super::operator_event(&format!(
+        "event=npc_command_busy command_id={} stage={stage}",
+        command.command_id
+    ));
+    // The existing wire disposition is retryable for all NPC_SERVICE_V1 clients.
+    NpcIntentDisposition::RateLimited
+}
+
+pub(super) async fn probe_npc_receipt(
+    admission: &super::ComposedFreshAdmission<'_, '_, '_>,
+    command: super::connection::UseCommand,
+    family: crate::durability::NpcTalkReceipt,
+    stage: &'static str,
+) -> Result<bool, NpcIntentDisposition> {
+    let (Some(fence), Ok(id)) = (
+        command.item_fence,
+        crate::foundation::CommandId::new(command.command_id),
+    ) else {
+        return Ok(false);
+    };
+    let reference = crate::foundation::CommandRef::new(command.game_session_id, id);
+    let budget = super::AdmissionRetryBudget::for_command(admission.root);
+    match budget
+        .retry_command_guard(async || {
+            admission
+                .root
+                .npc_talk_receipt_exists(family, fence.character_id, reference, budget.deadline)
+                .await
+        })
+        .await
+    {
+        Ok(exists) => Ok(exists),
+        Err(error) if npc_holder_busy(&error) => Err(busy_disposition(command, stage)),
+        Err(_) => Err(NpcIntentDisposition::Rejected),
+    }
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static NPC_FENCE_WAIT: std::sync::Arc<tokio::sync::Notify>;
+}
+
+async fn npc_gameplay_fence(
+    admission: &super::ComposedFreshAdmission<'_, '_, '_>,
+    command: super::connection::UseCommand,
+    stage: &'static str,
+    budget: &super::AdmissionRetryBudget<'_>,
+) -> Result<
+    crate::durability::character_progression::CurrentCharacterGameplayFence,
+    NpcIntentDisposition,
+> {
+    match budget
+        .retry_command_guard(async || {
+            let result = admission
+                .current_quest_fence_durable(command.game_session_id)
+                .await;
+            #[cfg(test)]
+            if result.as_ref().is_err_and(npc_holder_busy) {
+                let _ = NPC_FENCE_WAIT.try_with(|wait| wait.notify_one());
+            }
+            result
+        })
+        .await
+    {
+        Ok(Some(fence)) => Ok(fence),
+        Err(error) if npc_holder_busy(&error) => Err(busy_disposition(command, stage)),
+        _ => Err(NpcIntentDisposition::Rejected),
+    }
+}
+
+async fn retry_npc_checkout<T>(
+    budget: &super::AdmissionRetryBudget<'_>,
+    mut write: impl AsyncFnMut() -> Result<
+        T,
+        crate::durability::character_progression::CharacterProgressionError,
+    >,
+) -> Result<T, crate::durability::character_progression::CharacterProgressionError> {
+    use crate::durability::{DurabilityError, character_progression::CharacterProgressionError};
+    loop {
+        let result = write().await;
+        if !matches!(
+            result,
+            Err(CharacterProgressionError::Unavailable(
+                DurabilityError::RootUnavailable
+            ))
+        ) || !budget
+            .retries_unavailable(super::AdmissionRefusal::Unavailable)
+            .await
+        {
+            return result;
+        }
+    }
+}
+
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
 mod bank_robbery;
@@ -852,7 +958,10 @@ pub(super) async fn npc_bank_talk(
     };
     let stag_beaks = match stag_beaks::preview(admission, actor, command, &intent).await {
         Ok(proof) => proof,
-        Err(()) => return unknown(),
+        Err(error) if npc_holder_busy(&error) => {
+            return NpcTalkOutcome::only(busy_disposition(command, "stag_beak_preview"));
+        }
+        Err(_) => return rejected(),
     };
     let source_appearance = catalogue::appearance(admission, actor, command, &intent).await;
     let source_inventory = catalogue::inventory(admission, actor, command, &intent).await;
@@ -1319,11 +1428,7 @@ pub(super) async fn npc_bank_talk(
         else {
             return rejected();
         };
-        match admission
-            .root
-            .read_character_backpack(admission.character, fence.character_id)
-            .await
-        {
+        match admission.read_use_backpack(fence).await {
             Ok(Some(current)) => match super::item_ref_admission::generation_item_facts(
                 native,
                 &current.backpack.definition,
@@ -1337,8 +1442,8 @@ pub(super) async fn npc_bank_talk(
                 Err(_) => return rejected(),
             },
             Ok(None) => None,
-            Err(crate::durability::item_transfer::ItemTransferError::Unavailable(_)) => {
-                return unknown();
+            Err(error) if npc_holder_busy(&error) => {
+                return NpcTalkOutcome::only(busy_disposition(command, "bank_backpack"));
             }
             Err(_) => return rejected(),
         }
@@ -1376,7 +1481,9 @@ pub(super) async fn npc_bank_talk(
     };
     let preview = match preview_result {
         Ok(preview) => preview,
-        Err(BankError::Unavailable(_)) => return unknown(),
+        Err(BankError::Unavailable(error)) if npc_holder_busy(&error) => {
+            return NpcTalkOutcome::only(busy_disposition(command, "bank_preview"));
+        }
         Err(BankError::Suspended) => return reply(bank_robbery::clue(&npc_key).into()),
         Err(_) => return rejected(),
     };

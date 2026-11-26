@@ -80,6 +80,7 @@ pub(super) enum JournalBackend {
 }
 
 impl JournalBackend {
+    #[track_caller]
     pub(super) fn try_issue_root(&self) -> Result<Option<db::IssuedSemanticPass>, DurabilityError> {
         match self {
             #[cfg(any(test, feature = "test-support"))]
@@ -176,6 +177,7 @@ impl AdmissionReconnectJournal {
         }
     }
 
+    #[track_caller]
     pub(super) fn try_issue_root_pass(
         &self,
     ) -> Result<Option<db::IssuedSemanticPass>, DurabilityError> {

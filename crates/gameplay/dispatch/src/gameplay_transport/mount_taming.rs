@@ -58,7 +58,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 _ => None,
             };
             if let Some(result) = self
-                .use_carried_quest_item(actor, command, &intent, source, corpse)
+                .use_carried_quest_item(
+                    actor,
+                    command,
+                    &intent,
+                    &super::item_ref_admission::UseSourceHint::new(source),
+                    corpse,
+                )
                 .await?
             {
                 return Ok(Some(result));

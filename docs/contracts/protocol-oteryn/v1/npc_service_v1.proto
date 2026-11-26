@@ -31,6 +31,8 @@ enum NpcIntentDisposition {
   NPC_INTENT_DISPOSITION_OK = 1;
   NPC_INTENT_DISPOSITION_NOT_IN_RANGE = 2;
   NPC_INTENT_DISPOSITION_NO_CONVERSATION = 3;
+  // The command was throttled, including a temporarily busy durability owner.
+  // A caller can retry with a new command ID.
   NPC_INTENT_DISPOSITION_RATE_LIMITED = 4;
   // The catalogue revision, the offer or the expected price no longer matches.
   NPC_INTENT_DISPOSITION_STALE = 5;

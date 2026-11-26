@@ -51,7 +51,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(refuse(UseDisposition::NotPossible));
         };
-        let _lane = self.spell_lane_permit().await.ok_or(())?;
+        let request = ConsumeTransformRequest {
+            command: CommandRef::new(
+                command.game_session_id,
+                CommandId::new(command.command_id).map_err(|_| ())?,
+            ),
+            // A retired handle may still name an existing immutable same-command receipt.
+            source: match source {
+                Some(ItemKey::Instance(id)) => id,
+                _ => [0; 16],
+            },
+            target: None,
+            intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent)
+                .map_err(|_| ())?,
+        };
+        let historical = match self
+            .probe_plain_use_receipt(
+                crate::durability::PlainUseReceipt::ConsumeTransform,
+                request.command,
+            )
+            .await
+        {
+            Ok(present) => present,
+            Err(_) => {
+                return Ok(Some(super::use_receipt_refused(
+                    command,
+                    "house_item_existence",
+                )));
+            }
+        };
+        if !historical {
+            let source = super::item_ref_admission::UseSourceHint::new(source);
+            match source
+                .candidate(self, command, "house_item_candidate", |definition| {
+                    let key = &definition.production_key;
+                    crate::durability::consume_transform::house_decoration_use_candidate(key)
+                        || oteryn_gameplay_items::novelty_items::house_transform_for_key(key)
+                            .is_some()
+                })
+                .await
+            {
+                Ok(true) => {}
+                Ok(false) => return Ok(None),
+                Err(refusal) => return Ok(Some(refusal.into())),
+            }
+        }
+        let Some(_lane) = self.spell_lane_permit().await else {
+            return Ok(Some(super::use_receipt_refused(
+                command,
+                "house_item_permit",
+            )));
+        };
         let mut context = {
             let runtime = self.runtime.lock().await;
             if super::item_ref_admission::pinned_index(&runtime, self.active_generation).is_none() {
@@ -67,40 +117,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(_) => return Ok(refuse(UseDisposition::StaleState)),
             }
         };
-        let request = ConsumeTransformRequest {
-            command: CommandRef::new(
-                command.game_session_id,
-                CommandId::new(command.command_id).map_err(|_| ())?,
-            ),
-            // A retired handle may still name an existing immutable same-command receipt.
-            source: match source {
-                Some(ItemKey::Instance(id)) => id,
-                _ => [0; 16],
-            },
-            target: None,
-            intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent)
-                .map_err(|_| ())?,
-        };
+        if historical {
+            let budget = super::AdmissionRetryBudget::for_command(self.root);
+            return match budget
+                .retry_command_guard(async || {
+                    self.root
+                        .replay_house_item_action(self.holder, &context, &request)
+                        .await
+                })
+                .await
+            {
+                Ok(Some(replay)) => Ok(refuse(replay.disposition)),
+                _ => Ok(Some(super::use_receipt_refused(
+                    command,
+                    "house_item_replay",
+                ))),
+            };
+        }
         if let Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(target)) =
             intent.use_with_map_item.as_ref()
         {
-            // A successful bed use consumed its source kit and changed both bed
-            // revisions. Probe history before resolving either current handle.
-            if let Some(replay) = self
-                .root
-                .replay_house_item_action(self.holder, &context, &request)
+            let budget = super::AdmissionRetryBudget::for_command(self.root);
+            match budget
+                .retry_command_guard(async || {
+                    self.root
+                        .house_source_is_bed_kit(self.holder, &context, request.source)
+                        .await
+                })
                 .await
-                .map_err(|_| ())?
             {
-                return Ok(refuse(replay.disposition));
-            }
-            if !self
-                .root
-                .house_source_is_bed_kit(self.holder, &context, request.source)
-                .await
-                .map_err(|_| ())?
-            {
-                return Ok(None);
+                Ok(true) => {}
+                Ok(false) => return Ok(None),
+                Err(_) => {
+                    return Ok(Some(super::use_receipt_refused(
+                        command,
+                        "house_bed_source",
+                    )));
+                }
             }
             let Some(target) = self.prepare_house_bed_changes(&context, target).await else {
                 return Ok(refuse(UseDisposition::NotPossible));

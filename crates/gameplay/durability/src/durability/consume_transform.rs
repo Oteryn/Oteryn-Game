@@ -29,7 +29,7 @@ pub use ground::{GroundActionContext, GroundActionSource};
 #[path = "consume_transform_house.rs"]
 mod house;
 pub(super) use house::house_action_current_in_transaction;
-pub use house::{HouseActionContext, HouseDecorationBaseItem};
+pub use house::{HouseActionContext, HouseDecorationBaseItem, house_decoration_use_candidate};
 
 #[derive(Debug, Clone)]
 pub struct ConsumeTransformRequest {

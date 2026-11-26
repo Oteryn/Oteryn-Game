@@ -297,24 +297,36 @@ pub(super) async fn use_essence(
             .house_actor_state(actor, command.game_session_id)
             .is_ok()
     };
+    if let UseSource::Handle(item @ ItemKey::Instance(_)) = *source {
+        let hinted = crate::gameplay_transport::item_ref_admission::UseSourceHint::new(Some(item));
+        match hinted
+            .candidate(owner, command, "rotten_essence_candidate", |definition| {
+                oteryn_gameplay_quests::quest::rotten_blood::essence(&definition.production_key)
+                    .is_some()
+            })
+            .await
+        {
+            Ok(true) => {}
+            Ok(false) => return None,
+            Err(refusal) => {
+                return Some(Err(
+                    crate::gameplay_transport::connection::UseOutcome::from(refusal).disposition,
+                ));
+            }
+        }
+    }
     let inventory = if is_house {
-        owner
-            .root
-            .read_hireling_use_inventory(
-                owner.character,
-                owner.holder,
-                fence,
-                *owner.channel_id.as_bytes(),
-            )
-            .await
-            .ok()
+        owner.read_house_use_inventory(fence).await.map_err(|_| ())
     } else {
-        owner
-            .root
-            .read_item_use_inventory(owner.character, owner.holder, fence)
-            .await
-            .ok()
-    }?;
+        owner.read_use_inventory(fence).await.map_err(|_| ())
+    };
+    let Ok(inventory) = inventory else {
+        return Some(Err(crate::gameplay_transport::use_receipt_refused(
+            command,
+            "rotten_essence_inventory",
+        )
+        .disposition));
+    };
     let source_id = match source {
         UseSource::Handle(ItemKey::Instance(id)) => *id,
         UseSource::Definition(definition) => {
