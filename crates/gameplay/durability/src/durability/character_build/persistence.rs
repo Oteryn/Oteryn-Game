@@ -119,7 +119,7 @@ impl DurabilityRoot {
                         .as_ref()
                         .map(decode_receipt)
                         .transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    crate::durability::db::commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(record))
                 })
             })
@@ -220,7 +220,7 @@ impl DurabilityRoot {
                             content_revision: row.try_get("content_revision")?,
                         })
                     }).transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    crate::durability::db::commit_semantic_read(tx, deadline).await?;
                     Ok(Ok((build, points, progression)))
                 })
             })
@@ -258,7 +258,7 @@ impl DurabilityRoot {
                     .bind(vocation)
                     .fetch_one(&mut *tx)
                     .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    crate::durability::db::commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(unchanged))
                 })
             })
@@ -293,7 +293,7 @@ impl DurabilityRoot {
                     .map(|row| DurableBuildState::stored(&row, "vocation", ""))
                     .transpose()?
                     .unwrap_or_default();
-                    commit_semantic_transaction(tx, deadline).await?;
+                    crate::durability::db::commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(state))
                 })
             })

@@ -1,5 +1,6 @@
 //! Quest-owned Soul War state, command receipts and native creature-death consumers.
 //! No client command can supply a killed boss or a final encounter outcome.
+use crate::durability::db::commit_semantic_read;
 use super::super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence,
@@ -103,7 +104,7 @@ impl DurabilityRoot {
                     let state = storage::load(&mut tx, fence.character_id)
                         .await?
                         .expired(now);
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(state))
                 })
             })
@@ -135,7 +136,7 @@ impl DurabilityRoot {
                     storage::lock_occurrence(&mut tx, fence.character_id, &key).await?;
                     let found =
                         storage::replay(&mut tx, fence.character_id, &key, &binding).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(found)
                 })
             })

@@ -19,6 +19,7 @@ use crate::domain::{
     CharacterRevision,
     timed_item::{ExpireReason, TimedValues},
 };
+use crate::durability::db::commit_semantic_read;
 use oteryn_gameplay_progression::loop_training::add_gain;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
@@ -157,7 +158,7 @@ impl DurabilityRoot {
                 None=>TrainingWeapon {revision:0,charges:definition.full.charges().ok_or(DurabilityError::Unavailable)?},
                 _=>return Err(DurabilityError::Unavailable),
             };
-            commit_semantic_transaction(tx,deadline).await?;Ok(result)
+            commit_semantic_read(tx,deadline).await?;Ok(result)
         }) }).await
     }
 

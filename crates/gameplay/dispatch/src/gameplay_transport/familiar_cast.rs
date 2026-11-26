@@ -2306,7 +2306,7 @@ impl From<()> for FamiliarLoginError {
 
 #[derive(Default)]
 struct FamiliarFinishProgress {
-    deadline: Option<std::time::Instant>,
+    deadline: Option<tokio::time::Instant>,
     committed: Option<CommittedCharacterFamiliar>,
 }
 
@@ -2314,7 +2314,7 @@ impl FamiliarFinishProgress {
     fn check_deadline(&self) -> Result<(), FamiliarLoginError> {
         if self
             .deadline
-            .is_some_and(|deadline| tokio::time::Instant::now().into_std() >= deadline)
+            .is_some_and(|deadline| tokio::time::Instant::now() >= deadline)
         {
             return Err(FamiliarLoginError::FinalFence(
                 DurabilityError::RootPassDeadlineExceeded,
@@ -2668,7 +2668,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             prepared
         };
         let mut finish = FamiliarFinishProgress {
-            deadline: login_budget.map(|budget| budget.deadline.into_std()),
+            deadline: login_budget.map(|budget| budget.deadline),
             committed: None,
         };
         let event_id = prepared.source_event_id;

@@ -1,5 +1,6 @@
 //! Q10=B: the current native Channel owner can retire an independently observed
 //! empty room. The exact old visit remains a return obligation for an offline actor.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 
 impl DurabilityRoot {
@@ -27,7 +28,7 @@ impl DurabilityRoot {
                 .bind(channel.as_bytes().as_slice()).fetch_all(&mut *tx).await?;
             if rows.len() > 30 { return Err(DurabilityError::InvalidStoredState); }
             let entries = rows.iter().map(decode).collect::<StoredResult<Vec<_>>>()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(entries))
         })).await?
     }
@@ -63,7 +64,7 @@ impl DurabilityRoot {
                 .bind(i16::from(entry.boss_id)).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
                 .fetch_optional(&mut *tx).await?;
             let current = row.as_ref().map(decode).transpose()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(current))
         })).await?
     }

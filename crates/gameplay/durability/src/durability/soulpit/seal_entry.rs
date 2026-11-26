@@ -1,4 +1,5 @@
 //! A seal funding receipt commits only with its real solo encounter and fresh session.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::durability::item_craft::soulpit::EntryDebit;
 use crate::durability::item_mint::uuid_text;
@@ -79,7 +80,7 @@ impl DurabilityRoot {
             let row=sqlx::query("SELECT s.balance_after,s.intent FROM game_soulseal_entries s JOIN game_activity_handoff_groups g USING(handoff_id) WHERE s.character_id=encode($1,'hex')::uuid AND s.game_session_id=encode($2,'hex')::uuid AND s.command_id=$3::text::numeric AND g.state=2")
                 .bind(character.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut *tx).await?;
             let value=row.map(|r|Ok::<_,DurabilityError>(SoulsealReceipt {balance:u64::try_from(r.try_get::<i64,_>("balance_after")?).map_err(|_|DurabilityError::InvalidStoredState)?,intent:r.try_get("intent")?})).transpose()?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(value)
+            commit_semantic_read(tx,deadline).await?;Ok(value)
         })).await
     }
 }
@@ -102,7 +103,7 @@ impl DurabilityRoot {
             let row=sqlx::query("SELECT p.level,coalesce(t.value,0) AS seals FROM game_character_progression_state p LEFT JOIN game_character_quest_tracks t ON t.character_id=p.character_id AND t.track_key=$2 WHERE p.character_id=encode($1,'hex')::uuid")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(crate::durability::task_board::SOULSEALS).fetch_one(&mut *tx).await?;
             let value=(u64::try_from(row.try_get::<i64,_>("seals")?).map_err(|_|DurabilityError::InvalidStoredState)?,u32::try_from(row.try_get::<i64,_>("level")?).map_err(|_|DurabilityError::InvalidStoredState)?);
-            commit_semantic_transaction(tx,deadline).await?;Ok(value)
+            commit_semantic_read(tx,deadline).await?;Ok(value)
         })).await
     }
 }
