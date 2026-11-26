@@ -216,6 +216,48 @@ async fn required_hunt(
     ))
 }
 
+async fn prepare_hunter(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
+    use oteryn_protocol_oteryn::{cyclopedia_character as stats, logout::LogoutResult};
+
+    character_prep::declare_seeded("W13.full", "knight-level-200", "daily boost combat");
+    let mut initial = connect_character(clients, 0xd3, 0).await?;
+    let session = initial.join_snapshot().game_session_id;
+    request_fixture_control(uuid_text(session.as_bytes()), "--profile", "q_w13".into()).await?;
+    let logout = initial.session_mut().logout().await?;
+    if logout.result != Some(LogoutResult::Accepted) {
+        return Err(format!("W13 preparation logout refused: {:?}", logout.result).into());
+    }
+    drop(initial);
+
+    let mut client = connect_character(clients, 0xd3, 0).await?;
+    if client.join_snapshot().game_session_id == session {
+        return Err("W13 preparation reused its original session".into());
+    }
+    let reply = client
+        .session_mut()
+        .gated_command(
+            stats::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            stats::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[stats::CharacterTab::GeneralStats as u8, 0, 0, 1],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("W13 seeded GeneralStats refused: {:?}", reply.status).into());
+    }
+    let data = &reply.payload;
+    let vocation = general_stats::validate(data, general_stats::selected(&client))?;
+    let level = u32::from_le_bytes(data[9..13].try_into()?);
+    let xp = u64::from_le_bytes(data[1..9].try_into()?);
+    if vocation != stats::vocation_id("knight") || level != 200 || xp != 129_389_800 {
+        return Err(format!(
+            "W13 seeded stats mismatch: vocation={vocation:?} level={level} xp={xp}"
+        )
+        .into());
+    }
+    evidence(&format!("W13_CHECK seeded-knight level={level} xp={xp}"));
+    Ok(client)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -226,7 +268,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xd3).await?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_W13_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    let mut client = prepare_hunter(clients).await?;
     if !client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_DAILY_BOOST_V1)
@@ -318,7 +362,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step-7: logout reply was not Accepted".into());
     }
-    let mut fresh = connect_world(clients, 0xd4).await?;
+    let mut fresh = connect_character(clients, 0xd4, 0).await?;
     let durable = query(&mut fresh, 7).await?;
     if durable != selected {
         return Err(format!(
