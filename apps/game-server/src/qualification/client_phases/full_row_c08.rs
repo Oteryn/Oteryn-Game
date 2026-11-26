@@ -50,11 +50,12 @@ impl Row {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    character_prep::declare_seeded("C08.full", "level-10-sorcerer", "Cure Poison eligibility");
     let mut row = Row {
         started: std::time::Instant::now(),
         step: 1,
     };
-    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(720), verdict::observe(journey(&mut row, clients))).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(format!(
@@ -188,16 +189,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xc8)
+    let (account, mut client) = character_prep::connect_c08(clients, 0xc8, "Poison Cure Caster")
         .await
         .map_err(|error| admission_error("initial-admission", error))?;
-    travel_to_spawn(
-        &mut client,
-        world,
-        &metadata.spawns,
-        "oteryn:creature.poison_spider",
-    )
-    .await?;
+    let dedicated = account.clients(clients);
+    travel_to_poison_spider(&mut client, world, &metadata.spawns).await?;
     let damage = poison(&mut client).await?;
     row.pass(damage);
 
@@ -259,7 +255,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let safe = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| tile.protection_zone())
     }).ok_or("step=regeneration observed=no-reachable-protection-zone need=retreat-from-spider")?;
-    walk(&mut client, world, &safe).await?;
+    walk_c08(&mut client, world, &safe).await?;
     let damaged = client
         .actor_vitals()
         .ok_or("step regeneration: vitals absent")?
@@ -273,12 +269,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass((damaged, regenerated));
 
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.poison_spider").await?;
+    travel_to_poison_spider(&mut client, world, &metadata.spawns).await?;
     let second = poison(&mut client).await?;
     let safe = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| tile.protection_zone())
     }).ok_or("step=poison-persistence observed=no-safe-retreat-route")?;
-    walk(&mut client, world, &safe).await?;
+    walk_c08(&mut client, world, &safe).await?;
     let old_session = client.join_snapshot().game_session_id;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
@@ -301,7 +297,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         client.take_events();
     }
     drop(client);
-    let mut client = connect_world(clients, 0xc9)
+    let mut client = connect_character(&dedicated, 0xc9, 0)
         .await
         .map_err(|error| admission_error("fresh-admission", error))?;
     if client.join_snapshot().game_session_id == old_session {
@@ -313,6 +309,102 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let tick = resumed_poison_tick(&mut client, world).await?;
     row.pass((second, tick));
     let _ = client.session_mut().logout().await?;
+    Ok(())
+}
+
+pub(super) async fn travel_to_poison_spider(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let points: Vec<_> = spawns
+        .sources
+        .iter()
+        .flat_map(|source| {
+            source.points.iter().filter_map(|point| {
+                let creature = spawns.creatures.get(point.creature as usize)?;
+                (creature.key == "oteryn:creature.poison_spider").then_some((
+                    source.floor,
+                    point.x,
+                    point.y,
+                ))
+            })
+        })
+        .collect();
+    let path = route(world, from, |at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+            && points.iter().any(|&(floor, x, y)| {
+                at.floor == floor && at.x.abs_diff(x) <= 1 && at.y.abs_diff(y) <= 1
+            })
+    })
+    .ok_or("no reachable oteryn:creature.poison_spider spawn within town route budget")?;
+    walk_c08(client, world, &path).await?;
+
+    let here = client.world_spatial().actor_position;
+    let spider = client
+        .world_entities()
+        .ok_or("C08 visible entities absent")?
+        .iter()
+        .filter(|actor| {
+            actor.kind == oteryn_dev_client::EntityKind::Creature
+                && actor.position.floor == here.floor
+                && actor
+                    .display_name
+                    .as_ref()
+                    .and_then(|name| name.as_str().ok())
+                    .is_some_and(|name| name.eq_ignore_ascii_case("Poison Spider"))
+        })
+        .min_by_key(|actor| {
+            actor
+                .position
+                .x
+                .abs_diff(here.x)
+                .max(actor.position.y.abs_diff(here.y))
+        })
+        .ok_or("C08 authored spawn has no visible Poison Spider")?
+        .entity;
+    for _ in 0..32 {
+        let target = client
+            .world_entities()
+            .and_then(|entities| entities.get(&spider))
+            .ok_or("C08 lost the selected Poison Spider")?
+            .position;
+        let target = tile(target)?;
+        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+            at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
+        })
+        .ok_or("C08 selected Poison Spider unreachable")?;
+        let Some(direction) = path.first() else {
+            return Ok(());
+        };
+        walk_c08(client, world, &[*direction]).await?;
+    }
+    Err("C08 could not approach the selected Poison Spider within the route budget".into())
+}
+
+async fn walk_c08(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, from, direction).ok_or("C08 route landing absent")?;
+        let outcome = client.step(direction).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || actual != expected
+        {
+            return Err(format!("C08 step refused or mismatched: from={from:?} direction={direction:?} expected={expected:?} actual={actual:?} outcome={outcome:?}").into());
+        }
+        verdict::Harness::global().progress("walk");
+        client.take_events();
+    }
     Ok(())
 }
 
@@ -342,7 +434,7 @@ async fn walk_to_poison_site(client: &mut DevClientSession, world: &BundleWorld,
         world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone())
             && !creature_can_interfere(client, basis.position(at))
     }).ok_or_else(|| format!("step={stage} observed=no-safe-tick-site-outside-pz"))?;
-    walk(client, world, &safe_site).await?;
+    walk_c08(client, world, &safe_site).await?;
     let site = client.world_spatial().actor_position;
     require_isolated_poison_site(client, site, stage)?;
     Ok(site)

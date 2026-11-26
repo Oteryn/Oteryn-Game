@@ -10,13 +10,20 @@ use oteryn_protocol_oteryn::actor_spell::{
 };
 use oteryn_protocol_oteryn::actor_spell_catalog as catalogue;
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("C08_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
+    let stage_capture = std::env::var_os("E2E_C08_CAPTURE_DIR");
+    let suite_capture = std::env::var_os("E2E_ALL_CAPTURE_DIR");
+    if stage_capture.is_none() && suite_capture.is_none() {
+        return Err("C08 capture directory absent".into());
     }
+    for root in [stage_capture, suite_capture].into_iter().flatten() {
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(Path::new(&root).join(name))?;
+        std::io::Write::write_all(&mut file, bytes)?;
+    }
+    Ok(())
 }
 
 fn line(vitals: &ActorVitals) -> String {
@@ -60,14 +67,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0x30).await?;
-    travel_to_spawn(
-        &mut client,
-        world,
-        &metadata.spawns,
-        "oteryn:creature.poison_spider",
-    )
-    .await?;
+    let (_account, mut client) = character_prep::connect_c08(clients, 0x30, "Poison Replay Caster").await?;
+    super::full_row_c08::travel_to_poison_spider(&mut client, world, &metadata.spawns).await?;
     let before = *client.actor_vitals().ok_or("C08 initial vitals absent")?;
     client.session_mut().attack_target(None).await?;
     client.take_events();
@@ -111,21 +112,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ("dispelled", &dispelled),
     ] {
         match encode_actor_vitals(vitals) {
-            Ok(payload) => capture(&format!("c08-{name}.bin"), &payload),
+            Ok(payload) => capture(&format!("c08-{name}.bin"), &payload)?,
             Err(error) => return Err(format!("C08 {name} encode: {error:?}").into()),
         }
         expected.push_str(&line(vitals));
     }
-    capture("c08-expected.txt", expected.as_bytes());
-    // Leave the saved character out of combat for the phases that follow.
+    capture("c08-expected.txt", expected.as_bytes())?;
+    // A normal InFight refusal carries the remaining combat hold. Other refusals fail.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
-    while tokio::time::Instant::now() < deadline {
+    loop {
+        use oteryn_protocol_oteryn::logout::LogoutResult;
         let reply = client.session_mut().logout().await?;
-        if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            break;
+        match reply.result {
+            Some(LogoutResult::Accepted) => break,
+            Some(LogoutResult::InFight { retry_after_ms }) => {
+                let ready = tokio::time::Instant::now() + Duration::from_millis(retry_after_ms.into());
+                if ready >= deadline {
+                    return Err("C08 combat hold exceeds logout deadline".into());
+                }
+                while tokio::time::Instant::now() < ready {
+                    client.service_liveness(Duration::from_millis(250)).await?;
+                    client.take_events();
+                }
+            }
+            _ => return Err(format!("C08 cleanup logout refused: {reply:?}").into()),
         }
-        client.service_liveness(Duration::from_millis(250)).await?;
-        client.take_events();
     }
     Ok(format!(
         "health={}>{}>{} mana={}>{}",
@@ -134,7 +145,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await {
+    character_prep::declare_seeded("C08.client", "level-10-sorcerer", "Cure Poison eligibility");
+    match verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=C08.client status=CAPTURED evidence={observed}"
         )),

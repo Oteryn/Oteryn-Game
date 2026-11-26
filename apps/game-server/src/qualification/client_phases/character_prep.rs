@@ -124,6 +124,61 @@ impl DedicatedCharacter {
     }
 }
 
+pub(super) async fn connect_c08(
+    scope: &SeamClients<'_>,
+    tag: u8,
+    name: &str,
+) -> TestResult<(DedicatedCharacter, oteryn_dev_client::DevClientSession)> {
+    use oteryn_protocol_oteryn::cyclopedia_character as stats;
+    const PROFILE: &str = "c08-sorcerer";
+    const LEVEL: u32 = 10;
+
+    let account = dedicated_named_character(scope, "NODE_BOOT_C08_ACCOUNT", Some(name)).await?;
+    let clients = account.clients(scope);
+    let mut initial = connect_character(&clients, tag, 0).await?;
+    let session = initial.join_snapshot().game_session_id;
+    request_fixture_control(uuid_text(session.as_bytes()), "--profile", PROFILE.into()).await?;
+    let reply = initial.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C08 seeded character logout refused: {reply:?}").into());
+    }
+    drop(initial);
+
+    let mut fresh = connect_character(&clients, tag, 0).await?;
+    if fresh.join_snapshot().game_session_id == session {
+        return Err("C08 seeded character reused its initial session".into());
+    }
+    let reply = fresh
+        .session_mut()
+        .gated_command(
+            stats::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            stats::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[stats::CharacterTab::GeneralStats as u8, 0, 0, 50],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("C08 seeded GeneralStats refused: {reply:?}").into());
+    }
+    let vocation = general_stats::validate(&reply.payload, general_stats::selected(&fresh))?;
+    let level = u32::from_le_bytes(reply.payload[9..13].try_into()?);
+    let vitals = fresh.actor_vitals().ok_or("C08 seeded vitals absent")?;
+    if level != LEVEL
+        || vocation.is_none()
+        || vocation != stats::vocation_id("sorcerer")
+        || (vitals.max_health, vitals.max_mana, vitals.soul) != (195, 150, 100)
+    {
+        return Err(format!(
+            "C08 seeded stats mismatch: level={level} vocation={vocation:?} vitals={vitals:?}"
+        )
+        .into());
+    }
+    evidence(&format!(
+        "C08_SEEDED_STATS level={level} max_health={} max_mana={} soul={}",
+        vitals.max_health, vitals.max_mana, vitals.soul
+    ));
+    Ok((account, fresh))
+}
+
 pub(super) async fn dedicated_character(
     scope: &SeamClients<'_>,
     account_env: &str,

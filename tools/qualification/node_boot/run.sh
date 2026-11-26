@@ -36,6 +36,7 @@ readonly C06_CASTER_ACCOUNT=01934f10-7c00-7000-8000-00000000001c
 readonly C06_PEER_ACCOUNT=01934f10-7c00-7000-8000-00000000001d
 readonly W18_ACCOUNT=01934f10-7c00-7000-8000-00000000001e
 readonly C01_ACCOUNT=01934f10-7c00-7000-8000-00000000001f
+readonly C08_ACCOUNT=01934f10-7c00-7000-8000-000000000024
 readonly C10_FULL_ACCOUNT=01934f10-7c00-7000-8000-000000000020
 readonly C10_CLIENT_ACCOUNT=01934f10-7c00-7000-8000-000000000021
 readonly C19B_ACCOUNT=01934f10-7c00-7000-8000-000000000023
@@ -44,9 +45,9 @@ readonly FRESH_KEY_ID=node-boot-fresh-key-1
 readonly RECOVERY_KEY_ID=node-boot-recovery-key-1
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
-readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-700e-805b-3b112233440e 01934f10-7c04-700f-805b-3b112233440f 01934f10-7c04-7010-805b-3b1122334410 01934f10-7c04-7011-805b-3b1122334411 01934f10-7c04-7012-805b-3b1122334412 01934f10-7c04-7013-805b-3b1122334413 01934f10-7c04-7014-805b-3b1122334414 01934f10-7c04-7015-805b-3b1122334415 01934f10-7c04-7016-805b-3b1122334416 01934f10-7c04-7017-805b-3b1122334417 01934f10-7c04-7019-805b-3b1122334419 01934f10-7c04-701a-805b-3b112233441a 01934f10-7c04-701b-805b-3b112233441b 01934f10-7c04-701c-805b-3b112233441c 01934f10-7c04-701d-805b-3b112233441d 01934f10-7c04-701e-805b-3b112233441e 01934f10-7c04-701f-805b-3b112233441f 01934f10-7c04-7020-805b-3b1122334420 01934f10-7c04-7021-805b-3b1122334421 01934f10-7c04-7022-805b-3b1122334422 01934f10-7c04-7023-805b-3b1122334423)
+readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-700e-805b-3b112233440e 01934f10-7c04-700f-805b-3b112233440f 01934f10-7c04-7010-805b-3b1122334410 01934f10-7c04-7011-805b-3b1122334411 01934f10-7c04-7012-805b-3b1122334412 01934f10-7c04-7013-805b-3b1122334413 01934f10-7c04-7014-805b-3b1122334414 01934f10-7c04-7015-805b-3b1122334415 01934f10-7c04-7016-805b-3b1122334416 01934f10-7c04-7017-805b-3b1122334417 01934f10-7c04-7019-805b-3b1122334419 01934f10-7c04-701a-805b-3b112233441a 01934f10-7c04-701b-805b-3b112233441b 01934f10-7c04-701c-805b-3b112233441c 01934f10-7c04-701d-805b-3b112233441d 01934f10-7c04-701e-805b-3b112233441e 01934f10-7c04-701f-805b-3b112233441f 01934f10-7c04-7020-805b-3b1122334420 01934f10-7c04-7021-805b-3b1122334421 01934f10-7c04-7022-805b-3b1122334422 01934f10-7c04-7023-805b-3b1122334423 01934f10-7c04-7024-805b-3b1122334424)
 # The v4 bootstrap intent explicitly binds name, sex and vocation.
-readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Locate Caster" "Haste Caster" "Illusion Caster" "Summon Caster" "Aim Caster" "Challenge Knight" "Oressa Candidate" "Wheel Knight" "Augment Monk" "Party Caster" "Seasonal Bundle Buyer" "Locate Target" "Party Spell Peer" "Rune Caster" "Rune Refusal Target" "House Transfer Player" "Armored Rat Hunter" "Soul Full Caster" "Soul Client Caster" "Temple Replay" "Starter Kit Replay")
+readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Locate Caster" "Haste Caster" "Illusion Caster" "Summon Caster" "Aim Caster" "Challenge Knight" "Oressa Candidate" "Wheel Knight" "Augment Monk" "Party Caster" "Seasonal Bundle Buyer" "Locate Target" "Party Spell Peer" "Rune Caster" "Rune Refusal Target" "House Transfer Player" "Armored Rat Hunter" "Soul Full Caster" "Soul Client Caster" "Temple Replay" "Starter Kit Replay" "Poison Cure Caster")
 # Runtime build writers bind to the shipped training formula's content revision,
 # just as the S3-B seam does; progression is initialized from this interpretation.
 # The served readiness.content_revision is this same revision: the quest and Task Board
@@ -183,7 +184,7 @@ if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Packet journeys may move, loot or kill their Characters before the required core runs.
-  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$C10_FULL_ACCOUNT" "$C10_CLIENT_ACCOUNT" "$C20D_ACCOUNT" "$C19B_ACCOUNT")
+  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$C10_FULL_ACCOUNT" "$C10_CLIENT_ACCOUNT" "$C20D_ACCOUNT" "$C19B_ACCOUNT" "$C08_ACCOUNT")
 fi
 readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
@@ -377,7 +378,7 @@ fi
 # Seed only this run's extra synthetic accounts through the same portal binary
 # and disposable environment as the upstream harness and composition.py.
 seed_mp_accounts() {
-  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$C10_FULL_ACCOUNT" "$C10_CLIENT_ACCOUNT" "$C20D_ACCOUNT" "$C19B_ACCOUNT" <<'PY_MP_SEED'
+  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$C10_FULL_ACCOUNT" "$C10_CLIENT_ACCOUNT" "$C20D_ACCOUNT" "$C19B_ACCOUNT" "$C08_ACCOUNT" <<'PY_MP_SEED'
 import json
 from pathlib import Path
 import secrets
@@ -400,6 +401,8 @@ seed("world", {"worldId": world, "name": "Open PvP", "region": "local"})
 row_accounts = {}
 for account in accounts:
     credentials = {"email": f"nb-{account}@example.invalid", "password": secrets.token_urlsafe(48)}
+    if account.endswith("000000000024"):
+        credentials["email"] = "q_c08@example.invalid"
     seed("account", {"accountId": account, **credentials})
     if account.endswith(("000000000016", "00000000001c", "00000000001d")):
         row_accounts[account] = credentials
@@ -1464,6 +1467,7 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
       "$S13_ACCOUNT"|"$LIGHT_ACCOUNT_ID"|"$EXIVA_ACCOUNT_ID"|"$F5_C17A_ACCOUNT"|"$F5_C17C_ACCOUNT"|"$F5_C13_ACCOUNT"|"$F5_C18A_ACCOUNT") requested_vocation=Sorcerer ;;
       "$F5_C17D_ACCOUNT"|"$C11_UNASSIGNED_ACCOUNT"|"$C11_KNIGHT_ACCOUNT") requested_vocation=Knight ;;
       "$C12_MONK_ACCOUNT") requested_vocation=Monk ;;
+      "$C08_ACCOUNT") requested_vocation=Sorcerer ;;
       "$C06_CASTER_ACCOUNT"|"$C10_FULL_ACCOUNT"|"$C10_CLIENT_ACCOUNT") requested_vocation=Sorcerer ;;
     esac
     if ! python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
@@ -1478,6 +1482,10 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
   done
   [[ $failed == 0 ]] || fail "Character bootstrap"
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+    local c08_client_operation=01934f10-7c04-7025-805b-3b1122334425
+    python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
+      "$WORK" "$C08_ACCOUNT" "$WORLD_ID" "$c08_client_operation" "${INTERPRETATION[@]}" "Poison Replay Caster" Sorcerer
+    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$c08_client_operation"
     # A separate character uses the existing disposable tag-3 birth gate for this account.
     local s16_operation=01934f10-7c04-7018-805b-3b1122334418
     python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
@@ -1569,6 +1577,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       "NODE_BOOT_PLATFORM_GRANT_ACCOUNTS=$C12_MONK_ACCOUNT,$C06_CASTER_ACCOUNT,$C06_PEER_ACCOUNT")
     test_env+=("NODE_BOOT_W18_ACCOUNT=$W18_ACCOUNT")
     test_env+=("NODE_BOOT_C01_ACCOUNT=$C01_ACCOUNT" "NODE_BOOT_C20D_ACCOUNT=$C20D_ACCOUNT" "NODE_BOOT_C19B_ACCOUNT=$C19B_ACCOUNT")
+    test_env+=("NODE_BOOT_C08_ACCOUNT=$C08_ACCOUNT")
     test_env+=("NODE_BOOT_C10_FULL_ACCOUNT=$C10_FULL_ACCOUNT" "NODE_BOOT_C10_CLIENT_ACCOUNT=$C10_CLIENT_ACCOUNT")
     test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID" "NODE_BOOT_LIGHT_ACCOUNT_ID=$LIGHT_ACCOUNT_ID")
   fi
@@ -1584,6 +1593,27 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S; do
     [[ -z "${!knob+x}" ]] || test_env+=("$knob=${!knob}")
   done
+  local c08_capture="" row_batch="${OTERYN_E2E_ROW_BATCH-0:15}"
+  local groups=",${NODE_BOOT_E2E_ONLY:-},"
+  groups="${groups//[[:space:]]/}"
+  if [[ "$NODE_BOOT_WORLD" == 1 && ( "$groups" == ",," || "$groups" == *,rows,* ) ]] &&
+    python3 - "$row_batch" <<'PY_C08_SELECTED'
+import re
+import sys
+
+value = sys.argv[1]
+match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", value)
+if value == "all":
+    sys.exit(0)
+if match is None:
+    sys.exit(1)
+start, count = map(int, match.groups())
+sys.exit(0 if start <= 144 < start + count and count <= sys.maxsize * 2 + 1 else 1)
+PY_C08_SELECTED
+  then
+    c08_capture="$(mktemp -d "$WORK/c08-client.XXXXXX")"
+    test_env+=("E2E_C08_CAPTURE_DIR=$c08_capture")
+  fi
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
   local test_dir="$PWD"
@@ -1612,6 +1642,18 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
       "${test_command[@]}"
   )
+  if [[ -n "$c08_capture" ]]; then
+    local replay_log="$c08_capture/replay.log"
+    if ! E2E_ALL_CAPTURE_DIR="$c08_capture" cargo +1.100.0 test --locked -p oteryn-session --lib \
+        tests::e2e_c08::e2e_c08_poison_damage_and_dispel_replay -- --exact > "$replay_log" 2>&1 ||
+        ! grep -Fxq 'test tests::e2e_c08::e2e_c08_poison_damage_and_dispel_replay ... ok' "$replay_log"; then
+      cat "$replay_log"
+      echo 'SEAM_EVIDENCE e2e_all scenario=C08.client status=FAIL cause=replay'
+      return 1
+    fi
+    cat "$replay_log"
+    echo 'SEAM_EVIDENCE e2e_all scenario=C08.client status=PASS evidence=fresh-capture-replay'
+  fi
 }
 
 graceful_shutdown() { # ready=false first, socket removed

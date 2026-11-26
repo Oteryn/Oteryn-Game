@@ -291,6 +291,35 @@ WORK=.
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertEqual(Path(work, 'world-compile.json').read_text().strip(), command)
 
+    def test_c08_replay_uses_a_fresh_directory_for_each_selected_world_batch(self):
+        setup = section('  local c08_capture=', '  local staged_manifest=')
+        script = ('set -eu\ncheck() {\n' + setup
+                  + 'printf "%s\\n" "$c08_capture"\n}\ncheck\ncheck\n')
+        with tempfile.TemporaryDirectory() as work:
+            for world, group, batch, selected in [
+                ('1', 'rows', '144:1', True),
+                ('1', 'core, rows', '143:2', True),
+                ('1', '', 'all', True),
+                ('1', 'rows', '84:1', False),
+                ('1', 'core', '144:1', False),
+                ('1', 'rows', '144:0', False),
+                ('0', 'rows', '144:1', False),
+            ]:
+                with self.subTest(world=world, group=group, batch=batch):
+                    result = bash(script, {
+                        'WORK': work, 'NODE_BOOT_WORLD': world,
+                        'NODE_BOOT_E2E_ONLY': group, 'OTERYN_E2E_ROW_BATCH': batch,
+                    })
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    first, second = result.stdout.splitlines()
+                    if selected:
+                        self.assertNotEqual(first, second)
+                        for path in (first, second):
+                            self.assertEqual(Path(path).parent, Path(work))
+                            self.assertEqual(list(Path(path).iterdir()), [])
+                    else:
+                        self.assertEqual([first, second], ['', ''])
+
     def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
         fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
         fixtures += section("readonly INTENT_OPERATIONS=", "readonly INTERPRETATION=")
@@ -301,7 +330,7 @@ WORK=.
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 32)
+        self.assertEqual(len(accounts), 33)
         self.assertEqual(len(set(accounts)), len(accounts))
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 
