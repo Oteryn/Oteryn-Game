@@ -1,5 +1,6 @@
 //! I18a: browse field, open a tile's browse container with walk-to.
-//! Drops a backpack item and walks away. A different-floor request must be refused.
+//! Drops a backpack item, verifies the debit after relog, and walks away.
+//! A different-floor request must be refused without changing game state.
 //! One request for the actual tile must walk the actor back into reach and open the
 //! browse view. The item is picked up and the original backpack quantity is verified
 //! again after relog.
@@ -164,6 +165,9 @@ async fn drop_first(
         .ok_or("step=drop observed=no-backpack-item;needed:player-acquired-item")?;
     let at = ground(client);
     let before = quantity(client, item.item_definition_ref)?;
+    let debited = before
+        .checked_sub(u64::from(item.count.get()))
+        .ok_or("step=drop observed=stack-larger-than-backpack-quantity")?;
     client.take_events();
     let moved = client
         .session_mut()
@@ -177,14 +181,9 @@ async fn drop_first(
     if moved.outcome != ItemMoveOutcome::Moved {
         return Err(format!("step=drop observed={:?};needed=Moved", moved.outcome).into());
     }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    while quantity(client, item.item_definition_ref)? >= before {
-        client.take_events();
-        if tokio::time::Instant::now() >= deadline {
-            return Err("step=drop observed=no-inventory-debit".into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-    }
+    wait_quantity(client, item.item_definition_ref, debited)
+        .await
+        .map_err(|error| format!("step=drop {error}"))?;
     Ok((item.item_definition_ref, item.count, before))
 }
 
@@ -229,6 +228,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let t0 = tile(client.world_spatial().actor_position)?;
     let at = ground(&client);
     let (definition, count, before) = drop_first(&mut client).await?;
+    let debited = before - u64::from(count.get());
+    logout(&mut client).await?;
+    let mut client = connect_world(clients, 0xf1).await?;
+    let observed = quantity(&client, definition)?;
+    if observed != debited {
+        return Err(format!("step=drop-relog expected={debited} observed={observed}").into());
+    }
+    if tile(client.world_spatial().actor_position)? != t0 {
+        return Err("step=drop-relog observed=actor-off-drop-tile".into());
+    }
     let away = route(world, t0, |tile| {
         tile.floor == t0.floor && tile.x.abs_diff(t0.x).max(tile.y.abs_diff(t0.y)) >= 4
     })
@@ -247,10 +256,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         },
         ..at
     };
+    let inventory_before_refusal = quantities(&client)?;
+    let views_before_refusal = client.session_mut().container_views().cloned();
+    if views_before_refusal
+        .as_ref()
+        .is_some_and(|views| views.views.iter().any(|view| view.browse.is_some()))
+    {
+        return Err("step=browse-precondition observed=already-browsing".into());
+    }
     let (refused, view) = browse_open(&mut client, other_floor).await?;
     if refused != tree::ContainerViewOutcome::TooFar
         || view.is_some()
         || tile(client.world_spatial().actor_position)? != distant
+        || quantities(&client)? != inventory_before_refusal
+        || client.session_mut().container_views() != views_before_refusal.as_ref()
     {
         return Err(format!(
             "step=browse-other-floor observed={refused:?};needed=TooFar-without-moving"
@@ -280,6 +299,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if entry.count != count {
         return Err("step=browse-walk-to observed=dropped-stack-count-mismatch".into());
     }
+    if quantity(&client, definition)? != debited {
+        return Err("step=take observed=backpack-quantity-changed-before-pickup".into());
+    }
     take_entry(&mut client, &entry).await?;
     if quantity(&client, definition)? != before {
         return Err("step=restore observed=backpack-count-not-restored".into());
@@ -289,9 +311,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if quantity(&relogged, definition)? != before {
         return Err("step=relog observed=backpack-count-not-restored".into());
     }
+    if tile(relogged.world_spatial().actor_position)? != arrived {
+        return Err("step=relog observed=walk-to-position-not-restored".into());
+    }
     logout(&mut relogged).await?;
     Ok(format!(
-        "wrong-floor-refused;walk-to-opened;relog-restored={before};item-entries={}",
+        "drop-relog={debited};wrong-floor-unchanged;walk-to-opened;pickup-relog={before};position-relog={},{},{};item-entries={}",
+        arrived.x,
+        arrived.y,
+        arrived.floor,
         view.entries.len()
     ))
 }
