@@ -397,41 +397,70 @@ pub(super) async fn resume(
         command.game_session_id,
         CommandId::new(command.command_id).ok()?,
     );
+    use crate::durability::NpcTalkReceipt;
+    use crate::gameplay_transport::npc_command::{busy_disposition, probe_npc_receipt};
     let binding = intent_binding(intent);
-    // Periodic gameplay reads share the holder with durable replay. A busy
-    // holder is transient, while an intent-binding conflict is final.
-    let Ok(budget) =
-        crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(admission.root)
-    else {
-        return Some(unknown());
-    };
-    match budget
-        .retry_command_guard(async || {
-            match admission
-                .root
-                .read_hireling_food_receipt(
-                    admission.character,
-                    fence.character_id,
-                    reference,
-                    binding,
-                )
-                .await
-            {
-                Err(HirelingFoodError::Unavailable(error)) => Err(error),
-                result => Ok(result),
-            }
-        })
-        .await
+    let budget = crate::gameplay_transport::AdmissionRetryBudget::for_command(admission.root);
+    let food = match probe_npc_receipt(
+        admission,
+        command,
+        NpcTalkReceipt::HirelingFood,
+        "hireling_food_receipt",
+    )
+    .await
     {
-        Ok(Ok(true)) => {
-            return Some(completed(
-                intent,
-                "Your meal has been delivered to your Inbox.",
-            ));
+        Ok(exists) => exists,
+        Err(disposition) => return Some(NpcTalkOutcome::only(disposition)),
+    };
+    if food {
+        match budget
+            .retry_command_guard(async || {
+                match admission
+                    .root
+                    .read_hireling_food_receipt(
+                        admission.character,
+                        fence.character_id,
+                        reference,
+                        binding,
+                    )
+                    .await
+                {
+                    Err(HirelingFoodError::Unavailable(error)) => Err(error),
+                    result => Ok(result),
+                }
+            })
+            .await
+        {
+            Ok(Ok(true)) => {
+                return Some(completed(
+                    intent,
+                    "Your meal has been delivered to your Inbox.",
+                ));
+            }
+            Err(
+                crate::durability::DurabilityError::RootUnavailable
+                | crate::durability::DurabilityError::RootPassDeadlineExceeded,
+            ) => {
+                return Some(NpcTalkOutcome::only(busy_disposition(
+                    command,
+                    "hireling_food_replay",
+                )));
+            }
+            Err(_) => return Some(unknown()),
+            Ok(_) => return Some(rejected()),
         }
-        Ok(Ok(false)) => {}
-        Err(_) => return Some(unknown()),
-        Ok(Err(_)) => return Some(rejected()),
+    }
+    match probe_npc_receipt(
+        admission,
+        command,
+        NpcTalkReceipt::HirelingPackage,
+        "hireling_package_receipt",
+    )
+    .await
+    {
+        Ok(false) => return None,
+        Ok(true) => {}
+        Err(disposition) => return Some(NpcTalkOutcome::only(disposition)),
     }
     match budget
         .retry_command_guard(async || {
@@ -455,9 +484,15 @@ pub(super) async fn resume(
             intent,
             "Your imbuement package is in your backpack.",
         )),
-        Ok(Ok(false)) => None,
+        Err(
+            crate::durability::DurabilityError::RootUnavailable
+            | crate::durability::DurabilityError::RootPassDeadlineExceeded,
+        ) => Some(NpcTalkOutcome::only(busy_disposition(
+            command,
+            "hireling_package_replay",
+        ))),
         Err(_) => Some(unknown()),
-        Ok(Err(_)) => Some(rejected()),
+        Ok(_) => Some(rejected()),
     }
 }
 

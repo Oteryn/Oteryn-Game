@@ -321,7 +321,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let budget = AdmissionRetryBudget::for_command(self.root);
         match tokio::time::timeout(
             PROBE_TIMEOUT,
-            retry_owner_read(&budget, async || {
+            crate::gameplay_transport::item_ref_admission::retry_use_read(&budget, async || {
                 self.root
                     .read_item_use_inventory(self.character, self.holder, fence)
                     .await

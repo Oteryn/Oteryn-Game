@@ -154,7 +154,11 @@ fn sanity_use_case(recovery: Option<RecoveryPoint>) -> TestResult {
                 command_id: 1,
                 item_fence: admitted.item_fence,
             };
-            let (actual, qualified, _, _)=owner.qualify_soul_war_source_use(actor,command,&intent,None,None)
+            let inventory = owner
+                .read_use_inventory(command.item_fence.ok_or("actual current Source USE fence")?)
+                .await
+                .map_err(debug)?;
+            let (actual, qualified, _, _)=owner.qualify_soul_war_source_use(actor,command,&intent,None,None,inventory)
                 .await.ok_or("actual native Source5 target qualification must reach the paired writer boundary")?;
             assert_eq!(
                 actual.item.definition.production_key,

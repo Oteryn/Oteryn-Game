@@ -293,6 +293,17 @@ where
             },
             outcome.inventory_changed,
         )
+    } else if guard_deferred
+        && command.command_type == oteryn_protocol_oteryn::npc_service::COMMAND_TYPE_NPC_TALK_INTENT
+        && session
+            .selected_capabilities
+            .command_selected(command.command_type)
+    {
+        Dispatch::Npc(
+            NpcIntentDisposition::RateLimited,
+            NpcUpdate::default(),
+            false,
+        )
     } else if input_permit.is_none()
         && command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
         && session

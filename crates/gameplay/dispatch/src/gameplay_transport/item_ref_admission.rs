@@ -30,6 +30,169 @@ use crate::durability::item_transfer::{
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef};
 use std::num::NonZeroU32;
 
+pub(super) struct UseProbeRefusal(oteryn_protocol_oteryn::world_object::UseDisposition);
+
+impl From<UseProbeRefusal> for super::connection::UseOutcome {
+    fn from(refusal: UseProbeRefusal) -> Self {
+        Self {
+            disposition: refusal.0,
+            ..Self::rejected()
+        }
+    }
+}
+
+/// One advisory definition lookup serves all fresh candidates in the item-action chain.
+pub(super) struct UseSourceHint {
+    pub(super) key: Option<ItemKey>,
+    definition: tokio::sync::OnceCell<Option<TypedDefinitionRef>>,
+}
+
+impl UseSourceHint {
+    pub(super) fn new(key: Option<ItemKey>) -> Self {
+        Self {
+            key,
+            definition: tokio::sync::OnceCell::new(),
+        }
+    }
+
+    /// A successful false delegates to the next owner. A failed read is a typed refusal.
+    pub(super) async fn candidate(
+        &self,
+        owner: &ComposedFreshAdmission<'_, '_, '_>,
+        command: UseCommand,
+        stage: &'static str,
+        qualifies: impl FnOnce(&TypedDefinitionRef) -> bool,
+    ) -> Result<bool, UseProbeRefusal> {
+        Ok(self
+            .definition(owner, command, stage)
+            .await?
+            .is_some_and(qualifies))
+    }
+
+    pub(super) async fn definition(
+        &self,
+        owner: &ComposedFreshAdmission<'_, '_, '_>,
+        command: UseCommand,
+        stage: &'static str,
+    ) -> Result<Option<&TypedDefinitionRef>, UseProbeRefusal> {
+        let (Some(ItemKey::Instance(item)), Some(fence)) = (self.key, command.item_fence) else {
+            return Ok(None);
+        };
+        let definition = self
+            .definition
+            .get_or_try_init(|| async {
+                let budget = super::AdmissionRetryBudget::for_command(owner.root);
+                budget
+                    .retry_command_guard(async || {
+                        owner
+                            .root
+                            .plain_use_item_definition(
+                                item,
+                                fence.runtime_scope.world_id(),
+                                budget.deadline,
+                            )
+                            .await
+                    })
+                    .await
+            })
+            .await
+            .map_err(|_| UseProbeRefusal(super::use_receipt_refused(command, stage).disposition))?;
+        Ok(definition.as_ref())
+    }
+}
+
+pub(super) async fn retry_use_read<T>(
+    budget: &super::AdmissionRetryBudget<'_>,
+    mut read: impl AsyncFnMut() -> Result<T, crate::durability::item_use::ItemUseError>,
+) -> Result<T, crate::durability::item_use::ItemUseError> {
+    use crate::durability::{DurabilityError, item_use::ItemUseError};
+
+    loop {
+        let result = read().await;
+        if !matches!(
+            result,
+            Err(ItemUseError::Unavailable(
+                DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded
+            ))
+        ) || !budget
+            .retries_unavailable(super::AdmissionRefusal::Unavailable)
+            .await
+        {
+            return result;
+        }
+    }
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn probe_plain_use_receipt(
+        &self,
+        family: crate::durability::PlainUseReceipt,
+        command: crate::foundation::CommandRef,
+    ) -> Result<bool, crate::durability::DurabilityError> {
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        budget
+            .retry_command_guard(async || self.root.plain_use_receipt_exists(family, command).await)
+            .await
+    }
+
+    pub(super) async fn read_use_backpack(
+        &self,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> Result<
+        Option<crate::durability::item_transfer::CharacterBackpack>,
+        crate::durability::DurabilityError,
+    > {
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        budget
+            .retry_command_guard(async || {
+                self.root
+                    .read_character_backpack(self.character, fence.character_id)
+                    .await
+                    .map_err(|error| match error {
+                        ItemTransferError::Unavailable(error) => error,
+                        _ => crate::durability::DurabilityError::Unavailable,
+                    })
+            })
+            .await
+    }
+
+    pub(super) async fn read_use_inventory(
+        &self,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> Result<
+        crate::durability::item_use::ItemUseInventory,
+        crate::durability::item_use::ItemUseError,
+    > {
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        retry_use_read(&budget, async || {
+            self.root
+                .read_item_use_inventory(self.character, self.holder, fence)
+                .await
+        })
+        .await
+    }
+
+    pub(super) async fn read_house_use_inventory(
+        &self,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> Result<crate::durability::item_use::ItemUseInventory, crate::durability::DurabilityError>
+    {
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        budget
+            .retry_command_guard(async || {
+                self.root
+                    .read_hireling_use_inventory(
+                        self.character,
+                        self.holder,
+                        fence,
+                        *self.channel_id.as_bytes(),
+                    )
+                    .await
+            })
+            .await
+    }
+}
+
 /// The non-empty Item definition index of the active generation, if it pins one.
 fn item_index(generation: Option<&ActiveGeneration>) -> Option<&ItemDefinitionIndex> {
     generation?

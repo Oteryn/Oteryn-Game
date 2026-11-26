@@ -7,12 +7,12 @@ pub(super) async fn preview(
     actor: ExactActorRef,
     command: super::super::connection::UseCommand,
     intent: &NpcTalkIntent,
-) -> Result<Option<StagBeakPreview>, ()> {
+) -> Result<Option<StagBeakPreview>, crate::durability::DurabilityError> {
     let active = admission
         .states
         .quest_sessions
         .lock()
-        .map_err(|_| ())?
+        .map_err(|_| crate::durability::DurabilityError::InvalidStoredState)?
         .get(&command.game_session_id)
         .and_then(|s| s.copy.as_ref())
         .is_some_and(|copy| copy.tracks().get(STAGE) == Some(&6));
@@ -39,10 +39,14 @@ pub(super) async fn preview(
     if !hartford {
         return Ok(None);
     }
-    admission
-        .root
-        .read_stag_beak_preview(admission.character, fence.character_id)
+    let budget = crate::gameplay_transport::AdmissionRetryBudget::for_command(admission.root);
+    budget
+        .retry_command_guard(async || {
+            admission
+                .root
+                .read_stag_beak_preview(admission.character, fence.character_id)
+                .await
+        })
         .await
         .map(Some)
-        .map_err(|_| ())
 }

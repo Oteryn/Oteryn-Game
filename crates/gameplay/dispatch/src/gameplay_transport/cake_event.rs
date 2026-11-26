@@ -470,8 +470,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         if !candidate {
             match self
-                .root
-                .plain_use_receipt_exists(crate::durability::PlainUseReceipt::Cake, reference)
+                .probe_plain_use_receipt(crate::durability::PlainUseReceipt::Cake, reference)
                 .await
             {
                 Ok(false) => return None,

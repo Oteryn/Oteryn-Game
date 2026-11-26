@@ -528,7 +528,7 @@ pub(super) async fn talk(
         };
         copy.tracks().clone()
     };
-    let reply = {
+    let (reply, previous_topic, next_topic) = {
         let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
             return rejected();
         };
@@ -540,16 +540,22 @@ pub(super) async fn talk(
             conversation.context = Some(expected.clone());
             conversation.topic = Topic::None;
         }
-        dialogue(
+        let previous = conversation.topic.clone();
+        let mut next = previous.clone();
+        let reply = dialogue(
             &tracks,
             GrizzlyActor {
                 level,
                 premium,
                 level_after_reward: None,
             },
-            &mut conversation.topic,
+            &mut next,
             &intent.text,
-        )
+        );
+        if reply.actions.is_empty() {
+            conversation.topic = next.clone();
+        }
+        (reply, previous, next)
     };
     if reply.actions.is_empty() {
         return reward_reply(admission, actor, command, &intent, reply.line).await;
@@ -574,8 +580,13 @@ pub(super) async fn talk(
         .revision_sequencer
         .acquire(item_fence.character_id)
         .await;
-    let Ok(Some(fence)) = admission.current_quest_fence(command.game_session_id).await else {
-        return rejected();
+    let holder_budget =
+        crate::gameplay_transport::AdmissionRetryBudget::for_command(admission.root);
+    let fence = match super::npc_gameplay_fence(admission, command, "grizzly_fence", &holder_budget)
+        .await
+    {
+        Ok(fence) => fence,
+        Err(disposition) => return NpcTalkOutcome::only(disposition),
     };
     if fence.item_fence() != item_fence {
         return rejected();
@@ -604,11 +615,9 @@ pub(super) async fn talk(
         let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
             return rejected();
         };
-        sessions
-            .entry(command.game_session_id)
-            .or_default()
-            .grizzly
-            .pending = Some(Pending {
+        let conversation = &mut sessions.entry(command.game_session_id).or_default().grizzly;
+        conversation.topic = next_topic;
+        conversation.pending = Some(Pending {
             character: fence.character_id,
             cause,
             actions: reply.actions.clone(),
@@ -618,44 +627,60 @@ pub(super) async fn talk(
         });
     }
     let progression = admission.progression_binding(command.game_session_id);
-    for action in reply.actions {
-        let outcome = match admission.premium_coordinator {
-            Some(gate) => {
-                slot.commit_grizzly_transition_with_progression(
-                    admission.root,
-                    admission.character,
-                    admission.holder,
-                    fence,
-                    cause,
-                    action,
-                    std::sync::Arc::clone(catalogue),
-                    gate,
-                    progression.as_ref().map(|binding| &binding.policy),
-                )
-                .await
+    use crate::durability::{DurabilityError, character_progression::CharacterProgressionError};
+    for (index, action) in reply.actions.into_iter().enumerate() {
+        let outcome = super::retry_npc_checkout(&holder_budget, async || {
+            match admission.premium_coordinator {
+                Some(gate) => {
+                    slot.commit_grizzly_transition_with_progression(
+                        admission.root,
+                        admission.character,
+                        admission.holder,
+                        fence,
+                        cause,
+                        action.clone(),
+                        std::sync::Arc::clone(catalogue),
+                        gate,
+                        progression.as_ref().map(|binding| &binding.policy),
+                    )
+                    .await
+                }
+                None => {
+                    slot.commit_grizzly_transition_with_progression(
+                        admission.root,
+                        admission.character,
+                        admission.holder,
+                        fence,
+                        cause,
+                        action.clone(),
+                        std::sync::Arc::clone(catalogue),
+                        &NoGrizzlyPremium,
+                        progression.as_ref().map(|binding| &binding.policy),
+                    )
+                    .await
+                }
             }
-            None => {
-                slot.commit_grizzly_transition_with_progression(
-                    admission.root,
-                    admission.character,
-                    admission.holder,
-                    fence,
-                    cause,
-                    action,
-                    std::sync::Arc::clone(catalogue),
-                    &NoGrizzlyPremium,
-                    progression.as_ref().map(|binding| &binding.policy),
-                )
-                .await
-            }
-        };
+        })
+        .await;
         match outcome {
             Ok(
                 QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_),
             ) => {}
-            Err(
-                crate::durability::character_progression::CharacterProgressionError::Unavailable(_),
-            ) => return unknown(),
+            Err(CharacterProgressionError::Unavailable(DurabilityError::RootUnavailable)) => {
+                if index == 0
+                    && let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
+                    && let Some(state) = sessions.get_mut(&command.game_session_id)
+                {
+                    state.grizzly.topic = previous_topic;
+                    state.grizzly.pending = None;
+                } else {
+                    drop(slot);
+                    drop(_permit);
+                    reject_batch(admission, command.game_session_id).await;
+                }
+                return NpcTalkOutcome::only(super::busy_disposition(command, "grizzly_write"));
+            }
+            Err(CharacterProgressionError::Unavailable(_)) => return unknown(),
             _ => {
                 drop(slot);
                 drop(_permit);
@@ -678,15 +703,15 @@ async fn reward_reply(
     intent: &NpcTalkIntent,
     mut line: String,
 ) -> NpcTalkOutcome {
-    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    use crate::gameplay_transport::grizzly_rewards::GrizzlyRewardDelivery;
     let delivered = admission.deliver_grizzly_reward(actor, command).await;
-    if delivered == Some(UseDisposition::NoRoom) {
+    if matches!(delivered, GrizzlyRewardDelivery::NoRoom) {
         line.push_str(" Your item reward is waiting; make room and speak to me again.");
     }
     let mut reply = NpcConversations::bank_reply(intent, line);
     // An attempted MINT may have committed before its acknowledgement was lost.
     // Refresh the authoritative inventory on every attempt without claiming success.
-    reply.inventory_changed = delivered.is_some();
+    reply.inventory_changed = matches!(delivered, GrizzlyRewardDelivery::RefreshInventory);
     reply
 }
 

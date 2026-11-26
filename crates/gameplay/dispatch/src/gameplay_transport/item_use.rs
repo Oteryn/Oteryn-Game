@@ -471,6 +471,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 _ => None,
             };
             if let Some(input) = input {
+                use super::item_ref_admission::UseSourceHint;
+                use crate::durability::house_hireling::HIRELING_LAMP_KEY;
                 if let Some(disposition) = super::hireling::replay_lamp(self, actor, command, input)
                     .await
                     .map_err(|_| UseDisposition::Rejected)?
@@ -485,8 +487,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ) {
                     return Err(refused);
                 }
+                let budget = super::AdmissionRetryBudget::for_command(self.root);
                 let lamp = match &source {
-                    UseSource::Handle(ItemKey::Instance(id)) => Some(*id),
+                    UseSource::Handle(item @ ItemKey::Instance(id)) => {
+                        UseSourceHint::new(Some(*item))
+                            .candidate(self, command, "hireling_candidate", |definition| {
+                                definition.production_key == HIRELING_LAMP_KEY
+                            })
+                            .await
+                            .map_err(|refusal| UseOutcome::from(refusal).disposition)?
+                            .then_some(*id)
+                    }
                     UseSource::Definition(wanted) => {
                         let is_lamp = {
                             let runtime = self.runtime.lock().await;
@@ -495,21 +506,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 self.active_generation,
                             )
                             .and_then(|index| index.definition_at(*wanted))
-                            .is_some_and(|(key, _)| {
-                                key == crate::durability::house_hireling::HIRELING_LAMP_KEY
-                            })
+                            .is_some_and(|(key, _)| key == HIRELING_LAMP_KEY)
                         };
                         if is_lamp {
-                            let mut owned = self
-                                .root
-                                .read_owned_hirelings(
-                                    self.character,
-                                    self.holder,
-                                    fence,
-                                    *self.channel_id.as_bytes(),
-                                )
+                            let mut owned = budget
+                                .retry_command_guard(async || {
+                                    self.root
+                                        .read_owned_hirelings(
+                                            self.character,
+                                            self.holder,
+                                            fence,
+                                            *self.channel_id.as_bytes(),
+                                        )
+                                        .await
+                                })
                                 .await
-                                .map_err(|_| UseDisposition::Rejected)?
+                                .map_err(|_| {
+                                    super::use_receipt_refused(command, "hireling_inventory")
+                                        .disposition
+                                })?
                                 .into_iter()
                                 .filter(|h| h.position.is_none())
                                 .filter_map(|h| h.lamp);
@@ -525,11 +540,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     _ => None,
                 };
                 if let Some(lamp) = lamp
-                    && self
-                        .root
-                        .hireling_lamp_identity(self.character, fence, lamp)
+                    && budget
+                        .retry_command_guard(async || {
+                            self.root
+                                .hireling_lamp_identity(self.character, fence, lamp)
+                                .await
+                        })
                         .await
-                        .map_err(|_| UseDisposition::Rejected)?
+                        .map_err(|_| {
+                            super::use_receipt_refused(command, "hireling_identity").disposition
+                        })?
                         .is_some()
                 {
                     return super::hireling::use_lamp(self, actor, command, lamp, input)
@@ -574,8 +594,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(ActiveGeneration::native_gameplay)
             .ok_or(UseDisposition::Rejected)?;
         let inventory = self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
+            .read_use_inventory(fence)
             .await
             .map_err(|_| UseDisposition::Rejected)?;
         let source = match source {
