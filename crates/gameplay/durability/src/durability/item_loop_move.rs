@@ -2134,6 +2134,35 @@ impl DurabilityRoot {
             .await
     }
 
+    /// Advisory carried-tree presence only. A positive answer must be re-proved under
+    /// the Character root lock before publishing contents.
+    pub async fn item_loop_carried_present(
+        &self,
+        character_id: CharacterId,
+        item: [u8; 16],
+        deadline: tokio::time::Instant,
+    ) -> std::result::Result<bool, DurabilityError> {
+        let query = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_item_loop_owner(encode($1,'hex')::uuid)
+                 WHERE owner_character=encode($2,'hex')::uuid AND depth BETWEEN 0 AND $3)",
+        )
+        .bind(item.as_slice())
+        .bind(character_id.as_bytes().as_slice())
+        .bind(ITEM_LOOP_DEPTH_MAX);
+        self.read_gameplay_existence(query, deadline).await
+    }
+
+    pub async fn read_current_item_loop_container(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        container: [u8; 16],
+        deadline: tokio::time::Instant,
+    ) -> std::result::Result<Option<LoopContainer>, DurabilityError> {
+        self.read_item_loop_container_inner(recovery, fence.character_id, container, Some((fence, node.clone(), deadline))).await
+    }
+
     /// `container` with its parent and its direct contents (newest first) when it is in
     /// `character_id`'s carried tree, the main backpack included; `None` otherwise.
     /// Retain the Character root's shared lock across ownership and entry reads,
@@ -2144,14 +2173,37 @@ impl DurabilityRoot {
         character_id: CharacterId,
         container: [u8; 16],
     ) -> std::result::Result<Option<LoopContainer>, DurabilityError> {
+        self.read_item_loop_container_inner(recovery, character_id, container, None).await
+    }
+
+    async fn read_item_loop_container_inner(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+        container: [u8; 16],
+        current: Option<(CurrentCharacterItemFence, NodeIncarnationProof, tokio::time::Instant)>,
+    ) -> std::result::Result<Option<LoopContainer>, DurabilityError> {
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+        let pass = if let Some((_, _, deadline)) = &current {
+            self.try_issue_semantic_pass_by(*deadline)?
+        } else {
+            self.try_issue_semantic_pass()?
+        };
+        pass.run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &record).await?;
+                    if let Some((fence, node, _)) = current {
+                        use crate::foundation::admission_authority_publication::GameSessionUseAuthorizationErrorV1;
+                        super::db::lock_admission_relations(&mut tx).await?;
+                        if super::character_progression::assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
+                            return Err(DurabilityError::SessionUseAuthorization(
+                                GameSessionUseAuthorizationErrorV1::StaleAuthority,
+                            ));
+                        }
+                    }
                     let read: LoopResult<Option<LoopContainer>> = async {
                         // Custody and entries are separate READ COMMITTED statements.
                         // A historical owner result cannot authorize entries read after

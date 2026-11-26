@@ -151,13 +151,21 @@ pub(super) async fn use_lamp(owner:&ComposedFreshAdmission<'_,'_,'_>,actor:Exact
     {let runtime=owner.runtime.lock().await;
         runtime.house_actor_state(actor,command.game_session_id).ok()?;
         if !pending.park(&mut *owner.states.spell_states.lock().await){return None}}
-    pending::run_parked(owner,actor,command.game_session_id).await?.disposition()
+    pending::run_parked(owner,actor,command.game_session_id).await
 }
 
 pub(super) async fn replay_lamp(owner:&ComposedFreshAdmission<'_,'_,'_>,actor:ExactActorRef,
     command:UseCommand,input:HirelingLampInput)->Result<Option<UseDisposition>,()> {
     if !resolve_pending_lamp(owner,actor,command.game_session_id).await{return Err(())}
-    let _lane=owner.spell_lane_permit().await.ok_or(())?;
+    let reference=reference(command).ok_or(())?;
+    match owner.root.plain_use_receipt_exists(crate::durability::PlainUseReceipt::Hireling,reference).await {
+        Ok(false)=>return Ok(None),
+        Ok(true)=>{},
+        Err(_)=>return Ok(Some(super::use_receipt_refused(command,"hireling_existence").disposition)),
+    }
+    let Some(_lane)=owner.spell_lane_permit().await else {
+        return Ok(Some(super::use_receipt_refused(command,"hireling_permit").disposition));
+    };
     pending::replay(owner,actor,command,input).await
 }
 

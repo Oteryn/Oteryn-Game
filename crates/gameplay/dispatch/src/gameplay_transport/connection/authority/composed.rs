@@ -948,6 +948,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         .await
     }
 
+    async fn observe_container_for_use(
+        &self,
+        actor: ExactActorRef,
+        fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+        target: item_view::ItemKey,
+        house_capacity_v2: bool,
+    ) -> Result<Option<container_view::ContainerObservation>, crate::durability::DurabilityError>
+    {
+        loop_move::observe_container_for_use(self, actor, fence, target, house_capacity_v2).await
+    }
+
     /// VIS-3: the Channel's players, live creatures and (NPC-LOAD-1) NPC actors, read in one
     /// owner work item, and (MAP-ITEM-REF-1 Part B) its bound corpses as objects in the same
     /// read.
@@ -1494,6 +1505,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         source: Option<item_view::ItemKey>,
         target: Option<item_view::ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
+        use oteryn_protocol_oteryn::world_object::UseTarget;
+        if !matches!(
+            intent.target,
+            UseTarget::Item(_) | UseTarget::ItemByDefinition(_)
+        ) {
+            return Ok(None);
+        }
         if let Some(outcome) = self
             .use_arbaziloth_rod(actor, command, &intent, source)
             .await

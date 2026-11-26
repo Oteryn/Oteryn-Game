@@ -569,6 +569,14 @@
       "note": "The USE route could not establish control or a terminal effect outcome."
     },
     {
+      "event": "use_receipt_refused",
+      "level": "info",
+      "span": false,
+      "fields": ["command_id", "stage"],
+      "codes": [],
+      "note": "An ordinary USE receipt or its live preflight could not be classified."
+    },
+    {
       "event": "visibility_refresh_refused",
       "level": "warn",
       "span": false,

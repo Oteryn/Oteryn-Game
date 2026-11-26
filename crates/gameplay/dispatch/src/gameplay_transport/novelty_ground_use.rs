@@ -22,13 +22,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(fence) = command.item_fence else {
             return Ok(None);
         };
-        let Some(source) = self
+        let source = match self
             .root
             .read_ground_action_source(self.character, fence, request.source)
             .await
-            .map_err(|_| ())?
-        else {
-            return Ok(None);
+        {
+            Ok(Some(source)) => source,
+            Ok(None) => return Ok(None),
+            Err(_) => {
+                return Ok(Some(super::super::use_receipt_refused(
+                    command,
+                    "event_item_ground_source",
+                )));
+            }
         };
         if !novelty_items::is_ground_action(&source.definition().production_key) {
             return Ok(None);
