@@ -1392,6 +1392,17 @@ fn operator_event(line: &str) {
     operator_event_with_trace(line, connection::diagnostic_connection_trace());
 }
 
+fn use_receipt_refused(
+    command: connection::UseCommand,
+    stage: &'static str,
+) -> connection::UseOutcome {
+    operator_event(&format!(
+        "event=use_receipt_refused command_id={} stage={stage}",
+        command.command_id,
+    ));
+    connection::UseOutcome::rejected()
+}
+
 fn format_connection_trace(trace: [u8; 16]) -> String {
     format!(
         "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",

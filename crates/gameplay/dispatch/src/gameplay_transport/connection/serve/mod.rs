@@ -580,11 +580,92 @@ pub(in crate::gameplay_transport) async fn regression_routed_step<A: FreshAdmiss
 
 /// Run the first live command while a background pass holds the PostgreSQL holder.
 #[cfg(test)]
+pub(in crate::gameplay_transport) async fn regression_world_use_with_busy_holder(
+    authority: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: AdmittedSession,
+    stream: &mut tokio::io::DuplexStream,
+    target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_protocol_oteryn::world_object::{COMMAND_TYPE_USE_INTENT, encode_use_intent};
+    use std::{future::Future, task::Poll};
+
+    let actor = admitted.runtime_actor.ok_or("admitted actor")?;
+    let baseline = authority.observe(actor).await.ok_or("admitted position")?;
+    let mut session = setup::prepare(
+        stream,
+        &mut admitted,
+        authority,
+        IDLE_LIVENESS,
+        actor,
+        baseline,
+        integrity::Integrity::default(),
+    )
+    .await
+    .map_err(|_| "world USE setup")?;
+    let command = UseCommand {
+        game_session_id: session.admitted.game_session_id,
+        command_id: session.commands.next_command_id(),
+        item_fence: session.admitted.item_fence,
+    };
+    let payload =
+        encode_use_intent(&target).map_err(|error| format!("world USE payload: {error:?}"))?;
+    let frame = oteryn_protocol_oteryn::encode_client_command(
+        session.generation,
+        &oteryn_protocol_oteryn::ClientCommandValue {
+            command_id: command.command_id,
+            command_type: COMMAND_TYPE_USE_INTENT,
+            payload: &payload,
+        },
+    )?;
+    let held = authority.root.issue_ready_semantic_pass().await?;
+    let input = inbound::receive(
+        stream,
+        authority,
+        &mut session,
+        poll::Next::Held(frame, false, tokio::time::Instant::now()),
+    )
+    .await
+    .map_err(|_| "receive world USE")?
+    .ok_or("missing world USE")?;
+    // Prove both unrelated receipts can return absence with the holder still occupied.
+    // The ladder's own PvP fence may use that holder once these checks are complete.
+    assert!(
+        authority
+            .use_event_world_object(actor, command, target.clone())
+            .await
+            .map_err(|_| "harvest probe closed on ladder")?
+            .is_none()
+    );
+    assert!(
+        authority
+            .use_cake_world_object(actor, command, &target)
+            .await
+            .is_none()
+    );
+    let work = crate::durability::DurabilityRoot::with_holder_owner(command::execute(
+        stream,
+        authority,
+        &mut session,
+        input,
+    ));
+    let mut work = std::pin::pin!(work);
+    let first = std::future::poll_fn(|cx| Poll::Ready(work.as_mut().poll(cx))).await;
+    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    match first {
+        Poll::Ready(outcome) => outcome,
+        Poll::Pending => work.await,
+    }
+    .map_err(|end| format!("world USE: {:?}", end.finish(admitted)))?;
+    Ok(())
+}
+
+#[cfg(test)]
 pub(in crate::gameplay_transport) async fn regression_item_use_with_busy_holder(
     authority: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     mut admitted: AdmittedSession,
     stream: &mut tokio::io::DuplexStream,
     item: crate::gameplay_transport::item_view::ItemKey,
+    expect_container: bool,
 ) -> Result<oteryn_protocol_oteryn::item_view::ItemHandle, Box<dyn std::error::Error>> {
     use oteryn_protocol_oteryn::world_object::{
         COMMAND_TYPE_USE_INTENT, UseIntent, UseTarget, encode_item_use_intent,
@@ -667,12 +748,33 @@ pub(in crate::gameplay_transport) async fn regression_item_use_with_busy_holder(
             &mut session,
             input,
         ));
-        let mut work = std::pin::pin!(work);
-        let first = std::future::poll_fn(|cx| Poll::Ready(work.as_mut().poll(cx))).await;
-        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
-        let outcome = match first {
-            Poll::Ready(outcome) => outcome,
-            Poll::Pending => work.await,
+        let outcome = if expect_container {
+            use crate::gameplay_transport::loop_move::{
+                CARRIED_USE_READ_BARRIER, CarriedUseReadBarrier,
+            };
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            let barrier = std::sync::Arc::new(CarriedUseReadBarrier::default());
+            let occupy_holder = async {
+                barrier.ready.notified().await;
+                let held = authority.root.issue_ready_semantic_pass().await?;
+                barrier.held.notify_one();
+                barrier.refused.notified().await;
+                held.run(|_, _| Box::pin(async { Ok(()) })).await
+            };
+            let (outcome, released) = tokio::join!(
+                CARRIED_USE_READ_BARRIER.scope(std::sync::Arc::clone(&barrier), work),
+                occupy_holder,
+            );
+            released?;
+            outcome
+        } else {
+            let mut work = std::pin::pin!(work);
+            let first = std::future::poll_fn(|cx| Poll::Ready(work.as_mut().poll(cx))).await;
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            match first {
+                Poll::Ready(outcome) => outcome,
+                Poll::Pending => work.await,
+            }
         };
         outcome.map_err(|end| format!("first readmitted item USE: {:?}", end.finish(admitted)))?;
     }

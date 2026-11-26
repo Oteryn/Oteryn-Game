@@ -17,14 +17,8 @@ pub(in crate::gameplay_transport) struct PendingLampUse {
 }
 
 #[derive(Debug,Clone)]
-enum Work { ReceiptProbe, Place(Box<HirelingLampPlacement>), ProjectCommitted }
+enum Work { Place(Box<HirelingLampPlacement>), ProjectCommitted }
 
-pub(super) enum Resolution { Decided(UseDisposition), NoReceipt }
-impl Resolution {
-    pub(super) fn disposition(self)->Option<UseDisposition>{
-        match self {Self::Decided(result)=>Some(result),Self::NoReceipt=>None}
-    }
-}
 
 impl PendingLampUse {
     pub(in crate::gameplay_transport) fn prepared(
@@ -67,18 +61,15 @@ pub(super) async fn replay(
     let fence=command.item_fence.ok_or(())?;
     let reply=owner.root.read_hireling_receipt_state(owner.character,fence,command.command_id,input.binding()).await;
     match reply {
-        Ok(HirelingReceiptRead::Missing)=>Ok(None),
-        Ok(HirelingReceiptRead::Found(Reply::Committed))|Err(_)=>{
-            let committed=matches!(reply,Ok(HirelingReceiptRead::Found(Reply::Committed)));
-            let mut pending=PendingLampUse::committed(actor,command,input).ok_or(())?;
-            if !committed {pending.work=Work::ReceiptProbe;}
+        Ok(HirelingReceiptRead::Missing)|Err(_)=>Ok(Some(crate::gameplay_transport::use_receipt_refused(command,"hireling_replay").disposition)),
+        Ok(HirelingReceiptRead::Found(Reply::Committed))=>{
+            let pending=PendingLampUse::committed(actor,command,input).ok_or(())?;
             let runtime=owner.runtime.lock().await;
             runtime.house_actor_state(actor,command.game_session_id).map_err(|_|())?;
             let mut states=owner.states.spell_states.lock().await;
             if !pending.park(&mut states){return Err(())}
             drop(states);drop(runtime);
-            if committed {finish(owner,actor,command.game_session_id,Reply::Committed).await.map(Some).ok_or(())}
-                else {Err(())}
+            finish(owner,actor,command.game_session_id,Reply::Committed).await.map(Some).ok_or(())
         }
         Ok(HirelingReceiptRead::Conflict|HirelingReceiptRead::Found(_))=>Ok(Some(UseDisposition::Rejected)),
     }
@@ -87,7 +78,7 @@ pub(super) async fn replay(
 /// Do not acquire the lane again: initial USE and the resolver both already hold it.
 pub(super) async fn run_parked(
     owner:&ComposedFreshAdmission<'_,'_,'_>,actor:ExactActorRef,session:GameSessionId,
-) -> Option<Resolution> {
+) -> Option<UseDisposition> {
     let pending=owner.states.spell_states.lock().await.pending_hireling_lamps.iter()
         .find(|p|p.actor==actor&&p.session==session).cloned()?;
     let reply=match owner.root.read_hireling_receipt_state(owner.character,pending.fence,
@@ -95,11 +86,6 @@ pub(super) async fn run_parked(
         HirelingReceiptRead::Found(reply)=>reply,
         HirelingReceiptRead::Conflict=>Reply::Refused(Refusal::Conflict),
         HirelingReceiptRead::Missing=>{
-            if matches!(pending.work,Work::ReceiptProbe) {
-                // No value was attempted: the failed read had only prevented an unsafe ack.
-                remove(owner,actor,session,pending.command_id).await?;
-                return Some(Resolution::NoReceipt);
-            }
             let Work::Place(plan)=&pending.work else{return None};
             // An uncommitted retry retains its real position predecessor. Committed replay
             // deliberately skips this check and publishes the present durable House state.
@@ -127,7 +113,7 @@ pub(super) async fn run_parked(
             }
         }
     };
-    finish(owner,actor,session,reply).await.map(Resolution::Decided)
+    finish(owner,actor,session,reply).await
 }
 
 async fn finish(owner:&ComposedFreshAdmission<'_,'_,'_>,actor:ExactActorRef,session:GameSessionId,
@@ -157,13 +143,6 @@ async fn finish(owner:&ComposedFreshAdmission<'_,'_,'_>,actor:ExactActorRef,sess
     states.pending_hireling_lamps.swap_remove(index);
     super::super::item_use::remember_hireling_result(&mut states,actor,session,command.command_id,disposition);
     Some(disposition)
-}
-
-async fn remove(owner:&ComposedFreshAdmission<'_,'_,'_>,actor:ExactActorRef,session:GameSessionId,
-    command:u64)->Option<()> {
-    let mut states=owner.states.spell_states.lock().await;
-    let index=states.pending_hireling_lamps.iter().position(|p|p.actor==actor&&p.session==session&&p.command_id==command)?;
-    states.pending_hireling_lamps.swap_remove(index);Some(())
 }
 
 pub(in crate::gameplay_transport) async fn resolve(
