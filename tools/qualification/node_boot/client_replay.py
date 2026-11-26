@@ -129,7 +129,7 @@ def replay_targets():
     targets["e2e_i07"] = [(
         "oteryn-client", "e2e_i07_real_replies_replay_through_play_outbox",
         {"i07-expected.txt"}
-        | {f"i07-{key}{suffix}" for key in range(1, 24) for suffix in (".json", "-request.bin")},
+        | {f"i07-{key}{suffix}" for key in range(1, 21) for suffix in (".json", "-request.bin")},
     )]
     return targets
 
@@ -152,10 +152,10 @@ def read_i07_live_session(log, captures):
         return values
 
     try:
-        for key in range(1, 24):
+        for key in range(1, 21):
             envelope = json.loads((captures / f"i07-{key}.json").read_text(),
                                   object_pairs_hook=read_fields)
-            if not isinstance(envelope, dict) or envelope["game_session_id"] != (first if key < 11 else relog):
+            if not isinstance(envelope, dict) or envelope["game_session_id"] != (first if key < 12 else relog):
                 return None
     except (OSError, ValueError):
         return None

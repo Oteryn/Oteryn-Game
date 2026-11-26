@@ -387,7 +387,13 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         false,
     );
     type ReplayStep<'a> = (Action, &'a [([u8; 16], bool)], Option<&'a str>);
-    let steps: [ReplayStep<'_>; 23] = [
+    let unassigned_pouch = route(
+        None,
+        QuickLootRecipient::GoldPouch,
+        Some(expected.pouch),
+        false,
+    );
+    let steps: [ReplayStep<'_>; 20] = [
         (
             Action::Add {
                 mode: skip,
@@ -404,8 +410,9 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             &[],
             None,
         ),
+        (unassigned_pouch.clone(), &[], None),
+        (gold, &[], None),
         (main.clone(), &[], None),
-        (gold.clone(), &[], None),
         (
             Action::LootAll,
             &[
@@ -504,19 +511,6 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             &[],
             None,
         ),
-        (
-            route(
-                None,
-                QuickLootRecipient::GoldPouch,
-                Some(expected.pouch),
-                false,
-            ),
-            &[],
-            None,
-        ),
-        (gold, &[], None),
-        (gold_main.clone(), &[], None),
-        (main.clone(), &[], None),
     ];
     let (mut app, mut commands, outbox) = ui::fixture(true)?;
     app.add_plugins(bevy::ui_widgets::ButtonPlugin);
@@ -531,8 +525,8 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     let mut previous = (0, 0);
     for (index, (action, expected_items, notice)) in steps.into_iter().enumerate() {
         let key = index + 1;
-        let session_index = usize::from(key >= 11);
-        if key == 11 {
+        let session_index = usize::from(key >= 12);
+        if key == 12 {
             outbox.discovery_initialize(&Selected);
             previous = (0, 0);
             let panel = ui::link(&app)?.discovery_panel().loot;
@@ -541,7 +535,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         }
         let reply: Reply =
             serde_json::from_slice(&std::fs::read(directory.join(format!("i07-{key}.json")))?)?;
-        let status = if matches!(key, 18 | 19) {
+        let status = if matches!(key, 19 | 20) {
             CommandStatus::Rejected
         } else {
             CommandStatus::Accepted
@@ -552,7 +546,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             "I07 probe {key}"
         );
         previous = (reply.command_id, reply.server_sequence);
-        if key == 1 || key == 11 {
+        if key == 1 || key == 12 {
             sessions[session_index].clone_from(&reply.game_session_id);
         }
         assert_eq!(
@@ -560,7 +554,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             "I07 probe {key}"
         );
         let mode = |mode| (mode as u8).to_string();
-        let dispatched = if matches!(key, 3 | 6 | 13 | 21 | 22 | 23) {
+        let dispatched = if matches!(key, 4 | 5 | 7 | 14) {
             ui::click_action(&mut app, action)?;
             true
         } else {
@@ -636,7 +630,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         );
         let panel = link.discovery_panel().loot;
         assert_eq!(panel.pending, None);
-        if matches!(key, 18 | 19) {
+        if matches!(key, 19 | 20) {
             assert_eq!(panel.destinations, before_panel.destinations);
             assert_eq!(panel.result, before_panel.result);
             assert_eq!(notices(), before);
@@ -673,7 +667,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                     .is_some_and(|line| line.ends_with(notice))
             );
         }
-        if key == 10 {
+        if key == 11 {
             assert_eq!(panel.skipped, [expected.skip].into_iter().collect());
             assert_eq!(
                 panel.accepted,

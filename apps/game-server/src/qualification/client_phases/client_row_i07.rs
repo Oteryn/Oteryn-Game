@@ -292,7 +292,7 @@ impl Capture<'_> {
             .session_mut()
             .gated_command(98, 114, &payload)
             .await?;
-        let expected_status = if matches!(key, 18 | 19) {
+        let expected_status = if matches!(key, 19 | 20) {
             CommandStatus::Rejected
         } else {
             CommandStatus::Accepted
@@ -506,12 +506,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .await?;
     require_filters(&mut database, character, true, &expected_filters[..2]).await?;
-    capture.probe(&mut client, 3, unassigned, &[]).await?;
+    let unassigned_pouch = route(None, QuickLootRecipient::GoldPouch, Some(pouch), false);
+    capture.probe(&mut client, 3, unassigned_pouch, &[]).await?;
     capture.probe(&mut client, 4, gold_route, &[]).await?;
+    // Restore a distinct Unassigned route before testing Gold transfer.
+    capture.probe(&mut client, 5, unassigned, &[]).await?;
     capture
         .probe(
             &mut client,
-            5,
+            6,
             request(QuickLootAction::LootAll),
             &[
                 (coin, true),
@@ -540,17 +543,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         None,
         false,
     );
-    capture.probe(&mut client, 6, gold_main, &[]).await?;
+    capture.probe(&mut client, 7, gold_main, &[]).await?;
     capture
-        .probe(&mut client, 7, armor_route(false), &[])
+        .probe(&mut client, 8, armor_route(false), &[])
         .await?;
-    capture.probe(&mut client, 8, accept, &[]).await?;
+    capture.probe(&mut client, 9, accept, &[]).await?;
     require_filters(&mut database, character, true, &expected_filters).await?;
     require_routes(&mut database, character, &pouch, false, true).await?;
     capture
         .probe(
             &mut client,
-            9,
+            10,
             request(QuickLootAction::LootAll),
             &[
                 (armor, false),
@@ -599,7 +602,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     );
 
     capture
-        .probe(&mut client, 10, armor_route(true), &[])
+        .probe(&mut client, 11, armor_route(true), &[])
         .await?;
     require_routes(&mut database, character, &pouch, true, true).await?;
     require_logout(&mut client).await?;
@@ -654,7 +657,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     capture
         .probe(
             &mut fresh,
-            11,
+            12,
             request(QuickLootAction::LootAll),
             &[
                 (armor, true),
@@ -704,7 +707,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     // Manual click bypasses the active Accept filter and targets only this corpse.
     capture
-        .probe(&mut fresh, 12, click, &[(filtered, true)])
+        .probe(&mut fresh, 13, click, &[(filtered, true)])
         .await?;
     let mut bag_filtered = filtered.clone();
     bag_filtered.slot = expected_backpack
@@ -750,7 +753,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     capture
         .probe(
             &mut fresh,
-            13,
+            14,
             QuickLootRequest {
                 filter_mode: Some(QuickLootFilterMode::Skip),
                 ..request(QuickLootAction::FilterSelect)
@@ -759,12 +762,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .await?;
     require_filters(&mut database, character, false, &expected_filters).await?;
-    let unassigned_pouch = route(None, QuickLootRecipient::GoldPouch, Some(pouch), false);
-    capture.probe(&mut fresh, 14, unassigned_pouch, &[]).await?;
+    capture.probe(&mut fresh, 15, unassigned_pouch, &[]).await?;
     capture
         .probe(
             &mut fresh,
-            15,
+            16,
             request(QuickLootAction::LootAll),
             &[(other, false), (listed, false), (spare, false)],
         )
@@ -785,11 +787,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &expected_backpack,
     )
     .await?;
-    capture.probe(&mut fresh, 16, unassigned, &[]).await?;
+    capture.probe(&mut fresh, 17, unassigned, &[]).await?;
     capture
         .probe(
             &mut fresh,
-            17,
+            18,
             request(QuickLootAction::LootAll),
             &[(other, true), (listed, false), (spare, false)],
         )
@@ -833,7 +835,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     capture
         .probe(
             &mut fresh,
-            18,
+            19,
             route(None, QuickLootRecipient::GoldPouch, Some(backpack), true),
             &[],
         )
@@ -842,7 +844,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     capture
         .probe(
             &mut fresh,
-            19,
+            20,
             QuickLootRequest {
                 selected_item: Some(listed.item.as_slice().try_into()?),
                 ..click
@@ -867,11 +869,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     evidence("I07_SELECTED_CLICK sibling=retained foreign_item=rejected");
-    // Confirm a pouch route on this session before clicking the native Use gold pouch button.
-    capture.probe(&mut fresh, 20, unassigned_pouch, &[]).await?;
-    capture.probe(&mut fresh, 21, gold_route, &[]).await?;
-    capture.probe(&mut fresh, 22, gold_main, &[]).await?;
-    capture.probe(&mut fresh, 23, unassigned, &[]).await?;
     require_logout(&mut fresh).await?;
     drop(fresh);
     let mut readback = connect_world(clients, 0x07).await?;
