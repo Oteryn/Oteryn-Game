@@ -51,12 +51,17 @@ impl Comparison {
 #[derive(Debug, Clone, Deserialize)]
 pub struct Rule {
     pub creature: String,
+    #[serde(default)]
+    creature_aliases: Vec<String>,
     pub transition: String,
     pub effects: Vec<Effect>,
     pub room: Option<[i32; 5]>,
     /// A qualified local source rule may require the present most-damage player.
     #[serde(default)]
     pub top_damage_only: bool,
+    /// Crystal onDeathForParty uses the present top-damage player's shared-XP roster.
+    #[serde(default)]
+    pub top_damage_party: bool,
     define_transition: bool,
     /// Only mission-start guards are revision predecessors for cumulative counters.
     /// Counter increments from earlier queued deaths must not invalidate later ones.
@@ -65,14 +70,30 @@ pub struct Rule {
     pub quest: String,
 }
 impl Rule {
+    pub fn matches_creature(&self, creature: &str) -> bool {
+        self.creature == creature || self.creature_aliases.iter().any(|alias| alias == creature)
+    }
+
     pub fn active(&self, tracks: &BTreeMap<String, i64>) -> bool {
         self.effects.iter().all(|e| {
             e.from
                 .accepts(tracks.get(&e.track).copied().unwrap_or(e.default))
         })
     }
-    /// Source room bounds concern recipients, not damage ownership or social party.
+    /// Room or damage evidence without a qualified party observation.
     pub fn recipient(&self, position: [i32; 3], dealt_damage: bool) -> bool {
+        self.recipient_with_party(position, dealt_damage, false)
+    }
+
+    pub fn recipient_with_party(
+        &self,
+        position: [i32; 3],
+        dealt_damage: bool,
+        in_top_damage_party: bool,
+    ) -> bool {
+        if self.top_damage_party {
+            return in_top_damage_party;
+        }
         match self.room {
             Some([x1, y1, x2, y2, z]) => {
                 position[2] == z
@@ -144,6 +165,8 @@ const DOCUMENTS: &[&[u8]] = &[
     include_bytes!(
         "../../../../../content/quests/native-death-bindings/quest-batch3-c-the_primal_ordeal.json"
     ),
+    include_bytes!("../../../../../content/quests/native-death-bindings/secret-service.json"),
+    include_bytes!("../../../../../content/quests/native-death-bindings/thieves-guild.json"),
 ];
 fn documents() -> Result<Vec<Document>, String> {
     let mut documents: Vec<Document> = DOCUMENTS
@@ -173,6 +196,7 @@ fn documents() -> Result<Vec<Document>, String> {
             .into_iter()
             .map(|element| Rule {
                 creature: format!("oteryn:creature.{element}_overlord"),
+                creature_aliases: Vec::new(),
                 transition: format!(
                     "oteryn:quest-transition/elemental-spheres/{element}-overlord-death"
                 ),
@@ -188,6 +212,7 @@ fn documents() -> Result<Vec<Document>, String> {
                 }],
                 room: None,
                 top_damage_only: false,
+                top_damage_party: false,
                 define_transition: true,
                 epoch_tracks: None,
                 quest: String::new(),
@@ -240,10 +265,12 @@ fn arbaziloth_first_clear_rules() -> [Rule; 3] {
     };
     let rule = |name, effects| Rule {
         creature: "oteryn:creature.arbaziloth".into(),
+        creature_aliases: Vec::new(),
         transition: String::from(name),
         effects,
         room: None,
         top_damage_only: false,
+        top_damage_party: false,
         define_transition: true,
         epoch_tracks: None,
         quest: ARBAZILOTH_QUEST.into(),
@@ -287,10 +314,12 @@ fn arbaziloth_hard_rules() -> Vec<Rule> {
     };
     let hard_rule = |suffix: &str, effects| Rule {
         creature: ARBAZILOTH_ENRAGED.into(),
+        creature_aliases: Vec::new(),
         transition: format!("oteryn:quest-transition/native/no_rest_for_the_wicked/{suffix}"),
         effects,
         room: None,
         top_damage_only: false,
+        top_damage_party: false,
         define_transition: true,
         epoch_tracks: Some(vec![DOOR.into()]),
         quest: ARBAZILOTH_QUEST.into(),
@@ -379,6 +408,7 @@ pub fn rules() -> Result<&'static [Rule], &'static str> {
                         return Err("invalid source death mission guards".into());
                     }
                     if rule.effects.is_empty()
+                        || (rule.top_damage_party && (rule.top_damage_only || rule.room.is_some()))
                         || rule.effects.iter().any(|e| e.from.comparison().is_err())
                         || rules.iter().any(|r: &Rule| r.transition == rule.transition)
                     {
@@ -396,8 +426,32 @@ pub fn rule(key: &str) -> Option<&'static Rule> {
     rules().ok()?.iter().find(|rule| rule.transition == key)
 }
 pub fn tracks_creature(creature: &str) -> bool {
-    rules().is_ok_and(|rules| rules.iter().any(|rule| rule.creature == creature))
+    rules().is_ok_and(|rules| rules.iter().any(|rule| rule.matches_creature(creature)))
 }
+
+#[cfg(test)]
+#[test]
+fn black_knight_loads_the_avin_damage_objective() -> Result<(), String> {
+    let catalogue = super::loader::load_embedded_quest_state("cq16-test")
+        .map_err(|error| format!("{error:?}"))?;
+    let track = "oteryn:quest-progress/quest/u8_1/secret_service/avinmission04";
+    let transition =
+        "oteryn:quest-transition/quest/u8_1/secret_service/avinmission04/creature_event_1";
+    assert!(catalogue.catalogue().transition(transition).is_some());
+    let binding = rule(transition).ok_or("Black Knight native death binding")?;
+    assert_eq!(binding.creature, "oteryn:creature.black_knight");
+    assert!(!binding.top_damage_only);
+    assert!(binding.recipient([0, 0, -7], true));
+    assert!(!binding.recipient([0, 0, -7], false));
+    for value in [0, 1, 2, 3] {
+        assert_eq!(
+            binding.active(&BTreeMap::from([(track.into(), value)])),
+            value == 1
+        );
+    }
+    Ok(())
+}
+
 pub fn active(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
     rules().map_or_else(
         |_| Vec::new(),

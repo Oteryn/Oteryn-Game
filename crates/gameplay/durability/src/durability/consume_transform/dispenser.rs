@@ -34,10 +34,30 @@ pub(super) async fn prepare(
     }
     let placed = match context {
         ActionContext::DispenserTarget(ground) => ground.dispenser_row(tx, fence, target).await?,
+        ActionContext::DispenserMapTarget(frozen) => {
+            let (world, channel) = super::super::item_transfer::scope_of(&fence)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            let at = frozen
+                .placement()
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            let position =
+                super::super::map_item_mint_audit::map_item_spatial_position(at.x, at.y, at.floor);
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))")
+                .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).execute(&mut ***tx).await?;
+
+            sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,decode(repeat('00',16),'hex') AS parent,g.stack_ordinal::text AS ordinal,3::integer AS source_kind,to_jsonb(g) AS ground_location FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 AND i.quantity=1 AND g.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND g.scope_kind=1 AND g.runtime_scope_ownership_generation=$4::text::numeric AND g.stack_ordinal IS NOT NULL AND g.spatial_position=$5 AND game_item_loop_map_mint_source(i.item_instance_id) FOR UPDATE OF i")
+                .bind(target.as_slice()).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
+                .bind(fence.scope_ownership_generation.get().to_string()).bind(position)
+                .fetch_optional(&mut ***tx).await?
+        }
         ActionContext::DispenserHouseTarget(house) => house.dispenser_row(tx, node, target).await?,
         _ => None,
     };
-    let row = if placed.is_some() || matches!(context, ActionContext::DispenserTarget(_)) {
+    let row = if placed.is_some()
+        || matches!(
+            context,
+            ActionContext::DispenserTarget(_) | ActionContext::DispenserMapTarget(_)
+        ) {
         placed
     } else {
         sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,uuid_send(coalesce(e.parent_item_instance_id,n.parent_item_instance_id)) AS parent,coalesce(e.placement_ordinal,n.placement_ordinal)::text AS ordinal,CASE WHEN n.item_instance_id IS NULL THEN 1 ELSE 4 END AS source_kind FROM game_item_instances i LEFT JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id AND e.character_id=encode($2,'hex')::uuid LEFT JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id LEFT JOIN game_item_nested_entries n ON n.item_instance_id=i.item_instance_id LEFT JOIN LATERAL game_item_loop_owner(n.parent_item_instance_id) owner ON n.item_instance_id IS NOT NULL WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.quantity=1 AND ((e.world_id=i.world_id AND b.world_id=i.world_id) OR (n.world_id=i.world_id AND owner.owner_character=encode($2,'hex')::uuid AND owner.depth BETWEEN 0 AND 7)) FOR UPDATE OF i")

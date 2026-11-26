@@ -288,7 +288,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if tile(client.world_spatial().actor_position)? != start {
         return Err("step=restore-position;observed=not-at-start".into());
     }
-    let (result, detail, ..) = logout_retrying_busy(&mut client).await?;
+    let (result, detail, ..) = logout_once(&mut client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=logout;observed={detail}").into());
     }

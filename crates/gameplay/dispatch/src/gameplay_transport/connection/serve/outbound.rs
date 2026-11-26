@@ -182,6 +182,14 @@ where
             | Dispatch::NpcShop(..)
             | Dispatch::Reply(crate::foundation::CommandStatus::Accepted, _)
     );
+    let committed_store_claim = matches!(
+        &dispatch,
+        Dispatch::Reply(status, payload)
+            if routing::store::is_committed_claim(command.command_type, *status, payload)
+    );
+    if committed_store_claim {
+        session.inventory_capacity_refresh_at = None;
+    }
     match dispatch {
         Dispatch::NoLogout | Dispatch::Logout(LogoutResult::InFight { .. }) => {
             use oteryn_protocol_oteryn::zones_nologout::{IN_FIGHT_MESSAGE, NO_LOGOUT_MESSAGE};
@@ -345,7 +353,8 @@ where
                 || (command.command_type
                     == u32::from(oteryn_protocol_oteryn::mail::COMMAND_TYPE_MAIL)
                     && payload.as_slice()
-                        == [oteryn_protocol_oteryn::mail::MailOutcome::TextWritten as u8]) =>
+                        == [oteryn_protocol_oteryn::mail::MailOutcome::TextWritten as u8])
+                || (committed_store_claim && session.item_view.is_some()) =>
         {
             if command.command_type
                 == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH

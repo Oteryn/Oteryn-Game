@@ -77,7 +77,7 @@ async fn accepted(
 }
 
 async fn finish(client: &mut DevClientSession) -> TestResult {
-    let (result, reply, attempts, busy_timed_out) = logout_retrying_busy(client).await?;
+    let (result, reply, attempts, busy_timed_out) = logout_once(client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!(
             "step=logout observed={reply} attempts={attempts} busy_timed_out={busy_timed_out}"
