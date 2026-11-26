@@ -445,9 +445,9 @@ async fn scenario_inner(
             .ok_or("spell index")?;
         let (definition, _) = deps.spells.source_indexed(spell).ok_or("spell profile")?;
         let policy = &definition.authored.as_ref().ok_or("cast policy")?.header.targeting;
-        let position_cast = matches!(targeting, Targeting::PositionOnly);
-        assert_eq!(policy.cast_at_position, Some(position_cast), "{key}");
-        assert_eq!(policy.needs_target, !position_cast, "{key}");
+        let needs_target = !matches!(targeting, Targeting::PositionOnly);
+        assert_eq!(policy.cast_at_position, Some(true), "{key}");
+        assert_eq!(policy.needs_target, needs_target, "{key}");
         if index > 0 {
             // Clear the 2 s attack group cooldown of the previous cast.
             owner.clock_origin = owner

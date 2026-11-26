@@ -5735,7 +5735,7 @@
                         "const": true
                       },
                       "base_power": {
-                        "const": 85
+                        "const": 75
                       },
                       "schedule_bound": {
                         "const": 1
@@ -31353,7 +31353,7 @@
             },
             "cast_at_position": {
               "$ref": "#/$defs/bool",
-              "description": "S20: the spell may be cast at a chosen position: with crosshair, at the cursor or at the target (Canary 15.30 spell:optionalTarget)."
+              "description": "S20: the spell may be cast at a chosen position: with crosshair, at the cursor or at the target (Canary 15.30 spell:optionalTarget). For a target-required instant attack, the held creature takes precedence."
             },
             "allowed_targets": {
               "enum": [
@@ -31395,25 +31395,6 @@
                 "required": [
                   "needs_direction"
                 ]
-              }
-            },
-            {
-              "if": {
-                "properties": {
-                  "cast_at_position": {
-                    "const": true
-                  }
-                },
-                "required": [
-                  "cast_at_position"
-                ]
-              },
-              "then": {
-                "properties": {
-                  "needs_target": {
-                    "const": false
-                  }
-                }
               }
             },
             {
@@ -31548,6 +31529,46 @@
             "required": [
               "rune"
             ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "targeting": {
+                "required": [
+                  "cast_at_position",
+                  "needs_target"
+                ],
+                "properties": {
+                  "cast_at_position": {
+                    "const": true
+                  },
+                  "needs_target": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "carrier": {
+                "const": "instant"
+              },
+              "targeting": {
+                "properties": {
+                  "aggressive": {
+                    "const": true
+                  },
+                  "self_target": {
+                    "const": false
+                  },
+                  "needs_direction": {
+                    "const": false
+                  }
+                }
+              }
+            }
           }
         },
         {

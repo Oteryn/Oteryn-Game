@@ -1807,7 +1807,7 @@
           "learning_required": false
         },
         "costs": {
-          "mana": 155,
+          "mana": 150,
           "soul": 0
         },
         "cooldown_ms": 6000,
@@ -1835,7 +1835,7 @@
         "presentation": {
           "cast_cue": "canary.sound:spell_or_rune"
         },
-        "base_power": 85,
+        "base_power": 75,
         "execution": {
           "native_behavior": {
             "key": "delayed_strike",
@@ -1843,7 +1843,7 @@
               "spell_name": "death echo",
               "delay_ms": 1000,
               "requires_caster_online": true,
-              "base_power": 85,
+              "base_power": 75,
               "schedule_bound": 1,
               "repeat_resource_cost": false,
               "position_source": "cast_position",
@@ -1971,7 +1971,7 @@
             "spell_name": "death echo",
             "delay_ms": 1000,
             "requires_caster_online": true,
-            "base_power": 85,
+            "base_power": 75,
             "schedule_bound": 1,
             "repeat_resource_cost": false,
             "position_source": "cast_position",
@@ -2427,7 +2427,7 @@
             "paladin",
             "royal_paladin"
           ],
-          "level": 300,
+          "level": 0,
           "premium": true,
           "learning_required": false,
           "wheel_unlock": true
@@ -2452,7 +2452,7 @@
           "block_walls": true,
           "allow_on_self": true,
           "check_floor": true,
-          "range_tiles": 7,
+          "range_tiles": 4,
           "parameter": "none",
           "cast_at_position": true
         },

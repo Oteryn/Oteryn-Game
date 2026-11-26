@@ -114,7 +114,7 @@ class C18bSpellPolicyTests(unittest.TestCase):
                     (path, source_field, line),
                 )
                 self.assertTrue(proof["resolution"].startswith("C18b:"))
-                self.assertFalse(spell["targeting"]["cast_at_position"])
+                self.assertTrue(spell["targeting"]["cast_at_position"])
                 self.assert_manifest_identity(row)
 
     def test_source_projection_requires_proof_for_global_native_header_values(self):
@@ -174,7 +174,10 @@ class C18bSpellPolicyTests(unittest.TestCase):
                 if name not in names:
                     continue
                 with self.subTest(catalog=label, name=name):
-                    for expected_name, section, field, _, expected, _, _ in HEADERS:
+                    for expected_name, section, field, _, expected, *_ in (
+                        *GLOBAL_HEADERS,
+                        *BARRAGE_HEADERS,
+                    ):
                         if expected_name == name:
                             self.assertEqual(
                                 row["bundle"]["spell"][section][field], expected
