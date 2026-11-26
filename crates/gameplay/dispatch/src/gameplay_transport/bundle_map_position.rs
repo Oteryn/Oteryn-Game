@@ -1,5 +1,7 @@
 //! Domain-17 composition under the booted reset epoch.
 use super::*;
+use crate::content::item_ref::ITEM_FAMILY;
+use std::num::NonZeroU32;
 
 /// MAP-CUTOVER-1b: domain 17 of the bundle World `movement_cells` carry, at `actor`'s current
 /// position in `runtime`; `None` on a fixture World or when the actor has no current position.
@@ -13,7 +15,7 @@ pub(super) fn bundle_world_map(
     items: &mut item_view::SessionItemView,
 ) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
     let at = bundle_map_position(runtime, movement_cells, actor)?;
-    Some(at.update(view, items, None, 0))
+    Some(at.update(view, items, None, 0, &[]))
 }
 
 /// What domain 17 needs from the Channel runtime: the bundle map, the actor's native position
@@ -34,6 +36,7 @@ impl BundleMapPosition<'_> {
         items: &mut item_view::SessionItemView,
         ground: Option<&loop_move::LoopGroundOverlay>,
         reset_epoch: u64,
+        exercise_dummies: &[NonZeroU32],
     ) -> Result<Option<world_map::MapUpdate>, world_map::MapViewError> {
         // MAP-DOOR-1 (Codex 4239177726): one read of every door's state, so each door's
         // appearance and object revision in this update agree.
@@ -47,7 +50,7 @@ impl BundleMapPosition<'_> {
                     content_generation: self.content_generation,
                     reset_epoch,
                 };
-                view.update(items, &source, self.at)
+                view.update_with_exercise_dummies(items, &source, self.at, exercise_dummies)
             }
             None => {
                 let source = world_map::MapViewSource {
@@ -56,7 +59,7 @@ impl BundleMapPosition<'_> {
                     content_generation: self.content_generation,
                     reset_epoch,
                 };
-                view.update(items, &source, self.at)
+                view.update_with_exercise_dummies(items, &source, self.at, exercise_dummies)
             }
         }
     }
@@ -110,5 +113,22 @@ pub(super) async fn observe(
     };
     // ITEM-LOOP-1: the dropped items, read after the runtime lock is released.
     let ground = loop_move::loop_ground(admission, at.map.overlay.base(), index).await?;
-    Some(at.update(view, items, Some(&ground), admission.reset_epoch))
+    let exercise_dummies = index
+        .zip(admission.states.training.config.as_deref())
+        .filter(|(_, rates)| rates.enabled)
+        .map(|(index, rates)| {
+            rates
+                .dummies
+                .keys()
+                .filter_map(|key| index.definition_ref(ITEM_FAMILY, key, index.revision(key)?))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    Some(at.update(
+        view,
+        items,
+        Some(&ground),
+        admission.reset_epoch,
+        &exercise_dummies,
+    ))
 }

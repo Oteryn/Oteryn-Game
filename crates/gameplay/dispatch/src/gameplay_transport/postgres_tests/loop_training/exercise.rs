@@ -19,9 +19,12 @@ fn field(out: &mut Vec<u8>, key: u8, mut value: u64) {
 }
 #[test]
 fn loop_training_postgres_exercise_real_wire_atomic_stop_replay_fence_and_reload() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario(ExerciseCase::AtomicStop, None).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(ExerciseCase::AtomicStop, Some(admin)).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "exercise PG panic")??;
     Ok(())
@@ -349,6 +352,47 @@ enum ExerciseCase {
     NodeBoot,
     SecondStart,
     TerminalReadback,
+}
+
+async fn assert_dummy_refuses_move(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    command: UseCommand,
+    dummy: oteryn_protocol_oteryn::item_view::ItemHandle,
+    items: &mut SessionItemView,
+) -> TestResult {
+    use crate::gameplay_transport::item_move::{ItemMoveStep, item_move};
+    use oteryn_protocol_oteryn::item_view::{
+        ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection,
+        encode_item_move_intent_for,
+    };
+
+    let selection = ItemMoveSelection::default();
+    let payload = encode_item_move_intent_for(
+        &ItemMoveIntent {
+            source: dummy,
+            destination: ItemMoveDestination::MainBackpack,
+        },
+        selection,
+    )
+    .map_err(debug)?;
+    assert_eq!(
+        item_move(
+            owner,
+            actor,
+            UseCommand {
+                command_id: 20,
+                ..command
+            },
+            &payload,
+            selection,
+            false,
+            items,
+        )
+        .await,
+        ItemMoveStep::Result(ItemMoveOutcome::Stale, Vec::new())
+    );
+    Ok(())
 }
 
 fn scenario(case: ExerciseCase, admin: Option<String>) -> TestResult {
@@ -684,18 +728,36 @@ fn scenario(case: ExerciseCase, admin: Option<String>) -> TestResult {
         };
         let weapon = ItemKey::Instance(id(72));
         let mut items = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
-        let (wh, dh) = items
-            .map_view(&[weapon, dummy], |table| {
-                Ok((
-                    table.handle(&weapon).ok_or(
-                        crate::gameplay_transport::item_view::ItemViewError::LimitExceeded,
-                    )?,
-                    table.handle(&dummy).ok_or(
-                        crate::gameplay_transport::item_view::ItemViewError::LimitExceeded,
-                    )?,
-                ))
-            })
+        items
+            .snapshot(
+                owner
+                    .observe_character_inventory(deps.actor, admitted.game_session_id)
+                    .await
+                    .ok_or("training inventory")?,
+                None,
+            )
             .map_err(debug)?;
+        use crate::gameplay_transport::world_map::{MapUpdate, SessionMapView};
+        use oteryn_protocol_oteryn::world_map::{MapOrigin, decode_world_map_snapshot};
+        let Some(MapUpdate::Snapshot(snapshot)) = owner
+            .observe_world_map(deps.actor, &mut SessionMapView::default(), &mut items)
+            .await
+            .ok_or("training map")?
+            .map_err(debug)?
+        else {
+            return Err("training map snapshot".into());
+        };
+        let snapshot = decode_world_map_snapshot(&snapshot.payload).map_err(debug)?;
+        let dh = snapshot
+            .tiles
+            .iter()
+            .flat_map(|tile| &tile.items)
+            .find_map(|item| match item.origin {
+                MapOrigin::Handle(handle) if items.resolve(handle) == Some(dummy) => Some(handle),
+                _ => None,
+            })
+            .ok_or("authored dummy MapBase handle")?;
+        let wh = items.table().handle(&weapon).ok_or("exercise weapon handle")?;
         let mut start = vec![8, 1];
         field(&mut start, 16, wh.get());
         field(&mut start, 24, dh.get());
@@ -704,6 +766,26 @@ fn scenario(case: ExerciseCase, admin: Option<String>) -> TestResult {
             command_id: 1,
             item_fence: Some(fence),
         };
+        if matches!(case, ExerciseCase::AtomicStop) {
+            assert_dummy_refuses_move(&owner, deps.actor, command, dh, &mut items).await?;
+            assert_eq!(items.resolve(dh), Some(dummy));
+            let mut bad_target = vec![8, 1];
+            field(&mut bad_target, 16, wh.get());
+            field(&mut bad_target, 24, wh.get());
+            assert_eq!(
+                crate::gameplay_transport::loop_training::wire::dispatch(
+                    &owner,
+                    admitted,
+                    command,
+                    COMMAND_TYPE_EXERCISE_TRAINING,
+                    &bad_target,
+                    Some(&items),
+                )
+                .await,
+                Some(TrainingResult::REFUSED)
+            );
+            assert_eq!(owner.idle_training(admitted).await, Some(false));
+        }
         let mut without = admitted;
         without.continuity.selected_capabilities = SelectedCapabilities::NONE;
         assert_eq!(

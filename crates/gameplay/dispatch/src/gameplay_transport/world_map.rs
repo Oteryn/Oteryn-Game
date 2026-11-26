@@ -14,7 +14,8 @@
 //!   the header.
 //! - **Handles.** The handle-bearing entries within the budget are the session handle table's
 //!   map view ([`SessionItemView::map_view`]); an entry that leaves it loses its handle. A movable
-//!   leaf or read-only captured container's handle is bound to `(bundle_digest, placement_key, reset_epoch)`.
+//!   leaf, read-only captured container or exercise dummy's handle is bound to
+//!   `(bundle_digest, placement_key, reset_epoch)`.
 //! - **Targets.** [`resolve_map_target`] resolves the 40-byte `WorldObjectTargetV1` of a
 //!   `base_ordinal` entry (contract §4) and [`resolve_map_handle`] a handle-bearing entry. Command
 //!   9 from a base-entry handle is `ITEM_MOVE_OUTCOME_NOT_SUPPORTED` until MAP-PICKUP-1
@@ -43,15 +44,16 @@ use crate::map::view::{
 use oteryn_gameplay_world::map_view_diff::{Planned, SentView, encode};
 use oteryn_protocol_oteryn::item_view::ItemMoveOutcome;
 use oteryn_protocol_oteryn::world_map::{
-    DELTA_TYPE_WORLD_MAP_VIEW_DELTA_V1, MAP_TARGET_BYTES, MAX_MAP_VIEW_HANDLES, MapItem, MapOrigin,
-    MapTile, MapViewHeader, SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1, STATE_DOMAIN_WORLD_MAP_VIEW,
-    WorldMapWireError,
+    DELTA_TYPE_WORLD_MAP_VIEW_DELTA_V1, MAP_TARGET_BYTES, MAX_MAP_VIEW_HANDLES, MapDefinition,
+    MapItem, MapOrigin, MapTile, MapViewHeader, SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1,
+    STATE_DOMAIN_WORLD_MAP_VIEW, WorldMapWireError,
 };
 #[cfg(test)]
 use oteryn_protocol_oteryn::world_map::{
     MAX_DELTA_ENTRIES, WorldMapViewDelta, in_window, tile_order,
 };
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+use std::num::NonZeroU32;
 
 /// What a map view reads: the Channel overlay over its base, the per-entry facts, and the
 /// binding of the view.
@@ -180,24 +182,14 @@ impl MapPlan {
         for tile in &self.tiles {
             let mut items = Vec::with_capacity(tile.len);
             for entry in &self.entries[tile.start..tile.start + tile.len] {
-                let origin = match entry.source {
-                    EntrySource::Base {
-                        ordinal,
-                        placement_key,
-                        movable: false,
-                        openable_source: false,
-                    } => MapOrigin::BaseOrdinal {
-                        ordinal,
-                        object_revision: source.facts.object_revision(placement_key),
-                    },
-                    _ if entry.in_budget => {
-                        let key = source.item_key(entry.source.key());
-                        let handle = table
-                            .handle(&key)
-                            .ok_or(MapViewError::Items(ItemViewError::LimitExceeded))?;
-                        MapOrigin::Handle(handle)
-                    }
-                    _ => MapOrigin::DisplayOnly,
+                let origin = if entry.in_budget {
+                    let key = source.item_key(entry.source.key());
+                    let handle = table
+                        .handle(&key)
+                        .ok_or(MapViewError::Items(ItemViewError::LimitExceeded))?;
+                    MapOrigin::Handle(handle)
+                } else {
+                    entry.item.origin
                 };
                 items.push(MapItem {
                     origin,
@@ -278,7 +270,7 @@ fn plan_with<F: MapFacts>(
     actor: ActorPosition,
     buffers: PlanBuffers,
 ) -> Result<MapPlan, MapViewError> {
-    plan_with_house(source, actor, buffers, None)
+    plan_with_house(source, actor, buffers, None, &[])
 }
 
 fn plan_with_house<F: MapFacts>(
@@ -286,6 +278,7 @@ fn plan_with_house<F: MapFacts>(
     actor: ActorPosition,
     buffers: PlanBuffers,
     house: Option<&[HouseMapEntry]>,
+    exercise_dummies: &[NonZeroU32],
 ) -> Result<MapPlan, MapViewError> {
     let mut house_tiles = std::collections::BTreeMap::<TilePos, Vec<&HouseMapEntry>>::new();
     let mut unique = std::collections::BTreeSet::new();
@@ -400,16 +393,34 @@ fn plan_with_house<F: MapFacts>(
         let start = entries.len();
         for stack_index in kept {
             let entry = &stack[stack_index];
-            if entry.source.handle_bearing() {
+            // Exercise START addresses the authored dummy by handle. Its pickup facts
+            // stay those of the original base placement.
+            let exercise_dummy = matches!(entry.source, EntrySource::Base { .. })
+                && matches!(entry.facts.definition, MapDefinition::Item(reference)
+                    if exercise_dummies.contains(&reference));
+            let origin = if entry.source.handle_bearing() || exercise_dummy {
                 ranked.push((view::budget_key(at, pos, stack_index), entries.len()));
-            }
+                MapOrigin::DisplayOnly
+            } else if let EntrySource::Base {
+                ordinal,
+                placement_key,
+                ..
+            } = entry.source
+            {
+                MapOrigin::BaseOrdinal {
+                    ordinal,
+                    object_revision: source.facts.object_revision(placement_key),
+                }
+            } else {
+                MapOrigin::DisplayOnly
+            };
             entries.push(PlannedEntry {
                 source: entry.source,
                 item: MapItem {
                     definition: entry.facts.definition,
                     count: entry.facts.count,
                     sub_type: entry.facts.sub_type,
-                    origin: MapOrigin::DisplayOnly,
+                    origin,
                     appearance_id: entry.facts.appearance_id,
                 },
                 in_budget: false,
@@ -503,7 +514,23 @@ impl SessionMapView {
         source: &MapViewSource<'_, F>,
         actor: ActorPosition,
     ) -> Result<Option<MapUpdate>, MapViewError> {
-        let plan = plan_with(source, actor, std::mem::take(&mut self.buffers))?;
+        self.update_with_exercise_dummies(items, source, actor, &[])
+    }
+
+    pub(super) fn update_with_exercise_dummies<F: MapFacts>(
+        &mut self,
+        items: &mut SessionItemView,
+        source: &MapViewSource<'_, F>,
+        actor: ActorPosition,
+        exercise_dummies: &[NonZeroU32],
+    ) -> Result<Option<MapUpdate>, MapViewError> {
+        let plan = plan_with_house(
+            source,
+            actor,
+            std::mem::take(&mut self.buffers),
+            None,
+            exercise_dummies,
+        )?;
         self.update_plan(items, source, plan)
     }
 
@@ -528,6 +555,7 @@ impl SessionMapView {
             actor,
             std::mem::take(&mut self.buffers),
             Some(house),
+            &[],
         )?;
         self.update_plan(items, &source, plan)
     }

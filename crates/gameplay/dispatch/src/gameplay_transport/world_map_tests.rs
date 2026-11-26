@@ -29,6 +29,7 @@ const CHEST: u32 = 6;
 const TABLE: u32 = 7;
 const BAG: u32 = 8;
 const PILLAR: u32 = 9;
+const EXERCISE_DUMMY: u32 = 10;
 
 const ACTOR: TilePos = TilePos {
     x: 20,
@@ -158,6 +159,14 @@ fn bundle_bytes(
     tiles: Vec<(TilePos, Vec<Item>)>,
     ground_speed: u16,
 ) -> (Vec<u8>, crate::map::BundlePins) {
+    bundle_bytes_with_palette(tiles, ground_speed, None)
+}
+
+fn bundle_bytes_with_palette(
+    tiles: Vec<(TilePos, Vec<Item>)>,
+    ground_speed: u16,
+    extra_entry: Option<PaletteEntry>,
+) -> (Vec<u8>, crate::map::BundlePins) {
     let terrain = |key: &str, id, kind| PaletteEntry {
         key: key.into(),
         family: Family::Terrain,
@@ -213,7 +222,7 @@ fn bundle_bytes(
             }
         })
         .collect();
-    let manifest = Manifest {
+    let mut manifest = Manifest {
         subareas: Default::default(),
         format: bundle::LEGACY_FORMAT.into(),
         min_reader_version: bundle::LEGACY_VERSION,
@@ -250,6 +259,7 @@ fn bundle_bytes(
         spawns: Default::default(),
         npcs: Default::default(),
     };
+    manifest.palette.extend(extra_entry);
     let bytes = bundle::write(&manifest, &sectors, &Default::default()).expect("written bundle");
     let digest = bundle::read(&bytes).expect("read bundle").digest;
     let pins = crate::map::BundlePins {
@@ -292,8 +302,12 @@ impl Fixture {
     }
 
     fn with_ground_speed(tiles: Vec<(TilePos, Vec<Item>)>, ground_speed: u16) -> Self {
+        Self::with_base(base(tiles, ground_speed))
+    }
+
+    fn with_base(base: Arc<WorldBase>) -> Self {
         Self {
-            overlay: ChannelOverlay::new(base(tiles, ground_speed), world(), channel()),
+            overlay: ChannelOverlay::new(base, world(), channel()),
             facts: Facts::default(),
             reset_epoch: 1,
             items: SessionItemView::resume(ItemViewContinuity::default()).with_map_view(),
@@ -483,6 +497,60 @@ fn target(digest: [u8; 32], key: u64, expected_revision: u64) -> WorldObjectTarg
 
 fn key(pos: TilePos, ordinal: u8) -> u64 {
     view::placement_key(pos, ordinal).expect("fixture")
+}
+
+#[test]
+fn exercise_dummy_map_base_handle_survives_snapshot_and_tile_delta() {
+    let (bytes, pins) = bundle_bytes_with_palette(
+        vec![(ACTOR, vec![item(GRASS), item(EXERCISE_DUMMY), item(PILLAR)])],
+        150,
+        Some(PaletteEntry {
+            key: "oteryn:item.tibia.i28558".into(),
+            family: Family::Item,
+            id: EXERCISE_DUMMY,
+            terrain: None,
+        }),
+    );
+    let mut fixture = Fixture::with_base(Arc::new(crate::map::load(&bytes, &pins).expect("base")));
+    let dummies = [nz(EXERCISE_DUMMY)];
+    let dummy = ItemKey::MapBase {
+        bundle_digest: fixture.digest(),
+        placement_key: key(ACTOR, 1),
+        reset_epoch: fixture.reset_epoch,
+    };
+    let update = |fixture: &mut Fixture| {
+        let source = MapViewSource {
+            overlay: &fixture.overlay,
+            facts: &fixture.facts,
+            content_generation: [7; 32],
+            reset_epoch: fixture.reset_epoch,
+        };
+        fixture
+            .view
+            .update_with_exercise_dummies(&mut fixture.items, &source, at(ACTOR), &dummies)
+            .expect("map update")
+    };
+    let Some(MapUpdate::Snapshot(snapshot)) = update(&mut fixture) else {
+        panic!("expected snapshot");
+    };
+    let snapshot = decode_world_map_snapshot(&snapshot.payload).expect("decode snapshot");
+    let tile = &snapshot.tiles[0];
+    let MapOrigin::Handle(handle) = tile.items[1].origin else {
+        panic!("expected a dummy handle");
+    };
+    assert_eq!(fixture.items.resolve(handle), Some(dummy));
+    assert!(matches!(
+        tile.items[2].origin,
+        MapOrigin::BaseOrdinal { ordinal: 2, .. }
+    ));
+
+    fixture.add(ACTOR, TABLE);
+    let Some(MapUpdate::Delta(delta)) = update(&mut fixture) else {
+        panic!("expected tile delta");
+    };
+    let delta = decode_world_map_delta(&snapshot.header, &delta.payload).expect("decode delta");
+    assert_eq!(delta.tiles[0].items[1].origin, MapOrigin::Handle(handle));
+    assert_eq!(fixture.items.resolve(handle), Some(dummy));
 }
 
 // --- Composition -------------------------------------------------------------------------------
