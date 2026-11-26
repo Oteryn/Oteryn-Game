@@ -46,6 +46,14 @@ fn quick_loot_pouch_postgres_dispatch_unlimited_slots_coin_only_and_weight() -> 
 }
 
 #[test]
+fn quick_loot_pouch_relog_releases_on_one_logout_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_routed_case(admin, Case::PouchLogout)
+}
+
+#[test]
 fn quick_loot_selected_item_accepts_and_refuses_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -94,11 +102,12 @@ enum Case {
     StaleHandle,
     FilterReview,
     PouchFulfilment,
+    PouchLogout,
 }
 
 fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
     async move |admin| {
-        let pouch = matches!(case, Case::GoldPouch | Case::PouchFulfilment);
+        let pouch = matches!(case, Case::GoldPouch | Case::PouchFulfilment | Case::PouchLogout);
         let harness = Harness::create_with_admission_seed(admin, "quick_loot", true, false).await?;
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -382,7 +391,7 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
             crate::durability::map_item_mint_audit::map_item_spatial_position(9, 0, 7)
                 .try_into()
                 .map_err(|_| "far cell")?;
-        if !matches!(case, Case::Bulk | Case::GoldPouch) {
+        if !matches!(case, Case::Bulk | Case::GoldPouch | Case::PouchLogout) {
             match case {
                 Case::SelectedItem | Case::StaleHandle => {
                     selected_item_cases(
@@ -418,7 +427,7 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                 Case::PouchFulfilment => {
                     pouch_fulfilment_cases(&owner, &mut admitted, &harness.pool).await?
                 }
-                Case::Bulk | Case::GoldPouch => return Err("unexpected dedicated case".into()),
+                Case::Bulk | Case::GoldPouch | Case::PouchLogout => return Err("unexpected dedicated case".into()),
             }
             drop(owner);
             drop(authority);
@@ -585,6 +594,9 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
             },
             "batch conserves and merges both stacks"
         );
+        if case == Case::PouchLogout {
+            pouch_relog_logout(&owner, &harness, admitted).await?;
+        }
         let command = UseCommand {
             game_session_id: admitted.game_session_id,
             command_id: loot_id,
@@ -703,6 +715,81 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
         drop(seal);
         harness.cleanup().await
     }
+}
+
+async fn pouch_relog_logout(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    previous: AdmittedSession,
+) -> TestResult {
+    use crate::durability::fresh_admission::FreshAdmissionStore;
+    use crate::foundation::GameSessionState;
+    use crate::gameplay_transport::composed_admission::{CONDITION_RELEASE_PROBE, ConditionReleaseProbe};
+    use crate::gameplay_transport::connection::{ControllerBinding, SessionContinuity};
+    use crate::gameplay_transport::logout::LogoutReply;
+    use oteryn_protocol_oteryn::logout::{COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result};
+    use std::{cell::Cell, sync::Arc, time::Duration};
+
+    assert_eq!(owner.logout_session(previous).await, LogoutReply::Result(LogoutResult::Accepted));
+    let (session, request) = super::full_world_support::relogin_request(harness).await?;
+    let store = FreshAdmissionStore::from_root(harness.root.clone());
+    let transport = store.current_session(session).await?.current_transport().ok_or("relog transport")?;
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reserved = runtime.reserve_fresh_session(session).map_err(debug)?;
+        runtime.commit_fresh_session(reserved).map_err(debug)?
+    };
+    let (first_entry, item_fence, _) = Box::pin(owner.initialize_first_entry(&request, session, transport, actor)).await;
+    assert!(matches!(first_entry, FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled), "{first_entry:?}");
+    let admitted = AdmittedSession {
+        game_session_id: session,
+        runtime_actor: Some(actor),
+        controller: Some(ControllerBinding { transport, account_id: id(40) }),
+        continuity: SessionContinuity {
+            selected_capabilities: previous.continuity.selected_capabilities,
+            ..SessionContinuity::FRESH
+        },
+        first_entry,
+        item_fence,
+        ..previous
+    };
+
+    let probe = Arc::new(ConditionReleaseProbe {
+        before_read: tokio::sync::Notify::new(),
+        proceed: tokio::sync::Notify::new(),
+        read_failed: tokio::sync::Notify::new(),
+    });
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let drive = async {
+        loop {
+            let frame = read(&mut client).await?;
+            if decode_wire_envelope(&frame)?.message_type() == MessageType::SnapshotCommit {
+                break;
+            }
+        }
+        let id = admitted.continuity.next_command_id;
+        send(&mut client, id, u32::from(COMMAND_TYPE_LOGOUT_INTENT), &[]).await?;
+        probe.before_read.notified().await;
+        // Another foreground pass briefly wins the real holder after logout preflight.
+        let holder = harness.root.try_issue_semantic_pass()?;
+        probe.proceed.notify_one();
+        probe.read_failed.notified().await;
+        drop(holder);
+        let (_, payload) = command_reply(&mut client, id).await?;
+        client.shutdown().await?;
+        let outcome = decode_logout_result(&payload).map_err(debug)?;
+        assert_eq!(outcome, LogoutResult::Accepted);
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (end, result) = tokio::time::timeout(Duration::from_secs(30), join_two(
+        CONDITION_RELEASE_PROBE.scope(Cell::new(Some(Arc::clone(&probe))), serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS)),
+        drive,
+    )).await?;
+    result?;
+    assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)));
+    assert_eq!(store.current_session(session).await?.session_state(), GameSessionState::Terminal);
+    assert!(owner.runtime.lock().await.player_control_facts(actor, session).is_err());
+    Ok(())
 }
 
 async fn selected_item_cases(
