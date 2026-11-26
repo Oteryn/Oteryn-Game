@@ -137,23 +137,26 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
+    let capture = std::env::var_os("NODE_BOOT_S06_CAPTURE_DIR")
+        .or_else(|| std::env::var_os("E2E_ALL_CAPTURE_DIR"));
+    let Some(root) = capture else {
+        evidence("e2e_all scenario=S06.client status=FAIL evidence=capture-directory-missing");
         return;
-    }
+    };
+    let root = Path::new(&root);
     match verdict::indexed_timeout(Duration::from_secs(120), flow(clients)).await {
         Ok(Ok(observed)) => {
-            if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-                let root = Path::new(&root);
-                for (name, bytes) in [
-                    ("s06-before.bin", observed.before.as_slice()),
-                    ("s06-after.bin", observed.after.as_slice()),
-                    ("s06-commit.bin", observed.commit.as_slice()),
-                    ("s06-refusal.bin", observed.refusal.as_slice()),
-                    ("s06-expected.txt", observed.expected.as_bytes()),
-                ] {
-                    if let Err(error) = std::fs::write(root.join(name), bytes) {
-                        evidence(&format!("S06_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-                    }
+            for (name, bytes) in [
+                ("s06-before.bin", observed.before.as_slice()),
+                ("s06-after.bin", observed.after.as_slice()),
+                ("s06-commit.bin", observed.commit.as_slice()),
+                ("s06-refusal.bin", observed.refusal.as_slice()),
+                ("s06-expected.txt", observed.expected.as_bytes()),
+            ] {
+                if let Err(error) = std::fs::write(root.join(name), bytes) {
+                    evidence(&format!("S06_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+                    evidence("e2e_all scenario=S06.client status=FAIL evidence=capture-write-failed");
+                    return;
                 }
             }
             evidence(&format!(

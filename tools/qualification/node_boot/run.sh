@@ -1595,6 +1595,9 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     test_dir="$GAME_SOURCE/apps/game-server"
     test_command=("$NODE_BOOT_LIBTEST" "qualification::$qualification" --ignored --exact --nocapture)
   fi
+  if [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_UNPRIVILEGED:-0}" == 1 ]]; then
+    test_command=(bash "$GAME_SOURCE/tools/qualification/node_boot/s06_client_replay.sh" "$WORK" "${test_command[@]}")
+  fi
   (
     cd "$test_dir"
     env "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \

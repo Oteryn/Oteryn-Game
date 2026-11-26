@@ -390,6 +390,49 @@ class ReuseTests(unittest.TestCase):
 
 
 class SeamPassThroughTests(unittest.TestCase):
+    def test_s06_replay_fails_when_cargo_matches_zero_tests(self):
+        with tempfile.TemporaryDirectory() as temp:
+            cargo = Path(temp, 'cargo')
+            cargo.write_text("#!/bin/sh\necho 'test result: ok. 0 passed; 0 failed; 0 ignored;'\n")
+            cargo.chmod(0o755)
+            live = textwrap.dedent('''\
+                for file in s06-before.bin s06-after.bin s06-commit.bin s06-refusal.bin s06-expected.txt; do
+                    printf fixture > "$NODE_BOOT_S06_CAPTURE_DIR/$file"
+                done
+                echo 'SEAM_EVIDENCE e2e_all scenario=S06.client status=CAPTURED evidence=fixture'
+            ''')
+            log = subprocess.run(
+                ['bash', str(HERE / 's06_client_replay.sh'), temp, 'bash', '-c', live],
+                env={**os.environ, 'PATH': f'{temp}:{os.environ["PATH"]}',
+                     'NODE_BOOT_E2E_ONLY': 'rows', 'OTERYN_E2E_ROW_BATCH': 'all'},
+                capture_output=True, text=True, check=False,
+            )
+        self.assertNotEqual(log.returncode, 0)
+        self.assertIn('scenario=S06.client status=FAIL evidence=client-replay-not-executed', log.stdout)
+
+    def test_s06_replay_rejects_a_selected_batch_without_live_capture(self):
+        with tempfile.TemporaryDirectory() as temp:
+            Path(temp, 's06-expected.txt').write_text('stale')
+            log = subprocess.run(
+                ['bash', str(HERE / 's06_client_replay.sh'), temp, 'true'],
+                env={**os.environ, 'NODE_BOOT_E2E_ONLY': 'rows',
+                     'OTERYN_E2E_ROW_BATCH': '196:2', 'E2E_ALL_CAPTURE_DIR': temp},
+                capture_output=True, text=True, check=False,
+            )
+        self.assertNotEqual(log.returncode, 0)
+        self.assertIn('scenario=S06.client status=FAIL evidence=live-capture-missing', log.stdout)
+
+    def test_s06_replay_preserves_the_unselected_command_result(self):
+        with tempfile.TemporaryDirectory() as temp:
+            log = subprocess.run(
+                ['bash', str(HERE / 's06_client_replay.sh'), temp, 'bash', '-c', 'exit 17'],
+                env={**os.environ, 'NODE_BOOT_E2E_ONLY': 'rows',
+                     'OTERYN_E2E_ROW_BATCH': '196:1'},
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(list(Path(temp).iterdir()), [])
+        self.assertEqual(log.returncode, 17)
+
     def test_seam_runs_spawn_fence_regression_with_database_url(self):
         seam = function('seam_stages')
         self.assertIn('OTERYN_TEST_POSTGRES_ADMIN_URL="$ADMIN_URL"', seam)
