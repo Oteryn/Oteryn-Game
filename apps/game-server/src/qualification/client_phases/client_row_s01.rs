@@ -41,10 +41,11 @@ struct Sent {
     result: runtime::party::PartyResult,
 }
 
-async fn exchange(
+async fn capture_reply(
     client: &mut DevClientSession,
     command: &runtime::PartyCommand,
-) -> TestResult<(String, runtime::party::PartyResult)> {
+    capability: u32,
+) -> TestResult<(String, Vec<u8>)> {
     let session = client.join_snapshot().game_session_id;
     let encoded = session
         .as_bytes()
@@ -63,7 +64,7 @@ async fn exchange(
     let reply = client
         .session_mut()
         .gated_command(
-            runtime::party::CAPABILITY_PARTY_V1,
+            capability,
             command.kind,
             &command.payload,
         )
@@ -86,7 +87,15 @@ async fn exchange(
         )
         .into());
     }
-    let result = runtime::party::decode_party_result(&reply.payload)
+    Ok((name, reply.payload))
+}
+
+async fn exchange(
+    client: &mut DevClientSession,
+    command: &runtime::PartyCommand,
+) -> TestResult<(String, runtime::party::PartyResult)> {
+    let (name, payload) = capture_reply(client, command, runtime::party::CAPABILITY_PARTY_V1).await?;
+    let result = runtime::party::decode_party_result(&payload)
         .map_err(|error| format!("party reply: {error:?}"))?;
     if result.disposition != PartyDisposition::Ok {
         return Err(format!("party refused: {:?}", result.disposition).into());
@@ -119,9 +128,13 @@ async fn send(client: &mut DevClientSession, intent: Option<PartyIntent>) -> Tes
 }
 
 fn check_state(sent: &Sent, members: &[(&str, bool)], inviter: Option<&str>) -> TestResult {
+    check_state_with_xp(sent, members, inviter, false)
+}
+
+fn check_state_with_xp(sent: &Sent, members: &[(&str, bool)], inviter: Option<&str>, shared: bool) -> TestResult {
     let result = &sent.result;
     if result.disposition != PartyDisposition::Ok
-        || result.shared_xp_enabled
+        || result.shared_xp_enabled != shared
         || result.members.len() != members.len()
         || !members.iter().all(|&(name, leader)| {
             result
@@ -245,6 +258,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 
     let leader_view = send(&mut leader, None).await?;
     check_state(&leader_view, &before_pass, None)?;
+    use oteryn_protocol_oteryn::chat::{CAPABILITY_CHAT_V1, ChatDisposition, decode_chat_intent_result};
+    let toggle = runtime::PartyCommand::shared_experience(true).map_err(|error| format!("S01 shared XP wire: {error:?}"))?;
+    let (toggle_receipt, payload) = capture_reply(&mut leader, &toggle, CAPABILITY_CHAT_V1).await?;
+    let receipt = decode_chat_intent_result(&payload).map_err(|error| format!("S01 shared XP reply: {error:?}"))?;
+    if receipt.disposition != ChatDisposition::Ok || receipt.wait_seconds != 0 {
+        return Err(format!("S01 shared XP toggle refused: {receipt:?}").into());
+    }
+    let leader_shared = send(&mut leader, None).await?;
+    check_state_with_xp(&leader_shared, &before_pass, None, true)?;
+    check_state_with_xp(&send(&mut peer, None).await?, &before_pass, None, true)?;
     let member = leader_view
         .result
         .members
@@ -257,9 +280,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )
     .await?;
     let after_pass = [("Packet One", false), ("Packet Two", true)];
-    check_state(&passed, &after_pass, None)?;
+    check_state_with_xp(&passed, &after_pass, None, true)?;
     let peer_view = send(&mut peer, None).await?;
-    check_state(&peer_view, &after_pass, None)?;
+    check_state_with_xp(&peer_view, &after_pass, None, true)?;
 
     let leader_before_leave = leader.last_server_sequence();
     let peer_before_leave = peer.last_server_sequence();
@@ -291,9 +314,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         }
     }
     let expected = format!(
-        "inviter=Packet One\njoiner=Packet Two\nmembers=2\nshared_xp=false\nnew_leader=Packet Two\ninvitation={}\njoin={}\njoin_view={}\nleadership={}\nleader_before={}\nleader_operation={}\nleader_after={}\n",
+        "inviter=Packet One\njoiner=Packet Two\nmembers=2\nshared_xp=false\nnew_leader=Packet Two\ninvitation={}\njoin={}\njoin_view={}\nleadership={}\nleader_before={}\ntoggle_receipt={}\nleader_shared={}\nleader_operation={}\nleader_after={}\n",
         invited.view, joined.operation, joined.view, peer_view.view,
-        leader_view.view, passed.operation, passed.view,
+        leader_view.view, toggle_receipt, leader_shared.view, passed.operation, passed.view,
     );
     capture("s01-expected.txt", expected.as_bytes())?;
     Ok("invite-join-pass-leave-logout-relog".to_owned())

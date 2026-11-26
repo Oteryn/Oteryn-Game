@@ -10,7 +10,7 @@ struct Replay {
     invitation_view: Vec<u8>,
     joined_op: Vec<u8>,
     joined_view: Vec<u8>,
-    leader_transfer: Option<[Vec<u8>; 3]>,
+    leader_transfer: Option<[Vec<u8>; 5]>,
     passed_view: Vec<u8>,
     expected: String,
     statuses: [CommandStatus; 3],
@@ -113,7 +113,13 @@ fn load() -> Result<Replay, Error> {
         let (leader, leader_transfer) = load_group(
             root,
             &expected,
-            ["leader_before", "leader_operation", "leader_after"],
+            [
+                "leader_before",
+                "toggle_receipt",
+                "leader_shared",
+                "leader_operation",
+                "leader_after",
+            ],
         )?;
         if peer == leader {
             return Err("S01 leader and peer must have distinct sessions".into());
@@ -263,9 +269,10 @@ fn party_replay_invite_join_and_leadership_pass() -> Result<(), Error> {
         assert_eq!(panel.state, before);
         assert_eq!(panel.feedback, Some("The server refused the party command"));
     }
-    if let Some([before, operation, after]) = replay.leader_transfer {
+    if let Some([before, toggle_receipt, shared_view, operation, after]) = replay.leader_transfer {
         let mut leader_panel = PartyPanel {
             selected: true,
+            chat_selected: true,
             own_character_name: inviter.into(),
             ..PartyPanel::default()
         };
@@ -275,6 +282,38 @@ fn party_replay_invite_join_and_leadership_pass() -> Result<(), Error> {
             &response(CommandStatus::Accepted, &before, Some(&before)),
         ));
         assert!(leader_panel.is_leader());
+        assert!(
+            !leader_panel
+                .state
+                .as_ref()
+                .ok_or("leader state missing")?
+                .shared_xp_enabled
+        );
+        let toggle = request(&mut leader_panel, Intent::ToggleSharedExperience)
+            .ok_or("UI did not emit shared XP toggle")?;
+        assert_eq!(
+            toggle,
+            PartyCommand::shared_experience(true)
+                .map_err(|error| format!("S01 shared XP wire: {error:?}"))?
+        );
+        // ChatIntentResultV1 encodes Ok as field 1 = 1 and omits the zero wait.
+        assert_eq!(toggle_receipt, [8, 1]);
+        assert!(apply_result(
+            &mut leader_panel,
+            &response(
+                CommandStatus::Accepted,
+                &encode(vec![], vec![])?,
+                Some(&shared_view)
+            ),
+        ));
+        assert!(
+            leader_panel
+                .state
+                .as_ref()
+                .ok_or("shared XP view missing")?
+                .shared_xp_enabled
+        );
+
         let handle = leader_panel
             .state
             .as_ref()
