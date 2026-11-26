@@ -85,6 +85,9 @@ fn echo_portal_kill_reward_draws() -> TestResult {
     runtime
         .bind_attacker_lease(actor, session, lease)
         .map_err(debug)?;
+    runtime
+        .initialize_first_entry_position(actor)
+        .map_err(debug)?;
     let principal = crate::combat::CapturedRewardPrincipal {
         character,
         lease_generation: lease.generation(),
@@ -253,7 +256,6 @@ async fn scenario(h: &Harness) -> TestResult {
         channel,
         h.node.fact().node_id(),
         h.node.fact().registration_revision(),
-        1,
         1,
         1,
         "runtime-scope-assignment:1",
