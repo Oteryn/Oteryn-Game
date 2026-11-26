@@ -28,6 +28,14 @@ impl TryFrom<&NativeGameplayState> for PreyCatalogue {
     }
 }
 impl PreyCatalogue {
+    pub(super) fn can_offer(&self, key: &str) -> bool {
+        !self.unsupported_loot.contains(key)
+            && self
+                .creatures
+                .binary_search_by(|row| row.0.as_str().cmp(key))
+                .is_ok_and(|index| !self.creatures[index].2)
+    }
+
     pub fn rules(&self) -> &PreyRules {
         &self.rules
     }

@@ -9,7 +9,7 @@ use oteryn_protocol_oteryn::prey as wire;
 use oteryn_protocol_oteryn::CommandStatus;
 
 #[derive(Clone, Copy)]
-enum Case { Tier, Daily, PickAgain, Checkpoint, LapsedCheckpoint, History }
+enum Case { Tier, Daily, PickAgain, Checkpoint, LapsedCheckpoint, History, StaleOffer }
 
 fn run_case(case: Case) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -28,6 +28,11 @@ fn run_case(case: Case) -> TestResult {
 #[test] fn prey_diff_chosen_race_checkpoint_is_independent_per_slot() -> TestResult { run_case(Case::Checkpoint) }
 #[test] fn prey_diff_checkpoint_preserves_admitted_activity_after_premium_lapses() -> TestResult { run_case(Case::LapsedCheckpoint) }
 #[test] fn prey_diff_end_history_commits_measured_counters_with_transition() -> TestResult { run_case(Case::History) }
+
+#[test]
+fn prey_diff_unavailable_saved_offer_is_hidden_and_cannot_select_another_index() -> TestResult {
+    run_case(Case::StaleOffer)
+}
 
 fn scenario(case: Case) -> TestResult {
     run(async |admin| {
@@ -121,6 +126,25 @@ fn scenario(case: Case) -> TestResult {
         let catalogue = crate::durability::prey::PreyCatalogue::try_from(native).map_err(debug)?;
         let first = initial.slots[0].creatures[0].clone();
         match case {
+            Case::StaleOffer => {
+                let stale = "oteryn:creature.bonelord";
+                assert!(native.reward_table().row(stale).map_err(debug)?.loot_table.entries.len() > 7);
+                sqlx::query("UPDATE game_character_prey_slots SET creature_list=$1 WHERE slot=1")
+                    .bind(vec![stale.to_owned(), first])
+                    .execute(&h.pool).await?;
+                let queried = send(&owner, &mut admitted, &wire::Request::Query).await?;
+                assert!(queried.slots[0].creatures.is_empty());
+                let refused = send(&owner, &mut admitted, &wire::Request::Select { slot: 1, index: 1 }).await?;
+                assert_eq!(refused.status, wire::STATUS_CONTENT_UNAVAILABLE);
+                assert!(refused.slots[0].creatures.is_empty());
+                assert_eq!(refused.slots[0].state, 1);
+                let saved: Vec<String> = sqlx::query_scalar("SELECT creature_list FROM game_character_prey_slots WHERE slot=1")
+                    .fetch_one(&h.pool).await?;
+                assert!(saved.is_empty());
+                let redrawn = send(&owner, &mut admitted, &wire::Request::ListReroll { slot: 1 }).await?;
+                assert!(!redrawn.slots[0].creatures.is_empty());
+                assert!(!redrawn.slots[0].creatures.iter().any(|key| key == stale));
+            }
             Case::Tier => {
                 let tier = initial.slots[0].allowed_tier;
                 let tier_command = admitted.continuity.next_command_id;

@@ -19,7 +19,7 @@ where
     let Some(view) = session.visibility.as_ref() else {
         return Ok(());
     };
-    let Some(mut icons) = authority.observe_party_icons(session.admitted).await else {
+    let Ok(mut icons) = authority.observe_party_icons(session.admitted).await else {
         return Ok(());
     };
     icons.retain(|icon| view.shows(icon.entity));

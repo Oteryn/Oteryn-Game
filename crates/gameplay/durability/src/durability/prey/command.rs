@@ -117,6 +117,13 @@ impl DurabilityRoot {
             let balance: i16 = sqlx::query_scalar("SELECT balance FROM game_account_prey_wildcards WHERE account_id=$1::text::uuid AND world_id=encode($2,'hex')::uuid FOR UPDATE").bind(&account).bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.unwrap_or(0);
             let expansion: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_prey_expansions WHERE character_id=encode($1,'hex')::uuid)").bind(character.as_slice()).fetch_one(&mut **tx).await?;
             let (mut reply, mut metrics) = storage::load(&mut tx, character, balance as u8, level, expansion, &catalogue.rules).await?;
+            // Storage locked the existing slots in key order. Invalidate the entire
+            // positional grid rather than shifting another creature into a stale index.
+            for (slot, metric) in reply.slots.iter_mut().zip(&metrics) {
+                if clear_stale_offer(slot, catalogue) {
+                    storage::save(&mut tx, character, slot, metric).await?;
+                }
+            }
             if matches!(&mutation, PreyMutation::Command(Request::Query)) {
                 mask_locked(&mut reply, &access); tx.commit(deadline).await?; return Ok(Ok((reply, permanent, None)));
             }
@@ -240,6 +247,13 @@ impl DurabilityRoot {
                         }
                         Request::Select {index,..} => {
                             if slot.state != 1 { return Ok(Err(Error::InvalidInput)); }
+                            if slot.creatures.is_empty() {
+                                reply.status = wire::STATUS_CONTENT_UNAVAILABLE;
+                                mask_locked(&mut reply, &access);
+                                write_receipt(&mut tx, character, &occurrence, &binding, &reply, root.revision, ReceiptChange::default()).await?;
+                                tx.commit(deadline).await?;
+                                return Ok(Ok((reply, permanent, None)));
+                            }
                             let Some(key) = slot.creatures.get(usize::from(*index).wrapping_sub(1)).cloned() else { return Ok(Err(Error::InvalidInput)); };
                             if black.contains(&key) { return Ok(Err(Error::InvalidInput)); }
                             if catalogue.unsupported_loot.contains(&key) { reply.status = wire::STATUS_CONTENT_UNAVAILABLE; mask_locked(&mut reply, &access); write_receipt(&mut tx, character, &occurrence, &binding, &reply, root.revision, ReceiptChange::default()).await?; tx.commit(deadline).await?; return Ok(Ok((reply, permanent, None))); }
@@ -327,6 +341,15 @@ fn blacklist(reply: &Reply, i: usize) -> Vec<String> {
         })
         .collect()
 }
+fn clear_stale_offer(slot: &mut Slot, catalogue: &PreyCatalogue) -> bool {
+    if slot.state == 1 && slot.creatures.iter().any(|key| !catalogue.can_offer(key)) {
+        slot.creatures.clear();
+        true
+    } else {
+        false
+    }
+}
+
 fn bonus(slot: &Slot) -> Option<PreyBonus> {
     let kind = match slot.bonus {
         1 => BonusType::Damage,

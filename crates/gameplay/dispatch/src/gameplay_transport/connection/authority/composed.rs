@@ -296,7 +296,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn observe_party_icons(
         &self,
         admitted: connection::AdmittedSession,
-    ) -> Option<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>> {
+    ) -> Result<
+        Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
+        crate::durability::DurabilityError,
+    > {
         self.observe_party_skull(admitted).await
     }
 
@@ -317,7 +320,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn observe_pvp_status(
         &self,
         admitted: connection::AdmittedSession,
-    ) -> Option<oteryn_protocol_oteryn::party_skull::PvpStatus> {
+    ) -> Result<oteryn_protocol_oteryn::party_skull::PvpStatus, crate::durability::DurabilityError>
+    {
         self.observe_own_pvp(admitted).await
     }
 
@@ -1850,7 +1854,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         command_id: u64,
         modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
-    ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
+    ) -> Result<
+        oteryn_protocol_oteryn::attack::AttackIntentDisposition,
+        crate::durability::DurabilityError,
+    > {
         self.set_expert_fight_modes(actor, session, command_id, modes)
             .await
     }
