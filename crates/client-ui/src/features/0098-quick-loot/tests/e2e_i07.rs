@@ -49,6 +49,8 @@ fn fixture(skip: u32, accept: u32) -> Result<Capture, Error> {
     let loot_all = QuickLootRequest {
         action: QuickLootAction::LootAll,
         corpse: None,
+        selected_item: None,
+        review_filters: false,
         category: None,
         recipient: None,
         recipient_id: None,

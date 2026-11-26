@@ -1,5 +1,30 @@
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
+    #[cfg(any(bevy_shell, test))]
+    pub(crate) fn quick_loot_corpse_item(
+        &self,
+        container: oteryn_session::ItemHandle,
+        corpse: [u8; 16],
+        item: oteryn_session::ItemHandle,
+    ) -> bool {
+        use oteryn_client_ui::quick_loot::{Action, request};
+        let command = {
+            let mut mailbox = lock(&self.mailbox);
+            let view = &mailbox.player_trade.items.corpse;
+            if view.container_handle != Some(container)
+                || !view.entries.iter().any(|entry| entry.handle == item)
+                || super::view::corpse_identity(&mailbox, container) != Some(corpse)
+            {
+                return false;
+            }
+            request(
+                &mut mailbox.discovery.loot,
+                Action::CorpseItem { corpse, item },
+            )
+        };
+        command.is_some_and(|command| self.discovery_send(command))
+    }
+
     pub fn quick_loot_action(&self, action: oteryn_client_ui::quick_loot::Action) -> bool {
         let command =
             oteryn_client_ui::quick_loot::request(&mut lock(&self.mailbox).discovery.loot, action);
@@ -31,10 +56,25 @@ impl PlayLink {
 
 impl PlayLink {
     pub(super) fn quick_loot_open_main(&self, mailbox: &mut crate::play::mailbox::Mailbox) -> bool {
-        if mailbox.inventory_shutdown { return false; }
-        let Some(backpack) = mailbox.inventory.inventory.as_ref().and_then(|inventory| inventory.main_backpack) else { return false };
-        let Some(intent) = mailbox.containers.open(backpack.handle, None) else { return false };
-        if self.commands.send(crate::combat_input::PlayCommand::ContainerView(intent)).is_err() {
+        if mailbox.inventory_shutdown {
+            return false;
+        }
+        let Some(backpack) = mailbox
+            .inventory
+            .inventory
+            .as_ref()
+            .and_then(|inventory| inventory.main_backpack)
+        else {
+            return false;
+        };
+        let Some(intent) = mailbox.containers.open(backpack.handle, None) else {
+            return false;
+        };
+        if self
+            .commands
+            .send(crate::combat_input::PlayCommand::ContainerView(intent))
+            .is_err()
+        {
             mailbox.containers.end();
             return false;
         }
@@ -48,11 +88,19 @@ impl PlayLink {
         if action == 9 {
             let mut mailbox = lock(&self.mailbox);
             let panel = &mailbox.discovery.loot;
-            if !panel.managed || panel.pending.is_some() { return false; }
+            if !panel.managed || panel.pending.is_some() {
+                return false;
+            }
             let main = if panel.destinations.is_empty() {
                 row == 0
             } else {
-                matches!(panel.destinations.get(row), Some(Action::Destination {recipient: QuickLootRecipient::MainContainer, ..}))
+                matches!(
+                    panel.destinations.get(row),
+                    Some(Action::Destination {
+                        recipient: QuickLootRecipient::MainContainer,
+                        ..
+                    })
+                )
             };
             return main && self.quick_loot_open_main(&mut mailbox);
         }
@@ -70,8 +118,10 @@ impl PlayLink {
                 return false;
             };
             return self.quick_loot_action(Action::Destination {
-                category: *category, recipient: QuickLootRecipient::MainContainer,
-                id: None, fallback: true,
+                category: *category,
+                recipient: QuickLootRecipient::MainContainer,
+                id: None,
+                fallback: true,
             });
         }
         if (2..=5).contains(&action) && self.discovery_panel().loot.managed {

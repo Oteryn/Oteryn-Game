@@ -34,6 +34,10 @@ pub(super) fn menu_height(
         + f32::from(u8::from(matches!(
             slot.location,
             Location::Container { .. }
+                | Location::Corpse {
+                    identity: Some(_),
+                    ..
+                }
         )))
         + f32::from(u8::from(extra.0) + u8::from(extra.1));
     rows * popup::ENTRY_HEIGHT + (rows - 1.) * popup::ENTRY_SPACING + 8.
@@ -70,6 +74,15 @@ pub(super) fn menu_entries(
             popup::Item::entry("Open in New Window"),
             Control::OpenSeparate(slot),
         ));
+    }
+    if matches!(
+        slot.location,
+        Location::Corpse {
+            identity: Some(_),
+            ..
+        }
+    ) {
+        entries.push((popup::Item::entry(tr!("Loot")), Control::Loot(slot)));
     }
     if let Some(parent) = parent {
         entries.push((popup::Item::entry("Move up"), Control::MoveUp(slot, parent)));

@@ -54,7 +54,7 @@ fn cp02_0098_quick_loot_scenario() {
 fn cp02_quick_loot_native_session_scenario() -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_client_runtime::server_mechanic::ServerMechanicCommand;
     use oteryn_client_ui::quick_loot::*;
-    peer::scenario( |link, push, wait| {
+    peer::scenario(|link, push, wait| {
         wait(&|| link.quick_loot_panel().filter_mode == Some(QuickLootFilterMode::Accept));
         let panel = link.quick_loot_panel();
         assert_eq!(panel.skipped, std::collections::BTreeSet::from([4]));
@@ -88,6 +88,127 @@ fn cp02_quick_loot_native_session_scenario() -> Result<(), Box<dyn std::error::E
         assert_eq!(link.discovery_panel().loot.confirmed.len(), 1);
         Ok(())
     })
+}
+
+#[test]
+fn selected_item_loot_click_round_trip() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::server_mechanic::ServerMechanicCommand;
+    use oteryn_session::{
+        ActorPosition, AppliedDelta, CommandStatus, EntityDetail, EntityKind, EntityRef, ItemEntry,
+        ItemHandle, OpenContainer, SessionEvent, WorldSpatialEntity,
+    };
+
+    let corpse = [7; 16];
+    let container = ItemHandle::new(40).ok_or("corpse handle")?;
+    let entry = |handle: u64| -> Result<ItemEntry, Box<dyn std::error::Error>> {
+        Ok(ItemEntry {
+            appearance_id: 0,
+            handle: handle.try_into()?,
+            item_definition_ref: 42.try_into()?,
+            count: 1.try_into()?,
+            sub_type: 0,
+        })
+    };
+    let taken = entry(41)?;
+    let remaining = entry(42)?;
+    let opened = OpenContainer {
+        container_handle: Some(container),
+        entries: vec![taken, remaining],
+    };
+    let after = OpenContainer {
+        container_handle: Some(container),
+        entries: vec![remaining],
+    };
+    let delta = |revision, value| {
+        SessionEvent::OpenContainer(AppliedDelta {
+            server_sequence: revision + 10,
+            base_revision: revision - 1,
+            new_revision: revision,
+            value,
+        })
+    };
+    let visible_corpse = WorldSpatialEntity {
+        motion: None,
+        display_name: None,
+        kind: EntityKind::Corpse,
+        entity: EntityRef {
+            identity: corpse,
+            generation: 0,
+        },
+        position: ActorPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        },
+        detail: EntityDetail::Object {
+            item_definition_ref: 43,
+            quantity: 1,
+            item_handle: Some(container),
+        },
+    };
+    peer::scenario_with_events(
+        vec![delta(1, opened.clone())],
+        vec![visible_corpse],
+        move |link, push, wait| {
+            wait(&|| {
+                let view = link.corpse_loot_view();
+                view.contents == opened && view.identity == Some(corpse)
+            });
+            let exchange = |item: ItemHandle, payload, status| peer::Exchange {
+                command: ServerMechanicCommand {
+                    capability: 98,
+                    command_type: 114,
+                    payload: [
+                        &[0x08, 1, 0x12, 16][..],
+                        &corpse,
+                        &[0x4a, 8],
+                        &item.get().to_le_bytes(),
+                    ]
+                    .concat(),
+                },
+                payload,
+                status,
+            };
+            push(
+                exchange(taken.handle, vec![0x10, 1], CommandStatus::Accepted),
+                vec![delta(2, after.clone())],
+            );
+            assert!(link.quick_loot_corpse_item(container, corpse, taken.handle));
+            wait(&|| {
+                let view = link.corpse_loot_view();
+                view.contents == after && view.feedback == Some("Item moved")
+            });
+            assert!(!link.quick_loot_corpse_item(container, corpse, taken.handle));
+
+            push(
+                exchange(remaining.handle, vec![0x10, 2], CommandStatus::Rejected),
+                vec![],
+            );
+            assert!(link.quick_loot_corpse_item(container, corpse, remaining.handle));
+            wait(&|| link.corpse_loot_view().feedback == Some("Item is no longer available"));
+            assert_eq!(link.corpse_loot_view().contents, after);
+            assert!(link.quick_loot_panel().pending.is_none());
+            Ok(())
+        },
+    )
+}
+
+#[test]
+fn corpse_loot_click_without_selected_item_is_unchanged() -> Result<(), Box<dyn std::error::Error>>
+{
+    let (link, mut rx, outbox) = crate::play::play_channel();
+    outbox.discovery_initialize(&Selected);
+    let corpse = [7; 16];
+    assert!(link.quick_loot_action(oteryn_client_ui::quick_loot::Action::Corpse(corpse)));
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = rx.try_recv()? else {
+        return Err("wrong command".into());
+    };
+    assert_eq!((command.capability, command.command_type), (98, 114));
+    assert_eq!(
+        command.payload,
+        [&[0x08, 1, 0x12, 16][..], &corpse].concat()
+    );
+    Ok(())
 }
 
 #[test]

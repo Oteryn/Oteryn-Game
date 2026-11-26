@@ -82,7 +82,9 @@ pub(super) fn click(
         (crate::play::MouseScheme::Classic, PointerButton::Secondary)
             | (crate::play::MouseScheme::LeftSmart, PointerButton::Primary)
     );
-    if !direct && event.button == PointerButton::Secondary {
+    if event.button == PointerButton::Secondary
+        && (!direct || matches!(slot.location, Location::Corpse { .. }))
+    {
         select_slot(*slot, &owner, &mut ui);
         let mut position = event.pointer.position;
         // The same capability flags decide which rows the menu shows (view::project).
@@ -252,6 +254,19 @@ pub(super) fn choose(control: Control, owner: &HostOwner, ui: &mut InventoryUi) 
                 ui.menu = None;
             }
         }
+        Control::Loot(slot) => {
+            if let Location::Corpse {
+                handle,
+                identity: Some(corpse),
+            } = slot.location
+                && let Some(item) = slot.current_item(owner)
+                && let Some(play) = &owner.play
+            {
+                play.link
+                    .quick_loot_corpse_item(handle, corpse, item.handle);
+            }
+            ui.menu = None;
+        }
         Control::Write(slot) | Control::Timed(slot) => {
             if let Some(item) = slot.current_item(owner)
                 && let Some(play) = &owner.play
@@ -334,7 +349,7 @@ fn select_slot(slot: Slot, owner: &HostOwner, ui: &mut InventoryUi) {
         Location::Container { view, .. } => {
             play.link.container_select(view, item.handle);
         }
-        Location::Equipment(_) => {}
+        Location::Equipment(_) | Location::Corpse { .. } => {}
     }
     ui.selection = Some(slot);
 }

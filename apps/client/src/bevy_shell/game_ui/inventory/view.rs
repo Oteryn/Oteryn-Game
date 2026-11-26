@@ -9,6 +9,7 @@ struct Snapshot {
     generation: u64,
     inventory: oteryn_client_ui::inventory::InventoryPanel,
     containers: oteryn_client_ui::container_tree::ContainerPanel,
+    corpse: crate::play::feature_0098_quick_loot::view::CorpseLootView,
     slots: Vec<oteryn_client_ui::equipment::Slot>,
     movement: oteryn_client_ui::inventory::movement::Movement,
     selection: Option<Slot>,
@@ -98,6 +99,7 @@ pub(super) fn project(
         generation: owner.generation(),
         inventory: play.link.inventory_panel(),
         containers,
+        corpse: play.link.corpse_loot_view(),
         windows: ui.windows.clone(),
         browse: play.link.browse_field_panel().selected,
         soul: play.link.actor_vitals().map(|vitals| vitals.soul),
@@ -131,6 +133,7 @@ pub(super) fn project(
             && old.inventory.capacity == snapshot.inventory.capacity
             && old.containers.views == snapshot.containers.views
             && old.containers.feedback == snapshot.containers.feedback
+            && old.corpse == snapshot.corpse
             && old.slots == snapshot.slots
             && old.movement == snapshot.movement
             && old.menu == snapshot.menu
@@ -210,6 +213,27 @@ pub(super) fn project(
                 &snapshot,
                 play.view.scene(),
             );
+        }
+    }
+    if let Some(handle) = snapshot.corpse.contents.container_handle {
+        let corpse = panel(&mut commands, &skins, regions.containers, "Corpse");
+        let entries = &snapshot.corpse.contents.entries;
+        grid(
+            &mut commands,
+            &skins,
+            corpse,
+            snapshot.generation,
+            Location::Corpse {
+                handle,
+                identity: snapshot.corpse.identity,
+            },
+            entries,
+            entries.len(),
+            None,
+            snapshot.selection,
+        );
+        if let Some(feedback) = snapshot.corpse.feedback {
+            label(&mut commands, &skins, corpse, feedback);
         }
     }
     if let Some(message) = snapshot.containers.feedback.or(snapshot.movement.feedback) {

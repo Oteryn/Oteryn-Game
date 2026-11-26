@@ -1,5 +1,59 @@
 use crate::play::{PlayLink, mailbox::lock};
+
+#[cfg(any(bevy_shell, test))]
+use oteryn_session::{EntityDetail, EntityKind, ItemHandle, OpenContainer};
+
+#[cfg(any(bevy_shell, test))]
+#[derive(Clone, PartialEq, Eq)]
+pub(crate) struct CorpseLootView {
+    pub contents: OpenContainer,
+    pub identity: Option<[u8; 16]>,
+    pub feedback: Option<&'static str>,
+}
+
+#[cfg(any(bevy_shell, test))]
+pub(super) fn corpse_identity(
+    mailbox: &crate::play::mailbox::Mailbox,
+    handle: ItemHandle,
+) -> Option<[u8; 16]> {
+    if !mailbox.discovery.loot.selected {
+        return None;
+    }
+    mailbox
+        .entities_wire
+        .iter()
+        .find_map(|entity| match entity.detail {
+            EntityDetail::Object { item_handle, .. }
+            | EntityDetail::ObjectWithAppearance { item_handle, .. }
+                if entity.kind == EntityKind::Corpse && item_handle == Some(handle) =>
+            {
+                Some(entity.entity.identity)
+            }
+            _ => None,
+        })
+}
+
 impl PlayLink {
+    #[cfg(any(bevy_shell, test))]
+    pub(crate) fn corpse_loot_view(&self) -> CorpseLootView {
+        let mailbox = lock(&self.mailbox);
+        let contents = &mailbox.player_trade.items.corpse;
+        let identity = contents
+            .container_handle
+            .and_then(|handle| corpse_identity(&mailbox, handle));
+        let feedback = mailbox
+            .discovery
+            .loot
+            .item_feedback
+            .filter(|(corpse, _)| Some(*corpse) == identity)
+            .map(|(_, message)| message);
+        CorpseLootView {
+            contents: contents.clone(),
+            identity,
+            feedback,
+        }
+    }
+
     pub fn discovery_panel(&self) -> oteryn_client_ui::quick_loot::Discovery {
         let mailbox = lock(&self.mailbox);
         let mut projection = mailbox.discovery.clone();
@@ -39,14 +93,18 @@ pub(crate) fn quick_loot_pouch_route(
     let Action::Destination { fallback, .. } = panel.destinations.last()? else {
         return None;
     };
-    let id = panel.destinations.iter().rev().find_map(|route| match route {
-        Action::Destination {
-            recipient: QuickLootRecipient::GoldPouch,
-            id,
-            ..
-        } => *id,
-        _ => None,
-    })?;
+    let id = panel
+        .destinations
+        .iter()
+        .rev()
+        .find_map(|route| match route {
+            Action::Destination {
+                recipient: QuickLootRecipient::GoldPouch,
+                id,
+                ..
+            } => *id,
+            _ => None,
+        })?;
     Some(Action::Destination {
         category: Some(QuickLootCategory::Gold),
         recipient: QuickLootRecipient::GoldPouch,
@@ -146,6 +204,9 @@ impl crate::play::Outbox {
     }
     pub(crate) fn bevy_quick_loot_selected(&self, selected: bool) {
         lock(&self.0).discovery.loot.selected = selected;
+    }
+    pub(crate) fn bevy_quick_loot_corpse(&self, entity: oteryn_session::WorldSpatialEntity) {
+        self.entities(vec![entity]);
     }
     pub(crate) fn bevy_quick_loot_response(
         &self,
