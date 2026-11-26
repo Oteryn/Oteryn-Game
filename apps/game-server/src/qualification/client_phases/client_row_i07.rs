@@ -48,7 +48,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     pouch.recipient_id = Some([7; 16]);
     pouch.fallback_to_main = true;
     let requests = [skip, accept, pouch, request(QuickLootAction::LootAll)];
-    let mut payloads = Vec::new();
+    let capture_dir = std::env::var_os("E2E_ALL_CAPTURE_DIR");
     let mut item_count = 0;
     for (index, request) in requests.into_iter().enumerate() {
         let payload = encode_quick_loot_request(&request).map_err(|error| format!("{error:?}"))?;
@@ -74,19 +74,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 .items
                 .len();
         }
-        payloads.push(reply.payload);
-    }
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let path = Path::new(&path);
-        let writes = payloads.iter().enumerate().map(|(index, payload)| {
-            std::fs::write(path.join(format!("i07-{}.bin", index + 1)), payload)
-        }).chain(std::iter::once(std::fs::write(
-            path.join("i07-expected.txt"),
-            format!("skip={skip_reference} accept={accept_reference} confirmed=2 results={item_count}\n"),
-        )));
-        for write in writes {
-            write?;
+        if let Some(path) = capture_dir.as_deref().map(Path::new) {
+            let key = index + 1;
+            std::fs::write(path.join(format!("i07-{key}-request.bin")), &payload)?;
+            std::fs::write(
+                path.join(format!("i07-{key}-status.bin")),
+                (reply.status as u32).to_be_bytes(),
+            )?;
+            std::fs::write(path.join(format!("i07-{key}.bin")), &reply.payload)?;
         }
+    }
+    if let Some(path) = capture_dir.as_deref().map(Path::new) {
+        std::fs::write(
+            path.join("i07-expected.txt"),
+            format!(
+                "skip={skip_reference} accept={accept_reference} confirmed=2 results={item_count}\n"
+            ),
+        )?;
     }
     Ok(())
 }
