@@ -659,6 +659,37 @@ class PgObserveTests(unittest.TestCase):
 
 
 class CloudRunSummaryTests(unittest.TestCase):
+    def test_p04_replay_requires_fresh_capture_and_executed_test(self):
+        cloud = (HERE / "cloud_run.sh").read_text()
+        self.assertIn("replay_p04_client()", cloud)
+        helper = cloud[cloud.index("replay_p04_client()"):cloud.index("failed=0\nindex=0")]
+        script = helper + textwrap.dedent("""
+            cd "$1" || exit 1
+            mkdir captures || exit 1
+            cargo() {
+                touch replay-attempted
+                [[ "$E2E_ALL_CAPTURE_DIR" == "$PWD/captures" ]] || return 2
+                [[ "$*" == *' -- --exact' ]] || return 2
+                printf '%s\n' "$test_output"
+            }
+            marker='SEAM_EVIDENCE e2e_all scenario=P04.client status=CAPTURED evidence=query'
+            : > node.log
+            if replay_p04_client node.log "$PWD/captures"; then exit 1; fi
+            [[ ! -e replay-attempted ]] || exit 1
+            printf '%s\n' "$marker" > node.log
+            test_output='running 0 tests'
+            if replay_p04_client node.log "$PWD/captures"; then exit 1; fi
+            [[ -e replay-attempted ]] || exit 1
+            printf '%s\n' "$marker" > node.log
+            test_output='test task_board::e2e_p04::e2e_p04_replays_query_and_refused_start_weekly ... ok'
+            replay_p04_client node.log "$PWD/captures"
+            """)
+        with tempfile.TemporaryDirectory() as temp:
+            result = subprocess.run(["bash", "-c", script, "test", temp],
+                                    check=True, capture_output=True, text=True)
+        self.assertEqual([line.split()[3] for line in result.stdout.splitlines()],
+                         ["status=FAIL", "status=FAIL", "status=PASS"])
+
     def test_cloud_uses_first_eligible_work_parent(self):
         cloud = (HERE / "cloud_run.sh").read_text()
         helper = cloud[cloud.index("select_work_parent()"):cloud.index("summarize()")]
