@@ -37,7 +37,6 @@ pub(super) async fn wait_for_corpse_stage(
         .into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
-    verdict::Harness::global().bounded_wait(deadline, "rat-corpse-decay");
     loop {
         let current = client
             .world_entities()
