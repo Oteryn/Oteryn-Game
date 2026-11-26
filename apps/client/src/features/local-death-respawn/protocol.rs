@@ -5,7 +5,7 @@ use crate::play::{
     mailbox::{Mailbox, lock},
 };
 use oteryn_renderer::BatchError;
-use oteryn_session::ActorVitals;
+use oteryn_session::{ActorVitals, SessionEvent};
 use tokio::sync::mpsc::{UnboundedReceiver, error::TryRecvError};
 
 #[derive(Debug, Clone, Default)]
@@ -46,9 +46,14 @@ impl Mailbox {
     /// not schedule another query, otherwise query responses would feed themselves.
     pub(in crate::play) fn death_protection_events(
         &mut self,
-        events: &[oteryn_session::SessionEvent],
+        events: &[SessionEvent],
     ) {
-        if self.death.selected && events.iter().any(|event| matches!(event, oteryn_session::SessionEvent::ActorVitals(delta) if delta.value.max_health > 0 && delta.value.health > 0)) {
+        if self.death.selected
+            && events
+                .iter()
+                .filter_map(SessionEvent::actor_vitals)
+                .any(|delta| delta.value.max_health > 0 && delta.value.health > 0)
+        {
             self.death.refresh = true;
         }
     }

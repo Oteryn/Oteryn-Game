@@ -141,17 +141,20 @@ impl crate::play::mailbox::Mailbox {
             SessionEvent::AnalyserAttributedFacts(delta) => {
                 delta.value.iter().for_each(|row| observe(&row.fact))
             }
-            SessionEvent::ActorVitals(delta) if delta.value.max_health > 0 => {
-                let vitals = &delta.value;
-                let low = vitals.health > 0
-                    && u64::from(vitals.health) * 100 <= u64::from(vitals.max_health) * 4;
-                if self.capture_observations.was_low == Some(false) && low {
-                    self.capture_observations.low_health =
-                        self.capture_observations.low_health.wrapping_add(1);
+            _ => {
+                if let Some(delta) = event.actor_vitals()
+                    && delta.value.max_health > 0
+                {
+                    let vitals = &delta.value;
+                    let low = vitals.health > 0
+                        && u64::from(vitals.health) * 100 <= u64::from(vitals.max_health) * 4;
+                    if self.capture_observations.was_low == Some(false) && low {
+                        self.capture_observations.low_health =
+                            self.capture_observations.low_health.wrapping_add(1);
+                    }
+                    self.capture_observations.was_low = (vitals.health > 0).then_some(low);
                 }
-                self.capture_observations.was_low = (vitals.health > 0).then_some(low);
             }
-            _ => {}
         }
     }
 }
