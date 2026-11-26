@@ -108,7 +108,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )
     .await?;
     character_prep::grant_item(&prepare, 3043, 2).await?;
-    character_prep::grant_premium(&prepare).await?;
     logout(&mut prepare).await?;
     drop(prepare);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -176,6 +175,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         })
         .ok_or("King Tibianus was not visible at his authored placement")?
         .entity;
+    character_prep::grant_premium(&client).await?;
     let (_, greeting) = client_row_p20::talk(&mut client, king, "hi").await?;
     if greeting.is_empty() {
         return Err("King Tibianus greeting was empty".into());
