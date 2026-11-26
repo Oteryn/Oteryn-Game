@@ -6,7 +6,8 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{item_view::ItemHandle, loop_training as wire};
 
 use super::full_row_p15::{
-    DummyView, carried_weapon, dummy_distance, dummy_positions, exercise_character, walk_to_probe,
+    DummyView, carried_weapon, dummy_distance, dummy_positions, exercise_character,
+    observe_first_charge, verify_charge_after_relog, walk_to_probe,
 };
 use oteryn_dev_client::client_runtime::raw_feature::GatedCommandResult;
 use std::io::Write;
@@ -93,6 +94,7 @@ async fn exercise(
     }
     let decoded = training_reply(&reply.payload).ok_or("malformed training reply")?;
     let captured = serde_json::to_vec(&(
+        *client.join_snapshot().game_session_id.as_bytes(),
         reply.command_id,
         reply.server_sequence,
         reply.status as u32,
@@ -111,11 +113,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = exercise_character(clients, "P15.client", 0x41).await?;
     let (status_bytes, status) =
         exercise(&mut client, wire::ExerciseIntent::Status, Accepted).await?;
-    if status.disposition != 2 || status.revision == 0 {
+    if status.disposition != 2 || status.revision == 0 || status.charges != 0 {
         return Err(format!("STATUS reply={status:?}").into());
     }
     capture(root, "p15-status.json", &status_bytes)?;
 
+    let before_refusal = client.world_spatial().actor_position;
+    let inventory = client
+        .inventory()
+        .cloned()
+        .ok_or("inventory frame missing")?;
     let missing = ItemHandle::new(u64::MAX).ok_or("nonzero refusal handle")?;
     let (refused_bytes, refused) = exercise(
         &mut client,
@@ -130,8 +137,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("invalid START reply={refused:?}").into());
     }
     capture(root, "p15-refused.json", &refused_bytes)?;
+    let (_, after_refusal) = exercise(&mut client, wire::ExerciseIntent::Status, Accepted).await?;
+    if after_refusal != status
+        || client.world_spatial().actor_position != before_refusal
+        || client.inventory() != Some(&inventory)
+    {
+        return Err(
+            format!("refused START changed exercise, position, or inventory state: STATUS {status:?} -> {after_refusal:?}").into(),
+        );
+    }
 
-    let (weapon, _, _) = carried_weapon(&client)?;
+    let (weapon, full, _) = carried_weapon(&client)?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let positions = dummy_positions(&bytes)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -164,26 +180,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         Accepted,
     )
     .await?;
-    if running.disposition != 1 || running.revision == 0 || running.charges == 0 {
+    if running.disposition != 1 || running.revision == 0 || running.charges != full {
         return Err(format!("START reply={running:?}").into());
     }
     capture(root, "p15-running.json", &running_bytes)?;
+    let ticked = observe_first_charge(&mut client, full).await?;
     let (stopped_bytes, stopped) =
         exercise(&mut client, wire::ExerciseIntent::Stop, Accepted).await?;
-    if stopped.disposition != 2 || stopped.charges > running.charges {
-        return Err(format!("STOP reply={stopped:?} after {running:?}").into());
+    if stopped.disposition != 2
+        || stopped.charges != ticked.charges
+        || stopped.revision < ticked.revision
+    {
+        return Err(format!("STOP reply={stopped:?} after {ticked:?}").into());
     }
     capture(root, "p15-stopped.json", &stopped_bytes)?;
-    let _ = client.session_mut().logout().await?;
+    let restored = verify_charge_after_relog(client, clients, target, stopped, 0x42).await?;
     let expected = format!(
-        "status_disposition={}\nstatus_charges={}\nrefused_disposition={}\nrunning_disposition={}\nrunning_charges={}\nstopped_disposition={}\nstopped_charges={}\n",
+        "status_disposition={}\nstatus_charges={}\nrefused_disposition={}\nrunning_disposition={}\nrunning_charges={}\nstopped_disposition={}\nstopped_charges={}\nrestored_charges={}\n",
         status.disposition,
         status.charges,
         refused.disposition,
         running.disposition,
         running.charges,
         stopped.disposition,
-        stopped.charges
+        stopped.charges,
+        restored.charges
     );
     capture(root, "p15-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";"))

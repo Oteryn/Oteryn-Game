@@ -355,7 +355,7 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
     let clients = &dedicated.clients(clients);
     let mut client = exercise_character(clients, "P15.full", 0xb5).await?;
     let initial = command(&mut client, wire::ExerciseIntent::Status, Accepted).await?;
-    if initial.disposition != 2 || initial.revision == 0 {
+    if initial.disposition != 2 || initial.revision == 0 || initial.charges != 0 {
         return Err(format!("STATUS reply={initial:?}; need=stopped durable state").into());
     }
     verdict.pass(1, initial);
@@ -439,22 +439,7 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
     }
     verdict.pass(3, running);
 
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(6);
-    let ticked = loop {
-        client.service_liveness(Duration::from_millis(200)).await?;
-        let status = command(&mut client, wire::ExerciseIntent::Status, Accepted).await?;
-        if status.disposition != 1
-            || status.charges < full
-            || tokio::time::Instant::now() >= deadline
-        {
-            break status;
-        }
-    };
-    if ticked.disposition != 1 || ticked.charges >= full {
-        return Err(
-            format!("post-tick STATUS reply={ticked:?}; need=charge delta below {full}").into(),
-        );
-    }
+    let ticked = observe_first_charge(&mut client, full).await?;
     verdict.pass(4, ticked);
 
     let stopped = command(&mut client, wire::ExerciseIntent::Stop, Accepted).await?;
@@ -468,13 +453,63 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
         .into());
     }
     verdict.pass(5, stopped);
+    let restored = verify_charge_after_relog(client, clients, target, stopped, 0xb6).await?;
+    verdict.pass(6, restored);
+    Ok(())
+}
+
+pub(super) async fn observe_first_charge(
+    client: &mut DevClientSession,
+    full: u32,
+) -> TestResult<wire::TrainingResult> {
+    use CommandStatus::Accepted;
+
+    let expected = full
+        .checked_sub(1)
+        .ok_or("exercise weapon has no charges")?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(6);
+    let ticked = loop {
+        client.service_liveness(Duration::from_millis(200)).await?;
+        let status = command(client, wire::ExerciseIntent::Status, Accepted).await?;
+        if status.disposition != 1
+            || status.charges != full
+            || tokio::time::Instant::now() >= deadline
+        {
+            break status;
+        }
+    };
+    if ticked.disposition != 1 || ticked.charges != expected {
+        return Err(format!(
+            "post-tick STATUS reply={ticked:?}; need=exact first-tick charge count {expected}"
+        )
+        .into());
+    }
+    Ok(ticked)
+}
+
+pub(super) async fn verify_charge_after_relog(
+    mut client: DevClientSession,
+    clients: &SeamClients<'_>,
+    target: TilePos,
+    stopped: wire::TrainingResult,
+    tag: u8,
+) -> TestResult<wire::TrainingResult> {
+    use CommandStatus::Accepted;
+
+    let session = client.join_snapshot().game_session_id;
+    let before = client.world_spatial().actor_position;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("logout reply refused; need=accepted durable save".into());
     }
     drop(client);
-    let mut client = connect_character(clients, 0xb6, 0).await?;
+    let mut client = connect_character(clients, tag, 0).await?;
+    if client.join_snapshot().game_session_id == session
+        || client.world_spatial().actor_position != before
+    {
+        return Err("fresh admission must restore the same exercise tile in a new session".into());
+    }
     let relogged = command(&mut client, wire::ExerciseIntent::Status, Accepted).await?;
     if relogged.disposition != 2 || relogged.charges != 0 || relogged.revision < stopped.revision {
         return Err(format!("fresh-admission STATUS={relogged:?}; need stopped state").into());
@@ -505,9 +540,12 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
             format!("fresh-admission STOP={restored:?}; need=settled persisted charges").into(),
         );
     }
-    verdict.pass(6, restored);
-    let _ = client.session_mut().logout().await?;
-    Ok(())
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("post-verification logout refused".into());
+    }
+    Ok(restored)
 }
 
 #[cfg(test)]
