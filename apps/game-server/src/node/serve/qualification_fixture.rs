@@ -51,8 +51,12 @@ const PARTY_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000017";
 const C06_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-00000000001c";
 
 #[cfg(feature = "qualification-spawn")]
+const Q_P04_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000020";
+
+#[cfg(feature = "qualification-spawn")]
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
+        "p04-task-board" => Some(("sorcerer", 8)),
         "s08-knight" => Some(("knight", 8)),
         "s08-sorcerer" => Some(("sorcerer", 8)),
         "s13-party" => Some(("sorcerer", 32)),
@@ -771,6 +775,7 @@ async fn prepare_build(
             | "c06-sorcerer"
             | "s13-party"
             | "w20b-light"
+            | "p04-task-board"
             | "s08-knight"
             | "s08-sorcerer"
     ) {
@@ -809,6 +814,7 @@ async fn prepare_build(
             | ("c06-sorcerer", C06_CASTER_ACCOUNT)
             | ("s13-party", PARTY_CASTER_ACCOUNT)
             | ("w20b-light", LIGHT_ACCOUNT)
+            | ("p04-task-board", Q_P04_ACCOUNT)
             | ("s08-knight", PVP_KNIGHT_ACCOUNT)
             | ("s08-sorcerer", PVP_SORCERER_ACCOUNT) => {}
             _ => return Err("preparation profile does not match dedicated account".into()),
