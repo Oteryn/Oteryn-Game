@@ -57,29 +57,61 @@ fn operation(name: &str) -> Result<Operation, Box<dyn std::error::Error>> {
     })
 }
 
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ForgeEnvelope {
+    command_id: u64,
+    game_session_id: String,
+    payload: Vec<u8>,
+    server_sequence: u64,
+    status: u32,
+}
+
 fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
-    type LiveReply = (u64, u64, u32, Vec<u8>, Vec<u8>);
-    let file = std::fs::File::open(root.join("p18-live.json"))?;
-    let (session, captured): ([u8; 16], Vec<LiveReply>) = serde_json::from_reader(file)?;
-    if session == [0; 16] || captured.len() != 8 {
-        return Err("Forge replay requires eight frames from a live session".into());
+    type Submitted = (u64, u64, Vec<u8>);
+    let file = std::fs::File::open(root.join("p18-requests.json"))?;
+    let (session, requests): (String, Vec<Submitted>) = serde_json::from_reader(file)?;
+    if session.len() != 36
+        || !session
+            .bytes()
+            .enumerate()
+            .all(|(index, byte)| match index {
+                8 | 13 | 18 | 23 => byte == b'-',
+                14 => byte == b'7',
+                19 => matches!(byte, b'8' | b'9' | b'a' | b'b'),
+                _ => byte.is_ascii_hexdigit(),
+            })
+        || requests.len() != 8
+    {
+        return Err("Forge replay requires eight frames from a live UUIDv7 session".into());
     }
-    let metadata: Vec<_> = captured.iter().map(|frame| (frame.0, frame.1)).collect();
     let mut panel = ItemForgePanel {
         selected: true,
         ..Default::default()
     };
-    for (index, (command_id, server_sequence, status, payload, submitted_bytes)) in
-        captured.into_iter().enumerate()
+    let mut previous = (0, 0);
+    for (index, (command_id, server_sequence, submitted_bytes)) in requests.into_iter().enumerate()
     {
-        if status != CommandStatus::Accepted as u32
-            || command_id == 0
-            || server_sequence == 0
-            || index > 0
-                && (command_id <= metadata[index - 1].0 || server_sequence <= metadata[index - 1].1)
+        let file = std::fs::File::open(root.join(format!("p18-frame-{index}.json")))?;
+        let envelope: ForgeEnvelope = serde_json::from_reader(file)?;
+        let status = match envelope.status {
+            1 => CommandStatus::Accepted,
+            2 => CommandStatus::Rejected,
+            3 => CommandStatus::DuplicateReplay,
+            4 => CommandStatus::DuplicateOutcomeExpired,
+            _ => return Err(format!("unknown Forge reply status at frame {index}").into()),
+        };
+        if envelope.game_session_id != session
+            || envelope.command_id != command_id
+            || envelope.server_sequence != server_sequence
+            || command_id <= previous.0
+            || server_sequence <= previous.1
+            || status != CommandStatus::Accepted
         {
             return Err(format!("invalid Forge reply metadata at frame {index}").into());
         }
+        previous = (command_id, server_sequence);
+        let payload = envelope.payload;
         let submitted = if index == 7 {
             if !submitted_bytes.is_empty() {
                 return Err("invalid Forge dust query capture".into());
@@ -105,7 +137,7 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
             &ServerMechanicResponse {
                 command_id,
                 server_sequence,
-                status: CommandStatus::Accepted,
+                status,
                 payload: payload.clone(),
             },
         );

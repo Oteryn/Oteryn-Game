@@ -52,8 +52,27 @@ fn write_capture(root: &Path, session: [u8; 16], frames: &[LiveReply]) -> TestRe
         )
         .into());
     }
-    let mut file = std::fs::File::create_new(root.join("p18-live.json"))?;
-    serde_json::to_writer(&mut file, &(session, frames))?;
+    let session = uuid_text(&session);
+    let mut requests = Vec::with_capacity(frames.len());
+    for (index, (command_id, server_sequence, status, payload, submitted)) in
+        frames.iter().enumerate()
+    {
+        let mut file = std::fs::File::create_new(root.join(format!("p18-frame-{index}.json")))?;
+        serde_json::to_writer(
+            &mut file,
+            &serde_json::json!({
+                "command_id": command_id,
+                "game_session_id": session,
+                "payload": payload,
+                "server_sequence": server_sequence,
+                "status": status,
+            }),
+        )?;
+        file.flush()?;
+        requests.push((command_id, server_sequence, submitted));
+    }
+    let mut file = std::fs::File::create_new(root.join("p18-requests.json"))?;
+    serde_json::to_writer(&mut file, &(&session, requests))?;
     file.flush()?;
     Ok(())
 }

@@ -879,7 +879,7 @@ class CloudRunSummaryTests(unittest.TestCase):
             (
                 "oteryn-client-ui",
                 "e2e_p18_replays_forge_history_and_operation_receipts",
-                {"p18-live.json"},
+                {"p18-requests.json", *(f"p18-frame-{index}.json" for index in range(8))},
             ),
         ])
         selected, _ = replay["selected_rows"]("174:1")
