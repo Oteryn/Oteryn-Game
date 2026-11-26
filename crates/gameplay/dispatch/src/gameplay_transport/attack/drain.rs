@@ -2517,17 +2517,26 @@ mod tests {
         let constants = super::AttackConstants::checked_in().ok_or("attack constants")?;
         let helmet = ReferenceRationalPercent::new(5, 1)?;
         let amulet = ReferenceRationalPercent::new(6, 1)?;
+        let equipped_total = ReferenceRationalPercent::new(11, 1)?;
         let helmet_only = super::player_melee_after_defence(200, [helmet], Some);
         assert_eq!(helmet_only, Some(190));
         for (draw, expected) in (0..4).zip([174, 173, 172, 171]) {
-            let actual = super::player_melee_after_defence(200, [helmet, amulet], |protected| {
+            let armor = |protected| {
                 assert_eq!(protected, 178);
                 let protected = u32::try_from(protected).ok()?;
                 Some(i64::from(player_armor_mitigated(
                     constants, protected, 9, draw,
                 )))
-            });
-            assert_eq!(actual, Some(expected));
+            };
+            assert_eq!(
+                super::player_melee_after_defence(200, [helmet, amulet], armor),
+                Some(expected)
+            );
+            // The current equipment snapshot supplies one summed physical protection.
+            assert_eq!(
+                super::player_melee_after_defence(200, Some(equipped_total), armor),
+                Some(expected)
+            );
         }
         Ok(())
     }
