@@ -114,6 +114,7 @@ pub(super) async fn exchange_nested(
             if envelope.message_type() == protocol::MessageType::CommandResult {
                 let result = protocol::decode_command_result(envelope.payload()).map_err(debug)?;
                 if result.command_id == command_id {
+                    assert_eq!(result.status, protocol::CommandStatus::Accepted);
                     return Ok::<_, Box<dyn std::error::Error>>((
                         protocol::world_object::decode_use_result(result.payload).map_err(debug)?,
                         actual,

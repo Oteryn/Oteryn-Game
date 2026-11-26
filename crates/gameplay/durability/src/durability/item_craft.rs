@@ -31,7 +31,7 @@ pub(crate) mod marriage;
 mod skinning;
 pub mod soulpit;
 pub use enchanting::EnchantingCraft;
-pub use event_containers::{BLUE_PRESENT, EventContainerReplaySource, REWARD_BAG_INSTANCE_INTENT_TAG};
+pub use event_containers::{BLUE_PRESENT, EventContainerReplaySource, RED_CHRISTMAS_BUNDLE, REWARD_BAG_INSTANCE_INTENT_TAG};
 pub use harvest::{MapHarvestOperand, MapHarvestRequest, MapHarvestResult};
 pub use skinning::{SkinningOutcome, SkinningRequest};
 
@@ -196,7 +196,7 @@ impl DurabilityRoot {
             let previous: Option<(Vec<u8>, Vec<u8>, bool)> = sqlx::query_as(
                 "SELECT intent, uuid_send(character_id), \
                         source_item_instance_id=encode($3,'hex')::uuid \
-                            AND (recipe LIKE 'oteryn:event-container.%' OR recipe=$4) \
+                            AND (recipe LIKE 'oteryn:event-container.%' OR recipe IN ($4,$5)) \
                  FROM game_item_craft_records \
                  WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric",
             )
@@ -204,6 +204,7 @@ impl DurabilityRoot {
                 .bind(request.command.command_id().get().to_string())
                 .bind(request.source.as_slice())
                 .bind(event_containers::BLUE_PRESENT_RECIPE)
+                .bind(event_containers::RED_CHRISTMAS_BUNDLE_RECIPE)
                 .fetch_optional(&mut **tx).await?;
             if let Some((intent, character, event_source_matches)) = previous {
                 // The server's completion probe only retains the resolved instance after
@@ -308,6 +309,7 @@ async fn write<C: ItemLoopContent>(
     };
     if nested_source.is_some()
         && !matches!(&variant, CraftVariant::Skinning(_))
+        && (definition.production_key != RED_CHRISTMAS_BUNDLE || request.ingredient.is_some())
         && oteryn_gameplay_items::reward_bag::event_containers::legacy_conversion_rule(
             &definition.production_key,
         )

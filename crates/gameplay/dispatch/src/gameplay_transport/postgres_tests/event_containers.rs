@@ -45,6 +45,8 @@ fn w19_event_containers_music_box_soft_boots_mint_equip_and_replay() -> TestResu
 
 #[test]
 fn w19_event_containers_nested_christmas_wire_atomic_replay_and_refusals() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
     run_scenario_source("oteryn:item.tibia.i6506", 1, 7, true)
 }
 
@@ -300,29 +302,39 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             command_id,
             item_fence: Some(fence),
         };
-        assert!(
-            owner
-                .use_reward_bag_intent(
-                    deps.actor,
-                    command(fence),
-                    &intent,
-                    Some(ItemKey::Instance(source))
-                )
-                .await
-                .map_err(debug)?
-                .is_none(),
-            "W19 pre-routing must defer to SP04"
-        );
+        if !nested {
+            assert!(
+                owner
+                    .use_reward_bag_intent(
+                        deps.actor,
+                        command(fence),
+                        &intent,
+                        Some(ItemKey::Instance(source))
+                    )
+                    .await
+                    .map_err(debug)?
+                    .is_none(),
+                "W19 pre-routing must defer to SP04"
+            );
+        }
         // Changing only the current connection generation cannot consume the source.
         let mut stale = fence;
         stale.connection_generation =
             crate::foundation::ConnectionGeneration::new(fence.connection_generation.get() + 1)
                 .map_err(debug)?;
-        let refused = owner
-            .use_reward_bag(deps.actor, command(stale), ItemKey::Instance(source))
-            .await
-            .ok_or("SP04 route")?
-            .ok_or("stale result")?;
+        let refused = if nested {
+            owner
+                .use_reward_bag_intent(deps.actor, command(stale), &intent, Some(ItemKey::Instance(source)))
+                .await
+                .map_err(debug)?
+                .ok_or("stale nested USE")?
+        } else {
+            owner
+                .use_reward_bag(deps.actor, command(stale), ItemKey::Instance(source))
+                .await
+                .ok_or("SP04 route")?
+                .ok_or("stale result")?
+        };
         assert_eq!(refused.disposition, UseDisposition::Rejected);
         assert_eq!(craft_count().await?, 0);
         let unchanged: (i64, i16) = sqlx::query_as(
@@ -330,77 +342,60 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
         ).bind(source.as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(unchanged, (i64::from(source_quantity), 1));
 
-        if nested {
-            let before = ground::durable_state(&harness).await?;
-            let (next, result, raw) = wire::exchange_nested(
-                &owner,
-                admitted,
-                command_id,
-                &intent,
-                reference(bag).ok_or("nested bag definition")?,
-                reference(bag_key).ok_or("nested reward definition")?,
-            )
-            .await?;
-            assert_eq!(result, UseDisposition::NothingToUse);
-            assert_eq!(ground::durable_state(&harness).await?, before);
-            let (_, replayed, same) = exchange(&owner, next, command_id, &raw, None).await?;
-            assert_eq!(replayed, UseDisposition::NothingToUse);
-            assert_eq!(same, raw);
-            assert_eq!(ground::durable_state(&harness).await?, before);
-            assert_eq!(craft_count().await?, 0);
-            drop(owner);
-            drop(authority);
-            drop(seal);
-            return harness.cleanup().await;
-        }
+        let nested_before: Option<serde_json::Value> =
+            sqlx::query_scalar("SELECT to_jsonb(e) FROM game_item_nested_entries e WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(source.as_slice()).fetch_optional(&harness.pool).await?;
+        assert_eq!(nested_before.is_some(), nested);
 
-        // Nineteen real, heavy native items exhaust both slots and capacity. A
-        // multi-output recipe refuses slots; the one-output recipe reaches weight.
-        let mut tx = harness.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx)
-            .await?;
-        let mut fillers = Vec::new();
-        for ordinal in 100_i64..119 {
-            fillers.push(sqlx::query_scalar::<_, String>(
-                "WITH i AS (INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,'Item','oteryn:item.tibia.i43872','definition-r1',1,1,game_character_uuid_v7()) RETURNING item_instance_id) INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT item_instance_id,encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,game_character_uuid_v7() FROM i RETURNING item_instance_id::text",
-            ).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(id(70).as_slice())
-                .bind(ordinal).fetch_one(&mut *tx).await?);
-        }
-        tx.commit().await?;
-        let refused = owner
-            .use_reward_bag(deps.actor, command(fence), ItemKey::Instance(source))
-            .await
-            .ok_or("SP04 route")?
-            .ok_or("resource refusal")?;
-        assert_eq!(
-            refused.disposition,
-            if output_count > 1 || remaining_quantity > 0 || nested {
-                UseDisposition::NoRoom
-            } else {
-                UseDisposition::NotPossible
+        if !nested {
+            // Nineteen real, heavy native items exhaust both slots and capacity. A
+            // multi-output recipe refuses slots; the one-output recipe reaches weight.
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            let mut fillers = Vec::new();
+            for ordinal in 100_i64..119 {
+                fillers.push(sqlx::query_scalar::<_, String>(
+                    "WITH i AS (INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,'Item','oteryn:item.tibia.i43872','definition-r1',1,1,game_character_uuid_v7()) RETURNING item_instance_id) INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT item_instance_id,encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,game_character_uuid_v7() FROM i RETURNING item_instance_id::text",
+                ).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(id(70).as_slice())
+                    .bind(ordinal).fetch_one(&mut *tx).await?);
             }
-        );
-        assert_eq!(craft_count().await?, 0);
-        let unchanged: (i64, i16) = sqlx::query_as(
-            "SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
-        ).bind(source.as_slice()).fetch_one(&harness.pool).await?;
-        assert_eq!(unchanged, (i64::from(source_quantity), 1));
-        let mut tx = harness.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx)
-            .await?;
-        sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id::text=ANY($1)")
-            .bind(&fillers)
-            .execute(&mut *tx)
-            .await?;
-        sqlx::query("DELETE FROM game_item_instances WHERE item_instance_id::text=ANY($1)")
-            .bind(&fillers)
-            .execute(&mut *tx)
-            .await?;
-        tx.commit().await?;
+            tx.commit().await?;
+            let refused = owner
+                .use_reward_bag(deps.actor, command(fence), ItemKey::Instance(source))
+                .await
+                .ok_or("SP04 route")?
+                .ok_or("resource refusal")?;
+            assert_eq!(
+                refused.disposition,
+                if output_count > 1 || remaining_quantity > 0 {
+                    UseDisposition::NoRoom
+                } else {
+                    UseDisposition::NotPossible
+                }
+            );
+            assert_eq!(craft_count().await?, 0);
+            let unchanged: (i64, i16) = sqlx::query_as(
+                "SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
+            ).bind(source.as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(unchanged, (i64::from(source_quantity), 1));
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id::text=ANY($1)")
+                .bind(&fillers)
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("DELETE FROM game_item_instances WHERE item_instance_id::text=ANY($1)")
+                .bind(&fillers)
+                .execute(&mut *tx)
+                .await?;
+            tx.commit().await?;
+        }
 
-        if bag_key == "oteryn:item.tibia.i6506" {
+        if !nested && bag_key == "oteryn:item.tibia.i6506" {
             // A fixture has no node driver to replenish retired ready holders.
             // Without maintenance this unknown USE outcome disconnects the wire.
             let mut holders = Vec::new();
@@ -459,7 +454,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             sqlx::query_scalar("SELECT event_source_location FROM game_item_craft_records")
                 .fetch_one(&harness.pool)
                 .await?;
-        assert_eq!(nested_proof.is_some(), nested);
+        assert_eq!(nested_proof, nested_before);
         let durable = harness
             .root
             .read_character_backpack(&authority, fence.character_id)
@@ -486,6 +481,17 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             output_count
         );
         assert!(hash_matches);
+        if nested {
+            let distinct: i64 = sqlx::query_scalar(
+                "SELECT count(DISTINCT i.definition_production_key) FROM game_item_instances i JOIN game_item_craft_records r ON r.transaction_id=i.minted_transaction_id",
+            ).fetch_one(&harness.pool).await?;
+            assert_eq!(distinct, i64::try_from(output_count)?);
+            let committed = ground::durable_state(&harness).await?;
+            let (_, replayed, same) = exchange(&owner, next, command_id, &payload, None).await?;
+            assert_eq!(replayed, UseDisposition::Committed);
+            assert_eq!(same, payload);
+            assert_eq!(ground::durable_state(&harness).await?, committed);
+        }
         if bag_key == "oteryn:item.tibia.i39710" {
             let children: i64 = sqlx::query_scalar(
                 "SELECT (SELECT count(*) FROM game_item_nested_entries e JOIN game_item_instances i ON i.item_instance_id=e.parent_item_instance_id WHERE i.definition_production_key='oteryn:item.tibia.i39693') + (SELECT count(*) FROM game_item_container_entries e JOIN game_item_instances i ON i.item_instance_id=e.parent_item_instance_id WHERE i.definition_production_key='oteryn:item.tibia.i39693')",
@@ -515,11 +521,22 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             sqlx::query_scalar("SELECT intent FROM game_item_craft_records")
                 .fetch_one(&harness.pool)
                 .await?;
-        assert_eq!(
-            recorded_intent,
-            [b"oteryn:reward-bag-use:v1".as_slice(), source.as_slice()].concat(),
-            "SP04 receipt binds the historical instance tag"
-        );
+        if nested {
+            assert_eq!(recorded_intent, payload, "nested receipt binds the original USE");
+            let replay = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+                next.continuity.selected_capabilities.as_slice(),
+                &payload,
+            ).map_err(debug)?;
+            let replayed = restarted.use_reward_bag_intent(deps.actor, command(fence), &replay, None)
+                .await.map_err(debug)?.ok_or("wire replay without retired handle")?;
+            assert_eq!(replayed.disposition, UseDisposition::Committed);
+        } else {
+            assert_eq!(
+                recorded_intent,
+                [b"oteryn:reward-bag-use:v1".as_slice(), source.as_slice()].concat(),
+                "SP04 receipt binds the historical instance tag"
+            );
+        }
         assert_eq!(craft_count().await?, 1);
         let replay_outputs: serde_json::Value =
             sqlx::query_scalar("SELECT outputs FROM game_item_craft_records")

@@ -32,13 +32,14 @@ impl DurabilityRoot {
                  FROM game_item_craft_records \
                  WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric \
                    AND character_id=encode($3,'hex')::uuid \
-                   AND (recipe LIKE 'oteryn:event-container.%' OR recipe=$4)",
+                   AND (recipe LIKE 'oteryn:event-container.%' OR recipe IN ($4,$6))",
             )
             .bind(command.game_session_id().as_bytes().as_slice())
             .bind(command.command_id().get().to_string())
             .bind(fence.character_id.as_bytes().as_slice())
             .bind(BLUE_PRESENT_RECIPE)
             .bind(REWARD_BAG_INSTANCE_INTENT_TAG)
+            .bind(RED_CHRISTMAS_BUNDLE_RECIPE)
             .fetch_optional(&mut **tx).await?;
             tx.commit(deadline).await?;
             match source {
@@ -77,6 +78,8 @@ pub(super) async fn nested_source(
 
 pub const BLUE_PRESENT: &str = "oteryn:item.tibia.i6570";
 pub(super) const BLUE_PRESENT_RECIPE: &str = "oteryn:reward-bag.event_6570";
+pub const RED_CHRISTMAS_BUNDLE: &str = "oteryn:item.tibia.i6506";
+pub(super) const RED_CHRISTMAS_BUNDLE_RECIPE: &str = "oteryn:reward-bag.event_6506";
 
 pub(super) struct DropAdmission<'a> {
     pub(super) target: &'a LoopGround,

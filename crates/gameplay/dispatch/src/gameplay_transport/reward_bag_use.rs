@@ -4,7 +4,8 @@ use super::connection::{UseCommand, UseOutcome};
 use super::item_ref_admission::NativeItemWeights;
 use super::{ComposedFreshAdmission, item_view::ItemKey};
 use crate::durability::item_craft::{
-    BLUE_PRESENT, EventContainerReplaySource, ItemCraftRequest, REWARD_BAG_INSTANCE_INTENT_TAG,
+    BLUE_PRESENT, EventContainerReplaySource, ItemCraftRequest, RED_CHRISTMAS_BUNDLE,
+    REWARD_BAG_INSTANCE_INTENT_TAG,
 };
 use crate::durability::item_loop_move::LoopGround;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -60,13 +61,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .backpack
                 .iter()
                 .flat_map(|bag| &bag.entries)
-                .chain(inventory.nested.iter().map(|(_, entry)| entry))
-                .find(|entry| entry.item.item_instance_id == id);
+                .map(|entry| (entry, false))
+                .chain(inventory.nested.iter().map(|(_, entry)| (entry, true)))
+                .find(|(entry, _)| entry.item.item_instance_id == id);
             // SP04 owns ordinary carried Blue Present USE. Only the qualified
             // bundle Ground extension needs the original wire intent here.
-            if !carried.is_some_and(|entry| {
+            if !carried.is_some_and(|(entry, nested)| {
                 let key = &entry.item.definition.production_key;
                 legacy_conversion_rule(key).is_some()
+                    || (nested && key == RED_CHRISTMAS_BUNDLE)
                     || (key == BLUE_PRESENT
                         && self.bundle_map().is_some()
                         && self.rooms().gate_ground_item_action().is_some())
