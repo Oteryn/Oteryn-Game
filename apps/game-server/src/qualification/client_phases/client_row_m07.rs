@@ -87,6 +87,7 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
         y: i32::from(spot.y) + 1,
         floor: -i16::from(spot.floor) - 1,
     };
+    client.take_events();
     for direction in path {
         let from = tile(client.world_spatial().actor_position)?;
         let planned = destination(world, from, direction).ok_or("M07 route edge missing")?;
@@ -101,8 +102,8 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
             .into());
         }
         verdict::Harness::global().progress("M07 approach");
+        client.take_events();
     }
-    client.take_events();
     let before = client.world_spatial().actor_position;
     let index = provisioning::item_index()?;
     let reference = provisioning::item_reference(&index, 3003)?;
