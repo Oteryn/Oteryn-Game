@@ -2,9 +2,11 @@ use super::qengine_rewards_fixtures::{talk, talk_outcome};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::Harness};
 use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 const INQUISITION: &str = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline";
 const VAMPIRE_HUNT: &str = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03";
+const DUST: &str = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust";
 const RANK: &str = "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank";
 const DOOR: &str = "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/door";
 const TOKEN: &str = "oteryn:item.tibia.i8192";
@@ -35,15 +37,16 @@ pub(super) async fn loot(
     Ok(())
 }
 
-pub(super) async fn dust(
+async fn dust_setup(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut AdmittedSession,
+    admitted: &AdmittedSession,
     h: &Harness,
-) -> TestResult {
+    item: &str,
+    quantity: u16,
+) -> TestResult<EntityRef> {
     use super::qengine_outfit_stories_fixtures::seed_quest_prerequisites;
     use super::{classic_quests_fixtures, quest_world_callbacks_fixtures};
 
-    const DUST: &str = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust";
     let [npc] = classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.storkus"]).await?;
     seed_quest_prerequisites(
         h,
@@ -67,8 +70,8 @@ pub(super) async fn dust(
                 y: 31677,
                 floor: -15,
             },
-            item: "oteryn:item.tibia.i5905".into(),
-            count: 20,
+            item: item.into(),
+            count: quantity,
         },
         113,
         true,
@@ -77,6 +80,15 @@ pub(super) async fn dust(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
+    Ok(npc)
+}
+
+pub(super) async fn dust(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    let npc = dust_setup(owner, admitted, h, "oteryn:item.tibia.i5905", 20).await?;
     let first = admitted.continuity.next_command_id;
     for (offset, (word, expected)) in [
         ("hi", None),
@@ -105,6 +117,114 @@ pub(super) async fn dust(
             assert_eq!(state, expected, "Storkus step {offset} ({word})");
         }
     }
+    Ok(())
+}
+
+pub(super) async fn direct_dust(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use oteryn_gameplay_quests::quest::reward_callbacks;
+    use sqlx::types::Uuid;
+
+    const HAND_IN: &str = "oteryn:quest-reward/inquisition-vampire-hunt-dust";
+    let callbacks = reward_callbacks::load()?;
+    let collect = callbacks
+        .iter()
+        .find(|callback| callback.key == "oteryn:quest-reward/inquisition-vampire-hunt-dust/collect")
+        .ok_or("authored Storkus dust collection")?;
+    let [payment] = collect.take.as_slice() else {
+        return Err("expected one authored dust payment".into());
+    };
+    let report = callbacks
+        .iter()
+        .find(|callback| {
+            callback.key == "oteryn:quest-reward/inquisition-vampire-hunt-dust/already-paid"
+        })
+        .ok_or("authored Storkus paid report")?;
+    let [questline, mission, dust] = report.storage.as_slice() else {
+        return Err("expected the two Storkus progression tracks and dust counter".into());
+    };
+
+    // Leave enough dust for another payment so replay cannot pass for lack of stock.
+    let stack = payment.count.checked_mul(2).ok_or("dust stack quantity")?;
+    let npc = dust_setup(owner, admitted, h, &payment.item, stack).await?;
+    let stacks: Vec<(Uuid, i64)> = sqlx::query_as(
+        "SELECT item_instance_id, quantity FROM game_item_instances \
+         WHERE definition_production_key=$1 AND lifecycle=1 LIMIT 2",
+    )
+    .bind(&payment.item)
+    .fetch_all(&h.pool)
+    .await?;
+    let [(item, before)] = stacks.as_slice() else {
+        return Err("expected one live dust stack".into());
+    };
+    assert_eq!(*before, i64::from(stack));
+
+    let first = admitted.continuity.next_command_id;
+    assert_eq!(
+        talk(owner, admitted, npc, first, "hi").await?,
+        NpcIntentDisposition::Ok
+    );
+    let offer = talk_outcome(owner, admitted, npc, first + 1, "vampire dust").await?;
+    assert_eq!(offer.disposition, NpcIntentDisposition::Ok);
+    assert_eq!(
+        offer.conversation.ok_or("direct dust offer")?.lines,
+        ["Shall I take the vampire dust you've brought?"]
+    );
+    let command = first + 2;
+    assert_eq!(
+        talk(owner, admitted, npc, command, "yes").await?,
+        NpcIntentDisposition::Ok,
+        "Storkus must accept the direct hand-in"
+    );
+
+    // Read one snapshot and compare PostgreSQL row versions as well as the
+    // durable receipt stamps. A single snapshot alone could see split commits.
+    let session = Uuid::from_bytes(*admitted.game_session_id.as_bytes());
+    let snapshot = || {
+        sqlx::query_as::<_, (i64, i32, Vec<i64>, bool, Uuid)>(
+            "SELECT i.quantity, c.quantity, ARRAY[q.value, m.value, d.value],
+                    i.last_transaction_id=c.transaction_id
+                    AND c.created_xact_id=r.created_xact_id
+                    AND i.xmin=c.xmin AND q.xmin=c.xmin AND m.xmin=c.xmin AND d.xmin=c.xmin,
+                    c.transaction_id
+             FROM game_item_instances i
+             JOIN game_quest_callback_consumptions c USING (item_instance_id)
+             JOIN game_character_quest_receipts r
+               USING (character_id, cause_id, cause_ordinal, transition_key)
+             JOIN game_character_quest_tracks q ON q.character_id=r.character_id AND q.track_key=$2
+             JOIN game_character_quest_tracks m ON m.character_id=r.character_id AND m.track_key=$3
+             JOIN game_character_quest_tracks d ON d.character_id=r.character_id AND d.track_key=$4
+             WHERE i.item_instance_id=$1 AND i.lifecycle=1 AND r.transition_key=$5
+               AND r.cause_id=$6 AND r.cause_ordinal=$7::text::numeric
+             LIMIT 2",
+        )
+        .bind(*item)
+        .bind(INQUISITION)
+        .bind(VAMPIRE_HUNT)
+        .bind(DUST)
+        .bind(HAND_IN)
+        .bind(session)
+        .bind(command.to_string())
+        .fetch_all(&h.pool)
+    };
+    let committed = snapshot().await?;
+    let [(remaining, debit, tracks, same_xact, _)] = committed.as_slice() else {
+        return Err("expected one receipt for the direct Storkus hand-in".into());
+    };
+    assert_eq!(*debit, i32::from(payment.count));
+    assert_eq!(*remaining, *before - i64::from(payment.count));
+    assert_eq!(
+        tracks,
+        &[questline.set, mission.set, dust.set],
+        "direct hand-in must advance the questline, mission, and dust counter"
+    );
+    assert!(*same_xact, "the dust and all tracks must commit together");
+
+    let _ = talk(owner, admitted, npc, command, "yes").await?;
+    assert_eq!(snapshot().await?, committed, "replay changed the committed hand-in");
     Ok(())
 }
 
