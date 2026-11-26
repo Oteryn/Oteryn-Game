@@ -724,27 +724,48 @@ async fn pouch_relog_logout(
 ) -> TestResult {
     use crate::durability::fresh_admission::FreshAdmissionStore;
     use crate::foundation::GameSessionState;
-    use crate::gameplay_transport::composed_admission::{CONDITION_RELEASE_PROBE, ConditionReleaseProbe};
+    use crate::gameplay_transport::composed_admission::{
+        CONDITION_RELEASE_PROBE, HolderCheckoutProbe,
+    };
     use crate::gameplay_transport::connection::{ControllerBinding, SessionContinuity};
     use crate::gameplay_transport::logout::LogoutReply;
-    use oteryn_protocol_oteryn::logout::{COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result};
+    use oteryn_protocol_oteryn::logout::{
+        COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
+    };
     use std::{cell::Cell, sync::Arc, time::Duration};
 
-    assert_eq!(owner.logout_session(previous).await, LogoutReply::Result(LogoutResult::Accepted));
+    assert_eq!(
+        owner.logout_session(previous).await,
+        LogoutReply::Result(LogoutResult::Accepted)
+    );
     let (session, request) = super::full_world_support::relogin_request(harness).await?;
     let store = FreshAdmissionStore::from_root(harness.root.clone());
-    let transport = store.current_session(session).await?.current_transport().ok_or("relog transport")?;
+    let transport = store
+        .current_session(session)
+        .await?
+        .current_transport()
+        .ok_or("relog transport")?;
     let actor = {
         let mut runtime = owner.runtime.lock().await;
         let reserved = runtime.reserve_fresh_session(session).map_err(debug)?;
         runtime.commit_fresh_session(reserved).map_err(debug)?
     };
-    let (first_entry, item_fence, _) = Box::pin(owner.initialize_first_entry(&request, session, transport, actor)).await;
-    assert!(matches!(first_entry, FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled), "{first_entry:?}");
+    let (first_entry, item_fence, _) =
+        Box::pin(owner.initialize_first_entry(&request, session, transport, actor)).await;
+    assert!(
+        matches!(
+            first_entry,
+            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+        ),
+        "{first_entry:?}"
+    );
     let admitted = AdmittedSession {
         game_session_id: session,
         runtime_actor: Some(actor),
-        controller: Some(ControllerBinding { transport, account_id: id(40) }),
+        controller: Some(ControllerBinding {
+            transport,
+            account_id: id(40),
+        }),
         continuity: SessionContinuity {
             selected_capabilities: previous.continuity.selected_capabilities,
             ..SessionContinuity::FRESH
@@ -754,11 +775,7 @@ async fn pouch_relog_logout(
         ..previous
     };
 
-    let probe = Arc::new(ConditionReleaseProbe {
-        before_read: tokio::sync::Notify::new(),
-        proceed: tokio::sync::Notify::new(),
-        read_failed: tokio::sync::Notify::new(),
-    });
+    let probe = Arc::new(HolderCheckoutProbe::default());
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let drive = async {
         loop {
@@ -769,26 +786,38 @@ async fn pouch_relog_logout(
         }
         let id = admitted.continuity.next_command_id;
         send(&mut client, id, COMMAND_TYPE_LOGOUT_INTENT, &[]).await?;
-        probe.before_read.notified().await;
-        // Another foreground pass briefly wins the real holder after logout preflight.
-        let holder = harness.root.try_issue_semantic_pass()?;
-        probe.proceed.notify_one();
-        probe.read_failed.notified().await;
-        drop(holder);
+        probe.contend(&harness.root).await?;
         let (_, payload) = command_reply(&mut client, id).await?;
         client.shutdown().await?;
         let outcome = decode_logout_result(&payload).map_err(debug)?;
         assert_eq!(outcome, LogoutResult::Accepted);
         Ok::<_, Box<dyn std::error::Error>>(())
     };
-    let (end, result) = tokio::time::timeout(Duration::from_secs(30), join_two(
-        CONDITION_RELEASE_PROBE.scope(Cell::new(Some(Arc::clone(&probe))), serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS)),
-        drive,
-    )).await?;
+    let (end, result) = tokio::time::timeout(
+        Duration::from_secs(30),
+        join_two(
+            CONDITION_RELEASE_PROBE.scope(
+                Cell::new(Some(Arc::clone(&probe))),
+                serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS),
+            ),
+            drive,
+        ),
+    )
+    .await?;
     result?;
     assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)));
-    assert_eq!(store.current_session(session).await?.session_state(), GameSessionState::Terminal);
-    assert!(owner.runtime.lock().await.player_control_facts(actor, session).is_err());
+    assert_eq!(
+        store.current_session(session).await?.session_state(),
+        GameSessionState::Terminal
+    );
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .player_control_facts(actor, session)
+            .is_err()
+    );
     Ok(())
 }
 
@@ -808,13 +837,27 @@ async fn selected_item_cases(
     let corpse_identity = {
         let mut runtime = owner.runtime.lock().await;
         let creature = runtime
-            .admit_pinned_test_creature(MovementLocalPosition { x: 7, y: 0, floor: 7 })
+            .admit_pinned_test_creature(MovementLocalPosition {
+                x: 7,
+                y: 0,
+                floor: 7,
+            })
             .map_err(debug)?;
-        runtime.commit_monster_lab_damage(creature, b"quick-loot-corpse", 20).map_err(debug)?;
+        runtime
+            .commit_monster_lab_damage(creature, b"quick-loot-corpse", 20)
+            .map_err(debug)?;
         let mut death = runtime.borrow_combat_death();
         let receipt = death.committed_lethal_receipt(creature).map_err(debug)?;
         death.project_committed_lethal(receipt).map_err(debug)?;
-        runtime.bind_corpse_item(creature, corpse, "Item", "oteryn:item.tibia.i5973", "definition-r1").map_err(debug)?;
+        runtime
+            .bind_corpse_item(
+                creature,
+                corpse,
+                "Item",
+                "oteryn:item.tibia.i5973",
+                "definition-r1",
+            )
+            .map_err(debug)?;
         creature.corpse_identity()
     };
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
@@ -825,10 +868,19 @@ async fn selected_item_cases(
             use oteryn_protocol_oteryn::world_object::{
                 COMMAND_TYPE_USE_INTENT, UseDisposition, decode_use_result, encode_use_item_intent,
             };
-            send(&mut client, command_id, COMMAND_TYPE_USE_INTENT, &encode_use_item_intent(corpse_handle)).await?;
+            send(
+                &mut client,
+                command_id,
+                COMMAND_TYPE_USE_INTENT,
+                &encode_use_item_intent(corpse_handle),
+            )
+            .await?;
             let (status, payload) = command_reply(&mut client, command_id).await?;
             assert_eq!(status, CommandStatus::Accepted);
-            assert_eq!(decode_use_result(&payload).map_err(debug)?, UseDisposition::Committed);
+            assert_eq!(
+                decode_use_result(&payload).map_err(debug)?,
+                UseDisposition::Committed
+            );
             let opened = corpse_delta(&mut client).await?;
             assert_eq!(opened.container_handle, Some(corpse_handle));
             let [keep, take] = opened.entries.as_slice() else {
@@ -838,7 +890,10 @@ async fn selected_item_cases(
                 for handle in [corpse_handle, ItemHandle::MAX] {
                     command_id += 1;
                     send_click(&mut client, command_id, handle).await?;
-                    assert_eq!(command_reply(&mut client, command_id).await?, (CommandStatus::Rejected, vec![16, 2]));
+                    assert_eq!(
+                        command_reply(&mut client, command_id).await?,
+                        (CommandStatus::Rejected, vec![16, 2])
+                    );
                 }
                 assert_eq!(corpse_items(pool, corpse).await?, items);
             } else {
@@ -849,27 +904,45 @@ async fn selected_item_cases(
                     fixture_corpse(pool, corpse, cell, top, 0).await?;
                     command_id += 1;
                     send_click(&mut client, command_id, take.handle).await?;
-                    assert_eq!(command_reply(&mut client, command_id).await?.0, CommandStatus::Rejected, "{reason}");
+                    assert_eq!(
+                        command_reply(&mut client, command_id).await?.0,
+                        CommandStatus::Rejected,
+                        "{reason}"
+                    );
                     assert_eq!(corpse_items(pool, corpse).await?, items, "{reason}");
                 }
                 fixture_corpse(pool, corpse, near, id(41), 0).await?;
                 command_id += 1;
                 send_click(&mut client, command_id, take.handle).await?;
-                assert_eq!(command_reply(&mut client, command_id).await?, (CommandStatus::Accepted, vec![16, 1]));
-                assert_eq!(corpse_delta(&mut client).await?, OpenContainer {
-                    container_handle: Some(corpse_handle),
-                    entries: vec![*keep],
-                });
+                assert_eq!(
+                    command_reply(&mut client, command_id).await?,
+                    (CommandStatus::Accepted, vec![16, 1])
+                );
+                assert_eq!(
+                    corpse_delta(&mut client).await?,
+                    OpenContainer {
+                        container_handle: Some(corpse_handle),
+                        entries: vec![*keep],
+                    }
+                );
                 command_id += 1;
                 send_click(&mut client, command_id, take.handle).await?;
-                assert_eq!(command_reply(&mut client, command_id).await?, (CommandStatus::Rejected, vec![16, 2]));
+                assert_eq!(
+                    command_reply(&mut client, command_id).await?,
+                    (CommandStatus::Rejected, vec![16, 2])
+                );
             }
             Ok(())
-        }.await;
+        }
+        .await;
         client.shutdown().await?;
         result
     };
-    let (end, result) = join_two(serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS), drive).await;
+    let (end, result) = join_two(
+        serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS),
+        drive,
+    )
+    .await;
     result?;
     assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
     if case == Case::StaleHandle {
@@ -888,16 +961,15 @@ async fn selected_item_cases(
 }
 
 // Pin the new wire shape independently of the codec so the same scenario runs on the base.
-async fn send_click(
-    client: &mut DuplexStream,
-    command_id: u64,
-    handle: ItemHandle,
-) -> TestResult {
+async fn send_click(client: &mut DuplexStream, command_id: u64, handle: ItemHandle) -> TestResult {
     let payload = [&[8, 1, 74, 8][..], &handle.get().to_le_bytes()].concat();
     send(client, command_id, COMMAND_TYPE_QUICK_LOOT, &payload).await
 }
 
-async fn snapshot_corpse_handle(client: &mut DuplexStream, corpse: [u8; 16]) -> TestResult<ItemHandle> {
+async fn snapshot_corpse_handle(
+    client: &mut DuplexStream,
+    corpse: [u8; 16],
+) -> TestResult<ItemHandle> {
     let mut handle = None;
     loop {
         let frame = read(client).await?;
@@ -906,24 +978,37 @@ async fn snapshot_corpse_handle(client: &mut DuplexStream, corpse: [u8; 16]) -> 
             MessageType::SnapshotChunk => {
                 for domain in decode_snapshot_chunk(envelope.payload())?.1 {
                     if domain.domain_id == 1 {
-                        let snapshot = decode_world_spatial_entities_snapshot_with_item_handles(domain.payload)
-                            .map_err(debug)?;
-                        handle = snapshot.entities.iter().find_map(|entry| match entry.detail {
-                            EntityDetail::Object { item_handle, .. }
-                            | EntityDetail::ObjectWithAppearance { item_handle, .. }
-                                if entry.entity.identity == corpse => item_handle,
-                            _ => None,
-                        });
+                        let snapshot = decode_world_spatial_entities_snapshot_with_item_handles(
+                            domain.payload,
+                        )
+                        .map_err(debug)?;
+                        handle = snapshot
+                            .entities
+                            .iter()
+                            .find_map(|entry| match entry.detail {
+                                EntityDetail::Object { item_handle, .. }
+                                | EntityDetail::ObjectWithAppearance { item_handle, .. }
+                                    if entry.entity.identity == corpse =>
+                                {
+                                    item_handle
+                                }
+                                _ => None,
+                            });
                     }
                 }
             }
-            MessageType::SnapshotCommit => return handle.ok_or_else(|| "missing corpse handle".into()),
+            MessageType::SnapshotCommit => {
+                return handle.ok_or_else(|| "missing corpse handle".into());
+            }
             _ => {}
         }
     }
 }
 
-async fn command_reply(client: &mut DuplexStream, id: u64) -> TestResult<(CommandStatus, Vec<u8>)> {
+pub(super) async fn command_reply(
+    client: &mut DuplexStream,
+    id: u64,
+) -> TestResult<(CommandStatus, Vec<u8>)> {
     loop {
         let frame = read(client).await?;
         let envelope = decode_wire_envelope(&frame)?;

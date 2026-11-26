@@ -121,7 +121,7 @@ pub enum QuickLootFilterMode {
 pub struct QuickLootRequest {
     pub action: QuickLootAction,
     pub corpse: Option<[u8; 16]>,
-    pub selected_item: Option<[u8; 16]>,
+    pub selected_item: Option<ItemHandle>,
     pub review_filters: bool,
     pub category: Option<QuickLootCategory>,
     pub recipient: Option<QuickLootRecipient>,
@@ -138,6 +138,29 @@ pub struct QuickLootItemResult {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QuickLootResult {
     pub items: Vec<QuickLootItemResult>,
+}
+
+/// Command 114's result when the request selects a single item by handle.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QuickLootClickOutcome {
+    Moved = 1,
+    Stale = 2,
+    Rejected = 3,
+}
+
+impl QuickLootClickOutcome {
+    pub const fn encode(self) -> [u8; 2] {
+        [0x10, self as u8]
+    }
+
+    pub fn decode(payload: &[u8]) -> Result<Self, QuickLootWireError> {
+        match payload {
+            [0x10, 1] => Ok(Self::Moved),
+            [0x10, 2] => Ok(Self::Stale),
+            [0x10, 3] => Ok(Self::Rejected),
+            _ => malformed(),
+        }
+    }
 }
 
 impl QuickLootAction {
@@ -424,7 +447,7 @@ fn encode_request(r: &QuickLootRequest, handle: Option<[u8; 8]>) -> Vec<u8> {
         push_varint_field(&mut out, 8, u64::from(reference));
     }
     if let Some(item) = request.selected_item {
-        push_message_field(&mut out, 9, &item);
+        push_message_field(&mut out, 9, &item.get().to_le_bytes());
     }
     push_nonzero_varint_field(&mut out, 10, u64::from(request.review_filters));
     out
@@ -455,7 +478,7 @@ fn validate_request(r: &QuickLootRequest, has_handle: bool) -> WireResult<()> {
     }
     let valid = match r.action {
         QuickLootAction::Click => {
-            has_source
+            (has_source || r.selected_item.is_some())
                 && r.category.is_none()
                 && r.recipient.is_none()
                 && !has_recipient
@@ -530,6 +553,13 @@ fn decode_filter_mode(value: u32) -> WireResult<QuickLootFilterMode> {
     )
 }
 
+fn decode_item_handle(bytes: &[u8]) -> WireResult<ItemHandle> {
+    let bytes = bytes
+        .try_into()
+        .map_err(|_| QuickLootWireError::Malformed)?;
+    ItemHandle::new(u64::from_le_bytes(bytes)).ok_or(QuickLootWireError::Malformed)
+}
+
 pub fn decode_quick_loot_request(payload: &[u8]) -> WireResult<QuickLootRequest> {
     decode_quick_loot_view_request(payload, |_| None)
 }
@@ -550,8 +580,7 @@ pub fn decode_quick_loot_view_request(
     let mut raw_handle = None;
     let mut reference = |bytes: &[u8]| -> WireResult<[u8; 16]> {
         if let Ok(handle_bytes) = <[u8; 8]>::try_from(bytes) {
-            let handle = ItemHandle::new(u64::from_le_bytes(handle_bytes))
-                .ok_or(QuickLootWireError::Malformed)?;
+            let handle = decode_item_handle(&handle_bytes)?;
             set_once(&mut raw_handle, handle_bytes)?;
             resolve(handle).ok_or(QuickLootWireError::Malformed)
         } else {
@@ -613,7 +642,10 @@ pub fn decode_quick_loot_view_request(
                 decode_filter_mode(read_uint32(input, cursor)?)?,
             ),
             (8, 0) => set_once(&mut filter_definition_ref, read_uint32(input, cursor)?),
-            (9, 2) => set_once(&mut selected_item, uuid(read_bytes(input, cursor)?)?),
+            (9, 2) => set_once(
+                &mut selected_item,
+                decode_item_handle(read_bytes(input, cursor)?)?,
+            ),
             (10, 0) if read_uint32(input, cursor)? == 1 => set_once(&mut review_filters, true),
             _ => malformed(),
         }
@@ -810,23 +842,33 @@ mod tests {
     }
     #[test]
     fn selected_item_click_round_trips_and_rejects_invalid_shapes() -> WireResult<()> {
-        let fields = [&[0x08, 1, 0x12, 16][..], &[7; 16], &[0x4a, 8], &8_u64.to_le_bytes()];
+        let fields = [
+            &[0x08, 1, 0x12, 16][..],
+            &[7; 16],
+            &[0x4a, 8],
+            &8_u64.to_le_bytes(),
+        ];
         let bytes = fields.concat();
         let request = decode_quick_loot_request(&bytes)?;
         assert_eq!(request.action, QuickLootAction::Click);
         assert_eq!(request.corpse, Some([7; 16]));
-        assert!(request.selected_item.is_some());
+        assert_eq!(request.selected_item, ItemHandle::new(8));
         assert_eq!(encode_quick_loot_request(&request)?, bytes);
 
         let mut duplicated = bytes.clone();
         duplicated.extend_from_slice(&fields[2..].concat());
         let no_corpse = [&[0x08, 1][..], fields[2], fields[3]].concat();
+        let handle_only = QuickLootRequest {
+            corpse: None,
+            ..request
+        };
+        assert_eq!(decode_quick_loot_request(&no_corpse), Ok(handle_only));
+        assert_eq!(encode_quick_loot_request(&handle_only)?, no_corpse);
         let loot_all = [&[0x08, 2][..], fields[2], fields[3]].concat();
         let legacy_uuid = [fields[0], fields[1], &[0x4a, 16], &[8; 16]].concat();
         let zero_handle = [fields[0], fields[1], fields[2], &[0; 8]].concat();
         for malformed in [
             duplicated.as_slice(),
-            &no_corpse,
             &loot_all,
             &legacy_uuid,
             &zero_handle,
@@ -847,6 +889,23 @@ mod tests {
         );
         Ok(())
     }
+    #[test]
+    fn selected_item_outcomes_round_trip_without_item_ids() -> WireResult<()> {
+        for outcome in [
+            QuickLootClickOutcome::Moved,
+            QuickLootClickOutcome::Stale,
+            QuickLootClickOutcome::Rejected,
+        ] {
+            assert_eq!(QuickLootClickOutcome::decode(&outcome.encode())?, outcome);
+        }
+        assert_eq!(QuickLootClickOutcome::decode(&[0x10, 0]), malformed());
+        assert_eq!(
+            QuickLootClickOutcome::decode(&[0x10, 1, 0x10, 2]),
+            malformed()
+        );
+        Ok(())
+    }
+
     #[test]
     fn accepted_and_skipped_round_trip() -> WireResult<()> {
         let r = QuickLootResult {

@@ -1,7 +1,7 @@
 # Quick loot destinations
 
 Capability 607 requires capabilities 4 and 98 and gates commands 6376 and 6377.
-Command 114 retains actions 1–7 and their existing results. Each new action is
+Command 114 retains actions 1–7 and the existing results for requests without a selected item. Each new action is
 valid only on its registered command. Requests use the tagged field layout in
 [quick_loot_v1.proto](quick_loot_v1.proto).
 
@@ -33,7 +33,7 @@ The default applies when neither category is assigned. Command 114 accepts
 only categories 1–5 on assignment. Commands 6376 and 6377 accept an item reference as a 16-byte instance UUID
 or an eight-byte little-endian nonzero handle from the current session item
 view. The server resolves a handle at ingress and proves current custody for
-either reference. Command 114 retains its UUID-only grammar.
+either reference. Command 114 uses the session-local handle in field 9 for a selected Click.
 Other fields are forbidden. Premium is required for category-specific
 Loot management, bulk assignment and Obtain changes. The existing carried
 container and gold-pouch checks apply. Writes use the current Character item
