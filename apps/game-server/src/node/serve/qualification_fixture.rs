@@ -67,6 +67,7 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
         "f5-c13" => Some(("sorcerer", 200)),
         "f5-c18a" => Some(("sorcerer", 1)),
         "f5-c17d" => Some(("knight", 20)),
+        "p01-sorcerer" => Some(("sorcerer", 80)),
         _ => None,
     }
 }
@@ -2015,6 +2016,7 @@ mod tests {
             "c11-knight",
             "c12-monk",
             "c06-sorcerer",
+            "p01-sorcerer",
             "premium",
             "item-43895-1",
             "item-6506-2",
