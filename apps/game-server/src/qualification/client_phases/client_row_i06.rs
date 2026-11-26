@@ -5,7 +5,9 @@
 //! `crates/session/src/session_access.rs` (and `DevClientSession::world_entities` in
 //! `tools/dev-client/src/lib.rs`).
 use super::*;
-use oteryn_dev_client::{EntityDetail, EntityKind, SessionEvent, WorldSpatialEntitiesDelta};
+use oteryn_dev_client::{
+    EntityDetail, EntityKind, SessionEvent, WorldSpatialEntitiesDelta, WorldSpatialEntity,
+};
 use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
 use oteryn_protocol_oteryn::world_spatial_entities::encode_world_spatial_entities_delta;
 
@@ -29,6 +31,45 @@ fn capture(
 
 fn identity_text(identity: &[u8; 16]) -> String {
     identity.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+struct RatDeath {
+    target: WorldSpatialEntity,
+    left: bool,
+}
+
+impl RatDeath {
+    fn observe(
+        &mut self,
+        delta: &WorldSpatialEntitiesDelta,
+    ) -> TestResult<Option<WorldSpatialEntity>> {
+        if let Some(updated) = delta
+            .update
+            .iter()
+            .find(|entry| entry.entity == self.target.entity)
+        {
+            self.target = *updated;
+        }
+        if delta
+            .enter
+            .iter()
+            .any(|entry| entry.entity == self.target.entity)
+        {
+            return Err("I06 target reentered after leaving visibility".into());
+        }
+        self.left |= delta.leave.contains(&self.target.entity);
+        if !self.left {
+            return Ok(None);
+        }
+        let mut corpses = delta.enter.iter().filter(|entry| {
+            entry.kind == EntityKind::Corpse && entry.position == self.target.position
+        });
+        let corpse = corpses.next().copied();
+        if corpses.next().is_some() {
+            return Err("I06 ambiguous corpse evidence on the target tile".into());
+        }
+        Ok(corpse)
+    }
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -114,7 +155,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let kill_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     verdict::Harness::global().bounded_wait(kill_deadline, "bounded-observation");
-    let mut target_position = target.position;
+    let mut observation = RatDeath {
+        target,
+        left: false,
+    };
     let (corpse, introduced) = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
         let mut found = None;
@@ -122,24 +166,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             let SessionEvent::WorldSpatialEntities(delta) = event else {
                 continue;
             };
-            if let Some(updated) = delta
-                .value
-                .update
-                .iter()
-                .find(|entity| entity.entity == target.entity)
-            {
-                target_position = updated.position;
-            }
-            if delta.value.leave.contains(&target.entity) {
-                let mut corpses = delta.value.enter.iter().filter(|entity| {
-                    entity.kind == EntityKind::Corpse && entity.position == target_position
-                });
-                let corpse = corpses
-                    .next()
-                    .copied()
-                    .ok_or("I06 target left without its corpse")?;
-                if corpses.next().is_some() {
-                    return Err("I06 target left with ambiguous corpse evidence".into());
+            if let Some(corpse) = observation.observe(&delta.value)? {
+                if found.is_some() {
+                    return Err("I06 ambiguous corpse evidence across frames".into());
                 }
                 found = Some((corpse, delta.value));
             }
@@ -159,7 +188,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("I06 corpse has no item handle".into());
     };
     let used = client.use_item(handle).await?;
-    if used.status != CommandStatus::Accepted {
+    if used.status != CommandStatus::Accepted
+        || used.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+    {
         return Err(format!("I06 corpse open refused: {used:?}").into());
     }
     let open_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
@@ -170,7 +201,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
         if tokio::time::Instant::now() >= open_deadline {
-            return Err("I06 corpse container payload absent".into());
+            return Err(format!("I06 corpse container payload absent: use={used:?} expected_handle={handle:?} open={:?}", client.open_container()).into());
         }
     }
     let remaining = client
@@ -221,5 +252,82 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "SEAM_EVIDENCE e2e_all scenario=I06.client status=FAIL evidence={}",
             error.to_string().replace([' ', '\n'], "_")
         ));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+
+    #[test]
+    fn corpse_requires_target_leave_and_exact_tile_across_frames() -> TestResult {
+        let position = ActorPosition {
+            x: 41,
+            y: 42,
+            floor: 7,
+        };
+        let target = WorldSpatialEntity {
+            motion: None,
+            display_name: None,
+            kind: EntityKind::Creature,
+            entity: EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            position,
+            detail: EntityDetail::Actor {
+                direction: StepDirection::West,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        };
+        let corpse = WorldSpatialEntity {
+            kind: EntityKind::Corpse,
+            entity: EntityRef {
+                identity: [2; 16],
+                generation: 0,
+            },
+            detail: EntityDetail::Object {
+                item_definition_ref: 1,
+                quantity: 1,
+                item_handle: None,
+            },
+            ..target
+        };
+        let mut observed = RatDeath {
+            target,
+            left: false,
+        };
+        let mut frame = WorldSpatialEntitiesDelta {
+            content_generation: [0; 32],
+            actor_position: position,
+            enter: vec![corpse],
+            update: vec![],
+            leave: vec![],
+        };
+        assert_eq!(observed.observe(&frame)?, None);
+        frame.enter.clear();
+        frame.leave.push(target.entity);
+        assert_eq!(observed.observe(&frame)?, None);
+        frame.leave.clear();
+        frame.enter.push(WorldSpatialEntity {
+            position: ActorPosition { x: 40, ..position },
+            ..corpse
+        });
+        assert_eq!(observed.observe(&frame)?, None);
+        frame.enter = vec![corpse];
+        assert_eq!(observed.observe(&frame)?, Some(corpse));
+        frame.enter.push(WorldSpatialEntity {
+            entity: EntityRef {
+                identity: [3; 16],
+                generation: 0,
+            },
+            ..corpse
+        });
+        assert!(observed.observe(&frame).is_err());
+        frame.enter = vec![target];
+        assert!(observed.observe(&frame).is_err());
+        Ok(())
     }
 }
