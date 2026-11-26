@@ -124,8 +124,8 @@ fn party_membership_notices_share_the_domain_57_revision_only_when_selected() ->
                 assert_eq!(revision(&session), Some(0));
                 return Ok::<(), BoxError>(());
             }
-            // A change the client does not know (3) and a truncated notice are clean refusals.
-            for malformed in [vec![8, 7, 16, 3], vec![8, 7]] {
+            // A change the client does not know (5) and a truncated notice are clean refusals.
+            for malformed in [vec![8, 7, 16, 5], vec![8, 7]] {
                 assert!(matches!(session.apply_state_delta(41, &payload(0, 1, 2, &malformed)?),
                     Err(SessionError::Protocol(FoundationProtocolError::MalformedFrame))));
             }
@@ -148,7 +148,19 @@ fn party_membership_notices_share_the_domain_57_revision_only_when_selected() ->
             assert!(matches!(session.apply_state_delta(43, &payload(2, 3, 2, &left)?)?,
                 SessionEvent::PartyMembershipNotice(delta)
                     if delta.value.change == PartyMembershipChange::Left));
-            assert_eq!(revision(&session), Some(3));
+            for (base, wire_change, change) in [
+                (3, 3, PartyMembershipChange::Invited),
+                (4, 4, PartyMembershipChange::Disbanded),
+            ] {
+                let sequence = 41 + base;
+                let event = session.apply_state_delta(sequence, &payload(base, base + 1, 2, &[8, 7, 16, wire_change])?)?;
+                assert!(matches!(&event, SessionEvent::PartyMembershipNotice(delta)
+                    if delta.server_sequence == sequence && delta.base_revision == base
+                    && delta.new_revision == base + 1
+                    && delta.value == PartyMembershipNotice { member_handle: 7, change }));
+                assert_eq!(event.domain_id(), 57);
+            }
+            assert_eq!(revision(&session), Some(5));
             Ok(())
         })??;
     }
