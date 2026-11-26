@@ -1,12 +1,37 @@
 """Deployment documents must preserve purpose separation and discovered scope."""
 from pathlib import Path
+import json
+import subprocess
+import tempfile
 import tomllib
 import unittest
+from unittest.mock import patch
 
-from composition import node_documents
+from composition import bootstrap, node_documents
 
 
 class CompositionTests(unittest.TestCase):
+    def test_bootstrap_binds_default_and_explicit_sex(self):
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory)
+            (work / "portal" / "secrets").mkdir(parents=True)
+            (work / "portal" / "secrets" / "env.json").write_text("{}")
+            (work / "identity.json").write_text('{"portal_binary": "portal"}')
+            binding = {"operationId": "operation", "accountId": "account", "targetWorldId": "world"}
+            response = subprocess.CompletedProcess([], 0, stdout=json.dumps(binding))
+            revisions = ["profile", "ruleset", "content", "starter"]
+            with patch("composition.subprocess.run", return_value=response) as run:
+                bootstrap(work, "account", "world", "operation", revisions)
+                request = json.loads(run.call_args.args[0][3])
+                self.assertEqual(request["requestedSex"], "Female")
+                bootstrap(work, "account", "world", "operation", revisions, "Witness", "Knight", "Male")
+                request = json.loads(run.call_args.args[0][3])
+                self.assertEqual(request, {
+                    **binding, "profileRevision": "profile", "rulesetRevision": "ruleset",
+                    "contentRevision": "content", "starterTemplateRevision": "starter",
+                    "requestedName": "Witness", "requestedVocation": "Knight", "requestedSex": "Male",
+                })
+
     def test_game_configs_use_discovered_san_scope_and_route(self):
         world = "01934f10-7c02-7001-805b-3b1122334401"
         channel = "01934f10-7c03-7001-805b-3b1122334401"

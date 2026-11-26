@@ -1493,6 +1493,10 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
       "$WORK" "$C11_UNASSIGNED_ACCOUNT" "$WORLD_ID" "$s16_operation" "${INTERPRETATION[@]}" "First Vocation Candidate" Knight
     ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$s16_operation"
     ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$s16_operation"
+    local w19d_male_operation=01934f10-7c04-7021-805b-3b1122334421
+    python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
+      "$WORK" "$W19D_ACCOUNT" "$WORLD_ID" "$w19d_male_operation" "${INTERPRETATION[@]}" "Outfit Catalogue Witness" "$vocation" Male
+    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$w19d_male_operation"
   fi
   evidence "characters=${#BOOTSTRAP_ACCOUNTS[@]} source=platform_intents path=control_socket retry=idempotent"
 }

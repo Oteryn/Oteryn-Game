@@ -156,6 +156,7 @@ fn outfit_grant_projection(
     content: &NativeCosmeticsView,
     before: &BTreeMap<String, (u32, u8)>,
     grants: &[String],
+    sex: Sex,
 ) -> BTreeMap<String, (u32, u8)> {
     let facts: Vec<_> = grants
         .iter()
@@ -165,7 +166,7 @@ fn outfit_grant_projection(
         content,
         facts: &facts,
     }
-    .with_sex(Sex::Female);
+    .with_sex(sex);
     let mut expected = before.clone();
     for key in content.outfit_keys() {
         let key = key.to_owned();
@@ -175,7 +176,7 @@ fn outfit_grant_projection(
         }
         let earned_addons = u8::from(earned.addon(&key, 1) == UnlockFact::Compatible)
             | (u8::from(earned.addon(&key, 2) == UnlockFact::Compatible) << 1);
-        if let Some(look) = content.look_type(&key, Sex::Female) {
+        if let Some(look) = content.look_type(&key, sex) {
             expected.insert(
                 key,
                 (look, prior.map_or(0, |value| value.1) | earned_addons),
@@ -185,10 +186,9 @@ fn outfit_grant_projection(
     expected
 }
 
-async fn expected_doll_choice(
+async fn doll_source(
     clients: &SeamClients<'_>,
-    client: &DevClientSession,
-) -> TestResult<&'static item_cosmetics::Choice> {
+) -> TestResult<[u8; 16]> {
     use sqlx::Connection as _;
 
     // Read only the input instance identity. The wire inventory and catalogue remain
@@ -209,11 +209,17 @@ async fn expected_doll_choice(
     let [source] = sources.as_slice() else {
         return Err("step=doll observed=missing-or-ambiguous-input-instance".into());
     };
-    let source: [u8; 16] = source.as_slice().try_into()?;
+    Ok(source.as_slice().try_into()?)
+}
+
+fn expected_doll_choice(
+    client: &DevClientSession,
+    source: [u8; 16],
+    command: u64,
+) -> TestResult<&'static item_cosmetics::Choice> {
     let rule =
         item_cosmetics::rule("oteryn:item.tibia.i6579").ok_or("step=doll observed=no-rule")?;
     let session = *client.join_snapshot().game_session_id.as_bytes();
-    let command = client.next_command_id();
     let draw = |domain, upper| {
         oteryn_gameplay_items::reward_bag::reward_bag_bounded_draw(
             session, command, source, domain, upper,
@@ -230,13 +236,45 @@ async fn expected_doll_choice(
         .ok_or_else(|| "step=doll observed=invalid-draw".into())
 }
 
+async fn plan_owned_doll_use(
+    client: &mut DevClientSession,
+    source: [u8; 16],
+    known: &item_cosmetics::Choice,
+    absent_reference: NonZeroU32,
+) -> TestResult {
+    let first = client.next_command_id();
+    let mut scheduled = None;
+    for command in first..first + 1024 {
+        if expected_doll_choice(client, source, command)?.owned == known.owned {
+            scheduled = Some(command);
+            break;
+        }
+    }
+    let scheduled = scheduled.ok_or("step=doll-duplicate observed=no-owned-draw-in-window")?;
+    if quantities(client)?.contains_key(&absent_reference.get()) {
+        return Err("step=doll-duplicate observed=sequence-probe-item-carried".into());
+    }
+    // Schedule the command before sending any USE for this doll. Every preceding command
+    // addresses an item proved absent, and any refusal or outcome other than NothingToUse fails.
+    for command in first..scheduled {
+        let (status, disposition) = use_by_definition(client, absent_reference).await?;
+        require_mechanic_acceptance(status, "W19d absent-item sequence preparation")?;
+        if disposition != use_wire::UseDisposition::NothingToUse
+            || client.next_command_id() != command + 1
+        {
+            return Err("step=doll-duplicate observed=unexpected-sequence-probe-result".into());
+        }
+    }
+    Ok(())
+}
+
 fn verify_doll(
     content: &NativeCosmeticsView,
     choice: &item_cosmetics::Choice,
     before: &BTreeMap<String, (u32, u8)>,
     after: &BTreeMap<String, (u32, u8)>,
 ) -> TestResult {
-    let expected = outfit_grant_projection(content, before, &choice.grants);
+    let expected = outfit_grant_projection(content, before, &choice.grants, Sex::Female);
     if &expected == before || &expected != after {
         return Err(format!(
             "step=doll observed=unexpected-outfit-change expected={}",
@@ -253,8 +291,28 @@ fn verify_doll(
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let cosmetics = cosmetics_fixture::decode_cosmetics(&native_input()?.cosmetics.bytes)?;
-    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W19D_ACCOUNT").await?;
+    let male = character_prep::dedicated_named_character(
+        clients,
+        "NODE_BOOT_W19D_ACCOUNT",
+        Some("Outfit Catalogue Witness"),
+    )
+    .await?;
+    let dedicated = character_prep::dedicated_named_character(
+        clients,
+        "NODE_BOOT_W19D_ACCOUNT",
+        Some("Outfit Item Tester"),
+    )
+    .await?;
+    let male_clients = male.clients(clients);
     let clients = dedicated.clients(clients);
+    let mut witness = connect_character(&male_clients, 0xd4, 0).await?;
+    let mut male_expected = outfits(&mut witness)?;
+    if male_expected.get("oteryn:outfit.citizen") != Some(&(128, 0)) {
+        return Err("step=male-outfit-catalogue observed=wrong-starter-look".into());
+    }
+    let male_mounts = appearance_snapshot(&mut witness)?.catalogue.mounts;
+    let male_initial_session = witness.join_snapshot().game_session_id;
+    logout(witness).await?;
     let mut client = connect_character(&clients, 0xd4, 0).await?;
     let initial_inventory = quantities(&client)?;
     let initial_outfits = outfits(&mut client)?;
@@ -288,8 +346,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             return Err(format!("step=refused-use item={label} observed=state-changed").into());
         }
     }
+    let (&last_piece, partial_set) = AFFLICTED_PIECES
+        .split_last()
+        .ok_or("step=fund observed=empty-afflicted-set")?;
     let mut funded = initial_inventory.clone();
-    for id in AFFLICTED_PIECES.into_iter().chain([ADDON_DOLL]) {
+    for id in partial_set.iter().copied().chain([ADDON_DOLL]) {
         if funded.insert(reference(id)?.get(), 1).is_some() {
             return Err(format!("step=fund observed=preexisting-item-{id}").into());
         }
@@ -310,8 +371,39 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         if expected_outfits.insert(key.to_owned(), (431, 0)).is_some() {
             return Err(format!("step=afflicted observed=outfit-already-owned key={key}").into());
         }
+        if male_expected.insert(key.to_owned(), (430, 0)).is_some() {
+            return Err(format!("step=afflicted observed=male-outfit-already-owned key={key}").into());
+        }
     }
     let afflicted_reference = reference(AFFLICTED_OUTFIT_PIECE)?;
+    let missing_reference = reference(last_piece)?;
+    if funded.contains_key(&missing_reference.get()) {
+        return Err("step=afflicted-incomplete observed=complete-set-already-carried".into());
+    }
+    character_prep::grant_premium(&client).await?;
+    expect_item_use(
+        &mut client,
+        afflicted_reference,
+        use_wire::UseDisposition::RequirementNotMet,
+    )
+    .await?;
+    let mut client = relog(client, &clients).await?;
+    if quantities(&client)? != funded
+        || outfits(&mut client)? != initial_outfits
+        || appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts
+    {
+        return Err("step=afflicted-incomplete observed=state-changed".into());
+    }
+    evidence("W19D_AFFLICTED_INCOMPLETE_ASSERT disposition=RequirementNotMet persisted=unchanged");
+    character_prep::grant_item(&client, last_piece, 1).await?;
+    funded.insert(missing_reference.get(), 1);
+    let mut client = relog(client, &clients).await?;
+    if quantities(&client)? != funded
+        || outfits(&mut client)? != initial_outfits
+        || appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts
+    {
+        return Err("step=afflicted-complete-fund observed=unexpected-state".into());
+    }
     expect_item_use(
         &mut client,
         afflicted_reference,
@@ -357,7 +449,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         );
     }
     evidence("W19D_AFFLICTED_ASSERT consumed=12551,12552,12553,12554,12555,12556 outfit=afflicted");
-    let doll_choice = expected_doll_choice(&clients, &client).await?;
+    let doll_choice = expected_doll_choice(&client, doll_source(&clients).await?, client.next_command_id())?;
     expect_item_use(
         &mut client,
         reference(ADDON_DOLL)?,
@@ -373,7 +465,47 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts {
         return Err("step=outfit-use observed=unexpected-mount-grant".into());
     }
-    let mut duplicate_inputs = initial_inventory.clone();
+    logout(client).await?;
+    let mut witness = connect_character(&male_clients, 0xd4, 0).await?;
+    let male_after = outfit_grant_projection(&cosmetics, &male_expected, &doll_choice.grants, Sex::Male);
+    if witness.join_snapshot().game_session_id == male_initial_session
+        || male_after == male_expected
+        || outfits(&mut witness)? != male_after
+        || appearance_snapshot(&mut witness)?.catalogue.mounts != male_mounts
+    {
+        return Err("step=male-outfit-catalogue observed=wrong-outfit-or-mounts".into());
+    }
+    logout(witness).await?;
+    evidence("W19D_MALE_CATALOGUE_ASSERT afflicted=430 addon=expected mounts=unchanged");
+    let client = connect_character(&clients, 0xd4, 0).await?;
+    let doll_reference = reference(ADDON_DOLL)?;
+    let mut with_duplicate_doll = initial_inventory.clone();
+    with_duplicate_doll.insert(doll_reference.get(), 1);
+    character_prep::grant_item(&client, ADDON_DOLL, 1).await?;
+    let mut client = relog(client, &clients).await?;
+    if quantities(&client)? != with_duplicate_doll
+        || outfits(&mut client)? != after_doll
+        || appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts
+    {
+        return Err("step=doll-duplicate-fund observed=unexpected-state".into());
+    }
+    plan_owned_doll_use(&mut client, doll_source(&clients).await?, doll_choice, reference(SPARKION_TOKEN)?).await?;
+    if quantities(&client)? != with_duplicate_doll
+        || outfits(&mut client)? != after_doll
+        || appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts
+    {
+        return Err("step=doll-duplicate-sequence observed=state-changed".into());
+    }
+    expect_item_use(&mut client, doll_reference, use_wire::UseDisposition::Committed).await?;
+    let mut client = relog(client, &clients).await?;
+    if quantities(&client)? != with_duplicate_doll
+        || outfits(&mut client)? != after_doll
+        || appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts
+    {
+        return Err("step=doll-duplicate observed=state-changed".into());
+    }
+    evidence(&format!("W19D_DOLL_DUPLICATE_ASSERT grant={} persisted=unchanged", doll_choice.owned));
+    let mut duplicate_inputs = with_duplicate_doll;
     for id in AFFLICTED_PIECES {
         duplicate_inputs.insert(reference(id)?.get(), 1);
         character_prep::grant_item(&client, id, 1).await?;
