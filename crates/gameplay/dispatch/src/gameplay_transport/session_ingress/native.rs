@@ -45,6 +45,7 @@ impl SessionIngress {
         self.retained = Some(frame);
         self.result_sequence_floor = pending.sequence;
         self.pending_delivery = None;
+        self.pending_use = None;
         self.reconciled_sequence = Some(pending.sequence);
         Some(())
     }

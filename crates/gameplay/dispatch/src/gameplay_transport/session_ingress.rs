@@ -28,6 +28,9 @@ mod native;
 #[cfg(test)]
 #[path = "session_ingress/native_tests.rs"]
 mod native_tests;
+#[path = "session_ingress/pending_use.rs"]
+mod pending_use;
+pub(super) use pending_use::UseReceipt;
 
 #[derive(Default)]
 struct SessionIngress {
@@ -38,6 +41,7 @@ struct SessionIngress {
     active: bool,
     activity_recovery: bool,
     pending_delivery: Option<PendingDelivery>,
+    pending_use: Option<pending_use::PendingUseReceipt>,
     reconciled_sequence: Option<u64>,
 }
 
@@ -640,6 +644,7 @@ impl SessionCommandStream {
                 })
                 .ok()?;
             state.pending_delivery = None;
+            state.pending_use = None;
             state.reconciled_sequence = None;
         } else {
             effect();

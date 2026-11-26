@@ -82,6 +82,47 @@ fn from_code(value: i16) -> Result<CoinExchange, DurabilityError> {
 }
 
 impl DurabilityRoot {
+    /// Read the result of the original plain coin USE under its session and command key.
+    /// An accepted request with no final result has not applied an exchange.
+    pub async fn read_coin_use_receipt(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+    ) -> Result<Option<bool>, DurabilityError> {
+        if command.game_session_id() != fence.game_session_id {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_type2_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &record).await?;
+            lock(&mut tx, command).await?;
+            let result = match read(&mut tx, command).await? {
+                Some(row) => {
+                    let character: Vec<u8> = row.try_get("character")?;
+                    let world: Vec<u8> = row.try_get("world")?;
+                    if character != fence.character_id.as_bytes()
+                        || world != fence.runtime_scope.world_id().as_bytes()
+                        || row.try_get::<Option<Vec<u8>>, _>("item_source")?.is_none()
+                        || row.try_get::<Option<Vec<u8>>, _>("converter_source")?.is_some()
+                    {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    match row.try_get::<i16, _>("result")? {
+                        0 => None,
+                        1 => Some(true),
+                        2..=4 => Some(false),
+                        _ => return Err(DurabilityError::InvalidStoredState),
+                    }
+                }
+                None => None,
+            };
+            tx.commit(deadline).await?;
+            Ok(result)
+        })).await
+    }
+
     /// Accept a banker request or one exact item-use source, or resume its retained command.
     /// Acceptance commits before execution; the source binding separates item USE from NPC replay.
     #[allow(clippy::too_many_arguments)]
@@ -438,7 +479,7 @@ async fn read(
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
     command: CommandRef,
 ) -> Result<Option<sqlx::postgres::PgRow>, DurabilityError> {
-    Ok(sqlx::query("SELECT transaction_id::text,uuid_send(character_id) AS character,content_digest,exchange,amount::text,npc_identity,npc_generation::text,npc_key,catalogue_revision::text,conversation_revision::text,result,uuid_send(item_source) AS item_source,uuid_send(converter_source) AS converter_source,converter_kind FROM game_coin_exchange_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric FOR UPDATE")
+    Ok(sqlx::query("SELECT transaction_id::text,uuid_send(character_id) AS character,uuid_send(world_id) AS world,content_digest,exchange,amount::text,npc_identity,npc_generation::text,npc_key,catalogue_revision::text,conversation_revision::text,result,uuid_send(item_source) AS item_source,uuid_send(converter_source) AS converter_source,converter_kind FROM game_coin_exchange_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric FOR UPDATE")
         .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut ***tx).await?)
 }
 

@@ -155,12 +155,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(None) => {}
             Err(()) => return None,
         }
+        self.mark_use_receipt(command, Some(super::session_ingress::UseReceipt::Craft));
         if let Some(result) = self
             .use_enchanting(actor, command, &intent, source, target)
             .await
         {
             return result;
         }
+        self.mark_use_receipt(command, None);
         match self
             .use_soulpit_obelisk(actor, command, &intent, source, target)
             .await
@@ -185,6 +187,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(None) => {}
             Err(()) => return None,
         }
+        self.mark_use_receipt(command, None);
         match self
             .use_rope_tool(actor, command, &intent, source, target)
             .await
@@ -208,6 +211,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return disposition(UseDisposition::Rejected);
         };
+        self.mark_use_receipt(command, Some(super::session_ingress::UseReceipt::Craft));
         let permit = self.spell_lane_permit().await?;
         let Ok(encoded) = oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent)
         else {

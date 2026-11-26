@@ -13,7 +13,7 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    fn terrain_scope(&self) -> Option<TerrainScope> {
+    pub(in crate::gameplay_transport) fn terrain_scope(&self) -> Option<TerrainScope> {
         let map = self.bundle_map()?;
         let native = self.active_generation?.native_gameplay()?;
         Some(TerrainScope {
@@ -62,6 +62,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .use_with_map_item
                 .as_ref()
                 .map(|_| &self.states.loop_ground),
+        );
+        self.mark_use_receipt(
+            command,
+            Some(crate::gameplay_transport::session_ingress::UseReceipt::Terrain),
         );
         let permit = self.spell_lane_permit().await.ok_or(())?;
         let retry = AdmissionRetryBudget::for_command(self.root);
@@ -402,6 +406,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 enchanting: None,
             };
             let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
+            self.mark_use_receipt(
+                command,
+                Some(crate::gameplay_transport::session_ingress::UseReceipt::Craft),
+            );
             let result = retry_busy(&retry, async || {
                 self.root
                     .craft_item(

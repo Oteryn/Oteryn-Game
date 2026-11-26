@@ -1,15 +1,18 @@
 //! Plain USE through the negotiated connection, backed by the real item owners.
 use super::fixture::{Harness, debug, id, join_two};
+use super::house_transfer_fixtures::{RecoverySource, prepare_owned_session};
 use super::item_look_fixtures::{read_frame, seed_main_backpack};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::native_gameplay::test_support::activated_with_loot_tables;
 use crate::foundation::{
-    ChannelContentPin, ExactActorRef, GameSessionId, MessageType, WorldId, decode_wire_envelope,
+    AuthenticatedTransportRefV1, ChannelContentPin, ExactActorRef, GameSessionId, MessageType,
+    WorldId, decode_wire_envelope,
 };
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    AdmissionRefusal, AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAttempt,
-    FreshAdmissionAuthority, IDLE_LIVENESS, UseCommand, UseOutcome, serve_admitted,
+    AdmissionRefusal, AdmittedSession, ConnectionEnd, ControlLossResult, FirstEntryOutcome,
+    FreshAdmissionAttempt, FreshAdmissionAuthority, IDLE_LIVENESS, ResumeAttempt, UseCommand,
+    UseOutcome, serve_admitted,
 };
 use crate::gameplay_transport::item_view::{InventoryItems, ItemKey, SessionItemView};
 use crate::gameplay_transport::world_map::{MapUpdate, MapViewError, SessionMapView};
@@ -42,6 +45,9 @@ enum Case {
     CubeShort,
     CubeExhausted,
     AidProbeExhausted,
+    CubeCommitted,
+    CoinCommitted,
+    CoinNotApplied,
 }
 
 #[test]
@@ -74,6 +80,30 @@ fn s7c_kooldown_aid_probe_exhaustion_keeps_cube_use_pending() -> TestResult {
         return Ok(());
     };
     run(admin, Case::AidProbeExhausted)
+}
+
+#[test]
+fn s7c_resume_replays_committed_cube_after_lost_ack() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::CubeCommitted)
+}
+
+#[test]
+fn s7c_resume_replays_committed_coin_with_retired_handle() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::CoinCommitted)
+}
+
+#[test]
+fn s7c_resume_rejects_unapplied_coin_exchange_without_converting() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::CoinNotApplied)
 }
 
 fn run(admin: String, case: Case) -> TestResult {
@@ -119,6 +149,9 @@ async fn scenario(admin: String, case: Case) -> TestResult {
         Case::CubeShort => ("s7c_cube_short", &[(DROME_CUBE_KEY, 1)]),
         Case::CubeExhausted => ("s7c_cube_exhausted", &[(DROME_CUBE_KEY, 1)]),
         Case::AidProbeExhausted => ("s7c_aid_probe_exhausted", &[(DROME_CUBE_KEY, 1)]),
+        Case::CubeCommitted => ("s7c_cube_committed", &[(DROME_CUBE_KEY, 1)]),
+        Case::CoinCommitted => ("s7c_coin_committed", &[(GOLD, 100)]),
+        Case::CoinNotApplied => ("s7c_coin_not_applied", &[(GOLD, 100)]),
     };
     let h = Harness::create_with_admission_seed(admin, label, true, false).await?;
     let result = exercise(&h, case, entries).await;
@@ -130,7 +163,25 @@ async fn scenario(admin: String, case: Case) -> TestResult {
 }
 
 async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResult {
-    prepare_current_session(h).await?;
+    let recovery = if matches!(case, Case::Gold | Case::CubeShort) {
+        prepare_current_session(h).await?;
+        None
+    } else {
+        let recovery = RecoverySource::start(h).await?;
+        prepare_owned_session(h).await?;
+        Some(recovery)
+    };
+    if matches!(case, Case::CoinNotApplied) {
+        // Allow the accepted request to persist, then roll back its finalization.
+        sqlx::raw_sql(
+            "CREATE FUNCTION s7c_coin_no_commit() RETURNS trigger LANGUAGE plpgsql AS $$
+                BEGIN RAISE EXCEPTION 's7c coin finalization refused' USING ERRCODE='23514'; END $$;
+             CREATE TRIGGER s7c_coin_no_commit BEFORE UPDATE ON game_coin_exchange_receipts
+                FOR EACH ROW EXECUTE FUNCTION s7c_coin_no_commit()",
+        )
+        .execute(&h.pool)
+        .await?;
+    }
     seed_main_backpack(h, entries).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -208,6 +259,9 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
         .movement_cells(deps.room.movement_cells())
         .map_err(debug)?;
     let mut owner = deps.owner(h, &authority);
+    if let Some(recovery) = &recovery {
+        owner.evidence = &recovery.evidence;
+    }
     owner.active_generation = Some(active);
     owner.movement_cells = (&cells).into();
     deps.initialize(&owner).await;
@@ -232,6 +286,7 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
         admitted.continuity.selected_capabilities.as_slice(),
         &supported
     );
+    owner.states.command_ingress.admit(admitted.game_session_id);
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let wire_owner = WireOwner {
         owner: &owner,
@@ -245,15 +300,45 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
     let client_task = async {
         let inventory = read_inventory(&mut client).await?;
         match case {
-            Case::Gold => assert_gold_wire(&mut client, &inventory, definition(GOLD)?).await,
-            Case::CubeShort | Case::CubeExhausted | Case::AidProbeExhausted => {
-                assert_cube_wire(&mut client, definition(DROME_CUBE_KEY)?, case).await
+            Case::Gold => {
+                assert_gold_wire(&mut client, &inventory, definition(GOLD)?).await?;
+                Ok::<_, Box<dyn std::error::Error>>(None)
+            }
+            Case::CubeShort => {
+                send_use(
+                    &mut client,
+                    1,
+                    1,
+                    UseTarget::ItemByDefinition(definition(DROME_CUBE_KEY)?),
+                )
+                .await?;
+                assert_eq!(
+                    read_use(&mut client, 1).await?,
+                    (CommandStatus::Accepted, UseDisposition::Committed)
+                );
+                client.shutdown().await?;
+                Ok(None)
+            }
+            _ => {
+                let target = if matches!(case, Case::CoinCommitted | Case::CoinNotApplied) {
+                    let gold = definition(GOLD)?;
+                    let stack = inventory
+                        .iter()
+                        .find(|item| item.item_definition_ref == gold && item.count.get() == 100)
+                        .ok_or("full stack in initial view")?;
+                    UseTarget::Item(stack.handle)
+                } else {
+                    UseTarget::ItemByDefinition(definition(DROME_CUBE_KEY)?)
+                };
+                send_use(&mut client, 1, 1, target.clone()).await?;
+                assert_no_use_result(&mut client).await?;
+                Ok(Some(target))
             }
         }
     };
     let (end, client_result) =
         tokio::time::timeout(Duration::from_secs(20), join_two(serving, client_task)).await?;
-    client_result?;
+    let original_target = client_result?;
     let ConnectionEnd::AdmittedThenDisconnected(retained) = end else {
         return Err(format!("unexpected connection end: {end:?}").into());
     };
@@ -287,12 +372,99 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
             );
         }
         Case::CubeExhausted | Case::AidProbeExhausted => {
-            assert_eq!(retained.continuity.next_command_id, 1);
             assert_eq!(
                 count(h, "SELECT count(*) FROM game_drome_cube_uses").await?,
                 0
             );
         }
+        Case::CubeCommitted => assert_eq!(
+            count(h, "SELECT count(*) FROM game_drome_cube_uses").await?,
+            1
+        ),
+        Case::CoinCommitted => assert_eq!(
+            count(
+                h,
+                "SELECT count(*) FROM game_coin_exchange_receipts WHERE result=1"
+            )
+            .await?,
+            1
+        ),
+        Case::CoinNotApplied => assert_eq!(
+            count(
+                h,
+                "SELECT count(*) FROM game_coin_exchange_receipts WHERE result=0"
+            )
+            .await?,
+            1
+        ),
+    }
+    if let Some(target) = original_target {
+        assert!(!owner.states.command_ingress.resumable(&retained));
+        assert_eq!(
+            owner.lose_control(retained, Duration::ZERO, None).await,
+            ControlLossResult::Recorded
+        );
+        let token = RecoverySource::token(2)?;
+        let resumed = owner
+            .resume(ResumeAttempt {
+                game_session_id: retained.game_session_id,
+                recovery_material: token.as_bytes(),
+                transport: AuthenticatedTransportRefV1::decode(&[2; 16]).map_err(debug)?,
+                last_applied_server_sequence: retained.continuity.server_sequence,
+                supported_capabilities: &supported,
+            })
+            .await
+            .map_err(|error| format!("pending USE resume: {error:?}"))?;
+        assert!(owner.states.command_ingress.resumable(&resumed));
+        assert_eq!(resumed.continuity.next_command_id, 2);
+        let committed = matches!(case, Case::CubeCommitted | Case::CoinCommitted);
+        let expected = if committed {
+            UseDisposition::Committed
+        } else {
+            UseDisposition::Rejected
+        };
+        let (mut server, mut client) = tokio::io::duplex(1 << 20);
+        let serving = async {
+            let end = serve_admitted(&mut server, resumed, &wire_owner, IDLE_LIVENESS).await;
+            drop(server);
+            end
+        };
+        let replay = async {
+            let inventory = read_inventory(&mut client).await?;
+            if let UseTarget::Item(old) = target {
+                assert!(inventory.iter().all(|item| item.handle > old));
+                let gold = definition(GOLD)?;
+                assert_eq!(
+                    inventory
+                        .iter()
+                        .filter(|item| item.item_definition_ref == gold)
+                        .map(|item| item.count.get())
+                        .sum::<u32>(),
+                    if committed { 0 } else { 100 },
+                );
+            } else {
+                let cube = definition(DROME_CUBE_KEY)?;
+                assert_eq!(
+                    inventory
+                        .iter()
+                        .filter(|item| item.item_definition_ref == cube)
+                        .map(|item| item.count.get())
+                        .sum::<u32>(),
+                    if committed { 0 } else { 1 },
+                );
+            }
+            send_use(&mut client, 2, 1, target).await?;
+            assert_eq!(
+                read_use(&mut client, 1).await?,
+                (CommandStatus::DuplicateReplay, expected)
+            );
+            client.shutdown().await?;
+            Ok::<_, Box<dyn std::error::Error>>(())
+        };
+        let (end, replay) =
+            tokio::time::timeout(Duration::from_secs(20), join_two(serving, replay)).await?;
+        replay?;
+        assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
     }
     Ok(())
 }
@@ -307,6 +479,12 @@ struct WireOwner<'a, 'b, 'f, 's> {
 }
 
 impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
+    fn session_commands(
+        &self,
+    ) -> Option<&crate::gameplay_transport::session_ingress::SessionCommands> {
+        self.owner.session_commands()
+    }
+
     async fn admit(
         &self,
         _: FreshAdmissionAttempt<'_>,
@@ -365,6 +543,13 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
                 Some(UseDisposition::Committed)
             );
         }
+        if matches!(self.case, Case::CoinCommitted) {
+            assert_eq!(
+                result.map(|outcome| outcome.disposition),
+                Some(UseDisposition::Committed)
+            );
+            return None;
+        }
         result
     }
 
@@ -393,7 +578,11 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
             result
         };
         let holding = match self.case {
-            Case::Gold => return using.await,
+            Case::CubeCommitted => {
+                crate::gameplay_transport::item_use::drome_cube::test_faults::lose_next_ack();
+                return using.await;
+            }
+            Case::Gold | Case::CoinCommitted | Case::CoinNotApplied => return using.await,
             Case::CubeShort => Duration::from_millis(100),
             Case::CubeExhausted | Case::AidProbeExhausted => {
                 COMMAND_HOLDER_WINDOW + Duration::from_millis(200)
@@ -448,17 +637,17 @@ async fn assert_gold_wire(
     };
     let full = target(100).ok_or("full gold stack")?;
     let short = target(99).ok_or("short gold stack")?;
-    send_use(client, 1, full.clone()).await?;
+    send_use(client, 1, 1, full.clone()).await?;
     assert_eq!(
         read_use(client, 1).await?,
         (CommandStatus::Accepted, UseDisposition::Committed)
     );
-    send_use(client, 1, full).await?;
+    send_use(client, 1, 1, full).await?;
     assert_eq!(
         read_use(client, 1).await?,
         (CommandStatus::DuplicateReplay, UseDisposition::Committed)
     );
-    send_use(client, 2, short).await?;
+    send_use(client, 1, 2, short).await?;
     assert_eq!(
         read_use(client, 2).await?,
         (CommandStatus::Accepted, UseDisposition::NotPossible)
@@ -467,38 +656,33 @@ async fn assert_gold_wire(
     Ok(())
 }
 
-async fn assert_cube_wire(client: &mut DuplexStream, cube: NonZeroU32, case: Case) -> TestResult {
-    send_use(client, 1, UseTarget::ItemByDefinition(cube)).await?;
-    match case {
-        Case::CubeShort => {
-            assert_eq!(
-                read_use(client, 1).await?,
-                (CommandStatus::Accepted, UseDisposition::Committed)
-            );
-        }
-        Case::CubeExhausted | Case::AidProbeExhausted => loop {
-            match read_frame(client).await {
-                Err(error)
-                    if error
-                        .downcast_ref::<std::io::Error>()
-                        .is_some_and(|io| io.kind() == std::io::ErrorKind::UnexpectedEof) =>
-                {
-                    break;
-                }
-                Err(error) => return Err(error),
-                Ok(bytes) => assert_ne!(
-                    decode_wire_envelope(&bytes)?.message_type(),
-                    MessageType::CommandResult
-                ),
+async fn assert_no_use_result(client: &mut DuplexStream) -> TestResult {
+    loop {
+        match read_frame(client).await {
+            Err(error)
+                if error
+                    .downcast_ref::<std::io::Error>()
+                    .is_some_and(|io| io.kind() == std::io::ErrorKind::UnexpectedEof) =>
+            {
+                break;
             }
-        },
-        Case::Gold => unreachable!("Cube-only client"),
+            Err(error) => return Err(error),
+            Ok(bytes) => assert_ne!(
+                decode_wire_envelope(&bytes)?.message_type(),
+                MessageType::CommandResult
+            ),
+        }
     }
     client.shutdown().await?;
     Ok(())
 }
 
-async fn send_use(client: &mut DuplexStream, command_id: u64, target: UseTarget) -> TestResult {
+async fn send_use(
+    client: &mut DuplexStream,
+    generation: u64,
+    command_id: u64,
+    target: UseTarget,
+) -> TestResult {
     let payload = encode_item_use_intent(&UseIntent {
         target,
         use_with: None,
@@ -507,7 +691,7 @@ async fn send_use(client: &mut DuplexStream, command_id: u64, target: UseTarget)
     })
     .map_err(debug)?;
     let frame = encode_client_command(
-        1,
+        generation,
         &ClientCommandValue {
             command_id,
             command_type: COMMAND_TYPE_USE_INTENT,
