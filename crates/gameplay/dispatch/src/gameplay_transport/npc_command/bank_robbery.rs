@@ -2,13 +2,28 @@
 use super::*;
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::world_event::bank_robbery::{
-    Conversation, HandIn, Phase, RecognizedBag, ReturnReceipt, TOWNCRYER, TOWNCRYER_LINE,
-    banker_city,
+    Conversation, HandIn, Phase, RecognizedBag, ReturnReceipt, banker_city,
 };
 use crate::foundation::{CommandId, CommandRef};
 
+#[cfg(test)]
+impl NpcConversations {
+    pub(in crate::gameplay_transport) fn fixture_lose_robbery_ack(
+        &self,
+        session: GameSessionId,
+        command: u64,
+    ) -> Result<(), &'static str> {
+        let mut sessions = self.sessions.lock().map_err(|_| "sessions")?;
+        sessions
+            .get_mut(&session)
+            .ok_or("session")?
+            .interrupt_robbery_after_commit = Some(command);
+        Ok(())
+    }
+}
+
 pub(super) fn interested(key: &str) -> bool {
-    key == TOWNCRYER || banker_city(key).is_some()
+    banker_city(key).is_some()
 }
 
 pub(super) fn clue(key: &str) -> &'static str {
@@ -188,9 +203,6 @@ pub(super) async fn talk(
         Err(CharacterProgressionError::Unavailable(_)) => return Some(held_bank_outcome()),
         Err(_) => return Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected)),
     };
-    if key == TOWNCRYER {
-        return greeting.then(|| NpcConversations::bank_reply(intent, TOWNCRYER_LINE.into()));
-    }
     if state.phase.suspended() {
         admission
             .states

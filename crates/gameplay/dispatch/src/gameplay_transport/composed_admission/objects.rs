@@ -407,6 +407,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return outcome;
         }
+        if let Some(map) = self.bundle_map()
+            && let Some(outcome) =
+                super::super::world_event::use_board(self, actor, command, map, &target).await
+        {
+            return outcome;
+        }
         if self
             .rooms()
             .gate_source_world()
@@ -415,11 +421,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseOutcome::rejected();
         }
         if let Some(map) = self.bundle_map() {
-            if let Some(outcome) =
-                super::super::world_event::use_board(self, actor, command, map, &target).await
-            {
-                return outcome;
-            }
             if let Some(outcome) = self
                 .use_dawnport_departure(actor, command, map, &target)
                 .await

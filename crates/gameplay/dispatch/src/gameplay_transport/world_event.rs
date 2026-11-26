@@ -63,7 +63,7 @@ pub(super) async fn use_board(
     use oteryn_protocol_oteryn::world_map::MapDefinition;
     use oteryn_protocol_oteryn::world_object::UseDisposition;
 
-    let runtime = owner.runtime.lock().await;
+    let mut runtime = owner.runtime.lock().await;
     let source = super::world_map::MapViewSource {
         overlay: &map.overlay,
         facts: &map.facts,
@@ -114,7 +114,11 @@ pub(super) async fn use_board(
         .position();
     let disposition = if !oteryn_gameplay_items::reach::within_reach(
         (position.x, position.y, i32::from(position.floor)),
-        (i32::from(pos.x), i32::from(pos.y), i32::from(pos.floor)),
+        (
+            i32::from(pos.x),
+            i32::from(pos.y),
+            i32::from(owner.runtime_floor(i16::from(pos.floor))),
+        ),
     ) {
         UseDisposition::TooFar
     } else if !owner

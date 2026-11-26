@@ -16,6 +16,9 @@ use oteryn_gameplay_world::bank_robbery as projection;
 
 use bank_robbery::BAG;
 
+#[path = "bankrob/returns.rs"]
+mod returns;
+
 #[test]
 fn bankrob_city_spawn_and_top_damage_loot() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
@@ -25,7 +28,7 @@ fn bankrob_city_spawn_and_top_damage_loot() -> TestResult {
                 Harness::create_with_admission_seed(admin.clone(), "bankrob_city", false, false)
                     .await?;
             eprintln!("bankrob-marker: bankrob_city_spawn_and_top_damage_loot db ready");
-            let result = scenario(&h, city, false).await;
+            let result = scenario(&h, city, false, None).await;
             h.cleanup().await?;
             eprintln!(
                 "bankrob_city_spawn_and_top_damage_loot city={} elapsed={:?}",
@@ -47,7 +50,7 @@ fn bankrob_server_save_expires_bags_and_reopens() -> TestResult {
         eprintln!("bankrob-marker: bankrob_server_save_expires_bags_and_reopens db ready");
         let schedule = Schedule::parse(r#"{"events":[{"name":"double","startdate":"01/01/2030","enddate":"01/02/2030","ingame":{"lootrate":200}}]}"#).map_err(debug)?;
         let _clock = test_clock::set(schedule, 1_893_456_000);
-        let result = scenario(&h, &bank_robbery::cities()?[0], true).await;
+        let result = scenario(&h, &bank_robbery::cities()?[0], true, None).await;
         h.cleanup().await?;
         eprintln!(
             "bankrob_server_save_expires_bags_and_reopens elapsed={:?}",
@@ -57,7 +60,12 @@ fn bankrob_server_save_expires_bags_and_reopens() -> TestResult {
     })
 }
 
-async fn scenario(h: &Harness, city: &'static City, save: bool) -> TestResult {
+async fn scenario(
+    h: &Harness,
+    city: &'static City,
+    save: bool,
+    hand_in: Option<returns::Case>,
+) -> TestResult {
     let mut deps = Dependencies::new()?;
     let scope = RuntimeScopeRefV1::channel(deps.admitted.world_id, deps.admitted.channel_id);
     let world = scope.world_id();
@@ -67,7 +75,7 @@ async fn scenario(h: &Harness, city: &'static City, save: bool) -> TestResult {
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
-    let reset_source = save.then_some(
+    let reset_source = (save || hand_in == Some(returns::Case::Second)).then_some(
         include_bytes!(
             "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
         )
@@ -83,7 +91,7 @@ async fn scenario(h: &Harness, city: &'static City, save: bool) -> TestResult {
     let native = active.native_gameplay().ok_or("native gameplay")?;
     let mut origin = at(city.cell);
     origin.x -= 2;
-    let scene = scene(scope, city, origin)?;
+    let scene = scene(scope, city, origin, hand_in, native)?;
     let cells = scene
         .movement_cells(activated.qualified_room().movement_cells())
         .map_err(debug)?;
@@ -112,7 +120,7 @@ async fn scenario(h: &Harness, city: &'static City, save: bool) -> TestResult {
         1,
         "runtime-scope-assignment:1",
         64,
-        pin,
+        pin.clone(),
     )
     .map_err(debug)?;
     runtime.use_classic_creature_deaths().map_err(debug)?;
@@ -145,27 +153,12 @@ async fn scenario(h: &Harness, city: &'static City, save: bool) -> TestResult {
             .await?
             .is_none()
     );
-    sqlx::query(
-        "UPDATE game_bank_robbery_occurrences SET boot_ms=boot_ms-3600000 WHERE reset_epoch=0",
-    )
-    .execute(&h.pool)
-    .await?;
-    let selected = bank_robbery::with_test_roll(
-        city.key.as_str(),
-        h.root
-            .poll_bank_robbery(&authority, &h.node, scope, generation, 0, sites),
-    )
-    .await?
-    .ok_or("city occurrence")?;
-    assert_eq!(selected.city.key, city.key);
-    let target = {
-        let mut runtime = deps.runtime.lock().await;
-        projection::project(&mut runtime, &cells, selected).map_err(debug)?;
-        projection::project(&mut runtime, &cells, selected).map_err(debug)?;
-        assert_cohort(&runtime, selected)?
-    };
-
     let session = deps.admitted.game_session_id;
+    let bank = if hand_in.is_some() {
+        Some(returns::Bank::new(scope, pin, session, origin)?)
+    } else {
+        None
+    };
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = Some(active);
     owner.movement_cells = (&cells).into();
@@ -212,6 +205,34 @@ async fn scenario(h: &Harness, city: &'static City, save: bool) -> TestResult {
     // hit, but this fixture does not create a second durable progression root.
     deps.initialize(&owner).await;
 
+    if let Some(bank) = &bank {
+        owner.runtime = &bank.runtime;
+        bank.install(&owner, session)?;
+        if hand_in == Some(returns::Case::Announcements) {
+            bank.before_robbery(&owner, fence.item_fence()).await?;
+        }
+        owner.runtime = &deps.runtime;
+    }
+    sqlx::query(
+        "UPDATE game_bank_robbery_occurrences SET boot_ms=boot_ms-3600000 WHERE reset_epoch=0",
+    )
+    .execute(&h.pool)
+    .await?;
+    let selected = bank_robbery::with_test_roll(
+        city.key.as_str(),
+        h.root
+            .poll_bank_robbery(&authority, &h.node, scope, generation, 0, sites),
+    )
+    .await?
+    .ok_or("city occurrence")?;
+    assert_eq!(selected.city.key, city.key);
+    let target = {
+        let mut runtime = deps.runtime.lock().await;
+        projection::project(&mut runtime, &cells, selected).map_err(debug)?;
+        projection::project(&mut runtime, &cells, selected).map_err(debug)?;
+        assert_cohort(&runtime, selected)?
+    };
+
     kill_with_top_damage(&owner, deps.actor, session, target, origin).await?;
     let mints: Vec<Vec<u8>> = sqlx::query_scalar(
         "SELECT uuid_send(b.item_instance_id) FROM game_bank_robbery_bags b
@@ -228,9 +249,10 @@ async fn scenario(h: &Harness, city: &'static City, save: bool) -> TestResult {
     .bind(fence.character_id.as_bytes().as_slice())
     .fetch_all(&h.pool)
     .await?;
-    assert_eq!(mints.len(), if save { 2 } else { 1 });
-    if save {
-        assert_ne!(mints[0], mints[1]);
+    let double = save || hand_in.is_some_and(returns::Case::double_loot);
+    assert_eq!(mints.len(), if double { 2 } else { 1 });
+    if double { assert_ne!(mints[0], mints[1]); }
+    if save || hand_in.is_some_and(|case| case != returns::Case::Announcements) {
         // A real pickup needs the holder's durable progression level to derive
         // carried capacity. Bind it after the loot-only fight has settled.
         let mut admitted = deps.admitted;
@@ -241,16 +263,33 @@ async fn scenario(h: &Harness, city: &'static City, save: bool) -> TestResult {
             h,
             &authority,
             fence.item_fence(),
-            session,
+            CommandRef::new(session, CommandId::new(4).map_err(debug)?),
             native,
             &starter.definition,
             item,
         )
         .await
         .map_err(|error| format!("pick up the robbery bag: {error}"))?;
-        save_world(h, &authority, scope, reset_room, selected, item)
-            .await
-            .map_err(|error| format!("commit the robbery World save: {error}"))?;
+        if hand_in.is_some_and(returns::Case::double_loot) {
+            take_bag(h, &authority, fence.item_fence(),
+                CommandRef::new(session, CommandId::new(5).map_err(debug)?), native,
+                &starter.definition, mints[1].as_slice().try_into().map_err(|_| "bag UUID")?
+            ).await?;
+        }
+        if save {
+            save_world(h, &authority, scope, reset_room, selected, item)
+                .await
+                .map_err(|error| format!("commit the robbery World save: {error}"))?;
+        }
+    }
+    if let (Some(case), Some(bank)) = (hand_in, bank.as_ref()) {
+        owner.runtime = &bank.runtime;
+        let first_bag = mints[0].as_slice().try_into().map_err(|_| "bag UUID")?;
+        let second_bag = mints.get(1).map(|id| id.as_slice().try_into()).transpose().map_err(|_| "bag UUID")?;
+        bank.exercise(case, &mut owner, fence.item_fence(), h, first_bag, second_bag).await?;
+        if case == returns::Case::Second {
+            save_world(h, &authority, scope, reset_room, selected, second_bag.ok_or("second bag")?).await?;
+        }
     }
     Ok(())
 }
@@ -275,10 +314,26 @@ fn scene(
     scope: RuntimeScopeRefV1,
     city: &City,
     origin: MovementLocalPosition,
+    hand_in: Option<returns::Case>,
+    native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut manifest = bundle::read(&bytes)?.manifest;
+    let board = if hand_in == Some(returns::Case::Announcements) {
+        let key = returns::BOARD;
+        let facts = crate::map::boot::native_item_definition(Some(native), key).ok_or("Board Item")?;
+        let palette = u32::try_from(manifest.palette.len())?;
+        manifest.palette.push(bundle::PaletteEntry {
+            key: key.into(),
+            family: bundle::Family::Item,
+            id: facts.reference.get() - 1,
+            terrain: None,
+        });
+        Some(palette)
+    } else {
+        None
+    };
     let floor = i8::try_from(origin.floor)?;
     let x = u16::try_from(origin.x)?;
     let y = u16::try_from(origin.y)?;
@@ -301,11 +356,10 @@ fn scene(
                     flags: 0,
                     house: 0,
                     zones: vec![],
-                    items: vec![sector::Item {
-                        palette: 0,
-                        depth: 0,
-                        attrs: Default::default(),
-                    }],
+                    items: std::iter::once(0)
+                        .chain(board.filter(|_| tx == x && ty == y + 1))
+                        .map(|palette| sector::Item { palette, depth: 0, attrs: Default::default() })
+                        .collect(),
                 });
         }
     }
@@ -332,7 +386,8 @@ fn scene(
     .boot(
         scope.world_id(),
         scope.channel_id().ok_or("channel")?,
-        crate::map::boot::tests::items,
+        |key| crate::map::boot::tests::items(key)
+            .or_else(|| crate::map::boot::native_item_definition(Some(native), key)),
     )?)
 }
 
@@ -499,7 +554,7 @@ async fn take_bag(
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
-    session: GameSessionId,
+    command: CommandRef,
     native: &crate::content::native_gameplay::NativeGameplayState,
     backpack: &crate::durability::item_mint::TypedDefinitionRef,
     item: [u8; 16],
@@ -511,7 +566,7 @@ async fn take_bag(
     let weights = NativeItemWeights(native);
     let request = ItemTransferRequest {
         weight_generation_digest: native.source_digest(),
-        command: CommandRef::new(session, CommandId::new(4).map_err(debug)?),
+        command,
         source_item_instance_id: item,
         destination: ItemTransferDestination::MainBackpack,
         item: generation_item_facts(native, &definition(BAG)).map_err(debug)?,

@@ -499,6 +499,28 @@ async fn carried_bag(
 }
 
 impl DurabilityRoot {
+    /// Read the current World announcement under the live Channel owner fence.
+    pub async fn bank_robbery_announcement(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        scope: RuntimeScopeRefV1,
+        generation: ScopeOwnershipGeneration,
+        epoch: u64,
+    ) -> Result<bool, DurabilityError> {
+        let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            if !assert_runtime_scope_fence(&mut tx, scope, generation, &node).await? {
+                return Ok(false);
+            }
+            announced(&mut tx, scope.world_id(), epoch).await
+        })).await
+    }
+
     pub async fn bank_robbery_dialogue(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -507,11 +529,9 @@ impl DurabilityRoot {
         conversation: Conversation,
         greeting: bool,
     ) -> Result<Option<Dialogue>, ProgressionError> {
-        let towncryer = conversation.key == TOWNCRYER;
-        let city = banker_city(&conversation.key);
-        if !towncryer && city.is_none() {
+        let Some(city) = banker_city(&conversation.key) else {
             return Ok(None);
-        }
+        };
         let recovery = authority.record_for(self).map_err(|_| ProgressionError::AuthorityRejected)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
@@ -519,13 +539,13 @@ impl DurabilityRoot {
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
             let Some(o) = current(&mut tx, fence.runtime_scope.world_id()).await? else { return Ok(Ok(None)); };
-            if !(towncryer && o.phase == Phase::BagOutstanding || city == Some(o.city.as_str())) {
+            if city != o.city {
                 return Ok(Ok(None));
             }
             if !player_fenced(&mut tx, &node, &fence).await? {
                 return Ok(Err(ProgressionError::AuthorityRejected));
             }
-            let bag = if greeting && !towncryer && o.phase == Phase::BagOutstanding {
+            let bag = if greeting && o.phase == Phase::BagOutstanding {
                 carried_bag(&mut tx, &fence, o.epoch, None).await?.map(|bag| RecognizedBag {
                     fence, conversation, epoch: o.epoch, bag,
                 })
