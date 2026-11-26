@@ -16,6 +16,12 @@ use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
 };
 
+#[derive(Clone, Copy)]
+enum ConfirmationBlock {
+    ParkLane(u64),
+    Hold { command_id: u64, exhaust: bool },
+}
+
 /// Capability 3 is offered only on a bundle World. Keep the native NPC test on
 /// that production route, with a tiny source-qualified ground plane and no items.
 pub(super) fn world(
@@ -145,9 +151,33 @@ pub(super) async fn talk_refused_with_parked_confirmation(
         npc,
         commands,
         Some(NpcIntentDisposition::Rejected),
-        Some(*command_id),
+        Some(ConfirmationBlock::ParkLane(*command_id)),
     )
     .await
+}
+
+pub(super) async fn talk_with_busy_holder(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    exhaust: bool,
+) -> TestResult {
+    let commands = if exhaust {
+        [(1, "hi"), (2, "yes"), (3, "yes")]
+    } else {
+        [(1, "hi"), (2, "yes"), (3, "hi")]
+    };
+    conversation(
+        owner,
+        admitted,
+        npc,
+        &commands,
+        Some(NpcIntentDisposition::Ok),
+        Some(ConfirmationBlock::Hold {
+            command_id: 2,
+            exhaust,
+        }),
+    ).await
 }
 
 pub(super) async fn talk_interrupted(
@@ -165,7 +195,7 @@ async fn conversation(
     npc: EntityRef,
     commands: &[(u64, &str)],
     expected_last: Option<NpcIntentDisposition>,
-    park_before: Option<u64>,
+    block_confirmation: Option<ConfirmationBlock>,
 ) -> TestResult {
     let fresh = commands
         .iter()
@@ -180,10 +210,20 @@ async fn conversation(
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
     let before = *admitted;
-    let parked_lane = park_before.map(|id| (id, owner.spell_lane.clone()));
+    let (parked_lane, hold) = match block_confirmation {
+        Some(ConfirmationBlock::ParkLane(id)) => (Some((id, owner.spell_lane.clone())), None),
+        Some(ConfirmationBlock::Hold { command_id, exhaust }) => {
+            (None, Some((command_id, exhaust, owner.root.clone())))
+        }
+        None => (None, None),
+    };
+    let wait = Arc::new(tokio::sync::Notify::new());
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async {
-        let ended = serve_admitted(&mut server, before, owner, IDLE_LIVENESS).await;
+        let ended = crate::gameplay_transport::npc_command::NPC_FENCE_WAIT.scope(
+            Arc::clone(&wait),
+            serve_admitted(&mut server, before, owner, IDLE_LIVENESS),
+        ).await;
         drop(server);
         ended
     };
@@ -225,7 +265,19 @@ async fn conversation(
                 },
             )
             .map_err(debug)?;
+            let mut holder = match hold.as_ref() {
+                Some((id, _, root)) if id == command_id => Some(root.issue_ready_semantic_pass().await?),
+                _ => None,
+            };
             write_frame(&mut client, &frame).await?;
+            let exhaust = hold.as_ref().is_some_and(|(id, exhaust, _)| id == command_id && *exhaust);
+            if holder.is_some() {
+                tokio::time::timeout(std::time::Duration::from_secs(3), wait.notified())
+                    .await.map_err(|_| "NPC command did not reach its fenced read while the holder was busy")?;
+                if !exhaust && let Some(held) = holder.take() {
+                    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                }
+            }
             loop {
                 let frame = match read_frame(&mut client).await {
                     Err(error)
@@ -241,7 +293,9 @@ async fn conversation(
                 if envelope.message_type() == MessageType::CommandResult {
                     let result = decode_command_result(envelope.payload()).map_err(debug)?;
                     assert_eq!(result.command_id, *command_id);
-                    let expected = if last {
+                    let expected = if exhaust {
+                        NpcIntentDisposition::RateLimited
+                    } else if last {
                         expected_last.ok_or("unknown command was sequenced")?
                     } else {
                         NpcIntentDisposition::Ok
@@ -258,6 +312,9 @@ async fn conversation(
                         "{command_id}: {text}; NPC payload {:?}",
                         result.payload
                     );
+                    if let Some(held) = holder.take() {
+                        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                    }
                     assert_eq!(
                         decode_npc_intent_result(result.payload).map_err(debug)?,
                         expected,

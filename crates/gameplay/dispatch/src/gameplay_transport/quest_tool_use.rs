@@ -2,7 +2,7 @@
 use super::{
     ComposedFreshAdmission,
     connection::{UseCommand, UseOutcome},
-    item_ref_admission::NativeItemWeights,
+    item_ref_admission::{NativeItemWeights, UseSourceHint},
     item_view::ItemKey,
 };
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef};
@@ -32,16 +32,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<Option<bool>, &'static str> {
         use crate::durability::PlainUseReceipt;
         let exists = self
-            .root
-            .plain_use_receipt_exists(PlainUseReceipt::QuestCarried(character), command)
+            .probe_plain_use_receipt(PlainUseReceipt::QuestCarried(character), command)
             .await
             .map_err(|_| "quest_carried_existence")?;
         if !exists {
             return Ok(None);
         }
-        self.root
-            .reconcile_quest_carried_use(self.character, character, command, intent.to_vec())
-            .await
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        budget.retry_command_guard(async || {
+            match self.root.reconcile_quest_carried_use(self.character, character, command, intent.to_vec()).await {
+                Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(error)) => Err(error),
+                result => Ok(result),
+            }
+        }).await.map_err(|_| "quest_carried_replay")?
             .map_err(|_| "quest_carried_replay")
     }
 
@@ -52,7 +55,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         intent: &UseIntent,
-        source: Option<ItemKey>,
+        source: &UseSourceHint,
         corpse: Option<[u8; 16]>,
     ) -> Result<Option<UseOutcome>, ()> {
         use crate::durability::quest_state::{
@@ -93,15 +96,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(None) => {}
             Err(stage) => return Ok(Some(super::use_receipt_refused(command, stage))),
         }
-        let Some(ItemKey::Instance(source)) = source else {
+        let Some(catalogue) = self.quest_catalogue.as_deref() else {
             return Ok(None);
         };
-        let Ok(inventory) = self
-            .root
-            .read_item_use_inventory(self.character, self.holder, item_fence)
+        let callbacks = reward_callbacks::load_for(catalogue).map_err(|_| ())?;
+        match source
+            .candidate(self, command, "quest_carried_candidate", |definition| {
+                callbacks.iter().any(|callback| {
+                    callback.carried_item.as_deref() == Some(&definition.production_key)
+                        && callback.carried_target.is_none()
+                        && !callback.fresh_corpse
+                        && callback.corpse_target.is_some() == corpse.is_some()
+                })
+            })
             .await
-        else {
+        {
+            Ok(true) => {}
+            Ok(false) => return Ok(None),
+            Err(refusal) => return Ok(Some(refusal.into())),
+        }
+        let Some(ItemKey::Instance(source)) = source.key else {
             return Ok(None);
+        };
+        let inventory = match self.read_use_inventory(item_fence).await {
+            Ok(inventory) => inventory,
+            Err(_) => {
+                return Ok(Some(super::use_receipt_refused(
+                    command,
+                    "quest_carried_inventory",
+                )));
+            }
         };
         let Some(item) = inventory
             .backpack
@@ -112,10 +136,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let Some(catalogue) = self.quest_catalogue.as_deref() else {
-            return Ok(None);
-        };
-        let callbacks = reward_callbacks::load_for(catalogue).map_err(|_| ())?;
         let bound = callbacks
             .iter()
             .filter(|c| c.carried_item.as_deref() == Some(&item.definition.production_key))

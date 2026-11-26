@@ -76,17 +76,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         command: UseCommand,
-        item: ItemKey,
+        source: &super::item_ref_admission::UseSourceHint,
     ) -> Option<Option<UseOutcome>> {
-        let ItemKey::Instance(id) = item else {
+        let Some(ItemKey::Instance(id)) = source.key else {
             return None;
         };
         let fence = command.item_fence?;
-        let backpack = self
-            .root
-            .read_character_backpack(self.character, fence.character_id)
+        match source
+            .candidate(self, command, "converter_candidate", |definition| {
+                matches!(
+                    definition.production_key.as_str(),
+                    GOLD_CONVERTER
+                        | TEMPORARY_GOLD_CONVERTER
+                        | MAGIC_CONVERTER_INACTIVE
+                        | MAGIC_CONVERTER_ACTIVE
+                )
+            })
             .await
-            .ok()??;
+        {
+            Ok(true) => {}
+            Ok(false) => return None,
+            Err(refusal) => return Some(Some(refusal.into())),
+        }
+        let backpack = match self.read_use_backpack(fence).await {
+            Ok(backpack) => backpack?,
+            Err(_) => {
+                return Some(Some(super::use_receipt_refused(
+                    command,
+                    "converter_inventory",
+                )));
+            }
+        };
         let entry = backpack
             .entries
             .iter()
@@ -473,9 +493,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         command: UseCommand,
-        item: ItemKey,
+        source: &super::item_ref_admission::UseSourceHint,
     ) -> Option<Option<UseOutcome>> {
-        let ItemKey::Instance(id) = item else {
+        let Some(ItemKey::Instance(id)) = source.key else {
             return None;
         };
         let fence = command.item_fence?;
@@ -483,13 +503,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let command_id = CommandId::new(command.command_id).ok()?;
         let reference = CommandRef::new(command.game_session_id, command_id);
         let historical = match self
-            .root
-            .plain_use_receipt_exists(crate::durability::PlainUseReceipt::CoinExchange, reference)
+            .probe_plain_use_receipt(crate::durability::PlainUseReceipt::CoinExchange, reference)
             .await
         {
             Ok(present) => present,
             Err(_) => return Some(Some(super::use_receipt_refused(command, "coin_existence"))),
         };
+        if !historical {
+            match source
+                .candidate(self, command, "coin_candidate", |definition| {
+                    Coin::from_production_key(&definition.production_key).is_some()
+                })
+                .await
+            {
+                Ok(true) => {}
+                Ok(false) => return None,
+                Err(refusal) => return Some(Some(refusal.into())),
+            }
+        }
         let Some(permit) = self.spell_lane_permit().await else {
             return Some(Some(super::use_receipt_refused(command, "coin_permit")));
         };
@@ -537,23 +568,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(_) => return Some(None),
             }
         }
-        // A carried non-coin is not ours, whatever its fence; its own owner refuses it.
-        if let Ok(Some(backpack)) = self
-            .root
-            .read_character_backpack(self.character, fence.character_id)
-            .await
-            && backpack.entries.iter().any(|entry| {
-                entry.item.item_instance_id == id
-                    && Coin::from_production_key(&entry.item.definition.production_key).is_none()
-            })
-        {
-            return None;
-        }
-        let inventory = match self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
-            .await
-        {
+        let inventory = match self.read_use_inventory(fence).await {
             Ok(inventory) => inventory,
             Err(_) => return Some(Some(super::use_receipt_refused(command, "coin_inventory"))),
         };

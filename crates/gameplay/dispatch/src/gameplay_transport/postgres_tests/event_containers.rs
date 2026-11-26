@@ -306,7 +306,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
                     deps.actor,
                     command(fence),
                     &intent,
-                    Some(ItemKey::Instance(source))
+                    &crate::gameplay_transport::item_ref_admission::UseSourceHint::new(Some(ItemKey::Instance(source))),
                 )
                 .await
                 .map_err(debug)?
@@ -319,7 +319,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             crate::foundation::ConnectionGeneration::new(fence.connection_generation.get() + 1)
                 .map_err(debug)?;
         let refused = owner
-            .use_reward_bag(deps.actor, command(stale), ItemKey::Instance(source))
+            .use_reward_bag(deps.actor, command(stale), &crate::gameplay_transport::item_ref_admission::UseSourceHint::new(Some(ItemKey::Instance(source))))
             .await
             .ok_or("SP04 route")?
             .ok_or("stale result")?;
@@ -369,7 +369,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
         }
         tx.commit().await?;
         let refused = owner
-            .use_reward_bag(deps.actor, command(fence), ItemKey::Instance(source))
+            .use_reward_bag(deps.actor, command(fence), &crate::gameplay_transport::item_ref_admission::UseSourceHint::new(Some(ItemKey::Instance(source))))
             .await
             .ok_or("SP04 route")?
             .ok_or("resource refusal")?;
@@ -414,7 +414,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             assert!(!owner.root.is_ready());
             assert!(matches!(
                 owner
-                    .use_reward_bag(deps.actor, command(fence), ItemKey::Instance(source))
+                    .use_reward_bag(deps.actor, command(fence), &crate::gameplay_transport::item_ref_admission::UseSourceHint::new(Some(ItemKey::Instance(source))))
                     .await,
                 Some(None)
             ));
@@ -500,13 +500,13 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
         restarted.movement_cells = (&cells).into();
         deps.initialize(&restarted).await;
         let replayed = restarted
-            .use_reward_bag(deps.actor, command(fence), ItemKey::Instance(source))
+            .use_reward_bag(deps.actor, command(fence), &crate::gameplay_transport::item_ref_admission::UseSourceHint::new(Some(ItemKey::Instance(source))))
             .await
             .ok_or("SP04 route")?
             .ok_or("restart replay without retired view handle")?;
         assert_eq!(replayed.disposition, UseDisposition::Committed);
         let changed = restarted
-            .use_reward_bag(deps.actor, command(fence), ItemKey::Instance(id(99)))
+            .use_reward_bag(deps.actor, command(fence), &crate::gameplay_transport::item_ref_admission::UseSourceHint::new(Some(ItemKey::Instance(id(99)))))
             .await
             .ok_or("SP04 route")?
             .ok_or("changed-intent replay")?;
@@ -588,7 +588,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
                 "the existing equipment clock spent the fresh reward's budget: {remaining}"
             );
             let replayed = restarted
-                .use_reward_bag(deps.actor, command(fence), ItemKey::Instance(source))
+                .use_reward_bag(deps.actor, command(fence), &crate::gameplay_transport::item_ref_admission::UseSourceHint::new(Some(ItemKey::Instance(source))))
                 .await
                 .ok_or("SP04 route")?
                 .ok_or("timed reward replay")?;

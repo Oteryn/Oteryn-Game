@@ -52,26 +52,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: &UseIntent,
         source: Option<ItemKey>,
         target: Option<ItemKey>,
+        inventory: ItemUseInventory,
     ) -> Option<(BackpackEntry, QualifiedSoulWarUseTarget, String, String)> {
-        let fence = command.item_fence?;
         let native = self.active_generation?.native_gameplay()?;
-        {
-            let runtime = self.runtime.lock().await;
-            if !rotten_essence::current(&runtime, actor, command)
-                // A House actor is a proxy: its map must be resolved by the
-                // House owner, never the origin Channel map used below.
-                || runtime.house_actor_state(actor, command.game_session_id).is_ok()
-            {
-                return None;
-            }
-        }
-        let inventory = self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
-            .await
-            .ok()?;
         let mut runtime = self.runtime.lock().await;
-        if !rotten_essence::current(&runtime, actor, command) {
+        if !rotten_essence::current(&runtime, actor, command)
+            // A House actor is a proxy. Its map belongs to the House owner.
+            || runtime.house_actor_state(actor, command.game_session_id).is_ok()
+        {
             return None;
         }
         let index =
@@ -371,6 +359,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             held.source_pending.as_deref().cloned()
         };
+        if pending.is_none()
+            && (!matches!(
+                intent.target,
+                UseTarget::Item(_) | UseTarget::ItemByDefinition(_)
+            ) || !command.item_fence.is_some_and(|fence| {
+                matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+            }))
+        {
+            return Ok(None);
+        }
+        if pending.is_none()
+            && let UseTarget::ItemByDefinition(reference) = intent.target
+        {
+            let runtime = self.runtime.lock().await;
+            let definition =
+                super::super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+                    .and_then(|index| {
+                        crate::gameplay_transport::item_look::typed_definition(index, reference)
+                    });
+            if definition.as_ref().and_then(source_use).is_none() {
+                return Ok(None);
+            }
+        }
+        if pending.is_none() && matches!(intent.target, UseTarget::Item(_)) {
+            let source = super::super::item_ref_admission::UseSourceHint::new(source);
+            match source
+                .candidate(self, command, "soul_war_source_candidate", |definition| {
+                    source_use(definition).is_some()
+                })
+                .await
+            {
+                Ok(true) => {}
+                Ok(false) => return Ok(None),
+                Err(refusal) => return Ok(Some(refusal.into())),
+            }
+        }
         let Some(permit) = self.spell_lane_permit().await else {
             return if pending.is_some() {
                 Err(())
@@ -387,8 +411,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             pending
         } else {
+            let Some(fence) = command.item_fence else {
+                return Ok(None);
+            };
+            let Ok(inventory) = self.read_use_inventory(fence).await else {
+                return Ok(Some(crate::gameplay_transport::use_receipt_refused(
+                    command,
+                    "soul_war_source_inventory",
+                )));
+            };
             let Some((entry, qualified, content_revision, ruleset_revision)) = self
-                .qualify_soul_war_source_use(actor, command, intent, source, target)
+                .qualify_soul_war_source_use(actor, command, intent, source, target, inventory)
                 .await
             else {
                 return Ok(None);

@@ -22,9 +22,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(fence) = command.item_fence else {
             return Ok(None);
         };
-        let source = match self
-            .root
-            .read_ground_action_source(self.character, fence, request.source)
+        let source = match crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root)
+            .retry_command_guard(async || {
+                self.root
+                    .read_ground_action_source(self.character, fence, request.source)
+                    .await
+            })
             .await
         {
             Ok(Some(source)) => source,

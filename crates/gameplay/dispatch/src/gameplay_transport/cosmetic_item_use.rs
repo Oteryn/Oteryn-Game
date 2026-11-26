@@ -4,7 +4,7 @@ pub(super) mod quest_targets;
 
 use super::ComposedFreshAdmission;
 use super::connection::{UseCommand, UseOutcome};
-use super::item_ref_admission::NativeItemWeights;
+use super::item_ref_admission::{NativeItemWeights, UseSourceHint};
 use super::item_view::ItemKey;
 use super::spell_premium_coordinator::RegisteredSpellAccessOwner;
 use crate::durability::consume_transform::{ConsumeTransformRequest, GroundActionContext};
@@ -14,6 +14,13 @@ use crate::gameplay_transport::actor_spell::NoveltyEffectRequest;
 use crate::gameplay_transport::spell_access_facts::CurrentSpellAccessOwner;
 use oteryn_gameplay_items::novelty_items::{NoveltyEffects, NoveltyKind};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent};
+
+fn item_disguise_rules(
+    key: &str,
+) -> Option<&'static [oteryn_gameplay_quests::quest::item_disguises::Rule]> {
+    oteryn_gameplay_quests::quest::item_disguises::rules()
+        .filter(|rules| rules.iter().any(|rule| rule.item == key))
+}
 
 impl ItemCosmeticPremium for RegisteredSpellAccessOwner {
     fn current(&self, account: [u8; 16]) -> bool {
@@ -27,7 +34,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         intent: UseIntent,
-        source: Option<ItemKey>,
+        source: &UseSourceHint,
     ) -> Result<Option<UseOutcome>, ()> {
         // Named-House actions belong to the existing House item owner. In particular,
         // do not run a Channel-only receipt probe before that owner can see the command.
@@ -65,7 +72,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
                 .map(|memo| memo.request.source)
         };
-        let instance = pending_source.or(match source {
+        let instance = pending_source.or(match source.key {
             Some(ItemKey::Instance(id)) => Some(id),
             _ => None,
         });
@@ -80,8 +87,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ..UseOutcome::rejected()
         };
         let historical = match self
-            .root
-            .plain_use_receipt_exists(
+            .probe_plain_use_receipt(
                 crate::durability::PlainUseReceipt::ConsumeTransform,
                 command_ref,
             )
@@ -95,26 +101,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )));
             }
         };
-        if !historical && instance.is_none() {
-            return Ok(None);
+        if !historical && pending_source.is_none() {
+            match source
+                .candidate(self, command, "cosmetic_candidate", |definition| {
+                    oteryn_gameplay_items::item_cosmetics::rule(&definition.production_key)
+                        .is_some()
+                })
+                .await
+            {
+                Ok(true) => {}
+                Ok(false) => return Ok(None),
+                Err(refusal) => return Ok(Some(refusal.into())),
+            }
         }
         let Some(permit) = self.spell_lane_permit().await else {
             return Ok(Some(super::use_receipt_refused(command, "cosmetic_permit")));
         };
         let content = NativeItemWeights(native);
         let replay = if historical || pending_source.is_some() {
-            match self
-                .root
-                .consume_transform_detailed(
-                    &permit,
-                    self.character,
-                    self.holder,
-                    fence,
-                    request.clone(),
-                    native,
-                    &content,
-                    true,
-                )
+            match super::AdmissionRetryBudget::for_command(self.root)
+                .retry_command_guard(async || {
+                    self.root
+                        .consume_transform_detailed(
+                            &permit,
+                            self.character,
+                            self.holder,
+                            fence,
+                            request.clone(),
+                            native,
+                            &content,
+                            true,
+                        )
+                        .await
+                })
                 .await
             {
                 Ok(replay) => replay,
@@ -123,7 +142,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let source = request.source;
         if let Some(receipt) = replay.as_ref()
             && receipt.effects.get("cosmetic").is_some()
         {
@@ -132,11 +150,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
                 .map(Some);
         }
-        let inventory = match self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
-            .await
-        {
+        if historical && pending_source.is_none() {
+            match source
+                .candidate(self, command, "cosmetic_candidate", |definition| {
+                    oteryn_gameplay_items::item_cosmetics::rule(&definition.production_key)
+                        .is_some()
+                })
+                .await
+            {
+                Ok(true) => {}
+                Ok(false) => return Ok(None),
+                Err(refusal) => return Ok(Some(refusal.into())),
+            }
+        }
+        let source = request.source;
+        let inventory = match self.read_use_inventory(fence).await {
             Ok(inventory) => inventory,
             Err(_) => {
                 return Ok(Some(super::use_receipt_refused(
@@ -154,9 +182,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (definition, ground_source) = if let Some(item) = item {
             (item.definition.clone(), None)
         } else {
-            let ground = match self
-                .root
-                .read_ground_action_source(self.character, fence, source)
+            let ground = match super::AdmissionRetryBudget::for_command(self.root)
+                .retry_command_guard(async || {
+                    self.root
+                        .read_ground_action_source(self.character, fence, source)
+                        .await
+                })
                 .await
             {
                 Ok(Some(ground)) => ground,
@@ -406,7 +437,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         intent: &UseIntent,
-        source: Option<ItemKey>,
+        source: &UseSourceHint,
     ) -> Result<Option<UseOutcome>, ()> {
         if intent.use_with.is_some()
             || intent.use_with_map_item.is_some()
@@ -426,8 +457,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
-        self.use_carried_quest_item_selected(actor, command, intent, source, target, false)
-            .await
+        self.use_carried_quest_item_selected(
+            actor,
+            command,
+            intent,
+            &UseSourceHint::new(source),
+            target,
+            false,
+        )
+        .await
     }
 
     async fn use_carried_quest_item_selected(
@@ -435,7 +473,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         intent: &UseIntent,
-        source: Option<ItemKey>,
+        source: &UseSourceHint,
         target: Option<ItemKey>,
         disguise_only: bool,
     ) -> Result<Option<UseOutcome>, ()> {
@@ -486,7 +524,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(None);
         }
-        let source = match (&intent.target, source) {
+        if disguise_only
+            && matches!(
+                intent.target,
+                oteryn_protocol_oteryn::world_object::UseTarget::Item(_)
+            )
+        {
+            match source
+                .candidate(self, command, "disguise_candidate", |definition| {
+                    item_disguise_rules(&definition.production_key).is_some()
+                })
+                .await
+            {
+                Ok(true) => {}
+                Ok(false) => return Ok(None),
+                Err(refusal) => return Ok(Some(refusal.into())),
+            }
+        }
+        let source = match (&intent.target, source.key) {
             (
                 oteryn_protocol_oteryn::world_object::UseTarget::Item(_),
                 Some(ItemKey::Instance(item)),
@@ -494,12 +549,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(_), None) => None,
             _ => return Ok(None),
         };
-        let Ok(inventory) = self
-            .root
-            .read_item_use_inventory(self.character, self.holder, item_fence)
-            .await
-        else {
-            return Ok(None);
+        let inventory = match self.read_use_inventory(item_fence).await {
+            Ok(inventory) => inventory,
+            Err(_) if disguise_only => {
+                return Ok(Some(super::use_receipt_refused(
+                    command,
+                    "disguise_inventory",
+                )));
+            }
+            Err(_) => return Ok(None),
         };
         let Some(item) = inventory
             .backpack
@@ -527,13 +585,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         };
         let source = item.item_instance_id;
-        if let Some(rules) =
-            oteryn_gameplay_quests::quest::item_disguises::rules().filter(|rules| {
-                rules
-                    .iter()
-                    .any(|rule| rule.item == item.definition.production_key)
-            })
-        {
+        if let Some(rules) = item_disguise_rules(&item.definition.production_key) {
             // This source is retained. No quest transition, value grant or receipt is
             // invented for an action that only changes the live appearance conflict.
             if intent.use_with.is_some()
@@ -555,11 +607,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
             // DROP, MOVE, EQUIP and trade share this exclusive scope lane. The
             // preliminary route lookup predates it, so re-prove exact custody here.
-            let retained = self
-                .root
-                .read_item_use_inventory(self.character, self.holder, item_fence)
-                .await
-                .map_err(|_| ())?;
+            let retained = self.read_use_inventory(item_fence).await.map_err(|_| ())?;
             if !retained
                 .backpack
                 .iter()
