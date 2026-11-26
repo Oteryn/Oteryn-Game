@@ -2,7 +2,7 @@
 //! The disposable character receives its amulet before the wire checks.
 //! The row requires an authored player-facing fear source to complete.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityKind};
+use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::condition_status::{
@@ -262,14 +262,26 @@ async fn fight_fear_caster(
     {
         return Err(format!("Shrieking Cry-Stal attack refused: {attack:?}").into());
     }
-    if client
-        .session_mut()
-        .combat_state()
-        .ok_or("missing attack combat state")?
-        .target
-        != Some(target)
-    {
-        return Err("attack did not set the live caster as the combat target".into());
+    let target_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    'observe_target: loop {
+        for event in client.take_events() {
+            if let SessionEvent::ActorCombatState(delta) = event
+                && delta.server_sequence > attack.result_server_sequence
+            {
+                if delta.value.target != Some(target) {
+                    return Err(format!(
+                        "attack published the wrong combat target: {:?}",
+                        delta.value.target
+                    )
+                    .into());
+                }
+                break 'observe_target;
+            }
+        }
+        if tokio::time::Instant::now() >= target_deadline {
+            return Err("attack did not publish the live caster as its combat target".into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     verdict::Harness::global().bounded_wait(deadline, "authored-fear-cast");
@@ -338,6 +350,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             }
             // Crystal 201189f8 configmanager.cpp:377 defaults the necklace clock to 200 ms.
             wait_for(&mut client, Duration::from_millis(200)).await?;
+            if client.inventory() != Some(&equipped) {
+                return Err("cooldown refusal changed inventory before recovery".into());
+            }
             expect(&mut client, amulet, "after-delay", Out::Moved).await?;
             None
         }
