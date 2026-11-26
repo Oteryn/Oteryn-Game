@@ -265,3 +265,89 @@ fn evidence_limits_have_no_unbounded_or_production_default() {
     let zero_limit = EvidenceLimits::new("evidence:test", 0, 1, 1, 1, 1, 1, 1, 1, 1, 1);
     assert!(matches!(zero_limit, Err(ContentError::InvalidLimit(_))));
 }
+
+#[test]
+fn itemglob3_global_cyclopedia_values() -> Result<(), Box<dyn std::error::Error>> {
+    use serde_json::{Value, json};
+    use std::path::Path;
+
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content");
+    let record = |shard: &str, key: &str| -> Result<Value, Box<dyn std::error::Error>> {
+        let document: Value = serde_json::from_slice(&std::fs::read(root.join(shard))?)?;
+        document["records"]
+            .as_array()
+            .and_then(|records| {
+                records.iter().find(|row| {
+                    row["definition"]["identity"]["key"] == key
+                        || row["declaration"]["identity"]["key"] == key
+                })
+            })
+            .cloned()
+            .ok_or_else(|| format!("missing {key} in {shard}").into())
+    };
+    let item = |shard: &str, id: u32| {
+        record(
+            &format!("items/definitions/items-{shard}.json"),
+            &format!("oteryn:item.tibia.i{id}"),
+        )
+    };
+
+    // Cyclopedia leather armor (3361). Its captured classification is missing on main.
+    let armor = item("20000-20499", 3361)?;
+    assert_eq!(armor["authoring"]["forge"]["classification"], 1);
+    assert_eq!(armor["authoring"]["forge"]["max_tier"], 1);
+    assert_eq!(
+        armor["definition"]["semantics"]["protection"]["value"]["armor"]["value"],
+        4
+    );
+
+    let sword = item("19500-19999", 3264)?;
+    let stats = &sword["definition"]["semantics"];
+    assert_eq!(stats["weapon"]["value"]["attack"]["value"], 14);
+    assert_eq!(stats["weapon"]["value"]["defense"]["value"], 12);
+    assert_eq!(stats["weapon"]["value"]["extra_defense"]["value"], 1);
+    assert_eq!(stats["imbuement"]["value"]["slot_count"]["value"], 2);
+
+    let fire_sword = item("19500-19999", 3280)?;
+    assert_eq!(
+        fire_sword["definition"]["semantics"]["weapon"]["value"]["elemental"]["value"],
+        json!([{"element": "FIRE", "points": {"state": "KNOWN", "value": 11}}])
+    );
+
+    let wand = item("18000-18499", 3071)?;
+    let pattern = &wand["definition"]["semantics"]["equipment"]["value"]["patterns"]["value"][0];
+    assert_eq!(pattern["level"]["value"], 33);
+    assert_eq!(pattern["vocations"]["value"], json!(["SORCERER"]));
+
+    let ring = item("17500-17999", 3048)?;
+    let resistances =
+        &ring["definition"]["semantics"]["protection"]["value"]["resistances"]["value"];
+    assert_eq!(resistances[0]["kind"], "DEATH");
+    assert_eq!(resistances[0]["percent"]["value"]["numerator"], 20);
+
+    // The charged shawl's capture points to the uncharged Item's details.
+    let shawl = item("17500-17999", 30343)?;
+    let stats = &shawl["definition"]["semantics"];
+    assert_eq!(
+        stats["protection"]["value"]["resistances"]["value"][0]["percent"]["value"]["numerator"],
+        24
+    );
+    let boost = &stats["skill_modifiers"]["value"]["modifiers"]["value"][0];
+    assert_eq!(boost["kind"], "SKILL_DISTANCE");
+    assert_eq!(boost["parameter"]["value"]["value"], 3);
+
+    let alexander = record(
+        "services/trade/trade-00000-00323.json",
+        "oteryn:service.trade.alexander",
+    )?;
+    let offers = alexander["declaration"]["offers"]
+        .as_array()
+        .ok_or("Alexander has no trade offers")?;
+    assert!(offers.iter().any(|offer| {
+        offer["item"]["key"] == "oteryn:item.tibia.i28556"
+            && offer["direction"] == "SellToPlayer"
+            && offer["unit_price"] == 434_028
+            && offer.get("currency").is_none()
+    }));
+    Ok(())
+}

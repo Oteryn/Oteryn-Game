@@ -1,0 +1,10 @@
+{
+  "id": 6380,
+  "name": "WORLD_ACTOR_SPELL_CAST_PARAMETERS_V2",
+  "owner_decision": "Native action-bar spell parameters (2026-11-22)",
+  "capability": 608,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/actor_spell_parameters_v2.proto#WorldActorSpellCastParametersV2",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/actor_spell_parameters_v2.proto#WorldActorSpellCastParametersResultV2",
+  "max_payload_bytes": 192,
+  "max_result_payload_bytes": 8192
+}

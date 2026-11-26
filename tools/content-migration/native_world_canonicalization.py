@@ -8,6 +8,7 @@ import os
 import stat
 import subprocess
 import tempfile
+from collections import Counter
 from pathlib import Path
 
 from prebuilt import executable as prebuilt_executable
@@ -69,8 +70,9 @@ def complete_world_project(
     repo_root: Path,
     input_root: Path,
     *,
-    include_buddel: bool = False,
+    include_world_successors: bool = False,
     canonicalizer_manifest: Path | None = None,
+    materializer: Path | None = None,
 ) -> dict[str, int | str]:
     from buddel_travel import install_buddel
     from questpc7_thaian_authoring import _install_documents
@@ -83,7 +85,16 @@ def complete_world_project(
         manifest = os.environ.get("OTERYN_WORLD_CANONICALIZER_MANIFEST")
         if manifest is not None:
             canonicalizer_manifest = Path(manifest)
-    if canonicalizer_manifest is None:
+    use_materializer = canonicalizer_manifest is None and materializer is not None
+    if canonicalizer_manifest is not None:
+        # An explicitly supplied artifact must qualify; never hide a stale or
+        # corrupted producer behind a new, unreported fallback build.
+        command = [
+            str(prebuilt_executable("canonicalizer", canonicalizer_manifest, repo_root))
+        ]
+    elif use_materializer:
+        command = [str(materializer)]
+    else:
         command = [
             "cargo",
             "run",
@@ -93,12 +104,6 @@ def complete_world_project(
             "--bin",
             "oteryn-world-project-canonicalize",
             "--",
-        ]
-    else:
-        # An explicitly supplied artifact must qualify; never hide a stale or
-        # corrupted producer behind a new, unreported fallback build.
-        command = [
-            str(prebuilt_executable("canonicalizer", canonicalizer_manifest, repo_root))
         ]
     original = read_documents(input_root)
     # Stage this caller's package, never substitute the repository's generated World.
@@ -111,22 +116,31 @@ def complete_world_project(
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
         _install_documents(repo_root, staging_root)
-        if include_buddel:
+        if include_world_successors:
+            from import_cyclopedia_global import apply_trade_source, load_capture
+            from questpc7_world_seal import refresh
+            from regional_npc_dialogue import install as install_dialogue
+            from regional_npc_prices import install as install_prices
+
             install_buddel(repo_root, staging_root)
             project_routes(repo_root, staging_root)
+            reference = json.loads(
+                (staging_root / "definitions/reference.json").read_bytes()
+            )
+            apply_trade_source(
+                staging_root, load_capture(repo_root), reference, Counter()
+            )
+            install_prices(repo_root, staging_root)
+            install_dialogue(repo_root, staging_root)
+            refresh(repo_root, staging_root)
         authored_extent = source_cohort_extent(staging_root)
         # Native capture enforces the existing bounded source limits before serialization.
-        subprocess.run(
-            [
-                *command,
-                "--input-root",
-                str(staging_root),
-                "--output-root",
-                str(output_root),
-            ],
-            cwd=repo_root,
-            check=True,
-        )
+        output_args = ["--output-root", str(output_root)]
+        if use_materializer:
+            writer_args = [*output_args, "--canonicalize-root", str(staging_root)]
+        else:
+            writer_args = ["--input-root", str(staging_root), *output_args]
+        subprocess.run([*command, *writer_args], cwd=repo_root, check=True)
         canonical = read_documents(output_root, exact=True)
         if source_cohort_extent(output_root) != authored_extent:
             raise ValueError("native rewrite changed the authored source cohort")
@@ -165,7 +179,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--input-root", type=Path, required=True)
-    parser.add_argument(
+    writer = parser.add_mutually_exclusive_group()
+    writer.add_argument("--materializer", type=Path)
+    writer.add_argument(
         "--canonicalizer-manifest",
         type=Path,
         help="same-head manifest from content-migration/prebuilt.py build",
@@ -174,8 +190,9 @@ def main() -> None:
     extent = complete_world_project(
         args.repo_root,
         args.input_root,
-        include_buddel=True,
+        include_world_successors=True,
         canonicalizer_manifest=args.canonicalizer_manifest,
+        materializer=args.materializer,
     )
     print(
         json.dumps(

@@ -62,7 +62,7 @@ class ArchiveAffinityTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.temp = Path(temporary.name)
 
-    def test_every_scope_allocates_all_thirty_six_workers_once(self):
+    def test_every_scope_allocates_all_fifty_five_workers_once(self):
         for length in range(1, len(ARCHIVES) + 1):
             for scope in combinations(ARCHIVES, length):
                 with self.subTest(scope=scope):

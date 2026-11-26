@@ -1,16 +1,25 @@
 name=stash
-commands=79
+commands=79,6345
 [route]
-match routing::stash::route(
-    authority,
-    session.actor,
-    &session.admitted,
-    command,
-    &session.item_view,
-    &mut session.stash_rows,
-)
-.await
-{
-    Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+if command.command_type == oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_ROW_ACTION {
+    match routing::stash::row_action(
+        authority, session.actor, &session.admitted, command, session.stash_rows.as_deref(),
+    ).await {
+        Some(dispatch) => dispatch,
+        None => return Err(ServeEnd::Disconnected),
+    }
+} else {
+    match routing::stash::route(
+        authority,
+        session.actor,
+        &session.admitted,
+        command,
+        &session.item_view,
+        &mut session.stash_rows,
+    )
+    .await
+    {
+        Some(dispatch) => dispatch,
+        None => return Err(ServeEnd::Disconnected),
+    }
 }

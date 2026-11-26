@@ -15,13 +15,99 @@ fn daily_boost_postgres_real_dispatch_restart_and_epoch_fence() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "daily boost PostgreSQL scenario panicked")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn selected_world_login_probe_returns_boost_and_online_before_admission() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "world login probe PostgreSQL scenario panicked")?
+        .map_err(Into::into)
+}
+
+async fn pre_admission_case(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    world: crate::foundation::WorldId,
+    pool: &sqlx::PgPool,
+) -> TestResult {
+    use oteryn_protocol_oteryn::daily_boost::login;
+    let request = login::encode_request(*world.as_bytes());
+    // The World respawn owner commits this independently of player admission.
+    owner
+        .initialize_daily_boost()
+        .await
+        .map_err(|()| "boost init")?;
+    let (mut stream, mut peer) = tokio::io::duplex(8192);
+    assert!(crate::gameplay_transport::world_login_info::route(&mut stream, &request, owner).await);
+    drop(stream);
+    let reply = crate::gameplay_transport::tcp_tls::read_frame(&mut peer)
+        .await
+        .map_err(debug)?;
+    let info = login::decode_reply(&reply).ok_or("world reply")?;
+    assert_eq!(info.world_id, *world.as_bytes());
+    let info = info.info.ok_or("available world")?;
+    assert_eq!(info.players_online, 1);
+    let first = info.boost.ok_or("boosted races")?;
+    let choice = owner
+        .runtime
+        .lock()
+        .await
+        .daily_boost()
+        .cloned()
+        .ok_or("committed selection")?;
+    assert_eq!(
+        (first.creature.key.as_str(), first.boss.key.as_str()),
+        (choice.creature.as_str(), choice.boss.as_str())
+    );
+    assert!(!first.creature.name.is_empty() && !first.boss.name.is_empty());
+    assert!(first.effective_from < first.effective_until);
+
+    // Keep the old committed epoch as the active pointer, with no retirement in
+    // progress, after its Berlin boundary has elapsed.
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("UPDATE game_world_reset_epochs SET activated_at=statement_timestamp()-interval '2 days'
+                 WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
+        .bind(world.as_bytes().as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    let (mut stream, mut peer) = tokio::io::duplex(8192);
+    assert!(crate::gameplay_transport::world_login_info::route(&mut stream, &request, owner).await);
+    drop(stream);
+    let reply = crate::gameplay_transport::tcp_tls::read_frame(&mut peer).await.map_err(debug)?;
+    let info = login::decode_reply(&reply).and_then(|reply| reply.info).ok_or("available world")?;
+    assert_eq!(info.players_online, 1);
+    assert!(info.boost.is_none(), "an expired boost must be omitted before retirement starts");
+
+    let (mut stream, mut peer) = tokio::io::duplex(8192);
+    let unknown = id(97);
+    assert!(
+        crate::gameplay_transport::world_login_info::route(
+            &mut stream,
+            &login::encode_request(unknown),
+            owner
+        )
+        .await
+    );
+    drop(stream);
+    let reply = crate::gameplay_transport::tcp_tls::read_frame(&mut peer)
+        .await
+        .map_err(debug)?;
+    let reply = login::decode_reply(&reply).ok_or("wrong-world reply")?;
+    assert_eq!(reply.world_id, unknown);
+    assert_eq!(reply.info, None);
+    Ok(())
+}
+
+fn scenario(preadmission: bool) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "daily_boost_wire", true, false).await?;
@@ -94,6 +180,14 @@ fn scenario() -> TestResult {
         owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
+        if preadmission {
+            let result = pre_admission_case(&owner, deps.admitted.world_id, &h.pool).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(deps.admitted.game_session_id)

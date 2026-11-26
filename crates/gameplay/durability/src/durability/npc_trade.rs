@@ -80,6 +80,8 @@ const REQUEST_BINDING_VERSION: u8 = 1;
 mod hireling;
 mod quest_access;
 pub(super) mod sell_hireling;
+pub(super) mod shop_options;
+pub use shop_options::SHOPPING_BAG_KEY;
 pub use hireling::{HirelingPackageSelection, HirelingTradeSelection};
 
 #[derive(Default)]
@@ -124,6 +126,8 @@ pub struct NpcTradeCause {
 /// attempt and reused on every retry of the same occurrence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcTradeRequest {
+    pub shopping_bag: Option<ItemDefinitionFacts>,
+    pub include_equipped: bool,
     /// NPC-TRADE-3: None is ordinary/default; Some(0) is an empty fluid container.
     pub fluid_subtype: Option<u8>,
     /// Proven full native default charges; a missing timed row denotes this default.
@@ -192,6 +196,8 @@ pub struct CommittedNpcTrade {
 /// server price it was charged at.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcTradeReceipt {
+    pub packed: bool,
+    pub include_equipped: bool,
     pub npc_key: String,
     pub catalogue_revision: u64,
     pub offer_index: u32,
@@ -276,14 +282,10 @@ impl std::fmt::Display for NpcTradeError {
     }
 }
 
-const ALBINIUS: &str = "oteryn:npc.albinius";
-const BLANK_IMBUEMENT_SCROLL: &str = "oteryn:item.tibia.i51442";
-const HEAVY_OLD_TOME: &str = "oteryn:item.tibia.i23986";
-const FORGOTTEN_KNOWLEDGE: &str = "oteryn:quest.forgotten_knowledge_quest";
+use oteryn_gameplay_content::content::npc_catalogue::quest_shops::{
+    ALBINIUS, BLANK_IMBUEMENT_SCROLL, FORGOTTEN_KNOWLEDGE, HEAVY_OLD_TOME,
+};
 
-/// The one catalogue offer whose access is owned jointly by the NPC and quest owners. Keeping
-/// this recognition beside the durable commit prevents a forged catalogue request from opting
-/// out of the gate and makes retries observe either the complete purchase or no purchase.
 fn is_albinius_blank_scroll(request: &NpcTradeRequest) -> bool {
     request.cause.npc_key == ALBINIUS
         && request.cause.side == NpcTradeSide::Buy
@@ -406,6 +408,7 @@ fn validate_sell_bound(
     {
         return Err(NpcTradeError::InvalidInput);
     }
+    shop_options::validate(request, sell_all)?;
     let cause = &request.cause;
     let priced = if sell_all {
         if cause.side != NpcTradeSide::Sell
@@ -523,6 +526,13 @@ fn request_binding(
     text(&mut digest, &item.revision_ref);
     if sell_all {
         digest.update([1]);
+    }
+    if let Some(bag) = &request.shopping_bag {
+        digest.update(b"oteryn:npc-packed-buy:v1");
+        text(&mut digest, &bag.definition.revision_ref);
+    }
+    if request.include_equipped {
+        digest.update(b"oteryn:npc-equipped-sell-all:v1");
     }
     if let Some(subtype) = request.fluid_subtype {
         digest.update(b"oteryn:npc-fluid:v1");
@@ -645,13 +655,14 @@ fn plan_buy(
     tuple: Type2EventTuple,
     junior: bool,
 ) -> Result<Plan> {
-    Ok(rules::plan_buy(
+    Ok(rules::plan_buy_with_packaging(
         &plan_input(request),
         total,
         units,
         capacity,
         entries,
         tuple != Type2EventTuple::V1 && !junior,
+        request.shopping_bag.is_some(),
     )?
     .into())
 }
@@ -778,7 +789,7 @@ impl DurabilityRoot {
                     lock_occurrence(&mut tx, &occurrence).await?;
                     let Some(row) = sqlx::query(
                         "SELECT occurrence_id::text, npc_key, catalogue_revision::text, \
-                                offer_index, side, quantity, unit_price::text, sell_all \
+                                offer_index, side, quantity, unit_price::text, sell_all, shopping_bag_item_id IS NOT NULL AS packed, include_equipped \
                            FROM game_npc_trades \
                           WHERE game_session_id = encode($1,'hex')::uuid \
                             AND command_id = $2::text::numeric(20,0) \
@@ -803,6 +814,8 @@ impl DurabilityRoot {
                         _ => return Err(DurabilityError::InvalidStoredState),
                     };
                     let receipt = NpcTradeReceipt {
+                        packed: row.try_get("packed")?,
+                        include_equipped: row.try_get("include_equipped")?,
                         npc_key: row.try_get("npc_key")?,
                         catalogue_revision: numeric_u64(&row, "catalogue_revision")?,
                         offer_index: u32::try_from(row.try_get::<i32, _>("offer_index")?)
@@ -1003,6 +1016,11 @@ impl DurabilityRoot {
             scope_of(&fence).map_err(|_| NpcTradeError::AuthorityRejected)?
         };
         let hireling_sell = sell_hireling::selected(hireling.as_ref(), &request);
+        if (request.shopping_bag.is_some() && weights.is_none())
+            || (hireling.is_some() && (request.shopping_bag.is_some() || request.include_equipped))
+        {
+            return Err(NpcTradeError::InvalidInput);
+        }
         let priced = if hireling_sell {
             sell_hireling::validate(&request, sell_all)?
         } else {
@@ -1101,13 +1119,15 @@ impl DurabilityRoot {
                     let backpack_id = uuid_text(
                         &backpack.try_get::<String, _>("item_instance_id")?,
                     )?;
-                    if is_albinius_blank_scroll(&request)
-                        && !albinius_blank_scroll_gate(
-                            &mut tx,
-                            fence.character_id,
-                            &backpack_id,
-                        )
-                        .await?
+                    if request.cause.npc_key == ALBINIUS
+                        && request.item.definition.production_key == BLANK_IMBUEMENT_SCROLL
+                        && (!is_albinius_blank_scroll(&request)
+                            || !albinius_blank_scroll_gate(
+                                &mut tx,
+                                fence.character_id,
+                                &backpack_id,
+                            )
+                            .await?)
                     {
                         return Ok(Err(NpcTradeError::RequirementNotMet));
                     }
@@ -1130,7 +1150,10 @@ impl DurabilityRoot {
                         && (yeo_position != Some(yeo::POSITION) || !yeo::matches(&request)) {
                         return Ok(Err(NpcTradeError::RequirementNotMet));
                     }
-                    let entries = lock_entries(&mut tx, &backpack, world_id, request.fluid_subtype.unwrap_or(0), &request.item.definition.production_key).await?;
+                    let mut entries = lock_entries(&mut tx, &backpack, world_id, request.fluid_subtype.unwrap_or(0), &request.item.definition.production_key).await?;
+                    let shop = shop_options::Materialized::resolve(
+                        &mut tx, &fence, &request, &mut entries,
+                    ).await?;
                     let sinatuki = request.cause.side == NpcTradeSide::Exchange
                         && request.cause.npc_key == sinatuki_exchange::NPC;
                     let mut fish = None;
@@ -1165,8 +1188,14 @@ impl DurabilityRoot {
                     }
                     let plan = if let Some(plan) = fish_plan { Ok(plan) } else if yeo_position.is_some() {yeo::plan(&request,capacity,&entries,tx.tuple().tuple()).map(|plan|(plan,0,1))} else if hireling_sell {sell_hireling::plan(&request,priced,capacity,&entries)} else {match (priced, request.cause.side) {
                         (None, _) => plan_sell_all(&request, capacity, &entries),
-                        (Some((total, units)), NpcTradeSide::Buy) => plan_buy(&request, total, units, capacity, &entries, tx.tuple().tuple(), super::bank::fee_payer_is_junior(fence.character_id))
-                            .map(|plan| (plan, total, units)),
+                        (Some((total, units)), NpcTradeSide::Buy) => {
+                            let total = match shop_options::total(&request, total) {
+                                Ok(total) => total,
+                                Err(error) => return Ok(Err(error)),
+                            };
+                            plan_buy(&request, total, units, capacity, &entries, tx.tuple().tuple(), super::bank::fee_payer_is_junior(fence.character_id))
+                                .map(|plan| (plan, total, units))
+                        },
                         (Some((total, units)), NpcTradeSide::Sell) => plan_sell(&request, total, units, capacity, &entries)
                             .map(|plan| (plan, total, units)),
                         (Some(_), NpcTradeSide::Exchange) => {
@@ -1181,11 +1210,13 @@ impl DurabilityRoot {
                         Err(error) => return Ok(Err(error)),
                     };
                     // Direct slots and the carried tree are independent limits.
-                    // All planned burns are direct leaves; only whole burns free an entry.
+                    // Only whole direct burns free a slot in the carried tree.
                     let direct_delta: i64 = plan.lines.iter().map(|line| {
-                        i64::from(line.quantity_before == 0) - i64::from(line.quantity_after == 0)
+                        i64::from(line.quantity_before == 0)
+                            - i64::from(line.quantity_after == 0 && !shop.equipment.contains_key(&line.item_instance_id))
                     }).sum();
-                    let added = direct_delta + hireling.as_ref().map_or(0, hireling::Extra::nested_outputs);
+                    let added = direct_delta + i64::from(shop.bag_id.is_some())
+                        + hireling.as_ref().map_or(0, hireling::Extra::nested_outputs);
                     if added > 0 {
                         let carried: i64 = sqlx::query_scalar(
                             "SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)",
@@ -1206,7 +1237,8 @@ impl DurabilityRoot {
                         let Some(unit_weight) = request.item.weight else {
                             return Ok(Err(NpcTradeError::InvalidInput));
                         };
-                        let required = u64::from(unit_weight) * u64::from(units);
+                        let required = u64::from(unit_weight) * u64::from(units)
+                            + u64::from(request.shopping_bag.as_ref().and_then(|bag| bag.weight).unwrap_or(0));
                         let weight_check = buy_weight_bounds(&mut tx, &fence, weights).await
                             .and_then(|bounds| buy_weight_fits(bounds, required, &plan, &request, weights));
                         if let Err(error) = weight_check {
@@ -1241,7 +1273,7 @@ impl DurabilityRoot {
                         &backpack,
                         &request,
                         (quantity, total, sell_all),
-                        (&plan, fish.as_ref()),
+                        (&plan, fish.as_ref(), &shop),
                     );
                     message.hireling_package=hireling.as_ref().and_then(|source|source.package_audit(world_id,plan.item_instance_id));
                     message.house_key=house_key.clone();
@@ -1270,7 +1302,7 @@ impl DurabilityRoot {
                         &plan,
                         &envelope,
                         tuple,
-                        house_key.as_deref(),
+                        (house_key.as_deref(), &shop),
                     )
                     .await?;
                     if let Some(source)=&hireling
@@ -1362,7 +1394,7 @@ fn trade_message(
     backpack: &[u8; 16],
     request: &NpcTradeRequest,
     (quantity, total, sell_all): (u32, u64, bool),
-    (plan, fish): (&Plan, Option<&TypedDefinitionRef>),
+    (plan, fish, shop): (&Plan, Option<&TypedDefinitionRef>, &shop_options::Materialized),
 ) -> OneItemNpcTradeV1 {
     let definition = |line: &NpcTradeLine| match line.coin {
         Some(coin) => request.coins.of(coin),
@@ -1399,6 +1431,7 @@ fn trade_message(
     };
     let cause = &request.cause;
     OneItemNpcTradeV1 {
+        include_equipped: request.include_equipped,
         fluid_subtype: request.fluid_subtype.map(u32::from),
         full_charges: request.full_charges.map(u32::from),
         cause: Some(OneItemNpcTradeCauseV1 {
@@ -1424,6 +1457,7 @@ fn trade_message(
         minted_gold_units: plan.minted_gold_units,
         bank_debit: plan.bank_debit.clone(),
         sell_all,
+        shopping_bag: shop.bag_id.map(|id| id.to_vec()),
         hireling_package: None,
         house_furniture_kit: None,
         house_key: None,
@@ -1434,6 +1468,8 @@ fn trade_message(
                 kind: line_kind_code(line.kind),
                 before: line_is_burn(line.kind).then(|| state(line, line.quantity_before)),
                 after: Some(state(line, line.quantity_after)),
+                source_equipment_slot: shop.equipment.get(&line.item_instance_id)
+                    .and_then(|slot| u32::try_from(*slot).ok()),
                 placement_ordinal: line.placement_ordinal,
             })
             .collect(),
@@ -1455,11 +1491,19 @@ async fn apply_trade(
     plan: &Plan,
     envelope: &[u8],
     tuple: Type2EventTuple,
-    house_key: Option<&str>,
+    (house_key, shop): (Option<&str>, &shop_options::Materialized),
 ) -> std::result::Result<(), DurabilityError> {
     let gold = |value: u64| i64::try_from(value).map_err(|_| DurabilityError::InvalidStoredState);
     let cause = &request.cause;
     let item = &request.item.definition;
+    // Keep the write within the runtime PostgreSQL profile's 32 bind parameters.
+    let options = serde_json::json!({
+        "fluid_subtype": request.fluid_subtype,
+        "full_charges": request.full_charges,
+        "shopping_bag_item_id": shop.bag_id.map(|id| sqlx::types::Uuid::from_bytes(id).to_string()),
+        "include_equipped": request.include_equipped,
+        "equipment_revision_before": shop.equipment_revision,
+    });
     sqlx::query(
         "INSERT INTO game_npc_trades(transaction_id, event_id, occurrence_id, game_session_id, \
            command_id, character_id, request_binding, world_id, channel_id, \
@@ -1468,14 +1512,17 @@ async fn apply_trade(
            item_definition_production_key, item_definition_revision_ref, item_instance_id, \
            item_units, backpack_item_instance_id, burned_gold_units, minted_gold_units, \
            line_count, occurred_at, envelope_sha256, committed_at, bank_debit_gold_units, \
-           sell_all, house_key, fluid_subtype, full_charges) \
-         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
+           sell_all, house_key, fluid_subtype, full_charges, shopping_bag_item_id, include_equipped, equipment_revision_before) \
+         SELECT encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, $5::text::numeric(20,0), encode($6,'hex')::uuid, $7, \
            encode($8,'hex')::uuid, encode($9,'hex')::uuid, $10::text::numeric(20,0), $11, \
            $12::text::numeric(20,0), $13, $14, $15, $16, $17, $18, $19, $20, \
            encode($21,'hex')::uuid, $22, encode($23,'hex')::uuid, $24, $25, $26, $27, \
            sha256($28), floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $29, \
-           $30, $31, ($32::integer[])[1]::smallint, ($32::integer[])[2])",
+           $30, $31, options.fluid_subtype, options.full_charges, options.shopping_bag_item_id, \
+           options.include_equipped, options.equipment_revision_before \
+         FROM jsonb_to_record($32::jsonb) AS options(fluid_subtype smallint, full_charges integer, \
+           shopping_bag_item_id uuid, include_equipped boolean, equipment_revision_before numeric)",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -1508,10 +1555,7 @@ async fn apply_trade(
     .bind(gold(plan.bank_debit_gold_units)?)
     .bind(sell_all)
     .bind(house_key)
-    .bind(vec![
-        request.fluid_subtype.map(i32::from),
-        request.full_charges.map(i32::from),
-    ])
+    .bind(options)
     .execute(&mut **tx)
     .await?;
 
@@ -1534,7 +1578,9 @@ async fn apply_trade(
             if changed.rows_affected() != 1 {
                 return Err(DurabilityError::InvalidStoredState);
             }
-            if line.quantity_after == 0 {
+            if line.quantity_after == 0 && shop.equipment.contains_key(&line.item_instance_id) {
+                shop.remove_equipment(tx, fence, line).await?;
+            } else if line.quantity_after == 0 {
                 let removed = sqlx::query(
                     "DELETE FROM game_item_container_entries \
                       WHERE item_instance_id = encode($1,'hex')::uuid \
@@ -1567,22 +1613,29 @@ async fn apply_trade(
             .bind(request.transaction_id.as_slice())
             .execute(&mut **tx)
             .await?;
-            sqlx::query(
-                "INSERT INTO game_item_container_entries(item_instance_id, world_id, \
-                   character_id, parent_item_instance_id, placement_ordinal, \
-                   placed_transaction_id) \
-                 VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, \
-                   encode($3,'hex')::uuid, encode($4,'hex')::uuid, $5::text::numeric(20,0), \
-                   encode($6,'hex')::uuid)",
-            )
-            .bind(line.item_instance_id.as_slice())
-            .bind(world_id.as_bytes().as_slice())
-            .bind(fence.character_id.as_bytes().as_slice())
-            .bind(backpack.as_slice())
-            .bind(line.placement_ordinal.to_string())
-            .bind(request.transaction_id.as_slice())
-            .execute(&mut **tx)
-            .await?;
+            if let Some(bag) = shop.bag_id.filter(|_| line.kind == NpcTradeLineKind::ItemMint) {
+                if line.item_instance_id == plan.item_instance_id {
+                    shop.insert_bag(tx, (world_id, fence.character_id), backpack, request, plan).await?;
+                }
+                shop_options::insert_nested(tx, world_id, &bag, request, plan, line).await?;
+            } else {
+                sqlx::query(
+                    "INSERT INTO game_item_container_entries(item_instance_id, world_id, \
+                       character_id, parent_item_instance_id, placement_ordinal, \
+                       placed_transaction_id) \
+                     VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, \
+                       encode($3,'hex')::uuid, encode($4,'hex')::uuid, $5::text::numeric(20,0), \
+                       encode($6,'hex')::uuid)",
+                )
+                .bind(line.item_instance_id.as_slice())
+                .bind(world_id.as_bytes().as_slice())
+                .bind(fence.character_id.as_bytes().as_slice())
+                .bind(backpack.as_slice())
+                .bind(line.placement_ordinal.to_string())
+                .bind(request.transaction_id.as_slice())
+                .execute(&mut **tx)
+                .await?;
+            }
         }
         sqlx::query(
             "INSERT INTO game_npc_trade_lines(transaction_id, line_ordinal, line_kind, \
@@ -1611,6 +1664,7 @@ async fn apply_trade(
         }
     }
 
+    shop.bump_equipment_revision(tx, fence, request).await?;
     sqlx::query(
         "INSERT INTO game_item_audit_outbox(event_id, transaction_id, transaction_ordinal, \
            transaction_count, event_type_id, schema_revision, retention_profile_id, \

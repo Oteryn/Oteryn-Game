@@ -35,12 +35,30 @@ pub(super) struct NewhavenTravel {
     prompts: std::sync::Mutex<HashMap<GameSessionId, Prompt>>,
     paid_prompts: std::sync::Mutex<HashMap<GameSessionId, paid::Prompt>>,
     pub(super) holds: std::sync::Mutex<HashMap<GameSessionId, Invocation>>,
+    #[cfg(test)]
+    jack_fate_test_roll: std::sync::Mutex<Option<bool>>,
 }
 
 #[path = "paid_travel.rs"]
 mod paid;
 
 impl NewhavenTravel {
+    fn roll_jack_fate_storm(&self) -> Option<bool> {
+        #[cfg(test)]
+        if let Some(roll) = self.jack_fate_test_roll.lock().ok()?.take() {
+            return Some(roll);
+        }
+        SecureIdentifiers::random::<1>().map(|sample| sample[0] & 7 == 0)
+    }
+
+    #[cfg(test)]
+    pub(super) fn set_jack_fate_test_roll(&self, roll: bool) -> bool {
+        self.jack_fate_test_roll.lock().is_ok_and(|mut slot| {
+            *slot = Some(roll);
+            true
+        })
+    }
+
     pub(super) fn held(&self, session: GameSessionId) -> bool {
         self.holds.lock().map_or(true, |holds| {
             holds.get(&session).is_some_and(|held| held.slot.is_held())
@@ -110,14 +128,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
             };
         }
-        let ordinary = npc_command::npc_bank_talk(self, actor, command, intent.clone()).await;
-        if ordinary.disposition != NpcIntentDisposition::Ok {
-            return ordinary;
-        }
+        let received_at = self.owner_now();
+        let ordinary =
+            npc_command::npc_bank_talk(self, actor, command, intent.clone(), received_at).await;
         let ordinary = self
-            .paid_travel_talk(actor, command, &intent, ordinary)
+            .paid_travel_talk(actor, command, &intent, ordinary, received_at)
             .await;
-        if ordinary.inventory_changed || ordinary.unknown {
+        if ordinary.disposition != NpcIntentDisposition::Ok
+            || ordinary.inventory_changed
+            || ordinary.unknown
+        {
             return ordinary;
         }
         let tutorial_enabled = self.tutorial_enabled().await;
@@ -379,5 +399,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::NewhavenTravel;
+
+    #[test]
+    fn jack_fate_storm_draw_is_owner_scoped_and_consumed_once() {
+        let owner = NewhavenTravel::default();
+        let other = NewhavenTravel::default();
+        assert!(owner.set_jack_fate_test_roll(true));
+        assert!(other.set_jack_fate_test_roll(false));
+        assert_eq!(owner.roll_jack_fate_storm(), Some(true));
+        assert_eq!(other.roll_jack_fate_storm(), Some(false));
+        assert!(
+            owner
+                .jack_fate_test_roll
+                .lock()
+                .is_ok_and(|roll| roll.is_none())
+        );
+        assert!(
+            other
+                .jack_fate_test_roll
+                .lock()
+                .is_ok_and(|roll| roll.is_none())
+        );
     }
 }

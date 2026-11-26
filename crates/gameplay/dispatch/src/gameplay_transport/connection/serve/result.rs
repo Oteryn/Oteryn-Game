@@ -101,6 +101,30 @@ pub(super) fn encode(
                 outcome.disposition,
                 outcome.gate_message_id,
             );
+            use oteryn_protocol_oteryn::world_object::{
+                CAPABILITY_GAMEPLAY_OCCURRENCES_V1, CAPABILITY_POTION_UTTERANCE_V1,
+                COMMAND_TYPE_USE_INTENT, encode_use_result_with_utterance,
+                encode_use_reward_result,
+            };
+            let payload = if command.command_type == COMMAND_TYPE_USE_INTENT
+                && session
+                    .selected_capabilities
+                    .contains(CAPABILITY_GAMEPLAY_OCCURRENCES_V1)
+                && disposition == UseDisposition::Committed
+                && let Some(occurrence) = outcome.reward_granted
+            {
+                encode_use_reward_result(occurrence)
+            } else {
+                encode_use_result_with_utterance(
+                    disposition,
+                    gate_message_id,
+                    outcome.potion_utterance.filter(|_| {
+                        session
+                            .selected_capabilities
+                            .contains(CAPABILITY_POTION_UTTERANCE_V1)
+                    }),
+                )
+            };
             (
                 if disposition == UseDisposition::Rejected {
                     CommandStatus::Rejected
@@ -109,15 +133,23 @@ pub(super) fn encode(
                 },
                 detailed(
                     session,
-                    encode_use_result_with_gate(disposition, gate_message_id).unwrap_or_else(
-                        |_| encode_use_result(UseDisposition::Rejected).unwrap_or_default(),
-                    ),
+                    payload.unwrap_or_else(|_| {
+                        encode_use_result(UseDisposition::Rejected).unwrap_or_default()
+                    }),
                     outcome
                         .refusal_detail
                         .or(RefusalDetail::of_use(outcome.disposition)),
                 ),
             )
         }
+        Dispatch::ParameterSpell(outcome, payload) => (
+            if outcome.disposition == SpellCastDisposition::Rejected {
+                CommandStatus::Rejected
+            } else {
+                CommandStatus::Accepted
+            },
+            std::mem::take(payload),
+        ),
         Dispatch::Spell(outcome) => (
             if outcome.disposition == SpellCastDisposition::Rejected {
                 CommandStatus::Rejected
@@ -142,7 +174,9 @@ pub(super) fn encode(
                 ),
             )
         }
+        Dispatch::CarriedBatch(reply) => (CommandStatus::Accepted, reply.encode().to_vec()),
         Dispatch::ContainerSort(_) => (CommandStatus::Accepted, vec![1]),
+        Dispatch::ContainerPage(page, _) => (CommandStatus::Accepted, page.encode().to_vec()),
         Dispatch::ContainerView(outcome, _) => (
             CommandStatus::Accepted,
             encode_container_view_result(*outcome),
@@ -199,7 +233,8 @@ pub(super) fn encode(
         Dispatch::Reply(status, payload)
             if command.command_type == oteryn_protocol_oteryn::market::COMMAND_TYPE_MARKET
                 || command.command_type
-                    == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH =>
+                    == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH
+                || routing::store::is_committed_claim(command.command_type, *status, payload) =>
         {
             (*status, payload.clone())
         }

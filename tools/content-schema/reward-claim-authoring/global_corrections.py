@@ -11,7 +11,7 @@ evidence in the pinned pilot; only the canonical reward changes.
 | captain_iglues | Captain Iglues Treasure Quest/Spoiler rev 1013321: the right chest is a Chest (Quest) holding 2 Salmon; the book and 12 salmon are the left, daily-respawn chest | 1 salmon (its own comment says 2x) | 2 salmon |
 | quest/key/id4502 | Alawar's Vault Quest rev 683774 and /Spoiler rev 1029814: the Key 4502 reward is a Dark Helmet, 4 Throwing Knives, a Blank Rune, 33gp and Key 4502 | 23 gold coins | 33 gold coins |
 | fireaxe1 | Fire Axe Quest/Spoiler rev 855030: the chest holds a Ring of Healing, a Dragon Necklace and 7 Small Diamonds; the Fire Axe is the final reward of the Pile of Bones (fireaxe2) | the bag also holds a Fire Axe (its own comment omits it) | no Fire Axe in the bag |
-| powerring1 | Power Ring Quest rev 683946: the rewards are a Power Ring and a Bronze Amulet (powerring2) | 1 gold coin (its own comment says power ring) | 1 Power Ring |
+| Koshei platinum cache | Koshei the Deathless Quest rev 842829 and the chosen Oteryn recipe | 100 platinum coins | 50 platinum coins |
 """
 import copy
 
@@ -25,8 +25,8 @@ CORRECTIONS = {
            [[3098, 1], [3085, 200], [3028, 7]]),
     6117: ('canary:reward-claim/kv/captain_iglues', {'x': 32039, 'y': 32121, 'z': 13},
            [[3579, 1]], [[3579, 2]]),
-    6151: ('canary:reward-claim/kv/powerring1', {'x': 32599, 'y': 31776, 'z': 9},
-           [[3031, 1]], [[3050, 1]]),
+    6241: ('canary:reward-claim/quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum',
+           {'x': 33261, 'y': 32448, 'z': 12}, [[3035, 100]], [[3035, 50]]),
 }
 BY_PILOT = {pilot: (unique, position, source, target)
             for unique, (pilot, position, source, target) in CORRECTIONS.items()}

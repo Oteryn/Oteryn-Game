@@ -1,5 +1,5 @@
 name=analyser_catalogue
-commands=734
+commands=734,6360
 transport=analyser_catalogue
 composed=analyser_catalogue
 authority=analyser_catalogue

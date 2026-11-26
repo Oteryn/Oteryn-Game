@@ -12,12 +12,15 @@ mod dark_trails;
 mod isle_of_evil;
 mod literal_contacts;
 mod questpc7_reward_bounds;
+mod regional_contacts;
+#[cfg(test)]
+mod regional_tests;
 mod world_change_journals;
 
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
 use crate::greeting::{DEFAULT_TALK_RANGE, contains_words, words};
-use crate::greeting::{GreetingNpc, greeted_npc};
+use crate::greeting::{GreetingNpc, greeted_npc, matches_greeting};
 
 /// Words that start a conversation, until an NPC carries its own.
 const GREETINGS: [&str; 3] = ["hi", "hello", "hail"];
@@ -28,32 +31,39 @@ const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/chosen-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/classic-missions.json"),
+    include_str!("../../../../content/quests/npc-callbacks/fibula.json"),
+    include_str!("../../../../content/quests/npc-callbacks/l13-outfits.json"),
+    include_str!("../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
+    include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m09-rookie.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
+    include_str!("../../../../content/quests/npc-callbacks/newhaven-gustavo.json"),
     include_str!("../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
     include_str!("../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
-    include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
-    include_str!("../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/quest-contacts.json"),
     include_str!("../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
-    include_str!("../../../../content/quests/npc-callbacks/fibula.json"),
-    include_str!("../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
-    include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
-    include_str!("../../../../content/quests/npc-callbacks/l13-outfits.json"),
-    include_str!("../../../../content/quests/npc-callbacks/m09-rookie.json"),
-    include_str!("../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
-    include_str!("../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
+    include_str!("../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/tibia-tales.json"),
 ];
 #[cfg(test)]
 mod m09_rookie_tests;
 const REWARD_GREETINGS: &[&str] = &[
     include_str!("../../../../content/dialogues/quests/chosen-reward-greetings.json"),
-    include_str!("../../../../content/dialogues/quests/qd-greetings.json"),
-    include_str!("../../../../content/dialogues/quests/qnpcfx-m10-greetings.json"),
-    include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/classic-mission-greetings.json"),
     include_str!("../../../../content/dialogues/quests/l6-story-greetings.json"),
     include_str!("../../../../content/dialogues/quests/m09-rookie-greetings.json"),
-    include_str!("../../../../content/dialogues/quests/questpc5-targuna-map-greetings.json"),
     include_str!("../../../../content/dialogues/quests/m13-goblin-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/qd-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/qnpcfx-m10-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/quest-contact-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/questpc5-targuna-map-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/tibia-tales-greetings.json"),
 ];
 
 mod quest_merchant;
@@ -64,6 +74,8 @@ struct RewardMessages {
     greet: String,
     farewell: String,
     walkaway: String,
+    #[serde(default)]
+    greeting_words: Vec<String>,
 }
 
 fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
@@ -228,12 +240,15 @@ impl NpcTalkEntry {
         &self.offers
     }
 
+    /// Whether the message contains a greeting authored for this NPC.
+    pub fn matches_greeting(&self, text: &str) -> bool {
+        matches_greeting(&words(text), &self.greetings)
+    }
+
     /// Whether a focus message or an admitted dialogue keyword takes precedence over a default callback.
     pub fn matches_focus_or_dialogue(&self, text: &str) -> bool {
         let said = words(text);
-        self.greetings
-            .iter()
-            .any(|greeting| contains_words(&said, &words(greeting)))
+        matches_greeting(&said, &self.greetings)
             || says_any(&said, &FAREWELLS)
             || says_any(&said, &TRADE_WORDS)
             || self.dialogue_keyword(&said).is_some()
@@ -338,6 +353,34 @@ pub struct NpcTalkBook {
     /// The revision the trade windows carry: derived from the catalogue's source tree digest, so
     /// it changes exactly when the content the offers come from changes. Never 0.
     catalogue_revision: u64,
+    mean_buy_prices: HashMap<(String, String), u64>,
+}
+
+fn mean_buy_prices(model: &NpcServiceModel) -> HashMap<(String, String), u64> {
+    use crate::content::ProjectV2ServiceOfferDirection::BuyFromPlayer;
+    let mut sums = HashMap::<_, (u128, u128)>::new();
+    for service in model.services().values() {
+        for offer in &service.offers {
+            if offer.direction != BuyFromPlayer || offer.unit_price == 0 {
+                continue;
+            }
+            let (sum, samples) = sums
+                .entry((&offer.item.key, &offer.item.revision))
+                .or_default();
+            // Admitted multi-unit rows are stackable. Charged/fluid rows
+            // admitted by the service model already quote a single item.
+            *sum += u128::from(offer.unit_price / u64::from(offer.count.unwrap_or(1)));
+            *samples += 1;
+        }
+    }
+    sums.into_iter()
+        .filter_map(|((key, revision), (sum, samples))| {
+            u64::try_from(sum / samples)
+                .ok()
+                .filter(|price| *price > 0)
+                .map(|price| ((key.clone(), revision.clone()), price))
+        })
+        .collect()
 }
 
 impl NpcTalkBook {
@@ -355,6 +398,12 @@ impl NpcTalkBook {
         self.source_voices = crate::npc_voice::profiles_from_catalogue(catalogue, model, qualify)?;
         self.source_walks = Some(walks);
         Ok(())
+    }
+
+    pub fn mean_buy_price(&self, key: &str, revision: &str) -> Option<u64> {
+        self.mean_buy_prices
+            .get(&(key.to_owned(), revision.to_owned()))
+            .copied()
     }
 
     pub fn source_walks(&self) -> Option<&crate::npc_actor::NpcWalkBook> {
@@ -414,10 +463,17 @@ impl NpcTalkBook {
                 YASIR_JOB,
                 YASIR_NAME,
                 YASIR_PASSAGE,
-                literal_contacts::REVISION_MATERIAL,
+                format_args!(
+                    "{}\0{}\0{}\0{}",
+                    literal_contacts::REVISION_MATERIAL,
+                    literal_contacts::REGIONAL_SOURCE,
+                    regional_contacts::DATA,
+                    crate::content::npc_catalogue::subtype_trades::REGIONAL_DATA,
+                ),
             )),
             ..Self::default()
         };
+        book.mean_buy_prices = mean_buy_prices(model);
         for (reference, npc) in model.npcs() {
             book.display_names
                 .insert(reference.key.clone(), npc.name.clone());
@@ -465,7 +521,23 @@ impl NpcTalkBook {
                 .iter()
                 .filter_map(|reference| model.services().get(reference))
                 .any(|service| service.bank);
+            let regional_dialogue = npc
+                .bank_dialogue
+                .as_ref()
+                .filter(|_| literal_contacts::regional(&reference.key));
+            let regional = regional_contacts::get(&reference.key);
+            let regional_keywords = || {
+                regional_dialogue
+                    .into_iter()
+                    .flat_map(|dialogue| &dialogue.keywords)
+                    .filter(|keyword| {
+                        literal_keyword(keyword) && !keyword.reply[0].contains("|TIME|")
+                    })
+            };
+            let mut merged_regional_keywords = false;
             let mut journal_fallback = false;
+            let mut regional_source = false;
+            let mut regional_walkaway = None;
             let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if native_quest
                 && matches!(
                     reference.key.as_str(),
@@ -682,6 +754,38 @@ impl NpcTalkBook {
                     None,
                     keywords,
                 )
+            } else if let Some(contact) = regional.filter(|_| !bank) {
+                merged_regional_keywords = true;
+                (
+                    contact
+                        .greet
+                        .as_deref()
+                        .unwrap_or(regional_contacts::GREET)
+                        .into(),
+                    contact
+                        .farewell
+                        .as_deref()
+                        .unwrap_or(regional_contacts::FAREWELL)
+                        .into(),
+                    None,
+                    contact.keywords.clone(),
+                )
+            } else if let Some(messages) = npc
+                .bank_dialogue
+                .as_ref()
+                .and_then(|dialogue| literal_contacts::regional_messages(&reference.key, dialogue))
+            {
+                regional_source = true;
+                merged_regional_keywords = !bank;
+                regional_walkaway = messages.walkaway;
+                let passage = (!travel_routes.is_empty())
+                    .then(|| "Ask me for a passage to your destination.".into());
+                (
+                    messages.greet,
+                    messages.farewell,
+                    passage,
+                    messages.keywords,
+                )
             } else if let Some(replies) = &npc.generated_replies {
                 let mut lines: Vec<&str> = Vec::new();
                 for (_, line) in &replies.services {
@@ -800,16 +904,41 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if let Some(dialogue) = regional_dialogue {
+                let focus_line = |lines: &[String], default: &str| match lines {
+                    [line] => line.clone(),
+                    _ => default.into(),
+                };
+                (
+                    focus_line(&dialogue.greet, "Greetings, |PLAYERNAME|."),
+                    focus_line(&dialogue.farewell, "Good bye, |PLAYERNAME|."),
+                    None,
+                    regional_keywords().cloned().collect(),
+                )
             } else {
                 continue;
             };
+            let mut dialogue_keywords = dialogue_keywords;
+            if merged_regional_keywords
+                && npc.generated_replies.is_none()
+                && travel_routes.is_empty()
+            {
+                for keyword in regional_keywords() {
+                    if !dialogue_keywords
+                        .iter()
+                        .any(|existing| existing.triggers == keyword.triggers)
+                    {
+                        dialogue_keywords.push(keyword.clone());
+                    }
+                }
+            }
             book.npcs.insert(
                 reference.key.clone(),
                 NpcTalkEntry {
                     name: npc.name.clone(),
                     admitted_dialogue: !journal_fallback
                         && !matches!(reference.key.as_str(), YASIR | OROCKLE)
-                        && npc.dialogue.is_some()
+                        && (npc.dialogue.is_some() || regional.is_some())
                         && premium_services.is_empty()
                         && travel_routes.is_empty(),
                     travel_routes,
@@ -819,10 +948,38 @@ impl NpcTalkBook {
                         .iter()
                         .filter_map(|reference| model.services().get(reference))
                         .any(|service| service.bank),
-                    greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
+                    greetings: match reference.key.as_str() {
+                        "oteryn:npc.baa_leal"
+                        | "oteryn:npc.gabel"
+                        | "oteryn:npc.malor"
+                        | "oteryn:npc.ubaid" => vec!["djanni'hah".into()],
+                        "oteryn:npc.alesar" => GREETINGS
+                            .iter()
+                            .copied()
+                            .chain(["djanni'hah"])
+                            .map(str::to_owned)
+                            .collect(),
+                        _ => reward_messages
+                            .filter(|messages| !messages.greeting_words.is_empty())
+                            .map_or_else(
+                                || {
+                                    GREETINGS
+                                        .iter()
+                                        .map(|word| (*word).to_owned())
+                                        .chain(regional.into_iter().flat_map(|contact| {
+                                            contact.greet_aliases.iter().cloned()
+                                        }))
+                                        .collect()
+                                },
+                                |messages| messages.greeting_words.clone(),
+                            ),
+                    },
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: bank
+                        || regional_dialogue.is_some()
+                        || regional.is_some()
+                        || regional_source
                         || literal_contacts::greeting(&reference.key).is_some()
                         || reference.key == "oteryn:npc.lynda"
                         || matches!(reference.key.as_str(), YASIR | OROCKLE | DEEP_SEAS_GUARDIAN)
@@ -849,9 +1006,26 @@ impl NpcTalkBook {
                             .as_ref()
                             .and_then(|dialogue| dialogue.walkaway.first().cloned())
                     } else {
-                        isle_messages
-                            .map(|messages| messages.walkaway)
+                        regional_walkaway
+                            .or_else(|| isle_messages.map(|messages| messages.walkaway))
                             .or_else(|| reward_messages.map(|messages| messages.walkaway.clone()))
+                            .or_else(|| {
+                                regional_dialogue.map(|dialogue| {
+                                    match dialogue.walkaway.as_slice() {
+                                        [line] => line.clone(),
+                                        _ => "Good bye.".into(),
+                                    }
+                                })
+                            })
+                            .or_else(|| {
+                                regional.map(|contact| {
+                                    contact
+                                        .walkaway
+                                        .as_deref()
+                                        .unwrap_or(regional_contacts::WALKAWAY)
+                                        .into()
+                                })
+                            })
                     },
                     topic_reply,
                     dialogue_keywords,
@@ -955,7 +1129,13 @@ pub fn asks_to_trade(text: &str) -> bool {
 
 /// Source-specific shop keyword; ordinary merchants retain the standard trade words.
 pub fn asks_to_trade_for(npc_key: &str, text: &str) -> bool {
-    asks_to_trade(text) || (npc_key == YASIR && says_any(&words(text), &["ariki"]))
+    let source_keyword = match npc_key {
+        YASIR => "ariki",
+        crate::content::npc_catalogue::quest_shops::ALBINIUS => "buy",
+        _ => return asks_to_trade(text),
+    };
+    let said = words(text);
+    says_any(&said, &TRADE_WORDS) || says_any(&said, &[source_keyword])
 }
 
 fn says_any(said: &[String], list: &[&str]) -> bool {
@@ -1262,7 +1442,79 @@ mod tests {
         let book = NpcTalkBook::from_model(&model);
         let entry = book.get(YASIR).ok_or("native Yasir")?;
         assert!(!entry.admitted_dialogue);
-        assert_eq!(entry.offers().len(), 757);
+        assert_eq!(entry.offers().len(), 812);
+        // Global Cyclopedia quotes newly admitted for Yasir, after alias resolution.
+        for (id, price) in [
+            (5921, 50),
+            (9039, 5000),
+            (9040, 5000),
+            (10299, 15),
+            (40527, 120),
+            (40528, 135),
+            (40529, 175),
+            (43739, 5000),
+            (43847, 4500),
+            (43848, 4200),
+            (43856, 5200),
+            (43857, 4700),
+            (43858, 3000),
+            (43859, 5800),
+            (43888, 5000),
+            (43961, 3400000),
+            (43962, 3200000),
+            (43963, 5400000),
+            (43964, 900000),
+            (43965, 950000),
+            (43966, 1100000),
+            (43967, 1000000),
+            (43968, 2000000),
+            (44438, 210),
+            (44439, 280),
+            (44440, 240),
+            (44727, 85000),
+            (44728, 225000),
+            (44729, 580),
+            (44736, 385),
+            (44737, 540),
+            (44738, 480),
+            (44739, 620),
+            (44740, 810),
+            (44741, 560),
+            (44742, 950),
+            (48253, 2780),
+            (50065, 2500000),
+            (50066, 1800000),
+            (51424, 870),
+            (51428, 570),
+            (51429, 49000),
+            (51430, 46000),
+            (51471, 3650),
+            (51487, 670),
+            (52729, 900000),
+            (53778, 580),
+            (54128, 500),
+            (54268, 2800000),
+            (54269, 3400000),
+            (54270, 5700000),
+            (54363, 670),
+            (54364, 900),
+            (54611, 110000),
+            (54639, 720),
+        ] {
+            let item = format!("oteryn:item.tibia.i{id}");
+            let matches: Vec<_> = entry
+                .offers()
+                .iter()
+                .filter(|offer| {
+                    offer.item.key == item
+                        && offer.direction
+                            == crate::content::ProjectV2ServiceOfferDirection::BuyFromPlayer
+                        && offer.currency.is_none()
+                })
+                .map(|offer| offer.unit_price)
+                .collect();
+            assert_eq!(matches, [price], "captured Yasir offer {id}");
+        }
         let (_, source) = model
             .npcs()
             .iter()

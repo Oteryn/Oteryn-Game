@@ -304,6 +304,9 @@ where
     if entry_ms >= LISTENER_POLL_REPORT.as_millis() {
         operator_event_with_trace(&format!("event=connection_entry_slow ms={entry_ms}"), trace);
     }
+    if super::world_login_info::route(&mut stream, &frame, authority).await {
+        return None;
+    }
     // The owning authority's decision is never cancelled midway.
     if cast_observer::ingress(&frame) {
         if let Some(node) = authority.cast_node() {

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RestartResult",
+  "type": "object",
+  "properties": {
+    "restarted_node_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "save_receipt": {
+      "$ref": "#/$defs/SaveReceipt"
+    },
+    "state": {
+      "$ref": "#/$defs/WorldState"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "restarted_node_ids",
+    "save_receipt",
+    "state"
+  ],
+  "$defs": {
+    "SaveReceipt": {
+      "type": "object",
+      "properties": {
+        "save_receipt_id": {
+          "type": "string"
+        },
+        "saved_at": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "save_receipt_id",
+        "saved_at"
+      ]
+    },
+    "WorldState": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed",
+        "maintenance"
+      ]
+    }
+  }
+}

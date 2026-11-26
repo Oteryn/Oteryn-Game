@@ -1,0 +1,19 @@
+{
+  "id": 608,
+  "name": "ACTOR_SPELL_PARAMETERS_V2",
+  "constant": "actor_spell_v2::CAPABILITY_ACTOR_SPELL_PARAMETERS_V2",
+  "requires": [
+    4
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    6380
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

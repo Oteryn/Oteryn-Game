@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/too-hot/stage",
+      "quest": "oteryn:quest.too_hot_to_handle_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Too_Hot_to_Handle_Quest/Spoiler#Transcripts"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/too-hot-investigation",
+      "quest": "oteryn:quest.too_hot_to_handle_quest",
+      "npc": "oteryn:npc.gnomystery",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/too-hot/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line_complete",
+          "minimum": 2,
+          "maximum": 2147483647
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Speak to Brodraem, the keeper of the crypt. He is just north of here."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Too_Hot_to_Handle_Quest/Spoiler#Transcripts"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/too-hot-repair-commission",
+      "quest": "oteryn:quest.too_hot_to_handle_quest",
+      "npc": "oteryn:npc.brodraem_orcbeard",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/too-hot/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "requires": [],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take a chisel, a brush and replacement marble from the east end of the wooden coffin. Clean five sarcophagi, repair three columns and fill four holes in the floor."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Too_Hot_to_Handle_Quest/Spoiler#Transcripts"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/too-hot-repair-report",
+      "quest": "oteryn:quest.too_hot_to_handle_quest",
+      "npc": "oteryn:npc.brodraem_orcbeard",
+      "keywords": [
+        "hi",
+        "report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/too-hot/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/m07/too_hot/columns_repaired",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/too-hot/marble-total",
+          "minimum": 4,
+          "maximum": 4
+        },
+        {
+          "track": "oteryn:quest-progress/too-hot/sarcophagus-total",
+          "minimum": 5,
+          "maximum": 5
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i32769",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You have restored the crypt. Please take this white gem for your work."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Too_Hot_to_Handle_Quest/Spoiler#Transcripts"
+      ]
+    }
+  ]
+}

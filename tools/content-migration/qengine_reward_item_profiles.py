@@ -25,6 +25,7 @@ IDS = {21897, 21898, 21899, 21901, 21902, 21905, 21906, 30168, 30169, 37002, 370
 IDS |= {22731, 22775}
 # M51 arena trophy custody is qualified from the same pinned physical sources.
 CUSTODY_PROMOTIONS = {5805, 5806}
+CUSTODY_PROMOTION_KEYS = {f'oteryn:item.tibia.i{item}' for item in CUSTODY_PROMOTIONS}
 # Closed source qualification admits zero speed only for these three native Items.
 SOURCE_KNOWN_SPEED_IDS = frozenset({2833, 5805, 5806})
 # Rottin Wood: carried hammer, handcrafted ribbon and rabbit's foot lucky charm.
@@ -33,6 +34,12 @@ IDS |= {3460, 12171, 12173}
 IDS |= {12186, 12260}
 # M12 selected daily harvest: existing Juicy Roots identity, exact portable facts.
 IDS |= {21291}
+# Black Bert sells the source-priced portable Dust of Arthei.
+IDS |= {8720}
+# Storkus takes stackable lord tokens and grants a portable Vampire Doll.
+IDS |= {8191, 8192}
+# The Pale Count's reward table closes as a whole, including its other yields.
+IDS |= {18935, 18936, 19373, 19374}
 # M13: source-pinned carried Guardcatcher and each Perfume Gatherer stage.
 IDS |= {17669, 17670, 17672, 17673, 17674, 17675, 7253}
 # M13: native Slug corpse closure; Ground-only source durations remain authoritative.
@@ -46,6 +53,8 @@ IDS |= {14021, 14022, 14023}
 IDS |= {12785}
 # QN4 Cursed Crystal actions_MedusaOil.lua:2-4 uses these plain carried ingredients.
 IDS |= {21504, 21505, 21506, 21507, 9106}
+# Padreia's vermin poison and Boozer's empty and filled quest bottles.
+IDS |= {135, 136, 138}
 # M56: exact carried Molten Wax consumption through the existing quest input owner.
 IDS |= {9106}
 # QN3 Gnomus measurement report (Crystal 201189f gnomus.lua:88-97) grants this jar.
@@ -58,6 +67,9 @@ IDS |= {21466, 21389}
 IDS |= {14682, 7785}
 # M07 deterministic siege burning uses the existing Fire Bug as a retained tool.
 IDS |= {5467}
+# Tower Defence delivers the Watchtower parcel; Troll Sabotage exchanges Jerom's
+# family necklace for the Elvenhair Rope through the existing NPC custody owner.
+IDS |= {140, 646, 7754}
 # M07 Too Hot cleaning, column and floor-repair tools from the same pinned source.
 IDS |= {36543, 36544, 36545}
 # ENGNPC2: the registered Goblin Merchant Slug and Rotworm exchanges consume
@@ -80,6 +92,14 @@ IDS |= {3443}
 # M44: source flower harvest and the two remaining native pagoda offerings.
 IDS |= {21389, 21466}
 IDS |= questl2_ready.ITEMS
+# Crystal 201189f8 Explorer Society specimens, tools and terminal backpack.
+# The quest receipt mints the icicle as ordinary custody without starting its
+# donor duration. The native item's duration fact remains available to other owners.
+EXPLORER_ITEMS = {4834, 4837, 4844, 4845, 4847, 4863, 4864, 4868, 4872, 9605}
+EXPLORER_CORPSES = {4378, 4992}
+EXPLORER_PROPS = {3874, 4055, 4994}
+IDS |= EXPLORER_ITEMS | EXPLORER_CORPSES | EXPLORER_PROPS
+
 # Already present in main f5b584ef1's native provider; the existing cohort
 # cardinality includes these six shells, even when a source fact is refined.
 PREVIOUSLY_COUNTED_IDS = {3029, 3035, 3205, 3212, 3234, 3607}
@@ -199,8 +219,10 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
     records=[]
     for item_id in sorted(selected):
         node=xml[item_id]
-        flower = lion_flower.admitted(item_id, source.attrs(node))
-        if not flower and item_id not in (CORPSE_IDS | MERCHANT_SCENERY) and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
+        attrs = source.attrs(node)
+        flower = lion_flower.admitted(item_id, attrs)
+        admitted_duration = flower or item_id in (CORPSE_IDS | MERCHANT_SCENERY | EXPLORER_CORPSES | {4837})
+        if not admitted_duration and {'charges', 'duration', 'decayto', 'stopduration'} & attrs.keys():
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']
         if flags.get('flags.liquidcontainer') or flags.get('flags.liquidpool'):
@@ -214,15 +236,23 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
             record=lion_flower.temporal(record, definition, accepted.known_conflict)
         # These exact Ground-only props and corpse stages have canonical
         # identity-only rows; their physical facts come from the pinned sources.
-        semantics=definition.get('semantics') if item_id in (STATIC_IDS | CORPSE_IDS) else definition['semantics']
-        if item_id in (STATIC_IDS | CORPSE_IDS) and (definition.get('kind')!='Item' or definition['identity']['family']!='Item'):
+        ground_only = item_id in (STATIC_IDS | CORPSE_IDS | EXPLORER_PROPS)
+        identity_only = ground_only or item_id in EXPLORER_CORPSES
+        semantics = definition.get('semantics') if identity_only else definition['semantics']
+        if identity_only and (definition.get('kind') != 'Item' or definition['identity']['family'] != 'Item'):
             raise ValueError('QENGINE_REWARD_STATIC_IDENTITY')
+        # The explicit canonical weights take precedence where Crystal's XML
+        # differs. All remaining Item facts use the shared source reconciliation.
+        if item_id in {4864, 4868}:
+            weight = semantics['physical']['value']['weight']
+            if weight['state'] == 'KNOWN':
+                record['semantics']['physical']['value']['weight'] = weight.copy()
         for group in ('physical','stack','container','temporal'):
             if semantics is not None and accepted.known_conflict(semantics[group],record['semantics'][group]):
                 raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:'+group+':'+str(item_id))
         if definition['stack_class'] not in ('Unknown',record['admission']['stack_class']):
             raise ValueError('QENGINE_REWARD_ITEM_STACK_CONFLICT')
-        expected_destinations=['Ground'] if item_id in (STATIC_IDS | CORPSE_IDS) else ['CharacterInventory','Ground']
+        expected_destinations=['Ground'] if ground_only else ['CharacterInventory','Ground']
         if record['admission']['legal_destinations']!=expected_destinations:
             raise ValueError('QENGINE_REWARD_ITEM_DESTINATION_DRIFT')
         if item_id in STATIC_IDS and record['admission']['stack_class']!='NonStackable':
@@ -258,7 +288,7 @@ def reconcile(existing, observed):
     key = existing.get('production_definition', {}).get('production_key')
     old_custody = dict(materializable=False, stack_class='NonStackable', legal_destinations=['Ground'])
     portable = dict(materializable=True, stack_class='NonStackable', legal_destinations=['CharacterInventory', 'Ground'])
-    if (key in {'oteryn:item.tibia.i5805', 'oteryn:item.tibia.i5806'}
+    if (key in CUSTODY_PROMOTION_KEYS
             and existing.get('admission') == old_custody and observed.get('admission') == portable):
         existing = dict(existing, admission=portable)
     for field in ('production_definition', 'production_binding', 'admission'):
@@ -303,6 +333,12 @@ def admit_records(root,generated,profile_path,manifest_path,order,canonical,reco
         known_speed = _admitted_known_speed(record, present.get(key))
         if key in present:
             prior = present[key]
+            if key in CUSTODY_PROMOTION_KEYS and 'readable_writeable' in prior['semantics']:
+                # The text owner retains an unresolved write-once target for these trophies.
+                record = {**record, 'semantics': {
+                    **record['semantics'],
+                    'readable_writeable': prior['semantics']['readable_writeable'],
+                }}
             inert = prior['admission'] == {
                 'materializable': False,
                 'stack_class': record['admission']['stack_class'],

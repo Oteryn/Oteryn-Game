@@ -37,6 +37,7 @@ pub(super) fn handoff_continuity(
         server_motd_sent: previous.server_motd_sent,
         selected_capabilities,
         connection_generation,
+        house_input_pending: Some(true),
         ..SessionContinuity::FRESH
     }
 }
@@ -595,25 +596,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     pub(super) async fn recover_transferred_house(
         &self,
-        budget: &super::AdmissionRetryBudget<'_>,
-        attempt: super::connection::ResumeAttempt<'_>,
+        candidate: crate::durability::house_transfer::HouseTransferRecovery,
+        attempt: &super::connection::ResumeAttempt<'_>,
     ) -> Result<Option<AdmittedSession>, super::connection::AdmissionRefusal> {
         use super::connection::{AdmissionRefusal::*, ControllerBinding};
         use crate::durability::recovery_evidence_composition::RecoveryEvidenceSubject;
         use crate::foundation::fnd04_verifier::fresh_grant_signing_key_id;
-        // Every resume reads its receipt first, before anything is written: a busy holder
-        // retries under the resume's budget instead of closing the resume (NODEBOOT-1).
-        let Some(candidate) = budget
-            .retry_unavailable(async || {
-                self.root
-                    .house_transfer_recovery(attempt.game_session_id)
-                    .await
-                    .map_err(|_| Unavailable)
-            })
-            .await?
-        else {
-            return Ok(None);
-        };
         if candidate.started {
             // Ordinary reconnect owns sessions that have already used their
             // destination command stream; lost-ack recovery cannot reset it.
@@ -898,6 +886,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             continuity: SessionContinuity {
                 connection_generation: recovered.ack.connection_generation,
                 selected_capabilities: selected,
+                house_input_pending: Some(true),
                 ..SessionContinuity::FRESH
             },
             item_fence: Some(fence),

@@ -1,6 +1,6 @@
 //! T..Z reward claims: source placements -> wire USE -> durable custody and replay.
 //! This certifies the reward path, not any untested access puzzle or NPC mission.
-use super::source_quest_rewards_fixtures::{legacy_world_owned};
+use super::source_quest_rewards_fixtures::{OUTFOX_CLAIM, accept_outfox_mission, admit_reward_character, legacy_world_owned, reward_premium};
 
 use super::fixture::{Harness, debug, id, run};
 use super::quest_callbacks_fixtures::{source_world_positions, wire_use_targets_retained};
@@ -135,6 +135,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "source_quest_rewards", false, false)
             .await?;
+        let premium = reward_premium(&h, &chest.claim).await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -166,6 +167,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 .collect::<Vec<_>>()
         );
         let world_owned = legacy_world_owned(&chest.claim)?;
+        let outfox = chest.claim == OUTFOX_CLAIM;
         let catalogue = if bound.served.iter().any(|claim| {
             claim.key.as_str() == chest.claim
                 && claim
@@ -173,6 +175,8 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                     .iter()
                     .any(|placement| placement.placement.quest_transition.is_some())
         }) || world_owned
+            || oteryn_gameplay_quests::quest::completion_sets::mint_transition_for_claim(&chest.claim)?
+                .is_some()
         {
             let lowered =
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -288,6 +292,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
         };
         {
             let mut owner = deps.owner(&h, &authority);
+            owner.premium_coordinator = premium.as_ref();
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
             owner.quest_catalogue = catalogue.clone();
@@ -296,6 +301,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 owner.admit_quest_session(&admitted).await;
             }
             deps.initialize(&owner).await;
+            admit_reward_character(&owner, &admitted, &chest.claim).await?;
             let mut stale = admitted;
             let mut stale_fence = fence;
             stale_fence.character_lease_generation += 1;
@@ -317,6 +323,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
         let mut first_root = None;
         for cold in [false, true] {
             let mut owner = deps.owner(&h, &authority);
+            owner.premium_coordinator = premium.as_ref();
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
             owner.quest_catalogue = catalogue.clone();
@@ -326,6 +333,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 owner.admit_quest_session(&stream).await;
             }
             deps.initialize(&owner).await;
+            admit_reward_character(&owner, &stream, &chest.claim).await?;
             use oteryn_protocol_oteryn::world_spatial::{
                 COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition,
                 decode_step_result, encode_step_intent,
@@ -356,6 +364,9 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                     MovementLocalPosition { x, ..at }
                 );
             }
+            if !cold && outfox {
+                accept_outfox_mission(&mut owner, &mut stream).await?;
+            }
             let expected = if cold {
                 vec![(CommandStatus::Accepted, UseDisposition::Committed)]
             } else {
@@ -363,7 +374,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 // chest with its "it is empty" refusal, a Rejected command
                 // with a Rejected disposition (as quest_container_chests
                 // asserts); a RewardClaim chest owner reports NothingToUse.
-                let repeated = if world_owned {
+                let repeated = if world_owned && !outfox {
                     (CommandStatus::Rejected, UseDisposition::Rejected)
                 } else {
                     (CommandStatus::Accepted, UseDisposition::NothingToUse)
@@ -537,7 +548,19 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 // A World callback's storage write is one receipt; only a
                 // placement quest transition consumes a claim obligation.
                 let obligations = i64::from(!world_owned);
-                assert_eq!(quest_counts, (1, obligations, 0), "{}", chest.claim);
+                let receipts = 1 + i64::from(outfox);
+                assert_eq!(quest_counts, (receipts, obligations, 0), "{}", chest.claim);
+                if outfox {
+                    let keys: Vec<String> = sqlx::query_scalar(
+                        "SELECT transition_key FROM game_character_quest_receipts ORDER BY transition_key",
+                    )
+                    .fetch_all(&h.pool)
+                    .await?;
+                    assert_eq!(keys, [
+                        oteryn_gameplay_quests::quest::world_callbacks::OUTFOX_CACHE,
+                        "oteryn:quest-reward/tibia-tales/outfox-accept",
+                    ]);
+                }
             }
         }
         drop(authority);

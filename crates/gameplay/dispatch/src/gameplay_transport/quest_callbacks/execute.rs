@@ -1,17 +1,58 @@
 //! Durable callback commit followed by its prepared map effects.
 use super::*;
 use crate::durability::character_revision_sequencer::RevisionSlot;
+use crate::map::facts::QuestCallbackProjection;
+
+fn shared_projection_target(
+    projection: Option<&QuestCallbackProjection>,
+    source: u64,
+    selected_tool: bool,
+) -> Result<Option<u64>, UseDisposition> {
+    // An unknown acknowledgement keeps the affected placement reserved for replay.
+    Ok(match projection {
+        Some(QuestCallbackProjection::MerchantTrap { barricade, .. }) => match barricade {
+            Some((at, _)) => {
+                Some(crate::map::view::placement_key(*at, 0).ok_or(UseDisposition::Rejected)?)
+            }
+            None => Some(source),
+        },
+        Some(
+            QuestCallbackProjection::ReleaseMerchant { .. }
+            | QuestCallbackProjection::TimedRemoval { .. },
+        ) => Some(source),
+        Some(QuestCallbackProjection::TimedTransform { .. }) if selected_tool => Some(source),
+        Some(QuestCallbackProjection::TimedTargetTransform { key, .. }) => Some(*key),
+        Some(QuestCallbackProjection::TimedPassages { entries, .. }) if entries.len() == 1 => {
+            entries.first().map(|entry| entry.key)
+        }
+        _ => None,
+    })
+}
+
+fn refresh_source_reset(projection: Option<&mut QuestCallbackProjection>, published_due: u64) {
+    if let Some(
+        QuestCallbackProjection::TimedTransform { due, .. }
+        | QuestCallbackProjection::TimedRemoval { due, .. }
+        | QuestCallbackProjection::ReadsetTransforms {
+            reset: Some((due, _)),
+            ..
+        },
+    ) = projection
+    {
+        *due = published_due;
+    }
+}
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
-    pub(super) async fn execute_quest_callback(
+    pub(super) async fn execute_quest_callback<'map>(
         &self,
         permit: &SpellLanePermit,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
         session: GameSessionId,
-        map: &BundleMap,
+        map: &'map BundleMap,
         callback: &Callback,
         key: u64,
         expected_revision: u64,
@@ -22,7 +63,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         optional_pvp: Option<bool>,
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
+        scene_publication: Option<&mut Option<super::scene_items::ScenePublication<'map>>>,
     ) -> UseDisposition {
+        // Another user may have obtained the lane after this caller's first
+        // receipt check. Only the original batch or its exact receipt can
+        // release this placement for a new close.
+        if self.scene_receipt_pending(map, key) {
+            return UseDisposition::Rejected;
+        }
         if callback.effects.encounter.is_none()
             && let Some(catalogue) = self.quest_catalogue.as_deref()
             && let Some(bindings) = catalogue.authored_bindings()
@@ -153,6 +201,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::StaleState;
             }
         }
+        let opening;
+        let callback = if callback.key == super::serpentine_lever::JOURNEY
+            && map.facts.quest_callback_source_bound(key)
+        {
+            let Some(source) =
+                self.serpentine_opening_source(callback, map, key, after.appearance_id)
+            else {
+                return UseDisposition::Rejected;
+            };
+            // Retain the authored transition key for durable admission and receipt replay.
+            // Project the same forcefield removal as the native AID route.
+            opening = {
+                let mut opening = callback.clone();
+                opening.passages.clone_from(&source.passages);
+                opening.effects.scene.clone_from(&source.effects.scene);
+                opening
+            };
+            &opening
+        } else {
+            callback
+        };
         if goblin_elevator::owns(&callback.key) {
             if callback.selector.appearance != Some(after.appearance_id) {
                 return UseDisposition::NothingToUse;
@@ -244,10 +313,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
             };
-            projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
-                due,
-                restore: before,
-            });
+            projection = Some(
+                if callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|tool| tool.target_remove)
+                {
+                    crate::map::facts::QuestCallbackProjection::TimedRemoval {
+                        due,
+                        restore: before,
+                    }
+                } else {
+                    crate::map::facts::QuestCallbackProjection::TimedTransform {
+                        due,
+                        restore: before,
+                    }
+                },
+            );
         }
         if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
             let Some(crate::map::facts::QuestCallbackProjection::TimedTransform { due, restore }) =
@@ -285,15 +367,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .item_on_target
             .as_ref()
             .is_some_and(|item| item.target_remove)
+            && callback.effects.reset_after_ms.is_none()
         {
-            if projection.is_some() {
-                return UseDisposition::Rejected;
+            match projection {
+                Some(crate::map::facts::QuestCallbackProjection::TimedRemoval { .. }) => {}
+                None => {
+                    projection = Some(crate::map::facts::QuestCallbackProjection::ItemCycle {
+                        position: pos,
+                        remove: Some(key),
+                        create: None,
+                    });
+                }
+                Some(_) => return UseDisposition::Rejected,
             }
-            projection = Some(crate::map::facts::QuestCallbackProjection::ItemCycle {
-                position: pos,
-                remove: Some(key),
-                create: None,
-            });
         }
         if callback.effects.loot_merchant {
             if projection.is_some() {
@@ -505,36 +591,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(projection) => projection,
             Err(result) => return result,
         };
-        let projection_target = match &projection {
-            // Keep the source and shared entrance reserved until the exact
-            // USE receipt can settle, including when its acknowledgment is lost.
-            Some(crate::map::facts::QuestCallbackProjection::MerchantTrap {
-                barricade, ..
-            }) => match barricade {
-                Some((at, _)) => match crate::map::view::placement_key(*at, 0) {
-                    Some(entrance) => Some(entrance),
-                    None => return UseDisposition::Rejected,
-                },
-                None => Some(key),
-            },
-            Some(crate::map::facts::QuestCallbackProjection::ReleaseMerchant { .. }) => Some(key),
-            Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
-                if callback
-                    .item_on_target
-                    .as_ref()
-                    .is_some_and(|tool| tool.selected_instance) =>
-            {
-                Some(key)
+        let selected_tool_instance = callback
+            .item_on_target
+            .as_ref()
+            .is_some_and(|tool| tool.selected_instance);
+        let projection_target = if matches!(
+            callback.key.as_str(),
+            super::serpentine_lever::JOURNEY | super::serpentine_lever::SOURCE
+        ) {
+            // Both routes share the lever while an authored opening receipt is pending.
+            Some(key)
+        } else {
+            match shared_projection_target(projection.as_ref(), key, selected_tool_instance) {
+                Ok(target) => target,
+                Err(refusal) => return refusal,
             }
-            Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
-                key, ..
-            }) => Some(*key),
-            Some(crate::map::facts::QuestCallbackProjection::TimedPassages { entries, .. })
-                if entries.len() == 1 =>
-            {
-                entries.first().map(|entry| entry.key)
-            }
-            _ => None,
         };
         if let Some(target) = projection_target
             && !self
@@ -549,6 +620,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
+        if blocked && callback.effects.requires_no_pz_lock {
+            return UseDisposition::NotPossible;
+        }
         let mut destination = callback.teleport;
         if let Some(remote) = &callback.remote_teleport {
             let p = tile(remote.position);
@@ -1039,7 +1113,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 match self.states.quest_callbacks.personal.reserve(
                     runtime,
-                    &callback.key,
+                    callback.encounter_reservation_key(),
                     personal_encounter::Origin::new(
                         *fence.character_id.as_bytes(),
                         cause,
@@ -1072,6 +1146,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return ready;
             }
         }
+        let coffin = VampireCoffinKind::for_callback(&callback.key);
+        let mut recover_ordinary_coffin = false;
         if durable {
             let (Some(fence), Some(slot), Some(catalogue)) =
                 (fence, slot, self.quest_catalogue.as_ref())
@@ -1330,7 +1406,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Ok(mut pending)=self.states.quest_callbacks.records.lock(){pending.remove(&session);}
                     return UseDisposition::Committed;
                 }
-                Ok(_) | Err(_) => {
+                Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch))
+                    if coffin == Some(VampireCoffinKind::Ordinary) =>
+                {
+                    // The original transition stays stage-8 only. A separate
+                    // fenced delivery may still find its undelivered encounter.
+                    recover_ordinary_coffin = true;
+                }
+                refusal => {
                     if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|
                         objectives.iter().any(|objective| objective.quest == callback.quest && objective.guardian.is_some()))
                     {
@@ -1338,6 +1421,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                         pending.remove(&session);
+                    }
+                    if callback.key == world_callbacks::OUTFOX_CACHE
+                        && matches!(refusal, Ok(QuestTransitionOutcome::Refused(
+                            oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch
+                        )))
+                        && let Ok(Some(claim)) = world_callbacks::legacy_world_claim(callback)
+                        && self.root.reward_claim_is_claimed(
+                            self.character, self.holder, fence.item_fence(), claim.key.clone()
+                        ).await.is_ok_and(|claimed| claimed)
+                    {
+                        return UseDisposition::NothingToUse;
                     }
                     // Returning STEP callbacks emit their refusal after restoring
                     // the origin in refuse_quest_step. Only one owner emits it.
@@ -1388,22 +1482,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         let merchant_projected = if callback.effects.encounter.is_some() && !close {
-            let disposition = self.execute_quest_encounter(
-                runtime,
-                states,
-                actor,
-                session,
-                map,
-                callback,
-                key,
-                expected_revision,
-                after,
-                false,
-                cause,
-                personal_reservation.as_mut(),
-                projection.as_ref(),
-            );
+            let disposition = if let Some(kind) = coffin {
+                self.deliver_coffin(
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected_revision,
+                    after,
+                    cause,
+                    permit,
+                    fence,
+                    personal_reservation.as_mut(),
+                    kind,
+                )
+                .await
+            } else {
+                self.execute_quest_encounter(
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected_revision,
+                    after,
+                    false,
+                    cause,
+                    personal_reservation.as_mut(),
+                    projection.as_ref(),
+                )
+            };
             if disposition != UseDisposition::Committed {
+                if recover_ordinary_coffin
+                    && let Ok(mut pending) = self.states.quest_callbacks.records.lock()
+                {
+                    pending.remove(&session);
+                }
                 return disposition;
             }
             if !callback.starts_merchant_wave() {
@@ -1457,17 +1576,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 else {
                     return UseDisposition::Exhausted;
                 };
-                match projection.as_mut() {
-                    Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
-                        due,
-                        ..
-                    })
-                    | Some(crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
-                        reset: Some((due, _)),
-                        ..
-                    }) => *due = published_due,
-                    _ => {}
-                }
+                refresh_source_reset(projection.as_mut(), published_due);
             }
             if let Some(target) = &callback.effects.target_transform
                 && let Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
@@ -1551,6 +1660,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
             };
             if let Some(proof) = scene_moves {
+                if let Some(publication) = scene_publication {
+                    // This stage validates the original census without storing
+                    // a runtime guard or taking a stale carrier across custody I/O.
+                    if !close || runtime.stage_source_scene_relocations(proof).is_err() {
+                        return UseDisposition::Rejected;
+                    }
+                    let Some(scene) = map.facts.stage_scene_close(
+                        key,
+                        expected_revision,
+                        after,
+                        &passages,
+                        &replacements,
+                        projection.as_ref(),
+                    ) else {
+                        return UseDisposition::Rejected;
+                    };
+                    let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+                        return UseDisposition::Rejected;
+                    };
+                    // Any Character transition is already settled. The item
+                    // batch now owns reconciliation of this scene close.
+                    records.remove(&session);
+                    *publication = Some(super::scene_items::ScenePublication {
+                        map: scene,
+                        expected,
+                        fresh_effects,
+                        success_message,
+                    });
+                    return UseDisposition::Committed;
+                }
                 let committed = match runtime.commit_source_scene_relocations(proof, apply_scene) {
                     Ok(committed) => committed,
                     Err(error) => {
@@ -1560,31 +1699,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return UseDisposition::Rejected;
                     }
                 };
-                let now = self.owner_now().get();
-                for ((moved_actor, moved_session, before), after) in
-                    scene_observations.into_iter().zip(committed)
-                {
-                    if let Some(moved_session) = moved_session {
-                        states.stage_special_movement_step(
-                            runtime,
-                            map,
-                            moved_actor,
-                            moved_session,
-                            now,
-                            Some(before.position()),
-                            after.position(),
-                            optional_pvp,
-                        );
-                        states.stage_underwater_step(
-                            runtime,
-                            moved_actor,
-                            moved_session,
-                            now,
-                            underwater(map, before.position()),
-                            underwater(map, after.position()),
-                        );
-                    }
-                }
+                self.publish_scene_positions(
+                    runtime,
+                    states,
+                    map,
+                    optional_pvp,
+                    scene_observations.into_iter().zip(committed),
+                );
             } else if !merchant_projected
                 && !callback.is_read_only()
                 && !personal_claim_preserves_object
@@ -1741,5 +1862,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.states.chat.push_quest_feedback(session, &message);
         }
         UseDisposition::Committed
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn timed_removal_reserves_source_and_resets_at_publication() {
+        let mut projection = QuestCallbackProjection::TimedRemoval {
+            due: 100,
+            restore: crate::map::view::EntryFacts {
+                definition: oteryn_protocol_oteryn::world_map::MapDefinition::Item(
+                    std::num::NonZeroU32::MIN,
+                ),
+                terrain_kind: None,
+                appearance_id: 132,
+                blocks_projectile: false,
+                pickupable: false,
+                bound: true,
+                count: 1,
+                sub_type: 0,
+            },
+        };
+        assert_eq!(
+            shared_projection_target(Some(&projection), 42, true),
+            Ok(Some(42))
+        );
+        refresh_source_reset(Some(&mut projection), 200);
+        assert!(matches!(
+            projection,
+            QuestCallbackProjection::TimedRemoval { due: 200, .. }
+        ));
     }
 }

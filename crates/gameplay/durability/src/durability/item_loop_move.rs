@@ -21,7 +21,10 @@
 mod dreamer_ring;
 pub use dreamer_ring::DreamerRingTarget;
 mod altar_arrival;
-pub use altar_arrival::{AltarFieldRead, AltarArrivalReceipt, AltarArrivalTarget, PendingAltarBoss, PendingAltarRealization};
+pub use altar_arrival::{
+    AltarArrivalReceipt, AltarArrivalTarget, AltarFieldRead, PendingAltarBoss,
+    PendingAltarRealization,
+};
 
 mod elemental_arrival;
 pub use elemental_arrival::{ElementalArrivalProbe, ElementalArrivalTarget};
@@ -38,8 +41,12 @@ pub use floor_assembly::FloorAssemblyTarget;
 
 mod house;
 mod seed_drop;
+mod source_scene;
 mod subtree;
 pub use seed_drop::{SeedDropProbe, SeedDropTarget};
+pub use source_scene::{SourceSceneItemMove, SourceSceneReceipt};
+#[cfg(feature = "test-support")]
+pub use source_scene::with_lost_source_scene_commit_ack;
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_equipment::{EquipmentError, assert_current_equipment_in_transaction};
@@ -80,6 +87,7 @@ pub const ITEM_LOOP_DROP_REF_PREFIX: &[u8] = b"OTERYN_ITEM_LOOP_DROP/v1:";
 
 #[path = "container_sort.rs"]
 pub mod container_sort;
+pub mod managed_container_move;
 
 const KIND_NONE: i16 = 0;
 const KIND_MAIN: i16 = 1;
@@ -93,7 +101,7 @@ const KIND_INBOX: i16 = 6;
 const KIND_CUSTODY_NESTED: i16 = 7;
 #[path = "item_quick_loot.rs"]
 mod quick_loot;
-pub use quick_loot::is_loot_coin;
+pub use quick_loot::{QuickLootCommand, QuickLootInput, is_loot_coin};
 pub(super) use quick_loot::pouch_weight;
 #[path = "depot_move.rs"]
 mod depot_move;
@@ -231,6 +239,13 @@ pub trait ItemLoopContent: ItemWeightLookup {
     fn is_ammunition(&self, _definition: &TypedDefinitionRef) -> bool {
         false
     }
+    fn managed_item_category(
+        &self,
+        _definition: &TypedDefinitionRef,
+    ) -> Option<oteryn_gameplay_items::quick_loot::LootCategory> {
+        None
+    }
+
     fn loot_category(
         &self,
         _definition: &TypedDefinitionRef,
@@ -333,7 +348,7 @@ fn definition_of(row: &sqlx::postgres::PgRow) -> LoopResult<TypedDefinitionRef> 
 }
 
 /// The per-CommandRef serialization point of the loop writer and its replay read.
-async fn lock_loop_command(
+pub(super) async fn lock_loop_command(
     tx: &mut Transaction<'_, Postgres>,
     command: CommandRef,
 ) -> std::result::Result<(), sqlx::Error> {
@@ -642,11 +657,15 @@ async fn read_carried_weight(
                 c.cycle \
            FROM carried c JOIN game_item_instances i USING (item_instance_id) \
           ORDER BY i.item_instance_id FOR UPDATE OF i";
-    let sql = if lock { sql } else { sql.trim_end_matches(" FOR UPDATE OF i") };
+    let sql = if lock {
+        sql
+    } else {
+        sql.trim_end_matches(" FOR UPDATE OF i")
+    };
     let rows = sqlx::query(sql)
-    .bind(character.as_bytes().as_slice())
-    .fetch_all(&mut **tx)
-    .await?;
+        .bind(character.as_bytes().as_slice())
+        .fetch_all(&mut **tx)
+        .await?;
     let mut seen = std::collections::BTreeSet::new();
     let mut total = 0_u64;
     for row in rows {
@@ -1053,6 +1072,12 @@ async fn plan_loop_destination<C: ItemLoopContent>(
     })
 }
 
+#[derive(Clone, Copy)]
+enum MoveBatch {
+    QuickLoot(quick_loot::MoveContext),
+    Managed(i16),
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn apply_loop_move<C: ItemLoopContent>(
     tx: &mut Transaction<'_, Postgres>,
@@ -1065,9 +1090,36 @@ async fn apply_loop_move<C: ItemLoopContent>(
     request: &LoopMoveRequest,
     intent: &[u8],
     depot: Option<DepotMove>,
-    quick: Option<quick_loot::MoveContext>,
+    batch: Option<MoveBatch>,
     search: Option<i16>,
     house: Option<&house::HouseLoopContext>,
+) -> LoopResult<LoopMoveReceipt> {
+    apply_loop_move_with_source_policy(
+        tx, permit, record, node, fence, command, content, request, intent, depot, batch, search,
+        house, false,
+    )
+    .await
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one transaction binds the source, destination, session and custody policy"
+)]
+async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
+    tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
+    record: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+    content: &C,
+    request: &LoopMoveRequest,
+    intent: &[u8],
+    depot: Option<DepotMove>,
+    batch: Option<MoveBatch>,
+    search: Option<i16>,
+    house: Option<&house::HouseLoopContext>,
+    source_scene: bool,
 ) -> LoopResult<LoopMoveReceipt> {
     let character = fence.character_id;
     let scope = fence.runtime_scope;
@@ -1108,7 +1160,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
         return refuse(LoopMoveRefusal::Stale);
     };
     let row = sqlx::query(
-        "SELECT e.character_id::text AS entry_character, \
+        "SELECT e.character_id::text AS entry_character, e.parent_item_instance_id::text AS entry_parent, \
                 d.character_id::text AS depot_character, d.town_id, d.box_number, \
                 x.character_id::text AS inbox_character, \
                 n.parent_item_instance_id::text AS nested_parent, \
@@ -1116,6 +1168,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
                 EXISTS(SELECT 1 FROM game_item_mint_receipts cm WHERE cm.item_instance_id=i.item_instance_id AND cm.loot_purpose_key='CORPSE_MATERIALIZATION') AS native_corpse, \
                 game_elemental_corpse_ground_source(i.item_instance_id) AS altar_corpse_source, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) AS loop_drop, \
+                i.definition_production_key=$2 AND game_item_loop_map_mint_source(i.item_instance_id) AS fixed_map_cask, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) \
                 OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) OR game_item_plain_corpse_source(i.item_instance_id) AS loop_pickup, \
                 game_item_loop_native_corpse_source(i.item_instance_id) AS native_corpse \
@@ -1128,6 +1181,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
           WHERE i.item_instance_id = encode($1,'hex')::uuid",
     )
     .bind(request.item.as_slice())
+    .bind(super::map_item_mint::MAP_DISPENSER_KEY)
     .fetch_one(&mut **tx)
     .await?;
     let entry_character = optional_uuid(row.try_get("entry_character")?)?;
@@ -1144,8 +1198,19 @@ async fn apply_loop_move<C: ItemLoopContent>(
     }
     let depot_character = optional_uuid(row.try_get("depot_character")?)?;
     let inbox_character = optional_uuid(row.try_get("inbox_character")?)?;
-    let source = if let Some(context) = quick {
-        quick_loot::assert_corpse_source(tx, fence, request.item, context).await?;
+    let quick_source = match batch {
+        Some(MoveBatch::QuickLoot(context)) => Some(context.source),
+        _ => None,
+    };
+    if let Some(quick_loot::MoveSource::Carried(expected)) = quick_source {
+        let main = entry_character == Some(*character.as_bytes())
+            && optional_uuid(row.try_get("entry_parent")?)? == Some(expected);
+        if !main && nested_parent != Some(expected) {
+            return refuse(LoopMoveRefusal::Stale);
+        }
+    }
+    let source = if let Some(quick_loot::MoveSource::Corpse { id, cell }) = quick_source {
+        quick_loot::assert_corpse_source(tx, fence, request.item, id, cell).await?;
         SourceKind::Corpse
     } else if search.is_some() && depot_character.is_none() {
         // Depot search: an Inbox root, or an entry nested under a depot or Inbox root.
@@ -1198,11 +1263,18 @@ async fn apply_loop_move<C: ItemLoopContent>(
         {
             return refuse(LoopMoveRefusal::Stale);
         }
+        // Materializing a static dispenser for charges does not grant Ground relocation.
+        if row.try_get::<bool, _>("fixed_map_cask")? {
+            return refuse(LoopMoveRefusal::NotSupported);
+        }
         let native_corpse = row.try_get::<bool, _>("native_corpse")?;
         if native_corpse && !matches!(request.destination, LoopDestination::Ground(_)) {
             return refuse(LoopMoveRefusal::NotSupported);
         }
-        if !row.try_get::<bool, _>("loop_pickup")? && !native_corpse && !row.try_get::<bool, _>("altar_corpse_source")? {
+        if !row.try_get::<bool, _>("loop_pickup")?
+            && !native_corpse
+            && !row.try_get::<bool, _>("altar_corpse_source")?
+        {
             return refuse(LoopMoveRefusal::NotSupported);
         }
         let source_plain_corpse: bool = row.try_get("source_plain_corpse")?;
@@ -1220,20 +1292,31 @@ async fn apply_loop_move<C: ItemLoopContent>(
             let loop_drop: bool = row.try_get("loop_drop")?;
             // A corpse MINT binds the native pin's revision-string digest.
             // Its first loop drop binds the underlying bundle revision instead.
-            let native_map = (native_corpse && !loop_drop) || source_plain_corpse
-
-                && source_map
-                    == format!(
-                        "sha256:{}",
-                        sha2::Sha256::digest(to.map_revision.as_bytes())
-                            .iter()
-                            .map(|byte| format!("{byte:02x}"))
-                            .collect::<String>()
-                    );
+            let native_map = (native_corpse && !loop_drop)
+                || source_plain_corpse
+                    && source_map
+                        == format!(
+                            "sha256:{}",
+                            sha2::Sha256::digest(to.map_revision.as_bytes())
+                                .iter()
+                                .map(|byte| format!("{byte:02x}"))
+                                .collect::<String>()
+                        );
+            let source_content: String = row.try_get("ground_content")?;
+            let source_context: Vec<u8> = row.try_get("ground_context")?;
+            // Same-map ordinary Ground items stay in the overlay across a content-only repin.
+            // The scene requalifies their exact definition against current Content,
+            // and this move writes the destination under the current pins.
+            let retained_drop = source_scene
+                && !native_corpse
+                && !source_plain_corpse
+                && source_map == to.map_revision
+                && source_content != to.content_revision;
             if (source_map != to.map_revision && !native_map)
-                || row.try_get::<String, _>("ground_content")? != to.content_revision
-                || ((loop_drop || native_corpse || source_plain_corpse)
-                    && row.try_get::<Vec<u8>, _>("ground_context")? != to.placement_context)
+                || (!retained_drop
+                    && (source_content != to.content_revision
+                        || ((loop_drop || native_corpse || source_plain_corpse)
+                            && source_context != to.placement_context)))
             {
                 return refuse(LoopMoveRefusal::Stale);
             }
@@ -1249,7 +1332,9 @@ async fn apply_loop_move<C: ItemLoopContent>(
     {
         return refuse(LoopMoveRefusal::Stale);
     }
-    let facts = if row.try_get::<bool, _>("native_corpse")? { content.loop_native_corpse_facts(&definition) } else if source == SourceKind::Ground
+    let facts = if row.try_get::<bool, _>("native_corpse")? {
+        content.loop_native_corpse_facts(&definition)
+    } else if source == SourceKind::Ground
         && matches!(request.destination, LoopDestination::Ground(_))
     {
         content.loop_ground_facts(&definition)
@@ -1271,6 +1356,23 @@ async fn apply_loop_move<C: ItemLoopContent>(
         return refuse(LoopMoveRefusal::NotSupported);
     }
     let (height, size) = loop_subtree(tx, request.item).await?;
+    if matches!(request.destination, LoopDestination::Ground(_)) {
+        let store_bound: bool = sqlx::query_scalar(
+            "WITH RECURSIVE tree(item,depth) AS (
+                 SELECT encode($1,'hex')::uuid,0
+                 UNION ALL
+                 SELECT n.item_instance_id,t.depth+1 FROM tree t
+                 JOIN game_item_nested_entries n ON n.parent_item_instance_id=t.item
+                 WHERE t.depth<8
+             )
+             SELECT EXISTS(SELECT 1 FROM tree t JOIN game_item_bindings b
+                           ON b.item_instance_id=t.item WHERE b.cause='STORE_PURCHASE')",
+        ).bind(request.item.as_slice()).fetch_one(&mut **tx).await?;
+        if store_bound {
+            return refuse(LoopMoveRefusal::Rejected);
+        }
+    }
+
     let PlannedDestination {
         target,
         receiver,
@@ -1465,11 +1567,11 @@ async fn apply_loop_move<C: ItemLoopContent>(
         "INSERT INTO game_item_loop_move_receipts (transaction_id, event_id, character_id, \
                 game_session_id, command_id, connection_generation, lease_generation, world_id, \
                 channel_id, scope_generation, content_digest, operation, line_count, intent, \
-                intent_sha256, depot_town, depot_box, quick_loot_ordinal, scope_kind, instance_id) \
+                intent_sha256, depot_town, depot_box, quick_loot_ordinal, scope_kind, instance_id, inbox_recovery_generation) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
                  encode($4,'hex')::uuid, $5::text::numeric(20,0), $6::text::numeric(20,0), \
                  $7::text::numeric(20,0), encode($8,'hex')::uuid, encode($9,'hex')::uuid, \
-                 $10::text::numeric(20,0), $11, $12, $13, $14, sha256($14), $15, $16, $17, $18, encode($19,'hex')::uuid)",
+                 $10::text::numeric(20,0), $11, $12, $13, $14, sha256($14), $15, $16, $17, $18, encode($19,'hex')::uuid, $20::text::numeric)",
     )
     .bind(transaction_id.as_slice())
     .bind(event_id.as_slice())
@@ -1487,8 +1589,13 @@ async fn apply_loop_move<C: ItemLoopContent>(
     .bind(intent)
     .bind(depot.map(|access| i32::from(access.town)))
     .bind(depot.map(|access| i16::from(access.box_number)))
-    .bind(quick.map_or(search.unwrap_or(0), |q| q.ordinal))
+    .bind(match batch {
+        Some(MoveBatch::QuickLoot(context)) => context.ordinal,
+        Some(MoveBatch::Managed(ordinal)) => ordinal,
+        None => search.unwrap_or(0),
+    })
     .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
+    .bind((source == SourceKind::Inbox).then(|| record.recovery_generation.to_string()))
     .execute(&mut **tx)
     .await?;
     if let Some(context) = house {
@@ -1652,7 +1759,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     // Run the deferred proofs inside the attempt, so a violation is a refusal, not a commit error.
     // A quick-loot or depot-search batch proves each exact line before the next child may top
     // it up. Its terminal parent receipt and all other deferred guards still run at batch commit.
-    sqlx::query(if quick.is_some() || search.is_some() {
+    sqlx::query(if batch.is_some() || search.is_some() {
         "SET CONSTRAINTS game_item_loop_line_proven IMMEDIATE"
     } else {
         "SET CONSTRAINTS ALL IMMEDIATE"
@@ -2062,7 +2169,8 @@ impl DurabilityRoot {
                         }
                         let slot = load_slot(&mut tx, character_id).await?;
                         let main = slot.is_some_and(|slot| slot.item_instance_id == container);
-                        if !main && !matches!(loop_owner(&mut tx, container).await?,
+                        if !main
+                            && !matches!(loop_owner(&mut tx, container).await?,
                             Some((owner, depth)) if owner == *character_id.as_bytes()
                                 && (0..=ITEM_LOOP_DEPTH_MAX).contains(&depth))
                         {
@@ -2397,24 +2505,36 @@ impl DurabilityRoot {
 
 #[cfg(test)]
 mod split_capacity_tests {
+    use super::super::item_transfer::ItemStackClass;
     use super::*;
     use crate::bestiary_postgres_harness as harness;
-    use super::super::item_transfer::ItemStackClass;
 
     struct Content;
     impl ItemWeightLookup for Content {
-        fn generation_digest(&self) -> [u8; 32] { [1; 32] }
-        fn weight_of(&self, _: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> { Ok(1) }
+        fn generation_digest(&self) -> [u8; 32] {
+            [1; 32]
+        }
+        fn weight_of(&self, _: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
+            Ok(1)
+        }
     }
     impl ItemLoopContent for Content {
-        fn loop_content_digest(&self) -> [u8; 32] { [1; 32] }
+        fn loop_content_digest(&self) -> [u8; 32] {
+            [1; 32]
+        }
         fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
             Some(ItemDefinitionFacts {
-                definition: definition.clone(), weight: Some(1),
+                definition: definition.clone(),
+                weight: Some(1),
                 stack: if definition.production_key == "fixture:split.coin" {
-                    ItemStackClass::Stackable { proven_maximum: Some(100) }
-                } else { ItemStackClass::NonStackable },
-                container_capacity: (definition.production_key == "fixture:split.bag").then_some(20),
+                    ItemStackClass::Stackable {
+                        proven_maximum: Some(100),
+                    }
+                } else {
+                    ItemStackClass::NonStackable
+                },
+                container_capacity: (definition.production_key == "fixture:split.bag")
+                    .then_some(20),
                 container_slot_equip_pattern: true,
             })
         }
@@ -2422,7 +2542,9 @@ mod split_capacity_tests {
 
     #[test]
     fn external_split_planner_counts_one_incoming_leaf_at_tree_limit() -> harness::TestResult {
-        let Some(admin) = harness::configured_admin() else { return Ok(()); };
+        let Some(admin) = harness::configured_admin() else {
+            return Ok(());
+        };
         std::thread::Builder::new().stack_size(64 << 20).spawn(move || {
             let run = || -> harness::TestResult {
                 harness::runtime()?.block_on(async move {

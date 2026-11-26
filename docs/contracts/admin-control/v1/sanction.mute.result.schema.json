@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SanctionDecisionResult",
+  "type": "object",
+  "properties": {
+    "decision_revision": {
+      "$ref": "#/$defs/DecisionRevision"
+    },
+    "operation_id": {
+      "$ref": "#/$defs/EnforcementId"
+    },
+    "profile": {
+      "$ref": "#/$defs/MuteProfile"
+    },
+    "runtime_effect": {
+      "$ref": "#/$defs/RestrictionEffect"
+    },
+    "sanction_state": {
+      "$ref": "#/$defs/ActiveState"
+    },
+    "sanction_stream_id": {
+      "$ref": "#/$defs/EnforcementId"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "operation_id",
+    "sanction_stream_id",
+    "decision_revision",
+    "profile",
+    "sanction_state",
+    "runtime_effect"
+  ],
+  "$defs": {
+    "ActiveState": {
+      "type": "string",
+      "enum": [
+        "active"
+      ]
+    },
+    "DecisionRevision": {
+      "type": "integer",
+      "format": "uint64",
+      "maximum": 9007199254740991,
+      "minimum": 1
+    },
+    "EnforcementId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "MuteProfile": {
+      "type": "string",
+      "enum": [
+        "mute"
+      ]
+    },
+    "RestrictionEffect": {
+      "type": "string",
+      "enum": [
+        "online_applied",
+        "on_next_admission",
+        "none"
+      ]
+    }
+  }
+}

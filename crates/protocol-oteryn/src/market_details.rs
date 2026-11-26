@@ -2,7 +2,10 @@
 use crate::charm_wire::{push_message_field, read_bytes, read_varint};
 use crate::world_interaction::WorldInteractionWireError as Error;
 use serde::{Deserialize, Serialize};
+pub const CAPABILITY_MARKET_CATALOGUE_PRESENTATION_V1: u32 = 588;
 pub const COMMAND_TYPE_MARKET_DETAILS: u32 = 6126;
+/// The statistics query has exhausted its per-session request window.
+pub const STATISTICS_RATE_LIMITED: u8 = 15;
 pub const PAGE_SIZE: usize = 32;
 pub const MAX_REPLY: usize = 32 * 1024;
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -15,7 +18,17 @@ pub struct Filter {
     pub maximum_level: Option<u16>,
     pub forge_class: Option<u8>,
     pub depot_only: bool,
+    #[serde(
+        default,
+        deserialize_with = "read_tier",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub forge_tier: Option<u8>,
 }
+fn read_tier<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<u8>, D::Error> {
+    u8::deserialize(deserializer).map(Some)
+}
+
 impl Filter {
     pub fn valid(&self) -> bool {
         self.search.len() <= 80
@@ -59,6 +72,15 @@ pub struct Ware {
     pub level: Option<u16>,
     pub forge_class: Option<u8>,
     pub depot_units: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub appearance: Option<Artwork>,
+}
+/// Object artwork bound to the active client artifact.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Artwork {
+    pub catalogue_digest: [u8; 32],
+    pub object_appearance_id: std::num::NonZeroU16,
 }
 impl Filter {
     pub fn matches(&self, item: &Ware) -> bool {
@@ -81,6 +103,8 @@ impl Filter {
                 .maximum_level
                 .is_none_or(|v| item.level.is_some_and(|n| n <= v))
             && self.forge_class.is_none_or(|v| item.forge_class == Some(v))
+            // The admitted Market cohort currently contains only default-tier wares.
+            && self.forge_tier.is_none_or(|tier| tier == 0)
             && (!self.depot_only || item.depot_units > 0)
     }
 }
@@ -318,6 +342,7 @@ mod tests {
             level: Some(50),
             forge_class: Some(4),
             depot_units: 7,
+            appearance: None,
         };
         let filter = Filter {
             search: "BLADE".into(),
@@ -327,6 +352,7 @@ mod tests {
             maximum_level: Some(50),
             forge_class: Some(4),
             depot_only: true,
+            forge_tier: None,
         };
         assert!(filter.matches(&ware));
         for other in [
@@ -357,6 +383,7 @@ mod tests {
         }
         assert!(!filter.matches(&Ware {
             depot_units: 0,
+            appearance: None,
             ..ware
         }));
         let stats = Statistics {
@@ -425,6 +452,7 @@ mod tests {
             level: None,
             forge_class: None,
             depot_units: 0,
+            appearance: None,
         };
         assert!(
             !Filter {

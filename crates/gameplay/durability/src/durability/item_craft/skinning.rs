@@ -16,7 +16,7 @@ pub struct SkinningRequest {
 
 pub struct SkinningOutcome {
     pub disposition: UseDisposition,
-    /// Present for a newly committed rabbit attempt, including zero feet on failure.
+    /// Present for a committed rabbit attempt, including zero feet on failure and receipt replay.
     pub rabbit_feet: Option<u32>,
 }
 
@@ -26,6 +26,32 @@ impl From<UseDisposition> for SkinningOutcome {
             disposition,
             rabbit_feet: None,
         }
+    }
+}
+
+impl SkinningOutcome {
+    fn committed_from_receipt(
+        corpse_key: Option<&str>,
+        outputs: &Value,
+    ) -> Result<Self, DurabilityError> {
+        let rabbit_feet = if corpse_key == Some("oteryn:item.tibia.i4301") {
+            let count = match outputs.as_array().map(Vec::as_slice) {
+                Some([]) => 0,
+                Some([output]) => output["count"]
+                    .as_u64()
+                    .and_then(|count| u32::try_from(count).ok())
+                    .filter(|count| (1..=2).contains(count))
+                    .ok_or(DurabilityError::InvalidStoredState)?,
+                _ => return Err(DurabilityError::InvalidStoredState),
+            };
+            Some(count)
+        } else {
+            None
+        };
+        Ok(Self {
+            disposition: UseDisposition::Committed,
+            rabbit_feet,
+        })
     }
 }
 
@@ -90,18 +116,32 @@ impl DurabilityRoot {
             super::super::character_authority::assert_recovery_fence(&mut tx,&record).await?;
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:item-craft:' || encode($1,'hex') || ':' || $2,0))")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.craft.command.command_id().get().to_string()).execute(&mut **tx).await?;
-            let previous:Option<(Vec<u8>,Vec<u8>)>=sqlx::query_as("SELECT intent,uuid_send(character_id) FROM game_item_craft_records WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
+            let previous=sqlx::query(
+                "SELECT c.intent,uuid_send(c.character_id) AS character_id,
+                        s.before_item->>'definition_production_key' AS corpse_key,c.outputs
+                 FROM game_item_craft_records c LEFT JOIN game_corpse_skinning_records s USING(transaction_id)
+                 WHERE c.game_session_id=encode($1,'hex')::uuid AND c.command_id=$2::text::numeric")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.craft.command.command_id().get().to_string()).fetch_optional(&mut **tx).await?;
-            if let Some((intent,character))=previous {
-                let result=if intent==request.craft.intent && character==fence.character_id.as_bytes() { UseDisposition::Committed } else { UseDisposition::Rejected };
-                tx.commit(deadline).await?; return Ok(Some(result.into()));
+            if let Some(row)=previous {
+                let intent: Vec<u8> = row.try_get("intent")?;
+                let character: Vec<u8> = row.try_get("character_id")?;
+                let result=if intent==request.craft.intent && character==fence.character_id.as_bytes() {
+                    let corpse_key: Option<String> = row.try_get("corpse_key")?;
+                    SkinningOutcome::committed_from_receipt(corpse_key.as_deref(), &row.try_get("outputs")?)?
+                } else {
+                    UseDisposition::Rejected.into()
+                };
+                tx.commit(deadline).await?; return Ok(Some(result));
             }
             if probe { tx.commit(deadline).await?; return Ok(None); }
             if assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(request.craft.command),context.1.loop_content_digest()).await.is_err() {
                 return Ok(Some(UseDisposition::Rejected.into()));
             }
             let mut attempt = Attempt { request: &request, catalogue: context.2, rabbit_feet: None };
-            let disposition = super::write_with_skinning(&mut tx,context.3,fence,&request.craft,context.0,context.1,Some(&mut attempt)).await?;
+            let disposition = super::write(
+                &mut tx, context.3, fence, &request.craft, context.0, context.1,
+                super::CraftVariant::Skinning(&mut attempt),
+            ).await?;
             if disposition == UseDisposition::Committed {
                 tx.commit(deadline).await?;
                 return Ok(Some(SkinningOutcome { disposition, rabbit_feet: attempt.rabbit_feet }));
@@ -316,7 +356,9 @@ pub(super) async fn transform(
 
 #[cfg(test)]
 mod tests {
-    use super::chance_numerator;
+    use super::{DurabilityError, SkinningOutcome, UseDisposition, chance_numerator};
+    use serde_json::json;
+
     #[test]
     fn scavenge_stages_increase_relative_probability_exactly_and_cap_at_certainty() {
         assert_eq!(chance_numerator(7_000, 0), 70_000_000);
@@ -325,5 +367,22 @@ mod tests {
         assert_eq!(chance_numerator(7_000, 12_000), 154_000_000);
         assert_eq!(chance_numerator(50_000, 12_000), 1_000_000_000);
         assert_eq!(chance_numerator(1, 6_001), 16_001);
+    }
+
+    #[test]
+    fn rabbit_skinning_replays_the_persisted_foot_count() -> Result<(), DurabilityError> {
+        for (outputs, count) in [
+            (json!([]), 0),
+            (json!([{"count":1}]), 1),
+            (json!([{"count":2}]), 2),
+        ] {
+            let replay =
+                SkinningOutcome::committed_from_receipt(Some("oteryn:item.tibia.i4301"), &outputs)?;
+            assert_eq!(replay.disposition, UseDisposition::Committed);
+            assert_eq!(replay.rabbit_feet, Some(count));
+        }
+        let replay = SkinningOutcome::committed_from_receipt(None, &json!([]))?;
+        assert_eq!(replay.rabbit_feet, None);
+        Ok(())
     }
 }

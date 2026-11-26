@@ -2,25 +2,25 @@
   "meaning": "Numbers are donor-attested (Canary/Crystal pinned revisions) and carry no Global verification; records without a closed donor derivation stay explicitly unavailable.",
   "profile_artifact": {
     "path": "content/creatures/definitions/spell-native-profiles.json",
-    "record_count": 1871,
+    "record_count": 1877,
     "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
-    "sha256": "5b0531550dc98b86ad6767d3622367501019147dc7a6e7275fa7ef25295fa13e",
-    "source_definitions_sha256": "97b6be5d2d4d1de6f263393c696709b1bc00f0f7b41750f369b4b84c3b4afbcf"
+    "sha256": "ff39ce6d2c475a4c9041678148cdecab29647e46d22658238de30f61636061cd",
+    "source_definitions_sha256": "e22366bc0e78090447307d0ad71aa89528189cf03a94dc85f4c98630aac8d77c"
   },
   "qualification": "DONOR_ATTESTED_NOT_GLOBAL_VERIFIED",
   "records": {
-    "authored": 5099,
-    "count": 5779,
+    "authored": 5088,
+    "count": 5797,
     "path": "content/abilities/source-imports/monster-attack-authoring.jsonl",
     "schema": "OTERYN_MONSTER_ATTACK_AUTHORING/v1",
-    "sha256": "873014161c27cd6c61813efb81418fde9c1fdd086fe3a129d2648bf400bfdefd",
-    "unavailable": 680,
+    "sha256": "77d71ecd59660ec57a797907e05a0ffffb217d4055a81248c9ab455093f33684",
+    "unavailable": 709,
     "unavailable_by_reason": {
-      "attack_count_differs_from_donor": 24,
+      "attack_count_differs_from_donor": 32,
       "conflicting_creature_bindings": 33,
       "donor_ability_has_no_effects": 36,
       "donor_health_conflict": 311,
-      "no_unique_donor_bundle": 272,
+      "no_unique_donor_bundle": 293,
       "source_provenance_ambiguous": 4
     }
   },

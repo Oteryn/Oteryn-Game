@@ -52,10 +52,10 @@ class NativeGoalLootProof(unittest.TestCase):
 
     def test_selected_source_tables_have_complete_finite_custody(self):
         ids = native.selected()
-        self.assertEqual(len(ids), 87)
-        self.assertTrue({44158, 3082, 2824, 3031} <= ids)
+        self.assertEqual(len(ids), 89)
+        self.assertTrue({44158, 3082, 2824, 3031, 3035, 13429} <= ids)
         items = definitions()
-        self.assertEqual(len(items), 87)
+        self.assertEqual(len(items), 89)
         self.assertEqual(set(items), {f'oteryn:item.tibia.i{i}' for i in ids})
         self.assertTrue(all(d['materializable'] for d in items.values()))
         amulet = items['oteryn:item.tibia.i3082']
@@ -103,11 +103,13 @@ class NativeGoalLootProof(unittest.TestCase):
     def test_exact_full_charge_admission_preserves_source_definition_and_unowned_data(self):
         item = copy.deepcopy(definitions()['oteryn:item.tibia.i3082'])
         item['materializable'] = False
-        before = copy.deepcopy(item)
+        expected = copy.deepcopy(item)
+        expected['materializable'] = True
+        expected['semantics']['container'] = {'state': 'NOT_APPLICABLE'}
+        expected['semantics']['stack']['value']['stack_max'] = {'state': 'NOT_APPLICABLE'}
+        expected['semantics']['temporal'] = {'state': 'NOT_APPLICABLE'}
         native.apply_admissions([item])
-        self.assertTrue(item['materializable'])
-        for group in ('physical', 'weapon', 'charges', 'use_transform', 'temporal'):
-            self.assertEqual(item['semantics'][group], before['semantics'][group])
+        self.assertEqual(item, expected)
         self.assertEqual(item['semantics']['charges']['value']['count']['value'], 50)
 
 

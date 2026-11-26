@@ -191,7 +191,7 @@ pub struct ItemMintCause {
     loot_table: TypedDefinitionRef,
     purpose_key: String,
     draw_ordinal: u32,
-    corpse_race: Option<crate::domain::bestiary::BestiaryRace>,
+    corpse_race: Option<TypedDefinitionRef>,
 }
 
 impl ItemMintCause {
@@ -250,11 +250,23 @@ impl ItemMintCause {
 
     /// Bind source Creature identity only to the committed death's own corpse.
     /// Skinning never derives race from a shared corpse Item definition.
-    pub fn with_corpse_race(mut self, race: crate::domain::bestiary::BestiaryRace) -> Result<Self> {
-        if self.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY || self.draw_ordinal != 0 {
+    pub fn with_corpse_race(self, race: crate::domain::bestiary::BestiaryRace) -> Result<Self> {
+        self.with_corpse_source(TypedDefinitionRef {
+            family: "Creature".into(),
+            production_key: race.key().into(),
+            revision_ref: race.definition_revision().into(),
+        })
+    }
+
+    pub fn with_corpse_source(mut self, source: TypedDefinitionRef) -> Result<Self> {
+        if self.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY
+            || self.draw_ordinal != 0
+            || source.family != "Creature"
+        {
             return Err(ItemMintError::InvalidInput);
         }
-        self.corpse_race = Some(race);
+        validate_definition(&source)?;
+        self.corpse_race = Some(source);
         Ok(self)
     }
 
@@ -1090,6 +1102,7 @@ impl DurabilityRoot {
                 top_damage_character_id,
                 boss,
                 None,
+                None,
             )
             .await?;
         outcomes.pop().ok_or(ItemMintError::InvalidInput)
@@ -1111,6 +1124,7 @@ impl DurabilityRoot {
         top_damage_character_id: [u8; 16],
         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
         tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
+        bank_robbery: Option<[u8; 16]>,
     ) -> Result<Vec<ItemMintOutcome>> {
         self.commit_kill_loot_mints_inner(
             permit,
@@ -1121,6 +1135,7 @@ impl DurabilityRoot {
             Some(top_damage_character_id),
             boss,
             tutorial_corruptor,
+            bank_robbery,
             None,
         )
         .await
@@ -1143,6 +1158,7 @@ impl DurabilityRoot {
                 node,
                 candidate,
                 &mut [],
+                None,
                 None,
                 None,
                 None,
@@ -1172,6 +1188,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
             Some(source),
         )
         .await
@@ -1191,6 +1208,7 @@ impl DurabilityRoot {
         top_damage_character_id: Option<[u8; 16]>,
         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
         tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
+        bank_robbery: Option<[u8; 16]>,
         source: Option<source_death::SourceCorpseMintProof<'_>>,
     ) -> Result<Vec<ItemMintOutcome>> {
         if candidate.request.cause.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY {
@@ -1391,6 +1409,18 @@ impl DurabilityRoot {
                         return Ok(Err(ItemMintError::AuthorityRejected));
                     }
 
+                    let robbery_epoch = if let Some(firing) = bank_robbery {
+                        let scope = frozen.request.cause.death.runtime_scope;
+                        let Some(epoch) = super::world_event::bank_robbery::claim_death(
+                            &mut tx, scope, firing,
+                        ).await? else {
+                            return Ok(Err(ItemMintError::AuthorityRejected));
+                        };
+                        Some(epoch)
+                    } else {
+                        None
+                    };
+
                     // Capacity is checked only for a fresh Ground root, after the
                     // historical receipt and the real current writer fence above.
                     let death = &frozen.request.cause.death;
@@ -1493,6 +1523,25 @@ impl DurabilityRoot {
                             occurred_at_unix_ms: child.occurred_at_unix_ms,
                             envelope_sha256: child.envelope_sha256,
                         }));
+                    }
+                    if let Some(epoch) = robbery_epoch {
+                        let mut bags = Vec::new();
+                        for (child, placement) in &frozen_children {
+                            if child.request.item.production_key == super::world_event::bank_robbery::BAG {
+                                if child.request.quantity != 1
+                                    || placement.corpse_item_instance_id != frozen.item_instance_id
+                                {
+                                    return Ok(Err(ItemMintError::InvalidInput));
+                                }
+                                bags.push((placement.placement_ordinal, child.item_instance_id));
+                            }
+                        }
+                        if bags.is_empty() {
+                            return Ok(Err(ItemMintError::InvalidInput));
+                        }
+                        super::world_event::bank_robbery::bind_bags(
+                            &mut tx, frozen.request.cause.death.world_id, &epoch, &bags,
+                        ).await?;
                     }
                     if let Some(claim) = &tutorial_corruptor {
                         super::tutorial_corruptor::consume_in_transaction(&mut tx, &node, claim)
@@ -1920,8 +1969,8 @@ fn intent_binding_format(
     // Absent provenance retains the byte layout of historical reservations.
     if let Some(race) = &cause.corpse_race {
         push_text(&mut semantic, b"corpse-source-race.v1")?;
-        push_text(&mut semantic, race.key().as_bytes())?;
-        push_text(&mut semantic, race.definition_revision().as_bytes())?;
+        push_text(&mut semantic, race.production_key.as_bytes())?;
+        push_text(&mut semantic, race.revision_ref.as_bytes())?;
     }
     let digest: [u8; 32] = Sha256::digest(&semantic).into();
     let mut binding = [0_u8; 33];
@@ -2454,8 +2503,8 @@ async fn insert_receipt(
         )
         .bind(frozen.item_instance_id.as_slice())
         .bind(frozen.transaction_id.as_slice())
-        .bind(race.key())
-        .bind(race.definition_revision())
+        .bind(&race.production_key)
+        .bind(&race.revision_ref)
         .execute(&mut **tx)
         .await?;
     }
@@ -3232,14 +3281,11 @@ mod tests {
                         .expect("different Instance")
             },
             |r| {
-                r.cause.corpse_race = Some(
-                    crate::domain::bestiary::BestiaryRace::new(
-                        "oteryn:creature.dragon",
-                        "dragon-r1",
-                        vec![5, 50, 500],
-                    )
-                    .expect("race"),
-                )
+                r.cause.corpse_race = Some(TypedDefinitionRef {
+                    family: "Creature".into(),
+                    production_key: "oteryn:creature.dragon".into(),
+                    revision_ref: "dragon-r1".into(),
+                })
             },
             |r| {
                 r.cause.death.scope_ownership_generation =

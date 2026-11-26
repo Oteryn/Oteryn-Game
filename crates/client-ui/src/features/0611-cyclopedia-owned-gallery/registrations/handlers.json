@@ -1,0 +1,16 @@
+{
+  "mechanic": "0611-cyclopedia-owned-gallery",
+  "kind": "handlers",
+  "id": "0611-cyclopedia-owned-gallery-reply",
+  "status": "unsupported",
+  "commands": [],
+  "direction": "server_to_client",
+  "reason": "The ownership and acquisition-source gallery is pending client wiring.",
+  "not_applicable": {
+    "state": "The server returns a request-scoped page.",
+    "protocol": "The ownership and acquisition-source gallery is pending client wiring.",
+    "view": "The ownership and acquisition-source gallery is pending client wiring.",
+    "input": "The ownership and acquisition-source gallery is pending client wiring.",
+    "settings": "The capability adds no client setting."
+  }
+}

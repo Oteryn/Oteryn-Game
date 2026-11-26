@@ -367,9 +367,12 @@ pub struct NativeItemAttributes {
     pub blocks_projectile: Option<bool>,
     pub immovable_block_solid: Option<bool>,
     /// Missing is Unknown; only a source-qualified recipe may assert a non-damaging field.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub field_condition: Option<crate::content::field_condition::QualifiedFieldCondition>,
     /// Explicit activated source/config policy; absence stays Unknown.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rune_consumption: Option<NativeRuneConsumption>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub field_replaceable: Option<bool>,
     pub has_height: Option<bool>,
     /// Crystal items.cpp:203-208: clip/top/bottom select orders 1/3/2.
@@ -513,6 +516,50 @@ fn qualified_item_policy<'a>(
                 && p.production_definition.revision_ref == revision)
     })?;
     Some(QualifiedItemPolicy { digest, record })
+}
+
+/// Resolve stack facts for every loot route from the same exact native Item policy.
+/// Older sections may omit these fields. Keep their facts for definitions that have
+/// no matching materializable native profile.
+fn apply_loot_item_stack_policies(
+    loot: &mut super::creature_reward::LootTablesSection,
+    profiles: &ItemProfilesDocument,
+) {
+    use super::ReferenceItemField as Field;
+    let native: BTreeMap<_, _> = profiles
+        .records
+        .iter()
+        .filter(|record| record.admission.materializable)
+        .map(|record| {
+            let definition = &record.production_definition;
+            (
+                (
+                    definition.family.as_str(),
+                    definition.production_key.as_str(),
+                    definition.revision_ref.as_str(),
+                ),
+                record,
+            )
+        })
+        .collect();
+    for facts in loot.items.iter_mut().filter(|facts| facts.materializable) {
+        let item = &facts.item;
+        let Some(record) = native.get(&(
+            item.family.as_str(),
+            item.key.as_str(),
+            item.revision.as_str(),
+        )) else {
+            continue;
+        };
+        facts.stackable = record.admission.stack_class == NativeItemStackClass::StackCapable;
+        facts.stack_maximum = match &record.semantics.stack {
+            Field::Known(stack) if facts.stackable => match stack.stack_max {
+                Field::Known(maximum) => std::num::NonZeroU32::new(u32::from(maximum)),
+                _ => None,
+            },
+            _ => None,
+        };
+    }
 }
 
 impl PartialEq for NativeGameplayState {
@@ -1269,6 +1316,19 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("ITEMHOLD-Q Wiki identity collision"));
         }
+        let loot_bindings: Vec<super::project::ProjectV2SourceIdentityBinding> =
+            serde_json::from_slice(include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/cloot2-wiki-item-bindings.json"
+            ))
+            .map_err(|_| invalid("creature loot Wiki identity"))?;
+        for binding in loot_bindings {
+            if admitted
+                .insert(binding.external_id.clone(), binding)
+                .is_some()
+            {
+                return Err(invalid("creature loot Wiki identity collision"));
+            }
+        }
         // W02: Crystal201189f items.cpp:163-174 indexes ItemType by the exact
         // appearance.id. Appearance48416 is independently captured by
         // boss_reward_item_profiles.py; the existing canonical identity is reused.
@@ -1286,6 +1346,21 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("W02 Sugar corpse identity collision"));
         }
+        // Crystal's retained Lua and appearance IDs bind these carried Items
+        // and discharge targets outside the older binding inventory.
+        let cloot3_bindings: Vec<super::project::ProjectV2SourceIdentityBinding> =
+            serde_json::from_slice(include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/cloot3-item-bindings.json"
+            ))
+            .map_err(|_| invalid("CLOOT3 exact Item binding"))?;
+        for binding in cloot3_bindings {
+            if admitted
+                .insert(binding.external_id.clone(), binding)
+                .is_some()
+            {
+                return Err(invalid("CLOOT3 Item binding collision"));
+            }
+        }
         // Crystal 201189f8 appearances.dat and arbaziloth_fight.lua bind the
         // purple-fire projection to this exact Ground-only item identity.
         let arbaziloth_fire = serde_json::from_value(serde_json::json!({
@@ -1300,6 +1375,16 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             .is_some()
         {
             return Err(invalid("Arbaziloth fire identity collision"));
+        }
+        // The first and third loot slices independently qualify Spirited Soil.
+        // Register it once above and require the two exact bindings to agree.
+        let spirited_soil: super::project::ProjectV2SourceIdentityBinding =
+            serde_json::from_slice(include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/loot-slice-1-spirited-soil-binding.json"
+            ))
+            .map_err(|_| invalid("native gameplay Spirited Soil identity"))?;
+        if admitted.get(&spirited_soil.external_id) != Some(&spirited_soil) {
+            return Err(invalid("native gameplay Spirited Soil binding conflict"));
         }
         let cradle_profiles = qready1_cradle::profiles()?;
         for (id, record) in &cradle_profiles {
@@ -1366,7 +1451,9 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         m25_corpse_items::admit_exact_bindings(&mut admitted, &m25_items)?;
         source_reward_items.extend(m25_items);
         source_reward_items.extend(galthen_furniture::qualified_records()?);
-        source_reward_items.extend(galthen_loot::qualified_records()?);
+        let galthen_source = galthen_loot::qualified_records()?;
+        let galthen_global = galthen_loot::qualified_global_records(&galthen_source)?;
+        source_reward_items.extend(galthen_source);
         let item_detail_weights: BTreeMap<String, u32> = serde_json::from_slice(include_bytes!(
             "../../../../../tools/content-schema/native-gameplay/item-detail-weight-facts.json"
         ))
@@ -1401,7 +1488,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 .iter()
                 .find(|expected| expected.production_binding.external_id == binding.external_id)
             {
-                if record != expected {
+                if record != expected && galthen_global.get(&binding.external_id) != Some(record) {
                     // Accept the verified Global weight in addition to the historical
                     // donor record. Compare the entire profile in both cases.
                     use super::ReferenceItemField as F;
@@ -1785,9 +1872,12 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         None
     };
     // An older pin carries no loot section: every creature then has no loot binding.
-    let loot = is_v8
+    let mut loot = is_v8
         .then(|| super::creature_reward::LootTablesSection::decode(sections[11], &creatures))
         .transpose()?;
+    if let (Some(loot), Some(items)) = (&mut loot, &items) {
+        apply_loot_item_stack_policies(loot, items);
+    }
     let reward_table = Arc::new(
         super::creature_reward::CreatureRewardTable::from_pin_with_native_corpses(
             &creatures,
@@ -1808,6 +1898,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
     };
     let mut policies = CompiledCreaturePolicies::from_active_artifact(source_digest, records)
         .map_err(|_| invalid("native gameplay creature policy table"))?;
+    policies.bind_spawn_eligibility(&creatures);
     policies.bind_soul_war_health_callbacks(&creatures);
     Ok(DecodedNativeGameplay {
         baseline: sections[0],
@@ -2225,9 +2316,10 @@ pub mod test_support {
     mod activation_fixture;
     pub use activation_fixture::{
         activated_boss_slot_loot_fixture, activated_loop_monster,
-        activated_loop_monster_missing_child, activated_reward_boss_corpse_capacity_fixture,
-        activated_reward_boss_fixture, activated_with_custom_loot_tables,
-        activated_with_loot_tables, loop_monster_inner_digest, try_activate_input,
+        activated_loop_monster_missing_child, activated_nested_reward_boss_fixture,
+        activated_reward_boss_corpse_capacity_fixture, activated_reward_boss_fixture,
+        activated_with_custom_loot_tables, activated_with_loot_tables, loop_monster_inner_digest,
+        try_activate_input,
     };
 }
 
@@ -3817,6 +3909,136 @@ mod tests {
         invalid_section.progression = Some(pinned(b"{}"));
         assert!(compile_native_gameplay(baseline.compiled(), &invalid_section).is_err());
     }
+
+    #[test]
+    fn itemglob3_loaded_item_stats() {
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller.active().unwrap().native_gameplay().unwrap();
+        let armor = native
+            .item_policy("oteryn:item.tibia.i3361", "definition-r1")
+            .unwrap();
+        let forge = armor.record().authoring.forge.unwrap();
+        assert_eq!((forge.classification, forge.max_tier), (1, 1));
+        assert!(matches!(
+            &armor.record().semantics.protection,
+            crate::content::ReferenceItemField::Known(protection)
+                if protection.armor == crate::content::ReferenceItemField::Known(crate::content::ReferenceSignedPoints(4))
+        ));
+        for (id, pointer, value) in [
+            (
+                8063,
+                "/imbuement/value/slot_count/value",
+                serde_json::json!(1),
+            ),
+            (
+                8063,
+                "/skill_modifiers/value/modifiers/value/0/parameter/value/value",
+                serde_json::json!(2),
+            ),
+            (8078, "/weapon/value/defense/value", serde_json::json!(47)),
+            (
+                34088,
+                "/protection/value/resistances/value/0/kind",
+                serde_json::json!("HOLY"),
+            ),
+            (
+                34088,
+                "/equipment/value/patterns/value/0/level/value",
+                serde_json::json!(400),
+            ),
+            (
+                761,
+                "/use_requirements/value/min_level/value",
+                serde_json::json!(20),
+            ),
+        ] {
+            let policy = native
+                .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                .unwrap();
+            let semantics = serde_json::to_value(&policy.record().semantics).unwrap();
+            assert_eq!(
+                semantics.pointer(pointer),
+                Some(&value),
+                "Item {id} {pointer}"
+            );
+        }
+    }
+
+    #[test]
+    fn itemglob3_loaded_launcher_combat_values() {
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller.active().unwrap().native_gameplay().unwrap();
+        for (id, expected_range, expected_hit) in [(7438, 6, 3), (22866, 6, 3), (22867, 5, 3)] {
+            let launcher = native
+                .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                .unwrap();
+            assert!(
+                matches!(
+                    launcher.record().authoring.ranged,
+                    Some(crate::content::ProjectV2RangedWeapon::Distance { range_cells, hit_chance, .. })
+                        if (range_cells, hit_chance) == (expected_range, expected_hit)
+                ),
+                "launcher {id}: {:?}",
+                launcher.record().authoring.ranged
+            );
+        }
+    }
+
+    #[test]
+    fn production_crazed_beggar_reward_has_a_materializable_corpse() -> Result<(), String> {
+        let key = "oteryn:creature.crazed_beggar";
+        let world = test_source(1)
+            .map_err(|error| format!("{error:?}"))?
+            .world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("missing active native gameplay")?;
+        let profile = native
+            .creature_profiles()
+            .records
+            .iter()
+            .find(|record| record.profile.target.key == key)
+            .ok_or("missing Crazed Beggar profile")?;
+        let ProjectV2AuthoringProfileData::Creature(profile) = &profile.profile.data else {
+            return Err("expected a Creature profile".into());
+        };
+        let expected = profile
+            .details
+            .as_ref()
+            .and_then(|details| details.corpse_item.as_ref())
+            .ok_or("missing declared corpse")?;
+        let reward = native
+            .reward_table()
+            .row(key)
+            .map_err(|reason| format!("{key}: {}", reason.as_str()))?;
+        let corpse = reward.corpse_item.as_ref().ok_or("missing reward corpse")?;
+        assert_eq!(
+            (&corpse.production_key, &corpse.revision_ref),
+            (&expected.key, &expected.revision)
+        );
+        assert_eq!(
+            serde_json::to_value(expected.family).ok(),
+            Some(Value::from(corpse.family.as_str()))
+        );
+        assert_eq!(
+            u64::try_from(reward.xp_amount.get()).ok(),
+            profile.experience
+        );
+        let policy = native
+            .item_policy(&corpse.production_key, &corpse.revision_ref)
+            .ok_or("missing native corpse Item policy")?;
+        assert!(policy.record().admission.materializable);
+        assert_eq!(
+            policy.record().admission.legal_destinations,
+            [NativeItemDestination::Ground]
+        );
+        Ok(())
+    }
+
     #[test]
     fn production_manifest_activates_with_the_rat_reward_row() {
         let world = test_source(1).unwrap().world_id;
@@ -3829,17 +4051,105 @@ mod tests {
         );
         assert!(!rat.loot_table.entries.is_empty());
         assert!(rat.boss.is_none());
-        assert!(
-            native
-                .reward_table()
-                .row("oteryn:creature.ferumbras")
-                .is_err()
+        let ferumbras = native
+            .reward_table()
+            .row("oteryn:creature.ferumbras")
+            .unwrap();
+        assert_eq!(ferumbras.loot_table.entries.len(), 53);
+        assert_eq!(
+            ferumbras.loot_table_ref.as_ref().unwrap().production_key,
+            "oteryn:loot.creature.ferumbras"
         );
         let boss = native
             .reward_table()
             .boss("oteryn:creature.ferumbras")
             .unwrap();
         assert_eq!(boss.category.as_str(), "nemesis");
+    }
+    #[test]
+    fn legacy_loot_facts_use_active_item_stack_policy() -> Result<(), Box<dyn std::error::Error>> {
+        // The predecessor loot section omitted stackable for these admitted Items.
+        let mut loot: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/loot-tables.json"
+        ))?;
+        let legacy_keys = [
+            "oteryn:item.tibia.i37109",
+            "oteryn:item.tibia.i3577",
+            "oteryn:item.tibia.i3032",
+        ];
+        for facts in loot["items"].as_array_mut().ok_or("loot Item facts")? {
+            if legacy_keys.iter().any(|key| facts["item"]["key"] == *key) {
+                facts
+                    .as_object_mut()
+                    .ok_or("loot Item fact")?
+                    .remove("stackable");
+            }
+        }
+        let world = test_source(1)?.world_id;
+        let (controller, _) =
+            activated_with_custom_loot_tables(world, None, Some(&serde_json::to_vec(&loot)?));
+        let native = controller
+            .active()
+            .ok_or("active generation")?
+            .native_gameplay()
+            .ok_or("native gameplay")?;
+        let rewards = native.reward_table();
+        let wolf = rewards
+            .row("oteryn:creature.wolf")
+            .map_err(|reason| reason.as_str())?;
+        let boss = rewards
+            .row("oteryn:creature.glooth_fairy")
+            .map_err(|reason| reason.as_str())?;
+        let sliver = rewards.forge_sliver().ok_or("admitted Fiendish sliver")?;
+        let find_stack = |table: &crate::content::creature_reward::CreatureRewardRow, key| {
+            table.loot_table.entries.iter().any(|entry| {
+                entry.item.production_key == key && entry.max_count > 1 && entry.details.stackable
+            })
+        };
+        assert_eq!(
+            (
+                sliver.details.stackable,
+                find_stack(&wolf, legacy_keys[1]),
+                find_stack(&boss, legacy_keys[2])
+            ),
+            (true, true, true),
+            "Fiendish, ordinary, and private loot must all use the qualified Item stack class",
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn slice_three_manifest_activates_carried_rewards() {
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller.active().unwrap().native_gameplay().unwrap();
+        let row = native
+            .reward_table()
+            .row("oteryn:creature.spirit_overlord")
+            .unwrap();
+        assert!(row.loot_table.entries.iter().any(|entry| {
+            entry.item.production_key == "oteryn:item.tibia.i51276"
+                && entry.probability_ppm == Some(70_000)
+                && entry.details.stackable
+                && (entry.min_count, entry.max_count) == (1, 1)
+        }));
+        let source: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/cloot3-item-profiles.json"
+        ))
+        .unwrap();
+        for entry in source["records"].as_array().unwrap() {
+            let key = entry["production_definition"]["production_key"]
+                .as_str()
+                .unwrap();
+            let item = native.item_policy(key, "definition-r1").unwrap().record();
+            assert!(item.admission.materializable, "{key}");
+            assert!(
+                item.admission
+                    .legal_destinations
+                    .contains(&NativeItemDestination::CharacterInventory),
+                "{key}"
+            );
+        }
     }
     #[test]
     fn reward_boss_empty_corpse_does_not_admit_missing_private_loot() {
@@ -4618,12 +4928,38 @@ impl oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup
         revision: &str,
     ) -> Option<oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy>
     {
+        self.project_equipment_policy(key, revision, true)
+    }
+
+    fn worn_equipment_policy(
+        &self,
+        key: &str,
+        revision: &str,
+    ) -> Option<oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy>
+    {
+        self.project_equipment_policy(key, revision, false)
+    }
+}
+
+impl NativeGameplayState {
+    fn project_equipment_policy(
+        &self,
+        key: &str,
+        revision: &str,
+        require_eligibility: bool,
+    ) -> Option<oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy>
+    {
         use super::ReferenceItemField;
         let policy = self.item_policy(key, revision)?;
         let semantics = &policy.record().semantics;
         let claims = [1, 2, 3, 4, 5, 6, 7, 8, 10]
             .into_iter()
-            .map(|slot| (slot, projected_equipment_claims(semantics, slot)))
+            .map(|slot| {
+                (
+                    slot,
+                    projected_equipment_claims(semantics, slot, require_eligibility),
+                )
+            })
             .collect();
         let capacity = match &semantics.container {
             ReferenceItemField::Known(container) => match container.capacity {
@@ -4643,6 +4979,7 @@ impl oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup
 fn projected_equipment_claims(
     semantics: &super::ReferenceItemSemantics,
     slot: u8,
+    require_eligibility: bool,
 ) -> Result<oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentClaims, &'static str> {
     use super::{ReferenceBaseVocation, ReferenceEquipmentSlot, ReferenceItemField};
     use oteryn_gameplay_domain::domain::equipment_policy_abi::{
@@ -4682,11 +5019,16 @@ fn projected_equipment_claims(
     let ReferenceItemField::Known(groups) = &pattern.mutually_exclusive_groups else {
         return Err(rejected("unknown equipment groups"));
     };
-    let ReferenceItemField::Known(level) = pattern.level else {
-        return Err(rejected("unknown equipment required level"));
-    };
-    let ReferenceItemField::Known(vocations) = &pattern.vocations else {
-        return Err(rejected("unknown equipment required vocations"));
+    let (level, vocations) = if require_eligibility {
+        let ReferenceItemField::Known(level) = pattern.level else {
+            return Err(rejected("unknown equipment required level"));
+        };
+        let ReferenceItemField::Known(vocations) = &pattern.vocations else {
+            return Err(rejected("unknown equipment required vocations"));
+        };
+        (level, vocations.as_slice())
+    } else {
+        (0, &[][..])
     };
     let mut occupied = vec![slot];
     for value in additional {
@@ -4740,7 +5082,7 @@ mod equipment_projection_tests {
         use ReferenceItemField::{Known, Unknown};
         let mut semantics: ReferenceItemSemantics =
             serde_json::from_str("{}").expect("unknown semantics");
-        assert!(projected_equipment_claims(&semantics, 5).is_err());
+        assert!(projected_equipment_claims(&semantics, 5, true).is_err());
         let pattern = ReferenceEquipmentPattern {
             pattern_id: 1,
             primary_slot: Known(ReferenceEquipmentSlot::Weapon),
@@ -4753,25 +5095,29 @@ mod equipment_projection_tests {
         semantics.equipment = Known(ReferenceItemEquipment {
             patterns: Known(vec![pattern.clone()]),
         });
-        let claims = projected_equipment_claims(&semantics, 5).expect("qualified weapon");
+        let claims = projected_equipment_claims(&semantics, 5, true).expect("qualified weapon");
         assert_eq!(claims.slots, vec![5, 6]);
         assert_eq!(claims.level, 20);
         assert_eq!(
             claims.vocations,
             vec![oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentBaseVocation::Paladin]
         );
-        assert!(projected_equipment_claims(&semantics, 6).is_err());
+        assert!(projected_equipment_claims(&semantics, 6, true).is_err());
         let mut incomplete = pattern.clone();
         incomplete.level = Unknown;
+        incomplete.vocations = Unknown;
         semantics.equipment = Known(ReferenceItemEquipment {
             patterns: Known(vec![incomplete]),
         });
-        assert!(projected_equipment_claims(&semantics, 5).is_err());
+        assert!(projected_equipment_claims(&semantics, 5, true).is_err());
+        let worn = projected_equipment_claims(&semantics, 5, false).expect("worn reservations");
+        assert_eq!(worn.slots, vec![5, 6]);
+        assert!(projected_equipment_claims(&semantics, 6, false).is_err());
         semantics.equipment = Known(ReferenceItemEquipment {
             patterns: Known(vec![pattern.clone(), pattern]),
         });
         assert_eq!(
-            projected_equipment_claims(&semantics, 5).err(),
+            projected_equipment_claims(&semantics, 5, true).err(),
             Some("equipment ambiguous source pattern")
         );
     }
@@ -4797,7 +5143,7 @@ mod equipment_projection_tests {
                 .expect("profile record");
             let semantics: ReferenceItemSemantics =
                 serde_json::from_value(record["semantics"].clone()).expect("semantics");
-            let claims = projected_equipment_claims(&semantics, 5).expect(key);
+            let claims = projected_equipment_claims(&semantics, 5, true).expect(key);
             assert_eq!((claims.slots, claims.level), (vec![5], 0), "{key}");
             assert!(claims.vocations.is_empty(), "{key}");
         }

@@ -6,6 +6,7 @@ use super::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::OnceLock;
 
 #[cfg(test)]
 mod capture_tests;
@@ -517,6 +518,35 @@ impl RewardCallback {
                     })
             })
     }
+
+    /// A dialogue can advance its topic under the existing quest and Premium
+    /// guards while leaving durable progress and inventory unchanged.
+    fn is_guarded_topic_change(&self) -> bool {
+        if self.topic == self.next_topic
+            || self.storage.is_empty()
+            || self.storage.iter().any(|state| {
+                state.set_if.is_some()
+                    || state.add.is_some()
+                    || state.increment
+                    || state.at_least
+                    || state.read_only
+                    || (!state.preserve
+                        && (state.minimum != state.maximum || state.set != state.minimum))
+            })
+        {
+            return false;
+        }
+        // Opt in only to conversation state and read predicates. Comparing the
+        // closed shape also excludes newly added reward effects by default.
+        let dialogue = serde_json::from_value::<Self>(serde_json::json!({
+            "key": self.key, "quest": self.quest, "npc": self.npc, "keywords": self.keywords,
+            "topic": self.topic, "next_topic": self.next_topic, "storage": self.storage,
+            "requires": self.requires, "requires_premium": self.requires_premium,
+            "take": [], "give": null, "outfit": null, "achievement": null,
+            "reply": self.reply, "failure_reply": self.failure_reply, "sources": self.sources
+        }));
+        dialogue.is_ok_and(|callback| callback == *self)
+    }
 }
 
 /// Source-bound track metadata; writable declarations name the exact existing owner.
@@ -546,31 +576,37 @@ struct Document {
 
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/classic-missions.json"),
+    include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
-    include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m13-guardcatcher.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m09-rookie.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-guardcatcher.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-slug-sample.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m20-cursed-crystal-recipes.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m56-cursed-crystal-wax.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m39-stories.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m13-slug-sample.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
-    // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
+    include_str!("../../../../../content/quests/npc-callbacks/m56-cursed-crystal-wax.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/newhaven-gustavo.json"),
+    include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/quest-contacts.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
     include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
-    include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
-    include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/tibia-tales.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/too-hot-to-handle.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/tower-defence.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/vampire-hunter.json"),
 ];
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
@@ -601,7 +637,11 @@ pub fn offered_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback
 }
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {
-    embedded_document().map(|document| document.callbacks)
+    // The embedded sources do not change between quest receipts.
+    static CALLBACKS: OnceLock<Result<Vec<RewardCallback>, String>> = OnceLock::new();
+    CALLBACKS
+        .get_or_init(|| embedded_document().map(|document| document.callbacks))
+        .clone()
 }
 
 fn embedded_document() -> Result<Document, String> {
@@ -645,7 +685,88 @@ fn parse_documents(sources: &[&str]) -> Result<Document, String> {
         combined.callbacks.extend(document.callbacks);
     }
     colours_peer::append_after_opening(&mut combined)?;
+    append_storkus_dust_deposits(&mut combined.callbacks)?;
     validate_document_with_capacity(combined, maximum)
+}
+
+// Stored 1 means collection has started and 21 means twenty dust were paid.
+// "Mission" keeps the acceptance and report steps. "Vampire dust" can start
+// collection and deposit in one exchange, and advances the mission when paid.
+fn append_storkus_dust_deposits(callbacks: &mut Vec<RewardCallback>) -> Result<(), String> {
+    const HAND_IN: &str = "oteryn:quest-reward/inquisition-vampire-hunt-dust";
+    const COLLECT: &str = "oteryn:quest-reward/inquisition-vampire-hunt-dust/collect";
+    let Some(full) = callbacks.iter().find(|row| row.key == COLLECT).cloned() else {
+        return Ok(());
+    };
+    let [questline, mission, dust] = full.storage.as_slice() else {
+        return Err("Storkus dust storage".into());
+    };
+    let [payment] = full.take.as_slice() else {
+        return Err("Storkus dust payment".into());
+    };
+    if !questline.preserve
+        || !mission.preserve
+        || dust.minimum != 1
+        || dust.maximum != 1
+        || dust.set != i64::from(payment.count) + 1
+        || !(1..=20).contains(&payment.count)
+    {
+        return Err("Storkus dust counter bounds".into());
+    }
+    let advance_mission = |callback: &mut RewardCallback| -> Result<(), String> {
+        for stage in &mut callback.storage[..2] {
+            stage.preserve = false;
+            stage.set = stage
+                .set
+                .checked_add(1)
+                .ok_or("Storkus dust stage bounds")?;
+        }
+        Ok(())
+    };
+    let mut full_hand_in = full.clone();
+    full_hand_in.key = HAND_IN.into();
+    full_hand_in.topic = 9;
+    full_hand_in.storage[2].minimum = 0;
+    advance_mission(&mut full_hand_in)?;
+    callbacks.push(full_hand_in);
+
+    for saved in dust.minimum..dust.set {
+        let remaining = payment
+            .count
+            .min(u16::try_from(dust.set - saved).map_err(|e| e.to_string())?);
+        for count in 1..=remaining {
+            if saved == dust.minimum && count == payment.count {
+                continue;
+            }
+            let mut deposit = full.clone();
+            deposit.key = format!("{HAND_IN}/deposit-{saved}-{count}");
+            deposit.take[0].count = count;
+            let finished = count == remaining;
+            deposit.inventory = vec![InventoryRequirement {
+                item: payment.item.clone(),
+                minimum: u32::from(count),
+                maximum: if finished { u32::MAX } else { u32::from(count) },
+            }];
+            deposit.storage[2].minimum = saved;
+            deposit.storage[2].maximum = saved;
+            deposit.storage[2].set = saved + i64::from(count);
+            if !finished {
+                deposit.reply = vec!["Bring me more vampire dust when you have it.".into()];
+            }
+            let mut hand_in = deposit.clone();
+            hand_in.key = format!("{HAND_IN}/hand-in-{saved}-{count}");
+            hand_in.topic = 9;
+            if saved == dust.minimum {
+                hand_in.storage[2].minimum = 0;
+            }
+            if finished {
+                advance_mission(&mut hand_in)?;
+            }
+            callbacks.push(deposit);
+            callbacks.push(hand_in);
+        }
+    }
+    Ok(())
 }
 
 pub(crate) fn validate_callbacks(callbacks: &[RewardCallback]) -> Result<(), String> {
@@ -1092,7 +1213,8 @@ fn validate_document_with_capacity(
                 && !c.is_save_restart_only()
                 && c.storage
                     .iter()
-                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                && !c.is_guarded_topic_change())
             || c.required_receipts.len() > 8
             || c.required_receipts.iter().collect::<BTreeSet<_>>().len()
                 != c.required_receipts.len()
@@ -1137,7 +1259,7 @@ fn validate_document_with_capacity(
                 != c.cosmetic_targets().count()
             || c.cosmetic_targets()
                 .any(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
-            || (c.keywords.is_empty() && c.world_claim.is_none())
+            || (c.keywords.is_empty() && c.world_claim.is_none() && c.carried_item.is_none())
             || c.keywords.len() > 8
             || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()
             || c.keywords.iter().any(|s| {
@@ -1820,6 +1942,64 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 #[cfg(test)]
 mod tests {
     #[test]
+    fn fiend_programme_requires_the_forgemaster_reward_at_every_stage() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let catalogue = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let claimed = callbacks
+            .iter()
+            .filter(|callback| {
+                callback
+                    .world_claim
+                    .as_ref()
+                    .is_some_and(|claim| claim.key == "oteryn:reward-claim.nrwicked-forgemaster")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(claimed.len(), 11);
+        for (stage, addons) in [
+            ("commission", None),
+            ("first-token", Some(0)),
+            ("second-token", Some(1)),
+            ("complete", Some(3)),
+        ] {
+            let callback = callbacks
+                .iter()
+                .find(|c| c.key == format!("oteryn:quest-reward/questpc7-fiend-{stage}"))
+                .ok_or("Fiend programme stage")?;
+            let requirements = callback.requirements.as_ref().ok_or("Fiend requirements")?;
+            assert_eq!(
+                requirements
+                    .owned_cosmetics
+                    .first()
+                    .map(|outfit| outfit.addons),
+                addons,
+                "{stage}"
+            );
+            assert_eq!(
+                requirements.owned_cosmetics.len(),
+                usize::from(addons.is_some()),
+                "{stage}"
+            );
+            assert!(requirements.premium);
+            assert_eq!(requirements.min_level, 250);
+            assert!(requirements.completed_quests.is_empty(), "{stage}");
+            let [gate] = callback.requires.as_slice() else {
+                return Err(format!("{stage} needs one Forgemaster claim predicate"));
+            };
+            assert!(!gate.holds(catalogue.catalogue(), &std::collections::BTreeMap::new()));
+            for reward in &claimed {
+                let [write] = reward.storage.as_slice() else {
+                    return Err("expected one Forgemaster reward write".into());
+                };
+                assert_eq!(write.track, gate.track);
+                let tracks = std::collections::BTreeMap::from([(write.track.clone(), write.set)]);
+                assert!(gate.holds(catalogue.catalogue(), &tracks), "{stage}");
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {
         let mut callback = super::parse(include_str!(
             "../../../../../content/quests/shared-reward-callbacks.json"
@@ -2386,9 +2566,23 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 207 existing and 31 QB routes. The final two terms are
-        // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12);
+        // The shards, Colours peer and Kingsday journal contribute 516 callbacks.
+        // Storkus's authored acceptance, collection and paid confirmation
+        // are joined by 209 partial-collection and 210 direct hand-in callbacks.
+        let callbacks = load()?;
+        // Wayland contributes three outfit exchanges.
+        assert_eq!(callbacks.len(), 516 + 209 + 210 + 3);
+        assert_eq!(
+            callbacks
+                .iter()
+                .filter(|callback| {
+                    callback
+                        .key
+                        .starts_with("oteryn:quest-reward/inquisition-vampire-hunt-dust/")
+                })
+                .count(),
+            421
+        );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2444,7 +2638,7 @@ mod tests {
         let programmes = parse(include_str!(
             "../../../../../content/quests/npc-callbacks/questpc7-programmes.json"
         ))?;
-        assert_eq!(programmes.len(), 59);
+        assert_eq!(programmes.len(), 62);
         let published = published_markers::keys()?;
         for callback in &programmes {
             assert!(callback.key.starts_with("oteryn:quest-reward/questpc7-"));
@@ -3510,4 +3704,70 @@ mod outfit_reward_predecessor_tests {
         }
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn too_hot_intake_and_white_gem_require_earned_crypt_progress() -> Result<(), String> {
+    let loaded = super::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let callbacks = load_for(catalogue)?;
+    let find = |suffix| {
+        callbacks
+            .iter()
+            .find(|row| row.key.strip_prefix("oteryn:quest-reward/too-hot-") == Some(suffix))
+            .ok_or_else(|| format!("missing Too Hot callback {suffix}"))
+    };
+    let request = find("investigation")?;
+    let mut tracks = BTreeMap::new();
+    assert_eq!(request.npc, "oteryn:npc.gnomystery");
+    assert_eq!(request.keywords, ["yes"]);
+    assert!(
+        request
+            .requires
+            .iter()
+            .any(|guard| !guard.holds(catalogue, &tracks))
+    );
+    tracks.insert(
+        "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line_complete".into(),
+        2,
+    );
+    assert!(
+        request
+            .requires
+            .iter()
+            .all(|guard| guard.holds(catalogue, &tracks))
+    );
+
+    let commission = find("repair-commission")?;
+    assert_eq!(commission.npc, "oteryn:npc.brodraem_orcbeard");
+    assert_eq!(commission.storage[0].minimum, 1);
+    let report = find("repair-report")?;
+    assert_eq!(report.npc, commission.npc);
+    assert_eq!(report.storage[0].minimum, 2);
+    for (track, count) in [
+        ("oteryn:quest-progress/too-hot/sarcophagus-total", 5),
+        ("oteryn:quest-progress/m07/too_hot/columns_repaired", 3),
+        ("oteryn:quest-progress/too-hot/marble-total", 4),
+    ] {
+        let guard = report
+            .requires
+            .iter()
+            .find(|guard| guard.track == track)
+            .ok_or(track)?;
+        tracks.insert(track.into(), count - 1);
+        assert!(!guard.holds(catalogue, &tracks));
+        tracks.insert(track.into(), count);
+        assert!(guard.holds(catalogue, &tracks));
+    }
+    assert_eq!(
+        report
+            .give
+            .as_ref()
+            .map(|reward| (reward.item.as_str(), reward.count)),
+        Some(("oteryn:item.tibia.i32769", 1))
+    );
+    assert!(!report.completes);
+    Ok(())
 }

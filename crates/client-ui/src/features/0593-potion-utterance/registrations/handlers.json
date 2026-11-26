@@ -1,0 +1,16 @@
+{
+  "mechanic": "0593-potion-utterance",
+  "kind": "handlers",
+  "id": "0593-potion-utterance-wire",
+  "status": "unsupported",
+  "commands": [],
+  "direction": "server_to_client",
+  "reason": "The negotiated use-receipt field awaits the client decoder.",
+  "not_applicable": {
+    "state": "The server owns the command outcome and any durable consequences.",
+    "protocol": "The negotiated use-receipt field awaits the client decoder.",
+    "view": "The client lane owns presentation of this capability.",
+    "input": "The client lane owns input handling for this capability.",
+    "settings": "This capability introduces no client setting."
+  }
+}

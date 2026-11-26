@@ -165,9 +165,7 @@ impl DurabilityRoot {
             // A rejected wire command is sequenced. Its native preparation remains durable,
             // so another real command needs its own attempt without rebinding that reservation.
             // The Platform operation, lamp identity and Store receipt remain unchanged.
-            transaction_id: hireling.as_ref().map_or(operation_id, |_| {
-                hireling_attempt_id(operation_id, plan.command)
-            }),
+            transaction_id: store_attempt_id(operation_id, plan.command),
             source_binding: digest.finalize().into(),
             item_instance_ids: vec![plan.item_instance_id],
         };
@@ -412,17 +410,55 @@ async fn write_delivery(
         )
         .await?;
     }
-    let native_transaction = hireling.map(|_| hireling_attempt_id(operation_id, plan.command));
+    if hireling.is_none() {
+        super::hireling_reservation::lock_character(tx, plan.character_id).await?;
+        if let Some(request) = plan.purchase_request_id {
+            let authorized: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM store_purchase_requests p
+                 WHERE p.purchase_request_id=encode($1,'hex')::uuid AND p.account_id=encode($2,'hex')::uuid
+                   AND p.character_id=encode($3,'hex')::uuid AND p.state=2
+                   AND (convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids') ? $4)",
+            ).bind(request.as_slice()).bind(plan.account_id.as_slice()).bind(plan.character_id.as_slice())
+                .bind(uuid_string(&operation_id)).fetch_one(&mut **tx).await?;
+            if !authorized {
+                return Err(StoreDurabilityError::AuthorityRejected);
+            }
+            sqlx::query(
+                "DELETE FROM game_store_item_reservations WHERE purchase_request_id=encode($1,'hex')::uuid
+                   AND character_id=encode($2,'hex')::uuid",
+            ).bind(request.as_slice()).bind(plan.character_id.as_slice()).execute(&mut **tx).await?;
+            sqlx::query(
+                "INSERT INTO game_item_bindings (item_instance_id,world_id,character_id,cause)
+                 VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,'STORE_PURCHASE')",
+            ).bind(plan.item_instance_id.as_slice()).bind(plan.world_id.as_slice()).bind(plan.character_id.as_slice())
+                .execute(&mut **tx).await?;
+        }
+        if super::hireling_capacity::inbox_occupancy(tx, &plan.character_id).await? > 20 {
+            return Err(StoreDurabilityError::AuthorityRejected);
+        }
+    }
+    let native_transaction = Some(store_attempt_id(operation_id, plan.command));
     write_receipt(
         tx,
         recovery,
         operation_id,
         &plan.identity(),
-        Some(plan.item_instance_id),
-        hireling,
-        native_transaction,
+        ReceiptPayload {
+            item_instance_id: Some(plan.item_instance_id),
+            purchase_request_id: hireling.map(|purchase| purchase.purchase_request_id),
+            native_transaction_id: native_transaction,
+            entitlement_key: None,
+        },
     )
     .await
+}
+
+#[derive(Default)]
+pub(super) struct ReceiptPayload<'a> {
+    pub(super) item_instance_id: Option<[u8; 16]>,
+    pub(super) purchase_request_id: Option<[u8; 16]>,
+    pub(super) native_transaction_id: Option<[u8; 16]>,
+    pub(super) entitlement_key: Option<&'a str>,
 }
 
 pub(super) async fn write_receipt(
@@ -430,9 +466,7 @@ pub(super) async fn write_receipt(
     recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
     operation_id: [u8; 16],
     plan: &DeliveryIdentity,
-    item: Option<[u8; 16]>,
-    purchase: Option<&HirelingStorePurchase>,
-    native_transaction: Option<[u8; 16]>,
+    payload: ReceiptPayload<'_>,
 ) -> Result<DeliveryReceipt, StoreDurabilityError> {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
@@ -452,9 +486,9 @@ pub(super) async fn write_receipt(
     sqlx::query(
         "INSERT INTO store_delivery_receipts \
          (operation_id,account_id,character_id,world_id,fulfilment_unit_id,result,\
-          recovery_generation,decided_at,receipt,item_instance_id,purchase_request_id,native_transaction_id) \
+          recovery_generation,decided_at,receipt,item_instance_id,purchase_request_id,native_transaction_id,entitlement_key) \
          VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
-                encode($4,'hex')::uuid,$5,'COMMITTED',$6::text::numeric,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,encode($11,'hex')::uuid)",
+                encode($4,'hex')::uuid,$5,'COMMITTED',$6::text::numeric,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,encode($11,'hex')::uuid,$12)",
     )
     .bind(operation_id.as_slice())
     .bind(plan.account_id.as_slice())
@@ -464,9 +498,10 @@ pub(super) async fn write_receipt(
     .bind(recovery.recovery_generation.to_string())
     .bind(now)
     .bind(bytes)
-    .bind(item.as_ref().map(|id| id.as_slice()))
-    .bind(purchase.map(|p| p.purchase_request_id.as_slice()))
-    .bind(native_transaction.as_ref().map(|id|id.as_slice()))
+    .bind(payload.item_instance_id.as_ref().map(<[u8; 16]>::as_slice))
+    .bind(payload.purchase_request_id.as_ref().map(<[u8; 16]>::as_slice))
+    .bind(payload.native_transaction_id.as_ref().map(<[u8; 16]>::as_slice))
+    .bind(payload.entitlement_key)
     .execute(&mut **tx)
     .await?;
     sqlx::query("INSERT INTO store_receipt_outbox(operation_id)VALUES(encode($1,'hex')::uuid)")
@@ -478,7 +513,7 @@ pub(super) async fn write_receipt(
 
 /// Native work is bounded per real CommandRef; a fresh wire retry does not reset or change an
 /// earlier preparation. Stable Store operation/item identities still admit only one winner.
-fn hireling_attempt_id(operation: [u8; 16], command: crate::foundation::CommandRef) -> [u8; 16] {
+fn store_attempt_id(operation: [u8; 16], command: crate::foundation::CommandRef) -> [u8; 16] {
     use sha2::{Digest, Sha256};
     let digest = Sha256::new()
         .chain_update(b"oteryn:store-hireling-inbox-attempt:v1\0")
@@ -548,16 +583,16 @@ mod tests {
             ))
         };
         let operation = uuid(1);
-        let original = hireling_attempt_id(operation, command(2, 1)?);
+        let original = store_attempt_id(operation, command(2, 1)?);
         assert!(uuid_v7(&original));
         assert_ne!(original, operation);
-        assert_eq!(original, hireling_attempt_id(operation, command(2, 1)?));
+        assert_eq!(original, store_attempt_id(operation, command(2, 1)?));
         assert_ne!(
             original,
-            hireling_attempt_id(operation, command(2, (1_u64 << 40) + 1)?)
+            store_attempt_id(operation, command(2, (1_u64 << 40) + 1)?)
         );
-        assert_ne!(original, hireling_attempt_id(operation, command(3, 1)?));
-        assert_ne!(original, hireling_attempt_id(uuid(4), command(2, 1)?));
+        assert_ne!(original, store_attempt_id(operation, command(3, 1)?));
+        assert_ne!(original, store_attempt_id(uuid(4), command(2, 1)?));
         Ok(())
     }
 }

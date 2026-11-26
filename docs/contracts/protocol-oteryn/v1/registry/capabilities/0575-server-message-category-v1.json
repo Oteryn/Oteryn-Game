@@ -1,0 +1,13 @@
+{
+  "id": 575,
+  "name": "SERVER_MESSAGE_CATEGORY_V1",
+  "owner_decision": "2026-11-22 notification packet",
+  "owner": "Game notification transport",
+  "requires": [
+    92
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Adds the optional category in domain 57 type 1 deltas."
+}

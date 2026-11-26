@@ -504,11 +504,24 @@ def extract(bundle, directory, role):
                 shutil.copyfileobj(source, target, 1 << 20)
 
 
+PRODUCER_DEPENDENCIES = ("Merge gate / scope", "Merge gate / trusted-base risk lanes",
+                         "Merge gate / Molehill runner routing")
+
+
+def dependencies_concluded(jobs):
+    for name in PRODUCER_DEPENDENCIES:
+        found = [job for job in jobs if job.get("name", "") == name
+                 or job.get("name", "").endswith(" / " + name)]
+        if not found or any(job.get("status") != "completed" for job in found):
+            return False
+    return True
+
+
 def restore(role, output, *, root=ROOT, env=None, api=None, clock=time.monotonic, sleep=time.sleep,
-            timeout=1200, discovery_grace=60):
+            timeout=1200, discovery_grace=900):
     env = os.environ if env is None else env
     identity = context(root, role, env)
-    if not 0 <= timeout <= 1200 or not 0 <= discovery_grace <= 60:
+    if not 0 <= timeout <= 1200 or not 0 <= discovery_grace <= 900:
         raise ValueError("invalid producer wait bound")
     if output.exists() and (output.is_symlink() or any(output.iterdir())):
         raise ValueError("restore output must be empty")
@@ -525,7 +538,9 @@ def restore(role, output, *, root=ROOT, env=None, api=None, clock=time.monotonic
     run = max(candidates, key=lambda item: item["id"])
     run_id, attempt = run["id"], run["run_attempt"]
     started = clock()
-    deadline, discovery_deadline = started + timeout, started + min(discovery_grace, timeout)
+    # The wait bound counts from the moment the producer job is first seen running;
+    # discovery of the job itself has its own hard upper bound (discovery_grace).
+    deadline, discovery_deadline, concluded_since = None, started + discovery_grace, None
     while True:
         validate_run(run, identity)
         if (run["id"], run["run_attempt"]) != (run_id, attempt):
@@ -539,6 +554,15 @@ def restore(role, output, *, root=ROOT, env=None, api=None, clock=time.monotonic
                                       head_sha=identity["source"]["head"], max_attempt=attempt)
         if job is None or job.get("status") == "queued":
             if run.get("status") in ("queued", "in_progress") and clock() < discovery_deadline:
+                # merge-gate.yml rust_fast_build `needs: [scope, lanes, runner_route]`: once
+                # all three concluded, a missing producer job will never be scheduled, so
+                # stop waiting (seen on two polls, so a lagging jobs listing cannot bail early).
+                if job is None and dependencies_concluded(jobs):
+                    concluded_since = clock() if concluded_since is None else concluded_since
+                    if clock() - concluded_since >= 5:
+                        raise Unavailable("producer dependencies concluded without a Dispatch build job")
+                else:
+                    concluded_since = None
                 sleep(max(0, min(5, discovery_deadline - clock())))
                 run = api.json(f"{base}/runs/{run_id}")
                 continue
@@ -546,6 +570,8 @@ def restore(role, output, *, root=ROOT, env=None, api=None, clock=time.monotonic
         if job.get("status") != "in_progress" and not (
                 job.get("status") == "completed" and job.get("conclusion") == "success"):
             raise Unavailable("canonical archive build is not running or successful")
+        if deadline is None:
+            deadline = clock() + timeout
         producer_attempt = job["run_attempt"]
         artifacts = github_items(api, f"{base}/runs/{run_id}/artifacts", "artifacts")
         matches = [item for item in artifacts if item.get("name") == artifact_name(role, producer_attempt)]
@@ -620,7 +646,13 @@ def main():
         print(f"Shared Dispatch archive unavailable: {error}", file=sys.stderr)
         return 3
     except (OSError, ValueError, subprocess.CalledProcessError, zipfile.BadZipFile) as error:
-        print(f"Shared Dispatch archive rejected: {type(error).__name__}", file=sys.stderr)
+        # ValueError texts are fixed messages of this module; other types may carry paths or argv.
+        detail = f": {error}" if type(error) is ValueError else ""
+        print(f"Shared Dispatch archive rejected: {type(error).__name__}{detail}", file=sys.stderr)
+        if args.command == "restore":
+            # A rejected archive is never reused; the consumer builds the exact head itself.
+            print("::warning title=Shared Dispatch archive rejected::building this exact head locally")
+            return 3
         return 1
     return 0
 

@@ -127,61 +127,81 @@ async fn install_offsets<const N: usize>(
 pub(super) async fn wire_sequence(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
-    commands: Vec<(u64,u32,Vec<u8>)>,
+    commands: Vec<(u64, u32, Vec<u8>)>,
+) -> TestResult<Vec<Vec<u8>>> {
+    wire_sequence_observed(owner, admitted, commands, async |_, _: &[u8]| Ok(())).await
+}
+
+pub(super) async fn wire_sequence_observed(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    commands: Vec<(u64, u32, Vec<u8>)>,
+    mut observe: impl AsyncFnMut(usize, &[u8]) -> TestResult,
 ) -> TestResult<Vec<Vec<u8>>> {
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
-    use tokio::io::{AsyncReadExt,AsyncWriteExt};
-    assert!(!commands.is_empty() && commands.len()<=16);
-    let generation=admitted.continuity.connection_generation;
-    let mut frames=Vec::new();
-    for (id,kind,payload) in commands {
-        frames.push((id,oteryn_protocol_oteryn::encode_client_command(generation,
-            &oteryn_protocol_oteryn::ClientCommandValue {command_id:id,command_type:kind,payload:&payload})
-            .map_err(debug)?));
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    assert!(!commands.is_empty() && commands.len() <= 16);
+    let generation = admitted.continuity.connection_generation;
+    let mut frames = Vec::new();
+    for (id, kind, payload) in commands {
+        let frame = oteryn_protocol_oteryn::encode_client_command(
+            generation,
+            &oteryn_protocol_oteryn::ClientCommandValue {
+                command_id: id,
+                command_type: kind,
+                payload: &payload,
+            },
+        )
+        .map_err(debug)?;
+        frames.push((id, frame));
     }
-    let (mut server,mut client)=tokio::io::duplex(1<<20);
-    let reader=tokio::spawn(async move {
-        let receiving=async {
-            let mut results=Vec::new();
-            for (id,frame) in frames {
-                client.write_all(&u32::try_from(frame.len())?.to_be_bytes()).await?;
-                client.write_all(&frame).await?;
-                loop {
-                    let mut prefix=[0;4];client.read_exact(&mut prefix).await?;
-                    let mut bytes=vec![0;u32::from_be_bytes(prefix) as usize];
-                    client.read_exact(&mut bytes).await?;
-                    let envelope=decode_wire_envelope(&bytes).map_err(debug)?;
-                    if envelope.message_type()==MessageType::CommandResult {
-                        let command=oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
-                        assert_eq!(command.command_id,id);
-                        results.push(command.payload.to_vec());break;
-                    }
-                }
-            }
-            client.shutdown().await?;
+
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let receiving = async move {
+        let mut results = Vec::new();
+        for (index, (id, frame)) in frames.into_iter().enumerate() {
+            client.write_all(&u32::try_from(frame.len())?.to_be_bytes()).await?;
+            client.write_all(&frame).await?;
             loop {
-                let mut prefix=[0;4];
-                match client.read_exact(&mut prefix).await {
-                    Ok(_)=>{},
-                    Err(error) if error.kind()==std::io::ErrorKind::UnexpectedEof=>break,
-                    Err(error)=>return Err(error.into()),
-                }
-                let mut bytes=vec![0;u32::from_be_bytes(prefix) as usize];
+                let mut prefix = [0; 4];
+                client.read_exact(&mut prefix).await?;
+                let mut bytes = vec![0; u32::from_be_bytes(prefix) as usize];
                 client.read_exact(&mut bytes).await?;
-                let envelope=decode_wire_envelope(&bytes).map_err(debug)?;
-                assert_ne!(envelope.message_type(),MessageType::CommandResult,"unexpected extra result");
+                let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    let command = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
+                        .map_err(debug)?;
+                    assert_eq!(command.command_id, id);
+                    observe(index, command.payload).await?;
+                    results.push(command.payload.to_vec());
+                    break;
+                }
             }
-            Ok(results)
-        };
-        let result:TestResult<Vec<Vec<u8>>>=receiving.await;
-        result.map_err(|error|error.to_string())
-    });
-    let end=serve_admitted(&mut server,*admitted,owner,IDLE_LIVENESS).await;
-    if let ConnectionEnd::AdmittedThenClosed(_,error)=&end {
+        }
+        client.shutdown().await?;
+        loop {
+            let mut prefix = [0; 4];
+            match client.read_exact(&mut prefix).await {
+                Ok(_) => {}
+                Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof => break,
+                Err(error) => return Err(error.into()),
+            }
+            let mut bytes = vec![0; u32::from_be_bytes(prefix) as usize];
+            client.read_exact(&mut bytes).await?;
+            let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
+            assert_ne!(envelope.message_type(), MessageType::CommandResult, "unexpected extra result");
+        }
+        Ok(results)
+    };
+    let initial = *admitted;
+    let serving = async move { serve_admitted(&mut server, initial, owner, IDLE_LIVENESS).await };
+    let (end, result) = tokio::join!(serving, receiving);
+    if let ConnectionEnd::AdmittedThenClosed(_, error) = &end {
         eprintln!("quest wire sequence closed={error:?}");
     }
-    drop(server);
-    let result=reader.await?.map_err(Into::into);
-    if let ConnectionEnd::AdmittedThenDisconnected(a)|ConnectionEnd::AdmittedThenClosed(a,_)=end {*admitted=a;}
+    if let ConnectionEnd::AdmittedThenDisconnected(next) | ConnectionEnd::AdmittedThenClosed(next, _) = end {
+        *admitted = next;
+    }
     result
 }

@@ -53,8 +53,9 @@ mod world_change_phases;
 pub use feroxa_map_phases::{FeroxaPhaseTile, prepare_feroxa_phase};
 use quest_callbacks::CallbackStates;
 pub use quest_callbacks::{
-    ArenaPillarProjection, ElementalArrivalReservation, QuestCallbackProjection, QuestMapItemMove,
-    QuestSceneMutation, QuestTimedPassage, RafzaneElevator, SourceBossLeverProjection,
+    ArenaPillarProjection, ElementalArrivalReservation, PreparedSceneClose,
+    QuestCallbackProjection, QuestMapItemMove, QuestSceneMutation, QuestTimedPassage,
+    RafzaneElevator, SourceBossLeverProjection,
 };
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
@@ -197,6 +198,25 @@ pub struct BundleFacts {
 const AMBIGUOUS: u32 = u32::MAX;
 
 impl BundleFacts {
+    #[cfg(any(test, feature = "test-support"))]
+    pub(super) fn fresh_for_test(&self) -> Self {
+        Self {
+            palette: self.palette.clone(),
+            movement_definitions: self.movement_definitions.clone(),
+            movement_solidities: self.movement_solidities.clone(),
+            movement_blocks: self.movement_blocks.clone(),
+            ids: self.ids.clone(),
+            placements: self.placements.clone(),
+            map_source_items: self.map_source_items.clone(),
+            map_source_children: self.map_source_children.clone(),
+            unsupported_source_containers: self.unsupported_source_containers.clone(),
+            houses: self.houses.clone(),
+            house_doors: self.house_doors.clone(),
+            doors: self.doors.fresh_for_test(),
+            ..Self::default()
+        }
+    }
+
     /// A qualified Source owner may use the same bounded volatile-item model
     /// without inventing a bundle, base tile, durable Item or map placement.
     /// The caller supplies its already resolved immovable native Item facts.
@@ -372,16 +392,19 @@ impl BundleFacts {
                 _ => unique.push((id, index)),
             }
         }
+        // 188: spent Botany spider web (Crystal actions_fire_bug.lua:125-129).
+        // 430: occupied Lighthouse pressure plate (Crystal movement-stair.lua:6-16).
         // 3682, 12187, 12189: Bushwhacking entrance, laid net and captured merchant.
+        // 4851, 4996: Ape City spent statue and jar (Crystal actions_mission9_snake_destroyer.lua).
         // 6473, 6474: the timed Rottin wall repairs.
         // 7252: painted baby seal (Crystal actions_paint.lua:27), absent from the base palette.
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
         let mut movement_solidities = BTreeMap::new();
         let movement_definitions: BTreeMap<_, _> = [
-            435, 1025, 1841, 1949, 3682, 5022, 6473, 6474, 7252, 9125, 9126, 9929, 9933, 9934,
-            9935, 9936, 9937, 9938, 9939, 10186, 10187, 12187, 12189, 12369, 13842, 13843, 13976,
-            14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077, 14163, 14164, 14255, 17939,
-            21804, 21805, 21812, 22059, 22074, 26077, 26087, 26100, 49362,
+            188, 430, 435, 1025, 1841, 1949, 3682, 4851, 4996, 5022, 6473, 6474, 7252, 9125, 9126,
+            9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187, 12187, 12189, 12369,
+            13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077, 14163,
+            14164, 14255, 17939, 21804, 21805, 21812, 22059, 22074, 26077, 26087, 26100, 49362,
         ]
         .into_iter()
         .chain(6594..=6608)
@@ -1072,6 +1095,10 @@ fn bound_without_action(attrs: &Attrs) -> bool {
 /// record is walkable or has no collision fact (Terrain).
 const SOLID_FLOOR_CHANGE: &[u16] = &[17230, 24806, 24810, 24812, 28655];
 
+// The WorldObject catalogue marks the Cursed Crystal stair decoration as non-solid.
+// Its floor changes are action callbacks, so the ordinary floor mask has no entry.
+const CURSED_CRYSTAL_STAIR: &str = "oteryn:item.tibia.i19387";
+
 /// Whether the catalogue says the entry `key` names changes floors and can be walked onto: the
 /// compiler routes stairs and holes to Item entries that production definitions leave without a
 /// solidity fact, and a solid floor-change object (`SOLID_FLOOR_CHANGE`) is not one of them.
@@ -1199,9 +1226,11 @@ fn palette_facts(
                         .is_some_and(|terrain| terrain.kind == TerrainKind::Wall),
             );
         facts.pickupable = definition.pickupable;
-        solid = definition
-            .solid
-            .unwrap_or_else(|| !walkable_floor_change(&entry.key) && !terrain_floor(entry));
+        solid = definition.solid.unwrap_or_else(|| {
+            entry.key != CURSED_CRYSTAL_STAIR
+                && !walkable_floor_change(&entry.key)
+                && !terrain_floor(entry)
+        });
         door = palette_door(&entry.key, item);
     }
     Ok(PaletteFacts {
@@ -1907,6 +1936,24 @@ mod tests {
             })
         };
         palette_facts(&entry, &definition).expect("facts").solid
+    }
+
+    #[test]
+    fn cursed_crystal_stair_inherits_the_source_collision_fact() {
+        let source: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/world/objects/objects-06000-06499.json"
+        ))
+        .expect("WorldObject catalogue");
+        let stair = source["records"]
+            .as_array()
+            .expect("WorldObject records")
+            .iter()
+            .find(|record| record["identity"]["key"] == "oteryn:world-object.tibia.i19387")
+            .expect("Cursed Crystal stair");
+        let blocks = &stair["collision"]["blocks_movement"];
+        assert_eq!(blocks["state"], "KNOWN");
+        assert_eq!(blocks["value"], false);
+        assert!(!item_solid(CURSED_CRYSTAL_STAIR));
     }
 
     #[test]

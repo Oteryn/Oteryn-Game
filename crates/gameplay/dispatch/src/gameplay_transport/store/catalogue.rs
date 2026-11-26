@@ -1,5 +1,6 @@
-//! The admitted runtime Store catalogue (`rulesets/economy/store/catalogue.json`, built from the
-//! pinned Canary GameStore catalogue by `tools/content-schema/store-authoring/build_runtime_catalogue.py`).
+//! The admitted runtime Store catalogue (`rulesets/economy/store/catalogue.json`).
+//! `tools/content-schema/store-authoring/build_runtime_catalogue.py` projects the pinned offer sources.
+use crate::content::blessing_catalogue::BlessingCatalogue;
 use oteryn_gameplay_economy::store as rules;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -51,6 +52,13 @@ struct Item {
 
 pub(super) const PREY_EXPANSION_UNLOCK: &str = "prey-list-expansion";
 pub(super) const CHARM_EXPANSION_UNLOCK: &str = "charm-expansion";
+pub(super) const BLESSING_CATEGORY: &str = "consumables.blessings";
+pub(super) const BLESSING_OFFER_PREFIX: &str = "store:blessing:";
+const BLESSING_ENTITLEMENT_PREFIX: &str = "store-blessing:";
+
+pub(super) fn blessing_storage_key(entitlement: &str) -> Option<&str> {
+    entitlement.strip_prefix(BLESSING_ENTITLEMENT_PREFIX)
+}
 
 fn enabled_by_default() -> bool {
     true
@@ -73,11 +81,123 @@ pub(super) struct RuntimeCatalogue {
 }
 
 impl RuntimeCatalogue {
+    pub(super) fn from_blessings() -> Option<Self> {
+        let blessings = BlessingCatalogue::load().ok()?.blessings;
+        let offers = blessings
+            .iter()
+            .map(|blessing| {
+                let suffix = blessing.storage_key.strip_prefix("oteryn:blessing.")?;
+                Some(serde_json::json!({
+                    "key": format!("{BLESSING_OFFER_PREFIX}{suffix}"),
+                    "category": BLESSING_CATEGORY,
+                    "title": blessing.name,
+                    "price": blessing.store_tibia_coins,
+                    "currency": currency_text(rules::CurrencyKind::TibiaCoin),
+                    "unlock_key": format!("{BLESSING_ENTITLEMENT_PREFIX}{}", blessing.storage_key),
+                    "source_line": 0,
+                }))
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let document = serde_json::json!({
+            "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
+            "source": "rulesets/character/blessings/catalogue.json",
+            "offers": offers,
+        });
+        super::load_active_catalogue(&serde_json::to_vec(&document).ok()?)
+    }
+
     /// `None` for anything but a closed, non-empty v1 document of positive Tibia Coin prices.
     pub(super) fn from_json(bytes: &[u8]) -> Option<Self> {
+        Self::from_json_with_revision(bytes, None)
+    }
+
+    pub(super) fn from_json_with_revision(
+        bytes: &[u8],
+        active_revision: Option<&str>,
+    ) -> Option<Self> {
         let mut value: serde_json::Value = serde_json::from_slice(bytes).ok()?;
-        let revision = catalogue_revision(&mut value)?;
+        let document_revision = catalogue_revision(&mut value)?;
         let document: Document = serde_json::from_value(value).ok()?;
+        let revision = active_revision.map_or(document_revision, str::to_owned);
+        Self::admit(document, revision)
+    }
+
+    /// The archived import preserves both the quote and its Platform grant identity.
+    /// Only Game-owned offers participate in purchase replay.
+    pub(super) fn from_platform(document: &serde_json::Value, revision: &str) -> Option<Self> {
+        let hirelings: Document = serde_json::from_slice(super::HIRELING_CATALOGUE_JSON).ok()?;
+        let mut entries = Vec::new();
+        for entry in document.get("offers")?.as_array()? {
+            let [unit] = entry.get("units")?.as_array()?.as_slice() else {
+                continue; // Platform-only offers may contain several units.
+            };
+            let kind = unit.get("unit_kind")?.as_str()?;
+            if kind == "PREMIUM_TIME" || entry["purchasable"] != true {
+                continue;
+            }
+            if !matches!(kind, "ITEM" | "COSMETIC")
+                || entry["currency"] != "COINS"
+                || entry["max_quantity"] != 1
+                || unit["quantity"] != 1
+            {
+                return None;
+            }
+            let key = entry.get("offer_key")?.as_str()?;
+            let grant = unit.get("grant_key")?.as_str()?;
+            let is_item = grant.starts_with("oteryn:item.");
+            let item = if is_item {
+                Some(Item {
+                    key: grant.into(),
+                    revision: format!("definition-r{}", unit.get("grant_revision")?.as_str()?),
+                    _charges: 0,
+                })
+            } else {
+                None
+            };
+            let hireling = hirelings
+                .offers
+                .iter()
+                .find(|row| row.key == key)
+                .and_then(|row| row.hireling.clone());
+            if key.starts_with("store:hireling:") && hireling.is_none() {
+                continue;
+            }
+            let unlock_key = if !is_item && hireling.is_none() {
+                if !matches!(grant, PREY_EXPANSION_UNLOCK | CHARM_EXPANSION_UNLOCK)
+                    && !crate::content::store_cosmetics::offer(key)
+                        .is_some_and(|offer| offer.unlock_key == grant)
+                {
+                    continue;
+                }
+                Some(grant.into())
+            } else {
+                None
+            };
+            entries.push(Offer {
+                key: key.into(),
+                category: "retained".into(),
+                title: key.into(),
+                price: Some(entry.get("unit_price")?.as_str()?.parse().ok()?),
+                enabled: true,
+                currency: "TIBIA_COIN".into(),
+                item,
+                unlock_key,
+                hireling,
+                preview: None,
+                _source_line: 0,
+            });
+        }
+        Self::admit(
+            Document {
+                schema: "OTERYN_STORE_RUNTIME_CATALOGUE/v1".into(),
+                _source: serde_json::Value::Null,
+                offers: entries,
+            },
+            revision.into(),
+        )
+    }
+
+    fn admit(document: Document, revision: String) -> Option<Self> {
         if document.schema != "OTERYN_STORE_RUNTIME_CATALOGUE/v1" || document.offers.is_empty() {
             return None;
         }
@@ -136,10 +256,28 @@ impl RuntimeCatalogue {
                         rules::Eligibility::default(),
                     ),
                     (None, Some(unlock_key))
+                        if offer.category == BLESSING_CATEGORY
+                            && blessing_storage_key(unlock_key)
+                                .and_then(|key| key.strip_prefix("oteryn:blessing."))
+                                .is_some_and(|suffix| {
+                                    offer.key.strip_prefix(BLESSING_OFFER_PREFIX) == Some(suffix)
+                                }) =>
+                    {
+                        (
+                            rules::OfferKind::Service,
+                            rules::DeliveryKind::Unlock {
+                                unlock_key: unlock_key.clone(),
+                            },
+                            rules::Eligibility::default(),
+                        )
+                    }
+                    (None, Some(unlock_key))
                         if matches!(
                             unlock_key.as_str(),
                             PREY_EXPANSION_UNLOCK | CHARM_EXPANSION_UNLOCK
-                        ) || crate::content::store_cosmetics::offers().is_some_and(|offers| offers.iter().any(|o| o.unlock_key == *unlock_key)) =>
+                        ) || crate::content::store_cosmetics::offers().is_some_and(
+                            |offers| offers.iter().any(|o| o.unlock_key == *unlock_key),
+                        ) =>
                     {
                         let eligibility = rules::Eligibility {
                             reject_if_unlock_owned: Some(unlock_key.clone()),

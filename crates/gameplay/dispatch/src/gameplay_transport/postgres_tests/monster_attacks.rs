@@ -18,6 +18,14 @@ fn rat_source_melee_dispatch_damages_player_once_and_checkpoints_vitals_postgres
 }
 
 #[test]
+fn native_melee_hits_player_published_between_swing_passes() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case("monster_attacks_handoff", AttackCase::RatAfterHandoff)
+}
+
+#[test]
 fn hunter_source_arrow_dispatch_damages_distant_player_and_checkpoints_vitals_postgres() -> TestResult {
     run_case("monster_attacks_hunter", AttackCase::Hunter)
 }
@@ -55,6 +63,7 @@ fn the_monster_source_removal_dispatch_retires_owned_wall_once_postgres() -> Tes
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum AttackCase {
     Rat,
+    RatAfterHandoff,
     Hunter,
     FireDevil,
     FireDevilInvisibleBystander,
@@ -67,7 +76,7 @@ enum AttackCase {
 impl AttackCase {
     fn creature_key(self) -> &'static str {
         match self {
-            Self::Rat => "oteryn:creature.rat",
+            Self::Rat | Self::RatAfterHandoff => "oteryn:creature.rat",
             Self::Hunter => "oteryn:creature.hunter",
             Self::FireDevil | Self::FireDevilInvisibleBystander | Self::FireDevilGhostBystander => "oteryn:creature.fire_devil",
             Self::FireElemental => "oteryn:creature.fire_elemental",
@@ -97,6 +106,8 @@ fn run_case(tag: &'static str, case: AttackCase) -> TestResult {
                 .await?;
                 let result = if case == AttackCase::TheMonster {
                     removal::scenario(&harness).await
+                } else if case == AttackCase::RatAfterHandoff {
+                    rat_after_handoff(&harness).await
                 } else if matches!(case, AttackCase::FireElemental | AttackCase::Firestarter) {
                     field_scenario(&harness, case).await
                 } else {
@@ -113,6 +124,103 @@ fn run_case(tag: &'static str, case: AttackCase) -> TestResult {
         .join()
         .unwrap_or_else(|panic| std::panic::resume_unwind(panic))
         .map_err(Into::into)
+}
+
+async fn rat_after_handoff(harness: &Harness) -> TestResult {
+    use oteryn_simulation_determinism::SemanticTimeMicros;
+
+    prepare_current_session(harness).await?;
+    let seal = harness.recovery.seal_current().map_err(debug)?;
+    let authority = harness
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+    let (controller, pin) =
+        crate::content::native_gameplay::test_support::activated_loop_monster(world, false);
+    let active = controller.active().ok_or("active native generation")?;
+    let (deps, rat) = dependencies(active, &pin, AttackCase::Rat)?;
+    let mut owner = deps.owner(harness, &authority);
+    owner.active_generation = Some(active);
+    owner.movement_cells = deps.room.movement_cells().into();
+    let initial_health = crate::gameplay_transport::actor_spell::tests::FACTS.max_health;
+    let old_session = deps.admitted.game_session_id;
+    initialize_player(&owner, deps.actor, old_session, initial_health).await?;
+
+    let first = SemanticTimeMicros::from_micros(10_000_000);
+    owner.drain_monster_melee_at(first).await;
+    let next_swing = first.get() + 30_000_000;
+    {
+        let mut states = owner.states.spell_states.lock().await;
+        assert!(states.monster_melee.creature_ai.state(rat).is_some());
+        // Model the think clock falling due before the next compatibility swing.
+        states.monster_melee.next_swing_pass_us = next_swing;
+    }
+
+    // Publish the new exact actor and its spell state after the previous swing's census.
+    let session = GameSessionId::decode(&id(51)).map_err(debug)?;
+    let arrived = {
+        let mut runtime = deps.runtime.lock().await;
+        runtime
+            .set_staff_visibility(deps.actor, old_session, true, false)
+            .map_err(debug)?;
+        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_source_pinned_lab_player_position(
+                actor,
+                session,
+                MovementLocalPosition {
+                    x: 3,
+                    y: 11,
+                    floor: -7,
+                },
+            )
+            .map_err(debug)?;
+        actor
+    };
+    initialize_player(&owner, arrived, session, initial_health).await?;
+    let before = player_health(&owner, arrived, session).await?;
+    let mut selected = false;
+    for _ in 0..8 {
+        let due = owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .monster_melee
+            .creature_ai
+            .due(rat)
+            .ok_or("next native think")?;
+        assert!(due < next_swing);
+        owner
+            .drain_monster_melee_at(SemanticTimeMicros::from_micros(due))
+            .await;
+        {
+            let states = owner.states.spell_states.lock().await;
+            assert_eq!(states.monster_melee.next_swing_pass_us, next_swing);
+            selected |= states
+                .monster_melee
+                .creature_ai
+                .native_melee_selection(rat, 0)
+                .is_some_and(|selection| selection.target == Some(arrived));
+        }
+        // Canonical Rat melee can roll zero, so allow several native selections.
+        if player_health(&owner, arrived, session).await? < before {
+            break;
+        }
+    }
+
+    assert!(
+        selected,
+        "the actual native think selected the new adjacent player"
+    );
+    assert!(
+        player_health(&owner, arrived, session).await? < before,
+        "between-swing melee must hit the player selected from the live roster"
+    );
+    Ok(())
 }
 
 async fn field_scenario(harness: &Harness, case: AttackCase) -> TestResult {
@@ -598,7 +706,7 @@ fn dependencies(
     )?;
     runtime
         .begin_activation_spawn_sources(vec![(
-            vec![((if matches!(case, AttackCase::Rat | AttackCase::TheMonster) { 2 } else { -1 }, 12, -7), 60_000, case.creature_key().into(), maximum_health, false)],
+            vec![((if matches!(case, AttackCase::Rat | AttackCase::TheMonster) { 2 } else { -1 }, 12, -7), 60_000, case.creature_key().to_owned(), maximum_health, false)],
             5_000,
         )])
         .map_err(debug)?;

@@ -103,11 +103,13 @@ def stopped_merge(
 
 
 def resolve_in(root: Path) -> tuple[int, list[str]]:
-    rc.ROOT, rc.PIN_TEST, rc.WORLD = root, root / rc.PIN_PATH, root / "content/world"
-    try:
-        return 0, rc.resolve_conflicts()
-    except SystemExit as stop:
-        return int(stop.code), []
+    with patch.multiple(
+        rc, ROOT=root, PIN_TEST=root / rc.PIN_PATH, WORLD=root / "content/world"
+    ):
+        try:
+            return 0, rc.resolve_conflicts()
+        except SystemExit as stop:
+            return int(stop.code), []
 
 
 def unmerged(root: Path) -> list[str]:
@@ -238,27 +240,24 @@ def test_git_failure_while_enumerating_conflicts_fails_closed() -> None:
         corrupt = root / "corrupt-index"
         corrupt.write_bytes(b"not an index")
         commands: list[list[str]] = []
-        saved = rc.run, sys.argv, os.environ.get("GIT_INDEX_FILE")
-        rc.run, sys.argv = commands.append, ["regenerate_content.py", "--resolve"]
-        os.environ["GIT_INDEX_FILE"] = str(corrupt)
-        rc.ROOT, rc.PIN_TEST, rc.WORLD = (
-            root,
-            root / rc.PIN_PATH,
-            root / "content/world",
-        )
-        try:
-            rc.main()
-            raise AssertionError(
-                "--resolve must stop when git cannot list the conflicts"
-            )
-        except SystemExit as stop:
-            assert stop.code not in (0, None), stop.code
-        finally:
-            rc.run, sys.argv = saved[0], saved[1]
-            if saved[2] is None:
-                os.environ.pop("GIT_INDEX_FILE", None)
-            else:
-                os.environ["GIT_INDEX_FILE"] = saved[2]
+        with (
+            patch.multiple(
+                rc,
+                ROOT=root,
+                PIN_TEST=root / rc.PIN_PATH,
+                WORLD=root / "content/world",
+                run=commands.append,
+            ),
+            patch.object(sys, "argv", ["regenerate_content.py", "--resolve"]),
+            patch.dict(os.environ, {"GIT_INDEX_FILE": str(corrupt)}),
+        ):
+            try:
+                rc.main()
+                raise AssertionError(
+                    "--resolve must stop when git cannot list the conflicts"
+                )
+            except SystemExit as stop:
+                assert stop.code not in (0, None), stop.code
         # Nothing ran and nothing was written: the merge is exactly as git left it.
         assert commands == [], commands
         assert {path: (root / path).read_bytes() for path in before} == before
@@ -584,7 +583,9 @@ def test_source_cohort_includes_installed_successors() -> None:
         pass
 
     def measure():
-        assert installed == [rc.ROOT], "measure only the complete installed World"
+        assert installed == [rc.ROOT, rc.WORLD, rc.WORLD, rc.WORLD, rc.WORLD], (
+            "measure only the complete installed World"
+        )
         raise Measured
 
     with (
@@ -593,8 +594,22 @@ def test_source_cohort_includes_installed_successors() -> None:
         patch.object(rc, "refresh_quest_callback_proof"),
         patch.object(rc, "materialize_world"),
         patch("questpc7_thaian_authoring.install", side_effect=installed.append),
-        patch("buddel_travel.install_buddel"),
-        patch("travel_route_corrections.project_routes"),
+        patch(
+            "buddel_travel.install_buddel",
+            side_effect=lambda _, world: installed.append(world),
+        ),
+        patch(
+            "travel_route_corrections.project_routes",
+            side_effect=lambda _, world: installed.append(world),
+        ),
+        patch(
+            "regional_npc_prices.install",
+            side_effect=lambda _, world: installed.append(world),
+        ),
+        patch(
+            "regional_npc_dialogue.install",
+            side_effect=lambda _, world: installed.append(world),
+        ),
         patch.object(rc, "canonicalize_world"),
         patch.object(rc, "refresh_source_cohort_extent", side_effect=measure),
     ):
@@ -649,6 +664,17 @@ def full_generation_trace(
         root = Path(temp)
         for tool in rc.AUTHORING_TOOLS:
             write(root, tool, "")
+        # Seed the committed inputs so the in-process Nomads refresh runs as usual.
+        profile = json.loads((rc.ROOT / rc.NOMADS_WINDOW).read_bytes())
+        nomads_map = profile["map"]["path"]
+        for path in (
+            rc.NOMADS_WINDOW,
+            nomads_map,
+            *(path for path, _ in rc.NOMADS_WINDOW_REPORTS),
+        ):
+            target = root / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((rc.ROOT / path).read_bytes())
         feedback = "tools/content-schema/quest-authoring/samples/donor-source/refinements/conditions.json"
         write(root, feedback, {"source_fixture": True})
         write(
@@ -699,6 +725,14 @@ def full_generation_trace(
                 "travel_route_corrections.project_routes",
                 side_effect=lambda *_: record(("project-travel-routes",)),
             ),
+            patch(
+                "regional_npc_prices.install",
+                side_effect=lambda *_: record(("install-regional-npc-prices",)),
+            ),
+            patch(
+                "regional_npc_dialogue.install",
+                side_effect=lambda *_: record(("install-regional-npc-dialogue",)),
+            ),
             patch.object(
                 rc,
                 "canonicalize_world",
@@ -723,6 +757,13 @@ def full_generation_trace(
         ):
             result = rc.main()
             unresolved.assert_called_once_with()
+        digest = hashlib.sha256((root / nomads_map).read_bytes()).hexdigest()
+        assert (
+            json.loads((root / rc.NOMADS_WINDOW).read_bytes())["map"]["sha256"]
+            == digest
+        )
+        for report, label in rc.NOMADS_WINDOW_REPORTS:
+            assert f"{label}: `{digest}`" in (root / report).read_text(encoding="utf-8")
         assert not any(command[0] in {"git", "cargo"} for command in events)
         if not checks:
             assert not any("--check" in command for command in events)
@@ -737,6 +778,8 @@ def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them(
         ("install-thaian",),
         ("install-buddel",),
         ("project-travel-routes",),
+        ("install-regional-npc-prices",),
+        ("install-regional-npc-dialogue",),
         ("canonicalize-world",),
         ("source-cohort",),
         ("repin-world",),
@@ -759,7 +802,8 @@ def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them(
         assert error.cmd == ["canonicalize-world"]
     else:
         raise AssertionError("canonical rewrite refusal must stop generation")
-    assert not any(command in refused for command in ordered[5:]), refused
+    after_canonicalization = ordered[ordered.index(("canonicalize-world",)) + 1:]
+    assert not any(command in refused for command in after_canonicalization), refused
 
 
 def test_world_canonicalizer_copies_only_a_complete_document_inventory() -> None:
@@ -946,6 +990,11 @@ def downstream_quest_commands():
 
 def test_callback_and_w01_witnesses_follow_final_provider_in_dependency_order() -> None:
     native = ("python3", "tools/content-migration/register_spell_families.py")
+    store = (
+        "python3",
+        "tools/content-schema/store-authoring/build_runtime_catalogue.py",
+        "--refresh-owner-offers",
+    )
     callback = (
         "python3",
         "tools/content-schema/native-gameplay/build_native_callback_witness.py",
@@ -960,8 +1009,8 @@ def test_callback_and_w01_witnesses_follow_final_provider_in_dependency_order() 
 
     def require_current_callback(command, events):
         if command == callback:
-            assert events[-2] == native, (
-                "callback witness requires the final native provider"
+            assert events[-3:-1] == [native, store], (
+                "callback witness follows the final native provider and Store refresh"
             )
         if command == death:
             assert events[-2] == callback, (
@@ -1149,6 +1198,20 @@ def test_downstream_quest_producers_follow_inputs_and_precede_consumers() -> Non
         < events.index(commands[1])
         < events.index(native)
     )
+    quest_prefix = "tools/content-schema/quest-authoring/"
+    tree = next(
+        index for index, command in enumerate(events)
+        if command[:2] == ("python3", quest_prefix + "quest_tree_authoring.py")
+    )
+    callbacks = ("python3", quest_prefix + "qengine_rewards.py")
+    completion = ("python3", quest_prefix + "quest_completion_import.py")
+    matrix = ("python3", quest_prefix + "quest_completion_matrix.py")
+    callback_runs = [index for index, command in enumerate(events) if command == callbacks]
+    rooms = ("python3", quest_prefix + "grizzly_rooms.py")
+    assert any(tree < index < events.index(native) for index in callback_runs)
+    assert events.index(("world-metadata",)) < callback_runs[-1] < events.index(rooms)
+    assert events.count(completion) == 1
+    assert tree < events.index(completion) < min(events.index(commands[1]), events.index(matrix))
     final_inputs = max(
         events.index(native), events.index(("world-metadata",)), events.index(variant)
     )
@@ -1278,14 +1341,21 @@ def test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work() -> 
     )
     materializer = ("materialize-world",)
     tree = ("python3", "tools/content-migration/world_project_v2_to_tree.py")
-    ordered = (store, imbuement, bootstrap, materializer, tree)
+    native = ("python3", "tools/content-migration/register_spell_families.py")
+    witness = (
+        "python3",
+        "tools/content-schema/native-gameplay/build_native_callback_witness.py",
+    )
+    check = ("python3", "fixture/final_check.py", "--check")
+    # Store admission reads converter weights from the regenerated native Item profiles.
+    ordered = (imbuement, bootstrap, materializer, tree, native, store, witness, check)
     events = []
-    assert full_generation_trace(events, lambda *_: None) == 0
+    assert full_generation_trace(events, lambda *_: None, checks=True) == 0
     assert all(events.count(step) == 1 for step in ordered)
     assert [events.index(step) for step in ordered] == sorted(
         events.index(step) for step in ordered
     )
-    for refused in ordered[:3]:
+    for refused in (imbuement, bootstrap, tree, native, store):
 
         def refuse(command, _events):
             if command == refused:
@@ -1293,16 +1363,14 @@ def test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work() -> 
 
         events = []
         try:
-            full_generation_trace(events, refuse)
+            full_generation_trace(events, refuse, checks=True)
         except subprocess.CalledProcessError as error:
             assert error.cmd == list(refused)
         else:
-            raise AssertionError(
-                "a failed Item prerequisite must stop before materializing World"
-            )
+            raise AssertionError("a refused Item or Store producer must stop regeneration")
         assert events.count(refused) == 1
-        assert materializer not in events and tree not in events
-        assert not any(command in events for command in downstream_quest_commands())
+        assert events[-1] == refused
+        assert not any(step in events for step in ordered[ordered.index(refused) + 1 :])
 
 
 def item_index_fixture(root: Path) -> tuple[dict, list[str]]:

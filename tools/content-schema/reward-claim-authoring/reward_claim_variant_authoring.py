@@ -18,7 +18,7 @@ import reward_claim_variant_migration as migration
 PROFILE = 'authored_variant_v1'
 SCHEMA = 'OTERYN_REWARD_CLAIM_VARIANT_SHARD/v1'
 # Refreshed only by tools/content-migration/refresh_reward_stack_weight_proof.py.
-STACK_NORMALIZATION_PROOF_SHA256 = 'b549b8f620d1146744ae9ced2e2615f8c94b369012c7db479031fe22ecdd481e'
+STACK_NORMALIZATION_PROOF_SHA256 = '913a53658ce1bd288d1d24b295b2e8ef6ef3c983ff04f349a823233504cd0954'
 
 
 def canonical_schema(root):
@@ -190,7 +190,7 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
                         or semantic_digest(items[case['item_identity']['key']]) != case['item_definition_sha256']):
                     raise ValueError('selected source/Item stack normalization inputs changed')
                 serialized_item_stacks(reward, claim_items, stack_problem)
-            poison_daggers.correct_canonical(source['identity']['key'], placement['position'], reward)
+            poison_daggers.verify_canonical(source['identity']['key'], placement['position'], reward)
             global_corrections.correct_canonical(source['identity']['key'], placement['position'], reward)
             for qi, quantity in enumerate(reward.get('items', [])):
                 problem = stack_problem(claim_items[quantity['item']['key']], quantity['count'])

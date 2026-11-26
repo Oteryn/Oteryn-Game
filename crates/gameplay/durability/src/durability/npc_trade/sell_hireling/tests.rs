@@ -32,6 +32,8 @@ fn facts(key: &str) -> ItemDefinitionFacts {
 }
 fn request() -> NpcTradeRequest {
     NpcTradeRequest {
+        shopping_bag: None,
+        include_equipped: false,
         fluid_subtype: None,
         full_charges: None,
         cause: NpcTradeCause {
@@ -196,7 +198,7 @@ fn high_value_trade_uses_existing_audit_owner_and_refuses_foreign_or_corrupt_coi
         &id(43),
         &request,
         (units, total, false),
-        (&plan, None),
+        (&plan, None, &Default::default()),
     );
     message.house_key = Some("oteryn:content.house.fixture".into());
     check_npc_trade(&message).expect("source-derived payout");

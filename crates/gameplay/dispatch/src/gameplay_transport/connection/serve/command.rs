@@ -1,6 +1,7 @@
 //! Decode, reserve and execute one command before producing its ordered output.
 
 use super::*;
+use crate::gameplay_transport::hotkey_equip::RejectionStage;
 use oteryn_protocol_oteryn::chat::{COMMAND_TYPE_CHAT_INTENT, ChatDisposition};
 
 pub(super) struct CommandOutcome {
@@ -103,9 +104,17 @@ where
         Ok(crate::gameplay_transport::session_ingress::CommandAction::Execute) => {}
     }
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
+    let selected_hotkey = command.command_type
+        == oteryn_protocol_oteryn::hotkey_equip::COMMAND_TYPE_HOTKEY_EQUIP
+        && session
+            .selected_capabilities
+            .command_selected(command.command_type);
     // A retained unknown Bank operation must reconcile its original outcome. Rejecting it
     // here could hide committed money work. A replay above always keeps its retained result.
     if limited && !session.reconcile_original_bank {
+        if selected_hotkey {
+            RejectionStage::Throttled.log(command.command_id);
+        }
         let mut dispatch = integrity::refusal(session, command.command_type);
         session.sequence = session
             .sequence
@@ -142,7 +151,7 @@ where
         .enter_input(session.admitted.game_session_id)
         .await;
     let guard_deferred =
-        input_permit.is_some() && !guards(authority, session.admitted, command).await?;
+        input_permit.is_some() && !guards(authority, &mut session.admitted, command).await?;
     if guard_deferred && !session.reconcile_original_bank {
         drop(input_permit.take());
     }
@@ -214,8 +223,17 @@ where
         drop(input_permit.take());
     }
     let npc_relocation = None;
+    use oteryn_protocol_oteryn::loop_training::{
+        COMMAND_TYPE_OFFLINE_TRAINING_CHOOSE, decode_offline_training_skill,
+    };
+    let training_action = command.command_type != COMMAND_TYPE_OFFLINE_TRAINING_CHOOSE
+        || (session
+            .selected_capabilities
+            .command_selected(command.command_type)
+            && decode_offline_training_skill(command.payload).is_ok());
     if input_permit.is_some()
         && !guard_deferred
+        && training_action
         && !authority
             .training_activity(session.admitted, command.command_type)
             .await
@@ -234,7 +252,11 @@ where
         } else {
             None
         };
-    if command.command_type != oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_INTENT {
+    if !matches!(
+        command.command_type,
+        oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_INTENT
+            | oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_ROW_ACTION
+    ) {
         session.stash_rows = None;
     }
     let walk_target = autowalk::target(session, command);
@@ -270,8 +292,12 @@ where
             .selected_capabilities
             .command_selected(command.command_type)
     {
+        if selected_hotkey {
+            RejectionStage::InputUnavailable.log(command.command_id);
+        }
         Dispatch::Unregistered
     } else if replaced {
+        RejectionStage::Superseded.log(command.command_id);
         Dispatch::ItemMove(
             oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Rejected,
             Vec::new(),
@@ -328,14 +354,7 @@ where
         // Pacing waits must not hold shutdown's player-input permit. The walk takes one
         // permit per actual step, and the original action reacquires one before its retry.
         drop(input_permit.take());
-        let walked = Box::pin(autowalk::walk(
-            stream,
-            authority,
-            session,
-            command.command_id,
-            target,
-        ))
-        .await?;
+        let walked = Box::pin(autowalk::walk(stream, authority, session, command, target)).await?;
         input_permit = authority
             .enter_input(session.admitted.game_session_id)
             .await;
@@ -477,13 +496,23 @@ where
 /// Keep holder contention distinct from lost authority in both command loops.
 pub(super) async fn guards<A: FreshAdmissionAuthority>(
     authority: &A,
-    admitted: AdmittedSession,
+    admitted: &mut AdmittedSession,
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
 ) -> Result<bool, ServeEnd> {
-    let failure = match authority.house_transfer_input(admitted).await {
+    let house_input = match admitted.continuity.house_input_pending {
+        Some(false) => Ok(()),
+        pending => {
+            let result = authority.house_transfer_input(*admitted).await;
+            if pending == Some(true) && result.is_ok() {
+                admitted.continuity.house_input_pending = Some(false);
+            }
+            result
+        }
+    };
+    let failure = match house_input {
         Err(error) => Some(("house_transfer_input", error)),
         Ok(()) => authority
-            .activity_transfer_input(admitted)
+            .activity_transfer_input(*admitted)
             .await
             .err()
             .map(|error| ("activity_transfer_input", error)),

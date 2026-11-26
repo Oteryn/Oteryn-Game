@@ -1,8 +1,8 @@
 //! Selected domain-57 messages; transient raid announcements are never replayed on join.
 use super::*;
 use oteryn_protocol_oteryn::zones_nologout::{
-    CAPABILITY_ZONES_NOLOGOUT_V1, SERVER_MESSAGES_EMPTY_SNAPSHOT, STATE_DOMAIN_SERVER_MESSAGES,
-    decode_server_message,
+    CAPABILITY_BOSS_DEFEATED_V1, CAPABILITY_ZONES_NOLOGOUT_V1, SERVER_MESSAGES_EMPTY_SNAPSHOT,
+    STATE_DOMAIN_SERVER_MESSAGES, decode_server_message,
 };
 
 pub(super) fn validate_join(
@@ -50,6 +50,7 @@ pub(super) fn apply<S: SessionStream>(
             domain_id: STATE_DOMAIN_SERVER_MESSAGES,
         });
     }
+    let boss_defeats = session.is_selected(CAPABILITY_BOSS_DEFEATED_V1);
     let delta = decode_state_delta(payload)?;
     let entry = session
         .gated_revisions
@@ -59,6 +60,11 @@ pub(super) fn apply<S: SessionStream>(
     check_delta(&delta, 1, entry.1)?;
     let value = decode_server_message(delta.payload)
         .map_err(|_| SessionError::Protocol(FoundationProtocolError::MalformedFrame))?;
+    if matches!(value, ServerMessage::BossDefeated(_)) && !boss_defeats {
+        return Err(SessionError::CapabilityNotSelected {
+            capability: CAPABILITY_BOSS_DEFEATED_V1,
+        });
+    }
     entry.1 = delta.new_revision;
     Ok(SessionEvent::ServerMessage(AppliedDelta {
         server_sequence: sequence,

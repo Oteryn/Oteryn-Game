@@ -29,23 +29,32 @@ pub(super) fn artifact() -> TestResult<(Vec<u8>, serde_json::Value)> {
                 // interrupted build never leaves a partial artifact at the shared path.
                 let staging =
                     std::env::temp_dir().join(format!("qc-pin-{digest}-{}", std::process::id()));
-                let status = std::process::Command::new("cargo")
-                    .current_dir(root)
-                    .args([
-                        "run",
-                        "--locked",
-                        "--release",
-                        "-p",
-                        "oteryn-world-bundle-compiler",
-                        "--",
-                        "pin-check",
-                        ".",
-                    ])
-                    .arg(&staging)
-                    .status()?;
-                if !status.success() {
-                    return Err("world pin-check failed".into());
+                // The fixture needs the exact published bytes once. Use the
+                // compiler already linked into the test binary so the lock
+                // never encloses a Cargo build or a second parity compile.
+                use oteryn_world_bundle_compiler::{bundle, compile, project, source};
+                let identity = serde_json::from_slice(&std::fs::read(
+                    root.join("content/world/pins/oteryn.identity.json"),
+                )?)?;
+                let project = source::project(&root)?;
+                let (registry, palette) = source::registry(&root, &project)?;
+                let compiled = compile::compile(
+                    &compile::Input {
+                        regions: &project.regions,
+                        palette: &palette,
+                        identity,
+                        world: source::world_extent(&root)?,
+                        build_class: bundle::BuildClass::NonProduction,
+                        draft_areas: project::draft_areas(&project.index)?,
+                        families: &project.families,
+                    },
+                    &registry,
+                )?;
+                if oteryn_world_bundle::npc::hex(&compiled.digest) != digest {
+                    return Err("compiled World differs from the published pin".into());
                 }
+                std::fs::create_dir_all(&staging)?;
+                std::fs::write(staging.join(&filename), compiled.bytes)?;
                 std::fs::rename(staging.join(&filename), path.join(&filename))?;
                 let _ = std::fs::remove_dir_all(&staging);
             }
@@ -60,6 +69,47 @@ pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     let (bytes, pin) = artifact()?;
+    boot(native, &bytes, &boot_pins(&pin)?)
+}
+
+/// Retain the real source tiles, including their ordinals and attributes, and
+/// the surrounding sectors needed by the live map view. Verify the original
+/// digest before booting the smaller fixture bundle.
+pub(super) fn world_near(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    positions: &[(u16, u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use oteryn_world_bundle::{bundle, sector::SECTOR_SIZE};
+
+    let (bytes, pin) = artifact()?;
+    let mut pins = boot_pins(&pin)?;
+    let mut sectors = Vec::new();
+    let visited = bundle::visit(&bytes, |_, sector| {
+        if positions.iter().copied().chain([(pins.start.x, pins.start.y)]).any(|(x, y)| {
+            sector.sx.abs_diff(x / SECTOR_SIZE) <= 1 && sector.sy.abs_diff(y / SECTOR_SIZE) <= 1
+        }) {
+            sectors.push(sector);
+        }
+        Ok(())
+    })?;
+    if visited.digest != pins.bundle.digest || visited.manifest.is_production() != pins.bundle.production {
+        return Err("pinned World identity mismatch".into());
+    }
+    drop(bytes);
+
+    let mut manifest = visited.manifest;
+    manifest.build_class = bundle::BuildClass::NonProduction;
+    manifest.spawns = Default::default();
+    manifest.npcs = Default::default();
+    manifest.dropped_teleports.retain(|&key| bundle::names_entry(&sectors, key));
+    let projected = oteryn_world_bundle::writer::write(&manifest, &sectors, &Default::default())?;
+    pins.bundle.digest = projected[projected.len() - bundle::DIGEST..].try_into()?;
+    pins.bundle.production = false;
+    pins.map_revision = format!("sha256:{}", oteryn_world_bundle::npc::hex(&pins.bundle.digest));
+    boot(native, &projected, &pins)
+}
+
+pub(super) fn boot_pins(pin: &serde_json::Value) -> TestResult<crate::map::boot::BootPins> {
     let field = |key: &str| -> TestResult<&str> { Ok(pin[key].as_str().ok_or("world pin field")?) };
     let hex = field("digest")?;
     let mut digest = [0; 32];
@@ -67,7 +117,7 @@ pub(super) fn world(
         *byte = u8::from_str_radix(&hex[2 * index..2 * index + 2], 16)?;
     }
     let entry = &pin["entry_start"];
-    let pins = crate::map::boot::BootPins {
+    Ok(crate::map::boot::BootPins {
         bundle: crate::map::BundlePins {
             digest,
             project_format_version: field("project_format_version")?.into(),
@@ -81,10 +131,17 @@ pub(super) fn world(
             y: u16::try_from(entry["y"].as_u64().ok_or("entry y")?)?,
             floor: -i8::try_from(entry["floor"].as_u64().filter(|&z| z <= 15).ok_or("entry floor")?)?,
         },
-    };
+    })
+}
+
+fn boot(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    bytes: &[u8],
+    pins: &crate::map::boot::BootPins,
+) -> TestResult<crate::map::boot::BundleWorld> {
     crate::map::boot::boot(
-        &bytes,
-        &pins,
+        bytes,
+        pins,
         crate::foundation::WorldId::decode(&super::fixture::id(42))
             .map_err(super::fixture::debug)?,
         crate::foundation::ChannelId::decode(&super::fixture::id(43))

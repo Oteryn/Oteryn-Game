@@ -378,10 +378,12 @@ const INVENTORY: &[Entry] = &[
         state: Gate::AllocatedOpen { task: "TK-W19" },
         calls: &[
             ("gameplay_transport/cosmetic_item_use.rs", 1),
-            // Carried-fluid dispensers retain the native ground owner proof.
-            ("gameplay_transport/item_craft/dispenser.rs", 1),
+            // Ground dispensers and map-base cask minting both require the ground owner proof.
+            ("gameplay_transport/item_craft/dispenser.rs", 2),
             ("gameplay_transport/item_craft/planting.rs", 1),
             ("gameplay_transport/novelty_ground_use.rs", 1),
+            // The SP04 deferral check and the Blue Present drop tile both need the ground proof.
+            ("gameplay_transport/reward_bag_use.rs", 2),
         ],
     },
     // The durable custody of the map's Items; on a bundle World that is its Ground persistence.
@@ -1079,13 +1081,21 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/dawnport_trial.rs", 1),
     // Q6's condition-potion fixture supplies only combat; its qualified room stays None.
     ("gameplay_transport/postgres_tests/condition_potions.rs", 1),
-    // W05d's native Cake tile fixture supplies combat only, never qualification.
+    // W05d's native Cake tile fixtures supply combat only, never qualification.
+    ("gameplay_transport/postgres_tests/cake_bridge.rs", 1),
     ("gameplay_transport/postgres_tests/cake_phases.rs", 1),
     ("gameplay_transport/postgres_tests/cyclopedia_tracker.rs", 1),
+    // The map-base cask fixture supplies the pinned Bundle combat room only.
+    ("gameplay_transport/postgres_tests/dispenser_map_base.rs", 1),
     // W19 fixtures supply only combat; bundle Worlds still have no qualified room.
     (
         "gameplay_transport/postgres_tests/event_containers/ground.rs",
         2,
+    ),
+    // The full-pack reward fixture supplies the Bundle combat room for the Ground drop.
+    (
+        "gameplay_transport/postgres_tests/event_reward_full_pack.rs",
+        1,
     ),
     ("gameplay_transport/postgres_tests/field_runes.rs", 2),
     (
@@ -1175,6 +1185,16 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         2,
     ),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
+    // The Lighthouse supplies the room for its cropped World fixture.
+    (
+        "gameplay_transport/postgres_tests/thais_lighthouse_journey.rs",
+        1,
+    ),
+    // The poacher chapter uses its compact Bundle map without qualification.
+    (
+        "gameplay_transport/postgres_tests/threatened_dreams_journey.rs",
+        1,
+    ),
     (
         "gameplay_transport/postgres_tests/support/vertical_move_fixtures.rs",
         2,

@@ -200,7 +200,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Exhausted,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                reward_granted: None,
                 gate_message_id: None,
+                potion_utterance: None,
                 refusal_detail: None,
             };
         }
@@ -299,7 +301,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     disposition: oteryn_protocol_oteryn::world_object::UseDisposition::TooFar,
                     committed: None,
                     earned: connection::EarnedNotice::NoneEarned,
+                    reward_granted: None,
                     gate_message_id: None,
+                    potion_utterance: None,
                     refusal_detail:
                         oteryn_protocol_oteryn::refusal_detail::RefusalDetail::of_floors(
                             -i32::from(position.floor),
@@ -352,7 +356,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             committed: None,
             earned: earned_notice(self.achievements, notice, &mut operator_event),
+            reward_granted: None,
             gate_message_id: None,
+            potion_utterance: None,
             refusal_detail: None,
         }
     }
@@ -398,6 +404,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(outcome) = self
             .use_house_base_decoration(actor, command, &target)
             .await
+        {
+            return outcome;
+        }
+        if let Some(map) = self.bundle_map()
+            && let Some(outcome) =
+                super::super::world_event::use_board(self, actor, command, map, &target).await
         {
             return outcome;
         }
@@ -458,7 +470,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition: oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                reward_granted: None,
                 gate_message_id: None,
+                potion_utterance: None,
                 refusal_detail: None,
             };
         }
@@ -469,7 +483,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition: oteryn_protocol_oteryn::world_object::UseDisposition::TooFar,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                reward_granted: None,
                 gate_message_id: None,
+                potion_utterance: None,
                 refusal_detail: None,
             };
         }
@@ -502,7 +518,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         },
                     ),
                     earned: connection::EarnedNotice::NoneEarned,
+                    reward_granted: None,
                     gate_message_id: None,
+                    potion_utterance: None,
                     refusal_detail: None,
                 }
             }
@@ -510,21 +528,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition: oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                reward_granted: None,
                 gate_message_id: None,
+                potion_utterance: None,
                 refusal_detail: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::Occupied) => UseOutcome {
                 disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Occupied,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                reward_granted: None,
                 gate_message_id: None,
+                potion_utterance: None,
                 refusal_detail: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::StaleState) => UseOutcome {
                 disposition: oteryn_protocol_oteryn::world_object::UseDisposition::StaleState,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                reward_granted: None,
                 gate_message_id: None,
+                potion_utterance: None,
                 refusal_detail: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::Rejected) | Err(_) => {

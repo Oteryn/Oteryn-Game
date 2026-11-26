@@ -252,6 +252,7 @@ mod vocation_choice;
 pub mod weapon_proficiency;
 mod wire_position;
 mod world_event;
+mod world_login_info;
 mod world_map;
 /// ADMIT0: the boot-bound Channel required gameplay capabilities (D1081-D1084).
 pub mod world_required_capabilities;
@@ -277,7 +278,10 @@ pub use seam_rooms::SeamRooms;
 )]
 pub use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
 pub use staff::StaffReply;
-pub use store::{StorePurchaseMode, with_store_offer};
+pub use store::{
+    StorePurchaseMode, run_retained_store_reconciliation, run_store_receipt_outbox,
+    with_store_offer,
+};
 
 use crate::achievement_catalogue::AccountAchievementsRequest;
 use crate::content::NativeEntryMovementCells;

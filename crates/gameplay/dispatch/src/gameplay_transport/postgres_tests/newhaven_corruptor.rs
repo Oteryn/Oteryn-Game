@@ -550,9 +550,13 @@ fn scenario(
                 &[4, 6, 12, 14, 98, 179, 180],
             )
             .ok_or("Newhaven item command capabilities")?;
+        let visible_corpse = owner.runtime.lock().await.visible_corpses().into_iter()
+            .find(|visible| visible.item.item_instance_id == corpse)
+            .ok_or("visible corpse binding")?;
+        assert_ne!(visible_corpse.identity, corpse);
         let click = QuickLootRequest {
             action: QuickLootAction::Click,
-            corpse: Some(corpse),
+            corpse: Some(visible_corpse.identity),
             category: None,
             recipient: None,
             recipient_id: None,

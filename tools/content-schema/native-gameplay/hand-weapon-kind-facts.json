@@ -5,6 +5,13 @@
   "binding_sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
   "records": [
     {
+      "key": "oteryn:item.tibia.i3059",
+      "source_id": 3059,
+      "source_line": 6988,
+      "taxonomy": "Spellbooks",
+      "weapon_type": "SPELLBOOK"
+    },
+    {
       "key": "oteryn:item.tibia.i3409",
       "source_id": 3409,
       "source_line": 10226,
@@ -232,6 +239,13 @@
       "key": "oteryn:item.tibia.i14088",
       "source_id": 14088,
       "source_line": 32375,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i19373",
+      "source_id": 19373,
+      "source_line": 39511,
       "taxonomy": "Shields",
       "weapon_type": "SHIELD"
     },

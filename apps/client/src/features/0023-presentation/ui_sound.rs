@@ -57,7 +57,7 @@ pub(in crate::play) fn observe(mailbox: &mut mailbox::Mailbox, events: &[Session
                         UiSound::PrivateWithoutTab
                     })
                 }
-                ChatLine::Dropped => None,
+                ChatLine::System { .. } | ChatLine::Dropped => None,
                 _ => Some(UiSound::Chat),
             },
             SessionEvent::ServerMessage(_) => Some(UiSound::System),

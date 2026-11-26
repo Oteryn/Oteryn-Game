@@ -16,6 +16,7 @@ from pathlib import Path
 
 import grizzly_shop_profiles as grizzly
 import quest_reward_item_semantics as custody
+import quest_shared_boss_corpses
 
 ROOT = Path(__file__).resolve().parents[2]
 XML = 'imports/canary/items-xml/items.xml'
@@ -28,7 +29,8 @@ CREATURES = 'content/creatures/definitions/spell-native-profiles.json'
 # crates/gameplay/domain/src/domain/loot_data.rs CORPSE_CONTAINER_ENTRIES_MAX.
 CORPSE_CAPACITY_MAX = 48
 GROUPS = ('physical', 'stack', 'container', 'temporal', 'classification')
-MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 40, 8, 144
+# The Vampire Hunter package adds two roots to the source projection budget.
+MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 66, 8, 256
 
 
 def item_id(reference):
@@ -110,7 +112,6 @@ def required_with_loot_scope(root, creatures):
                 or details['system_eligibility']['reward_boss']):
             raise ValueError('QUEST_CORPSE_LOOT_SOURCE_BODY_CHANGED')
         loot_roots.add(number)
-    import quest_shared_boss_corpses
     roots.update(quest_shared_boss_corpses.roots(by_creature))
     import questpc7_corpse_requirements
     roots.update(questpc7_corpse_requirements.roots(root, by_creature))
@@ -283,6 +284,8 @@ def qualifications(root=ROOT, creatures=None):
     if hashlib.sha256(raw).hexdigest() != XML_SHA:
         raise ValueError('QUEST_CORPSE_XML_PIN')
     xml = grizzly.source.xml_index(raw)
+    if 50029 in roots:
+        quest_shared_boss_corpses.apply_arbaziloth_corpse_facts(xml)
     limits, source_capacities = projection_limits(root, roots, xml)
     selected = decay_closure(roots, xml)
     ordinary_loot_only = selected - decay_closure(roots - ordinary_loot_roots, xml)

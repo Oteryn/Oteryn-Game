@@ -65,7 +65,7 @@ pub(super) async fn execute(
         .await
         .ok()?;
     let mut context = owner;
-    pass.run_with_context(&mut context, move |holder, deadline, owner| {
+    let outcome = pass.run_with_context(&mut context, move |holder, deadline, owner| {
         Box::pin(async move {
             let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
             let authority = item_tx::assert_spell_item_authority_in_transaction(
@@ -80,14 +80,23 @@ pub(super) async fn execute(
             )
             .await
             .map_err(|_| DurabilityError::Unavailable)?;
-            let accepted =
+            let outcome =
                 team_finder::apply_leader_listing_in_transaction(&mut tx, &authority, listing)
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
             crate::durability::party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
-            Ok(accepted)
+            Ok(outcome)
         })
     })
     .await
-    .ok()
+    .ok()?;
+    if outcome.changed {
+        let hub = &owner.states.server_messages;
+        let text = if listing.is_some() { "The team listing was updated." } else { "The team listing was removed." };
+        hub.send_team_finder(admitted.game_session_id, admitted.continuity.connection_generation, text);
+        for target in outcome.applicants {
+            hub.send_team_finder(target.session, target.connection_generation, text);
+        }
+    }
+    Some(outcome.accepted)
 }

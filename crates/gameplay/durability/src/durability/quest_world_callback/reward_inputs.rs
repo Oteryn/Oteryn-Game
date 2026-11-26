@@ -31,16 +31,17 @@ pub(super) async fn apply(
         .map(|input| input.item.parse::<Uuid>())
         .collect::<Result<Vec<_>, _>>()
         .map_err(|_| DurabilityError::InvalidStoredState)?;
-    // The same plain-item exclusions as the single-input path, read once for
-    // the already locked set. A Royal Costume hand-in can contain 275 stacks.
+    // Mirror the carried custody trigger for the already locked set. A Royal
+    // Costume hand-in can contain 275 stacks.
     let special: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM game_item_keys WHERE item_instance_id=ANY($1::uuid[])
          UNION ALL SELECT 1 FROM game_item_timed_states WHERE item_instance_id=ANY($1::uuid[])
          UNION ALL SELECT 1 FROM game_item_texts WHERE item_instance_id=ANY($1::uuid[])
+             AND NOT game_quest_callback_accepts_authored_text($2,item_instance_id)
          UNION ALL SELECT 1 FROM game_item_imbuements WHERE item_instance_id=ANY($1::uuid[])
          UNION ALL SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=ANY($1::uuid[])
          UNION ALL SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=ANY($1::uuid[]))",
-    ).bind(&ids).fetch_one(&mut **tx).await?;
+    ).bind(&ids).bind(&request.transition_key).fetch_one(&mut **tx).await?;
     if special {
         return Ok(false);
     }

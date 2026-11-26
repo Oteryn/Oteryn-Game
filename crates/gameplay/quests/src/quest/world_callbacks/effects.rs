@@ -51,6 +51,9 @@ pub struct CallbackEffects {
     /// Opt in to source-script displacement onto a present blocked pad.
     #[serde(default, skip_serializing_if = "is_false")]
     pub scripted_teleport: bool,
+    /// Source actions that refuse an active PZ lock even on a non-PZ landing.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub requires_no_pz_lock: bool,
     /// Current native occupants must be absent before a previously started stage commits.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub clear_area: Option<ClearArea>,
@@ -85,7 +88,7 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub player_speech: Option<String>,
     pub transform: Option<u16>,
-    /// Restore the exact pre-transform source revision after this delay.
+    /// Restore the exact source revision after a transform or selected-tool removal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reset_after_ms: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -492,6 +495,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
     {
         return false;
     }
+    if effects.requires_no_pz_lock
+        && (callback.teleport.is_none() || callback.actor_kind != ActorKind::Player)
+    {
+        return false;
+    }
     if effects.item_reward_per_use && !super::per_use_reward::admitted(callback) {
         return false;
     }
@@ -670,7 +678,23 @@ pub(super) fn valid(callback: &Callback) -> bool {
         || effects.reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)
                 || callback.actor_kind != ActorKind::Player
-                || (effects.transform.is_none() && callback.lever.is_none())
+                || (effects.transform.is_none()
+                    && callback.lever.is_none()
+                    && !callback.item_on_target.as_ref().is_some_and(|tool| {
+                        tool.selected_instance
+                            && tool.target_remove
+                            && (!tool.reusable
+                                || (callback.requires_world_admission
+                                    && callback.trigger == Trigger::Use
+                                    && callback.passages.is_empty()))
+                    }))
+                || (callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|tool| tool.target_remove)
+                    && (callback.reversible
+                        || callback.lever.is_some()
+                        || !callback.passages.is_empty()))
                 || effects.portals.is_some()
                 || effects.item_presence.is_some()
                 || effects.item_cycle.is_some()
@@ -888,7 +912,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && callback.lever.is_none()
             && !callback.opening_only
             && !callback.reversible
-            && callback.offerings.is_empty()
+            && (callback.offerings.is_empty()
+                || (callback.vampire_coffin_fallback().is_some()
+                    && callback.offerings.len() == 3
+                    && callback.offerings.iter().all(|offering| {
+                        offering.item == "oteryn:item.tibia.i3083" && offering.count == 1
+                    })))
             && callback.item_on_target.is_none()
             && encounter.players.len() == 1
             && encounter.timing.is_none()

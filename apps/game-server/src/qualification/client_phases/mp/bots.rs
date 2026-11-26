@@ -8,6 +8,8 @@ use oteryn_dev_client::client_runtime::party as party_client;
 use oteryn_dev_client::{DevClientSession, EntityRef, SessionEvent};
 use oteryn_protocol_oteryn::{attack, logout::LogoutResult, party, target_move};
 
+const STEP_BUDGET: Duration = Duration::from_secs(10);
+
 pub(super) struct Bot<'p, 'a> {
     pub pair: &'p SeamClients<'a>,
     pub index: usize,
@@ -244,8 +246,7 @@ async fn provision_current(bot: &mut Bot<'_, '_>, profile: &str) -> TestResult {
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
     let output = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("sudo")
-            .args(["-n", "python3"])
+        crate::qualification::provision_python()
             .arg(script)
             .args([
                 "--socket",
@@ -327,6 +328,35 @@ pub(super) async fn walk_bot(
     Ok(())
 }
 
+pub(super) async fn walk_bot_to_logout(
+    bots: &mut [Bot<'_, '_>],
+    index: usize,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    let (before, remaining) = bots.split_at_mut(index);
+    let (bot, after) = remaining.split_first_mut().ok_or("logout walker missing")?;
+    let result = while_servicing_liveness(
+        async {
+            walk_with_landing_budget(
+                bot.client()?,
+                path,
+                |at, direction| destination(world, at, direction),
+                Some(STEP_BUDGET),
+                None,
+            )
+            .await
+        },
+        async || {
+            pump_at(before, "walk-to-logout-peer").await?;
+            pump_at(after, "walk-to-logout-peer").await?;
+            Ok(())
+        },
+    )
+    .await?;
+    bot.contextualize("walk-to-logout", result)
+}
+
 pub(super) fn positions(bots: &[Bot<'_, '_>]) -> TestResult<Vec<TilePos>> {
     bots.iter()
         .map(|bot| {
@@ -355,6 +385,7 @@ pub(super) fn tile_available(positions: &[TilePos], actor: usize, next: TilePos)
         .all(|(index, &at)| index == actor || at != next)
 }
 
+#[derive(Clone)]
 struct GroupRoute {
     goal: TilePos,
     remaining: VecDeque<StepDirection>,
@@ -365,16 +396,39 @@ fn plan_round(
     positions: &[TilePos],
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
 ) -> Vec<(usize, StepDirection)> {
+    let mut planned = routes.to_vec();
+    let (steps, yield_to) = plan_round_in_order(&mut planned, positions, &landing, None);
+    if let Some(index) = yield_to {
+        return plan_round_in_order(routes, positions, &landing, Some(index)).0;
+    }
+    for (route, next) in routes.iter_mut().zip(planned) {
+        *route = next;
+    }
+    steps
+}
+
+fn plan_round_in_order(
+    routes: &mut [GroupRoute],
+    positions: &[TilePos],
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+    priority: Option<usize>,
+) -> (Vec<(usize, StepDirection)>, Option<usize>) {
     let mut reserved = BTreeSet::new();
     let mut steps = Vec::new();
-    for (index, route) in routes.iter_mut().enumerate() {
+    for index in priority
+        .into_iter()
+        .chain((0..routes.len()).filter(|&i| Some(i) != priority))
+    {
+        let route = &mut routes[index];
         let at = positions[index];
         if at == route.goal {
             continue;
         }
+        let unoccupied_landing = |at, direction| {
+            landing(at, direction).filter(|&next| tile_available(positions, index, next))
+        };
         let available_landing = |at, direction| {
-            landing(at, direction)
-                .filter(|&next| tile_available(positions, index, next) && !reserved.contains(&next))
+            unoccupied_landing(at, direction).filter(|next| !reserved.contains(next))
         };
         if route
             .remaining
@@ -385,6 +439,13 @@ fn plan_round(
             // A peer can block the original path or reserve its next tile this round.
             // Replan around it, or wait if that peer must move before we can continue.
             let Ok(path) = find_route(at, |at| at == route.goal, available_landing) else {
+                // Try the stranded bot first if another bot's reservation cut off its route.
+                if priority.is_none()
+                    && !reserved.is_empty()
+                    && find_route(at, |at| at == route.goal, unoccupied_landing).is_ok()
+                {
+                    return (steps, Some(index));
+                }
                 continue;
             };
             route.remaining = path.into();
@@ -398,7 +459,7 @@ fn plan_round(
             steps.push((index, direction));
         }
     }
-    steps
+    (steps, None)
 }
 
 /// One confirmed step per bot per round, with a distinct unoccupied landing for each step.
@@ -424,7 +485,17 @@ pub(super) async fn walk_group(
         {
             return Ok(());
         }
-        if !seen.insert(positions.clone()) {
+        let remaining: Vec<Vec<u8>> = routes
+            .iter()
+            .map(|route| {
+                route
+                    .remaining
+                    .iter()
+                    .map(|direction| *direction as u8)
+                    .collect()
+            })
+            .collect();
+        if !seen.insert((positions.clone(), remaining)) {
             return Err(format!("MP group route revisited positions={positions:?}").into());
         }
         let steps = plan_round(&mut routes, &positions, |at, direction| {
@@ -448,7 +519,7 @@ async fn step_confirmed(
     world: &BundleWorld,
     direction: StepDirection,
 ) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    let deadline = tokio::time::Instant::now() + STEP_BUDGET;
     let origin = tile(bots[index].client()?.world_spatial().actor_position)?;
     let landing = destination(world, origin, direction);
     let context = format!(
@@ -464,13 +535,14 @@ async fn step_confirmed(
                 return TestResult::Ok(());
             }
             if outcome.disposition != StepDisposition::Rejected || after != origin {
-                return Err(format!("MP movement refused;{context};reply={outcome:?}").into());
+                return Err(format!("MP movement refused;reply={outcome:?}").into());
             }
             pump(bots).await?;
         }
     })
     .await
-    .map_err(|_| format!("MP movement deadline;{context}"))??;
+    .map_err(|_| format!("MP movement deadline;{context}"))?
+    .map_err(|error| format!("{error};{context}"))?;
     // A server-confirmed tile change is real progress of the running row.
     verdict::Harness::global().progress("walk");
     Ok(())
@@ -517,6 +589,7 @@ pub(super) async fn party(
             Some(party::PartyIntent::Leave) => "Leave",
             Some(party::PartyIntent::Kick(_)) => "Kick",
             Some(party::PartyIntent::PassLeadership(_)) => "PassLeadership",
+            Some(party::PartyIntent::Revoke(_)) => "Revoke",
             None => "Query",
         };
         return Err(format!(
@@ -553,12 +626,104 @@ pub(super) async fn invite_accept(
     Ok(())
 }
 
+// Profile provisioning grants the axe to the backpack. Equip it through the
+// admitted client and confirm the separately published inventory update.
+pub(super) async fn equip_axe(
+    bots: &mut [Bot<'_, '_>],
+    index: usize,
+    axe: std::num::NonZeroU32,
+) -> TestResult {
+    let wielded = bots[index].client()?.inventory().is_some_and(|inventory| {
+        inventory
+            .equipment
+            .iter()
+            .any(|entry| entry.item.item_definition_ref == axe)
+    });
+    if !wielded {
+        let carried = bots[index].client()?.inventory().is_some_and(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .any(|entry| entry.item_definition_ref == axe)
+        });
+        if !carried {
+            return Err("provisioning did not publish a carried axe".into());
+        }
+        let (before, remaining) = bots.split_at_mut(index);
+        let (bot, after) = remaining.split_first_mut().ok_or("axe wielder missing")?;
+        let equipped = while_servicing_liveness(
+            async {
+                let result = async {
+                    TestResult::Ok(
+                        bot.client()?
+                            .session_mut()
+                            .equip_item_definition(axe)
+                            .await?,
+                    )
+                }
+                .await;
+                bot.contextualize("equip-axe", result)
+            },
+            async || {
+                pump_at(before, "equip-axe-peer").await?;
+                pump_at(after, "equip-axe-peer").await?;
+                Ok(())
+            },
+        )
+        .await??;
+        if equipped.status != CommandStatus::Accepted
+            || equipped.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
+        {
+            let detail = bots[index].client()?.session_mut().last_refusal_detail();
+            let observed = bots[index].client()?.inventory().map(|inventory| {
+                let carried = inventory
+                    .entries
+                    .iter()
+                    .filter(|entry| entry.item_definition_ref == axe)
+                    .map(|entry| entry.count.get())
+                    .collect::<Vec<_>>();
+                format!(
+                    "equipment={:?};backpack={:?};axe_ref={axe};axe_direct_counts={carried:?}",
+                    inventory.equipment, inventory.main_backpack,
+                )
+            });
+            return Err(format!(
+                "axe equip refused:{equipped:?};refusal_detail={detail:?};observed_inventory={observed:?}"
+            )
+            .into());
+        }
+        // The result precedes the inventory StateDelta on the wire.
+        wait_observation(
+            bots,
+            tokio::time::Instant::now() + Duration::from_secs(5),
+            &format!("axe command {} publishes equipment", equipped.command_id),
+            |bots, _| {
+                Ok(bots[index]
+                    .session
+                    .as_ref()
+                    .and_then(|client| client.inventory())
+                    .is_some_and(|inventory| {
+                        inventory
+                            .equipment
+                            .iter()
+                            .any(|entry| entry.item.item_definition_ref == axe)
+                    }))
+            },
+        )
+        .await?;
+    }
+    Ok(())
+}
+
 pub(super) async fn attack_target(bot: &mut Bot<'_, '_>, target: Option<&EntityRef>) -> TestResult {
     let outcome = bot.client()?.session_mut().attack_target(target).await?;
     if outcome.status != CommandStatus::Accepted
         || outcome.disposition != attack::AttackIntentDisposition::Ok
     {
-        return Err(format!("attack status={:?};disposition={:?};source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/combat.rs:4;PvP-refusal:crates/gameplay/dispatch/src/gameplay_transport/pvp_live.rs:184;level-rule:crates/gameplay/combat-rules/src/pvp/legality.rs:97;reason-detail=not-carried-by-ATTACK_V1;reply={outcome:?}", outcome.status, outcome.disposition).into());
+        return Err(format!(
+            "attack status={:?};disposition={:?};source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/combat.rs:4;reason-detail=not-carried-by-ATTACK_V1;reply={outcome:?}",
+            outcome.status, outcome.disposition
+        ).into());
     }
     Ok(())
 }
@@ -678,6 +843,47 @@ pub(super) async fn release_all(
 #[cfg(test)]
 mod movement_tests {
     use super::*;
+
+    #[test]
+    fn group_planner_yields_the_junction_to_the_bot_that_must_cross() -> TestResult {
+        let cell = |x, y| TilePos { x, y, floor: 7 };
+        let junction = cell(1, 1);
+        let left = cell(0, 1);
+        let right = cell(2, 1);
+        let stem = cell(1, 2);
+        let landing = |at: TilePos, direction: StepDirection| {
+            let (dx, dy) = direction.delta();
+            let next = cell(
+                u16::try_from(i32::from(at.x) + dx).ok()?,
+                u16::try_from(i32::from(at.y) + dy).ok()?,
+            );
+            [junction, left, right, stem]
+                .contains(&next)
+                .then_some(next)
+        };
+        let mut positions = [stem, right];
+        let mut routes = [
+            GroupRoute {
+                goal: junction,
+                remaining: VecDeque::from([StepDirection::North]),
+            },
+            GroupRoute {
+                goal: left,
+                remaining: VecDeque::from([StepDirection::West; 2]),
+            },
+        ];
+        for expected in [
+            (1, StepDirection::West),
+            (1, StepDirection::West),
+            (0, StepDirection::North),
+        ] {
+            assert_eq!(plan_round(&mut routes, &positions, landing), [expected]);
+            positions[expected.0] =
+                landing(positions[expected.0], expected.1).ok_or("missing landing")?;
+        }
+        assert_eq!(positions, [junction, left]);
+        Ok(())
+    }
 
     #[test]
     fn group_planner_routes_both_bots_around_occupied_and_reserved_landings() -> TestResult {

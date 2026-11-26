@@ -161,7 +161,7 @@ class PostgresLibraryArchiveTests(unittest.TestCase):
                                      [row for row in matrices["matrix"]["include"] if row["archive"] == archive])
 
     def test_each_selected_archive_keeps_every_calibrated_partition_once(self):
-        counts = {"lib-1": 15, "lib-2": 7, "lib-3": 7, "e2e": 5, "lib": 2}
+        counts = {"lib-1": 20, "lib-2": 15, "lib-3": 11, "e2e": 6, "lib": 3}
         for size in range(1, len(counts) + 1):
             for archives in itertools.combinations(counts, size):
                 with self.subTest(archives=archives):
@@ -406,7 +406,7 @@ class PostgresLibraryArchiveTests(unittest.TestCase):
                     self.assertIn(error, result.stderr)
                 else:
                     self.assertEqual(result.returncode, 0, result.stderr)
-                    self.assertIn("4 PostgreSQL tests across 29 partitions", result.stdout)
+                    self.assertIn("4 PostgreSQL tests across 46 partitions", result.stdout)
 
 
 class HeavyGateTests(unittest.TestCase):

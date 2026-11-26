@@ -2,10 +2,15 @@
 BODIES = {
     'an_observer_eye': 5995,
     'arbaziloth': 50029,
+    'arachir_the_ancient_one': 8109,
     'armenius_creature': 6006,
+    'diblis_the_fair': 8109,
     'grand_mother_foulscale': 5973,
     'orshabaal': 5995,
+    'sir_valorcrest': 8109,
+    'the_pale_count': 18953,
     'the_weakened_count': 6006,
+    'zevelon_duskbringer': 8109,
 }
 
 
@@ -24,3 +29,19 @@ def roots(creatures):
             raise ValueError('SHARED_REWARD_BOSS_CORPSE_BINDING:' + key)
         selected.add(number)
     return selected
+
+
+def apply_arbaziloth_corpse_facts(xml):
+    # Crystal 201189f8 data/items/items.xml, items 50029 and 50028.
+    # Keep the pinned Canary records' exact identity, decay targets and physical facts.
+    for number in (50029, 50028):
+        overrides = {'containersize': ('15', '8'), 'duration': ('300', '60')}
+        for attribute in xml[number].findall('attribute'):
+            key = attribute.get('key', '').lower()
+            if key in overrides:
+                expected, value = overrides.pop(key)
+                if attribute.get('value') != expected:
+                    raise ValueError(f'ARBAZILOTH_CORPSE_CANARY_FACT_DRIFT:{number}:{key}')
+                attribute.set('value', value)
+        if overrides:
+            raise ValueError(f'ARBAZILOTH_CORPSE_CANARY_FACT_MISSING:{number}')

@@ -43,18 +43,24 @@ def historical_binding_bytes(data: bytes, expected_sha: str) -> bytes:
     """
     if hashlib.sha256(data).hexdigest() == expected_sha:
         return data
+    try:
+        document = json.loads(data)
+    except ValueError as error:
+        raise ValueError('Item binding table digest mismatch') from error
+    bindings = document.get('bindings') if isinstance(document, dict) else None
+    if not isinstance(bindings, list) or any(not isinstance(row, dict) for row in bindings):
+        raise ValueError('Item binding table digest mismatch')
     from event_item_identity import CRYSTAL, DECISION, evidence
     packet = json.loads((ROOT / 'tools/content-schema/native-gameplay/cake-bridge-identity.json').read_bytes())
     approved = {'source_key': 'oteryn:source.crystalserver', 'source_revision': CRYSTAL,
                 'identity_namespace': 'ots/item_server_id', 'external_id': '48227',
                 'target': {'family': 'Item', 'key': 'oteryn:item.tibia.i48227', 'revision': 'definition-r1'},
                 'disposition': 'EXACT'}
-    document = json.loads(data)
-    rows = [r for r in document['bindings'] if r['external_id'] == '48227']
+    rows = [r for r in bindings if r.get('external_id') == '48227']
     if (packet.get('decision') != DECISION or packet.get('sources') != evidence()['sources']
             or packet.get('binding') != approved or rows != [approved]):
         raise ValueError('Item binding table digest mismatch')
-    document['bindings'] = [r for r in document['bindings'] if r['external_id'] != '48227']
+    document['bindings'] = [r for r in bindings if r.get('external_id') != '48227']
     predecessor = (json.dumps(document, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n').encode()
     if hashlib.sha256(predecessor).hexdigest() != expected_sha:
         raise ValueError('Item binding table digest mismatch')
@@ -122,7 +128,13 @@ def source_xml(root: Path, server: str) -> tuple[set[int], dict]:
 
 def independent_crystal_membership(proof: tuple[str, bytes]) -> set[int]:
     revision, raw = proof
-    if revision != INDEPENDENT_CRYSTAL_PIN or hashlib.sha256(raw).hexdigest() != INDEPENDENT_CRYSTAL_XML_SHA:
+    qualified = {
+        INDEPENDENT_CRYSTAL_PIN: INDEPENDENT_CRYSTAL_XML_SHA,
+        # The retained Summer Item source already owns exact bindings for the new looks.
+        "00ce02a57ca5a12e48f32a3476e37471167e4c3f":
+            "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+    }
+    if hashlib.sha256(raw).hexdigest() != qualified.get(revision):
         raise ValueError("Unqualified independent Crystal XML pin")
     ids = set()
     for node in ET.fromstring(raw):

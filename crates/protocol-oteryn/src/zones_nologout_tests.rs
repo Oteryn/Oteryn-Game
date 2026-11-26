@@ -43,3 +43,19 @@ fn raid_server_messages_enforce_wire_limit_and_reject_ambiguous_payloads()
     assert!(decode_server_message(&vec![0; 261]).is_err());
     Ok(())
 }
+
+#[test]
+fn boss_defeat_and_category_use_distinct_fields() -> Result<(), ServerMessageError> {
+    let notice = ServerNotification {
+        message: ServerMessage::BossDefeated("a".repeat(255)),
+        category: ServerMessageCategory::Raid,
+    };
+    let mut encoded = encode_server_notification(&notice)?;
+    assert_eq!(encoded.len(), 260);
+    assert_eq!(encoded[0], 0x2a);
+    assert_eq!(&encoded[258..], &[0x30, 2]);
+    assert_eq!(decode_server_notification(&encoded)?, notice);
+    encoded[258] = 0x28;
+    assert_eq!(decode_server_notification(&encoded)?, notice);
+    Ok(())
+}

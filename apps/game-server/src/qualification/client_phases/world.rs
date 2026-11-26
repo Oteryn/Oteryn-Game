@@ -486,17 +486,14 @@ fn route_with_landings(
 ) -> Option<Vec<StepDirection>> {
     find_route(from, goal, |at, direction| {
         let next = landing(at, direction)?;
-        (next.x.abs_diff(from.x) <= 160
-            && next.y.abs_diff(from.y) <= 160
-            && next.floor.abs_diff(from.floor) <= 2
-            && available(next))
-        .then_some(next)
+        (map_journey::in_town(next, from) && available(next)).then_some(next)
     })
     .ok()
 }
 
 fn route_around_occupant(
     from: TilePos,
+    center: TilePos,
     occupied: TilePos,
     remaining: &VecDeque<StepDirection>,
     available: impl Fn(TilePos) -> bool,
@@ -505,12 +502,16 @@ fn route_around_occupant(
     let goal = remaining
         .iter()
         .try_fold(occupied, |at, &direction| landing(at, direction))?;
-    route_with_landings(
+    find_route(
         from,
         |at| at == goal,
-        |at| at != occupied && available(at),
-        landing,
+        |at, direction| {
+            let next = landing(at, direction)?;
+            (map_journey::in_town(next, center) && next != occupied && available(next))
+                .then_some(next)
+        },
     )
+    .ok()
 }
 
 fn find_route(
@@ -761,8 +762,7 @@ async fn request_fixture_control(
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
     let output = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("sudo")
-            .args(["-n", "python3"])
+        crate::qualification::provision_python()
             .arg(script)
             .args([
                 "--socket",
@@ -818,32 +818,51 @@ async fn walk_with_landings(
     path: &[StepDirection],
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
 ) -> TestResult {
+    walk_with_landing_budget(client, path, landing, None, None).await
+}
+
+async fn walk_with_landing_budget(
+    client: &mut oteryn_dev_client::DevClientSession,
+    path: &[StepDirection],
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+    step_budget: Option<Duration>,
+    detour_center: Option<TilePos>,
+) -> TestResult {
     let mut path = VecDeque::from(path.to_vec());
     let mut blocked = std::collections::BTreeSet::new();
     while let Some(direction) = path.pop_front() {
         let before = client.world_spatial().actor_position;
-        let mut outcome = client.step_retrying(direction).await?;
-        for attempt in 1..=6 {
-            if outcome.disposition != StepDisposition::Rejected
-                || client.world_spatial().actor_position != before
-            {
-                break;
+        let movement = async {
+            let mut outcome = client.step_retrying(direction).await?;
+            for attempt in 1..=6 {
+                if outcome.disposition != StepDisposition::Rejected
+                    || client.world_spatial().actor_position != before
+                {
+                    break;
+                }
+                evidence(&format!(
+                    "town_route step_rejected attempt={attempt} direction={direction:?} from={before:?} expected={:?} actual={:?}",
+                    landing(tile(before)?, direction),
+                    client.world_spatial().actor_position,
+                ));
+                let Some(delay) = town_route_retry_delay(
+                    outcome.disposition,
+                    client.world_spatial().actor_position == before,
+                    attempt,
+                ) else {
+                    break;
+                };
+                tokio::time::sleep(delay).await;
+                outcome = client.step_retrying(direction).await?;
             }
-            evidence(&format!(
-                "town_route step_rejected attempt={attempt} direction={direction:?} from={before:?} expected={:?} actual={:?}",
-                landing(tile(before)?, direction),
-                client.world_spatial().actor_position,
-            ));
-            let Some(delay) = town_route_retry_delay(
-                outcome.disposition,
-                client.world_spatial().actor_position == before,
-                attempt,
-            ) else {
-                break;
-            };
-            tokio::time::sleep(delay).await;
-            outcome = client.step_retrying(direction).await?;
-        }
+            TestResult::Ok(outcome)
+        };
+        let outcome = match step_budget {
+            Some(budget) => tokio::time::timeout(budget, movement).await.map_err(|_| {
+                format!("town route step deadline direction={direction:?} from={before:?}")
+            })?,
+            None => movement.await,
+        }?;
         let from = tile(before)?;
         let expected = landing(from, direction);
         if outcome.disposition == StepDisposition::Blocked
@@ -868,6 +887,7 @@ async fn walk_with_landings(
                 && blocked.insert(occupied)
                 && let Some(detour) = route_around_occupant(
                     from,
+                    detour_center.unwrap_or(from),
                     occupied,
                     &path,
                     |at| !blocked.contains(&at) && !visible_blockers.contains(&at),
@@ -897,6 +917,13 @@ async fn walk_with_landings(
         client.take_events();
     }
     Ok(())
+}
+
+pub(super) fn is_logout_rest_tile(world: &BundleWorld, at: TilePos) -> bool {
+    world
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .is_some_and(|tile| tile.protection_zone() && !tile.no_logout())
 }
 
 pub(super) async fn logout_retrying_busy(
@@ -3765,9 +3792,10 @@ fn qualification_town_route_detours_around_live_wolf() -> TestResult {
         route_with_landings(from, |at| at == goal, |_| true, landing),
         Some(vec![East, East])
     );
-    let detour = route_around_occupant(from, wolf, &VecDeque::from([East]), |_| true, landing)
-        .ok_or("missing wolf detour")?;
+    let detour =
+        route_around_occupant(from, from, wolf, &VecDeque::from([East]), |_| true, landing)
+            .ok_or("missing wolf detour")?;
     assert_eq!(detour, [North, East, East, South]);
-    assert!(route_around_occupant(from, wolf, &VecDeque::new(), |_| true, landing).is_none());
+    assert!(route_around_occupant(from, from, wolf, &VecDeque::new(), |_| true, landing).is_none());
     Ok(())
 }
