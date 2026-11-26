@@ -1,6 +1,11 @@
-//! Client replay capture for SCENARIO_MATRIX C11.
+//! C11 live Battle Instinct query and native panel verification.
 
 use super::*;
+use oteryn_dev_client::client_ui::battle_instinct_status::{
+    BattleInstinctStatusPanel, panel_text, request,
+};
+use oteryn_protocol_oteryn::battle_instinct_status as wire;
+use std::io::Write;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if let Err(error) = verdict::observe(capture(clients)).await {
@@ -11,15 +16,20 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
-    use oteryn_protocol_oteryn::battle_instinct_status as wire;
-
     let mut client = connect_world(clients, 0xcd).await?;
+    let mut panel = BattleInstinctStatusPanel {
+        selected: client
+            .selected_capabilities()
+            .contains(&wire::CAPABILITY_BATTLE_INSTINCT_STATUS_V1),
+        ..Default::default()
+    };
+    let payload = request(&mut panel).ok_or("C11 client did not build a Battle Instinct query")?;
     let reply = client
         .session_mut()
         .gated_command(
             wire::CAPABILITY_BATTLE_INSTINCT_STATUS_V1,
             wire::COMMAND_TYPE_BATTLE_INSTINCT_STATUS_QUERY,
-            &[],
+            &payload,
         )
         .await?;
     if reply.status != CommandStatus::Accepted {
@@ -27,26 +37,56 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     }
     let status = wire::BattleInstinctStatus::decode(&reply.payload)
         .ok_or("Battle Instinct query returned a malformed payload")?;
+    if status != wire::BattleInstinctStatus::default() {
+        return Err(format!(
+            "C11 fresh character did not report inactive Battle Instinct: {status:?}"
+        )
+        .into());
+    }
+    if !panel.finish(true, &reply.payload)
+        || panel.snapshot != Some(status)
+        || panel.pending
+        || panel.error.is_some()
+        || panel_text(&panel) != "Battle Instinct: Inactive\r\nMelee: +0\r\nShielding: +0\r\n"
+    {
+        return Err(
+            format!("C11 client did not render the live inactive snapshot: {panel:?}").into(),
+        );
+    }
+
+    request(&mut panel).ok_or("C11 client did not build a refresh after the first query")?;
+    let rejected = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_BATTLE_INSTINCT_STATUS_V1,
+            wire::COMMAND_TYPE_BATTLE_INSTINCT_STATUS_QUERY,
+            &[0],
+        )
+        .await?;
+    if rejected.status != CommandStatus::Rejected {
+        return Err(format!("C11 malformed query returned {:?}", rejected.status).into());
+    }
+    if panel.finish(false, &rejected.payload)
+        || panel.snapshot != Some(status)
+        || panel.pending
+        || panel.error != Some("Battle Instinct could not be refreshed. Try Refresh.")
+    {
+        return Err(format!("C11 client lost its snapshot on rejected refresh: {panel:?}").into());
+    }
 
     if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let path = Path::new(&path);
-        let expected = format!(
-            "active={} melee={} shielding={}\n",
-            u8::from(status.active),
-            status.melee,
-            status.shielding
-        );
-        for (name, result) in [
-            ("c11-battle-instinct.bin", std::fs::write(path.join("c11-battle-instinct.bin"), &reply.payload)),
-            ("c11-expected.txt", std::fs::write(path.join("c11-expected.txt"), expected)),
+        for (name, bytes) in [
+            ("c11-battle-instinct.bin", reply.payload.as_slice()),
+            ("c11-expected.txt", b"active=0 melee=0 shielding=0\n"),
         ] {
-            if let Err(error) = result {
-                evidence(&format!("C11_CAPTURE_WRITE_ERROR file={name} error={error}"));
-            }
+            std::fs::File::create_new(path.join(name))
+                .and_then(|mut file| file.write_all(bytes))
+                .map_err(|error| format!("C11 capture {name} failed: {error}"))?;
         }
     }
     evidence(&format!(
-        "SEAM_EVIDENCE e2e_all scenario=C11.client status=PASS evidence=active-{}-melee-{}-shielding-{}",
+        "SEAM_EVIDENCE e2e_all scenario=C11.client status=PASS evidence=active-{}-melee-{}-shielding-{}-native-panel-rejected-refresh",
         status.active, status.melee, status.shielding
     ));
     Ok(())
