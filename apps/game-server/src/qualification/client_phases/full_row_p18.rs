@@ -489,7 +489,7 @@ async fn append_dust(
     Ok(())
 }
 
-async fn bank_balance(tx: &mut FixtureDb, clients: &SeamClients<'_>) -> TestResult<i64> {
+pub(super) async fn bank_balance(tx: &mut FixtureDb, clients: &SeamClients<'_>) -> TestResult<i64> {
     Ok(sqlx::query_scalar(
         "SELECT coalesce((SELECT balance FROM game_account_bank_balances
         WHERE account_id=$1::uuid AND world_id=$2::uuid),0)::bigint",

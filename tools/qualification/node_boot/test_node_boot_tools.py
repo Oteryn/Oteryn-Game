@@ -879,7 +879,7 @@ class CloudRunSummaryTests(unittest.TestCase):
             (
                 "oteryn-client-ui",
                 "e2e_p18_replays_forge_history_and_operation_receipts",
-                {"p18-requests.json", *(f"p18-frame-{index}.json" for index in range(8))},
+                {"p18-requests.json", *(f"p18-frame-{index}.json" for index in range(10))},
             ),
         ])
         selected, _ = replay["selected_rows"]("174:1")
@@ -896,6 +896,40 @@ class CloudRunSummaryTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 1)
             self.assertIn("status=FAIL cause=capture-missing", result.stdout)
+
+    def test_p18_rejects_coherently_replaced_envelopes(self):
+        import hashlib
+        import json
+        import runpy
+
+        check = runpy.run_path(str(HERE / "client_replay.py"))["p18_capture_matches_verdict"]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            log = root / "node.log"
+            session = "01934f10-7c00-7000-8000-000000000020"
+
+            def write_capture(identity, payload):
+                digest = hashlib.sha256()
+                blobs = {"p18-requests.json": json.dumps([identity, []]).encode()}
+                for index in range(10):
+                    blobs[f"p18-frame-{index}.json"] = json.dumps({
+                        "game_session_id": identity, "command_id": index + 1,
+                        "server_sequence": index + 1, "status": 1, "payload": [payload],
+                    }).encode()
+                for name, blob in blobs.items():
+                    (root / name).write_bytes(blob)
+                    digest.update(len(blob).to_bytes(8, "big"))
+                    digest.update(blob)
+                return digest.hexdigest()
+
+            original = write_capture(session, 1)
+            log.write_text(f"SEAM_EVIDENCE e2e_capture scenario=P18.client status=CAPTURED "
+                           f"evidence=live-capture session={session} sha256={original}\n")
+            self.assertTrue(check(root, log))
+            write_capture(session, 2)
+            self.assertFalse(check(root, log))
+            write_capture("01934f10-7c00-7000-8000-000000000021", 1)
+            self.assertFalse(check(root, log))
 
     def test_summary_counts_client_replay_verdict_only(self):
         with tempfile.TemporaryDirectory() as tmp:

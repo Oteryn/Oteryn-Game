@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Gate the cloud wrapper's selected client rows on their fresh Rust replays."""
 
+import hashlib
+import json
 import os
 from pathlib import Path
 import re
@@ -127,9 +129,29 @@ def replay_targets():
     )]
     targets["e2e_p18"] = [(
         "oteryn-client-ui", "e2e_p18_replays_forge_history_and_operation_receipts",
-        {"p18-requests.json", *(f"p18-frame-{index}.json" for index in range(8))},
+        {"p18-requests.json", *(f"p18-frame-{index}.json" for index in range(10))},
     )]
     return targets
+
+
+def p18_capture_matches_verdict(captures, log):
+    pattern = (r"^SEAM_EVIDENCE e2e_capture scenario=P18\.client status=CAPTURED "
+               r"evidence=live-capture session=([0-9a-f-]+) sha256=([0-9a-f]{64})$")
+    verdicts = re.findall(pattern, log.read_text(errors="replace"), re.MULTILINE)
+    if len(verdicts) != 1:
+        return False
+    session, digest = verdicts[0]
+    try:
+        manifest = (captures / "p18-requests.json").read_bytes()
+        if json.loads(manifest)[0] != session:
+            return False
+        checksum = hashlib.sha256()
+        for raw in [manifest, *((captures / f"p18-frame-{i}.json").read_bytes() for i in range(10))]:
+            checksum.update(len(raw).to_bytes(8, "big"))
+            checksum.update(raw)
+        return checksum.hexdigest() == digest
+    except (OSError, ValueError, TypeError, IndexError, KeyError):
+        return False
 
 
 def replay_cause(row, package, test, names, captures, server, log):
@@ -141,6 +163,8 @@ def replay_cause(row, package, test, names, captures, server, log):
         return "capture-missing"
     if not package or not server:
         return "replay-not-run"
+    if row == "P18" and not p18_capture_matches_verdict(captures, log):
+        return "replay-failed"
 
     try:
         result = subprocess.run(

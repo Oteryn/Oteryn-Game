@@ -98,16 +98,18 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
                 19 => matches!(byte, b'8' | b'9' | b'a' | b'b'),
                 _ => byte.is_ascii_hexdigit(),
             })
-        || requests.len() != 8
+        || requests.len() != 10
     {
-        return Err("Forge replay requires eight frames from a live UUIDv7 session".into());
+        return Err("Forge replay requires ten frames from a live UUIDv7 session".into());
     }
     let mut panel = ItemForgePanel {
         selected: true,
         ..Default::default()
     };
+    panel.preview.selected = true;
     let mut previous = (0, 0);
-    for (index, (command_id, server_sequence, submitted_bytes)) in requests.into_iter().enumerate()
+    for (index, (command_id, server_sequence, submitted_bytes)) in
+        requests.iter().take(8).cloned().enumerate()
     {
         let file = std::fs::File::open(root.join(format!("p18-frame-{index}.json")))?;
         let envelope = read_envelope(file)?;
@@ -126,6 +128,86 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
             || status != CommandStatus::Accepted
         {
             return Err(format!("invalid Forge reply metadata at frame {index}").into());
+        }
+        if matches!(index, 1 | 2) {
+            use oteryn_client_runtime::{forge_preview as wire, raw_feature};
+            let quote_index = index + 7;
+            let (quote_id, quote_sequence, quote_request) = &requests[quote_index];
+            let quote = read_envelope(std::fs::File::open(
+                root.join(format!("p18-frame-{quote_index}.json")),
+            )?)?;
+            if quote.game_session_id != session
+                || quote.command_id != *quote_id
+                || quote.server_sequence != *quote_sequence
+                || quote.status != 1
+                || !(previous.0 < *quote_id && *quote_id < command_id)
+                || !(previous.1 < *quote_sequence && *quote_sequence < server_sequence)
+            {
+                return Err(
+                    "Forge review was not bound to its original command and session".into(),
+                );
+            }
+            let submitted =
+                Request::decode(&submitted_bytes).ok_or("captured Forge request invalid")?;
+            let request =
+                preview_request(&mut panel, wire::Selection::Resource(submitted.operation))
+                    .ok_or("Forge UI refused resource review")?;
+            if request.payload != *quote_request
+                || panel
+                    .confirm_resource(panel.resource_dialog.serial, submitted.occurrence)
+                    .is_some()
+            {
+                return Err("Forge submitted without the live resource quote".into());
+            }
+            crate::item_forge::preview::apply(
+                &mut panel,
+                &request,
+                &raw_feature::GatedCommandResult {
+                    command_id: quote.command_id,
+                    server_sequence: quote.server_sequence,
+                    status: raw_feature::CommandStatus::Accepted,
+                    payload: quote.payload,
+                },
+            );
+            let Some(Content::Confirm {
+                operation,
+                quote: Some(review),
+            }) = panel.resource_dialog.content.as_ref()
+            else {
+                return Err("Forge did not display the live confirmation".into());
+            };
+            let expected = if index == 1 {
+                (100, 40, 100, 100)
+            } else {
+                (40, 15, 100, 101)
+            };
+            if *operation != submitted.operation
+                || (
+                    review.before.dust,
+                    review.after_dust,
+                    review.before.dust_limit,
+                    review.after_limit,
+                ) != expected
+                || (index == 1
+                    && (!review.full_resources
+                        || review.before.slivers != 0
+                        || review.after_slivers != 3))
+            {
+                return Err(
+                    format!("Forge displayed wrong resource confirmation {review:?}").into(),
+                );
+            }
+            let serial = panel.resource_dialog.serial;
+            let confirmed = panel
+                .confirm_resource(serial, submitted.occurrence)
+                .ok_or("Forge UI refused the displayed confirmation")?;
+            if confirmed != submitted
+                || panel
+                    .confirm_resource(serial, submitted.occurrence)
+                    .is_some()
+            {
+                return Err("Forge confirmation submitted a different or duplicate action".into());
+            }
         }
         previous = (command_id, server_sequence);
         let payload = envelope.payload;
@@ -266,6 +348,9 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
         if panel_text(&panel).lines().nth(3) != Some(expected) {
             return Err(format!("unexpected Forge panel text at frame {index}").into());
         }
+        if index == 5 {
+            check_invalid_results(&mut panel.clone(), &payload);
+        }
     }
     Ok(())
 }
@@ -334,11 +419,16 @@ fn e2e_p18_replays_forge_history_and_operation_receipts() -> Result<(), Box<dyn 
         assert_eq!(panel_text(&panel).lines().nth(3), Some(header.as_str()));
     }
 
+    let (_, last) = operations.last().ok_or("no operation replies")?;
+    check_invalid_results(&mut panel, last);
+    Ok(())
+}
+
+fn check_invalid_results(panel: &mut ItemForgePanel, last: &[u8]) {
     // A rejected command and an undecodable accepted payload leave the last receipt unchanged.
     let kept = panel.decoded.clone();
-    let (_, last) = operations.last().ok_or("no operation replies")?;
     panel.pending = true;
-    apply_result(&mut panel, &response(CommandStatus::Rejected, last));
+    apply_result(panel, &response(CommandStatus::Rejected, last));
     assert!(!panel.pending);
     assert_eq!(panel.decoded, kept);
     assert_eq!(
@@ -347,7 +437,7 @@ fn e2e_p18_replays_forge_history_and_operation_receipts() -> Result<(), Box<dyn 
     );
     panel.pending = true;
     apply_result(
-        &mut panel,
+        panel,
         &response(CommandStatus::Accepted, br#"{"operation":"fusion"}"#),
     );
     assert_eq!(panel.decoded, kept);
@@ -355,5 +445,4 @@ fn e2e_p18_replays_forge_history_and_operation_receipts() -> Result<(), Box<dyn 
         panel.feedback.as_deref(),
         Some("Invalid forge reply; refresh to retry")
     );
-    Ok(())
 }
