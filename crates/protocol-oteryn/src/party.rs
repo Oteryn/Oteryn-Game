@@ -80,6 +80,8 @@ impl PartyResult {
 pub enum PartyMembershipChange {
     Joined = 1,
     Left = 2,
+    Invited = 3,
+    Disbanded = 4,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -111,6 +113,8 @@ pub fn decode_party_membership_notice(payload: &[u8]) -> Result<PartyMembershipN
     let change = match read_varint(payload, &mut cursor)? {
         1 => PartyMembershipChange::Joined,
         2 => PartyMembershipChange::Left,
+        3 => PartyMembershipChange::Invited,
+        4 => PartyMembershipChange::Disbanded,
         _ => return bad(),
     };
     if cursor != payload.len() {

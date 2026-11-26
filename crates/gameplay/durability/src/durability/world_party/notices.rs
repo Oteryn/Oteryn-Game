@@ -6,8 +6,8 @@ pub struct MembershipNotice {
     pub change: PartyMembershipChange,
 }
 
-/// Capture the current members in the mutating transaction. Join calls this
-/// after insertion and leave before removal, so both include the changed member.
+/// Queue notices in the mutating transaction. For a join, the character is
+/// the new member. For an invitation, the character is the invitee.
 pub(super) async fn enqueue(
     tx: &mut Transaction<'_, Postgres>,
     party: [u8; 16],
@@ -95,6 +95,8 @@ impl super::super::DurabilityRoot {
                         let change = match kind {
                             1 => PartyMembershipChange::Joined,
                             2 => PartyMembershipChange::Left,
+                            3 => PartyMembershipChange::Invited,
+                            4 => PartyMembershipChange::Disbanded,
                             _ => return Err(DurabilityError::Unavailable),
                         };
                         Ok(MembershipNotice { character, change })
