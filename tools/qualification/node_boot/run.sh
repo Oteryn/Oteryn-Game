@@ -1638,7 +1638,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   )
   if [[ -n "$c17a_capture" ]]; then
     local replay
-    if [[ "$(stage_rows "$c17a_log" CAPTURED | grep -xcF 'C17a.client')" != 1 ]] ||
+    if [[ "$(grep -xcF 'SEAM_EVIDENCE e2e_capture scenario=C17a.client status=CAPTURED' "$c17a_log")" != 1 ]] ||
       [[ "$(grep -c '^SEAM_EVIDENCE C17A_CAPTURE session=.* haste_sequence=[0-9]* strong_sequence=[0-9]*$' "$c17a_log")" != 1 ]]; then
       if ! grep -q 'e2e_all scenario=C17a.client status=FAIL' "$c17a_log"; then
         echo 'SEAM_EVIDENCE e2e_all scenario=C17a.client status=FAIL seconds=0 evidence=missing_live_capture'
