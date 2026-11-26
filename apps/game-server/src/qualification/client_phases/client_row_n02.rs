@@ -142,13 +142,40 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if stats.status != CommandStatus::Accepted || level != 75 || xp != 6_489_800 {
         return Err(format!("seeded stats level={level} xp={xp}").into());
     }
-    let king = full_row_p20::approach_npc(
-        &mut client,
-        world,
-        &metadata.npcs,
-        "oteryn:npc.king_tibianus",
-    )
+    cross_castle_door(&mut client, world, StepDirection::North).await?;
+    let placement = TilePos {
+        x: 32311,
+        y: 32172,
+        floor: -6,
+    };
+    let npc = metadata
+        .npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == "oteryn:npc.king_tibianus")
+        .ok_or("missing King Tibianus placement")?;
+    if !npc
+        .placements
+        .iter()
+        .any(|p| (p.x, p.y, p.floor) == (placement.x, placement.y, placement.floor))
+    {
+        return Err("King Tibianus is absent from his authored placement".into());
+    }
+    walk_route(&mut client, world, |at| {
+        at.floor == placement.floor
+            && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
+    })
     .await?;
+    let king = client
+        .world_entities()
+        .and_then(|view| {
+            view.iter().find(|actor| {
+                actor.kind == oteryn_dev_client::EntityKind::Npc
+                    && tile(actor.position).ok() == Some(placement)
+            })
+        })
+        .ok_or("King Tibianus was not visible at his authored placement")?
+        .entity;
     let greeting = talk(&mut client, king, "hi").await?;
     if greeting.is_empty()
         || talk(&mut client, king, "promotion").await?
@@ -157,11 +184,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("King Tibianus did not confirm promotion".into());
     }
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at == start
-    })
-    .ok_or("no route back to the Wheel starting tile")?;
-    walk(&mut client, world, &path).await?;
+    cross_castle_door(&mut client, world, StepDirection::South).await?;
+    walk_route(&mut client, world, |at| at == start).await?;
     if !client
         .selected_capabilities()
         .contains(&wheel::CAPABILITY_WHEEL_ALLOCATION_V1)
@@ -222,6 +246,83 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "revision={}->{}|core_slot={}->{}",
         initial.revision, saved.revision, initial.points[CORE_SLOT], saved.points[CORE_SLOT]
     ))
+}
+
+async fn step_once(
+    client: &mut DevClientSession,
+    direction: StepDirection,
+    expected: TilePos,
+) -> TestResult {
+    let result = client.step(direction).await?;
+    if result.status != CommandStatus::Accepted
+        || result.disposition != StepDisposition::Moved
+        || result.world_spatial_delta.is_none()
+        || tile(client.world_spatial().actor_position)? != expected
+    {
+        return Err(format!("castle step {direction:?} expected {expected:?}: {result:?}").into());
+    }
+    verdict::Harness::global().progress("walk");
+    tokio::time::sleep(Duration::from_millis(u64::from(result.step_wait_ms))).await;
+    client.take_events();
+    Ok(())
+}
+
+async fn walk_route(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    goal: impl Fn(TilePos) -> bool,
+) -> TestResult {
+    let mut at = tile(client.world_spatial().actor_position)?;
+    let path = route(world, at, goal).ok_or_else(|| format!("castle route absent from {at:?}"))?;
+    for direction in path {
+        at = destination(world, at, direction).ok_or("missing planned castle landing")?;
+        step_once(client, direction, at).await?;
+    }
+    Ok(())
+}
+
+async fn cross_castle_door(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    direction: StepDirection,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    const DOOR: TilePos = TilePos {
+        x: 32314,
+        y: 32180,
+        floor: -7,
+    };
+    let (from, to) = match direction {
+        StepDirection::North => (32181, 32179),
+        StepDirection::South => (32179, 32181),
+        _ => return Err("invalid castle doorway direction".into()),
+    };
+    let doors = world.facts().doors();
+    let mut keys = doors
+        .keys()
+        .filter(|&key| crate::map::view::placement_of(key).is_some_and(|(at, _)| at == DOOR));
+    let key = keys.next().ok_or("missing fixed castle door")?;
+    if keys.next().is_some() || doors.authored_closed(key).is_none() {
+        return Err("ambiguous or unsupported fixed castle door".into());
+    }
+    walk_route(client, world, |at| at == TilePos { y: from, ..DOOR }).await?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let revision = client
+        .world_object_overlay()
+        .iter()
+        .find(|entry| entry.placement == placement)
+        .map_or(0, |entry| entry.revision);
+    if revision % 2 == 0 {
+        let result = client.use_object(&placement, revision).await?;
+        if result.status != CommandStatus::Accepted
+            || result.disposition != UseDisposition::Committed
+        {
+            return Err(format!("castle door at {DOOR:?} item=1632 refused: {result:?}").into());
+        }
+    }
+    step_once(client, direction, DOOR).await?;
+    step_once(client, direction, TilePos { y: to, ..DOOR }).await
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
