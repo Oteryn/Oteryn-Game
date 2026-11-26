@@ -82,6 +82,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     #[cfg(feature = "qualification-spawn")]
     let allowed = allowed
         || spell_build(profile).is_some()
+        || profile == "w20b-light-strict"
         || named_item(profile).is_some()
         || profile == "premium";
     allowed.then_some((session, profile))
@@ -138,19 +139,24 @@ pub(super) async fn prepare(
             }
         };
     // The supervisor polls other owners in the same task as the control loop.
-    match Box::pin(DurabilityRoot::with_holder_owner(prepare_build(
+    let strict = profile == "w20b-light-strict";
+    let build = DurabilityRoot::with_holder_owner(prepare_build(
         root,
         authority,
         proof,
         config,
         native,
         session,
-        profile,
+        if strict { "w20b-light" } else { profile },
         #[cfg(feature = "qualification-spawn")]
         premium,
-    )))
-    .await
-    {
+    ));
+    let result = if strict {
+        Box::pin(qualification_build::STRICT_W20B_SEED.scope((), build)).await
+    } else {
+        Box::pin(build).await
+    };
+    match result {
         Ok(()) => "qualified",
         Err(error) => {
             emit(PROCESS, &refusal_warning(&session, profile, error.as_ref()));
