@@ -73,15 +73,32 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         rat
     };
     let target = rat.entity;
-    client.session_mut().attack_target(Some(&target)).await?;
-    client.service_liveness(Duration::from_millis(25)).await?;
-    let combat = *client
-        .session_mut()
-        .combat_state()
-        .ok_or("C18a capture has no combat state")?;
-    if combat.target != Some(target) {
-        return Err("C18a server did not retain selected target".into());
+    let attack = client.session_mut().attack_target(Some(&target)).await?;
+    if attack.status != CommandStatus::Accepted
+        || attack.disposition != attack::AttackIntentDisposition::Ok
+    {
+        return Err(format!(
+            "C18a first Rat selection refused: {attack:?}; caster={here:?} rat={rat:?}"
+        )
+        .into());
     }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    let combat = loop {
+        let combat = *client
+            .session_mut()
+            .combat_state()
+            .ok_or("C18a capture has no combat state")?;
+        if combat.target == Some(target) {
+            break combat;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "C18a server did not retain selected target after {attack:?}; observed={combat:?}"
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+    };
     let facing = if rat.position.x < here.x {
         StepDirection::East
     } else if rat.position.x > here.x {
@@ -153,10 +170,24 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         return Err("C18a Scorch did not apply its exact mana and soul costs".into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+    let mut observed = Vec::new();
     loop {
         if client.take_events().iter().any(|event| {
             let SessionEvent::Presentation(delta) = event else { return false };
-            delta.server_sequence > sequence && delta.value.iter().any(|damage| {
+            if delta.server_sequence <= sequence {
+                return false;
+            }
+            for event in &delta.value {
+                let relevant = match event.kind {
+                    PresentationEventKind::ValueText { target: victim, .. } => victim == target,
+                    PresentationEventKind::SpellWords { caster, .. } => caster == own,
+                    _ => false,
+                };
+                if relevant && observed.len() < 8 {
+                    observed.push((delta.server_sequence, event.decision_ordinal, event.kind));
+                }
+            }
+            delta.value.iter().any(|damage| {
                 matches!(damage.kind, PresentationEventKind::ValueText {
                     kind: PresentationValueKind::DamageDealt, target: victim, primary, ..
                 } if victim == target && primary.value > 0)
