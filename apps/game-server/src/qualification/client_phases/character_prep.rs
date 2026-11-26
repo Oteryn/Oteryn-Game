@@ -324,16 +324,29 @@ pub(super) async fn w01b_rat_hunter(
         chase: ChaseMode::Chase,
         ..FightModes::DEFAULT
     };
+    client.take_events();
     let reply = client.session_mut().set_fight_modes(&modes).await?;
-    if reply.status != CommandStatus::Accepted
-        || reply.disposition != AttackIntentDisposition::Ok
-        || client
-            .session_mut()
-            .combat_state()
-            .is_none_or(|state| state.modes != modes)
-    {
-        return Err(format!("W01b chase mode refused or missing its state delta: {reply:?}").into());
+    if reply.status != CommandStatus::Accepted || reply.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("W01b chase mode refused: {reply:?}").into());
     }
+    // The command result precedes its domain-10 state delta on the wire.
+    tokio::time::timeout(Duration::from_secs(6), async {
+        loop {
+            for event in client.take_events() {
+                if let oteryn_dev_client::SessionEvent::ActorCombatState(delta) = event
+                    && delta.server_sequence > reply.result_server_sequence
+                {
+                    if delta.value.modes != modes {
+                        return Err(format!("W01b chase mode delta mismatch: {:?}", delta.value).into());
+                    }
+                    return TestResult::Ok(());
+                }
+            }
+            client.service_liveness(Duration::from_millis(100)).await?;
+        }
+    })
+    .await
+    .map_err(|_| "W01b chase mode state delta missing")??;
     evidence(&format!(
         "W01B_SEEDED row={row} level={level} max_health={max_health} max_mana={max_mana} hands=empty chase=on"
     ));
