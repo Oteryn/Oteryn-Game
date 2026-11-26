@@ -1645,7 +1645,7 @@ fn scenario_with_creature_observed(
                 &creature_key,
                 expected_xp,
                 children,
-                reconcile == Some(true),
+                matches!(corpse_check, CorpseCheck::Decay(true)),
                 replay
                     .map(|(_, target, _)| target)
                     .ok_or("real captured kill")?,
