@@ -308,6 +308,7 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
+            let world = fence.runtime_scope.world_id();
             if let Err(error) = assert_item_only_fence(&mut tx, &fence, &node).await? {
                 return Ok(Err(error));
             }
@@ -318,7 +319,6 @@ impl DurabilityRoot {
             if !active {
                 return Ok(Err(CharacterProgressionError::AuthorityRejected));
             }
-            let world = fence.runtime_scope.world_id();
             // PK lookup is bounded. Character/session locks serialize duplicate commands.
             let receipt = sqlx::query("SELECT result,character_id=encode($3,'hex')::uuid AND world_id=encode($4,'hex')::uuid AS matches FROM game_world_event_query_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(command_id.to_string())
@@ -386,6 +386,18 @@ impl DurabilityRoot {
                     state.announcement.push('.');
                     state.active = true;
                 }
+            }
+            if bank_robbery::announced(&mut tx, world, state.reset_epoch).await? {
+                let line = bank_robbery::BOARD_LINE;
+                let limit = oteryn_protocol_oteryn::world_event::MAX_ANNOUNCEMENT_BYTES;
+                if state.announcement.is_empty() || state.announcement.len() + 1 + line.len() > limit {
+                    // Keep the source line whole, including when this epoch also has seasonal announcements.
+                    state.announcement = line.into();
+                } else {
+                    state.announcement.push(' ');
+                    state.announcement.push_str(line);
+                }
+                state.active = true;
             }
             let bytes = encode_world_event_state(&state).map_err(|_| DurabilityError::InvalidStoredState)?;
             sqlx::query("INSERT INTO game_world_event_query_receipts(game_session_id,command_id,character_id,world_id,result) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5)")
