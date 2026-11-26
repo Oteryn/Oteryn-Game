@@ -186,6 +186,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
 
     let request = sale::HouseSaleRequest::catalogue(String::new());
+    let buyer_before = accepted(&mut buyer, &request).await?;
+    if buyer_before.has_more || !buyer_before.rows.is_empty() {
+        return Err("step=initial-buyer observed=visible-house-before-offer".into());
+    }
     let original = accepted(&mut seller, &request).await?;
     let row = only_house(&original)?;
     if row.owner != seller_name || row.transfer_state != 0 || row.rent != RENT {
@@ -208,6 +212,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         || row.allowed != ((1 << 5) | (1 << 6))
         || only_house(&offered)?.revision != row.revision
         || bank_balance(&buyer_scope, 0).await? != buyer_gold
+        || bank_balance(clients, 1).await? != seller_gold
     {
         return Err(format!("step=offer observed={row:?}").into());
     }
@@ -217,13 +222,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     unauthorized.recipient = seller_name.clone();
     send(&mut buyer, &unauthorized, CommandStatus::Rejected).await?;
     let after = accepted(&mut buyer, &request).await?;
-    if after.rows != incoming.rows {
-        return Err("step=offer-not-owner observed=catalogue-changed".into());
+    if after.rows != incoming.rows
+        || accepted(&mut seller, &request).await?.rows != offered.rows
+        || bank_balance(&buyer_scope, 0).await? != buyer_gold
+        || bank_balance(clients, 1).await? != seller_gold
+    {
+        return Err("step=offer-not-owner observed=catalogue-or-balance-changed".into());
     }
     let accept = action(5, row.revision);
     send(&mut seller, &accept, CommandStatus::Rejected).await?;
-    if accepted(&mut seller, &request).await?.rows != offered.rows {
-        return Err("step=accept-not-recipient observed=catalogue-changed".into());
+    if accepted(&mut seller, &request).await?.rows != offered.rows
+        || accepted(&mut buyer, &request).await?.rows != incoming.rows
+        || bank_balance(&buyer_scope, 0).await? != buyer_gold
+        || bank_balance(clients, 1).await? != seller_gold
+    {
+        return Err("step=accept-not-recipient observed=catalogue-or-balance-changed".into());
     }
     let escrowed = accepted(&mut buyer, &accept).await?;
     let escrow = only_house(&escrowed)?;
@@ -252,7 +265,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )
     .execute(&mut database)
     .await?;
-    let settled: TestResult = async {
+    let settled: TestResult<sale::HouseSaleRow> = async {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
         loop {
             let page = accepted(&mut buyer, &request).await?;
@@ -261,7 +274,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                 if current.transfer_state != 0 || !current.recipient.is_empty() {
                     return Err(format!("step=settlement observed={current:?}").into());
                 }
-                return Ok(());
+                return Ok(current.clone());
             }
             if current.owner != seller_name
                 || current.transfer_state != 2
@@ -276,9 +289,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     sqlx::raw_sql(sqlx::AssertSqlSafe(original_calendar))
         .execute(&mut database)
         .await?;
-    settled?;
+    let settled = settled?;
 
     let buyer_session = buyer.join_snapshot().game_session_id;
+    let seller_session = seller.join_snapshot().game_session_id;
     logout(&mut buyer).await?;
     logout(&mut seller).await?;
     drop((buyer, seller));
@@ -287,6 +301,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let durable = accepted(&mut buyer, &request).await?;
     let row = only_house(&durable)?;
     if buyer.join_snapshot().game_session_id == buyer_session
+        || seller.join_snapshot().game_session_id == seller_session
+        || row != &settled
         || row.owner != buyer_name
         || row.transfer_state != 0
         || !row.recipient.is_empty()
