@@ -212,6 +212,11 @@ pub enum BankError {
     CapacityExceeded,
     ConflictingOccurrence,
     Suspended,
+    SuspendedConfirmation {
+        npc_key: String,
+        npc_identity: [u8; 16],
+        npc_generation: u64,
+    },
     Unavailable(DurabilityError),
 }
 
@@ -236,7 +241,9 @@ impl std::fmt::Display for BankError {
             Self::ConflictingOccurrence => {
                 formatter.write_str("bank occurrence was reused with a different binding")
             }
-            Self::Suspended => formatter.write_str("bank service is suspended during the robbery"),
+            Self::Suspended | Self::SuspendedConfirmation { .. } => {
+                formatter.write_str("bank service is suspended during the robbery")
+            }
             Self::Unavailable(error) => write!(formatter, "bank storage failed: {error:?}"),
         }
     }
@@ -593,8 +600,13 @@ impl DurabilityRoot {
             lock_admission_relations(&mut tx).await?;
             lock_npc_bank_command(&mut tx, command).await?;
             let Some(stored) = read_npc_bank_command(&mut tx, &fence, command).await? else { return Ok(Ok(None)); };
+            let suspended_confirmation = || BankError::SuspendedConfirmation {
+                npc_key: stored.npc_key.clone(),
+                npc_identity: stored.npc_identity,
+                npc_generation: stored.npc_generation,
+            };
             if npc_bank_suspension(&mut tx, command).await? {
-                return Ok(Err(BankError::Suspended));
+                return Ok(Err(suspended_confirmation()));
             }
             let request = match thaw_npc_bank(&stored.bytes) { Ok(request) => request, Err(error) => return nested_bank_error(error) };
             let outcome = match bank_operation_with_npc(&mut tx, &node, &fence, &request,Some(&stored.npc_key)).await {
@@ -605,7 +617,7 @@ impl DurabilityRoot {
                         .bind(command.game_session_id().as_bytes().as_slice())
                         .bind(command.command_id().get().to_string()).execute(&mut *tx).await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    return Ok(Err(BankError::Suspended));
+                    return Ok(Err(suspended_confirmation()));
                 }
                 Err(error) => return nested_bank_error(error),
             };

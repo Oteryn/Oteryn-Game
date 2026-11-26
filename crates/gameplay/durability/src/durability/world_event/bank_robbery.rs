@@ -257,6 +257,12 @@ impl DurabilityRoot {
                         if let Some(city) = select(config, world, epoch, hour) {
                             let index = config.cities.iter().position(|c| c.key == city.key)
                                 .ok_or(DurabilityError::InvalidStoredState)?;
+                            // A different Channel may provide this site. Leave the same
+                            // deterministic hour pending while no loaded site claims it.
+                            if !loaded_cities[index] {
+                                checked_through = hour - 1;
+                                break;
+                            }
                             let firing = crate::durability::starter_grant::new_uuid(&mut tx).await?;
                             selected = Some((index, firing));
                             checked_through = hour;
@@ -408,7 +414,7 @@ pub(super) async fn announced(
 ) -> Result<bool, DurabilityError> {
     sqlx::query_scalar("SELECT EXISTS(
         SELECT 1 FROM game_world_reset_active a JOIN game_bank_robbery_occurrences o USING(world_id,reset_epoch)
-        WHERE a.world_id=encode($1,'hex')::uuid AND a.reset_epoch=$2::text::numeric AND o.state=2
+        WHERE a.world_id=encode($1,'hex')::uuid AND a.reset_epoch=$2::text::numeric AND o.state IN (1,2)
     )").bind(world.as_bytes().as_slice()).bind(expected_epoch.to_string())
         .fetch_one(&mut **tx).await.map_err(Into::into)
 }

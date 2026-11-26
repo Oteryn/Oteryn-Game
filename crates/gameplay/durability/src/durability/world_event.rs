@@ -387,18 +387,6 @@ impl DurabilityRoot {
                     state.active = true;
                 }
             }
-            if bank_robbery::announced(&mut tx, world, state.reset_epoch).await? {
-                let line = bank_robbery::BOARD_LINE;
-                let limit = oteryn_protocol_oteryn::world_event::MAX_ANNOUNCEMENT_BYTES;
-                if state.announcement.is_empty() || state.announcement.len() + 1 + line.len() > limit {
-                    // Keep the source line whole, including when this epoch also has seasonal announcements.
-                    state.announcement = line.into();
-                } else {
-                    state.announcement.push(' ');
-                    state.announcement.push_str(line);
-                }
-                state.active = true;
-            }
             let bytes = encode_world_event_state(&state).map_err(|_| DurabilityError::InvalidStoredState)?;
             sqlx::query("INSERT INTO game_world_event_query_receipts(game_session_id,command_id,character_id,world_id,result) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5)")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(command_id.to_string())

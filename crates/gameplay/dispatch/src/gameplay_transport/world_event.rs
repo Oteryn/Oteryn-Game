@@ -129,16 +129,41 @@ pub(super) async fn use_board(
     {
         UseDisposition::Exhausted
     } else {
-        let state = query(owner, command)
+        drop(runtime);
+        if !query(owner, command)
             .await
-            .and_then(Result::ok)
-            .and_then(|bytes| {
-                oteryn_protocol_oteryn::world_event::decode_world_event_state(&bytes).ok()
-            });
-        let Some(state) = state else {
+            .is_some_and(|reply| reply.is_ok())
+        {
+            return Some(UseOutcome::rejected());
+        }
+        let Ok(announced) = owner
+            .root
+            .bank_robbery_announcement(
+                owner.character,
+                owner.holder,
+                actor.runtime_scope(),
+                actor.scope_generation(),
+                owner.reset_epoch,
+            )
+            .await
+        else {
             return Some(UseOutcome::rejected());
         };
-        if state.announcement.contains(BOARD_LINE) {
+        let runtime = owner.runtime.lock().await;
+        if owner.states.spell_states.lock().await.is_dead(actor)
+            || !runtime
+                .player_control_facts(actor, command.game_session_id)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+            || runtime
+                .read_actor_position(actor)
+                .ok()
+                .map(|read| read.position())
+                != Some(position)
+            || runtime.content_pin().client_artifact_digest() != source.content_generation
+        {
+            return Some(UseOutcome::rejected());
+        }
+        if announced {
             owner
                 .states
                 .chat

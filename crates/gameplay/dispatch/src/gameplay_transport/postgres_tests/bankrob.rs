@@ -344,7 +344,7 @@ fn at([x, y, z]: [u16; 3]) -> MovementLocalPosition {
     MovementLocalPosition {
         x: i32::from(x),
         y: i32::from(y),
-        floor: -(z as i16),
+        floor: z as i16,
     }
 }
 
@@ -358,6 +358,9 @@ fn scene(
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut manifest = bundle::read(&bytes)?.manifest;
+    // Trade checks occupied endpoints through the qualified spell tile reader.
+    // Use the native grass identity so both movement and sight can read the ground.
+    manifest.palette[0].key = "oteryn:terrain.tibia.i4526".into();
     let board = if hand_in == Some(returns::Case::Announcements) {
         let key = returns::BOARD;
         let facts =
@@ -373,7 +376,7 @@ fn scene(
     } else {
         None
     };
-    let floor = i8::try_from(origin.floor)?;
+    let floor = i8::try_from(-origin.floor)?;
     let x = u16::try_from(origin.x)?;
     let y = u16::try_from(origin.y)?;
     manifest.world = bundle::Extent {

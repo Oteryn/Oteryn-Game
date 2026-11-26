@@ -531,11 +531,24 @@ fn leaf_spki(chain: &[CertificateDer<'_>]) -> Option<Vec<u8>> {
         .map(|parsed| parsed.subject_public_key_info().as_ref().to_vec())
 }
 
+const STORE_CLIENT_CERTIFICATE: &str = "platform.store.client_certificate_file";
+const PLATFORM_ENV_IDENTITIES: [&str; 8] = [
+    "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM",
+    "OTERYN_PLATFORM_SANCTION_STREAM_CLIENT_IDENTITY_PEM",
+    "OTERYN_PLATFORM_LOYALTY_STREAM_CLIENT_IDENTITY_PEM",
+    "OTERYN_PLATFORM_SECURITY_REVOCATION_STREAM_CLIENT_IDENTITY_PEM",
+    "OTERYN_PLATFORM_ENFORCEMENT_READER_CLIENT_IDENTITY_PEM",
+    "OTERYN_PLATFORM_ENFORCEMENT_RESULTS_CLIENT_IDENTITY_PEM",
+    "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM",
+    "OTERYN_PLATFORM_PROFILE_B_CHANGES_CLIENT_IDENTITY_PEM",
+];
+
 fn store_descriptor(
     config: &NodeConfig,
     evidence: &ProducerDescriptor,
     endpoint: &(String, u16),
     roots: &[CertificateDer<'static>],
+    gameplay_chain: &[CertificateDer<'static>],
     secret: impl Fn(&'static str, &Path, usize) -> Result<Vec<u8>, StartupError>,
 ) -> Result<ProducerDescriptor, BootError> {
     let platform = &config.platform;
@@ -545,10 +558,7 @@ fn store_descriptor(
     let read_chain = |key, path: &Path| {
         certificates(&secret(key, path, MAX_PEM_BYTES)?).map_err(|_| invalid(key))
     };
-    let chain = read_chain(
-        "platform.store.client_certificate_file",
-        &store.client_certificate_file,
-    )?;
+    let chain = read_chain(STORE_CLIENT_CERTIFICATE, &store.client_certificate_file)?;
     let key = private_key(
         "platform.store.client_key_file",
         &secret(
@@ -557,11 +567,29 @@ fn store_descriptor(
             MAX_GAMEPLAY_KEY_BYTES,
         )?,
     )?;
-    let own = leaf_spki(&chain).ok_or_else(|| invalid("platform.store"))?;
-    for (key, path) in platform_client_identity_paths(config) {
-        let other = leaf_spki(&read_chain(key, path)?).ok_or_else(|| invalid(key))?;
-        if own == other {
+    let own =
+        webpki::EndEntityCert::try_from(chain.first().ok_or_else(|| invalid("platform.store"))?)
+            .map_err(|_| invalid("platform.store"))?;
+    let check_identity = |key, other: &[CertificateDer<'_>]| {
+        let other = webpki::EndEntityCert::try_from(other.first().ok_or_else(|| invalid(key))?)
+            .map_err(|_| invalid(key))?;
+        if own.subject() == other.subject()
+            || own.subject_public_key_info() == other.subject_public_key_info()
+        {
             return Err(invalid("platform.store"));
+        }
+        Ok(())
+    };
+    check_identity("listener.certificate_chain_file", gameplay_chain)?;
+    for (key, path) in platform_client_identity_paths(config)
+        .into_iter()
+        .filter(|(key, _)| *key != STORE_CLIENT_CERTIFICATE)
+    {
+        check_identity(key, &read_chain(key, path)?)?;
+    }
+    for key in PLATFORM_ENV_IDENTITIES {
+        if let Some(path) = std::env::var_os(key) {
+            check_identity(key, &read_chain(key, Path::new(&path))?)?;
         }
     }
     ProducerDescriptor::new(
@@ -821,16 +849,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                         path,
                     )?);
                 }
-                for name in [
-                    "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM",
-                    "OTERYN_PLATFORM_SANCTION_STREAM_CLIENT_IDENTITY_PEM",
-                    "OTERYN_PLATFORM_LOYALTY_STREAM_CLIENT_IDENTITY_PEM",
-                    "OTERYN_PLATFORM_SECURITY_REVOCATION_STREAM_CLIENT_IDENTITY_PEM",
-                    "OTERYN_PLATFORM_ENFORCEMENT_READER_CLIENT_IDENTITY_PEM",
-                    "OTERYN_PLATFORM_ENFORCEMENT_RESULTS_CLIENT_IDENTITY_PEM",
-                    "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM",
-                    "OTERYN_PLATFORM_PROFILE_B_CHANGES_CLIENT_IDENTITY_PEM",
-                ] {
+                for name in PLATFORM_ENV_IDENTITIES {
                     if let Some(path) = std::env::var_os(name) {
                         other_chains.push(chain(
                             "platform.character_services.identity_separation",
@@ -1025,7 +1044,14 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
             (chain, key)
         }
     };
-    let store = store_descriptor(&config, &evidence, &endpoint, &roots, secret)?;
+    let store = store_descriptor(
+        &config,
+        &evidence,
+        &endpoint,
+        &roots,
+        &gameplay_chain,
+        secret,
+    )?;
     let intents = ProducerDescriptor::new(
         CHARACTER_BOOTSTRAP_INTENT_ISSUER.into(),
         endpoint,
@@ -3639,6 +3665,9 @@ fn platform_client_identity_paths(config: &NodeConfig) -> Vec<(&'static str, &Pa
         "platform.client_certificate_file",
         &platform.client_certificate_file,
     )];
+    if let Some(v) = &platform.store {
+        paths.push((STORE_CLIENT_CERTIFICATE, &v.client_certificate_file));
+    }
     if let Some(v) = &platform.bootstrap_intents {
         paths.push((
             "platform.bootstrap_intents.client_certificate_file",
@@ -4607,6 +4636,15 @@ source_authority = "OTERYN_GAME_JOURNAL"
         rcgen::generate_simple_self_signed(vec!["localhost".to_owned()]).expect("leaf")
     }
 
+    fn store_certificate(key: &rcgen::KeyPair) -> rcgen::Certificate {
+        let mut params = rcgen::CertificateParams::new(vec!["store.localhost".to_owned()])
+            .expect("Store certificate parameters");
+        params
+            .distinguished_name
+            .push(rcgen::DnType::CommonName, "Fixture Store");
+        params.self_signed(key).expect("Store certificate")
+    }
+
     #[test]
     fn account_characters_boots_without_a_runtime_status_section() {
         let issue = || {
@@ -4694,6 +4732,7 @@ assignment_epoch = 1
             &descriptor,
             &endpoint,
             &roots,
+            &roots,
             |config_key, _, _| {
                 match config_key {
                     "platform.client_certificate_file" => Some(certificate(&evidence.cert)),
@@ -4720,15 +4759,11 @@ assignment_epoch = 1
 
     #[test]
     fn store_section_present_uses_dedicated_identity() {
-        let (evidence, store) = (issue_client_certificate(), issue_client_certificate());
-        let descriptor = select_store_descriptor(
-            STORE_SECTION,
-            &evidence,
-            &store.cert,
-            &store.signing_key,
-            None,
-        )
-        .expect("distinct Store identity");
+        let evidence = issue_client_certificate();
+        let key = rcgen::KeyPair::generate().expect("Store key");
+        let store = store_certificate(&key);
+        let descriptor = select_store_descriptor(STORE_SECTION, &evidence, &store, &key, None)
+            .expect("distinct Store identity");
         assert_eq!(
             descriptor.source_authority(),
             "urn:oteryn:platform:game-auth"
@@ -4737,7 +4772,7 @@ assignment_epoch = 1
             select_store_descriptor(
                 STORE_SECTION,
                 &evidence,
-                &store.cert,
+                &store,
                 &evidence.signing_key,
                 None
             ),
@@ -4750,16 +4785,30 @@ assignment_epoch = 1
     #[test]
     fn store_identity_equal_to_evidence_is_refused() {
         let evidence = issue_client_certificate();
-        let reissued = rcgen::CertificateParams::new(vec!["store.localhost".to_owned()])
-            .expect("Store certificate parameters")
-            .self_signed(&evidence.signing_key)
-            .expect("Store certificate with reused key");
+        let reissued = store_certificate(&evidence.signing_key);
         assert!(matches!(
             select_store_descriptor(
                 STORE_SECTION,
                 &evidence,
                 &reissued,
                 &evidence.signing_key,
+                None
+            ),
+            Err(BootError::Startup(StartupError::Invalid {
+                key: "platform.store"
+            }))
+        ));
+    }
+
+    #[test]
+    fn store_subject_cannot_be_reused_with_a_different_key() {
+        let (evidence, store) = (issue_client_certificate(), issue_client_certificate());
+        assert!(matches!(
+            select_store_descriptor(
+                STORE_SECTION,
+                &evidence,
+                &store.cert,
+                &store.signing_key,
                 None
             ),
             Err(BootError::Startup(StartupError::Invalid {

@@ -67,6 +67,14 @@ async fn hourly(h: &fixture::Harness) -> fixture::TestResult {
     )
     .execute(&h.pool)
     .await?;
+    assert!(bank_robbery::with_test_roll(
+        "thais",
+        h.root.poll_bank_robbery(&authority, &h.node, scope, generation, 1, [false; 4]),
+    ).await?.is_none());
+    let pending: (i16, i64) = sqlx::query_as(
+        "SELECT state,last_checked_hour FROM game_bank_robbery_occurrences WHERE reset_epoch=1",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(pending, (0, 0));
     let first = bank_robbery::with_test_roll(
         "thais",
         h.root
@@ -75,6 +83,7 @@ async fn hourly(h: &fixture::Harness) -> fixture::TestResult {
     .await?
     .ok_or("hourly Thais occurrence")?;
     assert_eq!(first.city.key, "thais");
+    assert!(h.root.bank_robbery_announcement(&authority, &h.node, scope, generation, 1).await?);
 
     let second = ChannelId::decode(&fixture::id(84)).map_err(fixture::debug)?;
     let other = RuntimeScopeRefV1::channel(world, second);

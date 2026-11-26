@@ -111,13 +111,7 @@ impl Bank {
         let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
         let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
         runtime
-            .initialize_pinned_test_position(
-                actor,
-                MovementLocalPosition {
-                    floor: -origin.floor,
-                    ..origin
-                },
-            )
+            .initialize_pinned_test_position(actor, origin)
             .map_err(debug)?;
         let keys = [
             "oteryn:npc.naji",
@@ -133,7 +127,7 @@ impl Bank {
                     placements: vec![NpcPlacement {
                         x: u16::try_from(origin.x + i32::try_from(i)? + 1)?,
                         y: u16::try_from(origin.y)?,
-                        floor: i8::try_from(origin.floor)?,
+                        floor: i8::try_from(-origin.floor)?,
                         direction: MovementFacing::South,
                     }],
                 })
@@ -427,7 +421,14 @@ impl Bank {
             .resume_npc_bank(self.actor, command(fence, 26))
             .await
             .ok_or("parked Bank confirmation")?;
-        assert!(!parked.unknown && parked.disposition == NpcIntentDisposition::Rejected);
+        assert!(!parked.unknown && parked.disposition == NpcIntentDisposition::Ok);
+        assert!(line(&parked).contains("Ancient Temple"));
+        let replay = owner
+            .resume_npc_bank(self.actor, command(fence, 26))
+            .await
+            .ok_or("suspended Bank replay")?;
+        assert_eq!(replay.disposition, parked.disposition);
+        assert_eq!(line(&replay), line(&parked));
         let suspended: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_npc_bank_robbery_suspensions")
                 .fetch_one(&h.pool)
@@ -446,13 +447,14 @@ impl Bank {
             .map_err(|()| "event query rejected")?;
         let state = oteryn_protocol_oteryn::world_event::decode_world_event_state(&result)
             .map_err(debug)?;
-        assert!(state.announcement.contains(bank_robbery::BOARD_LINE));
-        assert!(!state.announcement.contains("Thais"));
+        assert_eq!(state.reset_epoch, 0);
+        assert!(!state.active);
+        assert!(state.announcement.is_empty());
         let map = owner.bundle_map().ok_or("World Board map")?;
         let pos = crate::map::overlay::TilePos {
             x: u16::try_from(self.origin.x)?,
             y: u16::try_from(self.origin.y + 1)?,
-            floor: i8::try_from(self.origin.floor)?,
+            floor: i8::try_from(-self.origin.floor)?,
         };
         let placement = crate::map::view::placement_key(pos, 1).ok_or("Board placement")?;
         let result = owner
@@ -484,7 +486,7 @@ impl Bank {
         let mut cycle = {
             let runtime = self.runtime.lock().await;
             let talk = owner.states.chat.npc_talk().ok_or("Towncryer voice book")?;
-            crate::gameplay_transport::npc_voice::NpcVoiceCycle::new(&runtime, &talk)
+            crate::gameplay_transport::npc_voice::NpcVoiceCycle::new(&runtime, talk)
         };
         for tick in 1..=90 {
             owner.emit_npc_voices(&mut cycle, tick * 1_000_000).await;
@@ -683,11 +685,13 @@ impl Bank {
         .map_err(|error| format!("Bank Robbery peer Fresh admission: {error}"))?;
         let peer_fence = crate::gameplay_transport::item_fence_of(peer).ok_or("peer fence")?;
         initialize_peer_progression(owner, peer_fence).await?;
-        super::super::item_look_fixtures::seed_character_backpack(
-            h,
-            61,
+        super::super::player_trade_fixtures::seed_trade_backpack(
+            &h.pool,
+            *peer.commit().character_id().as_bytes(),
             92,
-            &[("oteryn:item.tibia.i3031", 1)],
+            93,
+            "oteryn:item.tibia.i3031",
+            1,
         )
         .await?;
         let peer_actor = {
@@ -719,7 +723,6 @@ impl Bank {
                 .initialize_pinned_test_position(
                     actor,
                     MovementLocalPosition {
-                        floor: -self.origin.floor,
                         y: self.origin.y - 1,
                         ..self.origin
                     },
@@ -775,16 +778,12 @@ impl Bank {
         let credited: Vec<(Vec<u8>, Vec<u8>)> = sqlx::query_as(
             "SELECT uuid_send(bag_id),uuid_send(character_id) FROM game_bank_robbery_returns ORDER BY character_id"
         ).fetch_all(&h.pool).await?;
-        assert_eq!(
-            credited,
-            [
-                (second_bag.to_vec(), fence.character_id.as_bytes().to_vec()),
-                (
-                    first_bag.to_vec(),
-                    peer_fence.character_id.as_bytes().to_vec()
-                ),
-            ]
-        );
+        let mut expected = [
+            (second_bag.to_vec(), fence.character_id.as_bytes().to_vec()),
+            (first_bag.to_vec(), peer_fence.character_id.as_bytes().to_vec()),
+        ];
+        expected.sort_unstable_by(|(_, left), (_, right)| left.cmp(right));
+        assert_eq!(credited, expected);
         Ok(())
     }
 }

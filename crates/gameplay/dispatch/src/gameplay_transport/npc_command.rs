@@ -917,18 +917,24 @@ pub(super) async fn npc_bank_talk(
         .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
         .filter(|context| bank_robbery::interested(&context.2))
     {
-        // Keep the exact live dialogue and actor/range facts through settlement.
+        drop(runtime);
         if let Some(outcome) = bank_robbery::talk(
             admission,
             command,
             &intent,
-            context,
+            context.clone(),
             _trade_permit.as_ref(),
             native,
         )
         .await
         {
             return outcome;
+        }
+        runtime = admission.runtime.lock().await;
+        if conversations.current_npc(&admission.states.chat, &runtime, actor, session, &intent)
+            != Some(context)
+        {
+            return rejected();
         }
     } else {
         bank_robbery::clear(admission, session);
@@ -1288,7 +1294,9 @@ pub(super) async fn npc_bank_talk(
                 )
                 .await
             }
-            Err(BankError::Suspended) => reply(bank_robbery::clue(&npc_key).into()),
+            Err(BankError::SuspendedConfirmation { npc_key, .. }) => {
+                reply(bank_robbery::clue(&npc_key).into())
+            }
             _ => unknown(),
         };
     }
@@ -1481,9 +1489,20 @@ pub(super) async fn resume_bank_talk(
         }
         // An accepted original pending command cannot be abandoned or sequenced as a new
         // command because current ownership is temporarily unavailable or storage is unknown.
-        Err(crate::durability::bank::BankError::Suspended) => {
-            Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected))
-        }
+        Err(crate::durability::bank::BankError::SuspendedConfirmation {
+            npc_key,
+            npc_identity,
+            npc_generation,
+        }) => Some(NpcConversations::bank_reply(
+            &NpcTalkIntent {
+                npc_actor: EntityRef {
+                    identity: npc_identity,
+                    generation: npc_generation,
+                },
+                text: String::new(),
+            },
+            bank_robbery::clue(&npc_key).into(),
+        )),
         Err(_) => Some(held_bank_outcome()),
     }
 }

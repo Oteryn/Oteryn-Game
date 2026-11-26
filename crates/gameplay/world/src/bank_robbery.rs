@@ -64,7 +64,7 @@ pub fn project(
         let at = MovementLocalPosition {
             x: i32::from(x),
             y: i32::from(y),
-            floor: -i16::try_from(z).map_err(|_| to_error(CarrierError::InvalidSpawnDefinition))?,
+            floor: i16::try_from(z).map_err(|_| to_error(CarrierError::InvalidSpawnDefinition))?,
         };
         let placed = runtime.realize_retryable_raid_spawn(
             stamp,
