@@ -23,6 +23,13 @@ def install(root: Path, package: Path, *, check: bool = False) -> None:
         npc = records[evidence["npc"]]
         if service["kind"] != "Service" or not any(ref["key"] == key for ref in npc["services"]):
             raise ValueError(f"{key}: source NPC does not own the service")
+        if excluded := evidence.get("exclude_items"):
+            offers = [offer for offer in service["offers"] if offer["item"]["key"] not in excluded]
+            if check and offers != service["offers"]:
+                raise ValueError(f"{key}: installed shop includes offers absent from Crystal")
+            if len(offers) != len(evidence["prices"]):
+                raise ValueError(f"{key}: shop offer count differs from Crystal")
+            service["offers"] = offers
         for correction in evidence["prices"]:
             rows = [
                 offer for offer in service["offers"]
