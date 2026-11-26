@@ -6,8 +6,8 @@
 //! 3. Before dispelling, require the explicit `InFight` logout refusal during active combat.
 //! 4. With health below maximum, observe a later positive `ActorVitals` health delta from the
 //!    server's ordinary regeneration owner, without changing state through a fixture or database.
-//! 5. Return to the poison spider, acquire another delayed poison delta, request logout (first
-//!    refusal may be `InFight`), retry until accepted, then make a fresh admission; expect a new
+//! 5. Return to the poison spider, acquire another delayed poison delta, wait for combat to
+//!    clear, then make one logout request and a fresh admission; expect a new
 //!    game-session id, an authoritative active poison icon, and resumed damage out of combat.
 use super::full_row_c01::admission_error;
 use super::*;
@@ -106,7 +106,7 @@ async fn poison_remaining(client: &mut DevClientSession) -> TestResult<Option<i6
 }
 
 fn poison_duration(status: &oteryn_protocol_oteryn::condition_status::ConditionStatus) -> Option<i64> {
-    status.conditions.iter().find(|condition| condition.icon == 1).map(|condition| condition.remaining_ms)
+    status.conditions.iter().find(|condition| condition.icon == 1 && condition.sub_id == 0).map(|condition| condition.remaining_ms)
 }
 
 async fn poison(client: &mut DevClientSession) -> TestResult<(u64, u64)> {
@@ -193,13 +193,23 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .await
         .map_err(|error| admission_error("initial-admission", error))?;
     let dedicated = account.clients(clients);
+    if poison_status(&mut client).await? {
+        return Err("C08 first exposure started with pre-existing poison".into());
+    }
     travel_to_poison_spider(&mut client, world, &metadata.spawns).await?;
     let damage = poison(&mut client).await?;
     row.pass(damage);
 
     let before_refusal = client.actor_vitals().copied().ok_or("step=logout-refusal observed=no-vitals")?;
+    let position_before_refusal = client.world_spatial().actor_position;
+    let session_before_refusal = client.join_snapshot().game_session_id;
     let initial_refusal = client.session_mut().logout().await?;
-    if !matches!(initial_refusal.result, Some(oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. })) || client.actor_vitals() != Some(&before_refusal) {
+    if !matches!(initial_refusal.result, Some(oteryn_protocol_oteryn::logout::LogoutResult::InFight { retry_after_ms }) if retry_after_ms > 0)
+        || client.actor_vitals() != Some(&before_refusal)
+        || client.world_spatial().actor_position != position_before_refusal
+        || client.join_snapshot().game_session_id != session_before_refusal
+        || !poison_status(&mut client).await?
+    {
         return Err(format!("step=logout-refusal observed={initial_refusal:?} need=InFight-during-poison-combat").into());
     }
 
@@ -261,40 +271,33 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or("step regeneration: vitals absent")?
         .health;
     let regenerated = next_health_change(&mut client, damaged, 45).await?;
-    if regenerated <= damaged {
+    if damaged.checked_add(1) != Some(regenerated) {
         return Err(format!(
-            "step regeneration: expected positive health delta, got {damaged}->{regenerated}"
+            "step regeneration: expected exactly one health point, got {damaged}->{regenerated}"
         )
         .into());
     }
     row.pass((damaged, regenerated));
 
+    if poison_status(&mut client).await? {
+        return Err("C08 second exposure started with pre-existing poison".into());
+    }
     travel_to_poison_spider(&mut client, world, &metadata.spawns).await?;
     let second = poison(&mut client).await?;
     let safe = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| tile.protection_zone())
+        is_logout_rest_tile(world, at)
     }).ok_or("step=poison-persistence observed=no-safe-retreat-route")?;
     walk_c08(&mut client, world, &safe).await?;
     let old_session = client.join_snapshot().game_session_id;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
-    loop {
-        if !poison_status(&mut client).await? {
-            return Err("step=poison-persistence observed=poison-expired-before-accepted-logout need=live-condition-at-save".into());
-        }
-        let reply = client.session_mut().logout().await?;
-        match reply.result {
-            Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) => break,
-            Some(oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. }) => {}
-            _ => return Err(format!("step persistence: unexpected logout reply={reply:?}").into()),
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "step persistence: logout remained refused after poison, last={reply:?}"
-            )
-            .into());
-        }
-        client.service_liveness(Duration::from_millis(250)).await?;
-        client.take_events();
+    let saved_position = client.world_spatial().actor_position;
+    wait_until_out_of_combat(&mut client).await?;
+    let sampled = tokio::time::Instant::now();
+    let saved_remaining = poison_remaining(&mut client).await?
+        .filter(|remaining| *remaining != 0)
+        .ok_or("step=poison-persistence observed=no-live-poison-at-save")?;
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=poison-persistence first logout refused: {reply:?}").into());
     }
     drop(client);
     let mut client = connect_character(&dedicated, 0xc9, 0)
@@ -303,13 +306,46 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if client.join_snapshot().game_session_id == old_session {
         return Err("step persistence: fresh admission reused game session".into());
     }
-    if !poison_status(&mut client).await? {
-        return Err("step=poison-persistence observed=missing-poison-icon-on-fresh-admission need=saved-live-condition".into());
+    if client.world_spatial().actor_position != saved_position {
+        return Err("step=poison-persistence observed=fresh-admission-position-mismatch".into());
+    }
+    let restored = poison_remaining(&mut client).await?
+        .ok_or("step=poison-persistence observed=missing-poison-icon-on-fresh-admission need=saved-live-condition")?;
+    if !retained_duration(saved_remaining, restored, sampled.elapsed()) {
+        return Err(format!("step=poison-persistence remaining-at-save={saved_remaining} restored={restored} elapsed={:?}", sampled.elapsed()).into());
     }
     let tick = resumed_poison_tick(&mut client, world).await?;
-    row.pass((second, tick));
-    let _ = client.session_mut().logout().await?;
+    wait_until_out_of_combat(&mut client).await?;
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=poison-persistence final logout refused: {reply:?}").into());
+    }
+    row.pass((second, tick, saved_position, saved_remaining, restored));
     Ok(())
+}
+
+fn retained_duration(before: i64, restored: i64, elapsed: Duration) -> bool {
+    if before == -1 {
+        return restored == -1;
+    }
+    restored > 0
+        && restored <= before
+        && (before - restored) as u128 <= elapsed.as_millis().saturating_add(2)
+}
+
+async fn wait_until_out_of_combat(client: &mut DevClientSession) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+    loop {
+        let combat = client.session_mut().combat_state().ok_or("C08 combat state absent")?;
+        if !combat.in_fight && combat.target.is_none() {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C08 combat state did not clear before first logout".into());
+        }
+        client.service_liveness(Duration::from_millis(250)).await?;
+        client.take_events();
+    }
 }
 
 pub(super) async fn travel_to_poison_spider(
@@ -518,6 +554,19 @@ fn poison_survived_window(remaining: i64, elapsed: Duration) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn retained_poison_duration_rejects_reset_expiry_and_excess_time_loss() {
+        let elapsed = Duration::from_millis(100);
+        assert!(retained_duration(1_000, 1_000, elapsed));
+        assert!(retained_duration(1_000, 900, elapsed));
+        assert!(!retained_duration(1_000, 1_001, elapsed));
+        assert!(!retained_duration(1_000, 800, elapsed));
+        assert!(!retained_duration(1_000, 0, elapsed));
+        assert!(!retained_duration(1_000, -1, elapsed));
+        assert!(retained_duration(-1, -1, elapsed));
+        assert!(!retained_duration(-1, 1_000, elapsed));
+    }
 
     #[test]
     fn second_review_c08_rejects_false_evidence() {
