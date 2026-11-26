@@ -236,6 +236,19 @@ async fn contended_queries_then_logout(
         ClientCommandValue, decode_command_result, encode_client_command,
     };
 
+    async fn read_result(stream: &mut tokio::io::DuplexStream, id: u64) -> TestResult<Vec<u8>> {
+        loop {
+            let bytes = read_frame(stream).await?;
+            let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                assert_eq!(result.command_id, id);
+                assert_eq!(result.status, CommandStatus::Accepted, "command {id}");
+                return Ok(result.payload.to_vec());
+            }
+        }
+    }
+
     admitted.continuity.selected_capabilities = SelectedCapabilities::select(
         &crate::gameplay_transport::daily_boost::offered(
             owner.offered_capabilities(),
@@ -255,7 +268,11 @@ async fn contended_queries_then_logout(
     let frame = |command_id, command_type, payload: &[u8]| {
         encode_client_command(
             generation,
-            &ClientCommandValue { command_id, command_type, payload },
+            &ClientCommandValue {
+                command_id,
+                command_type,
+                payload,
+            },
         )
         .map_err(debug)
     };
@@ -279,44 +296,48 @@ async fn contended_queries_then_logout(
             .test_daily_boost_hold_once
             .store(true, std::sync::atomic::Ordering::Relaxed);
         for id in [1, 2] {
-            write_frame(&mut client, &frame(id, COMMAND_TYPE_DAILY_BOOST_QUERY, &[])?).await?;
+            write_frame(
+                &mut client,
+                &frame(id, COMMAND_TYPE_DAILY_BOOST_QUERY, &[])?,
+            )
+            .await?;
         }
         let first = read_result(&mut client, 1).await?;
         assert_eq!(read_result(&mut client, 2).await?, first);
-        let selection = owner.runtime.lock().await.daily_boost().cloned().ok_or("daily choice")?;
-        assert_eq!(first, encode_view(&DailyBoostView {
-            reset_epoch: selection.reset_epoch,
-            creature_key: selection.creature,
-            boss_key: selection.boss,
-        }).map_err(debug)?);
-        write_frame(
-            &mut client,
-            &frame(3, COMMAND_TYPE_LOGOUT_INTENT, &logout)?,
-        )
-        .await?;
+        let selection = owner
+            .runtime
+            .lock()
+            .await
+            .daily_boost()
+            .cloned()
+            .ok_or("daily choice")?;
+        assert_eq!(
+            first,
+            encode_view(&DailyBoostView {
+                reset_epoch: selection.reset_epoch,
+                creature_key: selection.creature,
+                boss_key: selection.boss,
+            })
+            .map_err(debug)?
+        );
+        write_frame(&mut client, &frame(3, COMMAND_TYPE_LOGOUT_INTENT, &logout)?).await?;
         let result = read_result(&mut client, 3).await?;
-        assert_eq!(decode_logout_result(&result).map_err(debug)?, LogoutResult::Accepted);
+        assert_eq!(
+            decode_logout_result(&result).map_err(debug)?,
+            LogoutResult::Accepted
+        );
         TestResult::Ok(())
     };
-    async fn read_result(stream: &mut tokio::io::DuplexStream, id: u64) -> TestResult<Vec<u8>> {
-        loop {
-            let bytes = read_frame(stream).await?;
-            let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
-            if envelope.message_type() == MessageType::CommandResult {
-                let result = decode_command_result(envelope.payload()).map_err(debug)?;
-                assert_eq!(result.command_id, id);
-                assert_eq!(result.status, CommandStatus::Accepted, "command {id}");
-                return Ok(result.payload.to_vec());
-            }
-        }
-    }
     let (end, result) = tokio::time::timeout(
         std::time::Duration::from_secs(30),
         super::fixture::join_two(serving, driving),
     )
     .await?;
     result?;
-    assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)), "{end:?}");
+    assert!(
+        matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)),
+        "{end:?}"
+    );
     eprintln!("POSTGRES_W13 contended query, second query and terminal logout answered");
     Ok(())
 }
@@ -603,7 +624,9 @@ fn scenario(scenario: Scenario) -> TestResult {
                 .daily_boost_wire(admitted, 5, COMMAND_TYPE_DAILY_BOOST_QUERY, &[])
                 .await,
             crate::gameplay_transport::daily_boost::DailyBoostReply::Unavailable(
-                crate::durability::DurabilityError::Unavailable
+                crate::gameplay_transport::daily_boost::DailyBoostError::Selection(
+                    crate::durability::DurabilityError::Unavailable
+                )
             )
         ));
         assert_eq!(

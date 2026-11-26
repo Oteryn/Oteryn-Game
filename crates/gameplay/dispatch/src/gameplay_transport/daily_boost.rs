@@ -1,5 +1,7 @@
 //! BOOSTED-1: the committed World/server-save choice shared by queries, kills and home spawns.
-use super::{AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission, connection::AdmittedSession};
+use super::{
+    AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission, connection::AdmittedSession,
+};
 use crate::content::ProjectV2AuthoringProfileData;
 use crate::durability::{DurabilityError, SqlxFailureClass, daily_boost::DailyBoostBinding};
 use crate::foundation::RuntimeScopeRefV1;
@@ -9,16 +11,35 @@ use oteryn_protocol_oteryn::daily_boost as wire;
 pub enum DailyBoostReply {
     Rejected,
     Payload(Vec<u8>),
-    Unavailable(DurabilityError),
+    Unavailable(DailyBoostError),
 }
 
-pub(super) fn is_retryable(error: &DurabilityError) -> bool {
-    matches!(
-        error,
-        DurabilityError::RootUnavailable
-            | DurabilityError::RootPassDeadlineExceeded
-            | DurabilityError::Database(SqlxFailureClass::RetryableStatement)
-    )
+#[derive(Debug)]
+pub enum DailyBoostError {
+    Lane(DurabilityError),
+    Selection(DurabilityError),
+}
+
+impl From<DurabilityError> for DailyBoostError {
+    fn from(error: DurabilityError) -> Self {
+        Self::Selection(error)
+    }
+}
+
+impl DailyBoostError {
+    pub(super) fn is_retryable(&self) -> bool {
+        let error = match self {
+            // A retained writer can report an unresolved lane after a busy checkout.
+            Self::Lane(DurabilityError::Unavailable) => return true,
+            Self::Lane(error) | Self::Selection(error) => error,
+        };
+        matches!(
+            error,
+            DurabilityError::RootUnavailable
+                | DurabilityError::RootPassDeadlineExceeded
+                | DurabilityError::Database(SqlxFailureClass::RetryableStatement)
+        )
+    }
 }
 
 pub(super) fn offered(
@@ -91,7 +112,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.load_daily_boost(None).await.map_err(|_| ())
     }
 
-    async fn load_daily_boost(&self, deadline: Option<tokio::time::Instant>) -> Result<(), DurabilityError> {
+    async fn load_daily_boost(
+        &self,
+        deadline: Option<tokio::time::Instant>,
+    ) -> Result<(), DailyBoostError> {
         let Some(map) = self.bundle_map() else {
             return Ok(());
         };
@@ -106,7 +130,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 native.source_digest() != runtime.content_pin().server_artifact_digest()
             })
         {
-            return Err(DurabilityError::Unavailable);
+            return Err(DurabilityError::Unavailable.into());
         }
 
         if deadline.is_none()
@@ -122,13 +146,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(());
         }
         drop(runtime);
-        let permit = self.try_spell_lane_permit_by(deadline).await?;
+        let permit = self
+            .try_spell_lane_permit_by(deadline)
+            .await
+            .map_err(DailyBoostError::Lane)?;
         let binding = self.runtime.lock().await.binding();
         #[cfg(test)]
-        let held = if self
-            .states
-            .test_daily_boost_hold_once
-            .swap(false, std::sync::atomic::Ordering::Relaxed)
+        let held = if deadline.is_some()
+            && self
+                .states
+                .test_daily_boost_hold_once
+                .swap(false, std::sync::atomic::Ordering::Relaxed)
         {
             Some(self.root.try_issue_semantic_pass()?)
         } else {
@@ -159,21 +187,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let selection = selection?;
         let mut runtime = self.runtime.lock().await;
         if runtime.binding() != binding {
-            return Err(DurabilityError::Unavailable);
+            return Err(DurabilityError::Unavailable.into());
         }
         runtime
             .install_daily_boost(selection)
-            .map_err(|_| DurabilityError::Unavailable)
+            .map_err(|_| DurabilityError::Unavailable.into())
     }
 
-    async fn retry_daily_boost(&self) -> Result<(), DurabilityError> {
+    async fn retry_daily_boost(&self) -> Result<(), DailyBoostError> {
         let budget = AdmissionRetryBudget::for_foreground_command(self.root)?;
         loop {
             budget.check_deadline()?;
             let result = self.load_daily_boost(Some(budget.deadline)).await;
             // The pass and lane permit have both been returned before waiting.
-            if !result.as_ref().is_err_and(is_retryable)
-                || !budget.retries_unavailable(AdmissionRefusal::Unavailable).await
+            if !result.as_ref().is_err_and(DailyBoostError::is_retryable)
+                || !budget
+                    .retries_unavailable(AdmissionRefusal::Unavailable)
+                    .await
             {
                 return result;
             }
@@ -184,8 +214,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     async fn load_with_test_trade_contention(
         &self,
         fence: crate::durability::item_transfer::CurrentCharacterItemFence,
-        load: impl std::future::Future<Output = Result<(), DurabilityError>>,
-    ) -> Result<(), DurabilityError> {
+        load: impl std::future::Future<Output = Result<(), DailyBoostError>>,
+    ) -> Result<(), DailyBoostError> {
         use std::sync::atomic::Ordering;
         if !self
             .states
@@ -265,7 +295,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             boss_key: choice.boss.clone(),
         }) {
             Ok(bytes) => DailyBoostReply::Payload(bytes),
-            Err(_) => DailyBoostReply::Unavailable(DurabilityError::InvalidStoredState),
+            Err(_) => DailyBoostReply::Unavailable(DurabilityError::InvalidStoredState.into()),
         }
     }
 }
