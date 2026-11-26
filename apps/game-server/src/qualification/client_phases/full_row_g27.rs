@@ -2,15 +2,17 @@
 //! Two sessions (the two provisioned accounts): both choose a main character, the first invites
 //! the second by its main-character name, the inviter's own accept is refused (code 10), the
 //! invitee accepts, the inviter sees the main character, and a revoke empties the list. Badge
-//! visibility is then driven through the Cyclopedia badge request; a character with no earned
-//! badge cannot toggle one, so that leg ends FAIL `needed:earned-badge`.
+//! visibility is driven through the Cyclopedia badge request for Fledgeling Hero.
+//! Fresh sessions verify the changed friend state and the stored badge preferences.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use sqlx::Connection;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -102,6 +104,105 @@ async fn panel_call(
     Ok(cyc::apply_result(panel, &reply))
 }
 
+async fn expect_friends(
+    client: &mut DevClientSession,
+    step: &str,
+    main: Option<&str>,
+    peer: Option<(&str, &str, Option<&str>)>,
+) -> TestResult<Option<u64>> {
+    let (code, view) = friends(client, vip::Operation::FriendsQuery, 0, "").await?;
+    let handle = view["account_friends"][0]["handle"].as_u64();
+    let expected = match peer {
+        Some((name, state, peer_main)) => {
+            let handle = handle
+                .filter(|handle| *handle != 0)
+                .ok_or_else(|| format!("step={step} observed=missing-or-invalid-friend-handle"))?;
+            serde_json::json!([{
+                "handle": handle, "name": name, "state": state, "main_character": peer_main,
+            }])
+        }
+        None => serde_json::json!([]),
+    };
+    let expected_main = serde_json::json!(main);
+    if code != 1
+        || view.get("main_character") != Some(&expected_main)
+        || view["next_friend"] != 0
+        || view["account_friends"] != expected
+    {
+        return Err(format!("step={step} observed=code:{code},view:{view};needed=main:{expected_main},friends:{expected}").into());
+    }
+    Ok(handle)
+}
+
+async fn relog(
+    clients: &SeamClients<'_>,
+    mut client: DevClientSession,
+    tag: u8,
+    index: usize,
+) -> TestResult<DevClientSession> {
+    let session = client.join_snapshot().game_session_id;
+    logout(&mut client).await?;
+    drop(client);
+    let fresh = connect_character(clients, tag, index).await?;
+    if fresh.join_snapshot().game_session_id == session {
+        return Err(format!("step=relog account-index={index} observed=reused-session").into());
+    }
+    Ok(fresh)
+}
+
+async fn expect_badges(
+    client: &mut DevClientSession,
+    step: &str,
+    hidden: &[u8],
+) -> TestResult<cyc::CyclopediaCharacterPanel> {
+    let mut panel = cyc::CyclopediaCharacterPanel {
+        selected: true,
+        ..Default::default()
+    };
+    let badge = oteryn_protocol_oteryn::cyclopedia_character::Badge::FledgelingHero as u8;
+    if !panel_call(client, &mut panel, cyc::Intent::Badges).await?
+        || !panel.badge_visibility_known
+        || !panel
+            .badges
+            .as_ref()
+            .is_some_and(|earned| earned.contains(&badge))
+        || !panel
+            .server_hidden_badges
+            .iter()
+            .copied()
+            .eq(hidden.iter().copied())
+    {
+        return Err(format!(
+            "step={step} observed=earned:{:?},hidden:{:?},known:{};needed=earned-{badge},hidden:{hidden:?}",
+            panel.badges, panel.server_hidden_badges, panel.badge_visibility_known
+        )
+        .into());
+    }
+    Ok(panel)
+}
+
+// The wire view defaults to public when there is no stored preference.
+async fn expect_badge_preference(clients: &SeamClients<'_>, badge: u8, public: bool) -> TestResult {
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let stored: Option<bool> = sqlx::query_scalar(
+        "SELECT v.is_public FROM game_account_badge_visibility v
+         JOIN game_character_roots c USING (account_id)
+         WHERE c.character_id = encode($1, 'hex')::uuid AND v.badge = $2",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(i16::from(badge))
+    .fetch_optional(&mut database)
+    .await?;
+    database.close().await?;
+    if stored != Some(public) {
+        return Err(format!(
+            "step=badge-preference-after-relog observed={stored:?};needed={public}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let (name_a, name_b) = (
         character_name(clients, 0).await?,
@@ -118,122 +219,92 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             }
         }
     }
-    for client in [&mut a, &mut b] {
+    for (client, name) in [(&mut a, name_a.as_str()), (&mut b, name_b.as_str())] {
+        expect_friends(client, "social-pre-state", None, None).await?;
         let (code, _) = friends(client, vip::Operation::MainCharacter, 0, "").await?;
         if code != 1 {
             return Err(format!("step=main-character observed=code:{code};needed=1").into());
         }
+        expect_friends(client, "main-character", Some(name), None).await?;
     }
     let (code, _) = friends(&mut a, vip::Operation::FriendInvite, 0, &name_b).await?;
     if code != 1 {
         return Err(format!("step=invite observed=code:{code};needed=1").into());
     }
-    let (_, view) = friends(&mut a, vip::Operation::FriendsQuery, 0, "").await?;
-    if view["account_friends"][0]["state"] != "outgoing" {
-        return Err(format!(
-            "step=outgoing observed={};needed=outgoing",
-            view["account_friends"][0]["state"]
-        )
-        .into());
-    }
-    let outgoing = view["account_friends"][0]["handle"]
-        .as_u64()
-        .ok_or("step=outgoing observed=no-handle")?;
-    let (self_accept, _) = friends(&mut a, vip::Operation::FriendAccept, outgoing, "").await?;
+    let outgoing = Some((name_b.as_str(), "outgoing", None));
+    let incoming = Some((name_a.as_str(), "incoming", None));
+    let a_main = Some(name_a.as_str());
+    let b_main = Some(name_b.as_str());
+    expect_friends(&mut a, "outgoing", a_main, outgoing).await?;
+    expect_friends(&mut b, "incoming", b_main, incoming).await?;
+    a = relog(clients, a, 0xd7, 0).await?;
+    b = relog(clients, b, 0xd8, 1).await?;
+    let outgoing_handle = expect_friends(&mut a, "outgoing-after-relog", a_main, outgoing)
+        .await?
+        .ok_or("step=outgoing-after-relog observed=no-handle")?;
+    let incoming_handle = expect_friends(&mut b, "incoming-after-relog", b_main, incoming)
+        .await?
+        .ok_or("step=incoming-after-relog observed=no-handle")?;
+    let (self_accept, _) =
+        friends(&mut a, vip::Operation::FriendAccept, outgoing_handle, "").await?;
     if self_accept != 10 {
         return Err(format!("step=self-accept observed=code:{self_accept};needed=10").into());
     }
-    let (_, view) = friends(&mut b, vip::Operation::FriendsQuery, 0, "").await?;
-    let incoming = view["account_friends"][0]["handle"]
-        .as_u64()
-        .ok_or("step=incoming observed=no-handle")?;
-    let (code, _) = friends(&mut b, vip::Operation::FriendAccept, incoming, "").await?;
+    let a_after =
+        expect_friends(&mut a, "self-accept-unchanged-outgoing", a_main, outgoing).await?;
+    let b_after =
+        expect_friends(&mut b, "self-accept-unchanged-incoming", b_main, incoming).await?;
+    if a_after != Some(outgoing_handle) || b_after != Some(incoming_handle) {
+        return Err("step=self-accept observed=handles-changed".into());
+    }
+    let (code, _) = friends(&mut b, vip::Operation::FriendAccept, incoming_handle, "").await?;
     if code != 1 {
         return Err(format!("step=accept observed=code:{code};needed=1").into());
     }
-    let (_, view) = friends(&mut a, vip::Operation::FriendsQuery, 0, "").await?;
-    if view["account_friends"][0]["main_character"].as_str() != Some(name_b.as_str()) {
-        return Err(format!(
-            "step=accepted-view observed={};needed={name_b}",
-            view["account_friends"][0]["main_character"]
-        )
-        .into());
-    }
-    let mut panel = cyc::CyclopediaCharacterPanel {
-        selected: true,
-        ..Default::default()
-    };
-    if !panel_call(&mut a, &mut panel, cyc::Intent::Badges).await? {
-        return Err("step=badges observed=reply-not-applied".into());
-    }
-    let earned = panel
-        .badges
-        .clone()
-        .ok_or("step=badges observed=no-badge-list")?;
-    let mut badge_note = "no-earned-badge".to_owned();
-    if let Some(&badge) = earned.first() {
+    let a_friend = Some((name_b.as_str(), "friend", b_main));
+    let b_friend = Some((name_a.as_str(), "friend", a_main));
+    expect_friends(&mut a, "accepted-view-inviter", a_main, a_friend).await?;
+    expect_friends(&mut b, "accepted-view-invitee", b_main, b_friend).await?;
+
+    let badge = oteryn_protocol_oteryn::cyclopedia_character::Badge::FledgelingHero as u8;
+    for (public, before, after, step) in [
+        (false, &[][..], &[badge][..], "badge-hide"),
+        (true, &[badge][..], &[][..], "badge-restore"),
+    ] {
+        let mut panel = expect_badges(&mut a, step, before).await?;
         if !panel_call(
             &mut a,
             &mut panel,
-            cyc::Intent::SetBadgeVisibility {
-                badge,
-                public: false,
-            },
+            cyc::Intent::SetBadgeVisibility { badge, public },
         )
         .await?
         {
-            return Err("step=badge-hide observed=reply-not-applied".into());
+            return Err(format!("step={step} observed=reply-not-applied").into());
         }
-        if !panel_call(&mut a, &mut panel, cyc::Intent::Badges).await?
-            || !panel.badge_visibility_known
-            || !panel.server_hidden_badges.contains(&badge)
-        {
-            return Err(format!(
-                "step=badge-hide observed=server-hidden:{:?};known:{};needed=contains-{badge}",
-                panel.server_hidden_badges, panel.badge_visibility_known
-            )
-            .into());
-        }
-        if !panel_call(
-            &mut a,
-            &mut panel,
-            cyc::Intent::SetBadgeVisibility {
-                badge,
-                public: true,
-            },
-        )
-        .await?
-        {
-            return Err("step=badge-restore observed=reply-not-applied".into());
-        }
-        if !panel_call(&mut a, &mut panel, cyc::Intent::Badges).await?
-            || !panel.badge_visibility_known
-            || panel.server_hidden_badges.contains(&badge)
-        {
-            return Err(format!(
-                "step=badge-restore observed=server-hidden:{:?};known:{};needed=not-contains-{badge}",
-                panel.server_hidden_badges, panel.badge_visibility_known
-            )
-            .into());
-        }
-        badge_note = format!("badge-{badge}-hidden-and-restored");
+        expect_badges(&mut a, step, after).await?;
+        a = relog(clients, a, 0xd7, 0).await?;
+        expect_badges(&mut a, &format!("{step}-after-relog"), after).await?;
+        expect_badge_preference(clients, badge, public).await?;
     }
-    let (code, _) = friends(&mut a, vip::Operation::FriendRevoke, outgoing, "").await?;
+    b = relog(clients, b, 0xd8, 1).await?;
+    let accepted_handle = expect_friends(&mut a, "accepted-after-relog-inviter", a_main, a_friend)
+        .await?
+        .ok_or("step=accepted-after-relog-inviter observed=no-handle")?;
+    expect_friends(&mut b, "accepted-after-relog-invitee", b_main, b_friend).await?;
+
+    let (code, _) = friends(&mut a, vip::Operation::FriendRevoke, accepted_handle, "").await?;
     if code != 1 {
         return Err(format!("step=revoke observed=code:{code};needed=1").into());
     }
-    let (_, view) = friends(&mut a, vip::Operation::FriendsQuery, 0, "").await?;
-    if !view["account_friends"]
-        .as_array()
-        .is_some_and(|rows| rows.is_empty())
-    {
-        return Err("step=revoke observed=friend-still-listed".into());
-    }
-    let _ = name_a;
+    expect_friends(&mut a, "revoked-inviter", a_main, None).await?;
+    expect_friends(&mut b, "revoked-invitee", b_main, None).await?;
+    a = relog(clients, a, 0xd7, 0).await?;
+    b = relog(clients, b, 0xd8, 1).await?;
+    expect_friends(&mut a, "revoked-after-relog-inviter", a_main, None).await?;
+    expect_friends(&mut b, "revoked-after-relog-invitee", b_main, None).await?;
     logout(&mut a).await?;
     logout(&mut b).await?;
-    if earned.is_empty() {
-        return Err(format!("friends-invite-accept-revoke-proven;step=badge-visibility observed={badge_note};needed:earned-badge").into());
-    }
-    Ok(format!("friends-and-{badge_note}"))
+    Ok(format!(
+        "friends-and-badge-{badge}-hidden-and-restored-after-relog"
+    ))
 }
