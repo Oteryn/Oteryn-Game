@@ -37,8 +37,19 @@ SPECS = (
 
 FIBULA_DOORS = {
     "Storage.Quest.Key.ID3940": ([32190, 32432, 8], 1631),
-    1050: ([32212, 32435, 10], 1648),
     "Storage.Quest.Key.ID3980": ([32277, 32420, 10], 1631),
+}
+
+# Crystal's false selectors resolve to the closed door on the exact source tile.
+LEVEL_FIFTY_DOORS = {
+    (32212, 32435, 10): 1648,
+    (32874, 31974, 12): 5102,
+    (32875, 31974, 12): 5102,
+    (32234, 32140, 9): 6262,
+    (32554, 32860, 9): 5291,
+    (32909, 31074, 7): 1680,
+    (32910, 31088, 7): 1678,
+    (33775, 31699, 8): 9565,
 }
 
 ADDITIONAL_ACTIONS = (
@@ -83,6 +94,11 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
         ]
         value = lua_tables.as_python(field["value"])
         fibula = FIBULA_DOORS.get(selector)
+        level_fifty = (
+            LEVEL_FIFTY_DOORS.copy()
+            if (table, selector) == ("LevelDoorAction", 1050)
+            else None
+        )
         start = len(rows)
         for group in value if isinstance(value, list) else [value]:
             if (
@@ -122,9 +138,15 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
                         )
                     if node != 3142:
                         raise ValueError("Key 3142 source storage changed")
+                level_door = None
+                if level_fifty is not None:
+                    level_door = level_fifty.pop(tuple(cell), None)
+                    if level_door is None or group["itemId"] not in (False, level_door):
+                        raise ValueError(f"Level-50 door source changed at {cell}")
                 # False selectors target the existing source ground or door.
                 item = (
                     group["itemId"]
+                    or level_door
                     or (fibula[1] if fibula is not None else None)
                     or {
                         ("ItemAction", 25018): 104,
@@ -150,6 +172,10 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
                 )
         if fibula is not None and len(rows) != start + 1:
             raise ValueError(f"Fibula door source position changed: {selector}")
+        if level_fifty:
+            raise ValueError(
+                f"Level-50 door source positions missing: {sorted(level_fifty)}"
+            )
     path = "data-global/lib/core/storages.lua"
     raw = (source / path).read_bytes()
     storage = lua_tables.as_python(

@@ -13,12 +13,12 @@ use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
 
-pub(super) fn source_key_door(x: u16, y: u16, floor: i8, action: u16) -> TestResult {
+pub(super) fn source_key_door(x: u16, y: u16, floor: i8, appearance: u16, action: u16) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run("fibula-source-key", move || {
-        scenario(Some((x, y, floor, action)))
+        scenario(Some((x, y, floor, appearance, action)))
     })
 }
 
@@ -55,17 +55,12 @@ fn authored_door_action(x: u16, y: u16, floor: i8, appearance: u16) -> TestResul
     Ok(door.attrs.action)
 }
 
-pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
+pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
     run(async |admin| {
-        let level_gate = source.is_some_and(|(_, _, _, action)| action == 1050);
-        let door_appearance = if level_gate {
-            1648
-        } else if source.is_some() {
-            1631
-        } else {
-            1628
-        };
-        let door_action = if let Some((x, y, floor, action)) = source {
+        let (door_x, door_y, door_floor, door_appearance, key_action) =
+            source.unwrap_or((6, 0, -7, 1628, 4321));
+        let level_gate = key_action == 1050;
+        let door_action = if let Some((x, y, floor, _, action)) = source {
             let authored = authored_door_action(x, y, floor, door_appearance)?;
             assert_eq!(
                 authored,
@@ -106,7 +101,6 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
-        let (door_x, door_y, door_floor, key_action) = source.unwrap_or((6, 0, -7, 4321));
         let door_key = format!("oteryn:item.tibia.i{door_appearance}");
         let door = door_key.as_str();
         let station_pos = crate::map::overlay::TilePos {
@@ -365,7 +359,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
                 }
             }
             eprintln!(
-                "POSTGRES_CASE_COMPLETED fibula_source_level50_gate duration={:?}",
+                "POSTGRES_CASE_COMPLETED source_level50_gate_{source:?} duration={:?}",
                 started.elapsed()
             );
             drop(owner);
