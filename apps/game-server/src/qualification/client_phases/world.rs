@@ -1211,7 +1211,8 @@ pub(super) async fn journeys(
         )
         .into());
     }
-    if groups.runs("rows") && e2e_row_selected(241) {
+    const G09_PREFLIGHT_ROW: usize = 241;
+    if groups.runs("rows") && e2e_row_selected(G09_PREFLIGHT_ROW) {
         full_row_g09::logout(&mut client).await?;
     } else {
         let (result, logout, attempts, busy_timed_out) =
