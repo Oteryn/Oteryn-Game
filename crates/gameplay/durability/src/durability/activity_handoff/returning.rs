@@ -1,3 +1,4 @@
+use crate::durability::db::commit_semantic_read;
 use super::super::character_last_position::{
     LastPositionKey, LastPositionWrite, LastVitals, upsert_last_position,
 };
@@ -601,7 +602,7 @@ impl ActivityHandoffOwner {
                 result.exit_position.cell=cell;
                 result.boss_room=false;
             }
-            commit_semantic_transaction(tx,deadline).await?;Ok(Some(result))
+            commit_semantic_read(tx,deadline).await?;Ok(Some(result))
         })).await
     }
 }

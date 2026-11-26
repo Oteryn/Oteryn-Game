@@ -3,7 +3,7 @@ use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, commit_semantic_read, lock_admission_relations,
 };
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
@@ -88,7 +88,7 @@ impl DurabilityRoot {
             let observed_unix_ms = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
             let status = MechanicsStatus { observed_unix_ms, dust: u32::from(dust.balance()), dust_limit: u32::from(dust.limit().get()), deaths, timers, members };
             status.encode().ok_or(DurabilityError::InvalidStoredState)?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(MechanicsObservation { status, live_members }))
         })).await?
     }

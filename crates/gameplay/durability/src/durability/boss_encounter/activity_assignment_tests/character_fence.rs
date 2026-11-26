@@ -6,7 +6,7 @@ use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence,
 };
 use crate::durability::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, commit_semantic_read, lock_admission_relations,
 };
 use crate::durability::runtime_scope_assignment::{BootstrapSecret, NodeIncarnationProof};
 use crate::foundation::{
@@ -37,7 +37,7 @@ async fn full_fence(
                 let outcome = assert_gameplay_fence(&mut tx, &fence, &node)
                     .await?
                     .map(|root| root.revision);
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 Ok(outcome)
             })
         })

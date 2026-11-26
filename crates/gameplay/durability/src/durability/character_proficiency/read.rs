@@ -1,4 +1,5 @@
 //! Inert retained-value reads. No content admission, effects or controller authority.
+use crate::durability::db::commit_semantic_read;
 use super::{
     DurableProficiencyState, ProficiencyCause, ProficiencyLineCandidate, ProficiencyOccurrence,
 };
@@ -10,7 +11,7 @@ use crate::durability::character_authority::{
 };
 use crate::durability::character_proficiency_modification::load_track_modifications;
 use crate::durability::character_progression::{CharacterProgressionError, numeric_u64, uuid_text};
-use crate::durability::db::{begin_semantic_transaction, commit_semantic_transaction};
+use crate::durability::db::{begin_semantic_transaction};
 use crate::durability::{DurabilityError, DurabilityRoot};
 use sqlx::Row;
 use std::collections::BTreeMap;
@@ -324,7 +325,7 @@ impl DurabilityRoot {
                         policy_digest: row.try_get::<Vec<u8>,_>("policy_digest")?.try_into().map_err(|_| DurabilityError::InvalidStoredState)?, lines })
                 } else { None }
             } else { None };
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok((tracks, receipt)))
         }) }).await?
     }

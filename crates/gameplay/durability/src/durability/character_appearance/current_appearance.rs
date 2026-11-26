@@ -1,4 +1,5 @@
 //! Current appearance state loaded under recovery, admission and Character fences.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 #[path = "current_appearance/house_fence.rs"]
 mod house_fence;
@@ -159,7 +160,7 @@ impl DurabilityRoot {
                     } else {
                         Vec::new()
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(CurrentCharacterAppearance { sex, selected, earned, earned_sources, familiar_looks }))
                 })
             })

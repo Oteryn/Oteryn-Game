@@ -1,6 +1,7 @@
 //! Resolve immutable Content before entering the deciding SQL transaction. The
 //! decision still independently rechecks current configuration and activation.
 use super::*;
+use crate::durability::db::commit_semantic_read;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -48,7 +49,7 @@ impl DurabilityRoot {
                     .await?;
                     let policy: Policy = serde_json::from_str(&raw)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(policy)
                 })
             })

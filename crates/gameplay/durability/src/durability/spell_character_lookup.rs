@@ -10,10 +10,11 @@
     reason = "spell import candidate; awaits its production owner caller"
 )]
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
-use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::db::{begin_semantic_transaction};
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::character_name::CharacterName;
 use crate::domain::{CharacterId, CharacterRevision, WorldId};
@@ -128,7 +129,7 @@ impl DurabilityRoot {
                 ).transpose()?;
                 Ok(named)
             }).transpose()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(named))
         })).await?
     }

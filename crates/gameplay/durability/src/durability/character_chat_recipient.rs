@@ -5,11 +5,12 @@
 //! current transport and no control loss. The answer is a routing fact only, read without row
 //! locks; delivery stays at most once.
 
+use crate::durability::db::commit_semantic_read;
 use super::DurabilityRoot;
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
-use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::db::{begin_semantic_transaction};
 use crate::domain::character_name::CharacterName;
 use sqlx::Row;
 
@@ -53,7 +54,7 @@ impl DurabilityRoot {
                         }
                         None => None,
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(character))
                 })
             })
@@ -81,7 +82,7 @@ impl DurabilityRoot {
                     .bind(world.as_slice()).bind(key).fetch_optional(&mut *tx).await?;
                 levels.push(level.and_then(|value| u32::try_from(value).ok()).filter(|value| *value > 0));
             }
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(levels))
         })).await?
     }

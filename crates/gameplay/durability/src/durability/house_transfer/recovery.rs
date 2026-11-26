@@ -4,6 +4,7 @@ use super::super::recovery_evidence_composition::{
     RecoveryEvidenceSubject, decide_with_registered_recovery,
 };
 use super::*;
+use crate::durability::db::commit_semantic_read;
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
 };
@@ -48,7 +49,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(pass, deadline).await?;
                     let candidate = load(&mut tx, &root, session).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(candidate)
                 })
             })

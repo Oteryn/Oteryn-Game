@@ -1,4 +1,5 @@
 //! Character-bound Store cosmetics and atomic earned-token spending.
+use crate::durability::db::commit_semantic_read;
 use super::super::{
     DurabilityRoot,
     character_authority::{ReconciledCharacterAuthority, assert_recovery_fence},
@@ -161,7 +162,7 @@ impl DurabilityRoot {
                                           WHERE h.purchase_request_id=c.purchase_id))
                  ORDER BY p.created_at,c.purchase_id LIMIT 1",
             ).bind(account.as_slice()).bind(offer).bind(character.as_slice()).fetch_optional(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(row.map(|(purchase_id, character_id, world_id, binding_digest)| PendingStorePurchase {
                 purchase_id: *purchase_id.as_bytes(),
                 character_id: *character_id.as_bytes(),
@@ -189,7 +190,7 @@ impl DurabilityRoot {
                    AND p.state=1 AND c.purchase_id>encode($3,'hex')::uuid
                  ORDER BY c.purchase_id LIMIT 16",
             ).bind(account.as_slice()).bind(offer).bind(after.as_slice()).fetch_all(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(rows.into_iter().map(|(purchase_id, character_id, world_id, binding_digest)| PendingStorePurchase {
                 purchase_id: *purchase_id.as_bytes(),
                 character_id: *character_id.as_bytes(),
@@ -221,7 +222,7 @@ impl DurabilityRoot {
                     }
                     .await;
                     if outcome.is_ok() {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                     }
                     Ok(outcome)
                 })

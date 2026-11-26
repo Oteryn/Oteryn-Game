@@ -142,7 +142,7 @@ impl DurabilityRoot {
                             })
                         }
                     };
-                    crate::durability::db::commit_semantic_transaction(tx, deadline).await?;
+                    crate::durability::db::commit_semantic_read(tx, deadline).await?;
                     Ok(target)
                 })
             })
