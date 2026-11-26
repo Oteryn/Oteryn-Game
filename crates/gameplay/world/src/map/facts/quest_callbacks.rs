@@ -1,5 +1,6 @@
 //! Channel-local callback projection, sharing the bundle's existing fact/view owner.
 use super::*;
+use crate::foundation::CommandRef;
 use sha2::{Digest, Sha256};
 
 // A committed callback can replace or remove one exact native door. Keep every
@@ -183,6 +184,7 @@ pub(super) struct CallbackStates {
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
+    paid_scene_items: BTreeMap<CommandRef, TilePos>,
     scene_items: BTreeMap<(TilePos, u64, u16), (EntryId, bool)>,
     merchant_barricades: BTreeMap<u64, (TilePos, EntryId)>,
     batch_blockers: BTreeSet<TilePos>,
@@ -658,6 +660,7 @@ impl CallbackStates {
         self.movement_items.retain(|p, _| !cleared(p));
         self.solid_items.retain(|p| !cleared(p));
         self.scene_items.retain(|(p, _, _), _| !cleared(p));
+        self.paid_scene_items.retain(|_, p| !cleared(p));
         self.merchant_barricades.retain(|_, (pos, _)| !cleared(pos));
         self.batch_blockers.retain(|p| !inside(*p));
         self.portals.retain(|p, _| !cleared(p));
@@ -682,6 +685,7 @@ impl CallbackStates {
             + self.portals.len()
             + self.solid_items.len()
             + self.scene_items.len()
+            + self.paid_scene_items.len()
             + self.merchant_barricades.len()
             + self.batch_blockers.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
@@ -731,6 +735,7 @@ pub struct PreparedSceneClose<'a> {
     capacity: usize,
     staged: Arc<CallbackStates>,
     creations: Vec<(TilePos, usize, bool)>,
+    paid_output: Option<(CommandRef, TilePos, u64, u64)>,
     published: bool,
 }
 
@@ -743,6 +748,17 @@ impl PreparedSceneClose<'_> {
             states.reserved_positions.remove(position);
         }
         states.scene_reserved_capacity -= self.capacity;
+    }
+
+    /// Start the source reset at publication, after payment I/O.
+    pub fn reschedule_paid_reset(&mut self, due: u64) {
+        if let Some((_, _, key, previous)) = &mut self.paid_output {
+            let staged = Arc::make_mut(&mut self.staged);
+            if let Some(decay) = staged.movement_decays.remove(&(*previous, *key)) {
+                staged.movement_decays.insert((due, *key), decay);
+                *previous = due;
+            }
+        }
     }
 
     pub fn publish(mut self) {
@@ -779,6 +795,12 @@ impl PreparedSceneClose<'_> {
             }
             if blocks {
                 states.solid_items.insert(position);
+            }
+        }
+        if let Some((receipt, position, key, due)) = self.paid_output {
+            states.paid_scene_items.insert(receipt, position);
+            if let Some(decay) = self.staged.movement_decays.get(&(due, key)) {
+                states.movement_decays.insert((due, key), decay.clone());
             }
         }
         self.published = true;
@@ -1970,8 +1992,98 @@ impl BundleFacts {
         replacements: &[(u64, EntryFacts, bool)],
         projection: Option<&QuestCallbackProjection>,
     ) -> Option<PreparedSceneClose<'_>> {
-        let Some(QuestCallbackProjection::Scene { mutations, .. }) = projection else {
+        self.stage_scene(
+            key,
+            expected,
+            after,
+            passages,
+            replacements,
+            true,
+            projection,
+        )
+    }
+
+    /// Reserve the lever and the output of the exact payment before debiting it.
+    pub fn stage_paid_scene_open(
+        &self,
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+        projection: &QuestCallbackProjection,
+    ) -> Option<PreparedSceneClose<'_>> {
+        self.stage_scene(key, expected, after, &[], &[], false, Some(projection))
+    }
+
+    /// Rehydrate a paid output without changing the source lever or its timer.
+    pub fn restore_paid_scene_item(
+        &self,
+        position: TilePos,
+        facts: EntryFacts,
+        receipt: CommandRef,
+    ) -> bool {
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if let Some(existing) = states.paid_scene_items.get(&receipt) {
+            return *existing == position;
+        }
+        if states.position_reserved(position) || !states.has_capacity(2) {
+            return false;
+        }
+        project_scene(
+            Arc::make_mut(&mut states),
+            0,
+            &[QuestSceneMutation::Create {
+                position,
+                facts,
+                passable: true,
+                payment: Some(receipt),
+            }],
+            false,
+        )
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one scene reservation binds the publication inputs"
+    )]
+    fn stage_scene(
+        &self,
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+        passages: &[u64],
+        replacements: &[(u64, EntryFacts, bool)],
+        close: bool,
+        projection: Option<&QuestCallbackProjection>,
+    ) -> Option<PreparedSceneClose<'_>> {
+        let Some(QuestCallbackProjection::Scene {
+            mutations,
+            source_reset,
+            remove_self,
+        }) = projection
+        else {
             return None;
+        };
+        let paid_output = if close {
+            None
+        } else {
+            let [
+                QuestSceneMutation::Create {
+                    position,
+                    passable: true,
+                    payment: Some(receipt),
+                    ..
+                },
+            ] = mutations.as_slice()
+            else {
+                return None;
+            };
+            let (due, _) = (*source_reset)?;
+            if *remove_self {
+                return None;
+            }
+            Some((*receipt, *position, key, due))
         };
         let mut keys = BTreeSet::from([key]);
         keys.extend(passages);
@@ -2007,12 +2119,16 @@ impl BundleFacts {
             after,
             passages,
             replacements,
-            true,
+            close,
             projection,
         ) {
             return None;
         }
-        let footprint = mutations.len() * 3 + 1 + passages.len() + replacements.len();
+        let footprint = mutations.len() * 3
+            + 1
+            + passages.len()
+            + replacements.len()
+            + usize::from(paid_output.is_some());
         let reserved = keys.len() + positions.len();
         if !current.has_capacity(footprint.max(reserved)) {
             return None;
@@ -2041,6 +2157,7 @@ impl BundleFacts {
             capacity,
             staged,
             creations,
+            paid_output,
             published: false,
         })
     }
@@ -2464,6 +2581,7 @@ pub enum QuestSceneMutation {
         position: TilePos,
         facts: EntryFacts,
         passable: bool,
+        payment: Option<CommandRef>,
     },
 }
 
@@ -2557,9 +2675,13 @@ fn project_scene(
                 position,
                 facts,
                 passable,
+                payment,
             } => {
                 let identity = (*position, owner, facts.appearance_id);
-                if states.scene_items.contains_key(&identity) {
+                if match payment {
+                    Some(receipt) => !passable || states.paid_scene_items.contains_key(receipt),
+                    None => states.scene_items.contains_key(&identity),
+                } {
                     return false;
                 }
                 let Some(sequence) = states.movement_sequence.checked_add(1) else {
@@ -2577,7 +2699,11 @@ fn project_scene(
                         source: view::EntrySource::Added(entry),
                         facts: *facts,
                     });
-                states.scene_items.insert(identity, (entry, *passable));
+                if let Some(receipt) = payment {
+                    states.paid_scene_items.insert(*receipt, *position);
+                } else {
+                    states.scene_items.insert(identity, (entry, *passable));
+                }
             }
         }
     }
@@ -2615,6 +2741,7 @@ mod primal_pod_removal_tests {
                 position: tile,
                 facts: entry,
                 passable: false,
+                payment: None,
             }],
             remove_self: false,
             source_reset: None,
@@ -2889,6 +3016,7 @@ mod lifecycle_tests {
                 position,
                 facts: item,
                 passable: true,
+                payment: None,
             }],
             remove_self: false,
             source_reset: Some((deadline, resting)),

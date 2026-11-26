@@ -1191,6 +1191,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return ready;
             }
         }
+        let mut paid_scene = if callback.key == super::paid_projection::DREAD_LORD_SCROLL {
+            let (true, QuestCause::Use(payment), Some(projection)) =
+                (durable, cause, projection.as_mut())
+            else {
+                return UseDisposition::Rejected;
+            };
+            let QuestCallbackProjection::Scene { mutations, .. } = projection else {
+                return UseDisposition::Rejected;
+            };
+            let [
+                crate::map::facts::QuestSceneMutation::Create {
+                    payment: identity, ..
+                },
+            ] = mutations.as_mut_slice()
+            else {
+                return UseDisposition::Rejected;
+            };
+            *identity = Some(payment);
+            let Some(prepared) =
+                map.facts
+                    .stage_paid_scene_open(key, expected_revision, after, projection)
+            else {
+                return UseDisposition::Rejected;
+            };
+            Some(prepared)
+        } else {
+            None
+        };
         let coffin = VampireCoffinKind::for_callback(&callback.key);
         let mut recover_ordinary_coffin = false;
         if durable {
@@ -1641,6 +1669,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return UseDisposition::Exhausted;
                 };
                 refresh_source_reset(projection.as_mut(), published_due);
+                if let Some(scene) = &mut paid_scene {
+                    scene.reschedule_paid_reset(published_due);
+                }
             }
             if let Some(target) = &callback.effects.target_transform
                 && let Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
@@ -1723,7 +1754,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     projection.as_ref(),
                 )
             };
-            if let Some(proof) = scene_moves {
+            if let Some(scene) = paid_scene.take() {
+                scene.publish();
+            } else if let Some(proof) = scene_moves {
                 if let Some(publication) = scene_publication {
                     // This stage validates the original census without storing
                     // a runtime guard or taking a stale carrier across custody I/O.

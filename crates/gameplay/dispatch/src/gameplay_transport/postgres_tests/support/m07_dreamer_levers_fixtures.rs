@@ -241,6 +241,25 @@ pub(super) async fn exercise_dread_lord(
     assert_eq!(pull(owner, admitted, resting_lever).await?, UseDisposition::Rejected);
     assert_eq!(counts(harness).await?, after);
     assert_eq!(ground_outputs(owner)?, 1);
+    let second_claim = pull(owner, &mut peer, resting_lever).await;
+    assert_eq!(counts(harness).await?.1, before.1 + 2);
+    assert_eq!(second_claim?, UseDisposition::Committed);
+    assert_eq!(ground_outputs(owner)?, 2);
+
+    use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+    use crate::map::boot::BundleCollisionIndexExt;
+    let native = owner.active_generation.and_then(|active| active.native_gameplay())
+        .ok_or("native gameplay")?;
+    let rebuilt = dread_lord_world(native, callback)?;
+    let cells = rebuilt.movement_cells(owner.movement_cells()).map_err(debug)?;
+    let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+        return Err("rebuilt Dread Lord map".into());
+    };
+    let recovered = index.map();
+    owner.restore_paid_quest_scene(recovered).await.ok_or("paid scene recovery")?;
+    owner.restore_paid_quest_scene(recovered).await.ok_or("paid scene replay")?;
+    assert_eq!(count_outputs(recovered), 2);
+    assert_eq!(counts(harness).await?.1, before.1 + 2);
     let after_mints: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources")
         .fetch_one(&harness.pool).await?;
     assert_eq!(after_mints, before_mints);

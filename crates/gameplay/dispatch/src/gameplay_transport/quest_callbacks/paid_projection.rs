@@ -3,7 +3,7 @@ use super::*;
 use crate::durability::character_last_position::LastVitals;
 use crate::durability::quest_world_callback::paid_projection::PaidArrival;
 use crate::foundation::SourceStepCommitProof;
-use crate::map::facts::{QuestCallbackProjection, QuestSceneMutation};
+pub(super) const DREAD_LORD_SCROLL: &str = "oteryn:quest-callback/dreamer-dread-lord-scroll";
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn paid_arrival(
@@ -36,7 +36,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &BundleMap,
     ) -> Option<()> {
         let source_loaded = self.callback_content().iter().any(|callback| {
-            callback.key == "oteryn:quest-callback/dreamer-dread-lord-scroll"
+            callback.key == DREAD_LORD_SCROLL
                 && callback.selector.native.as_ref().is_some_and(|source| {
                     let pos = tile(source.position);
                     map.overlay.base().tile(pos.x, pos.y, pos.floor).is_some()
@@ -54,9 +54,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 runtime.content_pin().frame_binding_digest(),
             )
         };
-        let scene = self
+        let scenes = self
             .root
-            .read_paid_scroll_scene(
+            .read_paid_scroll_scenes(
                 self.character,
                 self.holder,
                 &permit,
@@ -67,64 +67,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .ok()?;
-        let Some((source, edits)) = scene else {
-            return Some(());
-        };
         let runtime = self.runtime.lock().await;
         runtime.owner_fence().ok()?;
         if runtime.binding() != binding || runtime.content_pin().frame_binding_digest() != frame {
             return None;
         }
-        let pos = tile(source.position);
-        let key = placement_key(pos, source.ordinal)?;
-        let base = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
-        let (id, _) = base
-            .ids()
-            .iter()
-            .zip(base.depths())
-            .filter(|(_, depth)| **depth == 0)
-            .nth(usize::from(source.ordinal))?;
-        let before = map.facts.base_entry(pos, source.ordinal, *id)?;
-        if before.appearance_id != source.appearance || map.facts.house_tile(pos) {
-            return None;
+        for (receipt, source, edits) in scenes {
+            let pos = tile(source.position);
+            let base = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
+            let (id, _) = base
+                .ids()
+                .iter()
+                .zip(base.depths())
+                .filter(|(_, depth)| **depth == 0)
+                .nth(usize::from(source.ordinal))?;
+            let before = map.facts.base_entry(pos, source.ordinal, *id)?;
+            if before.appearance_id != source.appearance || map.facts.house_tile(pos) {
+                return None;
+            }
+            let [edit] = edits.as_slice() else {
+                return None;
+            };
+            let position = tile(edit.position);
+            if edit.remove.is_some()
+                || edit.passable != Some(true)
+                || map.facts.house_tile(position)
+                || map
+                    .overlay
+                    .base()
+                    .tile(position.x, position.y, position.floor)
+                    .is_none()
+            {
+                return None;
+            }
+            let facts = map
+                .facts
+                .movement_item_facts(edit.create?)
+                .filter(|facts| !facts.pickupable)?;
+            if !map.facts.restore_paid_scene_item(position, facts, receipt) {
+                return None;
+            }
         }
-        let [edit] = edits.as_slice() else {
-            return None;
-        };
-        let position = tile(edit.position);
-        if edit.remove.is_some()
-            || map.facts.house_tile(position)
-            || map
-                .overlay
-                .base()
-                .tile(position.x, position.y, position.floor)
-                .is_none()
-        {
-            return None;
-        }
-        let facts = map
-            .facts
-            .movement_item_facts(edit.create?)
-            .filter(|facts| !facts.pickupable)?;
-        let projection = QuestCallbackProjection::Scene {
-            mutations: vec![QuestSceneMutation::Create {
-                position,
-                facts,
-                passable: edit.passable?,
-            }],
-            remove_self: false,
-            source_reset: None,
-        };
-        map.facts
-            .apply_quest_callback(
-                key,
-                map.facts.object_revision(key),
-                before,
-                &[],
-                &[],
-                false,
-                Some(&projection),
-            )
-            .then_some(())
+        Some(())
     }
 }

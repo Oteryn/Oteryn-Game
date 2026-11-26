@@ -135,6 +135,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     position: at,
                     facts,
                     passable,
+                    payment: None,
                 },
                 _ => return Err(UseDisposition::Rejected),
             });

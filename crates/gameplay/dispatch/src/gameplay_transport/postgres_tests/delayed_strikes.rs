@@ -453,7 +453,11 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .map_err(debug)?
             .position();
         position = crate::foundation::MovementLocalPosition {
-            x: p.x + 1,
+            x: p.x + match plan.tag {
+                "monk_flurry" => 3,
+                "monk_takedown" => 4,
+                _ => 1,
+            },
             y: p.y,
             floor: p.floor,
         };

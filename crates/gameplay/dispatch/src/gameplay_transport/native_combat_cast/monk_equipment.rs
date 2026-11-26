@@ -71,6 +71,46 @@ pub(super) fn facts(
     })
 }
 
+pub(super) fn apply_parity(
+    spell: &SpellDefinition,
+    caster: &crate::spell::CasterState,
+    facts: &EquipmentFacts,
+    plan: &mut EquipmentAttackPlan,
+) -> Result<(), SpellCastDisposition> {
+    let area = |rows: &[&str]| AttackArea::Matrix {
+        rows: rows.iter().map(|row| (*row).to_owned()).collect(),
+        directional: true,
+    };
+    if spell.key == "candidate:spell/flurry_of_blows" && facts.flurry_enlarged {
+        let [flurry] = plan.components.as_mut_slice() else {
+            return reject();
+        };
+        // Crystal 201189f8 flurry_of_blows.lua:47-53.
+        flurry.area = area(&["..x..", ".xxx.", "xxxxx", "xxCxx", "xx.xx"]);
+    }
+    if spell.key == "candidate:spell/sweeping_takedown" {
+        let [inner, outer] = plan.components.as_mut_slice() else {
+            return reject();
+        };
+        // Global uses connected 3x2 boxes, with two side tiles and 75% outer damage.
+        inner.area = area(&["xxx", "xCx", "x.x"]);
+        outer.area = area(&["xxx", "xxx", "...", ".c."]);
+        let power = spell.base_power.ok_or(SpellCastDisposition::Rejected)? as f64;
+        let level =
+            oteryn_gameplay_content::content::spell_data::formula::level_base_damage_healing(
+                caster.level,
+            );
+        let weapon = (1.2 * f64::from(caster.attack_value)).floor();
+        let skill = (f64::from(caster.attack_skill) + 4.0) / 28.0;
+        let total = (level as f64 + weapon * skill) * (power / 100.0 + 1.0);
+        inner.bounds.minimum = caster.harmony_multiplier.apply((total * 0.9) as i64);
+        inner.bounds.maximum = caster.harmony_multiplier.apply((total * 1.1) as i64);
+        outer.bounds.minimum = inner.bounds.minimum * 3 / 4;
+        outer.bounds.maximum = inner.bounds.maximum * 3 / 4;
+    }
+    Ok(())
+}
+
 pub(super) fn geometry(
     plan: &EquipmentAttackPlan,
     origin: TilePosition,
@@ -166,7 +206,7 @@ pub(super) fn combat(
         cooldown_ms: None,
         shared_cooldown: None,
         reduce_all_spell_cooldowns_ms: 0,
-        block_armor: equipment.blocked_by_armor && element == Element::Physical,
+        block_armor: false,
         use_weapon_charges: false,
         weapon_missile: false,
         dispel_paralysis_targets: Vec::new(),
