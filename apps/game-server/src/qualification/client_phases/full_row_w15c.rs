@@ -119,9 +119,12 @@ fn first_task() -> TestResult<(String, u64)> {
                 task["required"].as_u64(),
             ))
         })
-        .min()
+        .min_by_key(|&(level, name, _)| (level, name))
         .ok_or("step=catalogue observed=empty")?;
-    Ok((name.to_owned(), required))
+    Ok((
+        name.to_owned(),
+        required.ok_or("step=catalogue observed=missing-task-target")?,
+    ))
 }
 
 async fn reach(
@@ -256,6 +259,19 @@ fn expect(lines: &[String], needle: &str, step: &str) -> TestResult {
         )
         .into())
     }
+}
+
+async fn expect_task_status(
+    client: &mut DevClientSession,
+    actor: EntityRef,
+    expected: &str,
+    step: &str,
+) -> TestResult {
+    let lines = say(client, actor, "status").await?;
+    if lines.as_slice() != [expected] {
+        return Err(format!("step={step} observed={lines:?} expected={expected:?}").into());
+    }
+    Ok(())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -410,11 +426,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
                 "Happy hunting",
                 "confirm",
             )?;
-            expect(
-                &say(&mut client, actor, "status").await?,
-                &expected_status,
-                "status",
-            )?;
+            expect_task_status(&mut client, actor, &expected_status, "status").await?;
             true
         }
         TaskReply::Refusal => false,
@@ -440,11 +452,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         "durable-join",
     )?;
     if started {
-        expect(
-            &say(&mut client, actor, "status").await?,
-            &expected_status,
-            "durable-task",
-        )?;
+        expect_task_status(&mut client, actor, &expected_status, "durable-task").await?;
     }
     logout(&mut client).await?;
     Ok(if started {
