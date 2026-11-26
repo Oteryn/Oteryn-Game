@@ -2,24 +2,17 @@
 //!
 //! Concrete player scenario derived from the W08 audit/matrix row and the named
 //! `kill_reward`/Animus owners:
-//! 1. Admit the provisioned character and send command 232 for page zero; require
-//!    an accepted, bounded, sorted mastery page and retain its durable species set.
-//! 2. Send an invalid zero-limit command 232 and require the server to reject it
-//!    without a page. This is the refusal path and must not change the mastery set.
-//! 3. Re-query with the valid player command and require the same set. If no
-//!    completion exists, report the observed empty reply at this exact acquisition
-//!    step: a player cannot manufacture a completion through the query protocol.
-//! 4. Log out, obtain a fresh admission, send command 232 again, and require the
-//!    completed species set to survive with the same total and keys.
-//! 5. The completed-species combat leg must kill that species and assert the XP
-//!    progress delta equals the server's species-scoped Animus multiplier; absence
-//!    of a player-earned completion is reported as the blocking observed state, not
-//!    converted into a PASS.
+//! The dedicated character starts with a Rat Soul Core, a seeded Knight build,
+//! and an empty mastery page. Command 232 must reject a zero limit without
+//! changing the page. The intended gameplay leg earns Rat mastery in Soulpit,
+//! then checks the exact species after relog and measures its XP bonus.
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::animus_mastery as wire;
 use std::collections::BTreeSet;
+
+const RAT: &str = "oteryn:creature.rat";
 
 const ACTIONS: &[&str] = &[
     "seeded-prerequisites",
@@ -190,6 +183,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("seeded-prerequisites", (max_health, max_mana, core_count));
     let before = page(&mut client).await?;
+    if before.total != 0 || !before.keys.is_empty() {
+        row.fail(
+            "initial-query",
+            format!("expected empty mastery page, got {before:?}"),
+        );
+        return Ok(());
+    }
     row.pass("initial-query", (&before.total, &before.keys));
 
     let refused = command(&mut client, &[0, 0, 0, 0]).await?;
@@ -197,37 +197,48 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         row.fail("invalid-query-refused", format!("reply={refused:?}"));
         return Ok(());
     }
-    row.pass("invalid-query-refused", refused.status);
-
     let after_refusal = page(&mut client).await?;
     if after_refusal != before {
         row.fail(
-            "completion-observed",
+            "invalid-query-refused",
             format!("mastery-set-mutated-by-refusal before={before:?},after={after_refusal:?}"),
         );
         return Ok(());
     }
-    if before.total == 0 || before.keys.is_empty() {
+    row.pass("invalid-query-refused", (refused.status, &after_refusal));
+
+    // The acquisition driver must earn mastery before the completion query.
+    let completed = page(&mut client).await?;
+    if completed.total != 1 || completed.keys.as_slice() != [RAT] {
         row.fail(
             "completion-observed",
-            "accepted-command-232-page-total=0,keys=[];need-player-earned-Soulpit-survivor-completion-before-species-XP-command-path",
+            format!("expected player-earned Rat mastery, got {completed:?}"),
         );
         return Ok(());
     }
-    row.pass("completion-observed", (&before.total, &before.keys));
+    row.pass("completion-observed", (&completed.total, &completed.keys));
 
+    let mastery_session = client.join_snapshot().game_session_id;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         row.fail("fresh-admission-persistence", "logout-reply-not-accepted");
         return Ok(());
     }
+    drop(client);
     let mut fresh = connect_character(clients, 0xca, 0).await?;
-    let durable = page(&mut fresh).await?;
-    if durable != before {
+    if fresh.join_snapshot().game_session_id == mastery_session {
         row.fail(
             "fresh-admission-persistence",
-            format!("before={before:?},fresh={durable:?}"),
+            "mastery admission was reused",
+        );
+        return Ok(());
+    }
+    let durable = page(&mut fresh).await?;
+    if durable != completed {
+        row.fail(
+            "fresh-admission-persistence",
+            format!("completed={completed:?},fresh={durable:?}"),
         );
         return Ok(());
     }
