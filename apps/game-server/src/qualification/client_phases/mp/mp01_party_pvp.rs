@@ -435,7 +435,8 @@ async fn set_expert_modes(
                 )
                 .await?;
             if reply.status == CommandStatus::Rejected
-                && reply.payload == oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL
+                && decode_attack_intent_result(&reply.payload)
+                    == Ok(AttackIntentDisposition::Rejected)
             {
                 client.service_liveness(Duration::from_millis(50)).await?;
                 continue;

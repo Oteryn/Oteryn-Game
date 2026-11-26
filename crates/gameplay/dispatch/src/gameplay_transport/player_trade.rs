@@ -344,20 +344,29 @@ impl TradeBook {
         &self,
         binding: ChannelRuntimeAssignmentBinding,
         fence: CurrentCharacterItemFence,
-    ) {
+    ) -> Result<(), crate::durability::DurabilityError> {
+        use crate::durability::DurabilityError::Unavailable;
+
         let mut peer = fence;
         let mut character = *fence.character_id.as_bytes();
         character[15] ^= 1;
-        peer.character_id = crate::domain::CharacterId::from_bytes(character).unwrap();
+        peer.character_id =
+            crate::domain::CharacterId::from_bytes(character).map_err(|_| Unavailable)?;
         let mut session = *fence.game_session_id.as_bytes();
         session[15] ^= 1;
-        peer.game_session_id = GameSessionId::decode(&session).unwrap();
-        let pair = CommandRef::new(fence.game_session_id, CommandId::new(1).unwrap());
+        peer.game_session_id = GameSessionId::decode(&session).map_err(|_| Unavailable)?;
+        let pair = CommandRef::new(
+            fence.game_session_id,
+            CommandId::new(1).map_err(|_| Unavailable)?,
+        );
+        let accept_id = CommandId::new(2).map_err(|_| Unavailable)?;
+        // The test stops at holder checkout before the frozen leaves are read.
+        let leaf: TradeLeaf = serde_json::from_value(serde_json::json!({"item": {}, "entry": {}}))
+            .map_err(|_| Unavailable)?;
         let participants = [fence, peer].map(|accepted| TradeParticipant {
             accepted,
-            command: CommandRef::new(accepted.game_session_id, CommandId::new(2).unwrap()),
-            // The test stops at holder checkout before the frozen leaves are read.
-            leaf: serde_json::from_value(serde_json::json!({"item": {}, "entry": {}})).unwrap(),
+            command: CommandRef::new(accepted.game_session_id, accept_id),
+            leaf: leaf.clone(),
         });
         let digest = [1; 32];
         let request = PlayerTradeRequest {
@@ -392,12 +401,25 @@ impl TradeBook {
             staged: None,
             request: Some(request),
         };
-        self.0.lock().unwrap().records.insert(fence.game_session_id, record);
+        self.0
+            .lock()
+            .map_err(|_| Unavailable)?
+            .records
+            .insert(fence.game_session_id, record);
+        Ok(())
     }
 
     #[cfg(test)]
-    pub(in crate::gameplay_transport) fn remove_test_request(&self, session: GameSessionId) {
-        self.0.lock().unwrap().records.remove(&session);
+    pub(in crate::gameplay_transport) fn remove_test_request(
+        &self,
+        session: GameSessionId,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        self.0
+            .lock()
+            .map_err(|_| crate::durability::DurabilityError::Unavailable)?
+            .records
+            .remove(&session);
+        Ok(())
     }
 
     /// Called under the mutation's spell lane. An attempt on an offered leaf is refused

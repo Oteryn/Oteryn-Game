@@ -24,13 +24,19 @@ pub(in super::super) async fn route_expert_modes<A: FreshAdmissionAuthority>(
             .expert_fight_modes(actor, admitted.game_session_id, command.command_id, modes)
             .await
         {
+            // For expert mode, a typed rejection reserves the bounded
+            // retry signal. Permanent refusals remain empty rejections.
+            Ok(oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected) => {
+                Dispatch::Unregistered
+            }
             Ok(disposition) => Dispatch::Attack(disposition),
-            Err(crate::durability::DurabilityError::RootUnavailable |
-                crate::durability::DurabilityError::RootPassDeadlineExceeded) => Dispatch::Reply(
-                crate::foundation::CommandStatus::Rejected,
-                oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL.to_vec(),
-            ),
-            Err(_) => Dispatch::Attack(oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected),
+            Err(
+                crate::durability::DurabilityError::RootUnavailable
+                | crate::durability::DurabilityError::RootPassDeadlineExceeded,
+            ) => {
+                Dispatch::Attack(oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected)
+            }
+            Err(_) => Dispatch::Unregistered,
         },
         _ => Dispatch::Unregistered,
     }

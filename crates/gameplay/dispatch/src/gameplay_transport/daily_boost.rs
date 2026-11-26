@@ -155,14 +155,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // now belongs specifically to the lane reconciliation this query calls.
         let binding = self.runtime.lock().await.binding();
         super::monk_save::postgres_tests::maintain_authority_ready(self).await;
-        let holder = self.root.try_issue_semantic_pass().expect("test holder");
+        let holder = self
+            .root
+            .try_issue_semantic_pass()
+            .map_err(|_| DurabilityError::Unavailable)?;
         self.states
             .player_trades
-            .retain_test_request(binding, fence);
+            .retain_test_request(binding, fence)?;
         let result = load.await;
         self.states
             .player_trades
-            .remove_test_request(fence.game_session_id);
+            .remove_test_request(fence.game_session_id)?;
         drop(holder);
         result
     }
