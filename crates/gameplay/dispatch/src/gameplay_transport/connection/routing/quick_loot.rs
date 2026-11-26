@@ -7,6 +7,11 @@ use oteryn_protocol_oteryn::{
     quick_loot::{self as wire, encode_quick_loot_result},
 };
 
+pub(in super::super) fn selected_moved(command_type: u32, payload: &[u8]) -> bool {
+    command_type == wire::COMMAND_TYPE_QUICK_LOOT
+        && wire::QuickLootClickOutcome::decode(payload) == Ok(wire::QuickLootClickOutcome::Moved)
+}
+
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
     admitted: &AdmittedSession,
@@ -46,6 +51,22 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     };
     if request.action.command_type() != command.command_type {
         return Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new()));
+    }
+    if let Some(handle) = request.selected_item {
+        use transport::item_view::ItemKey;
+        let selection = items.and_then(|view| {
+            let key @ ItemKey::Instance(entry) = view.resolve(handle)? else {
+                return None;
+            };
+            let ItemKey::Entity(corpse_identity) = view.open_corpse_of(&key)? else {
+                return None;
+            };
+            Some(transport::quick_loot::OpenLootSelection { corpse_identity, entry })
+        });
+        let (status, payload) = authority
+            .quick_loot_selected(*admitted, use_command, request, selection)
+            .await?;
+        return Some(Dispatch::Reply(status, payload));
     }
     let (status, result) = authority
         .quick_loot(*admitted, use_command, request)
