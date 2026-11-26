@@ -26,7 +26,7 @@ fn first_unarmed_cyclopedia_offence_tab_waits_for_the_holder() -> TestResult {
         return Ok(());
     };
     super::kill_reward_e2e_fixtures::scenario_thread::run("cyclopedia_unarmed_entry", || {
-        first_combat_tabs(false)
+        first_combat_tabs("cyclopedia_unarmed_entry", false, CharacterTab::Offence)
     })
 }
 
@@ -36,17 +36,22 @@ fn first_armed_cyclopedia_combat_tabs_wait_for_the_holder_and_refuse_stale_fence
         return Ok(());
     };
     super::kill_reward_e2e_fixtures::scenario_thread::run("cyclopedia_armed_entry", || {
-        first_combat_tabs(true)
+        first_combat_tabs("cyclopedia_armed_entry", true, CharacterTab::Offence)
     })
 }
 
-fn first_combat_tabs(armed: bool) -> TestResult {
+#[test]
+fn first_cyclopedia_misc_tab_waits_for_the_holder() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("cyclopedia_misc_entry", || {
+        first_combat_tabs("cyclopedia_misc_entry", true, CharacterTab::Misc)
+    })
+}
+
+fn first_combat_tabs(tag: &str, armed: bool, first_tab: CharacterTab) -> TestResult {
     run(async |admin| {
-        let tag = if armed {
-            "cyclopedia_armed_entry"
-        } else {
-            "cyclopedia_unarmed_entry"
-        };
         let h = Harness::create_with_admission_seed(admin, tag, false, false).await?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) = super::equipment_mods_fixtures::activate(world)?;
@@ -109,9 +114,9 @@ fn first_combat_tabs(armed: bool) -> TestResult {
                 store.current_session_at(admitted.game_session_id).await,
                 Err(DurabilityError::RootUnavailable)
             ));
-            let mut offence = std::pin::pin!(request(admitted, CharacterTab::Offence));
+            let mut query = std::pin::pin!(request(admitted, first_tab));
             let first = std::future::poll_fn(|cx| {
-                std::task::Poll::Ready(std::future::Future::poll(offence.as_mut(), cx))
+                std::task::Poll::Ready(std::future::Future::poll(query.as_mut(), cx))
             })
             .await;
             assert!(
@@ -119,11 +124,13 @@ fn first_combat_tabs(armed: bool) -> TestResult {
                 "{tag}: the first self-tab returned {first:?} with the session reader's holder busy"
             );
             held.run(|_, _| Box::pin(async { Ok(()) })).await?;
-            offence.await.map_err(|()| "first Offence tab refused")?
+            query.await.map_err(|()| format!("first {first_tab:?} tab refused"))?
         };
         let stats = CombatStats::decode(&bytes).map_err(debug)?;
-        assert_eq!(stats.tab(), CharacterTab::Offence);
-        if armed {
+        assert_eq!(stats.tab(), first_tab);
+        if first_tab == CharacterTab::Misc {
+            assert_eq!(stats.get(Stat::Blessings), Some(2));
+        } else if armed {
             assert_eq!(stats.get(Stat::AttackSkillId), Some(8)); // Sword
             for tab in [CharacterTab::Defence, CharacterTab::Misc] {
                 let bytes = request(admitted, tab).await.map_err(|()| "armed tab refused")?;
