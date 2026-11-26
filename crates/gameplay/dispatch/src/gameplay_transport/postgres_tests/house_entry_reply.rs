@@ -115,6 +115,7 @@ async fn exercise(h: &Harness, is_owner: bool) -> TestResult {
                     .reconcile_quest_callbacks(admitted.game_session_id)
                     .await
             );
+            h.root.await_ready().await?;
             // Hold the real publication store unavailable through the first entry attempt.
             Some(h.root.try_issue_semantic_pass()?)
         } else {
