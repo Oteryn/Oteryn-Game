@@ -77,7 +77,7 @@ async fn exercise(h: &Harness, name: &str) -> TestResult {
     assert_eq!(marker_count(h, destination.game_session_id).await?, 0);
 
     if name == OLD_VIEWS {
-        return check_replaced_views(&owner, destination).await;
+        return check_replaced_views(h, &owner, destination).await;
     }
 
     let probe = Probe {
@@ -244,6 +244,7 @@ async fn expect_step(client: &mut DuplexStream, id: u64) -> TestResult {
 }
 
 async fn check_replaced_views(
+    h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     destination: AdmittedSession,
 ) -> TestResult {
@@ -260,6 +261,52 @@ async fn check_replaced_views(
     let (vitals, feed) = owner.observe_join_vitals(actor, old, true).await;
     assert!(vitals.is_some(), "original House vitals");
     let feed = feed.ok_or("original House cooldown feed")?;
+
+    use oteryn_gameplay_domain::domain::hireling::food::{GourmetBuff, GourmetConditions};
+    let saved = GourmetConditions {
+        attributes: Some(GourmetBuff {
+            item_id: 29409,
+            remaining_ms: 60_000,
+        }),
+        haste: None,
+    };
+    let session = old.game_session_id;
+    let fence = old.item_fence.ok_or("original House fence")?;
+    // Fixture only. The service tick still runs the production checkpoint
+    // transaction with its normal triggers and authority checks.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_hireling_gourmet_state
+        (character_id, last_transaction_id, cooldown_until, attributes_item, attributes_ms, haste_ms)
+        VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, now(), 29409, 60000, 0)")
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(id(177).as_slice())
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    let clock = super::srx3_native_source_cast_fixtures::NativeOwnerClock::new(owner);
+    let checkpoint_at = (owner.owner_now().get() / 1000 + 1) * 1000;
+    clock.set(checkpoint_at);
+    {
+        let mut states = owner.states.spell_states.lock().await;
+        let state = &mut states
+            .actors
+            .iter_mut()
+            .find(|(a, s, _)| *a == actor && *s == session)
+            .ok_or("retained House actor")?
+            .2;
+        crate::spell::actor_conditions::restore_gourmet_food(state, saved, checkpoint_at / 1000)
+            .map_err(debug)?;
+        crate::gameplay_transport::item_use::gourmet::remember(
+            &mut states,
+            actor,
+            session,
+            saved,
+            checkpoint_at,
+        );
+    }
 
     let token = RecoverySource::token(7)?;
     let mut replacement = owner
@@ -283,6 +330,27 @@ async fn check_replaced_views(
         "the replaced socket must lose join vitals, registration, and its old mailbox",
     );
     assert!(owner.observe_house_vitals(actor, old).await.is_none());
+    clock.set(checkpoint_at + 60_001_000);
+    assert!(owner.tick_house_vitals(actor, old).await.is_none());
+    let read = || {
+        owner
+            .root
+            .read_gourmet_conditions(owner.character, fence.character_id)
+    };
+    owner.root.await_ready().await?;
+    assert_eq!(
+        read().await.map_err(debug)?,
+        saved,
+        "stale House tick changed storage"
+    );
+    owner.root.await_ready().await?;
+    assert!(owner.tick_house_vitals(actor, replacement).await.is_some());
+    owner.root.await_ready().await?;
+    assert_eq!(
+        read().await.map_err(debug)?,
+        GourmetConditions::default(),
+        "current House tick checkpoints"
+    );
     replacement.continuity.selected_capabilities = selected;
     let (vitals, feed) = owner.observe_join_vitals(actor, replacement, true).await;
     assert!(vitals.is_some());

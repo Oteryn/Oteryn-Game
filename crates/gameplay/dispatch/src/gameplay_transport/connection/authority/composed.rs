@@ -1820,7 +1820,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
-        self.expire_house_furniture_on_tick(actor, game_session_id)
+        self.expire_house_furniture_on_tick(actor, game_session_id, None)
             .await;
         self.tick_actor_vitals(actor, game_session_id).await
     }
@@ -1830,8 +1830,6 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         admitted: AdmittedSession,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
-        self.expire_house_furniture_on_tick(actor, admitted.game_session_id)
-            .await;
         self.tick_house_actor_vitals(actor, admitted).await
     }
 
