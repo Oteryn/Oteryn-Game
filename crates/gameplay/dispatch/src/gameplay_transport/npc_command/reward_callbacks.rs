@@ -156,12 +156,15 @@ pub(super) fn prepare(
                     reply: lines.to_vec(),
                 })
             };
+            let track_value = |key: &str| {
+                tracks
+                    .get(key)
+                    .copied()
+                    .or_else(|| catalogue.track(key).map(|track| track.initial))
+            };
             let eligible = |storage: &[Storage]| {
                 storage.iter().all(|s| {
-                    tracks
-                        .get(&s.track)
-                        .copied()
-                        .or_else(|| catalogue.track(&s.track).map(|track| track.initial))
+                    track_value(&s.track)
                         .is_some_and(|value| (s.minimum..=s.maximum).contains(&value))
                 })
             };
@@ -214,24 +217,32 @@ pub(super) fn prepare(
                         reply: callback.reply.clone(),
                     });
                 }
-                // Crystal storkus.lua:121-141 reports a zero deposit and resets the topic.
-                // The largest eligible hand-in gives the amount still due at this stage.
+                // Crystal storkus.lua:121-141 displays 20 minus the saved counter
+                // for an empty deposit and resets the topic.
+                const STORKUS_DUST: &str =
+                    "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust";
                 if context.2 == "oteryn:npc.storkus"
-                    && topic == 9
+                    && matches!(topic, 1 | 9)
+                    && let Some(saved) = track_value(STORKUS_DUST)
                     && let Some(facts) = inventory
                     && let Some(payment) = matching_stage
                         .clone()
-                        .filter_map(|callback| callback.take.first())
-                        .max_by_key(|payment| payment.count)
+                        .find_map(|callback| callback.take.first())
                     && facts.quantities.get(&payment.item).copied().unwrap_or(0) == 0
                 {
+                    let remaining = 20 - saved;
+                    let reply = if remaining > 0 {
+                        format!(
+                            "Ye've brought me 0 vampire dusts. Ye' need to bring {remaining} more."
+                        )
+                    } else {
+                        "Ye've brought me 0 vampire dusts. Ask me for a mission to continue your quest."
+                            .into()
+                    };
                     return Some(Choice {
                         transition: None,
                         next_topic: Some(Topic::from(0)),
-                        reply: vec![format!(
-                            "Ye've brought me 0 vampire dusts. Ye' need to bring {} more.",
-                            payment.count
-                        )],
+                        reply: vec![reply],
                     });
                 }
                 // A later stage with the same keyword cannot hide this stage's

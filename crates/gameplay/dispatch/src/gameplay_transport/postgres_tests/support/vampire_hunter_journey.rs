@@ -269,6 +269,55 @@ pub(super) async fn empty_dust(
         follow_up.conversation.ok_or("mission after empty hand-in")?.lines,
         ["Are you ready to help me hunt vampires?"]
     );
+
+    for (case, saved, reply) in [
+        (0, 6, "Ye've brought me 0 vampire dusts. Ye' need to bring 14 more."),
+        (1, 20, "Ye've brought me 0 vampire dusts. Ask me for a mission to continue your quest."),
+    ] {
+        seed_quest_prerequisites(h, owner, admitted, &[(DUST.into(), saved)], 113 + case).await?;
+        owner
+            .refresh_quest_session(admitted.game_session_id, false)
+            .await;
+        let command = first + 4 + u64::from(case) * 4;
+        let _ = talk(owner, admitted, npc, command, "bye").await?;
+        let _ = talk(owner, admitted, npc, command + 1, "hi").await?;
+        let offer = talk_outcome(owner, admitted, npc, command + 2, "mission").await?;
+        assert_eq!(
+            offer.conversation.ok_or("collection dust offer")?.lines,
+            ["Have you brought any vampire dust?"]
+        );
+        let answer = talk_outcome(owner, admitted, npc, command + 3, "yes").await?;
+        assert_eq!(
+            answer.conversation.map(|conversation| conversation.lines),
+            Some(vec![reply.into()]),
+            "empty collection hand-in with {saved} saved dust"
+        );
+        assert_eq!(answer.disposition, NpcIntentDisposition::Ok);
+        assert!(!answer.inventory_changed);
+        assert_eq!(
+            owner
+                .states
+                .npc_conversations
+                .fixture_quest_topic(admitted.game_session_id)?,
+            0,
+            "empty collection hand-in must reset the topic"
+        );
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_quest_callback_consumptions")
+                .fetch_one(&h.pool)
+                .await?,
+            0
+        );
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>(
+                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+            )
+            .bind(DUST)
+            .fetch_one(&h.pool)
+            .await?,
+            saved
+        );
+    }
     Ok(())
 }
 

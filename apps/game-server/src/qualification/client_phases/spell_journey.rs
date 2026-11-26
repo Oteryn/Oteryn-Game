@@ -169,13 +169,16 @@ fn same_spell_refusals_match(
     after_spoken: Option<&ActorVitals>,
     after_indexed: Option<&ActorVitals>,
 ) -> bool {
+    // Independent combat and vitals refreshes can change health during the probe.
+    let resources_unchanged =
+        |after: &ActorVitals| after.mana == paid.mana && after.soul == paid.soul;
     spoken_retry.status == CommandStatus::Rejected
         && spoken_retry.disposition == ChatDisposition::Rejected
         && retry.status == CommandStatus::Accepted
         && retry.disposition == SpellCastDisposition::CoolingDown
         && retry.actor_vitals_delta.is_none()
-        && after_spoken == Some(paid)
-        && after_indexed == Some(paid)
+        && after_spoken.is_some_and(resources_unchanged)
+        && after_indexed.is_some_and(resources_unchanged)
 }
 
 pub(super) fn spell_index(
@@ -286,6 +289,21 @@ mod tests {
             Some(&paid),
             Some(&paid)
         ));
+        let after_damage = ActorVitals {
+            health: 110,
+            ..paid
+        };
+        assert!(
+            same_spell_refusals_match(&spoken, &indexed, &paid, Some(&after_damage), Some(&paid))
+                && same_spell_refusals_match(
+                    &spoken,
+                    &indexed,
+                    &paid,
+                    Some(&paid),
+                    Some(&after_damage),
+                ),
+            "an independent health update must not invalidate a cooldown refusal"
+        );
 
         let mana_debit = ActorVitals { mana: 60, ..paid };
         let soul_debit = ActorVitals { soul: 99, ..paid };
