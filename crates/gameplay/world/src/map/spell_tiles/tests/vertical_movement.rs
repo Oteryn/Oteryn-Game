@@ -13,6 +13,31 @@ pub fn world_with_rope_spot(
     covered_spot: bool,
     gate: bool,
 ) -> BundleWorld {
+    vertical_world(
+        world,
+        channel,
+        appearance,
+        distant_target,
+        covered_spot,
+        gate,
+        false,
+    )
+}
+
+/// A Crystal i385 open hole above regular ground, with a south landing.
+pub fn world_with_rope_hole(world: WorldId, channel: ChannelId) -> BundleWorld {
+    vertical_world(world, channel, 385, false, false, false, true)
+}
+
+fn vertical_world(
+    world: WorldId,
+    channel: ChannelId,
+    appearance: u32,
+    distant_target: bool,
+    covered_spot: bool,
+    gate: bool,
+    hole: bool,
+) -> BundleWorld {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{Extent, Sector};
     let sector = |floor, positions: &[(u16, u16, u32)]| Sector {
@@ -35,7 +60,16 @@ pub fn world_with_rope_spot(
             })
             .collect(),
     };
-    let mut lower = sector(-8, &[(10, 10, 4)]);
+    let mut lower = if hole {
+        sector(-8, &[(11, 10, 0)])
+    } else {
+        sector(-8, &[(10, 10, 4)])
+    };
+    let upstairs = if hole {
+        sector(-7, &[(10, 10, 0), (11, 10, 4), (11, 11, 0)])
+    } else {
+        sector(-7, &[(10, 9, 0), (10, 11, 0)])
+    };
     if gate {
         lower.tiles[0].items.push(Item {
             palette: 8,
@@ -67,7 +101,7 @@ pub fn world_with_rope_spot(
     let (mut bytes, mut bundle) = super::bundle_with_projectiles(
         Some(vec![
             lower,
-            sector(-7, &[(10, 9, 0), (10, 11, 0)]),
+            upstairs,
             sector(-6, &[(10, 10, 0)]),
             sector(-5, &[(10, 9, 0)]),
         ]),

@@ -328,7 +328,7 @@ impl Owner {
         ) {
             RopeTurn::Refused(disposition) => disposition,
             RopeTurn::Moved { .. } => UseDisposition::Committed,
-            RopeTurn::Jam => panic!("test rope should not jam"),
+            RopeTurn::Jam | RopeTurn::Hole(_) => panic!("test expects rope-spot ascent"),
         }
     }
 }

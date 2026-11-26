@@ -1454,6 +1454,14 @@ pub(super) fn source_drop_cell(
     if from.2 != to.floor || from.0.abs_diff(to.x) > 32 || from.1.abs_diff(to.y) > 32 {
         return Err(LoopMoveResult::TooFar);
     }
+    checked_source_drop_cell(base, from, to)
+}
+
+fn checked_source_drop_cell(
+    base: &WorldBase,
+    from: (i32, i32, i16),
+    to: WorldTilePosition,
+) -> Result<Vec<u8>, LoopMoveResult> {
     let source = (
         u16::try_from(from.0),
         u16::try_from(from.1),
@@ -1474,6 +1482,36 @@ pub(super) fn source_drop_cell(
     Ok(ground_cell(to.x, to.y, to.floor))
 }
 
+#[derive(Clone, Copy)]
+pub(super) enum SourceItemOrigin {
+    Door(TilePos),
+    Rope(TilePos),
+}
+
+impl SourceItemOrigin {
+    fn tile(self) -> TilePos {
+        match self {
+            Self::Door(tile) | Self::Rope(tile) => tile,
+        }
+    }
+
+    fn drop_cell(self, base: &WorldBase, to: WorldTilePosition) -> Result<Vec<u8>, LoopMoveResult> {
+        let from = self.tile();
+        let cell = (i32::from(from.x), i32::from(from.y), i16::from(from.floor));
+        match self {
+            Self::Door(_) => source_drop_cell(base, cell, to),
+            Self::Rope(_) => {
+                let dx = cell.0.abs_diff(to.x);
+                let dy = cell.1.abs_diff(to.y);
+                if to.floor != cell.2 + 1 || dx > 1 || dy > 1 || (dx == 0 && dy == 0) {
+                    return Err(LoopMoveResult::TooFar);
+                }
+                checked_source_drop_cell(base, cell, to)
+            }
+        }
+    }
+}
+
 /// A qualified source script uses the existing item-loop receipt/custody writer.
 /// Its caller holds the lane and proves the authored source/destination pair;
 /// voluntary moves retain their ordinary one-cell reach check.
@@ -1487,9 +1525,10 @@ pub(super) async fn relocate_source_item(
     actor: ExactActorRef,
     command: UseCommand,
     item: ItemKey,
-    from: TilePos,
+    origin: SourceItemOrigin,
     to: TilePos,
 ) -> LoopMoveResult {
+    let from = origin.tile();
     let destination = oteryn_protocol_oteryn::item_view::WorldTilePosition {
         x: i32::from(to.x),
         y: i32::from(to.y),
@@ -1507,7 +1546,7 @@ pub(super) async fn relocate_source_item(
                 slot: None,
             },
             permit,
-            Some(from),
+            Some(origin),
         )
         .await;
     }
@@ -1538,13 +1577,9 @@ pub(super) async fn relocate_source_item(
         let Some(map) = admission.bundle_map() else {
             return LoopMoveResult::Refused(LoopMoveRefusal::NotSupported);
         };
-        let Some(ground) = source_drop_cell(
-            map.overlay.base(),
-            (i32::from(from.x), i32::from(from.y), i16::from(from.floor)),
-            destination,
-        )
-        .ok() else {
-            return LoopMoveResult::Refused(LoopMoveRefusal::Blocked);
+        let ground = match origin.drop_cell(map.overlay.base(), destination) {
+            Ok(cell) => cell,
+            Err(refusal) => return refusal,
         };
         (
             native,
