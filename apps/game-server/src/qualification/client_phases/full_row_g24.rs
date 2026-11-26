@@ -214,59 +214,66 @@ fn inventory_ware(
 async fn catalogue_ware(
     client: &mut DevClientSession,
     native: &crate::content::native_gameplay::NativeGameplayState,
-    mut items: Vec<wire::Ware>,
-    mut has_next: bool,
+    first_page: &[wire::Ware],
 ) -> TestResult<(u32, u32)> {
-    let mut selected = None;
-    let mut previous = 0;
-    for page in 0..=4096 {
-        if items.is_empty() || items.len() > wire::PAGE_SIZE {
-            return Err(format!("step=catalogue invalid-page={page} size={}", items.len()).into());
-        }
-        for ware in &items {
-            if ware.definition <= previous {
-                return Err(format!(
-                    "step=catalogue page={page} unordered-definition={}",
-                    ware.definition
-                )
-                .into());
-            }
-            previous = ware.definition;
-            if let Some(id) = inventory_ware(native, ware.definition) {
-                let candidate = (id, ware.definition);
-                selected =
-                    Some(selected.map_or(candidate, |current: (u32, u32)| current.min(candidate)));
-            }
-        }
-        if !has_next {
-            return selected.ok_or_else(|| "step=catalogue observed=no-inventory-ware".into());
-        }
+    let index = native
+        .item_index()
+        .ok_or("step=catalogue observed=missing-item-index")?;
+    let definitions: Vec<_> = native
+        .market_references()
+        .into_iter()
+        .filter(|reference| {
+            index
+                .definition_at(*reference)
+                .is_some_and(|(key, revision)| native.marketable_definition(key, revision))
+        })
+        .collect();
+    let (id, definition, position) = definitions
+        .iter()
+        .enumerate()
+        .filter_map(|(position, reference)| {
+            inventory_ware(native, reference.get()).map(|id| (id, reference.get(), position))
+        })
+        .min()
+        .ok_or("step=catalogue observed=no-inventory-ware")?;
+    let page = u32::try_from(position / wire::PAGE_SIZE)?;
+    let fetched;
+    let items = if page == 0 {
+        first_page
+    } else {
         let wire::Reply::Catalogue {
-            items: next,
+            items,
             page: echoed,
-            has_next: more,
             ..
         } = ask(
             client,
             &wire::Query::Catalogue {
                 filter: wire::Filter::default(),
-                page: page + 1,
+                page,
             },
         )
         .await?
         else {
-            return Err("step=catalogue observed=not-a-catalogue".into());
+            return Err("step=catalogue observed=selected-page-not-a-catalogue".into());
         };
-        if echoed != page + 1 {
-            return Err(format!(
-                "step=catalogue observed=page-{echoed} expected={}",
-                page + 1
-            )
-            .into());
+        if echoed != page {
+            return Err(format!("step=catalogue observed=page-{echoed} expected={page}").into());
         }
-        (items, has_next) = (next, more);
+        fetched = items;
+        &fetched
+    };
+    if !items.iter().map(|ware| ware.definition).eq(definitions
+        .chunks(wire::PAGE_SIZE)
+        .nth(usize::try_from(page)?)
+        .ok_or("step=catalogue observed=missing-expected-page")?
+        .iter()
+        .map(|reference| reference.get()))
+    {
+        return Err(
+            format!("step=catalogue page={page} observed=active-generation-mismatch").into(),
+        );
     }
-    Err("step=catalogue observed=page-budget-exhausted".into())
+    Ok((id, definition))
 }
 
 async fn settle(
@@ -372,12 +379,7 @@ async fn body(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult {
     let filter = wire::Filter::default();
-    let wire::Reply::Catalogue {
-        items,
-        page: 0,
-        has_next,
-        ..
-    } = ask(
+    let wire::Reply::Catalogue { items, page: 0, .. } = ask(
         &mut client,
         &wire::Query::Catalogue {
             filter: filter.clone(),
@@ -418,7 +420,7 @@ async fn body(
     {
         return Err(format!("step=search observed=items:{}", found.len()).into());
     }
-    let (id, definition) = catalogue_ware(&mut client, native, items, has_next).await?;
+    let (id, definition) = catalogue_ware(&mut client, native, &items).await?;
     evidence(&format!(
         "G24 ware={id} definition={definition} selection=lowest-inventory-ware"
     ));
