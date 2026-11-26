@@ -165,22 +165,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     wait_carried(&mut client, item, 0).await?;
 
-    // List the holdings page by page, as the client does (first page, then next page after the
-    // last row), until the deposited item is listed.
+    // Preserve the full client pagination, even when the item appears before the last page.
     let mut pages = Vec::new();
     let mut after = 0;
-    let (listed, row) = loop {
+    let mut row = None;
+    let listed = loop {
         let (page, page_envelope) = search_command(&mut client, wire::Request::Open { after }).await?;
-        let found = page.results.iter().find(|row| row.client_id == client_id).cloned();
+        if let Some(found) = page.results.iter().find(|row| row.client_id == client_id) {
+            if row.replace(found.clone()).is_some() {
+                return Err("N03 item repeated across holdings pages".into());
+            }
+        }
         pages.push(page_envelope);
-        if let Some(row) = found {
-            break (page, row);
+        if page.outcome == wire::Outcome::Listed {
+            break page;
         }
         if page.outcome != wire::Outcome::More || pages.len() >= 64 {
-            return Err(format!("deposited item {client_id} not in the holdings list").into());
+            return Err(format!("N03 holdings pagination did not finish: {:?}", page.outcome).into());
         }
-        after = page.results.last().ok_or("empty More page")?.client_id;
+        let next = page.results.last().ok_or("empty More page")?.client_id;
+        if next <= after {
+            return Err("N03 holdings cursor did not advance".into());
+        }
+        after = next;
     };
+    let row = row.ok_or_else(|| format!("deposited item {client_id} not in the holdings list"))?;
     if (row.depot, row.stash, row.inbox) != (1, 0, 0) {
         return Err(format!("N03 expected one depot unit after deposit: {row:?}").into());
     }

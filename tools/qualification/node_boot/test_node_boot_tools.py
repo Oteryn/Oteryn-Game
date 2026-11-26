@@ -411,7 +411,7 @@ class N03ReplayTests(unittest.TestCase):
             session = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
             Path(temp, 'n03-expected.txt').write_text(f'session={session}\n')
             replay = ('test play::feature_0153_depot_search::view::native::e2e_n03::'
-                      'e2e_n03_depot_list_and_retrieve_one ... ok')
+                      'e2e_n03_depot_list_retrieve_one_and_refusals ... ok')
             verified = f'{replay}\nN03_NATIVE_REPLAY session={session}'
             for marker, outcome, expected in (
                 ('', replay, 1),
