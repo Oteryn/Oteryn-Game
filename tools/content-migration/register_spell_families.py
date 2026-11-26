@@ -375,20 +375,23 @@ def admit_agony_field(root: Path, generated: dict[str, bytes]) -> None:
     generated[path] = spell_import.canonical_bytes(document)
 
 
-def admit_dream_courts_supplies(root: Path, items: dict) -> None:
-    """Admit the two portable rewards bound by the Dream Courts pickup callbacks."""
+def admit_portable_quest_items(root: Path, items: dict) -> None:
+    """Admit portable quest items from the pinned XML and client appearance inputs."""
     import build_source_item_profiles as source
     from authored_quest_item_custody import XML_SHA256
     from quest_reward_item_semantics import CLIENT, CLIENT_SHA
 
-    ids = {29991, 30009}
+    # The retained i10009 inputs agree with Crystal 201189f8 items.xml:26415-26418
+    # and appearances.dat object 10009 (take, no cumulative/unmove/forceuse/multiuse).
+    # Crystal king_tibianus.lua:78,89 consumes the flask through dialogue.
+    ids = {10009, 29991, 30009}
     xml = (root / "imports/canary/items-xml/items.xml").read_bytes()
     client = (root / CLIENT).read_bytes()
     if (
         hashlib.sha256(xml).hexdigest() != XML_SHA256
         or hashlib.sha256(client).hexdigest() != CLIENT_SHA
     ):
-        raise ValueError("DREAM_COURTS_SUPPLY_SOURCE_DRIFT")
+        raise ValueError("PORTABLE_QUEST_ITEM_SOURCE_DRIFT")
     nodes = source.xml_index(xml)
     appearances = source.engine_items.load_appearance_objects(client)
     bindings = source.binding_index(
@@ -405,7 +408,7 @@ def admit_dream_courts_supplies(root: Path, items: dict) -> None:
             "stack_class": "NonStackable",
             "legal_destinations": ["CharacterInventory", "Ground"],
         }:
-            raise ValueError(f"DREAM_COURTS_SUPPLY_CUSTODY:{item}")
+            raise ValueError(f"PORTABLE_QUEST_ITEM_CUSTODY:{item}")
         profiles.append(profile)
     qualified = source.bind_profiles(
         {"schema": items["schema"], "records": profiles}, bindings, ids
@@ -426,7 +429,7 @@ def admit_dream_courts_supplies(root: Path, items: dict) -> None:
             if row["production_definition"]["production_key"] == key
         ]
         if existing and existing != [profile]:
-            raise ValueError(f"DREAM_COURTS_SUPPLY_CONFLICT:{key}")
+            raise ValueError(f"PORTABLE_QUEST_ITEM_CONFLICT:{key}")
         if not existing:
             items["records"].append(profile)
     items["records"].sort(key=provider_order)
@@ -1800,7 +1803,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import healing_global_overrides
 
     healing_global_overrides.apply_native_profiles(items)
-    admit_dream_courts_supplies(root, items)
+    admit_portable_quest_items(root, items)
     import protected_loot_yields
 
     protected_loot_yields.admit(root, items, provider_order)
