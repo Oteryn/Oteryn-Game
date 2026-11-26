@@ -1,8 +1,11 @@
 //! Spoken casts on the ordinary client connection; no direct runtime mutation.
 use super::client_combat_journey::Checks;
 use super::*;
-use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatSpeechMode, DevClientSession};
-use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
+use oteryn_dev_client::{
+    CastOutcome, ChatDisposition, ChatIntent, ChatOutcome, ChatSpeechMode, DevClientSession,
+};
+use oteryn_protocol_oteryn::actor_spell::{ActorVitals, SpellCastDisposition, SpellTarget};
+use oteryn_protocol_oteryn::cyclopedia_character as character;
 
 pub(super) async fn spell_journey(
     client: &mut DevClientSession,
@@ -60,10 +63,7 @@ pub(super) async fn spell_journey(
     checks.finish()
 }
 
-async fn say(
-    client: &mut DevClientSession,
-    words: &str,
-) -> TestResult<oteryn_dev_client::ChatOutcome> {
+async fn say(client: &mut DevClientSession, words: &str) -> TestResult<ChatOutcome> {
     Ok(client
         .chat(&ChatIntent::Say {
             mode: ChatSpeechMode::Say,
@@ -127,13 +127,55 @@ async fn words_and_cooldown(
             _ => return Err(format!("same-spell cooldown seed refused: {seed:?}").into()),
         }
     }
+    let paid = client
+        .actor_vitals()
+        .copied()
+        .ok_or("paid caster vitals unavailable")?;
     let spoken_retry = say(client, "exura").await?;
     // The indexed probe distinguishes spell cooldown from chat flood control.
     let retry = client.cast_spell(index, SpellTarget::None, false).await?;
-    let cooldown = spoken_retry.disposition == ChatDisposition::Rejected
-        && retry.disposition == SpellCastDisposition::CoolingDown
-        && retry.actor_vitals_delta.is_none();
+    // The indexed result follows any spoken effects. A read-only command then
+    // lets the client apply any vitals update sent after the indexed result.
+    let after_spoken = client.actor_vitals().copied();
+    let stats = client
+        .session_mut()
+        .gated_command(
+            character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            character::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[character::CharacterTab::GeneralStats as u8, 0, 0, 1],
+        )
+        .await?;
+    if stats.status != CommandStatus::Accepted {
+        return Err(format!(
+            "same-spell vitals follow-up query refused: {:?}",
+            stats.status
+        )
+        .into());
+    }
+    let cooldown = same_spell_refusals_match(
+        &spoken_retry,
+        &retry,
+        &paid,
+        after_spoken.as_ref(),
+        client.actor_vitals(),
+    );
     Ok((mana, cooldown, group_cooldown))
+}
+
+fn same_spell_refusals_match(
+    spoken_retry: &ChatOutcome,
+    retry: &CastOutcome,
+    paid: &ActorVitals,
+    after_spoken: Option<&ActorVitals>,
+    after_indexed: Option<&ActorVitals>,
+) -> bool {
+    spoken_retry.status == CommandStatus::Rejected
+        && spoken_retry.disposition == ChatDisposition::Rejected
+        && retry.status == CommandStatus::Accepted
+        && retry.disposition == SpellCastDisposition::CoolingDown
+        && retry.actor_vitals_delta.is_none()
+        && after_spoken == Some(paid)
+        && after_indexed == Some(paid)
 }
 
 pub(super) fn spell_index(
@@ -211,6 +253,82 @@ pub(super) async fn protection_zone_probe(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn same_spell_cooldown_probe_requires_resource_free_refusals() {
+        let paid = ActorVitals {
+            health: 120,
+            max_health: 150,
+            mana: 80,
+            max_mana: 100,
+            soul: 100,
+            harmony: 0,
+            serene: false,
+        };
+        let spoken = ChatOutcome {
+            command_id: 1,
+            status: CommandStatus::Rejected,
+            disposition: ChatDisposition::Rejected,
+            wait_seconds: 0,
+            result_server_sequence: 1,
+        };
+        let indexed = CastOutcome {
+            command_id: 2,
+            status: CommandStatus::Accepted,
+            disposition: SpellCastDisposition::CoolingDown,
+            result_server_sequence: 2,
+            actor_vitals_delta: None,
+        };
+        assert!(same_spell_refusals_match(
+            &spoken,
+            &indexed,
+            &paid,
+            Some(&paid),
+            Some(&paid)
+        ));
+
+        let mana_debit = ActorVitals { mana: 60, ..paid };
+        let soul_debit = ActorVitals { soul: 99, ..paid };
+        let mut accepted = Vec::new();
+        for (case, after_spoken, after_indexed) in [
+            ("spoken mana debit", Some(&mana_debit), Some(&paid)),
+            ("indexed soul debit", Some(&paid), Some(&soul_debit)),
+            ("missing spoken vitals", None, Some(&paid)),
+            ("missing indexed vitals", Some(&paid), None),
+        ] {
+            if same_spell_refusals_match(&spoken, &indexed, &paid, after_spoken, after_indexed) {
+                accepted.push(case);
+            }
+        }
+
+        let wrong_spoken_status = ChatOutcome {
+            status: CommandStatus::Accepted,
+            ..spoken.clone()
+        };
+        let wrong_indexed_status = CastOutcome {
+            status: CommandStatus::Rejected,
+            ..indexed.clone()
+        };
+        let unexpected_delta = CastOutcome {
+            actor_vitals_delta: Some(oteryn_dev_client::AppliedDelta {
+                server_sequence: 3,
+                base_revision: 2,
+                new_revision: 3,
+                value: soul_debit,
+            }),
+            ..indexed.clone()
+        };
+        for (case, spoken, indexed) in [
+            ("wrong spoken status", &wrong_spoken_status, &indexed),
+            ("wrong indexed status", &spoken, &wrong_indexed_status),
+            ("indexed vitals delta", &spoken, &unexpected_delta),
+        ] {
+            if same_spell_refusals_match(spoken, indexed, &paid, Some(&paid), Some(&paid)) {
+                accepted.push(case);
+            }
+        }
+        assert!(accepted.is_empty(), "probe accepted {accepted:?}");
+    }
 
     #[test]
     fn spell_journey_resolves_words_from_pinned_catalog() -> TestResult {
