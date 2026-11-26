@@ -772,6 +772,11 @@ install_owned root -m 0600 "$WORK/ops.toml" "$BASE/ops/ops.toml"
 # One descriptor installation time: changed facts under an unchanged
 # revision are refused at boot, as D3 requires.
 DESCRIPTOR_INSTALLED_AT="$(date +%s)"
+# G14's isolated batch configures the ordinary Server login MOTD.
+if [[ "${NODE_BOOT_E2E_ONLY:-}" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 246:1 ]]; then
+  : "${NODE_BOOT_SERVER_MOTD=Welcome to the Crystal Server!}"
+fi
+
 write_node_config() { # launch-file
   # Pass the operator's text through the same root TOML key as a deployed node.
   : > "$WORK/node.toml"

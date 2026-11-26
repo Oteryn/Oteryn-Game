@@ -52,6 +52,23 @@ KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
 class ServerNoticeTests(unittest.TestCase):
+    def test_g14_batch_configures_login_motd_without_a_manual_export(self):
+        config = section("# G14's isolated batch", "write_node_config() {")
+        for batch, group, override, expected in (
+            ("246:1", "rows", None, "Welcome to the Crystal Server!"),
+            ("246:1", "rows", "Operator notice", "Operator notice"),
+            ("246:1", "rows", "", ""),
+            ("245:1", "rows", None, ""),
+            ("246:1", "core", None, ""),
+        ):
+            with self.subTest(batch=batch, group=group, override=override):
+                env = {"NODE_BOOT_E2E_ONLY": group, "OTERYN_E2E_ROW_BATCH": batch}
+                if override is not None:
+                    env["NODE_BOOT_SERVER_MOTD"] = override
+                result = bash(config + 'printf "%s" "${NODE_BOOT_SERVER_MOTD:-}"', env)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, expected)
+
     def test_notice_config_uses_only_operator_text(self):
         writer = section("write_node_config() {", '  cat >> "$WORK/node.toml" <<TOML')
         self.assertNotIn("OTERYN_E2E_ROW_BATCH", writer)

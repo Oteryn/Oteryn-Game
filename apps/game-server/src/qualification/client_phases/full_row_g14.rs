@@ -246,6 +246,14 @@ async fn cancel_after_relogin(client: &mut DevClientSession, prior_id: u32) -> T
     if dialog.id == prior_id {
         return Err("step=relogin observed=stale-dialog-id".into());
     }
+    let (status, payload) = send(client, CAPABILITY, wire::COMMAND_TYPE_SERVER_MODAL_ANSWER, &stale).await?;
+    if status != CommandStatus::Rejected || !payload.is_empty() {
+        return Err("step=relogin-pending observed=stale-answer-not-rejected".into());
+    }
+    match query(client).await? {
+        wire::Reply::Dialog(still) if still == dialog => {}
+        other => return Err(format!("step=relogin-pending observed=dialog-changed:{other:?}").into()),
+    }
     let cancel = answer(true, dialog.id, CANCEL)?;
     let payload = accepted(client, CAPABILITY, wire::COMMAND_TYPE_SERVER_MODAL_ANSWER, &cancel).await?;
     let expected = wire::Answer { dialog_id: dialog.id, button_id: CANCEL, choice_id: None };
