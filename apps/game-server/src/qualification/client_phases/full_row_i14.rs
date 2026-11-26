@@ -113,6 +113,15 @@ pub(super) fn decode_trade_window(
 }
 
 pub(super) async fn acquire(client: &mut DevClientSession, world: &BundleWorld, id: u32, amount: u32) -> TestResult<u64> {
+    acquire_with_approach::<false>(client, world, id, amount).await
+}
+
+async fn acquire_with_approach<const I14: bool>(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    id: u32,
+    amount: u32,
+) -> TestResult<u64> {
     use oteryn_dev_client::client_runtime::npc_shop as runtime;
     use oteryn_protocol_oteryn::npc_service as wire;
     let index = provisioning::item_index()?;
@@ -128,10 +137,42 @@ pub(super) async fn acquire(client: &mut DevClientSession, world: &BundleWorld, 
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let here = tile(client.world_spatial().actor_position)?;
-    let (npc, path) = metadata.npcs.npcs.iter().filter(|npc| sellers.contains(&npc.key)).filter_map(|npc| {
-        route(world, here, |at| npc.placements.iter().any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)).map(|path| (npc, path))
-    }).min_by_key(|(_, path)| path.len()).ok_or_else(|| format!("no walk route to seller for item {id}; sellers={sellers:?}"))?;
-    walk(client, world, &path).await?;
+    let talk_range = if I14 { wire::TALK_RANGE_TILES } else { 3 };
+    let (npc, path) = metadata
+        .npcs
+        .npcs
+        .iter()
+        .filter(|npc| sellers.contains(&npc.key))
+        .filter_map(|npc| {
+            route(world, here, |at| {
+                npc.placements.iter().any(|placement| seller_in_range(at, placement, talk_range))
+            })
+            .map(|path| (npc, path))
+        })
+        .min_by_key(|(_, path)| path.len())
+        .ok_or_else(|| format!("no walk route to seller for item {id}; sellers={sellers:?}"))?;
+    if I14 {
+        for direction in path {
+            let from = tile(client.world_spatial().actor_position)?;
+            let expected = destination(world, from, direction)
+                .ok_or("I14 seller route lost its planned landing")?;
+            let reply = client.step(direction).await?;
+            let actual = tile(client.world_spatial().actor_position)?;
+            if reply.disposition != StepDisposition::Moved
+                || reply.world_spatial_delta.is_none()
+                || actual != expected
+            {
+                return Err(format!(
+                    "I14 seller STEP {direction:?} from={from:?} planned={expected:?} actual={actual:?} reply={reply:?}"
+                )
+                .into());
+            }
+            verdict::Harness::global().progress("walk");
+            client.take_events();
+        }
+    } else {
+        walk(client, world, &path).await?;
+    }
     let actor = client.world_entities().and_then(|entities| entities.iter().find(|entity| entity.kind == oteryn_dev_client::EntityKind::Npc && npc.placements.iter().any(|p| entity.position.x == i32::from(p.x) && entity.position.y == i32::from(p.y) && entity.position.floor == -i16::from(p.floor)))).map(|entry| entry.entity).ok_or("seller not visible after walk")?;
     for text in ["hi", "trade"] {
         let reply = runtime::talk(client.session_mut(), &wire::NpcTalkIntent { npc_actor: actor, text: text.into() }).await?;
@@ -146,6 +187,15 @@ pub(super) async fn acquire(client: &mut DevClientSession, world: &BundleWorld, 
     if reply != wire::NpcIntentDisposition::Ok { return Err(format!("buy item={id} reply={reply:?} price={} quantity={amount}", offer.unit_price).into()); }
     let expected = before + u64::from(offer.count) * u64::from(amount);
     wait_quantity(client, reference, expected).await
+}
+
+fn seller_in_range(
+    at: TilePos,
+    seller: &oteryn_world_bundle::npc::Placement,
+    range: u32,
+) -> bool {
+    at.floor == seller.floor
+        && u32::from(at.x.abs_diff(seller.x).max(at.y.abs_diff(seller.y))) <= range
 }
 
 async fn use_one(client: &mut DevClientSession, reference: std::num::NonZeroU32) -> TestResult<(UseDisposition, u64)> {
@@ -172,8 +222,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let flask = provisioning::item_reference(&index, 285)?;
     let missing = provisioning::item_reference(&index, 268)?;
     let mut client = connect_world(clients, 0xb4).await?;
-    let purchase_meat = acquire(&mut client, world, 3577, 2).await?;
-    let purchase_potion = acquire(&mut client, world, 266, 2).await?;
+    let purchase_meat = acquire_with_approach::<true>(&mut client, world, 3577, 2).await?;
+    let purchase_potion = acquire_with_approach::<true>(&mut client, world, 266, 2).await?;
     row.pass("npc-purchase", format!("meat_sequence={purchase_meat} potion_sequence={purchase_potion}"));
     let (food_reply, _) = use_one(&mut client, meat).await?;
     if food_reply != UseDisposition::Committed { return Err(format!("food USE reply={food_reply:?}").into()); }
@@ -221,7 +271,7 @@ async fn refill_keg(
     use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseIntent, UseTarget, decode_use_result, encode_item_use_intent};
 
     let keg_id = 25903;
-    acquire(client, world, keg_id, 1).await.map_err(|error| {
+    acquire_with_approach::<true>(client, world, keg_id, 1).await.map_err(|error| {
         verdict::context(format!(
             "missing=ordinary-health-potion-keg-{keg_id}-acquisition observed={error} owner=crates/gameplay/dispatch/src/gameplay_transport/item_craft/dispenser.rs:6"
         ), error)
@@ -277,6 +327,22 @@ mod tests {
             "missing-variant-refusal",
         ]);
         assert_eq!(next_step(&passed), "cask-keg-refill");
+    }
+
+    #[test]
+    fn i14_seller_approach_uses_the_wire_boundary_on_the_same_floor() {
+        let seller = oteryn_world_bundle::npc::Placement {
+            x: 32398,
+            y: 32222,
+            floor: -7,
+            direction: oteryn_world_bundle::npc::Direction::North,
+        };
+        let at = TilePos { x: 32394, y: 32226, floor: -7 };
+        let range = oteryn_protocol_oteryn::npc_service::TALK_RANGE_TILES;
+        assert!(seller_in_range(at, &seller, range));
+        assert!(!seller_in_range(at, &seller, 3));
+        assert!(!seller_in_range(TilePos { x: at.x - 1, ..at }, &seller, range));
+        assert!(!seller_in_range(TilePos { floor: -6, ..at }, &seller, range));
     }
 
     #[test]
