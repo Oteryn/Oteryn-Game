@@ -284,7 +284,7 @@ impl DurabilityRoot {
                 Err(LoopError::Database(error)) => return Err(error.into()),
                 Err(LoopError::Refused(_)) => None,
             };
-            super::super::db::commit_semantic_transaction(tx,deadline).await?;
+            super::super::db::commit_semantic_read(tx,deadline).await?;
             Ok(result)
         })).await
     }

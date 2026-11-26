@@ -1,4 +1,5 @@
 //! Fenced v1 create publication after retirement of its intent feed.
+use crate::durability::db::commit_semantic_read;
 use super::super::db::DB_PASS_DEADLINE;
 use super::*;
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
@@ -111,7 +112,7 @@ impl RetainedCreateScan for RetainedCreatePublisherStore<'_, '_, '_> {
                         })
                     })
                     .collect::<Result<_, sqlx::Error>>()?;
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 Ok(RetainedCreatePage { through, keys })
             })
         })
@@ -129,7 +130,7 @@ impl RetainedCreateScan for RetainedCreatePublisherStore<'_, '_, '_> {
             Box::pin(async move {
                 let mut tx = begin_semantic_transaction(holder, deadline).await?;
                 let result = sendable(&mut tx, &recovery, &proof, &source, &operation).await?;
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 Ok(result)
             })
         })
@@ -173,7 +174,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let result = sendable(&mut tx, &recovery, &proof, &source, &operation).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })

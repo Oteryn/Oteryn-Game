@@ -339,7 +339,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let current = prove_current_incarnation(&mut tx, &proof).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(if current {
                         Ok(())
                     } else {

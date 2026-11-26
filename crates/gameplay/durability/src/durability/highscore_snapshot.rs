@@ -10,6 +10,7 @@ pub mod job;
 
 pub mod reply;
 
+use crate::durability::db::commit_semantic_read;
 use super::account_achievement::EarnedAchievement;
 use super::character_build::{DurableBuildState, SKILLS};
 use super::charm_state::{BestiaryCharmEntry, BestiaryCharmFacts};
@@ -435,7 +436,7 @@ impl DurabilityRoot {
                     .await
                     {
                         Ok(value) => {
-                            commit_semantic_transaction(tx, deadline).await?;
+                            commit_semantic_read(tx, deadline).await?;
                             Ok(Ok(value))
                         }
                         Err(SnapshotError::Unavailable(error)) => Err(error),

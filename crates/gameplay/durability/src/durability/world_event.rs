@@ -1,4 +1,5 @@
 //! Immutable reset decision and session-fenced durable announcement observations.
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{CharacterProgressionError, assert_item_only_fence};
 use super::db::{
@@ -190,7 +191,7 @@ impl DurabilityRoot {
             changes.fury_gates = change_active(&mut tx, world, "fury_gates").await?.then_some(changes.fury_exit);
             changes.grimvale_full_moon = change_active(&mut tx, world, "grimvale").await?;
             changes.their_masters_voice = change_active(&mut tx, world, "their_masters_voice").await?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(changes)
         })).await
     }
@@ -210,7 +211,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let active = change_active(&mut tx, world, &key).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(active)
                 })
             })
@@ -263,7 +264,7 @@ impl DurabilityRoot {
                     events
                 }
             } else if expected_epoch == 0 { Vec::new() } else { return Err(DurabilityError::InvalidStoredState); };
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(events)
         })).await
     }
@@ -282,7 +283,7 @@ impl DurabilityRoot {
                 if !event_bound { return Err(DurabilityError::InvalidStoredState); }
                 epoch.parse().map_err(|_| DurabilityError::InvalidStoredState)
             }).transpose()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(epoch)
         })).await
     }

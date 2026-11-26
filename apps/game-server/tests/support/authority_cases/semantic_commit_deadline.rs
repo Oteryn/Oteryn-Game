@@ -27,7 +27,9 @@ fn read_only_assignment_commit_deadline_is_busy_and_retryable() -> fixture::Test
 
 async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     let scope = fixture::scope()?;
-    let read = with_stalled_commit_response(h.root.read_runtime_scope_assignment(scope)).await;
+    let (read, stalled) =
+        with_stalled_commit_response(h.root.read_runtime_scope_assignment(scope)).await;
+    assert!(stalled, "assignment read must reach COMMIT");
     assert!(
         matches!(read, Err(AssignmentError::Unavailable(DurabilityError::RootUnavailable))),
         "{read:?}"
@@ -40,9 +42,10 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
 
     let secret = BootstrapSecret::from_bytes([2; 32]);
     let launch = LaunchBinding::new("semantic-commit-deadline").map_err(fixture::debug)?;
-    let write = with_stalled_commit_response(
+    let (write, stalled) = with_stalled_commit_response(
         h.root.issue_node_bootstrap_authorization(&secret, &launch, None),
     ).await;
+    assert!(stalled, "bootstrap authorization must reach COMMIT");
     assert!(
         matches!(write, Err(RegistrationError::Unavailable(DurabilityError::CommitOutcomeUnknown))),
         "{write:?}"

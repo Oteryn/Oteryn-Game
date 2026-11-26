@@ -84,11 +84,14 @@ pub(super) async fn input_item(
     carried: bool,
 ) -> TestResult {
     use crate::durability::{
+        DurabilityError,
         item_loop_move::{LoopDestination, LoopGround, LoopMoveRequest},
         item_mint::{
             GroundPlacement, ItemMintCause, ItemMintOutcome, ItemMintRequest, TypedDefinitionRef,
         },
-        item_transfer::{ItemTransferDestination, ItemTransferOutcome, ItemTransferRequest},
+        item_transfer::{
+            ItemTransferDestination, ItemTransferError, ItemTransferOutcome, ItemTransferRequest,
+        },
     };
     use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generation_item_facts};
     let native = owner
@@ -205,18 +208,34 @@ pub(super) async fn input_item(
         )
         .await
         .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
-    let transfer_outcome = owner
-        .root
-        .commit_item_transfer(
+    let weights = NativeItemWeights(native);
+    let commit = async |transfer: &mut _| {
+        owner.root.commit_item_transfer(
             &permit,
             owner.character,
             owner.holder,
             fence,
-            &mut transfer,
-            &NativeItemWeights(native),
+            transfer,
+            &weights,
         )
         .await
-        .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
+    };
+    let transfer_outcome = match commit(&mut transfer).await {
+        Err(ItemTransferError::Unavailable(DurabilityError::CommitOutcomeUnknown)) => {
+            owner.root.await_ready().await?;
+            match owner
+                .root
+                .read_item_transfer_receipt(owner.character, fence.character_id, command(0)?)
+                .await
+            {
+                Ok(Some(receipt)) => Ok(ItemTransferOutcome::AlreadyCommitted(receipt)),
+                Ok(None) => commit(&mut transfer).await,
+                Err(error) => Err(error),
+            }
+        }
+        outcome => outcome,
+    }
+    .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
     if carried {
         return Ok(());
     }

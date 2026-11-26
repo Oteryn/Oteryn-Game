@@ -1,6 +1,7 @@
 //! A sealed read proof for the existing Ground retirement owner.
 //! Returning every participant ends use of a private scope; item retirement then
 //! completes before the native runtime can be removed from its directory.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -77,7 +78,7 @@ impl ActivityHandoffOwner {
                 };
                 if validate_retiring_activity_in_transaction(&mut tx, &node, &proof).await? { activities.push(proof); }
             }
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok((activities, next))
         })).await
     }
@@ -113,7 +114,7 @@ impl ActivityHandoffOwner {
             let Some(id)=id else{return Ok(None);};
             let proof=RetiringActivity{handoff_id:bytes16(id)?,scope,generation};
             if !validate_retiring_activity_in_transaction(&mut tx,&node,&proof).await? {return Ok(None);}
-            commit_semantic_transaction(tx,deadline).await?;
+            commit_semantic_read(tx,deadline).await?;
             Ok(Some(proof))
         })).await
     }

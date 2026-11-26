@@ -1,6 +1,42 @@
 // Keep delegated lane futures off the shared scenario stack as the integration grows.
 use super::*;
 
+async fn latch_premium(
+    root: &crate::durability::DurabilityRoot,
+    activation_id: &str,
+    switch_over_us: i64,
+    latched_at_us: i64,
+) -> TestResult {
+    use crate::durability::{DurabilityError, premium_activation_latch::PremiumActivationRead};
+
+    let latch = async || {
+        root.latch_premium_activation(activation_id, switch_over_us, latched_at_us)
+            .await
+    };
+    match latch().await {
+        Err(DurabilityError::CommitOutcomeUnknown) => {
+            root.await_ready().await?;
+            match root.read_premium_activation::<()>().await? {
+                PremiumActivationRead::Latched(stored) => {
+                    assert_eq!(stored.activation_id, activation_id);
+                    assert_eq!(stored.switch_over_us, switch_over_us);
+                    assert_eq!(stored.latched_at_us, latched_at_us);
+                }
+                PremiumActivationRead::Empty => {
+                    latch().await?;
+                }
+                PremiumActivationRead::PreDelivery(()) => {
+                    return Err("read-only premium reconciliation ran a bypass".into());
+                }
+            }
+        }
+        result => {
+            result?;
+        }
+    }
+    Ok(())
+}
+
 pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
     scenario_case(name, trigger, lever_fixture, None)
 }
@@ -1800,14 +1836,13 @@ fn scenario_case(
             };
             let (consumer, clock, activation, _) =
                 purchase_fixture::current(super::super::fixture::id(40));
-            h.root
-                .latch_premium_activation(
-                    &activation.activation_id,
-                    activation.switch_over_us,
-                    activation.switch_over_us + 60_000_000,
-                )
-                .await
-                .map_err(debug)?;
+            latch_premium(
+                &h.root,
+                &activation.activation_id,
+                activation.switch_over_us,
+                activation.switch_over_us + 60_000_000,
+            )
+            .await?;
             Some(SpellPremiumCoordinator::new(
                 consumer,
                 Some(clock),
@@ -1820,14 +1855,13 @@ fn scenario_case(
         let (consumer, clock, activation, _) =
             crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
         if mead || m07_lion || lion_trial || m44_lions || m07_realm || m07_too_hot {
-            h.root
-                .latch_premium_activation(
-                    &activation.activation_id,
-                    activation.switch_over_us,
-                    activation.switch_over_us + 60_000_000,
-                )
-                .await
-                .map_err(debug)?;
+            latch_premium(
+                &h.root,
+                &activation.activation_id,
+                activation.switch_over_us,
+                activation.switch_over_us + 60_000_000,
+            )
+            .await?;
         }
         let mead_premium =
             crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(

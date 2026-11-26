@@ -4,7 +4,7 @@ use crate::durability::{
     DurabilityRoot,
     character_authority::{ReconciledCharacterAuthority, assert_recovery_fence},
     character_progression::assert_market_item_fence,
-    db::{begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations},
+    db::{begin_semantic_transaction, commit_semantic_read, lock_admission_relations},
     item_transfer::CurrentCharacterItemFence,
     runtime_scope_assignment::NodeIncarnationProof,
 };
@@ -77,7 +77,7 @@ impl DurabilityRoot {
                     }
                 }
             }
-            commit_semantic_transaction(tx,deadline).await?;
+            commit_semantic_read(tx,deadline).await?;
             Ok(result)
         })).await
     }

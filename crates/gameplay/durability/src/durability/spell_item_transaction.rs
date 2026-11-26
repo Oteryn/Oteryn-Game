@@ -208,7 +208,7 @@ impl DurabilityRoot {
                         Ok(value) => value,
                         Err(error) => return Ok(Err(error)),
                     };
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(result))
                 })
             })

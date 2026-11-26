@@ -2049,9 +2049,8 @@ impl IssuedSemanticPass {
                 -> Pin<Box<dyn Future<Output = Result<T, DurabilityError>> + Send + 'a>>
             + Send,
     {
-        let remaining = self.deadline.saturating_duration_since(Instant::now());
-        let result = match tokio::time::timeout(
-            remaining,
+        let result = match tokio::time::timeout_at(
+            self.deadline.into(),
             operation(&mut self.holder, self.deadline, context),
         )
         .await
@@ -2250,7 +2249,7 @@ pub async fn commit_semantic_transaction(
     transaction: Transaction<'_, Postgres>,
     deadline: Instant,
 ) -> Result<(), DurabilityError> {
-    commit_semantic_transaction_by(deadline, false, || commit_transaction(transaction)).await
+    commit_semantic_transaction_by(deadline, || commit_transaction(transaction)).await
 }
 
 /// Finish a pass that did not mutate durable state. This also permits reads that
@@ -2259,24 +2258,35 @@ pub(super) async fn commit_semantic_read(
     transaction: Transaction<'_, Postgres>,
     deadline: Instant,
 ) -> Result<(), DurabilityError> {
-    commit_semantic_transaction_by(deadline, true, || commit_transaction(transaction)).await
+    match commit_semantic_transaction(transaction, deadline).await {
+        Err(DurabilityError::CommitOutcomeUnknown | DurabilityError::CommitTransactionTimeout) => {
+            Err(DurabilityError::RootUnavailable)
+        }
+        result => result,
+    }
 }
 
 #[cfg(any(test, feature = "test-support"))]
 tokio::task_local! {
-    static STALL_COMMIT_RESPONSE: ();
+    static STALL_COMMIT_RESPONSE: std::cell::Cell<bool>;
 }
 
 /// Withhold a successful COMMIT response until the pass deadline cancels it.
+/// The flag reports whether the operation reached the injected stall.
 #[cfg(any(test, feature = "test-support"))]
-pub async fn with_stalled_commit_response<F: Future>(operation: F) -> F::Output {
-    STALL_COMMIT_RESPONSE.scope((), operation).await
+pub async fn with_stalled_commit_response<F: Future>(operation: F) -> (F::Output, bool) {
+    STALL_COMMIT_RESPONSE
+        .scope(std::cell::Cell::new(false), async {
+            let result = operation.await;
+            (result, STALL_COMMIT_RESPONSE.with(std::cell::Cell::get))
+        })
+        .await
 }
 
 async fn commit_transaction(transaction: Transaction<'_, Postgres>) -> Result<(), sqlx::Error> {
     transaction.commit().await?;
     #[cfg(any(test, feature = "test-support"))]
-    if STALL_COMMIT_RESPONSE.try_with(|()| ()).is_ok() {
+    if STALL_COMMIT_RESPONSE.try_with(|reached| reached.set(true)).is_ok() {
         std::future::pending::<()>().await;
     }
     Ok(())
@@ -2284,7 +2294,6 @@ async fn commit_transaction(transaction: Transaction<'_, Postgres>) -> Result<()
 
 async fn commit_semantic_transaction_by<F, Fut>(
     deadline: Instant,
-    read_only: bool,
     commit: F,
 ) -> Result<(), DurabilityError>
 where
@@ -2296,18 +2305,12 @@ where
         return Err(DurabilityError::RootPassDeadlineExceeded);
     }
 
-    let result = match tokio::time::timeout_at(deadline.into(), commit()).await {
+    // The outer pass polls its operation before its timer. Using the same
+    // absolute deadline lets the COMMIT classify its own timeout first.
+    match tokio::time::timeout_at(deadline.into(), commit()).await {
         Ok(Ok(())) => Ok(()),
         Ok(Err(error)) => Err(DurabilityError::from_commit_error(error)),
         Err(_) => Err(DurabilityError::CommitOutcomeUnknown),
-    };
-    match result {
-        Err(DurabilityError::CommitOutcomeUnknown | DurabilityError::CommitTransactionTimeout)
-            if read_only =>
-        {
-            Err(DurabilityError::RootUnavailable)
-        }
-        result => result,
     }
 }
 
