@@ -36,6 +36,67 @@ fn write_capture(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
     std::fs::File::create_new(path)?.write_all(bytes)
 }
 
+fn capture_envelope(
+    session: &[u8; 16],
+    command_id: u64,
+    server_sequence: u64,
+    status: CommandStatus,
+    payload: &[u8],
+) -> TestResult<Vec<u8>> {
+    if session[6] >> 4 != 7 || session[8] >> 6 != 2 {
+        return Err("I07 capture session must be an RFC-variant UUIDv7".into());
+    }
+    Ok(serde_json::to_vec(&serde_json::json!({
+        "command_id": command_id,
+        "game_session_id": uuid_text(session),
+        "payload": payload,
+        "server_sequence": server_sequence,
+        "status": status as u32,
+    }))?)
+}
+
+#[test]
+fn i07_writer_emits_exact_uuidv7_envelope() -> TestResult {
+    #[derive(serde::Deserialize, Debug, PartialEq)]
+    #[serde(deny_unknown_fields)]
+    struct Envelope {
+        command_id: u64,
+        game_session_id: String,
+        payload: Vec<u8>,
+        server_sequence: u64,
+        status: u32,
+    }
+
+    let mut session = [0; 16];
+    session[6] = 0x70;
+    for variant in [0x80, 0x90, 0xa0, 0xb0] {
+        session[8] = variant;
+        let wire = capture_envelope(&session, 4, 9, CommandStatus::Accepted, &[0, 255])?;
+        let observed: Envelope = serde_json::from_slice(&wire)?;
+        assert_eq!(
+            observed,
+            Envelope {
+                command_id: 4,
+                game_session_id: uuid_text(&session),
+                payload: vec![0, 255],
+                server_sequence: 9,
+                status: 1,
+            }
+        );
+        let json = std::str::from_utf8(&wire)?;
+        for extra in [r#""command_id":4"#, r#""unexpected":0"#] {
+            let invalid = format!("{{{extra},{}", &json[1..]);
+            assert!(serde_json::from_str::<Envelope>(&invalid).is_err());
+        }
+    }
+    for (version, variant) in [(0x40, 0x80), (0x70, 0x00), (0x70, 0xc0)] {
+        session[6] = version;
+        session[8] = variant;
+        assert!(capture_envelope(&session, 4, 9, CommandStatus::Accepted, &[]).is_err());
+    }
+    Ok(())
+}
+
 async fn require_filters(
     database: &mut sqlx::PgConnection,
     character: &[u8; 16],
@@ -359,16 +420,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             &capture_dir.join(format!("i07-{key}-request.bin")),
             &payload,
         )?;
-        let envelope = serde_json::json!({
-            "game_session_id": session,
-            "command_id": reply.command_id,
-            "server_sequence": reply.server_sequence,
-            "status": reply.status as u32,
-            "payload": reply.payload,
-        });
         write_capture(
             &capture_dir.join(format!("i07-{key}.json")),
-            &serde_json::to_vec(&envelope)?,
+            &capture_envelope(
+                original_session.as_bytes(),
+                reply.command_id,
+                reply.server_sequence,
+                reply.status,
+                &reply.payload,
+            )?,
         )?;
     }
     let logout = client.session_mut().logout().await?;
