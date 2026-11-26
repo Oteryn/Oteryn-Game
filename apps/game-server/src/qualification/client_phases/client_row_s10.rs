@@ -36,14 +36,16 @@ async fn talk(
         text: text.into(),
     })
     .map_err(|error| format!("step={text} encode: {error:?}"))?;
-    let reply = client
-        .session_mut()
-        .gated_command(
+    let reply = tokio::time::timeout(
+        Duration::from_secs(12),
+        client.session_mut().gated_command(
             wire::CAPABILITY_NPC_SERVICE_V1,
             wire::COMMAND_TYPE_NPC_TALK_INTENT,
             &payload,
-        )
-        .await?;
+        ),
+    )
+    .await
+    .map_err(|_| format!("step={text} first command reply timed out"))??;
     if reply.status != CommandStatus::Accepted {
         return Err(format!("step={text} command status {:?}", reply.status).into());
     }
@@ -52,13 +54,44 @@ async fn talk(
     if disposition != wire::NpcIntentDisposition::Ok {
         return Err(format!("step={text} observed {disposition:?}").into());
     }
-    let delta = loop {
-        let delta = client
-            .session_mut()
-            .read_gated_delta(wire::STATE_DOMAIN_NPC_CONVERSATION, 1)
-            .await?;
-        if delta.server_sequence > reply.server_sequence {
-            break delta;
+    verdict::Harness::global().progress(if text == "hi" {
+        "s10-hi-accepted"
+    } else {
+        "s10-trade-accepted"
+    });
+    let delta = tokio::time::timeout(Duration::from_secs(12), async {
+        loop {
+            let delta = client
+                .session_mut()
+                .read_gated_delta(wire::STATE_DOMAIN_NPC_CONVERSATION, 1)
+                .await?;
+            if delta.server_sequence > reply.server_sequence {
+                break Ok::<_, oteryn_dev_client::SessionError>(delta);
+            }
+        }
+    })
+    .await;
+    let delta = match delta {
+        Ok(delta) => delta?,
+        Err(_) => {
+            let shop = client
+                .take_events()
+                .into_iter()
+                .find_map(|event| match event {
+                    oteryn_dev_client::SessionEvent::NpcTradeWindow(delta)
+                        if delta.server_sequence > reply.server_sequence =>
+                    {
+                        Some((
+                            delta.value.open.map(|(actor, _)| actor) == Some(npc),
+                            delta.value.offers.len(),
+                        ))
+                    }
+                    _ => None,
+                });
+            return Err(format!(
+                "step={text} first_reply={disposition:?} missing_conversation_delta shop={shop:?}"
+            )
+            .into());
         }
     };
     if previous.is_some_and(|new| new != delta.base_revision) {
