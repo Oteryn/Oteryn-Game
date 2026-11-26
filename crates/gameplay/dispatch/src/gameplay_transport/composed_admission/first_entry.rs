@@ -447,7 +447,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             if super::super::condition_persistence::restore(
                 state,
-                prepared_conditions.as_ref(),
+                prepared_conditions,
                 gourmet,
                 self.owner_now().get(),
                 admitted_rest,
