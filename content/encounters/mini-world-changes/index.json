@@ -4,7 +4,111 @@
   "notes": "Mini World Change definitions.",
   "owner": "Encounter",
   "path": "content/encounters/mini-world-changes/",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "repository": "Oteryn/Oteryn-Game",
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "bank_robbery": {
+    "hourly_roll": {
+      "numerator": 1,
+      "denominator": 324,
+      "parity": "PARITY_PENDING"
+    },
+    "city_weights_parity": "PARITY_PENDING",
+    "spawn_cells_parity": "PARITY_PENDING",
+    "source": "https://tibia.fandom.com/index.php?curid=76139&oldid=1082154",
+    "cities": [
+      {
+        "key": "thais",
+        "weight": 1,
+        "robber": "oteryn:creature.jesse_the_wicked",
+        "cell": [
+          32373,
+          32221,
+          11
+        ],
+        "escort": {
+          "creature": "oteryn:creature.smuggler",
+          "cells": [
+            [
+              32372,
+              32221,
+              11
+            ],
+            [
+              32374,
+              32221,
+              11
+            ],
+            [
+              32373,
+              32220,
+              11
+            ],
+            [
+              32373,
+              32222,
+              11
+            ]
+          ]
+        }
+      },
+      {
+        "key": "carlin",
+        "weight": 1,
+        "robber": "oteryn:creature.robby_the_reckless",
+        "cell": [
+          32199,
+          31809,
+          9
+        ],
+        "escort": {
+          "creature": "oteryn:creature.poacher",
+          "cells": [
+            [
+              32198,
+              31809,
+              9
+            ],
+            [
+              32200,
+              31809,
+              9
+            ],
+            [
+              32199,
+              31808,
+              9
+            ],
+            [
+              32199,
+              31810,
+              9
+            ]
+          ]
+        }
+      },
+      {
+        "key": "venore",
+        "weight": 1,
+        "robber": "oteryn:creature.mornenion",
+        "cell": [
+          33087,
+          32157,
+          7
+        ],
+        "escort_parity": "PARITY_PENDING"
+      },
+      {
+        "key": "ab_dendriel",
+        "weight": 1,
+        "robber": "oteryn:creature.elvira_hammerthrust",
+        "cell": [
+          32511,
+          31910,
+          11
+        ],
+        "escort_parity": "PARITY_PENDING"
+      }
+    ]
+  }
 }

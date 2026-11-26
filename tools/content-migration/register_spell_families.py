@@ -1808,9 +1808,14 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     protected_loot_yields.admit(root, items, provider_order)
     # These late Item admissions belong to the base provider. Apply their
     # verified top-order facts before deriving the separate SRX-1 supplement.
+    robbery_creatures = native_goal_corpse_items.bank_robbery_creatures(root)
+    robbery_corpses, _ = native_goal_corpse_items.policies(root, creatures=robbery_creatures)
+    robbery_item_ids = robbery_corpses.keys() | native_goal_loot_items.selected(
+        root, robbery_creatures
+    )
     late_item_keys = protected_loot_yields.ARBAZILOTH_HARD_ITEMS | {
         f"oteryn:item.tibia.i{item_id}"
-        for item_id in outfit_reward_item_profiles.SOURCE_ROWS
+        for item_id in robbery_item_ids | outfit_reward_item_profiles.SOURCE_ROWS.keys()
     }
     late_items = [
         row

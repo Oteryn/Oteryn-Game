@@ -32,7 +32,7 @@ def compact_item_provider(document, canonical):
     return canonical(document)
 
 
-OMIT_IF_UNKNOWN = ('field_condition', 'rune_consumption')
+OMIT_IF_UNKNOWN = ('field_condition', 'rune_consumption', 'field_replaceable')
 
 
 def omit_unknown_attributes(row):

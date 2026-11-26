@@ -489,7 +489,7 @@ async fn mint(
     let permit = candidate.fresh_death_lane_permit().await;
     let outcomes = h.root.commit_kill_loot_mints(
         &permit, authority, &h.node, &mut candidate, &mut children,
-        protected_winner.unwrap_or_else(|| f::id(f::CHARACTER)), None, None, None,
+        protected_winner.unwrap_or_else(|| f::id(f::CHARACTER)), None, None, None, None,
     ).await.map_err(f::debug)?;
     assert_eq!(outcomes.len(), ids.len());
     assert!(outcomes.iter().all(|outcome| matches!(outcome, ItemMintOutcome::Committed(_))), "{outcomes:?}");

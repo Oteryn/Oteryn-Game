@@ -1103,6 +1103,7 @@ impl DurabilityRoot {
                 boss,
                 None,
                 None,
+                None,
             )
             .await?;
         outcomes.pop().ok_or(ItemMintError::InvalidInput)
@@ -1124,6 +1125,7 @@ impl DurabilityRoot {
         top_damage_character_id: [u8; 16],
         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
         tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
+        bank_robbery: Option<[u8; 16]>,
         achievement: Option<(crate::foundation::CreatureDeathOccurrenceKey, super::account_achievement::BossDeathAchievementWork)>,
     ) -> Result<Vec<ItemMintOutcome>> {
         self.commit_kill_loot_mints_inner(
@@ -1135,6 +1137,7 @@ impl DurabilityRoot {
             Some(top_damage_character_id),
             boss,
             tutorial_corruptor,
+            bank_robbery,
             achievement,
             None,
         )
@@ -1158,6 +1161,7 @@ impl DurabilityRoot {
                 node,
                 candidate,
                 &mut [],
+                None,
                 None,
                 None,
                 None,
@@ -1189,6 +1193,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
             Some(source),
         )
         .await
@@ -1208,6 +1213,7 @@ impl DurabilityRoot {
         top_damage_character_id: Option<[u8; 16]>,
         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
         tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
+        bank_robbery: Option<[u8; 16]>,
         achievement: Option<(crate::foundation::CreatureDeathOccurrenceKey, super::account_achievement::BossDeathAchievementWork)>,
         source: Option<source_death::SourceCorpseMintProof<'_>>,
     ) -> Result<Vec<ItemMintOutcome>> {
@@ -1419,6 +1425,18 @@ impl DurabilityRoot {
                         return Ok(Err(ItemMintError::AuthorityRejected));
                     }
 
+                    let robbery_epoch = if let Some(firing) = bank_robbery {
+                        let scope = frozen.request.cause.death.runtime_scope;
+                        let Some(epoch) = super::world_event::bank_robbery::claim_death(
+                            &mut tx, scope, firing,
+                        ).await? else {
+                            return Ok(Err(ItemMintError::AuthorityRejected));
+                        };
+                        Some(epoch)
+                    } else {
+                        None
+                    };
+
                     // Capacity is checked only for a fresh Ground root, after the
                     // historical receipt and the real current writer fence above.
                     let death = &frozen.request.cause.death;
@@ -1521,6 +1539,25 @@ impl DurabilityRoot {
                             occurred_at_unix_ms: child.occurred_at_unix_ms,
                             envelope_sha256: child.envelope_sha256,
                         }));
+                    }
+                    if let Some(epoch) = robbery_epoch {
+                        let mut bags = Vec::new();
+                        for (child, placement) in &frozen_children {
+                            if child.request.item.production_key == super::world_event::bank_robbery::BAG {
+                                if child.request.quantity != 1
+                                    || placement.corpse_item_instance_id != frozen.item_instance_id
+                                {
+                                    return Ok(Err(ItemMintError::InvalidInput));
+                                }
+                                bags.push((placement.placement_ordinal, child.item_instance_id));
+                            }
+                        }
+                        if bags.is_empty() {
+                            return Ok(Err(ItemMintError::InvalidInput));
+                        }
+                        super::world_event::bank_robbery::bind_bags(
+                            &mut tx, frozen.request.cause.death.world_id, &epoch, &bags,
+                        ).await?;
                     }
                     if let Some(claim) = &tutorial_corruptor {
                         super::tutorial_corruptor::consume_in_transaction(&mut tx, &node, claim)

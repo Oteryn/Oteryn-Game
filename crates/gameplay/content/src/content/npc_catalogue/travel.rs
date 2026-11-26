@@ -608,7 +608,7 @@ mod tests {
             .filter(|row| !row.native_addition || row.key == nargor)
             .collect::<Vec<_>>();
         assert_eq!(corrected.len(), 195);
-        assert_eq!(corrections.len() - corrected.len(), 48);
+        assert_eq!(corrections.len() - corrected.len(), 60);
         assert_eq!(sources.len(), 195);
         assert_eq!(evidence.len(), 195);
         for ((row, source), evidence) in corrected.into_iter().zip(sources).zip(evidence) {

@@ -78,6 +78,22 @@ class QuestRewards(unittest.TestCase):
                     complete["requires"][-1]["minimum"],
                 )
 
+    def test_every_outfit_addon_slot_has_a_grant(self):
+        document = self.author['document']
+        covered = {
+            (key, row['target']['addon'])
+            for row in document['grant_mappings']
+            if row['target']['kind'] == 'Addon'
+            for key in [row['target']['outfit_key'], *row.get('outfit_aliases', [])]
+        }
+        missing = [
+            (outfit['key'], addon)
+            for outfit in document['outfits']
+            for addon in range(1, outfit['addon_count'] + 1)
+            if (outfit['key'], addon) not in covered
+        ]
+        self.assertEqual(missing, [])
+
     def test_royal_costume_completes_only_after_crown_exchange(self):
         rows = {row["key"].split("/")[-1]: row for row in self.callbacks["callbacks"]}
         for name, before, after in [("base", -1, 1), ("shield", 1, 2), ("crown", 2, 3)]:
