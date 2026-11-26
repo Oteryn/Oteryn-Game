@@ -878,6 +878,93 @@ class CloudRunSummaryTests(unittest.TestCase):
                     self.assertEqual(result.returncode, 0, result.stderr)
                     self.assertIn(f'STAGE_STATUS={status}', result.stdout)
 
+    def test_direct_node_boot_result_requires_the_selected_clients_replay(self):
+        cases = [
+            ('missing capture', '184:1', 'S18.client', False, 'pass', False, 0),
+            ('missing replay verdict', '184:1', 'S18.client', True, 'none', False, 1),
+            ('replay failure', '184:1', 'S18.client', True, 'fail', False, 1),
+            ('different replay', '184:1', 'S18.client', True, 'wrong', False, 1),
+            ('replay success', '184:1', 'S18.client', True, 'pass', True, 1),
+            ('server only', '1:1', 'C03.full', False, 'fail', True, 0),
+            ('empty batch', '0:0', '', False, 'pass', False, 0),
+            ('no server verdict', '184:1', '', True, 'pass', False, 0),
+        ]
+        # Run the production stage and final result handling with server and Cargo fixtures.
+        script = textwrap.dedent('''\
+            set -Eeuo pipefail
+            declare -a ORDER
+            declare -A STATUS
+            VARS="$WORK/vars"
+            NODE_BOOT_WORLD=1
+            NODE_BOOT_SPELLS=0
+            NODE_BOOT_D150_LEGACY=0
+            NODE_BOOT_UNPRIVILEGED=1
+            BASE="$WORK/deploy"
+            result=NODE_BOOT_FAIL
+            NODE_PID=""
+            PG_CONTAINER=fixture
+            evidence() { :; }
+            stop_pg_sampler() { :; }
+            start_runtime_diagnostics() { :; }
+            stop_runtime_diagnostics() { :; }
+            pg_observability_dump() { :; }
+            compose() { :; }
+            docker() { :; }
+            server() {
+              if [[ "$CAPTURE" == yes && -n "${E2E_ALL_CAPTURE_DIR:-}" ]]; then
+                for file in s18-say.bin s18-whisper.bin s18-expected.txt; do
+                  printf fresh > "$E2E_ALL_CAPTURE_DIR/$file"
+                done
+              fi
+              if [[ -n "$ROW" ]]; then
+                printf 'SEAM_EVIDENCE e2e_all scenario=%s status=PASS\\n' "$ROW"
+              fi
+            }
+            ''')
+        script += '\n'.join(function(name) for name in ('stage_rows', 'known_rows', 'stage', 'cleanup'))
+        script += '\ntrap cleanup EXIT\nstage seam_stages -- server\n'
+        script += RUN_TEXT[RUN_TEXT.index('echo "NODE_BOOT_STAGES"'):]
+
+        for label, batch, row, capture, replay, passed, calls in cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                work = Path(tmp, 'work')
+                work.mkdir()
+                (work / 'vars').touch()
+                external = Path(tmp, 'external')
+                external.mkdir()
+                for name in ('s18-say.bin', 's18-whisper.bin', 's18-expected.txt'):
+                    (external / name).write_text('stale')
+                cargo = Path(tmp, 'cargo')
+                cargo.write_text(textwrap.dedent('''\
+                    #!/bin/bash
+                    set -euo pipefail
+                    printf 'replay\\n' >> "${0}.calls"
+                    [[ "$(cat "$E2E_ALL_CAPTURE_DIR/s18-say.bin")" == fresh ]]
+                    case "$REPLAY" in
+                      fail) exit 1 ;;
+                      none) exit 0 ;;
+                      wrong) test=some_other_row ;;
+                      pass) test=e2e_s18_say_and_whisper_echo_replay ;;
+                    esac
+                    printf 'test tests::%s ... ok\\n' "$test"
+                    echo 'test result: ok. 1 passed; 0 failed; 0 ignored'
+                    '''))
+                cargo.chmod(0o700)
+                result = bash(script, env={
+                    'WORK': str(work), 'GAME_SOURCE': str(HERE.parents[2]),
+                    'NODE_BOOT_E2E_ONLY': 'rows', 'OTERYN_E2E_ROW_BATCH': batch,
+                    'ROW': row, 'CAPTURE': 'yes' if capture else 'no', 'REPLAY': replay,
+                    'CARGO': str(cargo), 'E2E_ALL_CAPTURE_DIR': str(external),
+                })
+                self.assertEqual(result.returncode, int(not passed), result.stdout + result.stderr)
+                self.assertIn(f'NODE_BOOT_RESULT=NODE_BOOT_{"PASS" if passed else "FAIL"}',
+                              result.stdout)
+                call_log = Path(tmp, 'cargo.calls')
+                self.assertEqual(call_log.read_text().count('replay') if call_log.exists() else 0,
+                                 calls)
+                if capture:
+                    self.assertEqual((external / 's18-say.bin').read_text(), 'fresh')
+
     def test_client_replay_verdicts(self):
         cases = [
             (False, 0, 1, 'PASS', 'FAIL cause=capture-missing', False),
