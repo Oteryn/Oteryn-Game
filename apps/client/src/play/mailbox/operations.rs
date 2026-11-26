@@ -40,6 +40,14 @@ impl Mailbox {
 
     pub(in crate::play) fn push_events(&mut self, mut events: Vec<SessionEvent>) {
         let received_at = tokio::time::Instant::now();
+        oteryn_client_ui::party_membership_notices::observed(
+            &self.party,
+            &mut self.party_notice_refresh,
+            events
+                .iter()
+                .filter(|event| matches!(event, SessionEvent::PartyMembershipNotice(_)))
+                .count(),
+        );
         if let Some(index) = events
             .iter()
             .rposition(|event| matches!(event, SessionEvent::ActivityScope(_)))
@@ -71,13 +79,6 @@ impl Mailbox {
                 })
                 .for_each(drop);
         }
-        self.party_notice_refresh = oteryn_client_ui::party_membership_notices::observed(
-            self.party_notice_refresh,
-            events
-                .iter()
-                .filter(|event| matches!(event, SessionEvent::PartyMembershipNotice(_)))
-                .count(),
-        );
         self.console_events(&events);
         self.activity_scope_events(&events);
         self.channel_list_events(&events);
