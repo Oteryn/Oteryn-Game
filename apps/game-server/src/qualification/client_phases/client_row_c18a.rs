@@ -3,10 +3,23 @@
 //! `crates/client-runtime/src/features/local-spell-action-bar/protocol.rs::run_cast`.
 
 use super::*;
-use oteryn_dev_client::client_runtime::spell::{SpellFeedback, cast_selected};
+use oteryn_dev_client::client_runtime::combat::{CombatCommand, CombatReport, run_combat};
+use oteryn_dev_client::client_runtime::spell::SpellFeedback;
 use oteryn_dev_client::{EntityDetail, SessionEvent};
-use oteryn_protocol_oteryn::{actor_spell::SpellCastDisposition, attack, target_move};
+use oteryn_protocol_oteryn::{actor_spell::SpellCastDisposition, presentation, target_move};
 
+const SCORCH_MANA: u32 = 8;
+const RAT_MAX_HP: u64 = 20;
+const CAST_TILE: TilePos = TilePos {
+    x: 32490,
+    y: 32169,
+    floor: -7,
+};
+const RAT_TILE: TilePos = TilePos {
+    x: 32491,
+    y: 32169,
+    floor: -7,
+};
 const WORDS: &str = "exevo infir flam hur";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -24,20 +37,22 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
-        bytes.clone(),
+        bytes,
         &pin,
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let book = native_spell_book()?;
     let spell = client_spell_journey::spell_index(book, WORDS)?;
     let definition = book.indexed(spell).ok_or("C18a served spell absent")?;
-    let crate::spell::ManaCost::Fixed(mana) = definition.mana else {
-        return Err("C18a Scorch must have a fixed mana cost".into());
-    };
+    if definition.mana != crate::spell::ManaCost::Fixed(SCORCH_MANA) || definition.soul != 0 {
+        return Err("C18a Scorch must cost exactly 8 mana and 0 soul".into());
+    }
     let mut client = connect_character(clients, 0xca, 1).await?;
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    if tile(client.world_spatial().actor_position)? != TOWN {
+        return Err("C18a expected the initial town tile".into());
+    }
+    walk_once(&mut client, world, CAST_TILE).await?;
     let here = client.world_spatial().actor_position;
     let rat = {
         let mut rats = client
@@ -46,13 +61,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             .iter()
             .filter(|entry| {
                 entry.kind == oteryn_dev_client::EntityKind::Creature
-                    && entry.position.floor == here.floor
-                    && entry
-                        .position
-                        .x
-                        .abs_diff(here.x)
-                        .max(entry.position.y.abs_diff(here.y))
-                        == 1
+                    && tile(entry.position).ok() == Some(RAT_TILE)
                     && entry.display_name.is_some_and(|name| {
                         name.as_str()
                             .is_ok_and(|name| name.eq_ignore_ascii_case("rat"))
@@ -65,40 +74,14 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         rat
     };
     let target = rat.entity;
-    let attack = client.session_mut().attack_target(Some(&target)).await?;
-    require_mechanic_acceptance(attack.status, "C18a first Rat selection")?;
-    if attack.disposition != attack::AttackIntentDisposition::Ok {
-        return Err(format!(
-            "C18a first Rat selection refused: {attack:?}; caster={here:?} rat={rat:?}"
-        )
-        .into());
+    let combat_before = *client
+        .session_mut()
+        .combat_state()
+        .ok_or("C18a missing combat state")?;
+    if combat_before.target.is_some() {
+        return Err("C18a directional cast requires no active attack target".into());
     }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
-    loop {
-        let combat = *client
-            .session_mut()
-            .combat_state()
-            .ok_or("C18a capture has no combat state")?;
-        if combat.target == Some(target) {
-            break;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "C18a server did not retain selected target after {attack:?}; observed={combat:?}"
-            )
-            .into());
-        }
-        client.service_liveness(Duration::from_millis(20)).await?;
-    }
-    let facing = if rat.position.x < here.x {
-        StepDirection::East
-    } else if rat.position.x > here.x {
-        StepDirection::West
-    } else if rat.position.y < here.y {
-        StepDirection::South
-    } else {
-        StepDirection::North
-    };
+    let facing = StepDirection::East;
     let intent =
         target_move::encode_target_move_intent(target_move::TargetMoveIntent::Turn(facing))
             .map_err(|error| format!("C18a turn encoding failed: {error:?}"))?;
@@ -110,12 +93,12 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             &intent,
         )
         .await?;
-    require_mechanic_acceptance(turn.status, "C18a turn away from the selected Rat")?;
+    require_mechanic_acceptance(turn.status, "C18a turn toward the observed Rat")?;
     if turn.payload != [8, 1] {
-        return Err("C18a turn away from the selected Rat was refused".into());
+        return Err("C18a turn toward the observed Rat was refused".into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
-    let health_before = loop {
+    let (caster, health_before) = loop {
         let entities = client
             .world_entities()
             .ok_or("C18a has no post-turn entity projection")?;
@@ -137,82 +120,133 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             if health_percent == 0 {
                 return Err("C18a selected Rat has zero health before the cast".into());
             }
-            break health_percent;
+            break (own.entity, health_percent);
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("C18a did not observe the caster facing away from the selected Rat".into());
+            return Err("C18a did not observe the caster facing toward the observed Rat".into());
         }
         client.service_liveness(Duration::from_millis(20)).await?;
     };
     client.take_events();
-    if client
-        .session_mut()
-        .combat_state()
-        .and_then(|state| state.target)
-        != Some(target)
-    {
-        return Err("C18a cast requires the same selected Rat generation after turning".into());
-    }
     let before = *client.actor_vitals().ok_or("C18a caster vitals absent")?;
     let mut feedback = SpellFeedback::default();
-    let (cast, inbound) = oteryn_dev_client::capture_qualification_inbound(cast_selected(
+    let command_id = client.next_command_id();
+    let (report, mut exchange) = oteryn_dev_client::capture_qualification_exchange(run_combat(
         client.session_mut(),
         &mut feedback,
-        spell,
-        true,
+        CombatCommand::Cast(spell),
     ))
     .await;
-    let cast = cast?;
-    require_mechanic_acceptance(cast.status, "C18a aimed Scorch")?;
-    if cast.disposition != SpellCastDisposition::Cast || feedback.text() != Some("Spell cast") {
-        return Err(format!("C18a Scorch cast refused: {:?}", cast.disposition).into());
+    let report = report?;
+    let (result_server_sequence, status, cast_payload) =
+        received_cast_payload(&exchange.inbound, command_id).await?;
+    require_mechanic_acceptance(status, "C18a directional Scorch")?;
+    if report != CombatReport::Cast(SpellCastDisposition::Cast)
+        || feedback.text() != Some("Spell cast")
+    {
+        return Err(format!("C18a Scorch cast refused: {report:?}").into());
     }
     let after = *client
         .actor_vitals()
         .ok_or("C18a post-cast vitals absent")?;
-    if before.mana.checked_sub(mana) != Some(after.mana)
-        || before.soul.checked_sub(definition.soul) != Some(after.soul)
-    {
+    if before.mana.checked_sub(SCORCH_MANA) != Some(after.mana) || before.soul != after.soul {
         return Err("C18a Scorch did not apply its exact mana and soul costs".into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
-    let (health_sequence, health_after) = 'observe: loop {
+    let mut health = None;
+    let mut damage = None;
+    let (health_sequence, health_after, damage_sequence, damage_value) = loop {
         for event in client.take_events() {
-            let SessionEvent::WorldSpatialEntities(delta) = event else {
-                continue;
-            };
-            if delta.server_sequence <= cast.result_server_sequence {
-                continue;
+            match event {
+                SessionEvent::WorldSpatialEntities(delta)
+                    if delta.server_sequence > result_server_sequence =>
+                {
+                    if delta.value.leave.contains(&target) {
+                        return Err("C18a Rat left visibility after the cast".into());
+                    }
+                    for entry in delta
+                        .value
+                        .update
+                        .iter()
+                        .filter(|entry| entry.entity == target)
+                    {
+                        if let EntityDetail::Actor { health_percent, .. }
+                        | EntityDetail::ActorWithIcons { health_percent, .. } = entry.detail
+                            && health_percent != health_before
+                        {
+                            if health
+                                .replace((delta.server_sequence, health_percent))
+                                .is_some()
+                            {
+                                return Err("C18a observed multiple Rat health changes".into());
+                            }
+                        }
+                    }
+                }
+                SessionEvent::Presentation(batch)
+                    if batch.server_sequence > result_server_sequence =>
+                {
+                    for effect in batch.value {
+                        if let presentation::PresentationEventKind::ValueText {
+                            kind: presentation::PresentationValueKind::DamageDealt,
+                            target: victim,
+                            attacker: Some(source),
+                            primary,
+                            secondary,
+                            ..
+                        } = effect.kind
+                            && source == caster
+                            && victim == target
+                        {
+                            if primary.color != presentation::PresentationColor::Red
+                                || secondary.is_some()
+                                || damage
+                                    .replace((batch.server_sequence, primary.value))
+                                    .is_some()
+                            {
+                                return Err(
+                                    "C18a expected one red damage value for the caster and Rat"
+                                        .into(),
+                                );
+                            }
+                        }
+                    }
+                }
+                _ => {}
             }
-            if delta.value.leave.contains(&target) {
-                return Err(format!(
-                    "C18a selected Rat left visibility without a health-loss delta: command={} reply_sequence={} delta_sequence={} target={target:?}",
-                    cast.command_id, cast.result_server_sequence, delta.server_sequence
-                ).into());
-            }
-            if let Some(updated) = delta
-                .value
-                .update
-                .iter()
-                .find(|entry| entry.entity == target)
-                && let EntityDetail::Actor { health_percent, .. } = updated.detail
-                && health_percent < health_before
+        }
+        if let (Some((sequence, remaining)), Some((damage_sequence, value))) = (health, damage) {
+            let loss = u64::from(health_before).checked_sub(u64::from(remaining));
+            if remaining == 0 || loss != value.checked_mul(100).map(|percent| percent / RAT_MAX_HP)
             {
-                evidence(&format!(
-                    "SEAM_EVIDENCE c18a_health command={} reply_sequence={} delta_sequence={} target={target:?} before={health_before} after={health_percent}",
-                    cast.command_id, cast.result_server_sequence, delta.server_sequence
-                ));
-                break 'observe (delta.server_sequence, health_percent);
+                return Err(format!("C18a red damage {value} disagrees with Rat health {health_before} -> {remaining}").into());
             }
+            break (sequence, remaining, damage_sequence, value);
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
-                "C18a no WorldSpatialEntities health-loss delta after accepted Scorch: command={} reply_sequence={} target={target:?} before={health_before}",
-                cast.command_id, cast.result_server_sequence
+                "C18a missing correlated Scorch damage: command={} reply_sequence={} target={target:?} before={health_before} health={health:?} damage={damage:?}",
+                command_id, result_server_sequence
             ).into());
         }
-        client.service_liveness(Duration::from_millis(20)).await?;
+        let (pumped, read) = oteryn_dev_client::capture_qualification_exchange(
+            client.service_liveness(Duration::from_millis(20)),
+        )
+        .await;
+        pumped?;
+        exchange.inbound.extend(read.inbound);
     };
+    let combat_after = *client
+        .session_mut()
+        .combat_state()
+        .ok_or("C18a missing post-cast combat state")?;
+    if combat_after.target.is_some() || combat_after.modes != combat_before.modes {
+        return Err("C18a directional cast changed the attack target or fight modes".into());
+    }
+    evidence(&format!(
+        "SEAM_EVIDENCE c18a_health command={} reply_sequence={} delta_sequence={health_sequence} target={target:?} before={health_before} after={health_after} damage={damage_value}",
+        command_id, result_server_sequence
+    ));
     let session = client.join_snapshot().game_session_id;
     let capabilities = client.selected_capabilities().to_vec();
     let health_payload = client
@@ -223,23 +257,12 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .ok_or("C18a original health delta payload absent")?
         .payload
         .clone();
-    let cast_payload = received_cast_payload(&inbound, &cast).await?;
+    let damage_payload = received_damage_payload(&exchange.inbound, damage_sequence).await?;
 
-    let stop = client.session_mut().attack_target(None).await?;
-    require_mechanic_acceptance(stop.status, "C18a clear attack before relog")?;
-    if stop.disposition != attack::AttackIntentDisposition::Ok {
-        return Err(format!("C18a clear attack refused: {stop:?}").into());
+    if !is_logout_rest_tile(world, TOWN) {
+        return Err("C18a fixed logout tile must be a protection zone".into());
     }
-    let cast_tile = tile(here)?;
-    let rest_path = route(world, cast_tile, |at| is_logout_rest_tile(world, at))
-        .ok_or("C18a cannot reach a logout protection tile")?;
-    walk(&mut client, world, &rest_path).await?;
-    let logged_out_at = tile(client.world_spatial().actor_position)?;
-    if !is_logout_rest_tile(world, logged_out_at) {
-        return Err("C18a caster did not reach the planned protection tile".into());
-    }
-    let return_path = route(world, logged_out_at, |at| at == cast_tile)
-        .ok_or("C18a cannot return from the logout tile to the cast tile")?;
+    walk_once(&mut client, world, TOWN).await?;
     let (result, detail, _, _) = logout_once(&mut client).await?;
     if result != Some(LogoutResult::Accepted) {
         return Err(format!("C18a first logout refused: {detail}").into());
@@ -249,10 +272,14 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if fresh.join_snapshot().game_session_id == session {
         return Err("C18a relog reused the cast session".into());
     }
-    if tile(fresh.world_spatial().actor_position)? != logged_out_at {
+    if tile(fresh.world_spatial().actor_position)? != TOWN {
         return Err("C18a relog did not retain the protection tile".into());
     }
-    walk(&mut fresh, world, &return_path).await?;
+    let fresh_vitals = *fresh.actor_vitals().ok_or("C18a missing relogged vitals")?;
+    if (fresh_vitals.mana, fresh_vitals.soul) != (after.mana, after.soul) {
+        return Err(format!("C18a relog vitals differ after Scorch: expected mana={} soul={}, observed mana={} soul={}", after.mana, after.soul, fresh_vitals.mana, fresh_vitals.soul).into());
+    }
+    walk_once(&mut fresh, world, CAST_TILE).await?;
     let relogged = fresh
         .world_entities()
         .and_then(|entities| entities.get(&target))
@@ -268,23 +295,32 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     }
 
     let root = std::path::PathBuf::from(required("E2E_ALL_CAPTURE_DIR")?);
+    let cast_intent = sent_cast_payload(&exchange.outbound, command_id).await?;
+    std::fs::write(root.join("c18a-intent.bin"), cast_intent)?;
+    use std::os::unix::fs::MetadataExt;
+    let capture_dir = std::fs::metadata(&root)?;
     let session = uuid_text(session.as_bytes());
     for (name, sequence, payload) in [
         (
             "c18a-cast.json",
-            cast.result_server_sequence,
+            result_server_sequence,
             cast_payload.as_slice(),
         ),
         ("c18a-health.json", health_sequence, health_payload.as_ref()),
+        (
+            "c18a-damage.json",
+            damage_sequence,
+            damage_payload.as_slice(),
+        ),
     ] {
         std::fs::write(
             root.join(name),
             serde_json::to_vec(&serde_json::json!({
-                "command_id": cast.command_id,
+                "command_id": command_id,
                 "game_session_id": session,
                 "payload": payload,
                 "server_sequence": sequence,
-                "status": cast.status as u32,
+                "status": status as u32,
             }))?,
         )?;
     }
@@ -292,9 +328,24 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         root.join("c18a-proof.json"),
         serde_json::to_vec(&serde_json::json!({
             "game_session_id": session,
+            "capture_device": capture_dir.dev(),
+            "capture_inode": capture_dir.ino(),
+            "spell": spell.get(),
+            "damage": damage_value,
+            "damage_sequence": damage_sequence,
+            "caster_identity": caster.identity,
+            "caster_generation": caster.generation,
+            "mana_before": before.mana,
+            "mana_after": after.mana,
+            "mana_relog": fresh_vitals.mana,
+            "soul_before": before.soul,
+            "soul_after": after.soul,
+            "soul_relog": fresh_vitals.soul,
+            "combat_before": oteryn_protocol_oteryn::attack::encode_actor_combat_state(&combat_before).map_err(|error| format!("{error:?}"))?,
+            "combat_after": oteryn_protocol_oteryn::attack::encode_actor_combat_state(&combat_after).map_err(|error| format!("{error:?}"))?,
             "relog_session_id": uuid_text(fresh.join_snapshot().game_session_id.as_bytes()),
-            "command_id": cast.command_id,
-            "cast_sequence": cast.result_server_sequence,
+            "command_id": command_id,
+            "cast_sequence": result_server_sequence,
             "health_sequence": health_sequence,
             "identity": target.identity,
             "generation": target.generation,
@@ -308,21 +359,99 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
 
 async fn received_cast_payload(
     mut inbound: &[u8],
-    cast: &oteryn_dev_client::CastOutcome,
-) -> TestResult<Vec<u8>> {
+    command_id: u64,
+) -> TestResult<(u64, CommandStatus, Vec<u8>)> {
     use oteryn_protocol_oteryn::{MessageType, decode_command_result, decode_wire_envelope};
     while !inbound.is_empty() {
         let frame = oteryn_dev_client::native_session::read_frame(&mut inbound).await?;
         let envelope = decode_wire_envelope(&frame)?;
-        if envelope.message_type() == MessageType::CommandResult
-            && envelope.server_sequence() == cast.result_server_sequence
-        {
+        if envelope.message_type() == MessageType::CommandResult {
             let received = decode_command_result(envelope.payload())?;
-            if received.command_id != cast.command_id || received.status != cast.status {
+            if received.command_id != command_id {
                 return Err("C18a original cast reply does not match the exchange".into());
             }
-            return Ok(received.payload.to_vec());
+            return Ok((
+                envelope.server_sequence(),
+                received.status,
+                received.payload.to_vec(),
+            ));
         }
     }
     Err("C18a original cast reply absent from inbound capture".into())
+}
+
+async fn walk_once(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    goal: TilePos,
+) -> TestResult {
+    let start = tile(client.world_spatial().actor_position)?;
+    let path = route(world, start, |at| at == goal)
+        .ok_or_else(|| format!("C18a fixed route unavailable: {start:?} -> {goal:?}"))?;
+    for direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected =
+            destination(world, from, direction).ok_or("C18a route lost its planned landing")?;
+        let outcome = client.step(direction).await?;
+        require_mechanic_acceptance(outcome.status, "C18a first step attempt")?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || actual != expected
+        {
+            return Err(format!("C18a first step failed: from={from:?} direction={direction:?} expected={expected:?} actual={actual:?} outcome={outcome:?}").into());
+        }
+        verdict::Harness::global().progress("walk");
+        client.take_events();
+        if outcome.step_wait_ms != 0 {
+            client
+                .service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms)))
+                .await?;
+        }
+    }
+    if tile(client.world_spatial().actor_position)? != goal {
+        return Err("C18a fixed route did not reach its goal".into());
+    }
+    Ok(())
+}
+
+async fn sent_cast_payload(mut outbound: &[u8], command_id: u64) -> TestResult<Vec<u8>> {
+    use oteryn_protocol_oteryn::{MessageType, decode_wire_envelope};
+    let mut intent = None;
+    while !outbound.is_empty() {
+        let frame = oteryn_dev_client::native_session::read_frame(&mut outbound).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::ClientCommand {
+            let command = envelope.client_command(envelope.connection_generation())?;
+            if command.command_id != command_id
+                || command.command_type != oteryn_protocol_oteryn::actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT
+                || intent.replace(command.payload.to_vec()).is_some()
+            {
+                return Err("C18a captured an unexpected outbound command".into());
+            }
+        }
+    }
+    intent.ok_or_else(|| "C18a original outbound cast intent absent".into())
+}
+
+async fn received_damage_payload(mut inbound: &[u8], sequence: u64) -> TestResult<Vec<u8>> {
+    use oteryn_protocol_oteryn::{MessageType, decode_state_delta, decode_wire_envelope};
+    while !inbound.is_empty() {
+        let frame = oteryn_dev_client::native_session::read_frame(&mut inbound).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::StateDelta
+            && envelope.server_sequence() == sequence
+        {
+            let delta = decode_state_delta(envelope.payload())?;
+            if (delta.domain_id, delta.delta_type)
+                == (
+                    presentation::STATE_DOMAIN_WORLD_PRESENTATION,
+                    presentation::DELTA_TYPE_WORLD_PRESENTATION_BATCH_V1,
+                )
+            {
+                return Ok(delta.payload.to_vec());
+            }
+        }
+    }
+    Err("C18a original damage presentation absent".into())
 }

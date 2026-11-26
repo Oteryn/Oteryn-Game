@@ -54,7 +54,7 @@ fn id(marker: u8) -> [u8; 16] {
 #[test]
 fn e2e_c18a_replays_captured_damage_or_unit_refusal() -> Result<(), Error> {
     if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        return replay_capture(std::path::Path::new(&root));
+        replay_capture(std::path::Path::new(&root))?;
     }
     let Fixture {
         combat,
@@ -194,6 +194,21 @@ struct Envelope {
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Proof {
+    capture_device: u64,
+    capture_inode: u64,
+    spell: u32,
+    damage: u64,
+    damage_sequence: u64,
+    caster_identity: [u8; 16],
+    caster_generation: u64,
+    mana_before: u32,
+    mana_after: u32,
+    mana_relog: u32,
+    soul_before: u32,
+    soul_after: u32,
+    soul_relog: u32,
+    combat_before: Vec<u8>,
+    combat_after: Vec<u8>,
     game_session_id: String,
     relog_session_id: String,
     command_id: u64,
@@ -220,10 +235,17 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
     use oteryn_protocol_oteryn::world_spatial_entities as wire;
     let cast: Envelope = serde_json::from_slice(&std::fs::read(root.join("c18a-cast.json"))?)?;
     let health: Envelope = serde_json::from_slice(&std::fs::read(root.join("c18a-health.json"))?)?;
+    let damage: Envelope = serde_json::from_slice(&std::fs::read(root.join("c18a-damage.json"))?)?;
     let proof: Proof = serde_json::from_slice(&std::fs::read(root.join("c18a-proof.json"))?)?;
+    verify_capture_directory(root, &proof)?;
     let session = session_id(&proof.game_session_id)?;
     if session_id(&cast.game_session_id)? != session
         || session_id(&health.game_session_id)? != session
+        || session_id(&damage.game_session_id)? != session
+        || damage.command_id != proof.command_id
+        || damage.status != cast.status
+        || damage.server_sequence != proof.damage_sequence
+        || damage.server_sequence <= cast.server_sequence
         || session_id(&proof.relog_session_id)? == session
         || proof.command_id == 0
         || cast.command_id != proof.command_id
@@ -236,10 +258,24 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         || health.status != cast.status
         || proof.generation == 0
         || proof.before > 100
+        || proof.after == 0
         || proof.after >= proof.before
+        || !exact_rat_loss(proof.before, proof.after, proof.damage)
+        || !exact_vitals(
+            [proof.mana_before, proof.mana_after, proof.mana_relog],
+            [proof.soul_before, proof.soul_after, proof.soul_relog],
+        )
     {
         return Err("C18a capture provenance, sequence, or health proof is invalid".into());
     }
+    verify_directional_intent(&std::fs::read(root.join("c18a-intent.bin"))?, proof.spell)?;
+    let before = attack::decode_actor_combat_state(&proof.combat_before)
+        .map_err(|error| format!("{error:?}"))?;
+    let after = attack::decode_actor_combat_state(&proof.combat_after)
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(before.target, None);
+    assert_eq!(after.target, None);
+    assert_eq!(before.modes, after.modes);
     let disposition = actor_spell::decode_spell_cast_result(&cast.payload)
         .map_err(|error| format!("{error:?}"))?;
     let mut feedback = SpellFeedback::default();
@@ -255,6 +291,11 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         identity: proof.identity,
         generation: proof.generation,
     };
+    let caster = wire::EntityRef {
+        identity: proof.caster_identity,
+        generation: proof.caster_generation,
+    };
+    verify_damage(&damage.payload, caster, target, proof.damage)?;
     let entry = delta
         .update
         .iter()
@@ -265,6 +306,10 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         matches!(entry.detail, wire::EntityDetail::Actor { health_percent, .. }
         | wire::EntityDetail::ActorWithIcons { health_percent, .. } if health_percent == proof.after)
     );
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(root.join("c18a-replay-consumed"))?;
     Ok(())
 }
 
@@ -278,4 +323,165 @@ fn strict_envelope_rejects_unknown_duplicate_and_missing_keys() {
         assert!(serde_json::from_str::<Envelope>(&invalid).is_err());
     }
     assert!(serde_json::from_str::<Envelope>(r#"{"payload":[1]}"#).is_err());
+}
+
+fn verify_capture_directory(root: &std::path::Path, proof: &Proof) -> Result<(), Error> {
+    use std::os::unix::fs::MetadataExt;
+    let dir = std::fs::metadata(root)?;
+    if (dir.dev(), dir.ino()) != (proof.capture_device, proof.capture_inode) {
+        return Err("C18a capture was copied out of its run directory".into());
+    }
+    let created = std::fs::metadata(root.join("c18a-proof.json"))?.modified()?;
+    if created.elapsed()? > std::time::Duration::from_secs(600) {
+        return Err("C18a capture expired before replay".into());
+    }
+    Ok(())
+}
+
+fn verify_directional_intent(payload: &[u8], spell: u32) -> Result<(), Error> {
+    let intent =
+        actor_spell::decode_spell_cast_intent(payload).map_err(|error| format!("{error:?}"))?;
+    if intent.spell.get() != spell || intent.target != SpellTarget::None || intent.aim_at_target {
+        return Err("C18a outbound cast was not the ordinary directional intent".into());
+    }
+    Ok(())
+}
+
+fn exact_rat_loss(before: u8, after: u8, damage: u64) -> bool {
+    damage > 0
+        && after > 0
+        && u64::from(before).checked_sub(u64::from(after)) == damage.checked_mul(5)
+}
+
+fn exact_vitals(mana: [u32; 3], soul: [u32; 3]) -> bool {
+    mana[0].checked_sub(8) == Some(mana[1])
+        && mana[1] == mana[2]
+        && soul[0] == soul[1]
+        && soul[1] == soul[2]
+}
+
+fn verify_damage(
+    payload: &[u8],
+    caster: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    target: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    expected: u64,
+) -> Result<(), Error> {
+    use oteryn_protocol_oteryn::presentation;
+    let presentation =
+        presentation::decode_presentation_batch(payload).map_err(|error| format!("{error:?}"))?;
+    let attributed: Vec<_> = presentation
+        .iter()
+        .filter_map(|event| match event.kind {
+            presentation::PresentationEventKind::ValueText {
+                kind: presentation::PresentationValueKind::DamageDealt,
+                target: victim,
+                attacker: Some(source),
+                primary,
+                secondary: None,
+                ..
+            } if victim == target
+                && source == caster
+                && primary.color == presentation::PresentationColor::Red =>
+            {
+                Some(primary.value)
+            }
+            _ => None,
+        })
+        .collect();
+    if attributed != [expected] {
+        return Err("C18a damage presentation lacks one exact caster-to-Rat hit".into());
+    }
+    Ok(())
+}
+
+#[test]
+fn rejects_false_c18a_damage_cost_and_aim() {
+    let spell = std::num::NonZeroU32::new(1).unwrap();
+    for (target, aim_at_target, expected) in [
+        (SpellTarget::None, false, true),
+        (SpellTarget::AttackTarget, true, false),
+    ] {
+        let payload = actor_spell::encode_spell_cast_intent(&SpellCastIntent {
+            spell,
+            target,
+            aim_at_target,
+        });
+        assert_eq!(
+            verify_directional_intent(&payload, spell.get()).is_ok(),
+            expected
+        );
+    }
+    assert!(exact_rat_loss(100, 60, 8));
+    assert!(!exact_rat_loss(100, 60, 7));
+    assert!(!exact_rat_loss(100, 100, 0));
+    assert!(exact_vitals([30, 22, 22], [0, 0, 0]));
+    assert!(!exact_vitals([30, 23, 23], [0, 0, 0]));
+    assert!(!exact_vitals([30, 22, 30], [0, 0, 0]));
+}
+
+#[test]
+fn rejects_health_loss_without_the_exact_damage_source() -> Result<(), Error> {
+    use oteryn_protocol_oteryn::presentation::{
+        PresentationColor, PresentationEvent, PresentationEventKind, PresentationValue,
+        PresentationValueKind, encode_presentation_batch,
+    };
+    use oteryn_protocol_oteryn::world_spatial::ActorPosition;
+    use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+    let caster = EntityRef {
+        identity: [1; 16],
+        generation: 1,
+    };
+    let target = EntityRef {
+        identity: [2; 16],
+        generation: 1,
+    };
+    let event = |attacker, victim| PresentationEvent {
+        decision_ordinal: 1,
+        emission_ordinal: 1,
+        kind: PresentationEventKind::ValueText {
+            kind: PresentationValueKind::DamageDealt,
+            position: ActorPosition {
+                x: 32491,
+                y: 32169,
+                floor: 7,
+            },
+            target: victim,
+            attacker: Some(attacker),
+            primary: PresentationValue {
+                value: 8,
+                color: PresentationColor::Red,
+            },
+            secondary: None,
+        },
+    };
+    let payload = encode_presentation_batch(&[event(caster, target)])
+        .map_err(|error| format!("{error:?}"))?;
+    verify_damage(&payload, caster, target, 8)?;
+    assert!(verify_damage(&payload, caster, target, 7).is_err());
+    assert!(
+        verify_damage(
+            &payload,
+            EntityRef {
+                generation: 2,
+                ..caster
+            },
+            target,
+            8
+        )
+        .is_err()
+    );
+    assert!(
+        verify_damage(
+            &payload,
+            caster,
+            EntityRef {
+                generation: 2,
+                ..target
+            },
+            8
+        )
+        .is_err()
+    );
+    assert!(verify_damage(&[], caster, target, 8).is_err());
+    Ok(())
 }

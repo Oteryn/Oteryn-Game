@@ -38,7 +38,9 @@ pub use oteryn_session::{
 };
 use oteryn_session_tcp::{TcpAdapterError, TcpConnect};
 mod qualification_transport;
-pub use qualification_transport::{QualificationTransport, capture_qualification_inbound};
+pub use qualification_transport::{
+    QualificationExchange, QualificationTransport, capture_qualification_exchange,
+};
 use rustls::pki_types::CertificateDer;
 use std::error::Error as StdError;
 use std::fmt;
