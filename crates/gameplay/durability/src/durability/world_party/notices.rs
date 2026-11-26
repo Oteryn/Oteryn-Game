@@ -57,12 +57,24 @@ impl super::super::DurabilityRoot {
                         return Ok(Vec::new());
                     }
                     super::super::character_authority::assert_recovery_fence(&mut tx, &recovery).await?;
-                    try_lock_admission_relations(&mut tx).await?;
                     let current = if let Some(house) = house {
+                        try_lock_admission_relations(&mut tx).await?;
                         super::super::consume_transform::house_action_current_in_transaction(
                             &mut tx, &node, fence, &house,
                         ).await?
                     } else {
+                        // Keep the exact session, lease, account and runtime guards
+                        // stable through the mailbox delete. No reconnect journal
+                        // or receipt table participates in that proof.
+                        sqlx::query(
+                            "LOCK TABLE game_durability_admission_account_guards,
+                                        game_durability_admission_character_guards,
+                                        game_durability_admission_runtime_guards,
+                                        game_durability_reconnect_sessions
+                             IN SHARE MODE NOWAIT",
+                        )
+                        .execute(&mut *tx)
+                        .await?;
                         super::super::character_progression::assert_session_fence(
                             &mut tx, &fence, &node,
                         ).await?.is_ok()
@@ -78,6 +90,7 @@ impl super::super::DurabilityRoot {
                          WHERE n.character_id=encode($1,'hex')::uuid AND n.game_session_id=encode($2,'hex')::uuid
                            AND n.connection_generation=$3::text::numeric(20,0)
                            AND s.game_session_id=n.game_session_id AND s.character_id=n.character_id
+                           AND s.current_generation=n.connection_generation
                            AND s.session_state=2 AND g.character_id=n.character_id
                            AND g.eligible AND g.lease_generation=s.character_lease_generation
                            AND g.holder_game_session_id=n.game_session_id AND g.world_id=s.world_id
