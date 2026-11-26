@@ -1,8 +1,7 @@
 //! C04 full-row journey, derived from the matrix, re-audit, and the cast gate owner.
 //!
 //! 1. Admit the provisioned Character in the temple PZ; send an aggressive indexed CAST and
-//!    require a rejected command and cast disposition, no vitals delta, and no
-//!    mana change.
+//!    require the target-legality refusal, no vitals delta, and no mana change.
 //! 2. Walk out of the PZ using native STEP commands; send the same CAST and require `Cast`, an
 //!    authoritative vitals delta, and the exact mana debit.
 //! 3. Send that spell again immediately; require `CoolingDown`, no vitals delta, and no debit.
@@ -199,10 +198,12 @@ async fn journey(
     client.take_events();
     let started = tokio::time::Instant::now();
     let pz = cast(&mut client, ordinary).await?;
-    if !refused_without_cost(
-        pz.status, pz.disposition, pz.actor_vitals_delta.is_some(), before, mana(&client)?,
-    ) {
-        return Err(format!("PZ CAST expected rejected/rejected/no-delta reply={pz:?}").into());
+    if pz.status != CommandStatus::Accepted
+        || pz.disposition != SpellCastDisposition::TargetIllegal
+        || pz.actor_vitals_delta.is_some()
+        || mana(&client)? != before
+    {
+        return Err(format!("PZ CAST expected accepted/target-illegal/no-delta reply={pz:?}").into());
     }
     assert_no_pz_cooldown(&mut client)?;
     let from = tile(client.world_spatial().actor_position)?;

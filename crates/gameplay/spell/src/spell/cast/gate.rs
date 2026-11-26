@@ -39,7 +39,9 @@ pub const fn disposition(rejection: &CastRejection) -> SpellCastDisposition {
         | CastRejection::VocationCannotUse
         | CastRejection::PremiumRequired => SpellCastDisposition::NotAvailable,
         CastRejection::TargetRequired => SpellCastDisposition::TargetRequired,
-        CastRejection::TargetNotAllowed => SpellCastDisposition::TargetIllegal,
+        CastRejection::TargetNotAllowed | CastRejection::ProtectionZoneRejected => {
+            SpellCastDisposition::TargetIllegal
+        }
         _ => SpellCastDisposition::Rejected,
     }
 }

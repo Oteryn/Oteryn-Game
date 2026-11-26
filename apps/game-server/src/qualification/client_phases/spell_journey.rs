@@ -92,31 +92,48 @@ async fn words_and_cooldown(
         )
         .into());
     }
-    let spoken_retry = say(client, "exura").await?;
-    // Distinct indexed probes distinguish cooldown from chat flood control.
-    let retry = client.cast_spell(index, SpellTarget::None, false).await?;
-    let cooldown = spoken_retry.disposition == ChatDisposition::Rejected
-        && retry.disposition == SpellCastDisposition::CoolingDown
-        && retry.actor_vitals_delta.is_none();
+    // Probe the one-second healing group on the first round trip after payment.
     let group = client
         .cast_spell(group_index, SpellTarget::None, false)
         .await?;
     let group_cooldown = group.disposition == SpellCastDisposition::CoolingDown
         && group.actor_vitals_delta.is_none();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop {
+    let mana = loop {
         if client
             .actor_vitals()
             .is_some_and(|after| after.mana < before.mana)
         {
-            return Ok((true, cooldown, group_cooldown));
+            break true;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Ok((false, cooldown, group_cooldown));
+            break false;
         }
         client.service_liveness(Duration::from_millis(25)).await?;
         client.take_events();
+    };
+
+    // Give the same-spell probes their own paid cooldown window. Only wait
+    // for the earlier cast to expire, then evaluate both probes once.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let seed = client.cast_spell(index, SpellTarget::None, false).await?;
+        match seed.disposition {
+            SpellCastDisposition::Cast if seed.actor_vitals_delta.is_some() => break,
+            SpellCastDisposition::CoolingDown if tokio::time::Instant::now() < deadline => {
+                client.service_liveness(Duration::from_millis(100)).await?;
+                client.take_events();
+            }
+            _ => return Err(format!("same-spell cooldown seed refused: {seed:?}").into()),
+        }
     }
+    let spoken_retry = say(client, "exura").await?;
+    // The indexed probe distinguishes spell cooldown from chat flood control.
+    let retry = client.cast_spell(index, SpellTarget::None, false).await?;
+    let cooldown = spoken_retry.disposition == ChatDisposition::Rejected
+        && retry.disposition == SpellCastDisposition::CoolingDown
+        && retry.actor_vitals_delta.is_none();
+    Ok((mana, cooldown, group_cooldown))
 }
 
 pub(super) fn spell_index(
@@ -171,7 +188,7 @@ pub(super) async fn protection_zone_probe(
         }
         let matched = outcome.status == CommandStatus::Accepted
             && if inside {
-                outcome.disposition == SpellCastDisposition::Rejected
+                outcome.disposition == SpellCastDisposition::TargetIllegal
                     && outcome.actor_vitals_delta.is_none()
                     && client.actor_vitals().copied() == Some(before)
             } else {
