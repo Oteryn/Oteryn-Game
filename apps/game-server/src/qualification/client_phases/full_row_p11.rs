@@ -176,6 +176,233 @@ async fn wait_for_lever_arrival(
     }
 }
 
+const CORRIDOR_Y: u16 = 31659;
+const WEAPON_ID: u32 = 7405;
+const POTION_ID: u32 = 7643;
+const REWARD_ID: u32 = 3388;
+
+fn bag_count(client: &DevClientSession, definition: std::num::NonZeroU32) -> Option<u32> {
+    Some(
+        client
+            .inventory()?
+            .entries
+            .iter()
+            .filter(|item| item.item_definition_ref == definition)
+            .map(|item| item.count.get())
+            .sum(),
+    )
+}
+
+async fn equip_corridor_weapon(client: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome};
+    let definition = provisioning::item_reference(&provisioning::item_index()?, WEAPON_ID)?;
+    let source = client
+        .inventory()
+        .and_then(|view| {
+            view.entries
+                .iter()
+                .find(|item| item.item_definition_ref == definition)
+        })
+        .ok_or("P11 fixture sword missing")?
+        .handle;
+    let equipped = |client: &DevClientSession| {
+        client.inventory().is_some_and(|view| {
+            view.equipment.iter().any(|item| {
+                item.slot == EquipmentSlot::RightHand && item.item.item_definition_ref == definition
+            })
+        })
+    };
+    if equipped(client) {
+        return Err("P11 fixture sword already equipped".into());
+    }
+    let result = client
+        .move_item(&oteryn_dev_client::ItemMoveIntent {
+            source,
+            destination: oteryn_dev_client::ItemMoveDestination::Equipment(
+                EquipmentSlot::RightHand,
+            ),
+        })
+        .await?;
+    if result.outcome != ItemMoveOutcome::Moved {
+        return Err(format!("P11 first sword equip failed: {result:?}").into());
+    }
+    full_row_p05::wait_for_inventory(client, "P11 weapon equip", equipped).await
+}
+
+async fn corridor_step(
+    client: &mut DevClientSession,
+    direction: StepDirection,
+    x: u16,
+    y: u16,
+) -> TestResult {
+    let expected = TilePos { x, y, floor: -13 };
+    let reply = client.step(direction).await?;
+    let actual = tile(client.world_spatial().actor_position)?;
+    if reply.disposition != StepDisposition::Moved || actual != expected {
+        return Err(format!(
+            "P11 first corridor step expected={expected:?} actual={actual:?} reply={reply:?}"
+        )
+        .into());
+    }
+    if reply.step_wait_ms > 0 {
+        let until =
+            tokio::time::Instant::now() + Duration::from_millis(u64::from(reply.step_wait_ms));
+        while tokio::time::Instant::now() < until {
+            client
+                .service_liveness(
+                    until
+                        .saturating_duration_since(tokio::time::Instant::now())
+                        .min(Duration::from_millis(100)),
+                )
+                .await?;
+            client.take_events();
+        }
+    }
+    Ok(())
+}
+
+async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
+    use oteryn_dev_client::{EntityDetail, EntityKind};
+    use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+    let mut targets = Vec::new();
+    let entities = client
+        .world_entities()
+        .ok_or("P11 corridor entity snapshot absent")?;
+    for x in [33223, 33224] {
+        let mut found = entities.iter().filter(|entity| {
+            entity.kind == EntityKind::Creature
+                && entity.position.x == x
+                && entity.position.y == i32::from(CORRIDOR_Y)
+                && entity.position.floor == 13
+        });
+        let target = found
+            .next()
+            .copied()
+            .ok_or_else(|| format!("P11 no authored demon at {x},{CORRIDOR_Y},13"))?;
+        if found.next().is_some()
+            || target
+                .display_name
+                .is_none_or(|name| name.as_str() != Ok("Angry Demon"))
+            || !matches!(
+                target.detail,
+                EntityDetail::Actor {
+                    health_percent: 100,
+                    ..
+                }
+            )
+        {
+            return Err(format!(
+                "P11 corridor target was not one full-health Angry Demon: {target:?}"
+            )
+            .into());
+        }
+        targets.push(target);
+    }
+    let potion = provisioning::item_reference(&provisioning::item_index()?, POTION_ID)?;
+    for target in targets {
+        let existing_corpses: Vec<_> = client
+            .world_entities()
+            .ok_or("P11 corridor entities absent")?
+            .iter()
+            .filter(|row| row.kind == EntityKind::Corpse)
+            .map(|row| row.entity)
+            .collect();
+        client.take_events();
+        let reply = client
+            .session_mut()
+            .attack_target(Some(&target.entity))
+            .await?;
+        if reply.status != oteryn_protocol_oteryn::CommandStatus::Accepted
+            || reply.disposition != AttackIntentDisposition::Ok
+        {
+            return Err(format!(
+                "P11 first corridor attack failed target={:?}: {reply:?}",
+                target.entity
+            )
+            .into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+        let mut damaged = false;
+        let mut last = target.position;
+        loop {
+            client.service_liveness(Duration::from_millis(100)).await?;
+            for event in client.take_events() {
+                if let SessionEvent::WorldSpatialEntities(delta) = event {
+                    for updated in delta
+                        .value
+                        .update
+                        .iter()
+                        .filter(|row| row.entity == target.entity)
+                    {
+                        last = updated.position;
+                        damaged |= matches!(updated.detail, EntityDetail::Actor { health_percent, .. } if health_percent < 100);
+                    }
+                }
+            }
+            let visible = client
+                .world_entities()
+                .ok_or("P11 corridor entity state disappeared")?;
+            if damaged
+                && visible.get(&target.entity).is_none()
+                && visible.iter().any(|row| {
+                    row.kind == EntityKind::Corpse
+                        && row.position == last
+                        && !existing_corpses.contains(&row.entity)
+                })
+            {
+                evidence(&format!(
+                    "P11_COMBAT killed={:?} corpse_at={last:?}",
+                    target.entity
+                ));
+                break;
+            }
+            let vitals = client.actor_vitals().ok_or("P11 corridor vitals missing")?;
+            if vitals.health == 0 || tokio::time::Instant::now() >= deadline {
+                return Err(format!(
+                    "P11 corridor kill failed target={:?} damaged={damaged} vitals={vitals:?}",
+                    target.entity
+                )
+                .into());
+            }
+            if vitals.max_health - vitals.health >= 1200 {
+                let health = vitals.health;
+                let before = bag_count(client, potion).ok_or("P11 potion inventory missing")?;
+                let handle = client
+                    .inventory()
+                    .and_then(|view| {
+                        view.entries
+                            .iter()
+                            .find(|item| item.item_definition_ref == potion)
+                    })
+                    .ok_or("P11 fixture potions exhausted")?
+                    .handle;
+                let result = client.use_item(handle).await?;
+                if result.disposition
+                    != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+                {
+                    return Err(format!("P11 first potion use refused: {result:?}").into());
+                }
+                full_row_p05::wait_for_inventory(client, "P11 potion", |client| {
+                    bag_count(client, potion)
+                        .is_some_and(|after| after.checked_add(1) == Some(before))
+                        && client
+                            .actor_vitals()
+                            .is_some_and(|vitals| vitals.health > health)
+                })
+                .await?;
+            }
+        }
+        corridor_step(
+            client,
+            StepDirection::East,
+            u16::try_from(target.position.x)?,
+            CORRIDOR_Y,
+        )
+        .await?;
+    }
+    Ok(())
+}
+
 async fn operate_lever(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -189,7 +416,7 @@ async fn operate_lever(
         let (member, serviced) = tokio::join!(
             async {
                 let result = async {
-                    let member = connect_knight(scope, index).await?;
+                    let member = connect_knight(scope, index, false).await?;
                     assert_staging(&member, TilePos { x, ..STAGING })?;
                     Ok::<_, Box<dyn std::error::Error>>(member)
                 }
@@ -296,7 +523,26 @@ async fn operate_lever(
     third?;
     fourth?;
     evidence("P11_LEVER_ARRIVAL all_four=exact");
-    Err("step=annihilator-combat need=source-corridor-clearance".into())
+    let combat_finished = std::cell::Cell::new(false);
+    let (combat, liveness) = tokio::join!(
+        async {
+            let result = clear_corridor(client).await;
+            combat_finished.set(true);
+            result
+        },
+        async {
+            while !combat_finished.get() {
+                for peer in &mut companions {
+                    peer.service_liveness(Duration::from_millis(100)).await?;
+                    peer.take_events();
+                }
+            }
+            Ok::<(), oteryn_dev_client::DevClientError>(())
+        }
+    );
+    combat?;
+    liveness?;
+    Ok(())
 }
 
 async fn authored_granter(
@@ -342,40 +588,87 @@ async fn authored_granter(
     let placement = matches
         .next()
         .ok_or("step=granter missing fixed authored Annihilator chest at 33227,31656,13")?;
+    let [item] = placement.placement.items.as_slice() else {
+        return Err("P11 bound chest must award exactly one item".into());
+    };
+    if item.count != 1 || item.item.key().as_str() != "oteryn:item.tibia.i3388" {
+        return Err("P11 bound chest does not award one Demon Armor".into());
+    }
     if matches.next().is_some() {
         return Err("step=granter ambiguous authored Annihilator chest at 33227,31656,13".into());
     }
-    let from = tile(client.world_spatial().actor_position)?;
+    let door = TilePos {
+        x: 33225,
+        y: CORRIDOR_Y,
+        floor: -13,
+    };
+    let door_key =
+        crate::map::view::placement_key(door, 1).ok_or("P11 reward door placement missing")?;
+    let mut door_target = world.base().digest().to_vec();
+    door_target.extend_from_slice(&door_key.to_be_bytes());
+    let door_reply = client.session_mut().use_object(&door_target, 0).await?;
+    if door_reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
+        return Err(format!("P11 first reward-room door USE failed: {door_reply:?}").into());
+    }
     let interaction = TilePos {
         y: 31657,
         ..REWARD_CHEST
     };
-    let path = route(world, from, |at| at == interaction)
-        .ok_or("step=granter fixed Annihilator chest position 33227,31657,13 unreachable")?;
-    walk(client, world, &path).await?;
+    for x in 33225..=interaction.x {
+        corridor_step(client, StepDirection::East, x, CORRIDOR_Y).await?;
+    }
+    for y in (interaction.y..CORRIDOR_Y).rev() {
+        corridor_step(client, StepDirection::North, interaction.x, y).await?;
+    }
     let mut key = world.base().digest().to_vec();
     key.extend_from_slice(&placement.bundle_placement_key.to_be_bytes());
     Ok((key, ACHIEVEMENT.to_owned()))
 }
 
-async fn prepare_knight(clients: &SeamClients<'_>, index: usize) -> TestResult {
+async fn prepare_knight(clients: &SeamClients<'_>, index: usize, leader: bool) -> TestResult {
+    let (level, profile) = if leader {
+        ("knight-level-2000", "p11-corridor-knight")
+    } else {
+        ("knight-level-100", "knight")
+    };
     character_prep::declare_seeded(
         "P11.full",
-        "knight-level-100",
-        "Annihilator party lever eligibility",
+        level,
+        "Annihilator lever eligibility and corridor survival",
     );
     let mut initial = connect_character(clients, 0xc1, index).await?;
+    let session = uuid_text(initial.join_snapshot().game_session_id.as_bytes());
     request_fixture_control_at(
         "NODE_BOOT_CONTROL_SOCKET",
-        uuid_text(initial.join_snapshot().game_session_id.as_bytes()),
+        session.clone(),
         "--profile",
-        "knight".into(),
+        profile.into(),
     )
     .await?;
+    if leader {
+        for (id, count) in [(WEAPON_ID, 1), (POTION_ID, 20)] {
+            request_fixture_control_at(
+                "NODE_BOOT_CONTROL_SOCKET",
+                session.clone(),
+                "--profile",
+                format!("item-{id}-{count}"),
+            )
+            .await?;
+            evidence(&format!(
+                "FIXTURE_P11 character={} item={id} count={count}",
+                uuid_text(&clients.characters[index])
+            ));
+        }
+    }
     logout(&mut initial).await
 }
 
-async fn connect_knight(clients: &SeamClients<'_>, index: usize) -> TestResult<DevClientSession> {
+async fn connect_knight(
+    clients: &SeamClients<'_>,
+    index: usize,
+    leader: bool,
+) -> TestResult<DevClientSession> {
+    let level = if leader { 2000 } else { 100 };
     let mut fresh = connect_character(clients, 0xc1, index).await?;
     use oteryn_dev_client::client_ui::cyclopedia_character as panel;
     use oteryn_protocol_oteryn::cyclopedia_character::CharacterTab;
@@ -398,17 +691,18 @@ async fn connect_knight(clients: &SeamClients<'_>, index: usize) -> TestResult<D
         .gated_command(command.capability, command.kind, &command.payload)
         .await?;
     if !panel::apply_result(&mut view, &reply)
-        || view.general.as_ref().map(|stats| stats.level) != Some(100)
+        || view.general.as_ref().map(|stats| stats.level) != Some(level)
     {
-        return Err(format!("P11 seeded Knight expected level 100; reply={reply:?}").into());
+        return Err(format!("P11 seeded Knight expected level {level}; reply={reply:?}").into());
     }
     let vitals = fresh
         .actor_vitals()
         .ok_or("P11 seeded Knight missing vitals")?;
     evidence(&format!(
-        "P11_ROUTE seeded_level=100 seeded_vitals={vitals:?}"
+        "P11_ROUTE seeded_level={level} seeded_vitals={vitals:?}"
     ));
-    if (vitals.max_health, vitals.max_mana) != (1565, 550) {
+    if (vitals.max_health, vitals.max_mana) != (1565 + (level - 100) * 15, 550 + (level - 100) * 5)
+    {
         return Err(format!("P11 Knight derived vitals mismatch: {vitals:?}").into());
     }
     Ok(fresh)
@@ -417,6 +711,7 @@ async fn connect_knight(clients: &SeamClients<'_>, index: usize) -> TestResult<D
 pub(super) struct GrantProof {
     pub(super) page: AccountAchievementsResult,
     pub(super) session: [u8; 16],
+    pub(super) reward: std::num::NonZeroU32,
 }
 
 const ACHIEVEMENT: &str = "oteryn:achievement/annihilator";
@@ -439,8 +734,13 @@ pub(super) async fn earn_and_logout(
     placed_at: &std::cell::Cell<Option<std::time::Instant>>,
 ) -> TestResult<GrantProof> {
     // Complete setup with one live session at a time, before staging the party.
-    for (scope, index) in [(clients, 1), (clients, 0), (core, 0), (core, 1)] {
-        prepare_knight(scope, index).await?;
+    for (scope, index, leader) in [
+        (clients, 1, true),
+        (clients, 0, false),
+        (core, 0, false),
+        (core, 1, false),
+    ] {
+        prepare_knight(scope, index, leader).await?;
     }
     for (scope, index, x) in [
         (clients, 1, 33225),
@@ -453,7 +753,7 @@ pub(super) async fn earn_and_logout(
             placed_at.set(Some(std::time::Instant::now()));
         }
     }
-    let mut client = connect_knight(clients, 1).await?;
+    let mut client = connect_knight(clients, 1, true).await?;
     let session = *client.join_snapshot().game_session_id.as_bytes();
     let before = page(&mut client, 0).await?;
     if before != AccountAchievementsResult::default() {
@@ -512,6 +812,11 @@ pub(super) async fn earn_and_logout(
     {
         return Err(format!("step=pagination page={beyond} observed={empty:?}").into());
     }
+    equip_corridor_weapon(&mut client).await?;
+    let reward = provisioning::item_reference(&provisioning::item_index()?, REWARD_ID)?;
+    if bag_count(&client, reward) != Some(0) {
+        return Err("P11 reward inventory pre-state must be zero".into());
+    }
     let (placement, achievement) = authored_granter(&mut client, clients, core).await?;
     if achievement != ACHIEVEMENT {
         return Err(
@@ -550,6 +855,10 @@ pub(super) async fn earn_and_logout(
         )
         .into());
     };
+    full_row_p05::wait_for_inventory(&mut client, "P11 chest reward", |client| {
+        bag_count(client, reward) == Some(1)
+    })
+    .await?;
     let granted = page(&mut client, 0).await?;
     let latest = i64::try_from(now_seconds()?)?;
     if earned.key != ACHIEVEMENT
@@ -571,16 +880,34 @@ pub(super) async fn earn_and_logout(
             .iter()
             .any(|event| matches!(event, SessionEvent::AchievementEarned(_)))
         || page(&mut client, 0).await? != granted
+        || bag_count(&client, reward) != Some(1)
     {
         return Err(
             format!("step=duplicate observed_reply={duplicate_reply:?},duplicate-grant").into(),
         );
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(65);
+    while client
+        .session_mut()
+        .combat_state()
+        .ok_or("P11 combat state missing")?
+        .in_fight
+    {
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err("P11 combat lock did not clear before logout".into());
+        }
+        client
+            .service_liveness(remaining.min(Duration::from_millis(200)))
+            .await?;
+        client.take_events();
     }
     logout(&mut client).await?;
     drop(client);
     Ok(GrantProof {
         page: granted,
         session,
+        reward,
     })
 }
 
@@ -594,6 +921,7 @@ async fn journey(
     let mut fresh = connect_world(clients, 0xc2).await?;
     if fresh.join_snapshot().game_session_id.as_bytes() == &proof.session
         || page(&mut fresh, 0).await? != proof.page
+        || bag_count(&fresh, proof.reward) != Some(1)
     {
         return Err("step=relogin durable achievement page changed".into());
     }
@@ -629,7 +957,7 @@ mod tests {
             granter.contains("placement.placement.achievement.as_deref() == Some(ACHIEVEMENT)")
         );
         assert!(granter.contains("matches.next().is_some()"));
-        assert!(granter.contains("at == interaction"));
+        assert!(granter.contains("corridor_step(client, StepDirection::North, interaction.x, y)"));
     }
     #[test]
     fn p11_serializes_fixture_logouts_before_party_staging() -> super::TestResult {
