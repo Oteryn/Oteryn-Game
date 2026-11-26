@@ -208,15 +208,15 @@ fn expired_idle_window_does_not_start_queued_delta_but_finishes_started_frame()
     })?
 }
 
-async fn gift_pair() -> Result<(Session<DuplexStream>, DuplexStream), BoxError> {
+async fn gift_pair(capabilities: &'static [u32]) -> Result<(Session<DuplexStream>, DuplexStream), BoxError> {
     let (client, mut peer) = tokio::io::duplex(64 * 1024);
     let joining = tokio::spawn(async move {
         let low = actor_spell::encode_actor_vitals(&vitals(1, 5)).map_err(|e| format!("{e:?}"))?;
         let raw = [(3, 3, 1, low), (19, 0, 1, vec![]), (20, 0, 1, vec![])];
         join_peer_with(
             &mut peer,
-            &[6, 23],
-            &[6, 23],
+            capabilities,
+            capabilities,
             &[],
             entity_snapshot(vec![]),
             &raw,
@@ -224,7 +224,7 @@ async fn gift_pair() -> Result<(Session<DuplexStream>, DuplexStream), BoxError> 
         .await?;
         Ok::<_, BoxError>(peer)
     });
-    let session = Session::admit(client, admission_with(&[6, 23])?).await?;
+    let session = Session::admit(client, admission_with(capabilities)?).await?;
     Ok((session, joining.await??))
 }
 
@@ -254,7 +254,7 @@ fn gift_cooldown_frame(sequence: u64) -> Result<Vec<u8>, BoxError> {
 #[test]
 fn gift_cooldown_and_vitals_cross_an_idle_deadline_together() -> Result<(), BoxError> {
     block_on(async {
-        let (mut session, mut peer) = gift_pair().await?;
+        let (mut session, mut peer) = gift_pair(&[6, 23]).await?;
         write_frame(&mut peer, &gift_cooldown_frame(41)?).await?;
         let rescued =
             actor_spell::encode_actor_vitals(&vitals(30, 20)).map_err(|e| format!("{e:?}"))?;
@@ -280,8 +280,10 @@ fn gift_cooldown_and_vitals_cross_an_idle_deadline_together() -> Result<(), BoxE
 
 #[test]
 fn cast_claims_the_vitals_in_its_queued_rescue_pair() -> Result<(), BoxError> {
-    block_on(async {
-        let (mut session, mut peer) = gift_pair().await?;
+    use oteryn_protocol_oteryn::presentation::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1;
+    for capabilities in [&[6, 23][..], &[6, 23, CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1][..]] {
+        block_on(async {
+        let (mut session, mut peer) = gift_pair(capabilities).await?;
         let responder = tokio::spawn(async move {
             let command = read_frame(&mut peer).await?;
             let id = decode_wire_envelope(&command)?
@@ -323,17 +325,23 @@ fn cast_claims_the_vitals_in_its_queued_rescue_pair() -> Result<(), BoxError> {
             return Err(format!("expected one queued rescue pair, got {events:?}").into());
         };
         assert_eq!(cooldowns.server_sequence, 42);
+        assert_eq!(
+            cooldowns.value.snapshot,
+            !capabilities.contains(&CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1),
+        );
         assert_eq!(delivered, &claimed);
         assert_eq!(session.actor_vitals(), Some(&claimed.value));
         responder.await??;
-        Ok(())
-    })?
+        Ok::<_, BoxError>(())
+        })??;
+    }
+    Ok(())
 }
 
 #[test]
 fn malformed_rescue_vitals_leave_both_domain_revisions_unchanged() -> Result<(), BoxError> {
     block_on(async {
-        let (mut session, mut peer) = gift_pair().await?;
+        let (mut session, mut peer) = gift_pair(&[6, 23]).await?;
         write_frame(&mut peer, &gift_cooldown_frame(41)?).await?;
         send_vitals_delta(&mut peer, 42, 2, 4, &[]).await?;
         assert!(

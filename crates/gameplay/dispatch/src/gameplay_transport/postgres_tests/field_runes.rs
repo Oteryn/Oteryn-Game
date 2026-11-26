@@ -2751,8 +2751,15 @@ async fn drive_gift_field_entry(
     let offered =
         crate::gameplay_transport::native_cue_offer::offered(owner.offered_capabilities(), true);
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(&offered, &[6, wire::CAPABILITY_PRESENTATION_V1])
-            .ok_or("presentation capability")?;
+        SelectedCapabilities::select(
+            &offered,
+            &[
+                6,
+                wire::CAPABILITY_PRESENTATION_V1,
+                wire::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1,
+            ],
+        )
+        .ok_or("presentation capability")?;
     let book = owner
         .active_generation
         .and_then(|active| active.native_gameplay())
@@ -2844,7 +2851,7 @@ async fn drive_gift_field_entry(
     let published = feed
         .take(generation, None)
         .ok_or("current cooldown subscription")?;
-    assert_eq!(published.deadlines, [(cooldown, shortened)].into());
+    assert_eq!(published.deadlines, Some([(cooldown, shortened)].into()));
     assert_eq!(published.rescued, Some((revision, vitals)));
     Ok(())
 }

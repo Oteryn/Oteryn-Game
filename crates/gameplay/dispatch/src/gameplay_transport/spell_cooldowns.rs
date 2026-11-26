@@ -23,7 +23,7 @@ pub struct CooldownFeed {
 
 #[derive(Debug, Default)]
 pub(super) struct CommittedCooldowns {
-    pub(super) deadlines: BTreeMap<Key, u64>,
+    pub(super) deadlines: Option<BTreeMap<Key, u64>>,
     pub(super) rescued: Option<Vitals>,
 }
 
@@ -32,6 +32,7 @@ pub(super) struct Subscriber {
     fence: CurrentCharacterItemFence,
     spell_indices: BTreeMap<String, u32>,
     pending: Weak<Mutex<Option<CommittedCooldowns>>>,
+    sparse: bool,
 }
 
 impl CooldownFeed {
@@ -220,6 +221,10 @@ impl ChannelSpellStates {
                 })
                 .collect(),
             pending: Arc::downgrade(&pending),
+            sparse: admitted
+                .continuity
+                .selected_capabilities
+                .contains(wire::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1),
         };
         let snapshot = subscriber.keys(&state.cooldowns);
         let key = actor.placement_identity();
@@ -297,14 +302,19 @@ impl ChannelSpellStates {
         let Some(pending) = mailbox.as_mut() else {
             return;
         };
-        for (key, deadline) in &after {
-            if before.get(key) != Some(deadline) {
-                pending.deadlines.insert(*key, *deadline);
-            }
-        }
-        for key in before.keys() {
-            if !after.contains_key(key) {
-                pending.deadlines.insert(*key, 0);
+        if before != after {
+            if subscriber.sparse {
+                let changes = pending.deadlines.get_or_insert_with(BTreeMap::new);
+                for (key, deadline) in &after {
+                    if before.get(key) != Some(deadline) {
+                        changes.insert(*key, *deadline);
+                    }
+                }
+                for key in before.keys().filter(|key| !after.contains_key(key)) {
+                    changes.insert(*key, 0);
+                }
+            } else {
+                pending.deadlines = Some(after);
             }
         }
         if rescued.is_some() {
@@ -316,11 +326,11 @@ impl ChannelSpellStates {
 pub(super) fn payload(
     deadlines: &BTreeMap<Key, u64>,
     now_us: u64,
-    snapshot: bool,
+    complete: bool,
 ) -> Result<Vec<u8>, wire::PresentationWireError> {
     // The existing codec subtracts server_now_ms. A zero base lets deltas send
-    // remaining time directly; snapshots retain absolute expiries for recovery.
-    let server_now_ms = if snapshot {
+    // remaining time directly; complete views retain absolute expiries.
+    let server_now_ms = if complete {
         (now_us / 1000).min(wire::MAX_CLOCK_MS)
     } else {
         0
@@ -328,13 +338,13 @@ pub(super) fn payload(
     let entries = deadlines
         .iter()
         .filter_map(|(&(kind, id), &deadline)| {
-            if snapshot && deadline <= now_us {
+            if complete && deadline <= now_us {
                 return None;
             }
             Some(wire::ActorCooldown {
                 kind,
                 id,
-                expires_at_ms: (if snapshot {
+                expires_at_ms: (if complete {
                     deadline
                 } else {
                     deadline.saturating_sub(now_us)
@@ -384,6 +394,7 @@ impl TestReceipt {
         pending.rescued = Some(vitals);
         pending
             .deadlines
+            .get_or_insert_with(BTreeMap::new)
             .insert((wire::ActorCooldownKind::Spell, 1), 30_000_000);
         Some(())
     }

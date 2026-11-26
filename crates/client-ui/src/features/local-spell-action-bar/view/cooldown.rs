@@ -34,7 +34,7 @@ pub fn cooldown_icons_at(
             .flat_map(|entry| entry.cooldown_groups.iter().copied()),
     );
     let icon = |id, group| {
-        let (remaining_ms, duration) = panel.cooldown_at(group, id, now);
+        let (remaining_ms, duration) = panel.bar.cooldown_at(group, id, now);
         CooldownIcon {
             id,
             group,
@@ -74,10 +74,9 @@ pub fn cooldown_icons_at(
     let mut icons: Vec<_> = groups.into_iter().map(|id| icon(id, true)).collect();
     icons.extend(
         panel
-            .cooldown_timers
-            .keys()
-            .filter(|(group, _)| !group)
-            .map(|(_, id)| icon(*id, false))
+            .bar
+            .spell_cooldown_keys()
+            .map(|id| icon(id, false))
             .filter(|entry| entry.remaining_ms > 0),
     );
     icons

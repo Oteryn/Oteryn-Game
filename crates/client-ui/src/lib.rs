@@ -114,6 +114,8 @@ pub mod reference_preferences;
 pub mod account_achievements;
 #[path = "features/0008-achievement-notices/mod.rs"]
 pub mod achievement_notices;
+#[path = "features/0618-actor-cooldown-deltas/mod.rs"]
+mod actor_cooldown_deltas;
 
 #[path = "features/0170-arena/mod.rs"]
 pub mod arena;

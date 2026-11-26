@@ -361,7 +361,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         drop(seal);
         return h.cleanup().await;
     }
-    if (101..=106).contains(&case) {
+    if (101..=108).contains(&case) {
         cooldowns::exercise(&owner, admitted, native.spell_book(), case).await?;
         drop(owner);
         drop(authority);

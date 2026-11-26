@@ -1,14 +1,13 @@
-//! C04 replay covers `presentation::apply` in `crates/session/src/presentation.rs`, which decodes
-//! domain 20 into `SessionEvent::ActorCooldowns`; `vitals_events` in
-//! `apps/client/src/features/local-spell-action-bar/protocol.rs`, which installs that value; and
-//! `ActionBar::remaining_ms` in `crates/client-runtime/src/features/local-spell-action-bar/bar.rs`,
-//! which projects spell, primary-group, and secondary-group cooldowns for the native UI.
+//! Replay the C04 capture through the same cooldown reducer used by the native action bar.
 
 use super::*;
 use oteryn_session::{
     ActorCooldown, ActorCooldownKind, ActorCooldowns, SpellCastDisposition, decode_actor_cooldowns,
 };
-use std::num::NonZeroU32;
+use std::{
+    num::NonZeroU32,
+    time::{Duration, Instant},
+};
 
 #[test]
 fn replays_c04_server_cooldowns_and_refusals() -> Result<(), Box<dyn std::error::Error>> {
@@ -67,9 +66,37 @@ fn replays_c04_server_cooldowns_and_refusals() -> Result<(), Box<dyn std::error:
 
     let initial = decode_actor_cooldowns(&snapshot).map_err(|error| format!("{error:?}"))?;
     let mut bar = ActionBar::default();
-    bar.cooldowns = Some(initial);
-    bar.cooldowns = Some(decode_actor_cooldowns(&payload).map_err(|error| format!("{error:?}"))?);
-    assert_eq!(bar.remaining_ms(spell, &groups), remaining);
+    let received_at = Instant::now();
+    bar.apply_cooldowns(&ActorCooldownUpdate {
+        value: initial,
+        received_at,
+        snapshot: true,
+    });
+    bar.apply_cooldowns(&ActorCooldownUpdate {
+        value: decode_actor_cooldowns(&payload).map_err(|error| format!("{error:?}"))?,
+        received_at,
+        snapshot: false,
+    });
+    assert_eq!(bar.remaining_ms_at(spell, &groups, received_at), remaining);
+    let unrelated = ActorCooldowns {
+        server_now_ms: 0,
+        rtt_ms: None,
+        entries: vec![ActorCooldown {
+            kind: ActorCooldownKind::Spell,
+            id: if spell.get() == 1 { 2 } else { 1 },
+            expires_at_ms: 500,
+        }],
+    };
+    let later = received_at + Duration::from_millis(250);
+    bar.apply_cooldowns(&ActorCooldownUpdate {
+        value: unrelated,
+        received_at: later,
+        snapshot: false,
+    });
+    assert_eq!(
+        bar.remaining_ms_at(spell, &groups, later),
+        remaining.saturating_sub(250),
+    );
     assert_eq!(
         feedback_text(SpellCastDisposition::Rejected),
         "Spells unavailable"
@@ -78,9 +105,9 @@ fn replays_c04_server_cooldowns_and_refusals() -> Result<(), Box<dyn std::error:
     assert_eq!(value("pz")?, "Rejected");
     assert_eq!(value("cast")?, "Cast");
 
-    let before = bar.remaining_ms(spell, &groups);
+    let before = bar.remaining_ms_at(spell, &groups, received_at);
     assert!(decode_actor_cooldowns(&[0xff]).is_err());
-    assert_eq!(bar.remaining_ms(spell, &groups), before);
+    assert_eq!(bar.remaining_ms_at(spell, &groups, received_at), before);
     Ok(())
 }
 

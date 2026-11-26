@@ -29,3 +29,13 @@ fn spell_cooldowns_snapshot_saturates_permanent_deadlines() -> TestResult {
 fn spell_cooldowns_snapshot_requires_the_bound_lease() -> TestResult {
     scenario(106)
 }
+
+#[test]
+fn spell_cooldowns_legacy_client_keeps_magic_shield_after_light() -> TestResult {
+    scenario(107)
+}
+
+#[test]
+fn spell_cooldowns_negotiated_sparse_client_receives_only_changed_keys() -> TestResult {
+    scenario(108)
+}

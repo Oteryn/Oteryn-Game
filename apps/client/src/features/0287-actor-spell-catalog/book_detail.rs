@@ -16,7 +16,7 @@ fn text_at(mailbox: &Mailbox, row: usize, now: Instant) -> String {
     let Some(index) = NonZeroU32::new(spell.spell.cast_index) else {
         return text;
     };
-    if panel.bar.cooldowns.is_none() {
+    if panel.bar.last_cooldown_observation().is_none() {
         text.push_str("\r\nCooldown remaining: unavailable (no server snapshot).");
         return text;
     }

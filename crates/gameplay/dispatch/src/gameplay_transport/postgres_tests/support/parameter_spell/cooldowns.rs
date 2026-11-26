@@ -7,7 +7,14 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 use std::num::NonZeroU32;
 use tokio::io::DuplexStream;
 
-const SUPPORTED: [u32; 4] = [4, 6, 7, wire::CAPABILITY_PRESENTATION_V1];
+const LEGACY: [u32; 4] = [4, 6, 7, wire::CAPABILITY_PRESENTATION_V1];
+const SPARSE: [u32; 5] = [
+    4,
+    6,
+    7,
+    wire::CAPABILITY_PRESENTATION_V1,
+    wire::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1,
+];
 
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -22,9 +29,15 @@ pub(super) async fn exercise(
     // Omit item views in the holder-contention case so the test isolates the join's
     // vitals and cooldown read from independently required inventory snapshots.
     let supported = if case == 104 {
-        &[6, wire::CAPABILITY_PRESENTATION_V1][..]
+        &[
+            6,
+            wire::CAPABILITY_PRESENTATION_V1,
+            wire::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1,
+        ][..]
+    } else if case == 107 {
+        &LEGACY[..]
     } else {
-        &SUPPORTED[..]
+        &SPARSE[..]
     };
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(&offered, supported).ok_or("presentation selected")?;
@@ -38,6 +51,16 @@ pub(super) async fn exercise(
     let clock = NativeOwnerClock::new(owner);
     clock.set(1_000_000);
 
+    assert_eq!(
+        admitted
+            .continuity
+            .selected_capabilities
+            .contains(wire::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1),
+        case != 107,
+    );
+    if matches!(case, 107 | 108) {
+        return two_casts(owner, admitted, book, &clock, case == 108).await;
+    }
     if case == 105 {
         // Seed the persistent condition's owner value before admission.
         let runtime = owner.runtime.lock().await;
@@ -75,7 +98,7 @@ pub(super) async fn exercise(
             if envelope.message_type() == MessageType::StateDelta {
                 let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
                 if delta.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS {
-                    assert_eq!(delta.delta_type, wire::DELTA_TYPE_ACTOR_COOLDOWNS_V1);
+                    assert_eq!(delta.delta_type, wire::DELTA_TYPE_ACTOR_COOLDOWNS_SPARSE_V1);
                     assert!(!saw_result, "cooldown must arrive with the original result");
                     deltas.push(wire::decode_actor_cooldowns(delta.payload).map_err(debug)?);
                 }
@@ -152,6 +175,110 @@ pub(super) async fn exercise(
     Ok(())
 }
 
+
+async fn two_casts(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    book: &crate::spell::SpellBook,
+    clock: &NativeOwnerClock<'_>,
+    sparse: bool,
+) -> TestResult {
+    let cast_index = |words| -> TestResult<NonZeroU32> {
+        let key = &book
+            .spoken(words)
+            .ok_or("spell words missing from fixture")?
+            .spell
+            .key;
+        (1..=u32::try_from(book.source_len())?)
+            .filter_map(NonZeroU32::new)
+            .find(|index| {
+                book.source_indexed(*index)
+                    .is_some_and(|(spell, _)| &spell.key == key)
+            })
+            .ok_or_else(|| "cast index missing from fixture".into())
+    };
+    let shield = cast_index("utamo vita")?;
+    let light = cast_index("utevo lux")?;
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serving = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS);
+    let driving = async {
+        let (_, mut view) = join_cooldowns(&mut client).await?;
+        assert!(view.entries.is_empty());
+        for (command_id, spell) in [(1, shield), (2, light)] {
+            let cast = actor_spell::encode_spell_cast_intent(&actor_spell::SpellCastIntent {
+                spell,
+                target: actor_spell::SpellTarget::None,
+                aim_at_target: false,
+            });
+            send(
+                &mut client,
+                1,
+                command_id,
+                actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+                &cast,
+            )
+            .await?;
+            loop {
+                let frame = read(&mut client).await?;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                if envelope.message_type() == MessageType::StateDelta {
+                    let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
+                    if delta.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS {
+                        assert_eq!(
+                            delta.delta_type,
+                            if sparse {
+                                wire::DELTA_TYPE_ACTOR_COOLDOWNS_SPARSE_V1
+                            } else {
+                                wire::DELTA_TYPE_ACTOR_COOLDOWNS_V1
+                            }
+                        );
+                        // Inspect each packet as a capability-23 replacement client would.
+                        view = wire::decode_actor_cooldowns(delta.payload).map_err(debug)?;
+                    }
+                }
+                if envelope.message_type() == MessageType::CommandResult {
+                    let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                    assert_eq!(result.command_id, command_id);
+                    assert_eq!(result.status, CommandStatus::Accepted);
+                    assert_eq!(
+                        actor_spell::decode_spell_cast_result(result.payload).map_err(debug)?,
+                        actor_spell::SpellCastDisposition::Cast
+                    );
+                    break;
+                }
+            }
+            assert!(
+                view.entries
+                    .iter()
+                    .any(|entry| entry.kind == wire::ActorCooldownKind::Spell
+                        && entry.id == spell.get()
+                        && entry.expires_at_ms > view.server_now_ms)
+            );
+            if command_id == 1 {
+                let support = view
+                    .entries
+                    .iter()
+                    .find(|entry| entry.kind == wire::ActorCooldownKind::Group)
+                    .ok_or("missing support cooldown")?;
+                clock.set(1_000_000 + (support.expires_at_ms - view.server_now_ms) * 1000);
+            }
+        }
+        assert_eq!(
+            view.entries
+                .iter()
+                .any(|entry| entry.kind == wire::ActorCooldownKind::Spell
+                    && entry.id == shield.get()
+                    && (sparse || entry.expires_at_ms > view.server_now_ms)),
+            !sparse,
+            "Magic Shield must stay active in the legacy view and be omitted from the sparse delta",
+        );
+        client.shutdown().await?;
+        Ok(())
+    };
+    tokio::time::timeout(Duration::from_secs(20), join_two(serving, driving))
+        .await?
+        .1
+}
 
 async fn gift(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
