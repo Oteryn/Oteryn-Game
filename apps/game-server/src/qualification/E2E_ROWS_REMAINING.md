@@ -3,6 +3,16 @@
 PR #3023, branch `claude/happy-davinci-ijz3wy-e2e-rows`. This file is the
 resume point; live PR and check state win over it.
 
+## Owner decision (2026-11-26)
+
+```text
+C11.full|EXCLUDED|owner: Dawnport
+```
+
+Ambassador Manop's only placement is in Dawnport Centre at
+`(32057, 31898, 4)`. The transfer requires the four Dawnport shrine flags.
+`C11.client` is under audit.
+
 ## State at handoff
 
 - Head `df0a6962c`: `main` merged up to #3069, rows run in batches
