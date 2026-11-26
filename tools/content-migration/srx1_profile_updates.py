@@ -43,6 +43,7 @@ def coalesce_dispenser_top_order(document, source_records, house_overlay):
 
 def generate(root, generated, profile_path, manifest_path, order, canonical):
     import dispenser_item_profiles
+    import equipment_eligibility
     import house_decoration_actions
     import qengine_reward_item_profiles
     import srx1_potion_variants
@@ -62,6 +63,11 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
     house_decoration_actions.apply_top_order(
         enriched['records'], json.loads((root / house_decoration_actions.PROFILES).read_bytes()))
     original_document = json.loads(base)
+    # Qualify both provider versions after the source owners' exact comparisons
+    # so updated records cannot restore unknown eligibility.
+    eligibility = equipment_eligibility.load_facts(root)
+    equipment_eligibility.complete(original_document, eligibility)
+    equipment_eligibility.complete(enriched, eligibility)
     exact_keys = exact_source_keys(json.loads(generated[qengine_reward_item_profiles.PROOF]))
     # Omit redundant nulls after the exact source comparisons. Rust reads either
     # representation as Unknown and keeps the composed provider within 16 MiB.
