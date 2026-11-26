@@ -124,7 +124,7 @@ impl ItemLoopContent for Content {
 fn gap_sv2_i05_postgres_chain_custody_handoff_and_replay() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(ChainCustody::Carried).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "I05 worker panicked")?
         .map_err(Into::into)
@@ -133,12 +133,30 @@ fn gap_sv2_i05_postgres_chain_custody_handoff_and_replay() -> TestResult {
 #[test]
 fn srx1_i05_depot_chain_pending_withdrawal_catchup_and_replay_postgres() -> TestResult {
     std::thread::Builder::new().stack_size(64 << 20)
-        .spawn(|| scenario(true).map_err(|error|error.to_string()))?
+        .spawn(|| scenario(ChainCustody::Depot).map_err(|error|error.to_string()))?
         .join().map_err(|_|"I05 depot worker panicked")?.map_err(Into::into)
 }
 
-fn scenario(depot: bool) -> TestResult {
+#[test]
+fn xdecay_postgres_ground_rooted_container_advances_without_character_custody() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario(ChainCustody::Ground).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "ground nested decay worker panicked")?
+        .map_err(Into::into)
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum ChainCustody {
+    Carried,
+    Depot,
+    Ground,
+}
+
+fn scenario(custody: ChainCustody) -> TestResult {
     run("gap_sv2_i05", async |h| {
+        let depot = custody == ChainCustody::Depot;
         let started = std::time::Instant::now();
         let (_runtime, origin) = spell_origin(h)?;
         let bag = mint_quantity(h, 1, 1, &target(), 1).await?[0];
@@ -299,6 +317,27 @@ fn scenario(depot: bool) -> TestResult {
                 .map_err(debug)?;
             assert!(moved.is_ok(), "custody move refused: {moved:?}");
         }
+        if custody == ChainCustody::Ground {
+            let moved = h
+                .root
+                .commit_item_loop_move(
+                    &permit,
+                    &recovery,
+                    &h.node,
+                    &fence,
+                    command(804)?,
+                    &Content,
+                    LoopMoveRequest {
+                        item: id(190),
+                        count: None,
+                        pickup_cell: None,
+                        destination: LoopDestination::Ground(ground),
+                    },
+                )
+                .await
+                .map_err(debug)?;
+            assert!(moved.is_ok(), "root backpack drop refused: {moved:?}");
+        }
         drop(permit);
         if depot {
             let schedules:serde_json::Value=sqlx::query_scalar("SELECT jsonb_agg(to_jsonb(p) ORDER BY source_stage) FROM game_spell_field_temporal_schedules p").fetch_one(&h.pool).await?;
@@ -320,6 +359,13 @@ fn scenario(depot: bool) -> TestResult {
         let stored: (String, String, i64) = sqlx::query_as("SELECT definition_production_key,state_revision::text,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(id(180).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(stored, ("oteryn:item.tibia.i901003".into(), if depot {"7"} else {"5"}.into(), 1));
+        if custody == ChainCustody::Ground {
+            let receipt: (i16, bool, bool) = sqlx::query_as(
+                "SELECT custody_kind, character_id IS NULL, game_session_id IS NULL
+                 FROM game_spell_field_temporal_receipts WHERE source_stage=2",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(receipt, (2, true, true));
+        }
         assert_eq!(h.count("game_spell_field_temporal_receipts").await?, 2);
         assert_eq!(h.count("game_spell_field_temporal_audit").await?, 2);
         assert_eq!(h.count("game_item_decay_handoffs").await?, if depot {4} else {2});

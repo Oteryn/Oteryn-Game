@@ -301,7 +301,10 @@ pub async fn drain_due_field_chains_in_transaction(
        UNION ALL
        SELECT n.item_instance_id,n.world_id,owner.owner_character,n.parent_item_instance_id,n.placement_ordinal
         FROM game_item_nested_entries n,LATERAL game_item_loop_owner(n.parent_item_instance_id) owner
-        WHERE n.item_instance_id=i.item_instance_id AND owner.owner_character IS NOT NULL AND owner.depth BETWEEN 0 AND 7
+        WHERE n.item_instance_id=i.item_instance_id AND (
+         (owner.owner_character IS NOT NULL AND owner.depth BETWEEN 0 AND 7)
+         OR (owner.owner_character IS NULL AND game_item_general_decay_chain(i.item_instance_id)
+             AND game_item_decay_ground_path(n.parent_item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric) IS NOT NULL))
       ) e ON TRUE
       LEFT JOIN game_item_container_slots bag ON bag.character_id=e.character_id
       LEFT JOIN game_character_equipment_slots eq ON eq.item_instance_id=p.item_instance_id
@@ -314,6 +317,7 @@ pub async fn drain_due_field_chains_in_transaction(
        AND NOT EXISTS(SELECT 1 FROM game_spell_field_temporal_receipts done WHERE done.item_instance_id=i.item_instance_id AND done.source_stage=p.source_stage)
        AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND ((g.runtime_scope_ownership_generation=$3::text::numeric OR game_event_item_timer_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)) OR game_corpse_stage_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
          OR (g.world_id=i.world_id AND game_instance_corpse_stage_current(i.item_instance_id,i.world_id,encode($5,'hex')::uuid,$3::text::numeric,g.stack_ordinal))
+         OR (e.world_id=i.world_id AND e.character_id IS NULL)
          OR (((e.world_id=i.world_id AND bag.character_id=e.character_id) OR eq.world_id=i.world_id)
           AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state IN(1,2)
           AND sess.character_id=cg.character_id AND sess.runtime_scope_kind=1 AND sess.runtime_scope_world_id=i.world_id
@@ -350,17 +354,17 @@ pub async fn drain_due_field_chains_in_transaction(
             } else {
                 None
             };
-            let session: Option<String> = if kind == 1 {
+            let session: Option<String> = if character.is_none() {
                 None
             } else {
                 row.try_get("session")?
             };
-            let lease: Option<String> = if kind == 1 {
+            let lease: Option<String> = if character.is_none() {
                 None
             } else {
                 row.try_get("lease")?
             };
-            let connection: Option<String> = if kind == 1 {
+            let connection: Option<String> = if character.is_none() {
                 None
             } else {
                 row.try_get("connection")?
