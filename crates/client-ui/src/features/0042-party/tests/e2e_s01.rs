@@ -7,11 +7,14 @@ type Error = Box<dyn std::error::Error>;
 
 struct Replay {
     invitations: Vec<u8>,
+    invitation_view: Vec<u8>,
     joined_op: Vec<u8>,
     joined_view: Vec<u8>,
     passed_op: Vec<u8>,
     passed_view: Vec<u8>,
     expected: String,
+    statuses: [CommandStatus; 3],
+    live: bool,
 }
 
 fn value<'a>(text: &'a str, key: &str) -> Result<&'a str, Error> {
@@ -48,8 +51,32 @@ fn encode(
 fn load() -> Result<Replay, Error> {
     if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let root = std::path::Path::new(&root);
+        let mut previous = None;
+        let mut statuses = [CommandStatus::Rejected; 3];
+        for (index, label) in ["invitation", "join", "leadership"].iter().enumerate() {
+            let text = std::fs::read_to_string(root.join(format!("s01-{label}-receipt.txt")))?;
+            let mut fields = text.splitn(4, ' ');
+            statuses[index] = match fields.next() {
+                Some("Accepted") => CommandStatus::Accepted,
+                _ => return Err("live party reply was not accepted".into()),
+            };
+            let command: u64 = fields.next().ok_or("command absent")?.parse()?;
+            let sequence: u64 = fields.next().ok_or("sequence absent")?.parse()?;
+            let session = fields
+                .next()
+                .filter(|value| !value.is_empty())
+                .ok_or("session absent")?;
+            if let Some((last_command, last_sequence, last_session)) = &previous {
+                assert!(command > *last_command && sequence > *last_sequence);
+                assert_eq!(session, last_session);
+            }
+            previous = Some((command, sequence, session.to_owned()));
+        }
         return Ok(Replay {
+            statuses,
+            live: true,
             invitations: std::fs::read(root.join("s01-invitations.bin"))?,
+            invitation_view: std::fs::read(root.join("s01-invitations-view.bin"))?,
             joined_op: std::fs::read(root.join("s01-joined-op.bin"))?,
             joined_view: std::fs::read(root.join("s01-joined-view.bin"))?,
             passed_op: std::fs::read(root.join("s01-passed-op.bin"))?,
@@ -65,8 +92,12 @@ fn load() -> Result<Replay, Error> {
         vec![entry(1, "Aurelia", false, 0), entry(2, "Berenike", true, 0)],
         vec![],
     )?;
+    let invitations = encode(vec![], vec![entry(9, "Aurelia", false, 1_900_000_000)])?;
     Ok(Replay {
-        invitations: encode(vec![], vec![entry(9, "Aurelia", false, 1_900_000_000)])?,
+        statuses: [CommandStatus::Accepted; 3],
+        live: false,
+        invitation_view: invitations.clone(),
+        invitations,
         joined_op: joined.clone(),
         joined_view: joined,
         passed_op: passed.clone(),
@@ -77,9 +108,9 @@ fn load() -> Result<Replay, Error> {
     })
 }
 
-fn response(operation: &[u8], view: Option<&[u8]>) -> PartyResponse {
+fn response(status: CommandStatus, operation: &[u8], view: Option<&[u8]>) -> PartyResponse {
     PartyResponse {
-        status: CommandStatus::Accepted,
+        status,
         operation: operation.to_vec(),
         view: view.map(<[u8]>::to_vec),
     }
@@ -105,7 +136,11 @@ fn party_replay_invite_join_and_leadership_pass() -> Result<(), Error> {
     assert!(request(&mut panel, Intent::Refresh).is_some());
     assert!(apply_result(
         &mut panel,
-        &response(&replay.invitations, Some(&replay.invitations))
+        &response(
+            replay.statuses[0],
+            &replay.invitations,
+            Some(&replay.invitation_view)
+        )
     ));
     let state = panel.state.as_ref().ok_or("state absent")?;
     assert!(state.members.is_empty());
@@ -129,7 +164,11 @@ fn party_replay_invite_join_and_leadership_pass() -> Result<(), Error> {
     assert!(request(&mut panel, Intent::Join).is_some());
     assert!(apply_result(
         &mut panel,
-        &response(&replay.joined_op, Some(&replay.joined_view))
+        &response(
+            replay.statuses[1],
+            &replay.joined_op,
+            Some(&replay.joined_view)
+        )
     ));
     let state = panel.state.as_ref().ok_or("state absent")?;
     assert_eq!(
@@ -151,31 +190,36 @@ fn party_replay_invite_join_and_leadership_pass() -> Result<(), Error> {
     assert!(has_line(&text, &format!("Member: {joiner}")));
     assert!(!text.contains("Invitation:"));
 
-    let before = panel.state.clone();
-    assert!(request(&mut panel, Intent::Refresh).is_some());
-    assert!(!apply_result(
-        &mut panel,
-        &response(&replay.joined_op[..1], None)
-    ));
-    assert_eq!(panel.state, before);
-    assert_eq!(
-        panel.feedback,
-        Some("The server returned an invalid party result")
-    );
-    assert!(request(&mut panel, Intent::Refresh).is_some());
-    let refused = PartyResponse {
-        status: CommandStatus::Rejected,
-        operation: replay.joined_op.clone(),
-        view: None,
-    };
-    assert!(!apply_result(&mut panel, &refused));
-    assert_eq!(panel.state, before);
-    assert_eq!(panel.feedback, Some("The server refused the party command"));
-
+    if !replay.live {
+        let before = panel.state.clone();
+        assert!(request(&mut panel, Intent::Refresh).is_some());
+        assert!(!apply_result(
+            &mut panel,
+            &response(CommandStatus::Accepted, &replay.joined_op[..1], None)
+        ));
+        assert_eq!(panel.state, before);
+        assert_eq!(
+            panel.feedback,
+            Some("The server returned an invalid party result")
+        );
+        assert!(request(&mut panel, Intent::Refresh).is_some());
+        let refused = PartyResponse {
+            status: CommandStatus::Rejected,
+            operation: replay.joined_op.clone(),
+            view: None,
+        };
+        assert!(!apply_result(&mut panel, &refused));
+        assert_eq!(panel.state, before);
+        assert_eq!(panel.feedback, Some("The server refused the party command"));
+    }
     assert!(request(&mut panel, Intent::Refresh).is_some());
     assert!(apply_result(
         &mut panel,
-        &response(&replay.passed_op, Some(&replay.passed_view))
+        &response(
+            replay.statuses[2],
+            &replay.passed_op,
+            Some(&replay.passed_view)
+        )
     ));
     assert!(panel.is_leader());
     let new_leader = value(&replay.expected, "new_leader")?;

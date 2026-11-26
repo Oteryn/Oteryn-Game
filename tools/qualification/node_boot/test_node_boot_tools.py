@@ -411,7 +411,20 @@ class S01ClientReplayTests(unittest.TestCase):
                     NODE_BOOT_E2E_ONLY={groups!r} OTERYN_E2E_ROW_BATCH={batch!r}
                     s01_client_selected
                 ''')
-                self.assertEqual(result.returncode, int(not selected), result.stderr)
+                self.assertEqual(result.returncode, 0 if selected else 3, result.stderr)
+
+    def test_selector_execution_error_blocks_node_boot(self):
+        gate = section("NODE_BOOT_S01_CAPTURE_DIR=", 'if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]')
+        result = bash(f"""
+            set -Eeuo pipefail
+            source "{HERE / 's01_client_replay.sh'}"
+            NODE_BOOT_WORLD=1 NODE_BOOT_SPELLS=0 NODE_BOOT_D150_LEGACY=0
+            python3() {{ return 1; }}
+            blocked() {{ echo "$1"; exit 2; }}
+            {gate}
+        """)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertEqual(result.stdout.strip(), "s01_selector_failed")
 
     def test_verdict_requires_one_live_capture_and_one_exact_replay(self):
         marker = 'SEAM_EVIDENCE e2e_capture scenario=S01.client status=CAPTURED evidence=party\n'
