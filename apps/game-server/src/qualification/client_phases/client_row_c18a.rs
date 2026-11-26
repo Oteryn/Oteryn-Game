@@ -74,9 +74,8 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     };
     let target = rat.entity;
     let attack = client.session_mut().attack_target(Some(&target)).await?;
-    if attack.status != CommandStatus::Accepted
-        || attack.disposition != attack::AttackIntentDisposition::Ok
-    {
+    require_mechanic_acceptance(attack.status, "C18a first Rat selection")?;
+    if attack.disposition != attack::AttackIntentDisposition::Ok {
         return Err(format!(
             "C18a first Rat selection refused: {attack:?}; caster={here:?} rat={rat:?}"
         )
@@ -119,7 +118,8 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             &intent,
         )
         .await?;
-    if turn.status != CommandStatus::Accepted || turn.payload != [8, 1] {
+    require_mechanic_acceptance(turn.status, "C18a turn away from the selected Rat")?;
+    if turn.payload != [8, 1] {
         return Err("C18a turn away from the selected Rat was refused".into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
