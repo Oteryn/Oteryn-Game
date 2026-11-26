@@ -14,7 +14,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result =
         verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     match result {
-        Ok(Ok(())) => evidence("SEAM_EVIDENCE e2e_all scenario=C17a.client status=PASS"),
+        Ok(Ok(())) => evidence("SEAM_EVIDENCE e2e_all scenario=C17a.client status=CAPTURED"),
         Ok(Err(error)) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C17a.client status=FAIL evidence={error}"
         )),
@@ -40,6 +40,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "c17a-client".into(),
     )
     .await?;
+    character_prep::grant_premium(&client).await?;
     logout(&mut client).await?;
     drop(client);
     wait_character_released(clients, 0).await?;
@@ -62,7 +63,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     evidence(&format!(
         "C17A_SEEDED_BUILD level={level} vocation={vocation:?} vitals={vitals:?}"
     ));
-    character_prep::grant_premium(&client).await?;
     let book = native_spell_book()?;
     let strong_spell = book
         .spoken("utani gran hur")
@@ -70,11 +70,43 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .spell;
     full_e2ef7::require_current_light_premium(&mut client).await?;
     full_e2ef5::prepare_spell_access(&mut client, strong_spell).await?;
-    let (haste, haste_payload) = cast_and_query(&mut client, "utani hur").await?;
+    let (before, _) = query_conditions(&mut client).await?;
+    if before
+        .conditions
+        .iter()
+        .any(|condition| condition.icon == 13)
+    {
+        return Err("C17a caster started with Haste".into());
+    }
+    let (haste, haste_payload) = cast_and_query(&mut client, "utani hur", 390, 30_000).await?;
+    let haste_sequence = client.last_server_sequence();
     wait_support_cooldown(&mut client).await?;
-    let (strong, strong_payload) = cast_and_query(&mut client, "utani gran hur").await?;
+    let (before_strong, _) = query_conditions(&mut client).await?;
+    if haste_remaining(&before_strong)? <= 22_000 {
+        return Err("C17a pre-Strong Haste condition does not distinguish replacement".into());
+    }
+    let (strong, strong_payload) =
+        cast_and_query(&mut client, "utani gran hur", 290, 22_000).await?;
+    let strong_sequence = client.last_server_sequence();
+    let cast_session = client.join_snapshot().game_session_id;
+    let strong_remaining = haste_remaining(&strong)?;
+    logout(&mut client).await?;
+    drop(client);
+    wait_character_released(clients, 0).await?;
+    let mut client = connect_character(clients, 0xca, 0).await?;
+    if client.join_snapshot().game_session_id == cast_session {
+        return Err("C17a durability check reused the casting session".into());
+    }
+    let (retained, _) = query_conditions(&mut client).await?;
+    if haste_remaining(&retained)? > strong_remaining
+        || client.actor_vitals().map(|vitals| vitals.mana) != Some(290)
+    {
+        return Err("C17a fresh admission did not retain Strong Haste and its mana debit".into());
+    }
+    logout(&mut client).await?;
 
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+    let path = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("C17a capture directory missing")?;
+    {
         let expected = format!("{}\n---\n{}\n", visible(&haste)?, visible(&strong)?);
         for (name, bytes) in [
             ("c17a-haste.bin", haste_payload),
@@ -85,7 +117,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         std::fs::File::create_new(Path::new(&path).join("c17a-expected.txt"))?
             .write_all(expected.as_bytes())?;
     }
-    logout(&mut client).await?;
+    evidence(&format!(
+        "C17A_CAPTURE session={} haste_sequence={haste_sequence} strong_sequence={strong_sequence}",
+        uuid_text(cast_session.as_bytes())
+    ));
     Ok(())
 }
 
@@ -101,6 +136,8 @@ async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult 
 async fn cast_and_query(
     client: &mut oteryn_dev_client::DevClientSession,
     words: &str,
+    expected_mana: u32,
+    duration_ms: i64,
 ) -> TestResult<(ConditionStatus, Vec<u8>)> {
     let cast = client
         .chat(&ChatIntent::Say {
@@ -109,8 +146,40 @@ async fn cast_and_query(
         })
         .await?;
     if cast.status != CommandStatus::Accepted || cast.disposition != ChatDisposition::Ok {
-        return Err(format!("C17a support cast refused: {words} {cast:?}").into());
+        for event in client.take_events() {
+            if matches!(
+                event,
+                oteryn_dev_client::SessionEvent::ServerMessage(_)
+                    | oteryn_dev_client::SessionEvent::ActorCooldowns(_)
+            ) {
+                evidence(&format!(
+                    "C17A_CAST_REFUSAL_EVENT words={words:?} {event:?}"
+                ));
+            }
+        }
+        return Err(format!(
+            "C17a support cast refused: {words} {cast:?} vitals={:?}",
+            client.actor_vitals()
+        )
+        .into());
     }
+    let (status, payload) = query_conditions(client).await?;
+    let remaining = haste_remaining(&status)?;
+    if !(duration_ms - 2_000..=duration_ms).contains(&remaining)
+        || client.actor_vitals().map(|vitals| vitals.mana) != Some(expected_mana)
+    {
+        return Err(format!(
+            "C17a {words} outcome mismatch: remaining_ms={remaining} vitals={:?}",
+            client.actor_vitals()
+        )
+        .into());
+    }
+    Ok((status, payload))
+}
+
+async fn query_conditions(
+    client: &mut oteryn_dev_client::DevClientSession,
+) -> TestResult<(ConditionStatus, Vec<u8>)> {
     let reply = client
         .session_mut()
         .gated_command(
@@ -120,17 +189,22 @@ async fn cast_and_query(
         )
         .await?;
     if reply.status != CommandStatus::Accepted {
-        return Err(format!("C17a condition query refused after {words}").into());
+        return Err("C17a condition query refused".into());
     }
     let status = ConditionStatus::decode(&reply.payload).ok_or("C17a malformed condition reply")?;
-    if !status
+    Ok((status, reply.payload))
+}
+
+fn haste_remaining(status: &ConditionStatus) -> TestResult<i64> {
+    let mut haste = status
         .conditions
         .iter()
-        .any(|condition| condition.icon == 13)
-    {
-        return Err(format!("C17a Haste icon absent after {words}").into());
+        .filter(|condition| condition.icon == 13);
+    let condition = haste.next().ok_or("C17a Haste icon absent")?;
+    if haste.next().is_some() || condition.sub_id != 0 || condition.remaining_ms <= 0 {
+        return Err("C17a invalid Haste condition slot or duration".into());
     }
-    Ok((status, reply.payload))
+    Ok(condition.remaining_ms)
 }
 
 async fn wait_support_cooldown(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {

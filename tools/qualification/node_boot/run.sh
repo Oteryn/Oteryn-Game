@@ -1591,6 +1591,25 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   done
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
+  local c17a_capture='' c17a_log='' c17a_started=$SECONDS
+  local selected_groups="${NODE_BOOT_E2E_ONLY:-}"
+  selected_groups=",${selected_groups//[[:space:]]/},"
+  local first length
+  if [[ "$NODE_BOOT_WORLD" == 1 && ( "$selected_groups" == ',,' || "$selected_groups" == *,rows,* ) ]]; then
+    if [[ "${OTERYN_E2E_ROW_BATCH:-}" == all ]]; then
+      c17a_capture="$(mktemp -d "$WORK/c17a-capture.XXXXXX")"
+    elif [[ "${OTERYN_E2E_ROW_BATCH:-}" =~ ^([0-9]{1,6}):([0-9]{1,6})$ ]]; then
+      first=$((10#${BASH_REMATCH[1]}))
+      length=$((10#${BASH_REMATCH[2]}))
+      if (( first <= 105 && 105 - first < length )); then
+        c17a_capture="$(mktemp -d "$WORK/c17a-capture.XXXXXX")"
+      fi
+    fi
+  fi
+  if [[ -n "$c17a_capture" ]]; then
+    test_env+=("E2E_ALL_CAPTURE_DIR=$c17a_capture")
+    c17a_log="$c17a_capture/seam.log"
+  fi
   local test_dir="$PWD"
   local test_command=(cargo +1.100.0 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
     "qualification::$qualification" -- --ignored --exact --nocapture)
@@ -1615,8 +1634,27 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       WP5_S3A_ACCOUNT_ID="$ACCOUNT_ID" WP5_S3B_SECOND_ACCOUNT_ID="$SECOND_ACCOUNT_ID" \
       WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
       WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
-      "${test_command[@]}"
+      "${test_command[@]}" | if [[ -n "$c17a_log" ]]; then tee "$c17a_log"; else cat; fi
   )
+  if [[ -n "$c17a_capture" ]]; then
+    local replay
+    if [[ "$(stage_rows "$c17a_log" CAPTURED | grep -xcF 'C17a.client')" != 1 ]] ||
+      [[ "$(grep -c '^SEAM_EVIDENCE C17A_CAPTURE session=.* haste_sequence=[0-9]* strong_sequence=[0-9]*$' "$c17a_log")" != 1 ]]; then
+      if ! grep -q 'e2e_all scenario=C17a.client status=FAIL' "$c17a_log"; then
+        echo 'SEAM_EVIDENCE e2e_all scenario=C17a.client status=FAIL seconds=0 evidence=missing_live_capture'
+      fi
+      return 1
+    fi
+    if replay="$(E2E_ALL_CAPTURE_DIR="$c17a_capture" cargo +1.100.0 test --locked -p oteryn-client-ui --lib replay_haste_and_strong_haste_condition_payloads -- --nocapture)" &&
+      grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' <<< "$replay"; then
+      printf '%s\n' "$replay"
+      echo "SEAM_EVIDENCE e2e_all scenario=C17a.client status=PASS seconds=$((SECONDS - c17a_started)) evidence=live_capture_replay"
+    else
+      printf '%s\n' "$replay"
+      echo 'SEAM_EVIDENCE e2e_all scenario=C17a.client status=FAIL seconds=0 evidence=client_replay'
+      return 1
+    fi
+  fi
 }
 
 graceful_shutdown() { # ready=false first, socket removed
