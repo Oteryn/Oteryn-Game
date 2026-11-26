@@ -1,3 +1,6 @@
+#[path = "party_membership_fixtures/invite_disband.rs"]
+mod invite_disband;
+
 use crate::bestiary_postgres_harness::{
     self as fixture, CHANNEL, Harness, TestResult, WORLD, debug, id,
 };
@@ -26,23 +29,33 @@ use std::time::Duration;
 use tokio::{io::AsyncWriteExt, sync::Mutex};
 
 pub(super) fn run(partyskull: bool) -> TestResult {
-    run_case(partyskull, false, false, false, false, None)
+    run_case(partyskull, false, false, false, None, None)
 }
 
 pub(super) fn run_reference_level() -> TestResult {
-    run_case(false, true, false, false, false, None)
+    run_case(false, true, false, false, None, None)
 }
 
 pub(super) fn run_chat() -> TestResult {
-    run_case(false, false, true, false, false, None)
+    run_case(false, false, true, false, None, None)
 }
 
 pub(super) fn run_busy_holder() -> TestResult {
-    run_case(false, false, false, true, false, None)
+    run_case(false, false, false, true, None, None)
 }
 
 pub(super) fn run_notices(admin: String) -> TestResult {
-    run_with_admin(admin, false, false, false, false, true, None)
+    run_with_admin(admin, false, false, false, false, Some(NoticeCase::JoinLeave), None)
+}
+
+pub(super) fn run_invite_disband_notices(admin: String) -> TestResult {
+    run_with_admin(admin, false, false, false, false, Some(NoticeCase::InviteDisband), None)
+}
+
+#[derive(Clone, Copy)]
+enum NoticeCase {
+    JoinLeave,
+    InviteDisband,
 }
 
 #[derive(Clone, Copy)]
@@ -53,7 +66,7 @@ pub(super) enum HuntCase {
 }
 
 pub(super) fn run_hunt(admin: String, case: HuntCase) -> TestResult {
-    run_with_admin(admin, false, false, false, false, false, Some(case))
+    run_with_admin(admin, false, false, false, false, None, Some(case))
 }
 
 fn run_case(
@@ -61,7 +74,7 @@ fn run_case(
     reference_level: bool,
     chat: bool,
     busy: bool,
-    notices: bool,
+    notices: Option<NoticeCase>,
     hunt: Option<HuntCase>,
 ) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
@@ -76,7 +89,7 @@ fn run_with_admin(
     reference_level: bool,
     chat: bool,
     busy: bool,
-    notices: bool,
+    notices: Option<NoticeCase>,
     hunt: Option<HuntCase>,
 ) -> TestResult {
     std::thread::Builder::new()
@@ -384,7 +397,7 @@ async fn scenario(
     reference_level: bool,
     chat: bool,
     busy: bool,
-    notices: bool,
+    notices: Option<NoticeCase>,
     hunt: Option<HuntCase>,
 ) -> TestResult {
     let now: i64 =
@@ -522,6 +535,9 @@ async fn scenario(
             SelectedCapabilities::select(owner.offered_capabilities(), &[6, 42])
                 .ok_or("party offer")?;
     }
+    if matches!(notices, Some(NoticeCase::InviteDisband)) {
+        return invite_disband::check(&owner, &mut admitted, targets[1], characters[0]).await;
+    }
     if busy {
         return super::party_busy_holder_fixtures::check(&owner, &mut admitted, &targets, h).await;
     }
@@ -615,7 +631,7 @@ async fn scenario(
         assert_eq!(result[1].disposition, PartyDisposition::Rejected);
         super::party_skull_fixtures::aggression(h, &targets, &characters, false).await?;
     }
-    if notices {
+    if matches!(notices, Some(NoticeCase::JoinLeave)) {
         return check_notices(&owner, &mut admitted).await;
     }
     for a in admitted.iter_mut().skip(1) {
