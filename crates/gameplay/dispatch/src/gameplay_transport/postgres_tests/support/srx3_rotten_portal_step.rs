@@ -105,10 +105,12 @@ pub(super) async fn exercise(
             false,
         )?
     };
+    const LURE_TURNS: usize = 5;
     assert!(
-        lure.len() <= 5,
+        lure.len() <= LURE_TURNS,
         "actual Elder lure stays inside the portal lifetime"
     );
+    let mut chase_turns = lure.len()..LURE_TURNS;
     for direction in lure {
         clock.set(clock_view.owner_now().get() + 1_000_000);
         let view = owner.runtime_view(&registered);
@@ -124,7 +126,7 @@ pub(super) async fn exercise(
         );
         super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
     }
-    let route = {
+    let route = loop {
         let view = owner.runtime_view(&registered);
         let runtime = view.runtime.lock().await;
         let elders: Vec<_> = runtime
@@ -140,10 +142,19 @@ pub(super) async fn exercise(
                 .then_some(at.position())
             })
             .collect();
+        let elder_in_step_range = elders.iter().any(|at| {
+            at.floor == centre.floor && at.x.abs_diff(centre.x) <= 2 && at.y.abs_diff(centre.y) <= 2
+        });
+        if !elder_in_step_range && chase_turns.next().is_some() {
+            // Reaching the lure tile can precede an Elder's next native step.
+            // Use only the turns left in the original five-second lure budget.
+            drop(runtime);
+            clock.set(clock_view.owner_now().get() + 1_000_000);
+            super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
+            continue;
+        }
         assert!(
-            elders.iter().any(|at| at.floor == centre.floor
-                && at.x.abs_diff(centre.x) <= 2
-                && at.y.abs_diff(centre.y) <= 2),
+            elder_in_step_range,
             "source STEP requires a current Elder within2, not merely the90s creator's15: {elders:?}"
         );
         let occupied = runtime
@@ -153,7 +164,7 @@ pub(super) async fn exercise(
             .map(|c| runtime.read_actor_position(c.actor).map(|p| p.position()))
             .collect::<Result<Vec<_>, _>>()
             .map_err(debug)?;
-        super::srx3_primal_terminal::source_route(
+        break super::srx3_primal_terminal::source_route(
             view.effective_movement_cells(),
             runtime
                 .read_actor_position(player)
@@ -162,7 +173,7 @@ pub(super) async fn exercise(
             centre,
             &occupied,
             false,
-        )?
+        )?;
     };
     assert!(
         route.len() < 10,
