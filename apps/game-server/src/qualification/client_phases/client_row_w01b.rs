@@ -261,7 +261,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             break corpse;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("W01b client capture: no corpse and removal before the deadline".into());
+            let live = target_state(&client, target.entity);
+            return Err(format!(
+                "W01b client capture: no corpse and removal before the deadline: last={last:?} target={live:?} attacker={:?}",
+                client.world_spatial().actor_position
+            )
+            .into());
         }
     };
     if !kill.trace.iter().any(|line| line.ends_with("|-") || line == "absent")

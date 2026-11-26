@@ -41,7 +41,6 @@ S13a.full assertion at S13a/solo-refusal
 S13b.full assertion at S13b/solo-zero-charge
 S16a.full assertion at S16a/oressa-reachable
 S18.full assertion at S18/yell; source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1
-W01b.full assertion at W01b.full/admission
 W18.full assertion at W18.full/admission; step:prerequisite-or-mechanic-refused
 W19a.full deadline at W19a.full/walk
 W20a.full assertion at W20a/sunrise; 120s-timeout

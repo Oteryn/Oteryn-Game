@@ -5,10 +5,10 @@
 //!    STEP commands to the authored `oteryn:creature.rat` point, and require its live entity.
 //! 2. Send ATTACK_TARGET for that rat; require an accepted/Ok reply, health update(s), removal of
 //!    that actor, and the corpse entity at its last position.
-//! 3. Remain in player interest through the authored respawn interval. This is the refusal path:
-//!    require the dead actor to stay absent and no new creature to enter at its authored point.
+//! 3. Remain in player interest through the authored respawn interval. Require no early
+//!    replacement, then a new Rat at the authored point during the non-blockable respawn.
 //! 4. Walk outside interest with native STEP commands, wait the next authored interval, return,
-//!    and require a new live creature generation at the authored point (the successful respawn).
+//!    and require the same replacement generation at the authored point.
 //! 5. Send LOGOUT and require Accepted, make a fresh admission, walk back to the point, and
 //!    re-check the session-independent World state: the replacement remains live and the killed
 //!    actor generation has not returned. Finish with another accepted LOGOUT.
@@ -62,7 +62,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut progress = Progress::new();
     progress.begin("world-bundle");
     let result = match verdict::indexed_timeout(
-        Duration::from_secs(420),
+        Duration::from_secs(660),
         journey(clients, &mut progress),
     )
     .await
@@ -226,7 +226,12 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
             break corpse.entity;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("ATTACK_TARGET accepted but corpse/removal delta timed out".into());
+            let live = client.world_entities().and_then(|entities| entities.get(&target));
+            return Err(format!(
+                "ATTACK_TARGET accepted but corpse/removal delta timed out: damaged={damaged} last={last:?} target={live:?} attacker={:?}",
+                client.world_spatial().actor_position
+            )
+            .into());
         }
     };
     if !damaged
@@ -238,17 +243,27 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     }
     progress.pass("kill-deltas", (target, corpse, last));
 
-    progress.begin("nearby-refusal");
-    let blocked_until = tokio::time::Instant::now()
+    progress.begin("no-early-respawn");
+    let no_early_respawn_until = tokio::time::Instant::now()
         + Duration::from_millis(u64::from(respawn_ms) + 1_000);
-    verdict::Harness::global().bounded_wait(blocked_until, "bounded-observation");
-    while tokio::time::Instant::now() < blocked_until {
+    verdict::Harness::global().bounded_wait(no_early_respawn_until, "bounded-observation");
+    while tokio::time::Instant::now() < no_early_respawn_until {
         pump(&mut client).await?;
         if visible_rat_at(&client, spawn).is_some() {
-            return Err("nearby refusal observed an unexpected respawn entity enter delta".into());
+            return Err("a replacement appeared before the non-blockable Rat warning elapsed".into());
         }
     }
-    progress.pass("nearby-refusal", (spawn, respawn_ms));
+    progress.pass("no-early-respawn", (spawn, respawn_ms));
+
+    progress.begin("nearby-replacement");
+    wait_until(
+        &mut client,
+        no_early_respawn_until + Duration::from_secs(10),
+        |client| visible_rat_at(client, spawn).is_some_and(|entity| entity != target),
+    )
+    .await?;
+    let nearby_replacement = visible_rat_at(&client, spawn).ok_or("nearby replacement disappeared")?;
+    progress.pass("nearby-replacement", nearby_replacement);
 
     progress.begin("leave-interest");
     let from = tile(client.world_spatial().actor_position)?;
@@ -277,6 +292,9 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     )
     .await?;
     let replacement = visible_rat_at(&client, spawn).ok_or("replacement disappeared")?;
+    if replacement != nearby_replacement {
+        return Err("return to the spawn observed a different replacement generation".into());
+    }
     progress.pass("replacement-delta", replacement);
 
     progress.begin("logout");

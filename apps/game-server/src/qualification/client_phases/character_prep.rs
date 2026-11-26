@@ -214,12 +214,56 @@ pub(super) async fn reload(
     Ok(())
 }
 
+async fn unequip_w01b_hands(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
+    use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent, SessionEvent};
+    use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome};
+
+    for slot in [EquipmentSlot::RightHand, EquipmentSlot::LeftHand] {
+        let inventory = client.inventory().ok_or("W01b starter inventory absent")?;
+        let Some(item) = inventory.equipment.iter().find(|entry| entry.slot == slot) else {
+            continue;
+        };
+        let source = item.item.handle;
+        client.take_events();
+        let reply = client
+            .move_item(&ItemMoveIntent {
+                source,
+                destination: ItemMoveDestination::MainBackpack,
+            })
+            .await?;
+        if reply.status != CommandStatus::Accepted || reply.outcome != ItemMoveOutcome::Moved {
+            return Err(format!("W01b {slot:?} unequip refused: {reply:?}").into());
+        }
+        tokio::time::timeout(Duration::from_secs(6), async {
+            loop {
+                if client.take_events().into_iter().any(|event| {
+                    matches!(event, SessionEvent::Inventory(delta)
+                        if delta.server_sequence > reply.result_server_sequence
+                            && delta.value.equipment.iter().all(|entry| entry.slot != slot)
+                            && delta.value.entries.iter().any(|entry| entry.handle == source))
+                }) {
+                    return TestResult::Ok(());
+                }
+                client.service_liveness(Duration::from_millis(100)).await?;
+            }
+        })
+        .await
+        .map_err(|_| format!("W01b {slot:?} unequip inventory delta missing"))??;
+    }
+    Ok(())
+}
+
 pub(super) async fn w01b_rat_hunter(
     row: &str,
     clients: &SeamClients<'_>,
     tag: u8,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
-    use oteryn_protocol_oteryn::{actor_spell, cyclopedia_character, logout::LogoutResult};
+    use oteryn_protocol_oteryn::{
+        actor_spell,
+        attack::{AttackIntentDisposition, ChaseMode, FightModes},
+        cyclopedia_character,
+        logout::LogoutResult,
+    };
 
     const LEVEL: u32 = 50;
     const VOCATION: &str = "sorcerer";
@@ -274,8 +318,24 @@ pub(super) async fn w01b_rat_hunter(
         )
         .into());
     }
+    unequip_w01b_hands(&mut client).await?;
+    // Crystal's Rat flees at low health. Set ordinary chase before the first attack.
+    let modes = FightModes {
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    let reply = client.session_mut().set_fight_modes(&modes).await?;
+    if reply.status != CommandStatus::Accepted
+        || reply.disposition != AttackIntentDisposition::Ok
+        || client
+            .session_mut()
+            .combat_state()
+            .is_none_or(|state| state.modes != modes)
+    {
+        return Err(format!("W01b chase mode refused or missing its state delta: {reply:?}").into());
+    }
     evidence(&format!(
-        "W01B_SEEDED row={row} level={level} max_health={max_health} max_mana={max_mana}"
+        "W01B_SEEDED row={row} level={level} max_health={max_health} max_mana={max_mana} hands=empty chase=on"
     ));
     Ok(client)
 }
