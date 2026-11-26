@@ -150,12 +150,7 @@ def apply_wiki_br_contacts(candidates: dict, scope: dict, facts: bytes) -> None:
                        or cell not in page["positions"] for cell in cells)
                 or len({tuple(cell) for cell in cells}) != len(cells)):
             raise ValueError(f"{key}: Wiki BR contact position missing from retained revision")
-        candidate["placements"] = [
-            {"position": dict(zip(("x", "y", "z"), cell)), "direction": None,
-             "origin": "native_wiki_br"}
-            for cell in cells
-        ]
-        candidate["native_provenance"] = {
+        evidence = {
             "origin": "native_wiki_br",
             "repository": "www.tibiawiki.com.br",
             "pageid": page["pageid"],
@@ -163,6 +158,41 @@ def apply_wiki_br_contacts(candidates: dict, scope: dict, facts: bytes) -> None:
             "source_sha256": page["sha256"],
             "direction_note": "No source direction; north is the project default",
         }
+        adjacent = contact.get("adjacent_cells")
+        if adjacent is None:
+            candidate["native_provenance"] = evidence
+            candidate["placements"] = [
+                {"position": dict(zip(("x", "y", "z"), cell)), "direction": None,
+                 "origin": "native_wiki_br"}
+                for cell in cells
+            ]
+            continue
+
+        if (contact.get("direction") != "SOUTH" or len(adjacent) != len(cells)
+                or any(not isinstance(target, list) or len(target) != 3
+                       or any(type(value) is not int for value in target)
+                       or target[2] != source[2]
+                       or sum(abs(a - b) for a, b in zip(target[:2], source[:2])) != 1
+                       for source, target in zip(cells, adjacent))
+                or len({tuple(cell) for cell in adjacent}) != len(cells)):
+            raise ValueError(f"{key}: invalid adjacent Wiki BR contact or facing")
+        candidate["placements"] = [
+            {
+                "position": dict(zip(("x", "y", "z"), target)),
+                "direction": contact["direction"],
+                "regional_provenance": {
+                    **evidence,
+                    "direction_note": "Crystal src/creatures/creature.hpp:806 default facing south",
+                    "source_cell": dict(zip(("x", "y", "floor"), source)),
+                    "arbitration": [{
+                        "fact": "placements", "chosen": "oteryn",
+                        "rule": "CHOSEN_OTERYN_APPROXIMATION",
+                        "basis": "Owner-approved seasonal merchant cell beside the retained marker.",
+                    }],
+                },
+            }
+            for source, target in zip(cells, adjacent)
+        ]
 
 
 def apply_wiki_br_cells(candidates: dict, scope: dict) -> None:
