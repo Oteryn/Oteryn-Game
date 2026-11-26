@@ -137,7 +137,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "w09-kooldown".into(),
     )
     .await?;
-    character_prep::grant_premium(&client).await?;
     character_prep::grant_item(&client, cube_id, 1).await?;
     character_prep::grant_item(&client, aid_id, 2).await?;
     logout(&mut client).await?;
@@ -145,6 +144,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if client.join_snapshot().game_session_id == preparation_session {
         return Err("W09 preparation reused its original session".into());
     }
+    character_prep::grant_premium(&client).await?;
     let level = full_e2ef7::player_level(&mut client).await?;
     let vitals = client.actor_vitals().ok_or("W09 seeded vitals missing")?;
     if (level, vitals.max_health, vitals.max_mana) != (41, 350, 1080) {
