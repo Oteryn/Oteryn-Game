@@ -4,7 +4,7 @@
 //! client-visible `SessionEvent::WorldMap`; `Session::take_events` exposes it to the native client.
 use super::*;
 use oteryn_dev_client::SessionEvent;
-use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin};
+use oteryn_protocol_oteryn::world_map::{self, MapDefinition, MapOrigin};
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
     encode_item_use_intent,
@@ -84,7 +84,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         Ok(())
     })?;
     let ordinal = ordinal.ok_or("compiled I09 tile omitted fixed chair 2358")?;
-    let expected = provisioning::item_reference(&provisioning::item_index()?, 2359)?;
+    let definitions = provisioning::item_index()?;
+    let expected = provisioning::item_reference(&definitions, 2359)?;
     let mut client = connect_world(clients, 0xc9).await?;
     let adjacent = |cell: TilePos| {
         cell.floor == at.floor && cell.x.abs_diff(at.x).max(cell.y.abs_diff(at.y)) == 1
@@ -117,6 +118,33 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         })
         .map_err(|error| format!("I09 intent encode: {error:?}"))
     };
+    let target = oteryn_protocol_oteryn::world_spatial::ActorPosition {
+        x: i32::from(at.x),
+        y: i32::from(at.y),
+        floor: -i16::from(at.floor),
+    };
+    let before = client
+        .session_mut()
+        .gated_snapshot(world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
+        .ok_or("I09 predecessor map snapshot absent")?
+        .clone();
+    let before_map = world_map::decode_world_map_snapshot(&before.payload)
+        .map_err(|error| format!("I09 predecessor decode: {error:?}"))?;
+    let original = provisioning::item_reference(&definitions, 2358)?;
+    if !before_map.tiles.iter().any(|tile| {
+        tile.position == target
+            && tile.items.iter().any(|item| {
+                item.origin
+                    == (MapOrigin::BaseOrdinal {
+                        ordinal,
+                        object_revision: 0,
+                    })
+                    && item.definition == MapDefinition::Item(original)
+                    && item.appearance_id == 2358
+            })
+    }) {
+        return Err("I09 predecessor omitted original chair at revision 0".into());
+    }
     client.take_events();
     let reply = client.session_mut().world_context_use(&intent(0)?).await?;
     if reply.status != CommandStatus::Accepted
@@ -126,29 +154,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("rotation refused: {:?}", reply.status).into());
     }
-    let target = oteryn_protocol_oteryn::world_spatial::ActorPosition {
-        x: i32::from(at.x),
-        y: i32::from(at.y),
-        floor: -i16::from(at.floor),
-    };
     let rotated = MapOrigin::BaseOrdinal {
         ordinal,
         object_revision: 1,
     };
     let started = tokio::time::Instant::now();
     let delta = loop {
-        if let Some(delta) = client
-            .take_events()
-            .into_iter()
-            .find_map(|event| match event {
+        let mut rotation = None;
+        for event in client.take_events() {
+            match event {
+                SessionEvent::GatedSnapshotReplaced(update)
+                    if update.value.domain_id == before.domain_id =>
+                {
+                    return Err("I09 map snapshot replaced before rotation delta".into());
+                }
                 SessionEvent::WorldMap(delta)
                     if delta.value.tiles.iter().any(|tile| tile.position == target) =>
                 {
-                    Some(delta)
+                    rotation = Some(delta);
+                    break;
                 }
-                _ => None,
-            })
-        {
+                _ => {}
+            }
+        }
+        if let Some(delta) = rotation {
             break delta;
         }
         // Match the full row's map observation budget. USE may publish on a later
@@ -158,6 +187,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     };
+    if delta.base_revision != before.revision {
+        return Err("I09 predecessor revision does not match rotation delta".into());
+    }
+    let predecessor_sequence = delta
+        .server_sequence
+        .checked_sub(1)
+        .ok_or("I09 rotation delta has no predecessor sequence")?;
     evidence(&format!(
         "I09 rotation_delta_ms={}",
         started.elapsed().as_millis()
@@ -193,6 +229,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("stale rotation was not refused".into());
     }
+    assert_chair(&mut client, target, item)?;
+    let session = client.join_snapshot().game_session_id;
+    let position = client.world_spatial().actor_position;
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("I09 first logout refused: {logout:?}").into());
+    }
+    drop(client);
+    let mut relogged = connect_world(clients, 0xca).await?;
+    if relogged.join_snapshot().game_session_id == session
+        || relogged.world_spatial().actor_position != position
+    {
+        return Err("I09 relog did not open a new session at the saved position".into());
+    }
+    assert_chair(&mut relogged, target, item)?;
+    capture("i09-map-before.bin", &before.payload)?;
+    capture(
+        "i09-map-before.txt",
+        format!(
+            "{predecessor_sequence} {} {} {}\n",
+            before.domain_id, before.snapshot_type, before.revision
+        )
+        .as_bytes(),
+    )?;
     capture("i09-result.bin", &reply.payload)?;
     capture("i09-map-delta.bin", &payload)?;
     capture(
@@ -207,5 +267,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .as_bytes(),
     )?;
+    Ok(())
+}
+
+fn assert_chair(
+    client: &mut oteryn_dev_client::DevClientSession,
+    target: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    expected: &world_map::MapItem,
+) -> TestResult {
+    let snapshot = client
+        .session_mut()
+        .world_map_snapshot()
+        .ok_or("I09 verification map absent")?;
+    if !snapshot
+        .tiles
+        .iter()
+        .any(|tile| tile.position == target && tile.items.contains(expected))
+    {
+        return Err("I09 verification map omitted the exact rotated chair".into());
+    }
     Ok(())
 }
