@@ -100,6 +100,21 @@ where
         }
         session.admitted.continuity.vitals_revision = to;
     }
+    if outcome.refresh_inventory
+        && let Some(view) = session.item_view.as_mut()
+    {
+        item_use_view_refresh::refresh(
+            stream,
+            authority,
+            session.actor,
+            &mut session.admitted,
+            view,
+            session.container_views.as_mut(),
+            &mut session.sequence,
+        )
+        .await
+        .ok_or(ServeEnd::Disconnected)?;
+    }
     Ok(())
 }
 

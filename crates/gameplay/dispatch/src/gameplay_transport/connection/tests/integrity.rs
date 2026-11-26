@@ -255,6 +255,7 @@ fn sec1_detect_cadence_burst_flags_without_changing_outcomes() -> Result<(), Box
                 ..UseOutcome::rejected()
             }),
             Dispatch::Spell(SpellCastOutcome {
+                refresh_inventory: false,
                 disposition: SpellCastDisposition::CoolingDown,
                 vitals: None,
             }),
@@ -286,6 +287,7 @@ fn sec1_detect_cadence_burst_flags_without_changing_outcomes() -> Result<(), Box
         }
         for _ in 0..4 {
             mixed(&Dispatch::Spell(SpellCastOutcome {
+                refresh_inventory: false,
                 disposition: SpellCastDisposition::CoolingDown,
                 vitals: None,
             }));
@@ -356,6 +358,7 @@ fn sec1_detect_no_flag_for_paced_play() -> Result<(), Box<dyn Error>> {
             );
             assert_eq!(
                 probe(&Dispatch::Spell(SpellCastOutcome {
+                    refresh_inventory: false,
                     disposition: SpellCastDisposition::Cast,
                     vitals: None
                 }))
