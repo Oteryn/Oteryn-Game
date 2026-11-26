@@ -1,7 +1,7 @@
 //! Reconcile a disconnected USE through its original ledger entry before opening a stream.
 use super::connection::{AdmittedSession, UseCommand};
 use super::item_ref_admission::NativeItemWeights;
-use super::session_ingress::UseReceipt;
+use super::session_ingress::{TerrainQuestController, UseReceipt};
 use super::{AdmissionRetryBudget, ComposedFreshAdmission};
 use crate::durability::item_craft::{ItemCraftRequest, MapHarvestRequest};
 use crate::foundation::{CommandId, CommandRef};
@@ -11,34 +11,49 @@ use oteryn_protocol_oteryn::world_object::{
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn finish_recovered_terrain_use(&self, admitted: &AdmittedSession) {
-        let session = admitted.game_session_id;
-        let ingress = &self.states.command_ingress;
-        let (Some(actor), Some(fence), Some(ordinal)) = (
-            admitted.runtime_actor,
-            admitted.item_fence,
-            ingress.recovered_terrain_quest(session),
-        ) else {
+        let (Some(actor), Some(fence)) = (admitted.runtime_actor, admitted.item_fence) else {
             return;
         };
-        let command = UseCommand {
-            game_session_id: session,
-            command_id: ordinal.get(),
-            item_fence: Some(fence),
-        };
-        // Receipt recovery runs while control is lost. Use the restored controller's
-        // fence, and the original command identity for the idempotent quest write.
-        if AdmissionRetryBudget::for_command(self.root)
+        let session = admitted.game_session_id;
+        let ingress = &self.states.command_ingress;
+        if ingress.recovered_terrain_quest(session).is_none() {
+            return;
+        }
+        // Receipt recovery runs while control is lost. Keep the restored controller's
+        // fence for the owner cadence if the immediate retry window expires.
+        let controller = TerrainQuestController { actor, fence };
+        let applied = AdmissionRetryBudget::for_command(self.root)
             .retry_until(async || {
-                if super::quest_terrain_uses::after_tool(self, actor, command).await {
+                if self.retry_recovered_terrain_use(controller).await {
                     return true;
                 }
                 self.refresh_quest_session(session, false).await;
                 false
             })
-            .await
-        {
+            .await;
+        if !applied {
+            ingress.set_terrain_quest_controller(controller);
+        }
+    }
+
+    pub(super) async fn retry_recovered_terrain_use(
+        &self,
+        controller: TerrainQuestController,
+    ) -> bool {
+        let session = controller.fence.game_session_id;
+        let ingress = &self.states.command_ingress;
+        while let Some(ordinal) = ingress.recovered_terrain_quest(session) {
+            let command = UseCommand {
+                game_session_id: session,
+                command_id: ordinal.get(),
+                item_fence: Some(controller.fence),
+            };
+            if !super::quest_terrain_uses::after_tool(self, controller.actor, command).await {
+                return false;
+            }
             ingress.clear_recovered_terrain_quest(CommandRef::new(session, ordinal));
         }
+        true
     }
 
     pub(super) fn mark_use_receipt(&self, command: UseCommand, receipt: Option<UseReceipt>) {
