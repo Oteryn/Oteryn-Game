@@ -915,6 +915,9 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-storkus-dust" {
         return Box::pin(super::vampire_hunter_journey::dust(owner, admitted, h)).await;
     }
+    if name == "qengine-rewards-storkus-empty-dust" {
+        return Box::pin(super::vampire_hunter_journey::empty_dust(owner, admitted, h)).await;
+    }
     if name == "qengine-rewards-vampire-hunter" {
         return Box::pin(super::vampire_hunter_journey::exercise(owner, admitted, h)).await;
     }
