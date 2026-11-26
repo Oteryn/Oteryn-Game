@@ -325,7 +325,6 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         accept: u32,
         pouch: [u8; 16],
         corpse: [u8; 16],
-        stacked: [u8; 16],
         coin: [u8; 16],
         armor: [u8; 16],
         filtered: [u8; 16],
@@ -411,16 +410,20 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         ),
         (armor(true), &[], None),
         (
-            click.clone(),
-            &[(expected.armor, true), (expected.filtered, false)],
-            Some("Looted 1 of 2 items"),
+            Action::LootAll,
+            &[
+                (expected.armor, true),
+                (expected.filtered, false),
+                (expected.other, false),
+            ],
+            Some("Looted 1 of 3 items"),
         ),
-        (Action::Select(skip), &[], None),
         (
             click,
             &[(expected.filtered, true)],
             Some("Looted 1 of 1 items"),
         ),
+        (Action::Select(skip), &[], None),
         (
             route(
                 None,
@@ -432,13 +435,13 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             None,
         ),
         (
-            Action::Corpse(expected.stacked),
+            Action::LootAll,
             &[(expected.other, false)],
             Some("Looted 0 of 1 items"),
         ),
         (main.clone(), &[], None),
         (
-            Action::Corpse(expected.stacked),
+            Action::LootAll,
             &[(expected.other, true)],
             Some("Looted 1 of 1 items"),
         ),

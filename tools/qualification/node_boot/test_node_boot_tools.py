@@ -876,6 +876,43 @@ class CloudRunSummaryTests(unittest.TestCase):
                             'e2e_s18_say_and_whisper_echo_replay -- --nocapture',
                         ])
 
+    def test_i07_replay_is_owned_by_node_boot_and_binds_both_admissions(self):
+        replay = load('client_replay')
+        first = "01a21926-86bc-7cdc-9169-b3b7b408008b"
+        relog = "01a2192b-71f0-78b9-8731-6bb51c8afb5d"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            log = root / "node.log"
+            log.write_text(
+                f"SEAM_EVIDENCE I07_LIVE_CAPTURE session={first} relog={relog}\n"
+                "SEAM_EVIDENCE e2e_all scenario=I07.client status=PASS\n"
+            )
+            envelopes = {}
+            for key in range(1, 16):
+                envelopes[key] = json.dumps({
+                    "command_id": key, "server_sequence": key,
+                    "game_session_id": first if key < 9 else relog, "payload": [], "status": 1,
+                })
+                (root / f"i07-{key}.json").write_text(envelopes[key])
+                (root / f"i07-{key}-request.bin").write_bytes(b"request")
+            (root / "i07-expected.txt").write_text("expected")
+            self.assertEqual(replay.read_i07_live_session(log, root), f"{first} relog={relog}")
+            for invalid in [
+                envelopes[9].replace(relog, first),
+                '{"status":1,' + envelopes[9][1:],
+                '{"extra":1,' + envelopes[9][1:],
+            ]:
+                (root / "i07-9.json").write_text(invalid)
+                self.assertIsNone(replay.read_i07_live_session(log, root))
+            for mode, expected in [("--exclude-i07", 0), ("--i07-only", 1)]:
+                result = subprocess.run(
+                    [sys.executable, str(HERE / 'client_replay.py'), mode, str(log)],
+                    env={**os.environ, "E2E_ALL_CAPTURE_DIR": str(root), "OTERYN_E2E_ROW_BATCH": "118:1"},
+                    capture_output=True, text=True,
+                )
+                self.assertEqual(result.returncode, expected, result.stderr)
+                self.assertEqual("status=FAIL cause=replay-failed" in result.stdout, bool(expected))
+
     def test_summary_counts_client_replay_verdict_only(self):
         with tempfile.TemporaryDirectory() as tmp:
             log = Path(tmp) / 'node.log'

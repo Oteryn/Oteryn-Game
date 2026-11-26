@@ -186,7 +186,10 @@ def replay_cause(row, package, test, names, captures, server, log):
         )
     except OSError:
         return "replay-not-run"
-    log.with_name(f"{log.stem}-{row}.replay.log").write_text(result.stdout)
+    replay_log = captures / "i07-native-replay.log" if row.lower() == "i07" else log.with_name(
+        f"{log.stem}-{row}.replay.log"
+    )
+    replay_log.write_text(result.stdout)
     if result.returncode:
         if re.search(r"^test result: FAILED\.", result.stdout, re.MULTILINE) and (
             "kind: NotFound" in result.stdout or "No such file or directory (os error 2)" in result.stdout

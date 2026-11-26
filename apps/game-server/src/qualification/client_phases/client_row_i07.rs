@@ -592,7 +592,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ..request(QuickLootAction::Click)
     };
     capture
-        .probe(&mut fresh, 9, click, &[(armor, true), (filtered, false)])
+        .probe(
+            &mut fresh,
+            9,
+            request(QuickLootAction::LootAll),
+            &[(armor, true), (filtered, false), (other, false)],
+        )
         .await?;
     expected_backpack.push(bag_armor);
     require_placements(
@@ -631,20 +636,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "I07_LOOT_CUSTODY fallback=on relog=true armor=backpack filtered=corpse stacked=retained",
     );
 
+    // Manual click bypasses the active Accept filter and targets only this corpse.
     capture
-        .probe(
-            &mut fresh,
-            10,
-            QuickLootRequest {
-                filter_mode: Some(QuickLootFilterMode::Skip),
-                ..request(QuickLootAction::FilterSelect)
-            },
-            &[],
-        )
-        .await?;
-    require_filters(&mut database, character, false, &expected_filters).await?;
-    capture
-        .probe(&mut fresh, 11, click, &[(filtered, true)])
+        .probe(&mut fresh, 10, click, &[(filtered, true)])
         .await?;
     let mut bag_filtered = filtered.clone();
     bag_filtered.slot = expected_backpack
@@ -680,14 +674,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     .await?;
     // Route the otherwise unclassified food to the coin-only pouch with fallback off.
     // Ignoring this assignment would silently move it to the default backpack.
-    let stacked_click = QuickLootRequest {
-        corpse: Some(stacked.as_slice().try_into()?),
-        ..request(QuickLootAction::Click)
-    };
+    capture
+        .probe(
+            &mut fresh,
+            11,
+            QuickLootRequest {
+                filter_mode: Some(QuickLootFilterMode::Skip),
+                ..request(QuickLootAction::FilterSelect)
+            },
+            &[],
+        )
+        .await?;
+    require_filters(&mut database, character, false, &expected_filters).await?;
     let unassigned_pouch = route(None, QuickLootRecipient::GoldPouch, Some(pouch), false);
     capture.probe(&mut fresh, 12, unassigned_pouch, &[]).await?;
     capture
-        .probe(&mut fresh, 13, stacked_click, &[(other, false)])
+        .probe(
+            &mut fresh,
+            13,
+            request(QuickLootAction::LootAll),
+            &[(other, false)],
+        )
         .await?;
     require_placements(
         &mut database,
@@ -707,7 +714,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     .await?;
     capture.probe(&mut fresh, 14, unassigned, &[]).await?;
     capture
-        .probe(&mut fresh, 15, stacked_click, &[(other, true)])
+        .probe(
+            &mut fresh,
+            15,
+            request(QuickLootAction::LootAll),
+            &[(other, true)],
+        )
         .await?;
     let mut bag_other = other.clone();
     bag_other.slot = expected_backpack
@@ -739,7 +751,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     write_capture(
         &capture_dir.join("i07-expected.txt"),
         &serde_json::to_vec(&serde_json::json!({
-            "skip": skip_reference, "accept": accept_reference, "pouch": pouch, "corpse": corpse_id, "stacked": stacked,
+            "skip": skip_reference, "accept": accept_reference, "pouch": pouch, "corpse": corpse_id,
             "coin": coin.item, "armor": armor.item, "filtered": filtered.item, "other": other.item,
         }))?,
     )?;
