@@ -1,8 +1,8 @@
 //! Packet E2E-C11: the concrete C11 player journey derived from the matrix, audit, and the
 //! production Harmony, spell-cast, vocation-choice, and Battle Instinct owners.
 //!
-//! 1. Admit the node-boot character, walk to Oressa, and send `hi`, `monk`, `yes`; require each
-//!    NPC reply to be accepted and the confirmation delta to say `Your vocation is now monk.`.
+//! 1. Follow Crystal 201189f8: Oressa redirects to Manop, four Dawnport shrine USEs
+//!    precede his offer, and his confirmation transfers the level-8 candidate to Blue Valley.
 //! 2. Observe the admitted monk's server-owned vitals and its solo Serene state.
 //! 3. Send five `exori infir pug` builder casts, requiring accepted spell replies, exact mana
 //!    deltas, and Harmony deltas 1 through 5.
@@ -16,14 +16,14 @@
 //!    the Monk-only builder again; require its reply, mana delta, Harmony delta, and Serene state.
 
 use super::full_row_c01::admission_error;
-use super::full_row_p20::{approach_npc, talk};
 use super::*;
-use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_dev_client::DevClientSession;
+use oteryn_protocol_oteryn::world_object::UseDisposition;
 use std::collections::BTreeSet;
 
 const ORESSA_PREPARATION: character_prep::Seeded = character_prep::Seeded {
     profile: "c11-unassigned",
-    reason: "C11 tests Oressa’s vocation choice and Harmony after reaching level 8.",
+    reason: "C11 tests Manop’s vocation transfer and Harmony after reaching level 8.",
 };
 const KNIGHT_PREPARATION: character_prep::Seeded = character_prep::Seeded {
     profile: "c11-knight",
@@ -94,21 +94,32 @@ impl Row {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    character_prep::declare_seeded("C11", "unassigned-level-8,premium-knight,wheel-fee-gold", "Oressa choice and Wheel mechanics");
+    character_prep::declare_seeded(
+        "C11",
+        "unassigned-level-8,premium-knight,wheel-fee-gold",
+        "Manop transfer and Wheel mechanics",
+    );
     let mut row = Row::new();
     let terminal = match verdict::indexed_timeout(
-        Duration::from_secs(300), verdict::observe(async {
+        Duration::from_secs(300),
+        verdict::observe(async {
             if let Err(error) = knight_journey(&mut row, clients).await {
                 verdict::record_error(error.as_ref());
                 row.fail("battle-instinct-snapshot", error);
             }
             journey(&mut row, clients).await
         }),
-    ).await {
+    )
+    .await
+    {
         Ok(Ok(())) => None,
         Ok(Err(error)) => {
             let detail = error.to_string();
-            Some(if detail.starts_with("step=") { detail } else { format!("step=journey observed={detail}") })
+            Some(if detail.starts_with("step=") {
+                detail
+            } else {
+                format!("step=journey observed={detail}")
+            })
         }
         Err(_) => Some("step=journey observed=timeout".into()),
     };
@@ -125,36 +136,34 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let dedicated = character_prep::dedicated_named_character(clients, "NODE_BOOT_C11_UNASSIGNED_ACCOUNT", Some("Oressa Candidate")).await?;
+    let dedicated = character_prep::dedicated_named_character(
+        clients,
+        "NODE_BOOT_C11_UNASSIGNED_ACCOUNT",
+        Some("Oressa Candidate"),
+    )
+    .await?;
     let clients = &dedicated.clients(clients);
-    let mut client = ORESSA_PREPARATION.connect(clients, 0xcb, 0)
+    let mut client = ORESSA_PREPARATION
+        .connect(clients, 0xcb, 0)
         .await
         .map_err(|error| admission_error("initial-admission", error))?;
     let (vocation, level) = admitted_vocation(&mut client).await?;
     if monk_path(vocation, level) != Some(false) || level != 8 {
         return Err(format!("Oressa candidate must first admit unassigned at level 8; observed vocation={vocation} level={level}").into());
     }
-    match monk_path(vocation, level) {
-        Some(false) => {
-            let town = tile(client.world_spatial().actor_position)?;
-            choose_monk(&mut client, world, &bytes).await
-                .map_err(|error| verdict::context(format!("step=player-monk-choice observed={error}"), error))?;
-            let (chosen, chosen_level) = admitted_vocation(&mut client).await?;
-            if monk_path(chosen, chosen_level) != Some(true) || chosen_level != level {
-                return Err(format!("Oressa confirmation did not persist Monk; observed vocation={chosen}").into());
-            }
-            row.pass("player-monk-choice", "Oressa-confirmed");
-            let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == town)
-                .ok_or("no player walk route from Oressa back to the initial admission tile")?;
-            walk(&mut client, world, &path).await?;
-        }
-        Some(true) => row.fail("player-monk-choice", "already-Monk; need=first-vocation-transition; continuing Monk gameplay"),
-        None => {
-            row.fail("player-monk-choice", format!("vocation-id={vocation} level={level}; need=unassigned-level-8-character-for-Oressa-or-admitted-Monk-for-Harmony"));
-            logout(&mut client, world).await?;
-            return Ok(());
-        }
+    choose_monk(&mut client, world, &metadata.npcs)
+        .await
+        .map_err(|error| {
+            verdict::context(format!("step=player-monk-choice observed={error}"), error)
+        })?;
+    let (chosen, chosen_level) = admitted_vocation(&mut client).await?;
+    if monk_path(chosen, chosen_level) != Some(true) || chosen_level < level {
+        return Err(format!(
+            "Manop confirmation did not install Monk: vocation={chosen} level={chosen_level}"
+        )
+        .into());
     }
+    row.pass("player-monk-choice", "Manop-confirmed-at-Blue-Valley");
 
     if client.actor_vitals().is_some_and(|v| v.serene) {
         row.pass("solo-serene", client.actor_vitals());
@@ -428,70 +437,222 @@ async fn wheel_command(client: &mut DevClientSession, request: &oteryn_protocol_
     wheel::decode_wheel_reply(&reply.payload).map_err(|error| format!("Wheel reply: {error:?}").into())
 }
 
-async fn choose_monk(
+// Search the served production graph. Dawnport can lie outside the shared town route radius.
+async fn walk_to(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    bytes: &[u8],
+    label: &str,
+    goal: impl Fn(TilePos) -> bool,
 ) -> TestResult {
-    use oteryn_dev_client::client_runtime::npc_shop;
-    use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
-    let metadata = oteryn_world_bundle::bundle::visit(bytes, |_, _| Ok(()))?;
-    let npc = metadata
-        .npcs
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = find_route(from, goal, |at, direction| {
+        destination(world, at, direction)
+    })
+    .map_err(|visited| {
+        format!("no legal STEP route to {label} from {from:?}; visited={visited}")
+    })?;
+    for direction in path {
+        let before = tile(client.world_spatial().actor_position)?;
+        let expected =
+            destination(world, before, direction).ok_or("C11 route landing disappeared")?;
+        let reply = client.step(direction).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if reply.status != CommandStatus::Accepted
+            || reply.disposition != StepDisposition::Moved
+            || actual != expected
+        {
+            return Err(format!("STEP to {label}: from={before:?} expected={expected:?} actual={actual:?} disposition={:?}", reply.disposition).into());
+        }
+        verdict::Harness::global().progress("C11 walk");
+        if reply.step_wait_ms != 0 {
+            client.service_liveness(Duration::from_millis(u64::from(reply.step_wait_ms))).await?;
+        }
+        client.take_events();
+    }
+    Ok(())
+}
+
+async fn approach_npc(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+    key: &str,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    let npc = npcs
         .npcs
         .iter()
-        .find(|n| n.key == "oteryn:npc.oressa")
-        .ok_or("Oressa absent from served NPC table; need=reachable-oteryn:npc.oressa-placement")?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        .find(|npc| npc.key == key)
+        .ok_or_else(|| format!("served NPC table lacks {key}"))?;
+    walk_to(client, world, key, |at| {
         npc.placements
             .iter()
             .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
     })
-    .ok_or("no player walk route to Oressa")?;
-    walk(client, world, &path).await?;
+    .await?;
     let basis = spatial_basis::current(client)?;
-    let actor = client
+    let at = tile(client.world_spatial().actor_position)?;
+    client
         .world_entities()
         .and_then(|entities| {
-            entities.iter().find(|e| {
-                e.kind == oteryn_dev_client::EntityKind::Npc
+            entities.iter().find(|entry| {
+                entry.kind == oteryn_dev_client::EntityKind::Npc
                     && npc.placements.iter().any(|p| {
-                        e.position.x == i32::from(p.x)
-                            && e.position.y == i32::from(p.y)
-                            && e.position.floor == basis.floor(p.floor)
+                        p.floor == at.floor
+                            && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3
+                            && entry.position
+                                == basis.position(TilePos {
+                                    x: p.x,
+                                    y: p.y,
+                                    floor: p.floor,
+                                })
                     })
             })
         })
-        .map(|e| e.entity)
-        .ok_or("Oressa not visible")?;
-    for text in ["hi", "monk", "yes"] {
-        client.take_events();
-        let disposition = npc_shop::talk(
-            client.session_mut(),
-            &NpcTalkIntent {
-                npc_actor: actor,
-                text: text.into(),
-            },
+        .map(|entry| entry.entity)
+        .ok_or_else(|| format!("{key} was not visible at its served placement").into())
+}
+
+async fn talk(
+    client: &mut DevClientSession,
+    npc: oteryn_dev_client::EntityRef,
+    text: &str,
+) -> TestResult<Vec<String>> {
+    use oteryn_protocol_oteryn::npc_service as wire;
+    let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
+        npc_actor: npc,
+        text: text.into(),
+    })
+    .map_err(|error| format!("NPC {text} encode: {error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_NPC_SERVICE_V1,
+            wire::COMMAND_TYPE_NPC_TALK_INTENT,
+            &payload,
         )
         .await?;
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
-        let mut lines = Vec::new();
-        while lines.is_empty() && tokio::time::Instant::now() < deadline {
-            client.service_liveness(Duration::from_millis(20)).await?;
-            for event in client.take_events() {
-                if let SessionEvent::NpcConversation(delta) = event {
-                    lines.extend(delta.value.lines);
-                }
-            }
+    let disposition = wire::decode_npc_intent_result(&reply.payload)
+        .map_err(|error| format!("NPC {text} decode: {error:?}"))?;
+    if reply.status != CommandStatus::Accepted || disposition != wire::NpcIntentDisposition::Ok {
+        return Err(format!(
+            "NPC {text} status={:?} disposition={disposition:?}",
+            reply.status
+        )
+        .into());
+    }
+    loop {
+        let delta = client
+            .session_mut()
+            .read_gated_delta(wire::STATE_DOMAIN_NPC_CONVERSATION, 1)
+            .await?;
+        if delta.server_sequence <= reply.server_sequence {
+            continue;
         }
-        if disposition != NpcIntentDisposition::Ok
-            || (text == "yes"
-                && !lines
-                    .iter()
-                    .any(|line| line == "Your vocation is now monk."))
-        {
-            return Err(format!("player command={text} disposition={disposition:?} replies={lines:?}; need=unassigned-level-8-character-and-confirmed-Oressa-Monk-offer").into());
+        let conversation = wire::decode_npc_conversation(&delta.payload)
+            .map_err(|error| format!("NPC {text} conversation: {error:?}"))?;
+        if conversation.open.map(|(actor, _)| actor) != Some(npc) {
+            return Err(format!("NPC {text} conversation belongs to another actor").into());
         }
+        return Ok(conversation.lines);
+    }
+}
+
+async fn honour_shrine(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    action: u16,
+) -> TestResult {
+    use crate::map::view::{MapFacts, placement_key};
+    let mut matches = world.base().tiles().flat_map(|(floor, x, y, view)| {
+        let at = TilePos { x, y, floor };
+        let count = view.depths().iter().filter(|depth| **depth == 0).count();
+        (0..count).filter_map(move |ordinal| {
+            let key = placement_key(at, u8::try_from(ordinal).ok()?)?;
+            world
+                .facts()
+                .quest_callback_matches(key, None, Some(action), None)
+                .then_some((at, key))
+        })
+    });
+    let (shrine, key) = matches
+        .next()
+        .ok_or_else(|| format!("served Dawnport shrine action {action} is missing"))?;
+    if matches.next().is_some() {
+        return Err(format!("Dawnport shrine action {action} has ambiguous placements").into());
+    }
+    walk_to(client, world, "Dawnport shrine", |at| {
+        at.floor == shrine.floor
+            && at != shrine
+            && at.x.abs_diff(shrine.x).max(at.y.abs_diff(shrine.y)) <= 1
+    })
+    .await?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let reply = client
+        .session_mut()
+        .use_object(&placement, world.facts().object_revision(key))
+        .await?;
+    if reply.status != CommandStatus::Accepted || reply.disposition != UseDisposition::Committed {
+        return Err(format!("Dawnport shrine action {action} USE returned {reply:?}").into());
+    }
+    evidence(&format!("C11_SHRINE action={action} disposition=Committed"));
+    Ok(())
+}
+
+async fn choose_monk(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult {
+    const MANOP: &str = "oteryn:npc.ambassador_manop";
+    let oressa = approach_npc(client, world, npcs, "oteryn:npc.oressa").await?;
+    talk(client, oressa, "hi").await?;
+    let redirect = talk(client, oressa, "monk").await?;
+    if redirect != ["If you are interested in becoming a monk, please speak to Ambassador Manop."] {
+        return Err(format!("BLOCKED-SERVER crates/gameplay/npc/src/vocation_choice.rs:207 Oressa redirect observed={redirect:?}").into());
+    }
+    let manop = approach_npc(client, world, npcs, MANOP).await?;
+    talk(client, manop, "hi").await?;
+    talk(client, manop, "invitation").await?;
+    talk(client, manop, "yes").await?;
+    let before = talk(client, manop, "seeker").await?;
+    if before
+        != [
+            "Look for one of our shrines around the outpost and return to me after you have honoured the Merudri.",
+        ]
+    {
+        return Err(format!("BLOCKED-SERVER crates/gameplay/dispatch/src/gameplay_transport/npc_command/monk.rs:23 Manop pre-shrine response={before:?}").into());
+    }
+    for action in 7101..=7104 {
+        honour_shrine(client, world, action).await?;
+    }
+    let manop = approach_npc(client, world, npcs, MANOP).await?;
+    talk(client, manop, "hi").await?;
+    let offer = talk(client, manop, "seeker").await?;
+    if !offer.iter().any(|line| {
+        line == "If you accept, I will send you to our temple in the Blue Valley as a MONK."
+    }) {
+        return Err(format!("BLOCKED-SERVER crates/gameplay/dispatch/src/gameplay_transport/npc_command/monk.rs:23 Manop transfer offer={offer:?}").into());
+    }
+    let confirmation = talk(client, manop, "yes").await?;
+    if confirmation
+        != ["You are now a pilgrim on the Three-Fold Path. Welcome to the Blue Valley, Seeker."]
+    {
+        return Err(format!("BLOCKED-SERVER crates/gameplay/dispatch/src/gameplay_transport/npc_command/monk.rs:23 Manop transfer confirmation={confirmation:?}").into());
+    }
+    let expected = ActorPosition {
+        x: 33614,
+        y: 31494,
+        floor: 7,
+    };
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+    while client.world_spatial().actor_position != expected
+        && tokio::time::Instant::now() < deadline
+    {
+        client.service_liveness(Duration::from_millis(20)).await?;
+    }
+    if client.world_spatial().actor_position != expected {
+        return Err(format!("BLOCKED-SERVER crates/gameplay/dispatch/src/gameplay_transport/npc_command/monk.rs:23 Manop transfer landed at {:?}", client.world_spatial().actor_position).into());
     }
     Ok(())
 }
