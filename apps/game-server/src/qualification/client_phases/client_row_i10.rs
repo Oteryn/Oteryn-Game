@@ -165,39 +165,13 @@ async fn transfer(client: &mut DevClientSession, key: &str, exit: bool) -> TestR
 
 async fn enter_house(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
     let mut client = connect_world(clients, 0xb3).await?;
-    for attempt in 1..=3 {
-        if tile(client.world_spatial().actor_position)? != ENTRANCE {
-            return Err("I10 fresh admission did not retain the House entrance".into());
-        }
-        let source = client.join_snapshot().game_session_id;
-        match transfer(&mut client, HOUSE, false).await {
-            Ok(()) => return Ok(client),
-            Err(error)
-                if attempt < 3
-                    && matches!(
-                        error.downcast_ref(),
-                        Some(oteryn_dev_client::SessionError::Io(_))
-                    ) =>
-            {
-                drop(client);
-                wait_character_released(clients, 1).await?;
-                let mut db = sqlx::PgConnection::connect(clients.url).await?;
-                let recorded: bool = sqlx::query_scalar(
-                    "SELECT EXISTS (SELECT 1 FROM game_house_scope_handoffs
-                     WHERE source_game_session_id=encode($1,'hex')::uuid)",
-                )
-                .bind(source.as_bytes().as_slice())
-                .fetch_one(&mut db)
-                .await?;
-                if recorded {
-                    return Err("I10 lost the House entry reply after a recorded handoff".into());
-                }
-                client = connect_world(clients, 0xb3).await?;
-            }
-            Err(error) => return Err(verdict::context("I10 enter House".to_owned(), error)),
-        }
+    if tile(client.world_spatial().actor_position)? != ENTRANCE {
+        return Err("I10 fresh admission did not retain the House entrance".into());
     }
-    Err("I10 House entry retry bound exhausted".into())
+    transfer(&mut client, HOUSE, false)
+        .await
+        .map_err(|error| verdict::context(format!("I10 enter House: {error}"), error))?;
+    Ok(client)
 }
 
 async fn journey(clients: &SeamClients<'_>, directory: &Path) -> TestResult {
