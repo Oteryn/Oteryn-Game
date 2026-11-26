@@ -231,6 +231,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if client.join_snapshot().game_session_id == session || durable != saved {
         return Err(format!("fresh Wheel differs from saved allocation: {durable:?}").into());
     }
+    // The last session's logout releases the disposable Premium view. Prepare
+    // the fresh session only after proving the saved Wheel survived admission.
+    character_prep::grant_premium(&client).await?;
     let (_, restored) = send(
         &mut client,
         request(1, v7(0xad, 2), saved.revision, initial.points),
