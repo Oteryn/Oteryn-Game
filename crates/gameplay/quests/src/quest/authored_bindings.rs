@@ -620,6 +620,9 @@ mod encounter_source_tests;
 #[cfg(test)]
 mod occurrence_tests;
 
+#[cfg(test)]
+mod qbind_budget_tests;
+
 impl Trigger {
     fn reward_callbacks(&self) -> impl Iterator<Item = &RewardCallback> {
         let (first, others): (Option<&RewardCallback>, &[RewardCallback]) = match self {

@@ -1,0 +1,104 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.gnomystery",
+      "keywords": [
+        "talk"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/too-hot/stage",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line_complete",
+          "minimum": 2,
+          "maximum": 2147483647
+        }
+      ],
+      "reply": [
+        "I could use your help. Would you do me a favour?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomystery",
+      "keywords": [
+        "favour"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/too-hot/stage",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line_complete",
+          "minimum": 2,
+          "maximum": 2147483647
+        }
+      ],
+      "reply": [
+        "We think the crypt hides an entrance. Will you ask its keeper to let you investigate?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.brodraem_orcbeard",
+      "keywords": [
+        "hi",
+        "hello"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Welcome to my workshop."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.brodraem_orcbeard",
+      "keywords": [
+        "business"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/too-hot/stage",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "reply": [
+        "I make coffins and sarcophagi, though recent incidents have kept me from my work."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.brodraem_orcbeard",
+      "keywords": [
+        "incidents"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/too-hot/stage",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "reply": [
+        "The sarcophagi are filthy, floor tiles are broken and the columns are crumbling. Will you help me restore the crypt?"
+      ]
+    }
+  ]
+}

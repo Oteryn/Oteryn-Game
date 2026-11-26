@@ -10,6 +10,22 @@ CATALOGUE_REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
 CATALOGUE_INPUT = CATALOGUE_REVISION + ':' + MOUNTS_XML
 
 
+def append_pegasus_feather(packet):
+    # Crystal declares Pegasus in mounts.xml but has no feather action. The retained
+    # TibiaWiki item revision 1194180 describes self-use and achievement 552 records it.
+    donor = 'https://tibia.fandom.com/wiki/Special:PermanentLink/1194180'
+    grant = 'oteryn:item-grant.mount.227'
+    packet['grants'].append({'key': grant, 'kind': 'mount', 'mount_id': 227,
+                             'look_type': 1730, 'donor': donor})
+    packet['rules'].append({'item_id': 48424, 'donor': donor, 'mode': 'direct',
+                            'premium': False, 'choices': [{
+                                'grants': [grant], 'owned': grant, 'required': [], 'cues': [],
+                                'achievements': ['oteryn:achievement/i_wanna_fly_away'],
+                            }]})
+    packet['grants'].sort(key=lambda row: row['key'])
+    packet['rules'].sort(key=lambda row: row['item_id'])
+
+
 def read_catalogue_xml(corpus, manifest):
     # The 201189f8 Git tree names the same blob as the retained Crystal Summer XML.
     row = next(row for row in manifest['files'] if row['path'] == MOUNTS_XML
@@ -84,4 +100,20 @@ def populate(root, inputs, looks, source, item_packet):
     catalogue_rows = {row.get('name'): row.attrib for row in ET.fromstring(raw)}
     for name in ('Jaracal', 'Radiant Nimbus'):
         mounts.append(definition(catalogue_rows[name], identities.get(name_key(name)), catalogue_source))
+    # Crystal 201189f data/scripts/lib/task_board_shop.lua:95-126. The existing
+    # shop owner resolves the look in the admitted catalogue before it spends points.
+    for offer, mount_id, look, slug in (
+        (6, 247, 1908, 'tidal_seawater_predator'),
+        (7, 248, 1909, 'ashen_coast_predator'),
+        (8, 249, 1910, 'crimson_bay_predator'),
+        (9, 163, 1281, 'antelope'),
+    ):
+        key = f'oteryn:content.mount.{slug}'
+        if int(by_id[mount_id]['clientid']) != look or [
+            row['key'] for row in mounts if row['look']['id'] == look
+        ] != [key] or admitted[mount_id] != key:
+            raise ValueError('Task Board mount look drift')
+        mappings.append({'grant_key': f'oteryn:taskboard/shop/offer-{offer}',
+                         'target': {'kind': 'Mount', 'mount_key': admitted[mount_id]},
+                         'compatible_provenance': ['task-board-shop-v1']})
     return sorted(mounts, key=lambda r: r['key']), mappings

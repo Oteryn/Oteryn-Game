@@ -151,7 +151,7 @@ where
         .enter_input(session.admitted.game_session_id)
         .await;
     let guard_deferred =
-        input_permit.is_some() && !guards(authority, session.admitted, command).await?;
+        input_permit.is_some() && !guards(authority, &mut session.admitted, command).await?;
     if guard_deferred && !session.reconcile_original_bank {
         drop(input_permit.take());
     }
@@ -496,13 +496,23 @@ where
 /// Keep holder contention distinct from lost authority in both command loops.
 pub(super) async fn guards<A: FreshAdmissionAuthority>(
     authority: &A,
-    admitted: AdmittedSession,
+    admitted: &mut AdmittedSession,
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
 ) -> Result<bool, ServeEnd> {
-    let failure = match authority.house_transfer_input(admitted).await {
+    let house_input = match admitted.continuity.house_input_pending {
+        Some(false) => Ok(()),
+        pending => {
+            let result = authority.house_transfer_input(*admitted).await;
+            if pending == Some(true) && result.is_ok() {
+                admitted.continuity.house_input_pending = Some(false);
+            }
+            result
+        }
+    };
+    let failure = match house_input {
         Err(error) => Some(("house_transfer_input", error)),
         Ok(()) => authority
-            .activity_transfer_input(admitted)
+            .activity_transfer_input(*admitted)
             .await
             .err()
             .map(|error| ("activity_transfer_input", error)),

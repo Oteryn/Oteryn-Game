@@ -1,5 +1,5 @@
 //! S-5 shared offer constraints, not a price-list producer or a full schema validator.
-use super::{CATALOGUE, rules};
+use super::{CATALOGUE, COSMETIC_CATALOGUE, HIRELING_CATALOGUE, rules};
 use serde::Deserialize;
 use std::collections::BTreeSet;
 
@@ -48,7 +48,12 @@ fn conforming_offers<'a>(
 }
 
 #[derive(Deserialize)]
+struct PlatformUnit {
+    unit_kind: String,
+}
+#[derive(Deserialize)]
 struct PlatformOffer {
+    units: Vec<PlatformUnit>,
     offer_key: String,
     currency: String,
     unit_price: String,
@@ -79,6 +84,49 @@ fn store_catalogue_offers_conform_to_platform_s5_price_list() -> TestResult {
         s5_currency(offer.currency),
         Some(offer.price_coins),
     ))));
+    Ok(())
+}
+
+#[test]
+fn active_platform_import_covers_every_dispatch_quote() -> TestResult {
+    let bytes = include_bytes!("../../../../../../rulesets/economy/store/platform-catalogue.json");
+    let active: PlatformPriceList = serde_json::from_slice(bytes)?;
+    let revision = super::active_catalogue_revision();
+    let mut quoted = BTreeSet::new();
+    for catalogue in [
+        &CATALOGUE,
+        &COSMETIC_CATALOGUE,
+        &HIRELING_CATALOGUE,
+        &super::BLESSING_CATALOGUE,
+    ] {
+        let catalogue = catalogue.as_ref().ok_or("dispatch catalogue")?;
+        assert_eq!(catalogue.rules.revision(), revision);
+        for offer in catalogue.entries() {
+            let imported = active
+                .offers
+                .iter()
+                .find(|row| row.offer_key == offer.key)
+                .ok_or_else(|| format!("Platform import is missing {}", offer.key))?;
+            assert_eq!(imported.currency, "COINS");
+            assert_eq!(imported.unit_price.parse::<u64>()?, offer.price_coins);
+            let [unit] = imported.units.as_slice() else {
+                return Err(format!("expected one imported unit for {}", offer.key).into());
+            };
+            assert_eq!(
+                super::platform_unit_kind(revision, &offer.key),
+                Some(unit.unit_kind.as_str())
+            );
+            assert!(quoted.insert(&offer.key));
+        }
+    }
+    let game_offers = active.offers.iter().filter(|offer| {
+        assert!(!offer.units.is_empty());
+        !offer
+            .units
+            .iter()
+            .all(|unit| unit.unit_kind == "PREMIUM_TIME")
+    });
+    assert_eq!(quoted.len(), game_offers.count());
     Ok(())
 }
 
@@ -183,4 +231,117 @@ fn platform_price_list_checker_rejects_invalid_offers() -> TestResult {
         Some(price)
     ))));
     Ok(())
+}
+
+#[test]
+fn retained_runtime_cosmetics_use_the_platform_unit_kind() -> TestResult {
+    use super::rules::DeliveryKind;
+
+    let mut legacy_cosmetics = 0;
+    let mut imported_cosmetics = 0;
+    for catalogue in super::PREDECESSOR_CATALOGUES.iter().flatten() {
+        let revision = catalogue.rules.revision();
+        // Retained Runtime cosmetics CI finding: legacy confirmations were
+        // sent as ITEM, while retained Platform imports bind COSMETIC.
+        let kind = if super::PLATFORM_PREDECESSORS
+            .iter()
+            .any(|(old, _)| old == revision)
+        {
+            "COSMETIC"
+        } else {
+            "ITEM"
+        };
+        for offer in catalogue.entries() {
+            if matches!(&offer.delivery, DeliveryKind::Unlock { unlock_key }
+                if unlock_key.starts_with("oteryn:outfit.") || unlock_key.starts_with("oteryn:mount."))
+            {
+                if kind == "COSMETIC" {
+                    imported_cosmetics += 1;
+                } else {
+                    legacy_cosmetics += 1;
+                }
+                assert_eq!(
+                    super::platform_unit_kind(revision, &offer.key),
+                    Some(kind),
+                    "{}",
+                    offer.key
+                );
+            }
+        }
+    }
+    assert!(legacy_cosmetics > 0);
+    assert!(imported_cosmetics > 0);
+    Ok(())
+}
+
+#[test]
+fn retained_platform_imports_reconstruct_the_original_purchase_bindings() -> TestResult {
+    use super::{PLATFORM_PREDECESSORS_JSON, PREDECESSOR_CATALOGUES, PurchaseRequest};
+
+    let active = CATALOGUE.as_ref().ok_or("active catalogue")?;
+    let snapshots: Vec<String> = serde_json::from_slice(PLATFORM_PREDECESSORS_JSON)?;
+    assert!(!snapshots.is_empty());
+    for snapshot in snapshots {
+        let revision = super::platform_revision(snapshot.as_bytes());
+        let original: PlatformPriceList = serde_json::from_str(&snapshot)?;
+        let archived = PREDECESSOR_CATALOGUES
+            .iter()
+            .flatten()
+            .find(|old| old.rules.revision() == revision)
+            .ok_or("archived catalogue")?;
+        let (sword, quote) = original
+            .offers
+            .iter()
+            .find_map(|offer| {
+                let active_quote = rules::build_quote(
+                    &active.rules,
+                    &offer.offer_key,
+                    &rules::CharacterStoreView::default(),
+                )
+                .ok()?;
+                (offer.unit_price.parse::<u64>().ok()? == active_quote.price)
+                    .then_some((offer, active_quote))
+            })
+            .ok_or("shared active offer")?;
+        let account = crate::domain::AccountId::from_bytes(uuid(1))?;
+        let character = crate::domain::CharacterId::from_bytes(uuid(2))?;
+        let old_id = rules::PurchaseRequestId::from_bytes(uuid(3)).map_err(|_| "original ID")?;
+        let confirmed = rules::PurchaseStoreOffer::from_quote(
+            rules::PurchaseRequestId::from_bytes(uuid(4)).map_err(|_| "retry ID")?,
+            account,
+            character,
+            quote,
+        );
+        let original = rules::PurchaseStoreOffer {
+            purchase_request_id: old_id,
+            account_id: account,
+            character_id: character,
+            offer_key: sword.offer_key.clone(),
+            catalog_revision: revision.clone(),
+            price: sword.unit_price.parse()?,
+            currency: rules::CurrencyKind::TibiaCoin,
+        };
+        let binding_digest = PurchaseRequest {
+            purchase_request_id: *old_id.as_bytes(),
+            account_id: *account.as_bytes(),
+            character_id: *character.as_bytes(),
+            binding: original.binding_digest().into(),
+        }
+        .binding_digest();
+        let pending = crate::durability::store::PendingStorePurchase {
+            purchase_id: *old_id.as_bytes(),
+            character_id: *character.as_bytes(),
+            world_id: uuid(5),
+            binding_digest: binding_digest.to_vec(),
+        };
+        assert!(archived.rules.offer(&sword.offer_key).is_some());
+        let (_, retained) =
+            super::retained_binding(active, &confirmed, &pending).ok_or("original binding")?;
+        assert_eq!(retained.binding_digest(), original.binding_digest());
+    }
+    Ok(())
+}
+
+fn uuid(suffix: u8) -> [u8; 16] {
+    [0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, suffix]
 }

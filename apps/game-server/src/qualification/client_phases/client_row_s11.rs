@@ -46,9 +46,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         snapshot_id: 0,
     };
     let accepted = exchange(&mut client, query).await?;
-    if accepted.status != CommandStatus::Accepted {
-        return Err(format!("step=query observed={accepted:?}").into());
-    }
+    require_mechanic_acceptance(accepted.status, "highscore-query")?;
     let page = wire::decode_highscores_result(&accepted.payload)
         .map_err(|error| format!("step=decode observed={error:?}"))?;
     if page.category != 1
@@ -93,7 +91,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     ));
     capture("s11-page1.bin", &accepted.payload)?;
     capture("s11-expected.txt", expected.as_bytes())?;
-    let _ = client.session_mut().logout().await;
+    let (logout, observed, _, _) = logout_once(&mut client).await?;
+    if logout != Some(LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={observed}").into());
+    }
     Ok(format!(
         "snapshot={} rows={} own={}",
         page.snapshot_id,

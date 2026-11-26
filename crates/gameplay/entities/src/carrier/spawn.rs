@@ -172,6 +172,24 @@ impl RespawnSchedule {
         due
     }
 
+    /// Ends this chain and starts a fresh occurrence after the point's full delay.
+    pub(super) fn reschedule_skipped(
+        &mut self,
+        point: SpawnPoint,
+        timing: PointTiming,
+        now: u64,
+    ) -> Result<RespawnOutcome, SpawnScheduleError> {
+        let pending = self.due_pending(point, now)?;
+        let successor_due_micros = after(now, timing.respawn_delay_micros)?;
+        pending.due_micros = successor_due_micros;
+        pending.attempt = 0;
+        pending.successor = pending.successor.saturating_add(1);
+        pending.step = RespawnStep::Due;
+        Ok(RespawnOutcome::Skipped {
+            successor_due_micros,
+        })
+    }
+
     /// Runs a due `Due` or `Retry` step: a blockable `Due` is blocked or proceeds immediately;
     /// all other steps warn.
     pub fn run_warning_step(
@@ -254,14 +272,7 @@ impl RespawnSchedule {
                 retry_due_micros,
             });
         }
-        let successor_due_micros = after(now, timing.respawn_delay_micros)?;
-        pending.attempt = 0;
-        pending.successor = pending.successor.saturating_add(1);
-        pending.due_micros = successor_due_micros;
-        pending.step = RespawnStep::Due;
-        Ok(RespawnOutcome::Skipped {
-            successor_due_micros,
-        })
+        self.reschedule_skipped(point, timing, now)
     }
 
     fn due_pending(
