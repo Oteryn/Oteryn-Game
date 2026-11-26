@@ -4265,8 +4265,16 @@ pub(super) async fn capture_animate_dead(
     let reference = provisioning::item_reference(&provisioning::item_index()?, 3203)?;
     let before = rune_quantity(&mut caster, reference)?;
     character_prep::grant_item(&caster, 3203, 1).await?;
-    character_prep::reload(&mut caster, clients).await?;
-    if before.checked_add(1) != Some(rune_quantity(&mut caster, reference)?) {
+    let prep_session = caster.join_snapshot().game_session_id;
+    let prep_logout = caster.session_mut().logout().await?;
+    if prep_logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C16c preparation first logout refused: {prep_logout:?}").into());
+    }
+    drop(caster);
+    let mut caster = admit_row(clients, 0xd5, 1).await?;
+    if caster.join_snapshot().game_session_id == prep_session
+        || before.checked_add(1) != Some(rune_quantity(&mut caster, reference)?)
+    {
         return Err("C16c Animate Dead rune grant absent from fresh inventory".into());
     }
 
