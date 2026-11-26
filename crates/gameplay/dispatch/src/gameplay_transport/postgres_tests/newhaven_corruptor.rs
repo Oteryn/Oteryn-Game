@@ -557,6 +557,7 @@ fn scenario(
         let click = QuickLootRequest {
             action: QuickLootAction::Click,
             corpse: Some(visible_corpse.identity),
+            selected_item: None,
             category: None,
             recipient: None,
             recipient_id: None,
