@@ -712,21 +712,33 @@ impl NpcTalkBook {
                 });
                 let greet = match reference.key.as_str() {
                     LUBO => LUBO_GREET,
-                    // Fandom archive: The Paradox Tower Quest/Spoiler.
+                    // TibiaWiki Oldrak transcript, revision 433053.
                     "oteryn:npc.oldrak" => {
-                        "Welcome |PLAYERNAME|! Only rarely I can welcome visitors these days."
+                        "Welcome |PLAYERNAME|! Rarely I can welcome visitors in these days."
                     }
                     // TibiaWiki Briasol and Fandom The Travelling Trader Quest/Spoiler.
                     "oteryn:npc.briasol" => {
                         "Ashari, |PLAYERNAME| and welcome to the Jewel Store of Ab'Dendriel."
                     }
                     "oteryn:npc.snake_eye" => "Hi |PLAYERNAME|. Come in and have a drink.",
-                    // Fandom Wrath of the Emperor Quest/Spoiler, mission 9.
-                    "oteryn:npc.zlak" => {
-                        "Ah, ze human everyone iz talking about. Your victory over ze champion waz quite imprezzive. ... Alzough, for many ziz only provez what a huge zreat you blank-zkinz ztill poze."
-                    }
                     // Fandom The Thieves Guild Quest/Spoiler.
+                    "oteryn:npc.carina" => {
+                        "Welcome, |PLAYERNAME|. I'm looking forward to trade with you."
+                    }
                     "oteryn:npc.dorian" => "Greetings, |PLAYERNAME|!",
+                    "oteryn:npc.herbert" => "At last! The audience arrives!",
+                    // TibiaWiki NPC transcripts, revisions 368606, 435671 and 352590.
+                    "oteryn:npc.chantalle" => "Hello. What brings you here?",
+                    "oteryn:npc.kazzan" => {
+                        "Feel welcome in the lands of the children of the enlightened Daraman, |PLAYERNAME|."
+                    }
+                    "oteryn:npc.one_eyed_joe" => {
+                        "Hello there. I'm sorry, I hardly noticed you. I'm a bit nervous. The spooky sounds down there, you know."
+                    }
+                    // Fandom Venore Daily Tasks Quest/Spoiler.
+                    "oteryn:npc.norman_the_foreman" => {
+                        "Hello friend. You lookin' for a {job}? I could use a hand here."
+                    }
                     // Fandom The Djinn War faction quest spoilers.
                     "oteryn:npc.melchior" => {
                         "Greetings, |PLAYERNAME|. I do not see your face, but I can read a thousand things in your voice!"
@@ -737,6 +749,8 @@ impl NpcTalkBook {
                     "oteryn:npc.umar" => {
                         "Whoa? You know the word! Amazing, |PLAYERNAME|! ... I should go and tell Fa'hradin. ... Well. Why are you here anyway, |PLAYERNAME|?"
                     }
+                    // Black Bert's everyday greeting is still unverified in Global.
+                    "oteryn:npc.black_bert" => &messages.greet,
                     _ => authored_greeting.unwrap_or(&messages.greet),
                 };
                 let keywords = if reference.key == LUBO {
@@ -1419,10 +1433,8 @@ mod tests {
             .map_err(|e| format!("{e:?}"))?;
         let names = [
             "a_prisoner",
-            "black_bert",
             "boozer",
             "bron",
-            "carina",
             "charles",
             "domizian",
             "eroth",
