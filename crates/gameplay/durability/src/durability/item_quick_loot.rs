@@ -319,8 +319,9 @@ impl DurabilityRoot {
                 for corpse in corpses {
                     let corpse_id=uuid_text(corpse.try_get("item_instance_id")?)?;
                     let corpse_cell: [u8;10]=corpse.try_get::<Vec<u8>,_>("spatial_position")?.try_into().map_err(|_| DurabilityError::InvalidStoredState)?;
-                    let entries=sqlx::query("SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref FROM game_item_corpse_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 ORDER BY e.placement_ordinal LIMIT $2 FOR UPDATE OF i")
-                        .bind(corpse_id.as_slice()).bind((MAX_TRANSFERS_PER_COMMAND-result.items.len()) as i64).fetch_all(&mut *tx).await?;
+                    let entries=sqlx::query("SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref FROM game_item_corpse_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 AND ($3::bytea IS NULL OR e.item_instance_id=encode($3,'hex')::uuid) ORDER BY e.placement_ordinal LIMIT $2 FOR UPDATE OF i")
+                        .bind(corpse_id.as_slice()).bind((MAX_TRANSFERS_PER_COMMAND-result.items.len()) as i64)
+                        .bind(request.selected_item.as_ref().map(<[u8;16]>::as_slice)).fetch_all(&mut *tx).await?;
                     let entries: Vec<_> = entries.into_iter().map(|entry| Ok((uuid_text(entry.try_get("item_instance_id")?)?, definition_of(&entry)?))).collect::<LoopResult<_>>()?;
                     let policy_settings = LootSettings { category_targets: settings.category_targets.clone(), unassigned_target: settings.unassigned_target, fallback_to_main: settings.fallback_to_main };
                     let corpse = Corpse { key: corpse_id, distance: 0, age_millis: 0, top_damage_or_party: corpse.try_get("loot_allowed")?, items: entries.iter().map(|(item,definition)| LootItem { key: *item, category: preferred_category(content, definition, |category| settings.category_targets.contains_key(&category)), is_coin: is_loot_coin(definition), allowed_by_filter: if settings.accept_only {settings.accepted_items.contains(&definition.production_key)} else {!settings.skipped_items.contains(&definition.production_key)} }).collect() };
@@ -339,6 +340,11 @@ impl DurabilityRoot {
                         result.items.push(QuickLootItemResult { item, accepted: execution.accepted.iter().any(|m| m.item==item) });
                     }
                     if result.items.len()==MAX_TRANSFERS_PER_COMMAND { break; }
+                }
+                if let Some(item) = request.selected_item
+                    && !result.items.first().is_some_and(|row| row.item == item && row.accepted)
+                {
+                    return refuse(LoopMoveRefusal::Rejected);
                 }
                 wire::encode_quick_loot_result(&result)
                     .map_err(|_| DurabilityError::InvalidStoredState.into())
