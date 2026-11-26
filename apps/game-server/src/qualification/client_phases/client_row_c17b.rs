@@ -1,7 +1,7 @@
 //! Client replay capture for SCENARIO_MATRIX C17b.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
-use oteryn_protocol_oteryn::actor_spell::SpellTarget;
+use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::world_spatial_entities::{
     EntityFields, EntityLights, WorldSpatialEntitiesSnapshot,
     encode_world_spatial_entities_delta_with_fields,
@@ -9,9 +9,6 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
 };
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
-        return;
-    }
     if let Err(error) = verdict::observe(journey(clients)).await {
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C17b.client status=FAIL evidence={error}"
@@ -56,18 +53,20 @@ fn spell_index() -> TestResult<std::num::NonZeroU32> {
         .ok_or_else(|| "C17b.client Invisibility spell absent".into())
 }
 
-fn write_capture(name: &str, bytes: &[u8]) {
-    let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&directory).join(name), bytes) {
-        evidence(&format!(
-            "C17b.client capture write failed file={name} error={error}"
-        ));
-    }
+fn write_capture(directory: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    use std::io::Write;
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(directory.join(name))?
+        .write_all(bytes)?;
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .ok_or("C17b.client capture directory absent")?;
+    let directory = Path::new(&directory);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -77,7 +76,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut caster = connect_character(clients, 0xc1, 1).await?;
+    let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_C17B_ACCOUNT").await?;
+    let caster_clients = fixture.clients(clients);
+    let book = full_row_c17b::spell_book()?;
+    let spell = book.spoken("utana vid").ok_or("C17b.client spell absent")?.spell;
+    let mut caster = full_row_c17b::seeded_caster(&caster_clients, "C17b.client", 0xc1, spell).await?;
     let mut observer = connect_character(clients, 0xc2, 0).await?;
     travel_to_spawn(&mut caster, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let caster_position = tile(caster.world_spatial().actor_position)?;
@@ -115,6 +118,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let cast = caster
         .cast_spell(spell_index()?, SpellTarget::None, false)
         .await?;
+    if cast.status != CommandStatus::Accepted || cast.disposition != SpellCastDisposition::Cast {
+        return Err(format!("C17b.client Invisibility cast refused: {cast:?}").into());
+    }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let removed = loop {
         observer.service_liveness(Duration::from_millis(50)).await?;
@@ -139,9 +145,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &EntityLights::new(),
     )
     .map_err(|error| format!("C17b.client delta encode: {error:?}"))?;
-    write_capture("c17b-snapshot.bin", &snapshot_payload);
-    write_capture("c17b-invisible.bin", &delta_payload);
+    write_capture(directory, "c17b-snapshot.bin", &snapshot_payload)?;
+    write_capture(directory, "c17b-invisible.bin", &delta_payload)?;
     write_capture(
+        directory,
         "c17b-expected.txt",
         format!(
             "{} {} {} {} {}\n",
@@ -156,9 +163,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             caster_ref.generation
         )
         .as_bytes(),
-    );
+    )?;
     evidence(&format!(
-        "SEAM_EVIDENCE e2e_all scenario=C17b.client status=PASS cast_sequence={} leave_sequence={}",
+        "SEAM_EVIDENCE e2e_all scenario=C17b.client status=CAPTURED cast_sequence={} leave_sequence={}",
         cast.result_server_sequence, removed.server_sequence
     ));
     Ok(())

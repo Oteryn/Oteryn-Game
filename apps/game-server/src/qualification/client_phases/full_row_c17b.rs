@@ -90,7 +90,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     row.finish(&result);
 }
 
-fn spell_book() -> TestResult<crate::spell::SpellBook> {
+pub(super) fn spell_book() -> TestResult<crate::spell::SpellBook> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(
         &root.join("content/spells.manifest.json"),
@@ -177,6 +177,27 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+pub(super) async fn seeded_caster(
+    clients: &SeamClients<'_>,
+    row: &str,
+    tag: u8,
+    spell: &crate::spell::SpellDefinition,
+) -> TestResult<DevClientSession> {
+    character_prep::declare_seeded(row, "sorcerer-level-35", "Invisibility cast prerequisites");
+    let mut caster = character_prep::Seeded {
+        profile: "c17b-sorcerer",
+        reason: "Invisibility cast prerequisites",
+    }
+    .connect(clients, tag, 0)
+    .await?;
+    let level = full_e2ef5::prepare_spell_access(&mut caster, spell).await?;
+    let vitals = caster.actor_vitals().ok_or("C17b caster vitals absent")?;
+    if level != 35 || vitals.mana != vitals.max_mana || vitals.max_mana < 440 {
+        return Err(format!("C17b seeded caster has level={level} vitals={vitals:?}").into());
+    }
+    Ok(caster)
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -186,7 +207,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut caster = connect_character(clients, 0xb1, 1).await?;
+    let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_C17B_ACCOUNT").await?;
+    let caster_clients = fixture.clients(clients);
     let book = spell_book()?;
     let spell = book
         .spoken("utana vid")
@@ -195,7 +217,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let crate::spell::ManaCost::Fixed(cost) = spell.mana else {
         return Err("step=cast observed=non-fixed-mana need=assertable-cost".into());
     };
-    full_e2ef5::prepare_spell_access(&mut caster, spell)
+    let mut caster = seeded_caster(&caster_clients, "C17b.full", 0xb1, spell)
         .await
         .map_err(|error| format!("step=invisibility-access spell=utana vid: {error}"))?;
     let mut observer = connect_character(clients, 0xb2, 0).await?;
@@ -276,6 +298,25 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=cast-and-cost observed=status:{:?}/disposition:{:?}/vitals:{:?} need=Cast-and-exact-mana-delta", cast.status, cast.disposition, cast.actor_vitals_delta).into());
     }
     row.pass("cast-and-cost", cast.result_server_sequence)?;
+    let paid = caster
+        .actor_vitals()
+        .copied()
+        .ok_or("step=cooldown observed=vitals-absent")?;
+    let cooldown = caster
+        .cast_spell(spell_index(&book)?, SpellTarget::None, false)
+        .await?;
+    if cooldown.disposition != SpellCastDisposition::CoolingDown
+        || cooldown.actor_vitals_delta.is_some()
+        || caster
+            .actor_vitals()
+            .is_none_or(|v| v.mana != paid.mana || v.soul != paid.soul)
+    {
+        return Err(format!(
+            "step=cooldown-no-cost observed={cooldown:?} need=Cooldown-without-vitals-delta"
+        )
+        .into());
+    }
+    row.pass("cooldown-no-cost", cooldown.result_server_sequence)?;
     let lost_seq = wait_visible(&mut observer, caster_ref, false).await?;
     row.pass(
         "observer-loses-entity",
@@ -305,26 +346,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let paid = caster
         .actor_vitals()
         .copied()
-        .ok_or("step=cooldown observed=vitals-absent")?;
-    let cooldown = caster
-        .cast_spell(spell_index(&book)?, SpellTarget::None, false)
-        .await?;
-    if cooldown.disposition != SpellCastDisposition::CoolingDown
-        || cooldown.actor_vitals_delta.is_some()
-        || caster
-            .actor_vitals()
-            .is_none_or(|v| v.mana != paid.mana || v.soul != paid.soul)
-    {
-        return Err(format!(
-            "step=cooldown-no-cost observed={cooldown:?} need=Cooldown-without-vitals-delta"
-        )
-        .into());
-    }
-    row.pass("cooldown-no-cost", cooldown.result_server_sequence)?;
+        .ok_or("step=fresh-admission-condition observed=vitals-absent")?;
     let session = caster.join_snapshot().game_session_id;
     let position = caster.world_spatial().actor_position;
     logout(&mut caster).await?;
-    caster = connect_character(clients, 0xb3, 1).await?;
+    caster = connect_character(&caster_clients, 0xb3, 0).await?;
     if caster.join_snapshot().game_session_id == session
         || caster.world_spatial().actor_position != position
         || caster
