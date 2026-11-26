@@ -147,7 +147,9 @@ fn damage_sequence(client: &mut DevClientSession, rat: oteryn_dev_client::Entity
         .unwrap_or(0)
 }
 pub(super) async fn wait_visible(
-    client: &mut DevClientSession, target: oteryn_dev_client::EntityRef, expected: bool,
+    client: &mut DevClientSession,
+    target: oteryn_dev_client::EntityRef,
+    expected: bool,
 ) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let mut sequence = 0;
@@ -156,11 +158,17 @@ pub(super) async fn wait_visible(
             if let SessionEvent::WorldSpatialEntities(delta) = event {
                 let matches = if expected {
                     delta.value.enter.iter().any(|entry| entry.entity == target)
-                } else { delta.value.leave.contains(&target) };
-                if matches { sequence = delta.server_sequence; }
+                } else {
+                    delta.value.leave.contains(&target)
+                };
+                if matches {
+                    sequence = delta.server_sequence;
+                }
             }
         }
-        if sequence != 0 && visible(client, target) == expected { return Ok(sequence); }
+        if sequence != 0 && visible(client, target) == expected {
+            return Ok(sequence);
+        }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("C17b missing visibility transition target={target:?} expected={expected} last_sequence={}", client.last_server_sequence()).into());
         }
@@ -384,15 +392,26 @@ impl<'a> Staging<'a> {
         observer: &mut DevClientSession,
         capture: &oteryn_dev_client::native_session::test_support::WireCapture,
     ) -> TestResult {
+        // The road south of the temple is outside the protection zone and away
+        // from wild spawns. The row places its own Rat after both players arrive.
         let caster_site = TilePos {
-            x: 32490,
-            y: 32169,
+            x: 32369,
+            y: 32251,
             floor: -7,
         };
         let observer_site = TilePos {
-            x: 32489,
+            x: 32368,
             ..caster_site
         };
+        for site in [caster_site, observer_site] {
+            let ground = self.world.base().tile(site.x, site.y, site.floor);
+            if !self.world.enterable(site)
+                || !ground.is_some_and(|tile| tile.walkable() && !tile.protection_zone())
+                || self.spawn_cells.contains(&site)
+            {
+                return Err(format!("C17b.client staging tile ineligible: {site:?}").into());
+            }
+        }
         let path = self.path(caster, None, |tile| tile == caster_site)?;
         super::mp::observations::while_servicing_liveness(self.walk(caster, &path), async || {
             capture
@@ -410,6 +429,9 @@ impl<'a> Staging<'a> {
         {
             return Err("C17b.client staging did not land at the fixed adjacent tiles".into());
         }
+        evidence(&format!(
+            "FIXTURE_PLACEMENT C17b.client caster={caster_site:?} observer={observer_site:?}"
+        ));
         Ok(())
     }
 }
@@ -638,12 +660,25 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("Global parity: other players must still see the invisible caster".into());
     }
     row.pass("player-sees-invisible", observer.last_server_sequence())?;
-    use oteryn_protocol_oteryn::{attack::AttackIntentDisposition, presentation::{PresentationEventKind, PresentationValueKind}};
-    let rat_position = caster.world_entities().and_then(|view| view.get(&rat)).ok_or("C17b exact Rat absent before caster attack")?.position;
-    full_e2ef5::with_observer_liveness(&mut observer, full_e2ef5::approach_melee(&mut caster, world, rat_position)).await?;
+    use oteryn_protocol_oteryn::{
+        attack::AttackIntentDisposition,
+        presentation::{PresentationEventKind, PresentationValueKind},
+    };
+    let rat_position = caster
+        .world_entities()
+        .and_then(|view| view.get(&rat))
+        .ok_or("C17b exact Rat absent before caster attack")?
+        .position;
+    full_e2ef5::with_observer_liveness(
+        &mut observer,
+        full_e2ef5::approach_melee(&mut caster, world, rat_position),
+    )
+    .await?;
     caster.take_events();
     let selected = caster.session_mut().attack_target(Some(&rat)).await?;
-    if selected.disposition != AttackIntentDisposition::Ok { return Err(format!("C17b Rat target refused: {selected:?}").into()); }
+    if selected.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("C17b Rat target refused: {selected:?}").into());
+    }
     let damage = full_e2ef5::with_observer_liveness(&mut observer, async {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
         loop {
@@ -661,7 +696,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }).await?;
     row.pass("caster-damages-rat", damage)?;
     let clear = caster.session_mut().attack_target(None).await?;
-    if clear.disposition != AttackIntentDisposition::Ok || caster.session_mut().combat_state().is_none_or(|state| state.target.is_some()) {
+    if clear.disposition != AttackIntentDisposition::Ok
+        || caster
+            .session_mut()
+            .combat_state()
+            .is_none_or(|state| state.target.is_some())
+    {
         return Err("C17b Rat target did not clear".into());
     }
     observer.take_events();
@@ -675,7 +715,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("C17b spent mana did not persist until logout".into());
     }
     wait_visible(&mut observer, caster_ref, false).await?;
-    caster = full_e2ef5::with_observer_liveness(&mut observer, connect_character(&caster_clients, 0xb3, 0)).await?;
+    caster = full_e2ef5::with_observer_liveness(
+        &mut observer,
+        connect_character(&caster_clients, 0xb3, 0),
+    )
+    .await?;
     if caster.join_snapshot().game_session_id == session
         || caster.world_spatial().actor_position != position
         || caster
@@ -685,7 +729,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("step=fresh-admission-condition observed=session/position/vitals-mismatch need=durable-condition-state".into());
     }
     let fresh_ref = own(&caster)?;
-    if fresh_ref == caster_ref { return Err("C17b fresh admission reused entity incarnation".into()); }
+    if fresh_ref == caster_ref {
+        return Err("C17b fresh admission reused entity incarnation".into());
+    }
     let enter_sequence = wait_visible(&mut observer, fresh_ref, true).await?;
     if invisibility_remaining(&mut caster)
         .await?

@@ -169,9 +169,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("C17b spent mana did not persist until logout".into());
     }
     full_row_c17b::wait_visible(&mut observer, caster_ref, false).await?;
-    caster = full_e2ef5::with_observer_liveness(&mut observer, connect_character(&caster_clients, 0xc3, 0)).await?;
+    caster = full_e2ef5::with_observer_liveness(
+        &mut observer,
+        connect_character(&caster_clients, 0xc3, 0),
+    )
+    .await?;
     let fresh_ref = own(&caster)?;
-    if fresh_ref == caster_ref { return Err("C17b fresh admission reused entity incarnation".into()); }
+    if fresh_ref == caster_ref {
+        return Err("C17b fresh admission reused entity incarnation".into());
+    }
     full_row_c17b::wait_visible(&mut observer, fresh_ref, true).await?;
     let relog_session = uuid_text(caster.join_snapshot().game_session_id.as_bytes());
     let remaining = full_row_c17b::invisibility_remaining(&mut caster)
