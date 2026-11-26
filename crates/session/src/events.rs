@@ -104,6 +104,15 @@ pub enum SessionEvent {
 }
 
 impl SessionEvent {
+    /// Applied own-actor vitals, including updates paired with rescue cooldowns.
+    #[must_use]
+    pub const fn actor_vitals(&self) -> Option<&AppliedDelta<ActorVitals>> {
+        match self {
+            Self::ActorVitals(vitals) | Self::GiftOfLife { vitals, .. } => Some(vitals),
+            _ => None,
+        }
+    }
+
     #[must_use]
     pub const fn domain_id(&self) -> u32 {
         match self {
