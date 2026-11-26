@@ -2,7 +2,7 @@
 //!
 //! Concrete player scenario, derived from the P06 matrix/audit row and the live
 //! `gameplay_transport/wheel_allocation.rs` owner:
-//! 1. Admit the provisioned node-boot character and send the native Wheel query;
+//! 1. Prepare the dedicated level-300 Sorcerer, buy promotion and query the Wheel;
 //!    expect an accepted, bounded revision/36-slot projection.
 //! 2. Save a partial core-slot allocation with a fresh player occurrence; expect
 //!    an accepted non-refused reply, revision increment, the exact slot delta,
@@ -15,7 +15,7 @@
 //!    allocation, revision, and dedication vitals projection.
 //! 6. Exercise revelation through the same player save route: the admitted
 //!    character must expose at least the first 250-point domain threshold; the
-//!    accepted allocation must retain those points and its live effect. If the
+//!    accepted allocation and live effect must survive a fresh admission. If the
 //!    legitimately provisioned/player-earned level supplies fewer points, report
 //!    the observed player level and required server/world prerequisite as FAIL.
 //! 7. Send reset with a fresh occurrence/current revision; expect an accepted
@@ -36,9 +36,13 @@ const ACTIONS: &[&str] = &[
     "stale-refusal",
     "fresh-admission-save",
     "revelation-save",
+    "fresh-admission-revelation",
     "reset",
     "fresh-admission-reset",
 ];
+const PROFILE: &str = "p06-wheel";
+const LEVEL: u32 = 300;
+const BASE_VITALS: (u32, u32, u32) = (1645, 8850, 100);
 const CORE_SLOT: usize = 20; // protocol slot 21: an open max-mana core in every vocation.
 
 struct Row {
@@ -89,7 +93,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
     let result = verdict::indexed_timeout(
         Duration::from_secs(180),
-        verdict::observe(journey(&mut row, clients)),
+        verdict::observe(async {
+            let dedicated =
+                character_prep::dedicated_character(clients, "NODE_BOOT_Q_P06_ACCOUNT").await?;
+            let scope = dedicated.clients(clients);
+            let result = journey(&mut row, &scope).await;
+            let cleanup = release_row_characters(&scope).await;
+            result.and(cleanup)
+        }),
     )
     .await;
     row.finish(match result {
@@ -112,10 +123,7 @@ async fn send(
     request: &WheelAllocationRequest,
 ) -> TestResult<(WheelResponse, WheelAllocationReply)> {
     let response = wheel_allocation::send(client.session_mut(), &command(request)?).await?;
-    if !matches!(
-        response.status,
-        CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) {
+    if response.status != CommandStatus::Accepted {
         return Err(format!(
             "mechanic command action={} observed status={:?} payload={:?}; need the server Wheel route to accept capability 148 command 161",
             request.action, response.status, response.payload
@@ -157,7 +165,13 @@ fn validate_current(response: &WheelResponse, expected: &WheelAllocationReply) -
         .ok_or("accepted Wheel command omitted its current-state query frame")?;
     let current = wheel::decode_wheel_reply(current)
         .map_err(|error| format!("current Wheel projection is malformed: {error:?}"))?;
-    if &current != expected {
+    // The receipt describes the attempted command. Its follow-up query must succeed.
+    if current
+        != (WheelAllocationReply {
+            refused: false,
+            ..expected.clone()
+        })
+    {
         return Err(format!(
             "current Wheel projection mismatch: receipt={expected:?} current={current:?}"
         )
@@ -196,8 +210,103 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+async fn talk_once(
+    client: &mut DevClientSession,
+    npc: oteryn_dev_client::EntityRef,
+    text: &str,
+) -> TestResult<Vec<String>> {
+    use oteryn_protocol_oteryn::npc_service as wire;
+
+    let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
+        npc_actor: npc,
+        text: text.into(),
+    })
+    .map_err(|error| format!("step=promotion encode {text}: {error:?}"))?;
+    let session = client.session_mut();
+    let reply = session
+        .gated_command(
+            wire::CAPABILITY_NPC_SERVICE_V1,
+            wire::COMMAND_TYPE_NPC_TALK_INTENT,
+            &payload,
+        )
+        .await?;
+    let disposition = wire::decode_npc_intent_result(&reply.payload)
+        .map_err(|error| format!("step=promotion decode {text}: {error:?}"))?;
+    if reply.status != CommandStatus::Accepted || disposition != wire::NpcIntentDisposition::Ok {
+        return Err(format!(
+            "step=promotion {text} status={:?} disposition={disposition:?}",
+            reply.status
+        )
+        .into());
+    }
+    loop {
+        let delta = session
+            .read_gated_delta(wire::STATE_DOMAIN_NPC_CONVERSATION, 1)
+            .await?;
+        if delta.server_sequence > reply.server_sequence {
+            let conversation = wire::decode_npc_conversation(&delta.payload)
+                .map_err(|error| format!("step=promotion conversation {text}: {error:?}"))?;
+            if conversation.open.map(|(actor, _)| actor) != Some(npc) {
+                return Err("step=promotion conversation belongs to another NPC".into());
+            }
+            return Ok(conversation.lines);
+        }
+    }
+}
+
+async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
+    character_prep::declare_seeded(
+        "P06.full",
+        "q_p06,sorcerer-level-300,premium,20000-promotion-gold",
+        "the first revelation requires 250 Wheel points",
+    );
+    let mut client = connect_character(clients, 0xd6, 0).await?;
+    request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        PROFILE.into(),
+    )
+    .await?;
+    character_prep::grant_premium(&client).await?;
+    character_prep::grant_item(&client, 3043, 2).await?;
+    logout(&mut client).await?;
+    drop(client);
+
+    let mut client = connect_character(clients, 0xd6, 0).await?;
+    let world = full_e2ef7::qualification_world(clients)?;
+    let bundle = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bundle, |_, _| Ok(()))?;
+    let origin = tile(client.world_spatial().actor_position)?;
+    let npc = full_row_p20::approach_npc(
+        &mut client,
+        world,
+        &metadata.npcs,
+        "oteryn:npc.king_tibianus",
+    )
+    .await?;
+    if talk_once(&mut client, npc, "hi").await?.is_empty() {
+        return Err("step=promotion greeting absent".into());
+    }
+    let quote = talk_once(&mut client, npc, "promotion").await?;
+    if quote != ["Do you want to be promoted for 20000 gold coins?"] {
+        return Err(format!("step=promotion quote={quote:?}").into());
+    }
+    let confirmation = talk_once(&mut client, npc, "yes").await?;
+    if confirmation != ["You are now promoted."] {
+        return Err(format!("step=promotion confirmation={confirmation:?}").into());
+    }
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at == origin
+    })
+    .ok_or("step=promotion no route back to the original temple tile")?;
+    walk(&mut client, world, &path).await?;
+    logout(&mut client).await?;
+    drop(client);
+    connect_character(clients, 0xd6, 0).await
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xd6).await?;
+    let mut client = prepare(clients).await?;
     if !client
         .selected_capabilities()
         .contains(&wheel::CAPABILITY_WHEEL_ALLOCATION_V1)
@@ -214,6 +323,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .actor_vitals()
         .ok_or("step 1 actor-vitals frame absent")?;
     let level = own_level(&mut client).await?;
+    if level != LEVEL || (baseline.max_health, baseline.max_mana, baseline.soul) != BASE_VITALS {
+        return Err(format!("step=profile expected level={LEVEL} vitals={BASE_VITALS:?}, observed level={level} vitals={baseline:?}").into());
+    }
+    evidence(&format!(
+        "P06_PREP account=q_p06 level={level} promotion=confirmed vitals={baseline:?}"
+    ));
     row.pass("query", (&initial, level, baseline));
 
     // Use the presently admitted allocation as the starting point. Node boot normally
@@ -297,7 +412,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     logout(&mut client).await?;
     drop(client);
-    let mut client = connect_world(clients, 0xd7).await?;
+    let mut client = connect_character(clients, 0xd7, 0).await?;
     let (_, reloaded) = send(&mut client, &query_request()).await?;
     if reloaded != saved_full || client.actor_vitals().copied() != Some(full_vitals) {
         return Err(format!(
@@ -363,6 +478,22 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             );
         }
         row.pass("revelation-save", (&revealed, client.actor_vitals()));
+        let vitals = client.actor_vitals().copied();
+        logout(&mut client).await?;
+        drop(client);
+        client = connect_character(clients, 0xd9, 0).await?;
+        let (_, retained) = send(&mut client, &query_request()).await?;
+        if retained != revealed || client.actor_vitals().copied() != vitals {
+            return Err(format!(
+                "step=revelation-relog lost durable state: saved={revealed:?} queried={retained:?}"
+            )
+            .into());
+        }
+        let retained_effects = full_row_p07::live_wheel_effects(&mut client, &retained, 3).await?;
+        if retained_effects != active {
+            return Err(format!("step=revelation-relog effects changed: saved={active:?} queried={retained_effects:?}").into());
+        }
+        row.pass("fresh-admission-revelation", (&retained, retained_effects));
         None
     };
 
@@ -388,7 +519,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     if revelation_gap.is_none() {
-        let active = full_row_p07::live_wheel_effects(&mut client, &reset, 3).await?;
+        let active = full_row_p07::live_wheel_effects(&mut client, &reset, 4).await?;
         if active
             .iter()
             .any(|line| line.contains(": revelation stage "))
@@ -400,7 +531,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     logout(&mut client).await?;
     drop(client);
-    let mut final_client = connect_world(clients, 0xd8).await?;
+    let mut final_client = connect_character(clients, 0xd8, 0).await?;
     let (_, final_state) = send(&mut final_client, &query_request()).await?;
     if final_state != reset || final_client.actor_vitals().copied() != Some(baseline) {
         return Err(format!(
@@ -439,6 +570,48 @@ mod tests {
         assert_eq!(round_trip(&save)?, save);
         let reset = request(2, v7(1, 3), 8, [0; 36]);
         assert_eq!(round_trip(&reset)?, reset);
+        Ok(())
+    }
+
+    #[test]
+    fn current_query_matches_accepted_and_refused_receipt_state() -> TestResult {
+        let mut points = [0; 36];
+        points[CORE_SLOT] = 25;
+        let current = WheelAllocationReply {
+            refused: false,
+            revision: 1,
+            points,
+            vessels: None,
+        };
+        let response = |reply: &WheelAllocationReply| -> TestResult<WheelResponse> {
+            let bytes =
+                wheel::encode_wheel_reply(reply).map_err(|error| format!("encode: {error:?}"))?;
+            Ok(WheelResponse {
+                kind: wheel::COMMAND_TYPE_WHEEL_ALLOCATION,
+                status: CommandStatus::Accepted,
+                payload: Vec::new(),
+                wheel: Some(bytes),
+                atelier: None,
+                resources: None,
+            })
+        };
+        let refused = WheelAllocationReply {
+            refused: true,
+            ..current.clone()
+        };
+        validate_current(&response(&current)?, &current)?;
+        validate_current(&response(&current)?, &refused)?;
+        assert!(validate_current(&response(&refused)?, &refused).is_err());
+        let wrong_revision = WheelAllocationReply {
+            revision: 2,
+            ..current.clone()
+        };
+        assert!(validate_current(&response(&wrong_revision)?, &refused).is_err());
+        let wrong_points = WheelAllocationReply {
+            points: [0; 36],
+            ..current
+        };
+        assert!(validate_current(&response(&wrong_points)?, &refused).is_err());
         Ok(())
     }
 
