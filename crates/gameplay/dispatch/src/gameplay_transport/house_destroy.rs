@@ -14,6 +14,8 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 
+pub(super) mod wooden_bars;
+
 #[derive(Debug, Clone)]
 pub struct Candidate {
     pub command: HouseDestroyCommand,
@@ -37,14 +39,29 @@ pub(super) async fn dispatch_map_use<A: FreshAdmissionAuthority>(
     let UseTarget::Item(source_handle) = intent.target else {
         return None;
     };
-    let Some(MapUseTarget::Item(target_handle)) = intent.use_with_map_item else {
+    let source_key @ ItemKey::Instance(source) = view?.resolve(source_handle)? else {
         return None;
     };
-    let ItemKey::Instance(source) = view?.resolve(source_handle)? else {
-        return None;
-    };
-    let ItemKey::Instance(target) = view?.resolve(target_handle)? else {
-        return None;
+    let target = match intent.use_with_map_item? {
+        MapUseTarget::Object(target) => {
+            return authority
+                .destroy_map_bars(
+                    actor,
+                    command,
+                    source_key,
+                    wooden_bars::Target::Object(target),
+                )
+                .await;
+        }
+        MapUseTarget::Item(handle) => match view?.resolve(handle)? {
+            key @ ItemKey::MapBase { .. } => {
+                return authority
+                    .destroy_map_bars(actor, command, source_key, wooden_bars::Target::Handle(key))
+                    .await;
+            }
+            ItemKey::Instance(instance) => instance,
+            _ => return None,
+        },
     };
     let mut candidate = authority
         .observe_house_destroy(actor, command, source, target)
@@ -74,28 +91,30 @@ pub(super) async fn dispatch_map_use<A: FreshAdmissionAuthority>(
         .finalize();
     let mut occurrence = [0; 16];
     occurrence.copy_from_slice(&digest[..16]);
-    // Rejection sampling removes the modulo bias of an eighty-way u64 draw.
-    let root = GameplayDecisionRoot::from_bytes(candidate.decision_root);
-    let occurrence = DecisionOccurrenceId::from_bytes(occurrence);
-    let mut draw_index = 0;
-    input.roll = loop {
-        let draw = deterministic_decision_u64(
-            &root,
-            occurrence,
-            "house.furniture.destroy.roll",
-            draw_index,
-        )
-        .ok()?;
-        if draw < u64::MAX - u64::MAX % 80 {
-            break u8::try_from(draw % 80 + 1).ok()?;
-        }
-        draw_index = draw_index.checked_add(1)?;
-    };
+    input.roll = destroy_roll(
+        candidate.decision_root,
+        occurrence,
+        "house.furniture.destroy.roll",
+    )?;
     // The durable owner rechecks the inclusive rule; this also exercises the shared parity rule.
     input.expected_success = destroy_roll_succeeds(input.roll, input.attack);
     authority
         .destroy_house_furniture(actor, command, candidate.command)
         .await
+}
+
+fn destroy_roll(root: [u8; 32], occurrence: [u8; 16], label: &str) -> Option<u8> {
+    // Rejection sampling removes the modulo bias of an eighty-way u64 draw.
+    let root = GameplayDecisionRoot::from_bytes(root);
+    let occurrence = DecisionOccurrenceId::from_bytes(occurrence);
+    let mut draw_index = 0;
+    loop {
+        let draw = deterministic_decision_u64(&root, occurrence, label, draw_index).ok()?;
+        if draw < u64::MAX - u64::MAX % 80 {
+            return u8::try_from(draw % 80 + 1).ok();
+        }
+        draw_index = draw_index.checked_add(1)?;
+    }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
