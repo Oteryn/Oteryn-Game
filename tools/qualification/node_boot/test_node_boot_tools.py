@@ -291,6 +291,32 @@ WORK=.
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertEqual(Path(work, 'world-compile.json').read_text().strip(), command)
 
+    def test_declared_row_world_profile_extends_town_only_for_its_batch(self):
+        selection = section('NODE_BOOT_WORLD_PROFILE=', 'if [[ "$NODE_BOOT_SPELLS" == 1 ]]')
+        script = ("""set -Eeuo pipefail
+blocked() { printf '%s\n' "$1"; exit 2; }
+""" + selection + 'printf "%s|%s\n" "$WORLD_REGIONS" "${WORLD_START[*]}"\n')
+        base = {'GAME_SOURCE': str(HERE.parents[2]), 'NODE_BOOT_WORLD': '1',
+                'NODE_BOOT_SPELLS': '0', 'NODE_BOOT_E2E_ONLY': 'rows'}
+        town = bash(script, base)
+        self.assertEqual(town.returncode, 0, town.stdout + town.stderr)
+        regions, start = town.stdout.strip().split('|')
+        self.assertNotIn('125,126', regions.split(';'))
+        self.assertEqual(start, '32369 32238 7')
+
+        profile = {**base, 'NODE_BOOT_WORLD_PROFILE': 'e02'}
+        for batch in ('87:1', '147:1'):
+            result = bash(script, {**profile, 'OTERYN_E2E_ROW_BATCH': batch})
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            regions, start = result.stdout.strip().split('|')
+            self.assertEqual(regions.split(';'), sorted(set(regions.split(';'))))
+            self.assertIn('125,126', regions.split(';'))
+            self.assertEqual(start, '32197 32297 6')
+
+        result = bash(script, {**profile, 'OTERYN_E2E_ROW_BATCH': '87:2'})
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertIn('row_world_profile_requires_declared_batch', result.stdout)
+
     def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
         fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
         fixtures += section('readonly INTENT_OPERATIONS=', 'readonly PVP_INTENT_OPERATIONS=')
