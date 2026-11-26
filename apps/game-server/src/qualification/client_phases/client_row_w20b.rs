@@ -9,17 +9,21 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
     EntityFields, EntityLight, EntityLights, WorldSpatialEntitiesDelta,
     encode_world_spatial_entities_delta_with_fields,
 };
+use std::io::Write as _;
 
 pub(super) const LIGHT_CHARACTER: usize = 2;
 const WORDS: &str = "utevo lux";
+// Crystal 201189f8, data/scripts/spells/support/light.lua:5-8.
+const EXPECTED_LIGHT: (u8, u8) = (6, 215);
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W20B_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::File::create_new(Path::new(&root).join(name))
+        .and_then(|mut file| file.write_all(bytes))
+        .map_err(|error| format!("step=capture file={name} error={error}"))?;
+    Ok(())
 }
 
 fn hex(bytes: &[u8; 16]) -> String {
@@ -114,6 +118,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             return Err("step=light the Character's own light did not appear after the cast".into());
         }
     };
+    if light != EXPECTED_LIGHT {
+        return Err(format!("step=light expected={EXPECTED_LIGHT:?} observed={light:?}").into());
+    }
     let position = client.world_spatial().actor_position;
     let delta = WorldSpatialEntitiesDelta {
         content_generation: client.world_spatial().content_generation,
@@ -128,7 +135,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &EntityLights::from([(own, EntityLight { level: light.0, color: light.1 })]),
     )
     .map_err(|error| format!("step=encode {error:?}"))?;
-    capture("w20b-entities.bin", &payload);
+    capture("w20b-entities.bin", &payload)?;
     capture(
         "w20b-expected.txt",
         format!(
@@ -140,15 +147,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             hex_bytes(&client.world_spatial().content_generation)
         )
         .as_bytes(),
-    );
-    let _ = client.session_mut().logout().await;
+    )?;
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={logout:?} need=Accepted").into());
+    }
     Ok(format!("light={}:{}", light.0, light.1))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     character_prep::declare_seeded("W20b.client", "sorcerer-level-26,premium-if-required", "native Light packet capture");
     match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await {
-        Ok(Ok(observed)) => evidence(&format!("e2e_all scenario=W20b.client status=CAPTURED evidence={observed}")),
+        Ok(Ok(observed)) => evidence(&format!("e2e_all scenario=W20b.client status=PASS evidence={observed}")),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W20b.client status=FAIL evidence={}",
             error.to_string().replace(' ', "_")
