@@ -370,19 +370,17 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     let click = Action::Corpse(expected.corpse);
     let skip = QuickLootFilterMode::Skip;
     let accept = QuickLootFilterMode::Accept;
-    let steps: [(Action, &[([u8; 16], bool)], Option<&str>); 15] = [
+    let gold_main = route(
+        Some(QuickLootCategory::Gold),
+        QuickLootRecipient::MainContainer,
+        None,
+        false,
+    );
+    let steps: [(Action, &[([u8; 16], bool)], Option<&str>); 17] = [
         (
             Action::Add {
                 mode: skip,
                 definition: expected.skip,
-            },
-            &[],
-            None,
-        ),
-        (
-            Action::Add {
-                mode: accept,
-                definition: expected.accept,
             },
             &[],
             None,
@@ -396,8 +394,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             None,
         ),
         (main.clone(), &[], None),
-        (gold.clone(), &[], None),
-        (armor(false), &[], None),
+        (gold, &[], None),
         (
             Action::LootAll,
             &[
@@ -407,6 +404,25 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 (expected.other, false),
             ],
             Some("Looted 1 of 4 items"),
+        ),
+        (gold_main.clone(), &[], None),
+        (armor(false), &[], None),
+        (
+            Action::Add {
+                mode: accept,
+                definition: expected.accept,
+            },
+            &[],
+            None,
+        ),
+        (
+            Action::LootAll,
+            &[
+                (expected.armor, false),
+                (expected.filtered, false),
+                (expected.other, false),
+            ],
+            Some("Looted 0 of 3 items"),
         ),
         (armor(true), &[], None),
         (
@@ -456,8 +472,8 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     let mut previous = (0, 0);
     for (index, (action, expected_items, notice)) in steps.into_iter().enumerate() {
         let key = index + 1;
-        let session_index = usize::from(key >= 9);
-        if key == 9 {
+        let session_index = usize::from(key >= 11);
+        if key == 11 {
             outbox.discovery_initialize(&Selected);
             previous = (0, 0);
             let panel = link.discovery_panel().loot;
@@ -475,7 +491,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             "I07 probe {key}"
         );
         previous = (reply.command_id, reply.server_sequence);
-        if key == 1 || key == 9 {
+        if key == 1 || key == 11 {
             sessions[session_index].clone_from(&reply.game_session_id);
         }
         assert_eq!(
@@ -538,7 +554,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                     .is_some_and(|line| line.ends_with(notice))
             );
         }
-        if key == 8 {
+        if key == 10 {
             assert_eq!(panel.skipped, [expected.skip].into_iter().collect());
             assert_eq!(
                 panel.accepted,
@@ -546,7 +562,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             );
             assert_eq!(
                 panel.destinations,
-                [main.clone(), gold.clone(), armor(true)]
+                [main.clone(), gold_main.clone(), armor(true)]
             );
         }
     }

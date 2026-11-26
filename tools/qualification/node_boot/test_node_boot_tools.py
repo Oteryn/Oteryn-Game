@@ -888,21 +888,21 @@ class CloudRunSummaryTests(unittest.TestCase):
                 "SEAM_EVIDENCE e2e_all scenario=I07.client status=PASS\n"
             )
             envelopes = {}
-            for key in range(1, 16):
+            for key in range(1, 18):
                 envelopes[key] = json.dumps({
                     "command_id": key, "server_sequence": key,
-                    "game_session_id": first if key < 9 else relog, "payload": [], "status": 1,
+                    "game_session_id": first if key < 11 else relog, "payload": [], "status": 1,
                 })
                 (root / f"i07-{key}.json").write_text(envelopes[key])
                 (root / f"i07-{key}-request.bin").write_bytes(b"request")
             (root / "i07-expected.txt").write_text("expected")
             self.assertEqual(replay.read_i07_live_session(log, root), f"{first} relog={relog}")
             for invalid in [
-                envelopes[9].replace(relog, first),
-                '{"status":1,' + envelopes[9][1:],
-                '{"extra":1,' + envelopes[9][1:],
+                envelopes[11].replace(relog, first),
+                '{"status":1,' + envelopes[11][1:],
+                '{"extra":1,' + envelopes[11][1:],
             ]:
-                (root / "i07-9.json").write_text(invalid)
+                (root / "i07-11.json").write_text(invalid)
                 self.assertIsNone(replay.read_i07_live_session(log, root))
             for mode, expected in [("--exclude-i07", 0), ("--i07-only", 1)]:
                 result = subprocess.run(

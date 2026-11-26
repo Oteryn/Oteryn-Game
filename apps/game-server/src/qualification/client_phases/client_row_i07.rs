@@ -246,11 +246,7 @@ async fn require_routes(
          FROM game_character_quick_loot_categories WHERE character_id=encode($1,'hex')::uuid ORDER BY category",
     ).bind(character).fetch_all(database).await?;
     if settings != (true, fallback, false, None)
-        || routes
-            != [
-                (0, true, Some(pouch.to_vec())),
-                (2, true, Some(pouch.to_vec())),
-            ]
+        || routes != [(0, false, None), (2, true, Some(pouch.to_vec()))]
     {
         return Err(format!(
             "I07 durable routing differs: settings={settings:?} routes={routes:?}"
@@ -472,12 +468,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     capture.probe(&mut client, 1, skip, &[]).await?;
     require_filters(&mut database, character, false, &FILTERS[..1]).await?;
-    capture.probe(&mut client, 2, accept, &[]).await?;
-    require_filters(&mut database, character, true, &FILTERS).await?;
     capture
         .probe(
             &mut client,
-            3,
+            2,
             QuickLootRequest {
                 filter_definition_ref: Some(skip_reference),
                 ..accept
@@ -485,15 +479,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             &[],
         )
         .await?;
-    require_filters(&mut database, character, true, &expected_filters).await?;
-    for (key, request) in [(4, unassigned), (5, gold_route), (6, armor_route(false))] {
-        capture.probe(&mut client, key, request, &[]).await?;
-    }
-    require_routes(&mut database, character, &pouch, false).await?;
+    require_filters(&mut database, character, true, &expected_filters[..2]).await?;
+    capture.probe(&mut client, 3, unassigned, &[]).await?;
+    capture.probe(&mut client, 4, gold_route, &[]).await?;
     capture
         .probe(
             &mut client,
-            7,
+            5,
             request(QuickLootAction::LootAll),
             &[
                 (coin, true),
@@ -501,6 +493,38 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 (filtered, false),
                 (other, false),
             ],
+        )
+        .await?;
+    require_placements(
+        &mut database,
+        Storage::InboxPouch,
+        character,
+        &pouch,
+        &expected_pouch,
+    )
+    .await?;
+    evidence("I07_LOOT_CUSTODY category=gold exact_coins=7 destination=inbox_pouch");
+
+    // Reset Gold to main before exercising Equipment, so misclassifying armor as Gold fails.
+    let gold_main = route(
+        Some(QuickLootCategory::Gold),
+        QuickLootRecipient::MainContainer,
+        None,
+        false,
+    );
+    capture.probe(&mut client, 6, gold_main, &[]).await?;
+    capture
+        .probe(&mut client, 7, armor_route(false), &[])
+        .await?;
+    capture.probe(&mut client, 8, accept, &[]).await?;
+    require_filters(&mut database, character, true, &expected_filters).await?;
+    require_routes(&mut database, character, &pouch, false).await?;
+    capture
+        .probe(
+            &mut client,
+            9,
+            request(QuickLootAction::LootAll),
+            &[(armor, false), (filtered, false), (other, false)],
         )
         .await?;
     let remaining = [armor.clone(), filtered.clone()];
@@ -537,11 +561,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     evidence(
-        "I07_LOOT_CUSTODY fallback=off gold=pouch armor=refused unassigned=main stacked=retained",
+        "I07_LOOT_CUSTODY fallback=off category=equipment armor=refused unassigned=main stacked=retained",
     );
 
     capture
-        .probe(&mut client, 8, armor_route(true), &[])
+        .probe(&mut client, 10, armor_route(true), &[])
         .await?;
     require_routes(&mut database, character, &pouch, true).await?;
     require_logout(&mut client).await?;
@@ -595,7 +619,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     capture
         .probe(
             &mut fresh,
-            9,
+            11,
             request(QuickLootAction::LootAll),
             &[(armor, true), (filtered, false), (other, false)],
         )
@@ -639,7 +663,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     // Manual click bypasses the active Accept filter and targets only this corpse.
     capture
-        .probe(&mut fresh, 10, click, &[(filtered, true)])
+        .probe(&mut fresh, 12, click, &[(filtered, true)])
         .await?;
     let mut bag_filtered = filtered.clone();
     bag_filtered.slot = expected_backpack
@@ -678,7 +702,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     capture
         .probe(
             &mut fresh,
-            11,
+            13,
             QuickLootRequest {
                 filter_mode: Some(QuickLootFilterMode::Skip),
                 ..request(QuickLootAction::FilterSelect)
@@ -688,11 +712,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .await?;
     require_filters(&mut database, character, false, &expected_filters).await?;
     let unassigned_pouch = route(None, QuickLootRecipient::GoldPouch, Some(pouch), false);
-    capture.probe(&mut fresh, 12, unassigned_pouch, &[]).await?;
+    capture.probe(&mut fresh, 14, unassigned_pouch, &[]).await?;
     capture
         .probe(
             &mut fresh,
-            13,
+            15,
             request(QuickLootAction::LootAll),
             &[(other, false)],
         )
@@ -713,11 +737,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &expected_backpack,
     )
     .await?;
-    capture.probe(&mut fresh, 14, unassigned, &[]).await?;
+    capture.probe(&mut fresh, 16, unassigned, &[]).await?;
     capture
         .probe(
             &mut fresh,
-            15,
+            17,
             request(QuickLootAction::LootAll),
             &[(other, true)],
         )
