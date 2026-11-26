@@ -15,12 +15,6 @@ use std::io::Write;
 const DOUGH: u32 = 3604;
 const BREAD: u32 = 3600;
 const ROPE: u32 = 3003;
-const OVEN: TilePos = TilePos {
-    x: 32355,
-    y: 32208,
-    floor: -7,
-};
-const OVEN_KEY: &str = "oteryn:item.tibia.i2535";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -47,7 +41,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let ordinal = oven_ordinal(&bytes)?;
     let identity = character_prep::dedicated_character(clients, "NODE_BOOT_Q_I11_ACCOUNT").await?;
     let clients = identity.clients(clients);
     character_prep::declare_seeded(
@@ -57,12 +50,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     );
     let mut client = super::full_row_i11::prepare_inputs(&clients, &[DOUGH, ROPE]).await?;
 
-    let here = tile(client.world_spatial().actor_position)?;
-    let path = route(world, here, |at| {
-        at.floor == OVEN.floor && at.x.abs_diff(OVEN.x).max(at.y.abs_diff(OVEN.y)) <= 1
-    })
-    .ok_or("step-1_observed=no-walk-route-to-oven")?;
-    super::full_row_i11::walk_once(&mut client, world, &path).await?;
+    let (oven, ordinal) = super::full_row_i11::reach_oven(&mut client, world, &bytes).await?;
 
     let index = provisioning::item_index()?;
     let dough = provisioning::item_reference(&index, DOUGH)?;
@@ -90,7 +78,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .handle;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(
-        &crate::map::view::placement_key(OVEN, ordinal)
+        &crate::map::view::placement_key(oven, ordinal)
             .ok_or("step-2_observed=oven-placement-unavailable")?
             .to_be_bytes(),
     );
@@ -105,7 +93,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     })
     .map_err(|error| format!("step-2_observed=encode-{error:?}"))?;
     client.take_events();
-    let reply = client.session_mut().world_context_use(&payload).await?;
+    let reply = client
+        .session_mut()
+        .world_context_use(&payload)
+        .await
+        .map_err(|error| verdict::context(format!("step=bake phase=USE-result observed={error}"), error))?;
     let disposition = decode_use_result(&reply.payload)
         .map_err(|error| format!("step-2_observed=reply-decode-{error:?}"))?;
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
@@ -122,7 +114,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         bread,
         before_bread + 1,
     )
-    .await?;
+    .await
+    .map_err(|error| verdict::context(format!("step=bake phase=inventory-update observed={error}"), error))?;
     if delta.base_revision != snapshot.revision {
         return Err("step-2_observed=bake-delta-does-not-follow-admission-inventory".into());
     }
@@ -140,7 +133,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .handle;
     let mut refusal_placement = world.base().digest().to_vec();
     refusal_placement.extend_from_slice(
-        &crate::map::view::placement_key(OVEN, ordinal)
+        &crate::map::view::placement_key(oven, ordinal)
             .ok_or("step-3_observed=oven-placement-unavailable")?
             .to_be_bytes(),
     );
@@ -199,29 +192,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         visible_inventory(&delta.value).as_bytes(),
     )?;
     Ok(())
-}
-
-fn oven_ordinal(bytes: &[u8]) -> TestResult<u8> {
-    let mut ordinal = None;
-    oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
-        if sector.floor != OVEN.floor {
-            return Ok(());
-        }
-        for tile in sector.tiles {
-            if (tile.x, tile.y) != (OVEN.x, OVEN.y) {
-                continue;
-            }
-            for (index, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
-                if manifest.palette[item.palette as usize].key == OVEN_KEY {
-                    ordinal = Some(u8::try_from(index).map_err(|_| {
-                        oteryn_world_bundle::Error::Limit("I11 oven ordinal".into())
-                    })?);
-                }
-            }
-        }
-        Ok(())
-    })?;
-    ordinal.ok_or_else(|| "step-1_observed=no-compiled-world-oven".into())
 }
 
 fn quantity(

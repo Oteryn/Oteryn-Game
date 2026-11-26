@@ -118,10 +118,31 @@ async fn reach_station(
         |at| !occupied.contains(&at),
     )
     .ok_or_else(|| format!("step={name}-route missing=reachable-compiled-world-station"))?;
-    evidence(&format!("I11_STATION_ROUTE station={name} steps={}", path.len()));
+    // Pin the approach and station before sending the first STEP.
+    let endpoint = path
+        .iter()
+        .try_fold(here, |at, &direction| destination(world, at, direction))
+        .ok_or_else(|| format!("step={name}-route missing=planned-endpoint"))?;
+    let target = nearby_station(endpoint, &stations)
+        .ok_or_else(|| format!("step={name}-route missing=planned-station"))?;
+    evidence(&format!(
+        "I11_STATION_ROUTE station={name} target={target:?} steps={}",
+        path.len()
+    ));
     walk_once(client, world, &path).await?;
-    let arrived = tile(client.world_spatial().actor_position)?;
-    nearby_station(arrived, &stations).ok_or_else(|| format!("step={name}-route observed=no-station-within-use-distance-after-STEP").into())
+    if tile(client.world_spatial().actor_position)? != endpoint {
+        return Err(format!("step={name}-route observed=unexpected-endpoint-after-STEP").into());
+    }
+    Ok(target)
+}
+
+pub(super) async fn reach_oven(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    bytes: &[u8],
+) -> TestResult<(TilePos, u8)> {
+    let here = tile(client.world_spatial().actor_position)?;
+    reach_station(client, world, bytes, here, &OVENS, "oven").await
 }
 
 async fn mill_wheat(
@@ -164,7 +185,11 @@ async fn mill_wheat(
         use_with_position: None,
     })
     .map_err(|error| format!("step=millstone encode={error:?}"))?;
-    let reply = client.session_mut().world_context_use(&payload).await?;
+    let reply = client
+        .session_mut()
+        .world_context_use(&payload)
+        .await
+        .map_err(|error| verdict::context(format!("step=millstone phase=USE-result observed={error}"), error))?;
     let disposition = decode_use_result(&reply.payload)
         .map_err(|error| format!("step=millstone decode={error:?}"))?;
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
@@ -174,7 +199,9 @@ async fn mill_wheat(
         )
         .into());
     }
-    wait_quantities(client, wheat, before_wheat - 1, flour, before_flour + 1).await?;
+    wait_quantities(client, wheat, before_wheat - 1, flour, before_flour + 1)
+        .await
+        .map_err(|error| verdict::context(format!("step=millstone phase=inventory-update observed={error}"), error))?;
     evidence("I11_CHECK wheat-to-flour PASS");
     Ok(())
 }
@@ -319,8 +346,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bread = provisioning::item_reference(&index, BREAD)?;
     let rope = provisioning::item_reference(&index, ROPE)?;
     mix_dough(&mut client, world, &bytes, &index, dough).await?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let (oven, ordinal) = reach_station(&mut client, world, &bytes, here, &OVENS, "oven").await?;
+    let (oven, ordinal) = reach_oven(&mut client, world, &bytes).await?;
     let before_dough = quantity(&client, dough)?;
     let before_bread = quantity(&client, bread)?;
     let source = client
@@ -440,7 +466,7 @@ pub(super) async fn prepare_inputs(
     connect_character(clients, 0xb8, 0).await
 }
 
-pub(super) async fn walk_once(
+async fn walk_once(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
     path: &[StepDirection],
