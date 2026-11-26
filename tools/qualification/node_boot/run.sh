@@ -1857,6 +1857,47 @@ pvp_world_shutdown() { # the Open PvP World's node ends cleanly before the lifec
   evidence "pvp_world shutdown=complete socket=removed"
 }
 
+s15b_client_selected() {
+  local groups=${NODE_BOOT_E2E_ONLY:-}
+  [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]] || return 1
+  [[ -z "$groups" || ",${groups//[[:space:]]/}," == *,rows,* ]] || return 1
+  python3 - "${OTERYN_E2E_ROW_BATCH-0:15}" <<'PY_S15B_BATCH'
+import re
+import sys
+
+batch = sys.argv[1]
+if batch == "all":
+    sys.exit(0)
+match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+if not match:
+    sys.exit(1)
+parts = [value.lstrip("0") or "0" for value in match.groups()]
+if any(len(value) > 20 for value in parts):
+    sys.exit(1)
+start, count = map(int, parts)
+sys.exit(not (count < 2**64 and start <= 202 < start + count))
+PY_S15B_BATCH
+}
+
+s15b_client_replay() {
+  local started=$SECONDS replay_state=missing-live-capture
+  local replay_test=tests::e2e_s15b::e2e_s15b_in_fight_logout_refusal_keeps_the_session_playing
+  if [[ -s "$OTERYN_S15B_CAPTURE_DIR/s15b-expected.txt" ]] &&
+    grep -q '^SEAM_EVIDENCE e2e_capture scenario=S15b.client status=CAPTURED ' "$WORK/stage-seam_stages.log"; then
+    replay_state=replay-failed
+    if E2E_ALL_CAPTURE_DIR="$OTERYN_S15B_CAPTURE_DIR" cargo +1.100.0 test --locked \
+      -p oteryn-session --lib "$replay_test" -- --exact > "$WORK/s15b-replay.log" 2>&1 &&
+      grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$WORK/s15b-replay.log"; then
+      cat "$WORK/s15b-replay.log"
+      printf 'SEAM_EVIDENCE e2e_all scenario=S15b.client status=PASS seconds=%s evidence=live-logout-replayed\n' "$((SECONDS - started))"
+      return 0
+    fi
+    cat "$WORK/s15b-replay.log"
+  fi
+  printf 'SEAM_EVIDENCE e2e_all scenario=S15b.client status=FAIL seconds=%s evidence=%s\n' "$((SECONDS - started))" "$replay_state"
+  return 1
+}
+
 if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
   game_platform_identity
   exit "$?"
@@ -1864,6 +1905,12 @@ fi
 
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
+if s15b_client_selected; then
+  # e2e_all/run.sh already owns a per-run capture directory used by its client suite.
+  OTERYN_S15B_CAPTURE_DIR="${E2E_ALL_CAPTURE_DIR:-$(mktemp -d "$WORK/s15b-capture.XXXXXX")}" \
+    || fail "S15b capture directory creation"
+  export OTERYN_S15B_CAPTURE_DIR
+fi
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
   stage "$seam_stage_name" -- seam_stages
 else
@@ -1891,6 +1938,9 @@ else
   fi
   stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
+fi
+if s15b_client_selected; then
+  stage s15b_client_replay "$seam_stage_name" -- s15b_client_replay
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
