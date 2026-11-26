@@ -14,10 +14,13 @@ use oteryn_dev_client::client_runtime::account_achievements::{
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::account_achievements as wire;
 
-pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+pub(super) async fn run_packet(clients: &SeamClients<'_>, core: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result =
-        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(90),
+        verdict::observe(journey(clients, core)),
+    )
+    .await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("step deadline: achievement lifecycle timed out".into()),
@@ -63,11 +66,203 @@ async fn page(client: &mut DevClientSession, number: u32) -> TestResult<AccountA
     }
 }
 
-const ACHIEVEMENT: &str = "oteryn:achievement/annihilator";
+const APPROACH: TilePos = TilePos {
+    x: 33213,
+    y: 31671,
+    floor: -13,
+};
+
+pub(super) fn qualification_entry(town: TilePos) -> TilePos {
+    if std::env::var("NODE_BOOT_P11_APPROACH").as_deref() == Ok("1")
+        && matches!(
+            std::env::var("OTERYN_E2E_ROW_BATCH").as_deref(),
+            Ok("54:1" | "166:1")
+        )
+    {
+        APPROACH
+    } else {
+        town
+    }
+}
+
+async fn open_approach_gate(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    from: TilePos,
+    name: &str,
+    landings: &[u16],
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    let gate = TilePos {
+        x: from.x + 1,
+        ..from
+    };
+    let observed = tile(client.world_spatial().actor_position)?;
+    if observed != from {
+        return Err(format!("step={name} expected={from:?} actual={observed:?}").into());
+    }
+    let planned = destination(world, from, StepDirection::East);
+    let base_tile = world
+        .base()
+        .tile(gate.x, gate.y, gate.floor)
+        .ok_or_else(|| format!("step={name} blocking_tile={gate:?} reason=missing-from-bundle"))?;
+    evidence(&format!(
+        "P11_ROUTE step={name} from={from:?} blocking_tile={gate:?} planned={planned:?} walkable={} enterable={} appearance={:?}",
+        base_tile.walkable(),
+        world.enterable(gate),
+        base_tile.appearance(1),
+    ));
+    let key = crate::map::view::placement_key(gate, 1).ok_or("approach gate placement absent")?;
+    let mut target = world.base().digest().to_vec();
+    target.extend_from_slice(&key.to_be_bytes());
+    use oteryn_protocol_oteryn::world_map::MapOrigin;
+    let position = ActorPosition {
+        x: i32::from(gate.x),
+        y: i32::from(gate.y),
+        floor: -i16::from(gate.floor),
+    };
+    let closed = base_tile
+        .appearance(1)
+        .ok_or("P11 authored closed door has no appearance")?;
+    let snapshot = client
+        .session_mut()
+        .world_map_snapshot()
+        .ok_or("P11 live door map view absent")?;
+    let revision = snapshot.tiles.iter()
+        .find(|cell| cell.position == position)
+        .and_then(|cell| cell.items.iter().find_map(|item| match item.origin {
+            MapOrigin::BaseOrdinal { ordinal: 1, object_revision } if item.appearance_id == closed => Some(object_revision),
+            _ => None,
+        }))
+        .ok_or_else(|| format!("step={name} live map did not show the authored closed door tile={gate:?} appearance={closed}"))?;
+    evidence(&format!(
+        "P11_ROUTE step={name} live_closed_appearance={closed} expected_revision={revision}"
+    ));
+    let reply = client.session_mut().use_object(&target, revision).await?;
+    evidence(&format!(
+        "P11_ROUTE step={name} tile={gate:?} wire_reply={reply:?}"
+    ));
+    if reply.disposition != UseDisposition::Committed {
+        return Err(format!("step={name} authored_gate={gate:?} first_reply={reply:?}").into());
+    }
+    walk_east(client, from, name, landings).await
+}
+
+async fn walk_east(
+    client: &mut DevClientSession,
+    from: TilePos,
+    name: &str,
+    landings: &[u16],
+) -> TestResult {
+    for &x in landings {
+        let expected = TilePos { x, ..from };
+        let reply = client.step(StepDirection::East).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if reply.disposition != StepDisposition::Moved || actual != expected {
+            return Err(format!(
+                "step={name} blocking_tile={expected:?} reply={reply:?} actual={actual:?}"
+            )
+            .into());
+        }
+        if reply.step_wait_ms > 0 {
+            tokio::time::sleep(Duration::from_millis(u64::from(reply.step_wait_ms))).await;
+        }
+    }
+    Ok(())
+}
+
+async fn stage_member(client: &mut DevClientSession, world: &BundleWorld, x: u16) -> TestResult {
+    open_approach_gate(client, world, APPROACH, "outer-level-door", &[33214, 33215]).await?;
+    open_approach_gate(
+        client,
+        world,
+        TilePos {
+            x: 33215,
+            ..APPROACH
+        },
+        "staging-door",
+        &[33217],
+    )
+    .await?;
+    let landings: Vec<_> = (33218..=x).collect();
+    walk_east(client, APPROACH, "lever-staging", &landings).await
+}
+
+async fn operate_lever(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    clients: &SeamClients<'_>,
+    core: &SeamClients<'_>,
+) -> TestResult {
+    stage_member(client, world, 33225).await?;
+    let mut companions = Vec::with_capacity(3);
+    for (scope, index, x) in [(clients, 0, 33224), (core, 0, 33223), (core, 1, 33222)] {
+        let finished = std::cell::Cell::new(false);
+        let (member, serviced) = tokio::join!(
+            async {
+                let result = async {
+                    let mut member = connect_knight(scope, index).await?;
+                    stage_member(&mut member, world, x).await?;
+                    Ok::<_, Box<dyn std::error::Error>>(member)
+                }
+                .await;
+                finished.set(true);
+                result
+            },
+            async {
+                while !finished.get() {
+                    for peer in std::iter::once(&mut *client).chain(companions.iter_mut()) {
+                        peer.service_liveness(Duration::from_millis(100)).await?;
+                    }
+                }
+                Ok::<(), oteryn_dev_client::DevClientError>(())
+            }
+        );
+        let member = member?;
+        serviced?;
+        companions.push(member);
+    }
+    let lever = TilePos {
+        x: 33226,
+        ..APPROACH
+    };
+    let key =
+        crate::map::view::placement_key(lever, 1).ok_or("Annihilator lever placement absent")?;
+    let mut target = world.base().digest().to_vec();
+    target.extend_from_slice(&key.to_be_bytes());
+    let reply = client.session_mut().use_object(&target, 0).await?;
+    evidence(&format!(
+        "P11_ROUTE step=annihilator-lever tile={lever:?} wire_reply={reply:?}"
+    ));
+    if reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
+        for member in &mut companions {
+            let _ = logout(member).await;
+        }
+        return Err(format!("step=lever authored_lever={lever:?} first_reply={reply:?}").into());
+    }
+    for (member, x) in std::iter::once(&mut *client)
+        .chain(companions.iter_mut())
+        .zip([33222, 33221, 33220, 33219])
+    {
+        let expected = TilePos {
+            x,
+            y: 31659,
+            floor: -13,
+        };
+        let actual = tile(member.world_spatial().actor_position)?;
+        if actual != expected {
+            return Err(
+                format!("step=lever expected_arrival={expected:?} actual={actual:?}").into(),
+            );
+        }
+    }
+    Err("step=annihilator-combat need=source-corridor-clearance".into())
+}
 
 async fn authored_granter(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
+    core: &SeamClients<'_>,
 ) -> TestResult<(Vec<u8>, String)> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -88,6 +283,9 @@ async fn authored_granter(
                 .is_some_and(|id| provisioning::item_reference(&items, id).is_ok())
         },
     )?;
+    if qualification_entry(TOWN) == APPROACH {
+        operate_lever(client, world, clients, core).await?;
+    }
     const REWARD_CHEST: TilePos = TilePos {
         x: 33227,
         y: 31656,
@@ -122,19 +320,117 @@ async fn authored_granter(
     Ok((key, ACHIEVEMENT.to_owned()))
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xc1).await?;
+async fn prepare_knight(clients: &SeamClients<'_>, index: usize) -> TestResult {
+    character_prep::declare_seeded(
+        "P11.full",
+        "knight-level-100",
+        "Annihilator outer gate eligibility",
+    );
+    let mut initial = connect_character(clients, 0xc1, index).await?;
+    request_fixture_control_at(
+        "NODE_BOOT_CONTROL_SOCKET",
+        uuid_text(initial.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        "knight".into(),
+    )
+    .await?;
+    logout(&mut initial).await
+}
+
+async fn connect_knight(clients: &SeamClients<'_>, index: usize) -> TestResult<DevClientSession> {
+    let mut fresh = connect_character(clients, 0xc1, index).await?;
+    use oteryn_dev_client::client_ui::cyclopedia_character as panel;
+    use oteryn_protocol_oteryn::cyclopedia_character::CharacterTab;
+    let mut view = panel::CyclopediaCharacterPanel {
+        selected: true,
+        limit: 50,
+        extensions: panel::TabExtensions {
+            vocation: general_stats::selected(&fresh),
+            death_details: false,
+        },
+        ..Default::default()
+    };
+    let command = panel::request(
+        &mut view,
+        panel::Intent::SelectTab(CharacterTab::GeneralStats),
+    )
+    .ok_or("P11 GeneralStats request absent")?;
+    let reply = fresh
+        .session_mut()
+        .gated_command(command.capability, command.kind, &command.payload)
+        .await?;
+    if !panel::apply_result(&mut view, &reply)
+        || view.general.as_ref().map(|stats| stats.level) != Some(100)
+    {
+        return Err(format!("P11 seeded Knight expected level 100; reply={reply:?}").into());
+    }
+    let vitals = fresh
+        .actor_vitals()
+        .ok_or("P11 seeded Knight missing vitals")?;
+    evidence(&format!(
+        "P11_ROUTE seeded_level=100 seeded_vitals={vitals:?}"
+    ));
+    if (vitals.max_health, vitals.max_mana) != (1565, 550) {
+        return Err(format!("P11 Knight derived vitals mismatch: {vitals:?}").into());
+    }
+    Ok(fresh)
+}
+
+pub(super) struct GrantProof {
+    pub(super) page: AccountAchievementsResult,
+    pub(super) session: [u8; 16],
+}
+
+const ACHIEVEMENT: &str = "oteryn:achievement/annihilator";
+const DESCRIPTION: &str = "You've daringly jumped into the infamous Annihilator and survived - taking home fame, glory and your reward.";
+
+fn expected_grant(page: &AccountAchievementsResult, earliest: i64, latest: i64) -> bool {
+    page.page == 0
+        && page.total_points == 5
+        && page.fact_count == 1
+        && !page.has_more
+        && matches!(page.rows.as_slice(), [entry]
+            if entry.key == ACHIEVEMENT && entry.name == "Annihilator"
+                && entry.description == DESCRIPTION && entry.grade == 2 && entry.points == 5
+                && !entry.secret && (earliest..=latest).contains(&entry.earned_at))
+}
+
+pub(super) async fn earn_and_logout(
+    clients: &SeamClients<'_>,
+    core: &SeamClients<'_>,
+) -> TestResult<GrantProof> {
+    if qualification_entry(TOWN) != APPROACH {
+        return Err("P11 needs its isolated authored approach profile".into());
+    }
+    // Complete setup with one live session at a time, before staging the party.
+    for (scope, index) in [(clients, 1), (clients, 0), (core, 0), (core, 1)] {
+        prepare_knight(scope, index).await?;
+    }
+    let mut client = connect_knight(clients, 1).await?;
+    let session = *client.join_snapshot().game_session_id.as_bytes();
     let before = page(&mut client, 0).await?;
+    if before != AccountAchievementsResult::default() {
+        return Err(format!(
+            "P11 fresh account expected no previous achievement facts; actual={before:?}"
+        )
+        .into());
+    }
     let notice_snapshot = client
         .session_mut()
         .gated_snapshot(
             oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
         )
         .ok_or("step=query missing achievement-notice snapshot")?;
-    oteryn_protocol_oteryn::achievement_notices::decode_achievement_notices_snapshot(
-        &notice_snapshot.payload,
-    )
-    .map_err(|error| format!("step=query malformed notice snapshot: {error:?}"))?;
+    let watermark =
+        oteryn_protocol_oteryn::achievement_notices::decode_achievement_notices_snapshot(
+            &notice_snapshot.payload,
+        )
+        .map_err(|error| format!("step=query malformed notice snapshot: {error:?}"))?;
+    if watermark.fact_count != 0 || watermark.total_points != 0 {
+        return Err(
+            format!("P11 initial achievement watermark was not empty: {watermark:?}").into(),
+        );
+    }
 
     client.take_events();
     let next_command = client.next_command_id();
@@ -169,7 +465,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step=pagination page={beyond} observed={empty:?}").into());
     }
-    let (placement, achievement) = authored_granter(&mut client, clients).await?;
+    let (placement, achievement) = authored_granter(&mut client, clients, core).await?;
+    if achievement != ACHIEVEMENT {
+        return Err(
+            format!("P11 expected the authored Annihilator claim, got {achievement}").into(),
+        );
+    }
+    let earliest = i64::try_from(now_seconds()?)?;
     client.take_events();
     let use_reply = client.session_mut().use_object(&placement, 0).await?;
     client.service_liveness(Duration::from_millis(250)).await?;
@@ -202,9 +504,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     };
     let granted = page(&mut client, 0).await?;
-    if earned.key != achievement
-        || granted.fact_count != before.fact_count.saturating_add(1)
-        || !granted.rows.iter().any(|row| row.key == earned.key)
+    let latest = i64::try_from(now_seconds()?)?;
+    if earned.key != ACHIEVEMENT
+        || earned.name != "Annihilator"
+        || earned.watermark.fact_count != 1
+        || earned.watermark.total_points != 5
+        || !expected_grant(&granted, earliest, latest)
     {
         return Err(format!("step=granter delta/query mismatch: {earned:?} {granted:?}").into());
     }
@@ -213,7 +518,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let duplicate_reply = client.session_mut().use_object(&placement, 0).await?;
     client.service_liveness(Duration::from_millis(250)).await?;
     if duplicate_reply.disposition
-        == oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+        != oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse
         || client
             .take_events()
             .iter()
@@ -226,8 +531,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     logout(&mut client).await?;
     drop(client);
+    Ok(GrantProof {
+        page: granted,
+        session,
+    })
+}
+
+async fn journey(clients: &SeamClients<'_>, core: &SeamClients<'_>) -> TestResult {
+    let proof = earn_and_logout(clients, core).await?;
     let mut fresh = connect_world(clients, 0xc2).await?;
-    if page(&mut fresh, 0).await? != granted {
+    if fresh.join_snapshot().game_session_id.as_bytes() == &proof.session
+        || page(&mut fresh, 0).await? != proof.page
+    {
         return Err("step=relogin durable achievement page changed".into());
     }
     logout(&mut fresh).await?;
@@ -264,6 +579,76 @@ mod tests {
         assert!(granter.contains("matches.next().is_some()"));
         assert!(granter.contains("at == interaction"));
     }
+    #[test]
+    fn p11_serializes_fixture_logouts_before_party_staging() -> super::TestResult {
+        let source = include_str!("full_row_p11.rs");
+        let (_, staging) = source
+            .split_once("async fn operate_lever(")
+            .ok_or("lever staging helper")?;
+        let (staging, _) = staging
+            .split_once("async fn authored_granter(")
+            .ok_or("granter helper")?;
+        let (_, earn) = source
+            .split_once("pub(super) async fn earn_and_logout(")
+            .ok_or("earn helper")?;
+        let (earn, _) = earn
+            .split_once("async fn journey(")
+            .ok_or("journey helper")?;
+        assert!(!staging.contains("prepare_knight("));
+        assert!(staging.contains("service_liveness("));
+        let fixture = earn.find("prepare_knight(").ok_or("fixture preparation")?;
+        let first_admission = earn
+            .find("let mut client = connect_knight(")
+            .ok_or("first live admission")?;
+        assert!(fixture < first_admission);
+        Ok(())
+    }
+
+    #[test]
+    fn p11_grant_proof_rejects_each_audit_false_positive() {
+        use super::*;
+        let entry = wire::AccountAchievementRow {
+            key: ACHIEVEMENT.into(),
+            name: "Annihilator".into(),
+            description: DESCRIPTION.into(),
+            grade: 2,
+            points: 5,
+            earned_at: 150,
+            secret: false,
+        };
+        let correct = AccountAchievementsResult {
+            rows: vec![entry],
+            total_points: 5,
+            fact_count: 1,
+            ..Default::default()
+        };
+        assert!(expected_grant(&correct, 140, 160));
+        assert!(!expected_grant(
+            &AccountAchievementsResult::default(),
+            140,
+            160
+        ));
+        let mutate: [fn(&mut AccountAchievementsResult); 10] = [
+            |page| page.total_points += 1,
+            |page| page.fact_count += 1,
+            |page| page.page += 1,
+            |page| page.has_more = true,
+            |page| page.rows[0].key.push('x'),
+            |page| page.rows[0].name.push('x'),
+            |page| page.rows[0].description.push('x'),
+            |page| page.rows[0].grade += 1,
+            |page| page.rows[0].points += 1,
+            |page| page.rows[0].secret = true,
+        ];
+        for wrong in mutate {
+            let mut page = correct.clone();
+            wrong(&mut page);
+            assert!(!expected_grant(&page, 140, 160));
+        }
+        assert!(!expected_grant(&correct, 151, 160));
+        assert!(!expected_grant(&correct, 140, 149));
+    }
+
     #[test]
     fn evidence_sanitizer_produces_one_report_token() {
         assert_eq!(

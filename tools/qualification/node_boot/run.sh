@@ -170,6 +170,10 @@ case "$NODE_BOOT_WORLD_PROFILE" in
     case ",${selected_groups//[[:space:]]/}," in
       ,,|*,rows,*) WORLD_REGIONS+=";131,122" ;;
     esac
+    if [[ ${NODE_BOOT_E2E_ONLY:-} == rows && ( ${OTERYN_E2E_ROW_BATCH:-} == 54:1 || ${OTERYN_E2E_ROW_BATCH:-} == 166:1 ) ]]; then
+      WORLD_REGIONS+=";129,123"
+      export NODE_BOOT_P11_APPROACH=1
+    fi
     ;;
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
   *) blocked invalid_world_profile ;;
@@ -713,6 +717,16 @@ pin["entry_start"] = {"x": 32369, "y": 32238, "floor": -7}
 with open(sys.argv[3], "w") as output:
     json.dump(pin, output, sort_keys=True)
 PY_REGION_PIN
+  if [[ ${NODE_BOOT_P11_APPROACH:-} == 1 ]]; then
+    python3 - "$PIN" <<'PY_P11_PIN'
+import json, sys
+from pathlib import Path
+path = Path(sys.argv[1])
+pin = json.loads(path.read_text())
+pin["entry_start"] = {"x": 33213, "y": 31671, "floor": -13}
+path.write_text(json.dumps(pin, sort_keys=True))
+PY_P11_PIN
+  fi
   WORLD_DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["digest"])' "$PIN")"
   install_owned root:root -d -m 0755 "$BASE/world"
   install_owned root:root -m 0644 "$WORK/world.otwb" "$BASE/world/world.otbundle"
@@ -840,9 +854,9 @@ project_format_version = "{pin['project_format_version']}"
 world_schema_version = "{pin['world_schema_version']}"
 content_revision = "{pin['content_revision']}"
 production = false
-start_x = 32369
-start_y = 32238
-start_floor = 7''')
+start_x = {pin['entry_start']['x']}
+start_y = {pin['entry_start']['y']}
+start_floor = {-pin['entry_start']['floor']}''')
 PY_WORLD
     cat >> "$WORK/node.toml" <<'TOML'
 [premium_activation]

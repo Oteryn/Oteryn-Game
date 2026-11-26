@@ -409,7 +409,7 @@ fn boot_world(
                 production: false,
             },
             map_revision: format!("sha256:{}", pin["digest"].as_str().ok_or("World digest")?),
-            start: TOWN,
+            start: full_row_p11::qualification_entry(TOWN),
         },
     )?;
     let input = native_input()?;
@@ -1085,9 +1085,10 @@ pub(super) async fn journeys(
     evidence(&format!(
         "world_fixture role=core phase=first_entry position={entered_at:?}"
     ));
-    if entered_at != TOWN {
+    let expected_entry = full_row_p11::qualification_entry(TOWN);
+    if entered_at != expected_entry {
         return Err(format!(
-            "Platform-created character did not enter the configured town: expected={TOWN:?} actual={entered_at:?}"
+            "Platform-created character did not enter the configured entry: expected={expected_entry:?} actual={entered_at:?}"
         )
         .into());
     }
@@ -1097,6 +1098,7 @@ pub(super) async fn journeys(
     }
     drop(client);
     {
+        let core_clients = clients;
         let clients = packet_clients;
         // Default runs retain the ordinary packets alongside the indexed rows.
         // Explicit groups can isolate those packets from the row batch.
@@ -1476,8 +1478,10 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(54) {
                 verdict::indexed("P11.full", async {
-                    full_row_p11::run_packet(clients).await;
-                    release_row_characters(clients).await
+                    full_row_p11::run_packet(clients, core_clients).await;
+                    let packets = release_row_characters(clients).await;
+                    let core = release_row_characters(core_clients).await;
+                    packets.and(core)
                 })
                 .await;
             }
@@ -2269,8 +2273,10 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(166) {
                 verdict::indexed("P11.client", async {
-                    client_row_p11::run_packet(clients).await;
-                    release_row_characters(clients).await
+                    client_row_p11::run_packet(clients, core_clients).await;
+                    let packets = release_row_characters(clients).await;
+                    let core = release_row_characters(core_clients).await;
+                    packets.and(core)
                 })
                 .await;
             }
