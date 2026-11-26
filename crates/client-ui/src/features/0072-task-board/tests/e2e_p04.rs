@@ -67,9 +67,8 @@ fn fixture() -> Result<Captured, Error> {
 }
 
 fn captured() -> Result<Captured, Error> {
-    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return fixture();
-    };
+    let path =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("live capture directory is required")?;
     let path = std::path::Path::new(&path);
     let session = std::env::var("E2E_P04_SESSION")?;
     let query = read_live_result(&path.join("p04-query.bin"), &session)?;
@@ -121,6 +120,7 @@ fn result(status: CommandStatus, payload: &[u8]) -> GatedCommandResult {
 }
 
 #[test]
+#[ignore = "requires the live node-boot capture"]
 fn e2e_p04_replays_query_and_refused_start_weekly() -> Result<(), Error> {
     let captured = captured()?;
     let e = captured.expected.as_str();
@@ -215,7 +215,7 @@ fn e2e_p04_replays_query_and_refused_start_weekly() -> Result<(), Error> {
     assert_eq!(unchanged, weekly);
     assert!(panel_text(&panel).ends_with("The server refused: level too low for this difficulty"));
 
-    Ok(())
+    assert_invalid_results(&mut panel, &refused)
 }
 
 #[test]
@@ -227,20 +227,24 @@ fn p04_invalid_results_preserve_the_confirmed_board() -> Result<(), Error> {
     };
     apply_full_result(&mut panel, &captured.refused);
     let refused = panel.weekly.clone().ok_or("weekly state")?;
+    assert_invalid_results(&mut panel, &refused)
+}
+
+fn assert_invalid_results(panel: &mut TaskBoardPanel, refused: &Reply) -> Result<(), Error> {
     // Undecodable and rejected replies leave the confirmed board untouched.
-    full_request(&mut panel, FullIntent::Refresh).ok_or("query request")?;
-    apply_full_result(&mut panel, &result(CommandStatus::Accepted, &[0xff, 0x00]));
+    full_request(panel, FullIntent::Refresh).ok_or("query request")?;
+    apply_full_result(panel, &result(CommandStatus::Accepted, &[0xff, 0x00]));
     assert_eq!(
         panel.feedback,
         Some("The server returned an invalid Task Board reply")
     );
-    assert_eq!(panel.weekly.as_ref(), Some(&refused));
-    full_request(&mut panel, FullIntent::Refresh).ok_or("query request")?;
-    apply_full_result(&mut panel, &result(CommandStatus::Rejected, &[]));
+    assert_eq!(panel.weekly.as_ref(), Some(refused));
+    full_request(panel, FullIntent::Refresh).ok_or("query request")?;
+    apply_full_result(panel, &result(CommandStatus::Rejected, &[]));
     assert_eq!(
         panel.feedback,
         Some("The server refused the Task Board action")
     );
-    assert_eq!(panel.weekly.as_ref(), Some(&refused));
+    assert_eq!(panel.weekly.as_ref(), Some(refused));
     Ok(())
 }

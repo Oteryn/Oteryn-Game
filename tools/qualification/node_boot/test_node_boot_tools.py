@@ -682,10 +682,24 @@ class PgObserveTests(unittest.TestCase):
 
 
 class CloudRunSummaryTests(unittest.TestCase):
+    def test_p04_replay_selects_every_batch_covering_index_159(self):
+        helper = (HERE / "p04_client_replay.sh").read_text()
+        script = helper + textwrap.dedent("""
+            set -Eeuo pipefail
+            for OTERYN_E2E_ROW_BATCH in 159:1 158:2 0:160 +159:+1 all; do
+                p04_selected 'core, rows'
+                p04_selected ''
+                if p04_selected core; then exit 1; fi
+            done
+            for OTERYN_E2E_ROW_BATCH in 159:0 158:1 160:1 59:1; do
+                if p04_selected rows; then exit 1; fi
+            done
+            """)
+        result = subprocess.run(["bash", "-c", script], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_p04_replay_requires_fresh_capture_and_executed_test(self):
-        cloud = (HERE / "cloud_run.sh").read_text()
-        self.assertIn("replay_p04_client()", cloud)
-        helper = cloud[cloud.index("replay_p04_client()"):cloud.index("failed=0\nindex=0")]
+        helper = (HERE / "p04_client_replay.sh").read_text()
         script = helper + textwrap.dedent("""
             cd "$1" || exit 1
             mkdir captures || exit 1
@@ -693,7 +707,7 @@ class CloudRunSummaryTests(unittest.TestCase):
                 touch replay-attempted
                 [[ "$E2E_ALL_CAPTURE_DIR" == "$PWD/captures" ]] || return 2
                 [[ "$E2E_P04_SESSION" == 01890f4c-3b2a-7c01-8d11-9a321b7c0004 ]] || return 2
-                [[ "$*" == *' -- --exact' ]] || return 2
+                [[ "$*" == *' -- --ignored --exact' ]] || return 2
                 printf '%s\n' "$test_output"
             }
             marker='SEAM_EVIDENCE e2e_capture scenario=P04.client status=CAPTURED evidence=session=01890f4c-3b2a-7c01-8d11-9a321b7c0004;query'

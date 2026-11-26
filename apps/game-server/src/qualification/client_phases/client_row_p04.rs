@@ -4,7 +4,10 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::task_board;
-use task_board::task_board::full::{Reply, Request, decode_reply, encode_request};
+use oteryn_gameplay_quests::quest::task_board::full::{SHOP_OFFERS, TaskBoardShopKind};
+use task_board::task_board::full::{
+    Reply, Request, ShopOffer, Weekly, decode_reply, encode_request,
+};
 
 fn capture(name: &str, bytes: &[u8]) {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
@@ -56,33 +59,95 @@ async fn send(
     decode_reply(&result.payload).map_err(|error| format!("reply decode: {error:?}").into())
 }
 
+async fn expected_period(clients: &SeamClients<'_>) -> TestResult<u64> {
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let period: i64 = sqlx::query_scalar(
+        "SELECT (date_trunc('week', (e.activated_at AT TIME ZONE 'Europe/Berlin')
+                    - interval '6 hours')::date - DATE '1970-01-01')::bigint
+           FROM game_world_reset_active a
+           JOIN game_world_reset_epochs e USING (world_id, reset_epoch)
+          WHERE a.world_id = $1::uuid AND e.calendar = 'TIBIA_SERVER_SAVE_BERLIN_06'",
+    )
+    .bind(uuid_text(&clients.world))
+    .fetch_one(&mut connection)
+    .await?;
+    Ok(u64::try_from(period)?)
+}
+
+fn expected_shop() -> Vec<ShopOffer> {
+    SHOP_OFFERS
+        .iter()
+        .map(|item| ShopOffer {
+            index: item.id,
+            kind: match item.kind {
+                TaskBoardShopKind::Item => 0,
+                TaskBoardShopKind::Mount => 1,
+                TaskBoardShopKind::Outfit => 2,
+                TaskBoardShopKind::ItemDouble => 3,
+                TaskBoardShopKind::Promotion => 4,
+            },
+            price: item.points,
+            primary: u32::from(item.appearance_or_item),
+            secondary: u32::from(item.second_item.unwrap_or(0)),
+            addon: item.addon,
+            bought: false,
+        })
+        .collect()
+}
+
+fn fresh_weekly() -> Weekly {
+    Weekly {
+        started: false,
+        difficulty: 0,
+        expanded: false,
+        multiplier: 1,
+        kill_experience: 0,
+        delivery_experience: 0,
+        pending_points: 0,
+        pending_soulseals: 0,
+        kills: Vec::new(),
+        deliveries: Vec::new(),
+    }
+}
+
+fn verify_fresh_query(reply: &Reply, period: u64, shop: &[ShopOffer]) -> TestResult {
+    if (
+        reply.refusal,
+        reply.period,
+        reply.points,
+        reply.bounty_points,
+        reply.soulseals,
+    ) != (0, period, 0, 0, 0)
+        || reply.weekly != fresh_weekly()
+        || reply.shop != shop
+    {
+        return Err(format!(
+            "unexpected fresh Task Board: expected period={period}; observed={reply:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let period = expected_period(clients).await?;
+    let shop = expected_shop();
     let mut client = connect_world(clients, 0x26).await?;
     let initial = send(&mut client, 4, 0, Some("p04-query.bin")).await?;
-    if initial.refusal != 0 || initial.shop.is_empty() || initial.weekly.started {
-        return Err(format!("query refused or without shop: {initial:?}").into());
-    }
+    verify_fresh_query(&initial, period, &shop)?;
     let refused = send(&mut client, 5, 3, Some("p04-refused.bin")).await?;
     let mut unchanged = refused.clone();
     unchanged.refusal = 0;
     if refused.refusal != 3 || unchanged != initial {
         return Err(format!("StartWeekly(3) was not refused unchanged: {refused:?}").into());
     }
-    let offer = initial.shop.first().ok_or("shop offer")?;
+    let offer = shop.first().ok_or("authored shop offer")?;
     let expected = format!(
-        "period={}\npoints={}\nbounty_points={}\nsoulseals={}\nstarted={}\nkills={}\ndeliveries={}\nshop_count={}\nshop_first={},{},{}\nrefusal={}\n",
-        initial.period,
-        initial.points,
-        initial.bounty_points,
-        initial.soulseals,
-        initial.weekly.started,
-        initial.weekly.kills.len(),
-        initial.weekly.deliveries.len(),
-        initial.shop.len(),
+        "period={period}\npoints=0\nbounty_points=0\nsoulseals=0\nstarted=false\nkills=0\ndeliveries=0\nshop_count={}\nshop_first={},{},{}\nrefusal=3\n",
+        shop.len(),
         offer.index,
         offer.kind,
-        offer.price,
-        refused.refusal
+        offer.price
     );
     capture("p04-expected.txt", expected.as_bytes());
     let admitted = client.join_snapshot().game_session_id;
@@ -118,5 +183,56 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=P04.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=P04.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use task_board::task_board::full::{Bounty, TalismanPath};
+
+    #[test]
+    fn p04_fresh_expectations_reject_self_consistent_wrong_replies() -> TestResult {
+        let shop = expected_shop();
+        let initial = Reply {
+            refusal: 0,
+            period: 20780,
+            points: 0,
+            bounty_points: 0,
+            soulseals: 0,
+            weekly: fresh_weekly(),
+            weekly_results: None,
+            bounty: Bounty {
+                elite: false,
+                state: 0,
+                difficulty: 0,
+                selected: 0,
+                current: 0,
+                rerolls: 0,
+                daily_reroll_at: 0,
+                offers: Vec::new(),
+                active: None,
+                lists: Vec::new(),
+            },
+            talisman: [TalismanPath::default(); 4],
+            shop: shop.clone(),
+        };
+        verify_fresh_query(&initial, 20780, &shop)?;
+        for mutate in [
+            (|r: &mut Reply| r.period += 7) as fn(&mut Reply),
+            |r| r.points += 1,
+            |r| r.bounty_points += 1,
+            |r| r.soulseals += 1,
+            |r| r.weekly.expanded = true,
+            |r| {
+                r.shop.pop();
+            },
+            |r| r.shop[0].price -= 1,
+        ] {
+            let mut reply = initial.clone();
+            mutate(&mut reply);
+            assert!(verify_fresh_query(&reply, 20780, &shop).is_err());
+        }
+        Ok(())
     }
 }

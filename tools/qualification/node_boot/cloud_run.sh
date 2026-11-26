@@ -110,22 +110,6 @@ interrupt_run() {
 trap 'interrupt_run 130' INT
 trap 'interrupt_run 143' TERM
 
-replay_p04_client() {
-  local log=$1 captures=$2 replay_log="$1.p04-replay"
-  local test_name=task_board::e2e_p04::e2e_p04_replays_query_and_refused_start_weekly
-  local verdict=FAIL session
-  session=$(sed -nE 's/^SEAM_EVIDENCE e2e_capture scenario=P04\.client status=CAPTURED evidence=session=([0-9a-f-]{36});.*/\1/p' "$log")
-  if [[ "$session" =~ ^[0-9a-f-]{36}$ && $(grep -ac '^SEAM_EVIDENCE e2e_capture scenario=P04.client status=CAPTURED evidence=' "$log") == 1 ]] &&
-     ! grep -aqE '^(SEAM_EVIDENCE e2e_all scenario=P04.client status=FAIL|SEAM_EVIDENCE P04_CLIENT_CAPTURE_WRITE_ERROR)' "$log" &&
-     E2E_ALL_CAPTURE_DIR="$captures" E2E_P04_SESSION="$session" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test_name" \
-       -- --exact > "$replay_log" 2>&1 &&
-     grep -Fxq "test $test_name ... ok" "$replay_log"; then
-    verdict=PASS
-  fi
-  printf 'SEAM_EVIDENCE e2e_all scenario=P04.client status=%s evidence=live_client_replay\n' "$verdict" | tee -a "$log"
-  [[ "$verdict" == PASS ]]
-}
-
 failed=0
 index=0
 for group in "$@"; do
@@ -133,20 +117,11 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
-  capture_env=()
-  if [[ "$group" == rows && ${OTERYN_E2E_ROW_BATCH:-} == 159:1 ]]; then
-    captures="$work_dir/$index-captures"
-    mkdir -- "$captures" || blocked capture_directory_unavailable
-    capture_env=("E2E_ALL_CAPTURE_DIR=$captures")
-  fi
-  NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" env "${capture_env[@]}" \
+  NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
-  if [[ "$status" == 0 && ${#capture_env[@]} != 0 ]]; then
-    replay_p04_client "$log" "$captures" || status=$?
-  fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1
 done
