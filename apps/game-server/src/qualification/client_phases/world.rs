@@ -2633,6 +2633,9 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(218) {
                 verdict::indexed("W20b.client", async {
+                    if attempts != 1 {
+                        return Err(format!("W20b town entry logout required {attempts} attempts").into());
+                    }
                     client_row_w20b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })

@@ -28,6 +28,10 @@ pub(super) fn debug(error: impl std::fmt::Debug) -> String {
     format!("{error:?}")
 }
 
+tokio::task_local! {
+    pub(crate) static STRICT_W20B_SEED: ();
+}
+
 /// Retry only holder acquisition failure, which occurs before the semantic pass runs.
 /// Fenced writes retain their request/occurrence across attempts; ambiguous writes are final.
 pub(super) async fn retry_holder<T, E>(
@@ -36,6 +40,9 @@ pub(super) async fn retry_holder<T, E>(
     busy: impl Fn(&E) -> bool,
     mut step: impl AsyncFnMut() -> Result<T, E>,
 ) -> Result<T, E> {
+    if STRICT_W20B_SEED.try_with(|()| ()).is_ok() {
+        return step().await;
+    }
     if let Some(root) = root {
         return root.retry_foreground_holder(deadline, busy, step).await;
     }
@@ -227,6 +234,9 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     })
     .await
     .map_err(debug)?;
+    if STRICT_W20B_SEED.try_with(|()| ()).is_ok() && before.vocation() != vocation {
+        return Err("W20b seed requires the existing Sorcerer vocation".into());
+    }
     let progression = retry_holder(Some(root), deadline, progression_busy, async || {
         root.read_character_progression(authority, character).await
     })
@@ -431,7 +441,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     #[cfg(not(feature = "qualification-spawn"))]
     let after = convert_vocation(&formula, &before, vocation).map_err(debug)?;
     #[cfg(feature = "qualification-spawn")]
-    let after = if vocation == NO_VOCATION {
+    let after = if vocation == NO_VOCATION || STRICT_W20B_SEED.try_with(|()| ()).is_ok() {
         before.clone()
     } else {
         convert_vocation(&formula, &before, vocation).map_err(debug)?

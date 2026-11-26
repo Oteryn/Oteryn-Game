@@ -18,7 +18,7 @@ const EXPECTED_LIGHT: (u8, u8) = (6, 215);
 
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return Ok(());
+        return Err("W20b requires E2E_ALL_CAPTURE_DIR".into());
     };
     std::fs::File::create_new(Path::new(&root).join(name))
         .and_then(|mut file| file.write_all(bytes))
@@ -76,14 +76,62 @@ async fn prepare_player_caster(
     Ok(client)
 }
 
+async fn logout_once(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("W20b first logout refused: {logout:?}").into());
+    }
+    Ok(())
+}
+
+async fn require_sorcerer(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::cyclopedia_character as wire;
+    if !client.selected_capabilities().contains(&wire::CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1) {
+        return Err("W20b requires the wire vocation extension".into());
+    }
+    let tab = wire::CharacterTab::GeneralStats as u8;
+    let reply = client.session_mut().gated_command(
+        wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+        wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+        &[tab, 0, 0, 1],
+    ).await?;
+    if reply.status != CommandStatus::Accepted || reply.payload.first() != Some(&tab)
+        || reply.payload.last().copied() != wire::vocation_id("sorcerer")
+    {
+        return Err("W20b bootstrap must already be a Sorcerer".into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let spell = native_spell_book()?
         .spoken(WORDS)
         .ok_or("missing authored Light spell")?
         .spell;
-    let mut client = connect_player_caster(
-        clients, spell.level, spell.premium, Duration::from_secs(60),
+    if spell.level != 8 || spell.premium {
+        return Err("Light must require level 8 and no Premium".into());
+    }
+    let run_id = std::env::var("OTERYN_W20B_CAPTURE_ID")?;
+    if run_id.len() != 32 || !run_id.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err("W20b requires a fresh 128-bit capture ID".into());
+    }
+    let mut starter = connect_character(clients, 0x97, LIGHT_CHARACTER).await?;
+    require_sorcerer(&mut starter).await?;
+    request_fixture_control(
+        uuid_text(starter.join_snapshot().game_session_id.as_bytes()), "--profile", "w20b-light-strict".into(),
     ).await?;
+    logout_once(&mut starter).await?;
+    let original = starter.join_snapshot().game_session_id;
+    drop(starter);
+    let mut client = connect_character(clients, 0x98, LIGHT_CHARACTER).await?;
+    if client.join_snapshot().game_session_id == original
+        || full_e2ef7::player_level(&mut client).await? != 26
+    {
+        return Err("W20b preparation did not restore a fresh level-26 admission".into());
+    }
+    require_sorcerer(&mut client).await?;
+    let mana = client.actor_vitals().ok_or("W20b initial vitals absent")?.mana;
+    let paid = mana.checked_sub(20).ok_or("W20b caster cannot pay 20 mana")?;
     let own = *client.world_entities().ok_or("step=entities absent")?.own_identity();
     let before = client
         .session_mut()
@@ -121,6 +169,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if light != EXPECTED_LIGHT {
         return Err(format!("step=light expected={EXPECTED_LIGHT:?} observed={light:?}").into());
     }
+    if client.actor_vitals().map(|vitals| vitals.mana) != Some(paid) {
+        return Err(format!("W20b cast must debit 20 mana: before={mana} after={:?}", client.actor_vitals()).into());
+    }
     let position = client.world_spatial().actor_position;
     let delta = WorldSpatialEntitiesDelta {
         content_generation: client.world_spatial().content_generation,
@@ -135,28 +186,56 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &EntityLights::from([(own, EntityLight { level: light.0, color: light.1 })]),
     )
     .map_err(|error| format!("step=encode {error:?}"))?;
-    capture("w20b-entities.bin", &payload)?;
-    capture(
-        "w20b-expected.txt",
-        format!(
-            "words={WORDS}\nidentity={}\ngeneration={}\nlight={}:{}\ncontent={}\n",
-            hex(&own),
-            entity.entity.generation,
-            light.0,
-            light.1,
-            hex_bytes(&client.world_spatial().content_generation)
-        )
-        .as_bytes(),
-    )?;
-    let logout = client.session_mut().logout().await?;
-    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("step=logout observed={logout:?} need=Accepted").into());
+    let expected = format!(
+        "run_id={run_id}\nwords={WORDS}\nidentity={}\ngeneration={}\nlight=6:215\ncontent={}\n",
+        hex(&own),
+        entity.entity.generation,
+        hex_bytes(&client.world_spatial().content_generation)
+    );
+    let session = client.join_snapshot().game_session_id;
+    logout_once(&mut client).await?;
+    drop(client);
+    let mut fresh = connect_character(clients, 0x99, LIGHT_CHARACTER).await?;
+    if fresh.join_snapshot().game_session_id == session
+        || fresh.actor_vitals().map(|vitals| vitals.mana) != Some(paid)
+    {
+        return Err("W20b fresh admission did not retain the paid mana".into());
     }
-    Ok(format!("light={}:{}", light.0, light.1))
+    let clock = std::path::PathBuf::from(std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE")
+        .ok_or("W20b requires the disposable qualification clock")?);
+    let initial: u64 = std::fs::read_to_string(&clock)?.trim().parse()?;
+    let temporary = clock.with_extension("w20b-next");
+    for (seconds, expected) in [(0, Some((6, 215))), (65, Some((5, 215))),
+        (125, Some((4, 215))), (188, Some((3, 215))), (250, Some((2, 215))),
+        (311, Some((1, 215))), (357, Some((1, 215))), (375, None)]
+    {
+        if seconds > 0 {
+            std::fs::write(&temporary, (initial + seconds * 1000).to_string())?;
+            std::fs::rename(&temporary, &clock)?;
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+        loop {
+            let own = *fresh.world_entities().ok_or("W20b restored entities absent")?.own_identity();
+            let seen = fresh.session_mut().visible_appearances().into_iter()
+                .find(|entry| entry.entity.entity.identity == own)
+                .ok_or("W20b restored caster absent")?.light;
+            if seen == expected {
+                break;
+            }
+            if seconds == 0 || tokio::time::Instant::now() >= deadline {
+                return Err(format!("W20b light at offset {seconds}s expected={expected:?} observed={seen:?}").into());
+            }
+            fresh.service_liveness(Duration::from_millis(50)).await?;
+        }
+    }
+    logout_once(&mut fresh).await?;
+    capture("w20b-entities.bin", &payload)?;
+    capture("w20b-expected.txt", expected.as_bytes())?;
+    Ok("light=6:215,mana=20,relog=restored,decay=verified,expiry=verified".into())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    character_prep::declare_seeded("W20b.client", "sorcerer-level-26,premium-if-required", "native Light packet capture");
+    character_prep::declare_seeded("W20b.client", "sorcerer-level-26", "native Light packet capture");
     match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await {
         Ok(Ok(observed)) => evidence(&format!("e2e_all scenario=W20b.client status=PASS evidence={observed}")),
         Ok(Err(error)) => evidence(&format!(
@@ -181,6 +260,6 @@ fn qualification_review_w20b_uses_fenced_seeded_preparation() -> TestResult {
     assert!(setup.contains(concat!("character_prep::", "Seeded")));
     assert!(setup.contains(concat!("character_prep::", "grant_premium")));
     let (packet, _) = packet.split_once("pub(super) async fn run_packet(").ok_or("missing W20b runner")?;
-    assert!(packet.contains(concat!("connect_player_", "caster(")));
+    assert!(packet.contains(concat!("request_fixture_", "control(")));
     Ok(())
 }
