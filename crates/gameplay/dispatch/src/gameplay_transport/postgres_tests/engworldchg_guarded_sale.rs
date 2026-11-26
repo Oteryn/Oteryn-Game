@@ -130,16 +130,7 @@ async fn install_chip(
             &capabilities,
         )
         .ok_or("NPC capabilities")?;
-    let placements: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../../../content/world/npc-placements/placements-00000-00055.json"
-    ))?;
-    let row = placements["records"]
-        .as_array()
-        .ok_or("placements")?
-        .iter()
-        .map(|r| &r["declaration"])
-        .find(|r| r["npc"] == CHIP)
-        .ok_or("Chip source placement")?;
+    let row = super::npc_placement_fixtures::published(CHIP)?.ok_or("Chip source placement")?;
     assert_eq!(
         row["cell"],
         serde_json::json!({"x":32418,"y":31702,"floor":7})

@@ -19,7 +19,7 @@ pub(super) mod elemental_arrival;
 mod floor_assembly;
 mod house_container;
 #[path = "loop_map_pickup.rs"]
-mod map_pickup;
+pub(super) mod map_pickup;
 mod map_sources;
 mod seed_drop;
 
@@ -428,7 +428,9 @@ impl LoopGroundOverlay {
                 blocks_projectile: entry
                     .field_collision
                     .map_or(native_projectile, |(_, projectile)| projectile),
-                pickupable,
+                pickupable: pickupable
+                    && item.definition.production_key
+                        != crate::durability::map_item_mint::MAP_DISPENSER_KEY,
                 bound: false,
                 count: item.quantity.clamp(1, 100),
                 sub_type: 0,
@@ -596,7 +598,17 @@ impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
 struct CacheState {
     epoch: u64,
     current: Option<Arc<LoopGroundOverlay>>,
+    cask_collision: Option<CaskCollisionPin>,
     pending_origins: std::collections::BTreeMap<u64, CommandRef>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct CaskCollisionPin {
+    scope: crate::foundation::RuntimeScopeRefV1,
+    generation: u64,
+    bundle: [u8; 32],
+    reset_epoch: u64,
+    cache_epoch: u64,
 }
 
 /// The Channel's loop Ground overlay, read once after each change. A leaf lock, never held
@@ -623,6 +635,10 @@ impl LoopGroundCache {
             state.epoch = state.epoch.wrapping_add(1);
             state.current = None;
         }
+    }
+
+    pub(super) fn epoch(&self) -> Option<u64> {
+        self.state.lock().ok().map(|state| state.epoch)
     }
 
     /// An unresolved map MINT origin is still part of the scene census even
@@ -713,6 +729,84 @@ async fn projection_read_with_budget<T, E>(
         .ok()
 }
 
+/// Movement shares the runtime's static collision index with Ground USE-WITH.
+pub(super) async fn reconcile_cask_collision(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+) -> Option<()> {
+    let Some(map) = admission.bundle_map() else {
+        return Some(());
+    };
+    let base = map.overlay.base();
+    let (scope, generation) = {
+        let runtime = admission.runtime.lock().await;
+        (
+            runtime.binding().runtime_scope(),
+            runtime.binding().scope_generation().get(),
+        )
+    };
+    let crate::foundation::RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = scope
+    else {
+        return Some(());
+    };
+    let cache = &admission.states.loop_ground;
+    let pin = {
+        let state = cache.state.lock().ok()?;
+        let pin = CaskCollisionPin {
+            scope,
+            generation,
+            bundle: base.digest(),
+            reset_epoch: admission.reset_epoch,
+            cache_epoch: state.epoch,
+        };
+        if state.cask_collision.as_ref() == Some(&pin) {
+            return Some(());
+        }
+        pin
+    };
+    let retired = projection_read(
+        admission.root,
+        async || {
+            admission
+                .root
+                .read_retired_map_cask_placements(
+                    world_id,
+                    channel_id,
+                    pin.bundle,
+                    pin.reset_epoch,
+                    base.entry_count(),
+                )
+                .await
+        },
+        |error| {
+            matches!(
+                error,
+                crate::durability::map_item_mint::MapItemMintError::Unavailable(
+                    crate::durability::DurabilityError::RootUnavailable
+                )
+            )
+        },
+    )
+    .await?;
+    let runtime = admission.runtime.lock().await;
+    if runtime.owner_fence().is_err()
+        || runtime.binding().runtime_scope() != scope
+        || runtime.binding().scope_generation().get() != generation
+    {
+        return None;
+    }
+    for key in retired {
+        map_sources::hide_retired_cask(map, key)?;
+    }
+    let mut state = cache.state.lock().ok()?;
+    if state.epoch == pin.cache_epoch {
+        state.cask_collision = Some(pin);
+    }
+    Some(())
+}
+
 /// The Channel's loop Ground overlay over the bundle `base`; `None` without a pinned index or
 /// when the item owner cannot be read.
 pub async fn loop_ground(
@@ -756,7 +850,7 @@ pub async fn loop_ground(
             async || {
                 admission
                     .root
-                    .read_map_item_mint_placements(
+                    .read_map_item_mint_placement_states(
                         world_id,
                         channel_id,
                         base.digest(),
@@ -794,12 +888,33 @@ pub async fn loop_ground(
                 .bundle_map()
                 .is_some_and(|map| map.facts.captured_map_item(key).is_some())
     };
-    if taken.iter().any(|key| !valid_source(*key)) {
+    if taken.iter().any(|(key, _)| !valid_source(*key)) {
         return None;
     }
-    built.taken_sources.extend(taken.iter().copied());
+    if taken.iter().any(|(_, retired_cask)| *retired_cask) {
+        let runtime = admission.runtime.lock().await;
+        if runtime.owner_fence().is_err()
+            || runtime.binding().runtime_scope() != scope
+            || runtime.binding().scope_generation().get() != field_pin.2
+        {
+            return None;
+        }
+        let map = admission.bundle_map()?;
+        if map.overlay.base().digest() != base.digest() {
+            return None;
+        }
+        for &(key, retired_cask) in &taken {
+            if retired_cask {
+                map_sources::hide_retired_cask(map, key)?;
+            }
+        }
+    }
+    built
+        .taken_sources
+        .extend(taken.iter().map(|(key, _)| *key));
     let roots: Vec<_> = taken
         .into_iter()
+        .map(|(key, _)| key)
         .filter(|key| map_sources::is_top_level(base, *key))
         .collect();
     crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots).ok()?;
@@ -1306,7 +1421,7 @@ fn drop_cell(
 
 /// Finite source-script relocation may span a small authored room. Both cells
 /// must exist on the same floor; ordinary item drops still use drop_cell.
-fn source_drop_cell(
+pub(super) fn source_drop_cell(
     base: &WorldBase,
     from: (i32, i32, i16),
     to: WorldTilePosition,

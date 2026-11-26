@@ -583,7 +583,7 @@ pub(super) async fn hunt_loot(
     Err(format!("source hunt did not deliver {count} units of {item}").into())
 }
 
-async fn collect_loot(
+pub(super) async fn collect_loot(
     owner: &super::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &super::AdmittedSession,
     h: &super::fixture::Harness,

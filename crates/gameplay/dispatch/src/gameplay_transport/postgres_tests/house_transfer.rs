@@ -1,13 +1,9 @@
 //! HOUSE-TRANSFER-1 exercises the production composition through framed dispatch.
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
-use super::house_transfer_fixtures::{RecoveryIdentifiers, RecoverySource, bytes, prepare_owned_session, resume_same_session, scalar};
+use super::house_transfer_fixtures::{RecoveryIdentifiers, RecoverySource, TRANSFER_TEST_HOUSE as HOUSE, bytes, prepare_owned_session, prepare_transfer_scene, initialize_transfer_source, resume_same_session, scalar};
 
 use super::*;
-use crate::durability::house_scope_handoff::{
-    HouseId, HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome, HouseScopeAssignmentRequest,
-};
-use crate::durability::runtime_scope_assignment::{ControlActor, OperationKey};
 use crate::foundation::{MessageType, MovementLocalPosition, decode_wire_envelope};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
@@ -18,7 +14,6 @@ use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
 };
 
-const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
 
 #[test]
 fn house_transfer_postgres_real_dispatch_entry_exit_recovery_and_fences() -> TestResult {
@@ -530,117 +525,13 @@ async fn case(h: &Harness, check_imbuements: bool) -> TestResult {
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
-    let base = Dependencies::new()?;
-    let (controller, native_pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
-        base.admitted.world_id,
-        "content-1",
-    )?;
+    let (controller, cells, deps) = prepare_transfer_scene(h).await?;
     let generation = controller.active().ok_or("active native generation")?;
-    let room = native_pin.qualified_room().clone();
-    let world = transfer_bundle(base.admitted.world_id, base.admitted.channel_id)?;
-    let cells = world.movement_cells(room.movement_cells()).map_err(debug)?;
-    let pin = ChannelContentPin::from_activation(
-        base.admitted.world_id,
-        1,
-        cells.scope().generation_digest,
-        native_pin.identity().client_artifact_digest(),
-        native_pin.frame_binding().digest(),
-        [4; 32],
-        (32309, 32805, 7),
-    );
-    // House recovery reads equipment under the same current Content activation
-    // as the runtime; publishing only an in-memory pin cannot satisfy that read.
-    sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
-        .bind(base.admitted.world_id.as_bytes().as_slice())
-        .bind(base.admitted.channel_id.as_bytes().as_slice())
-        .execute(&h.pool)
-        .await?;
-    sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
-        .bind(base.admitted.world_id.as_bytes().as_slice())
-        .bind(base.admitted.channel_id.as_bytes().as_slice())
-        .bind(pin.server_artifact_digest().as_slice())
-        .bind(pin.client_artifact_digest().as_slice())
-        .bind(pin.frame_binding_digest().as_slice())
-        .execute(&h.pool)
-        .await?;
-    let deps = Dependencies::with_content(pin, room, base.spells)?;
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = Some(generation);
     owner.movement_cells = (&cells).into();
     owner.evidence = &recovery_source.evidence;
-    deps.initialize(&owner).await;
-    {
-        let mut runtime = owner.runtime.lock().await;
-        runtime
-            .initialize_pinned_test_position(
-                deps.actor,
-                MovementLocalPosition {
-                    x: 32309,
-                    y: 32805,
-                    floor: 7,
-                },
-            )
-            .map_err(debug)?;
-        runtime
-            .bind_attacker_lease(
-                deps.actor,
-                deps.admitted.game_session_id,
-                crate::foundation::CharacterLease::new(
-                    crate::foundation::CharacterId::decode(&id(41)).map_err(debug)?,
-                    2,
-                )
-                .map_err(debug)?,
-            )
-            .map_err(debug)?;
-    }
-    sqlx::query(include_str!(
-        "../../../../../../apps/game-server/tests/support/owned_house_fixture.sql"
-    ))
-    .bind(id(42).as_slice())
-    .bind(HOUSE)
-    .bind(id(41).as_slice())
-    .execute(&h.pool)
-    .await?;
-    sqlx::query("INSERT INTO game_control_house_scope_grants(control_role,world_id,house_key,operation) SELECT session_user,encode($1,'hex')::uuid,$2,1").bind(id(42).as_slice()).bind(HOUSE).execute(&h.pool).await?;
-    assert!(matches!(
-        h.root
-            .assign_house_scope(HouseScopeAssignmentRequest {
-                operation_key: OperationKey::from_bytes([82; 32]),
-                actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
-                actor_role: "oteryn_test_admin".into(),
-                command: HouseScopeAssignmentCommand::Assign {
-                    house: HouseId::new(deps.admitted.world_id, HOUSE).ok_or("house")?,
-                    target: h.node.fact()
-                }
-            })
-            .await
-            .map_err(debug)?,
-        HouseScopeAssignmentOutcome::Committed(_)
-    ));
-    let (current, _) = FreshAdmissionStore::from_root(h.root.clone())
-        .current_session_at(deps.admitted.game_session_id)
-        .await?;
-    let mut admitted = deps.admitted;
-    admitted.first_entry = FirstEntryOutcome::Positioned;
-    admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
-    admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[86]).ok_or("selection")?;
-    // Recovery reads the selection admitted by the real Channel login owner;
-    // the House reader deliberately cannot initialize missing Character state.
-    assert!(owner.admit_hazard(admitted).await);
-    let admission = super::fresh_fixture::fresh::Source::new(0)?.request()?;
-    let equipment = h
-        .root
-        .initialize_admission_equipment(
-            &authority,
-            &h.node,
-            &admitted.item_fence.ok_or("source equipment fence")?,
-            cells.scope().generation_digest,
-            admission.operation(),
-        )
-        .await
-        .map_err(debug)?;
-    assert!(equipment.items.is_empty());
+    let admitted = initialize_transfer_source(h, &owner, &deps, cells.scope().generation_digest).await?;
     let source = admitted;
     let mut unsupported = source;
     unsupported.continuity.selected_capabilities =
@@ -1176,66 +1067,6 @@ async fn resume_transfer(
     Ok(admitted)
 }
 
-
-fn transfer_bundle(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    use crate::map::boot::{self, tests as fixture};
-    use oteryn_world_bundle::bundle;
-    let (bytes, mut pins) =
-        fixture::bundle_with_items("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
-    let mut data = bundle::read(&bytes).map_err(debug)?;
-    let sector = data.sectors.first_mut().ok_or("sector")?;
-    let mut entrance = sector
-        .tiles
-        .iter()
-        .find(|t| t.x == 3)
-        .ok_or("grass tile")?
-        .clone();
-    for tile in &mut sector.tiles {
-        if tile.x == 6 {
-            tile.house = 3437;
-            tile.items.last_mut().ok_or("door")?.attrs.door = Some(42);
-        }
-        tile.x += 32303;
-        tile.y += 32804;
-    }
-    entrance.x = 32309;
-    entrance.y = 32805;
-    sector.tiles.push(entrance);
-    sector.sx = 1009;
-    sector.sy = 1025;
-    data.manifest.world.min_x = 32288;
-    data.manifest.world.min_y = 32800;
-    data.manifest.world.max_x = 32320;
-    data.manifest.world.max_y = 32832;
-    let bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
-        &data.manifest,
-        &data.sectors,
-        &data.spawns,
-        &data.npcs,
-    )
-    .map_err(debug)?;
-    pins.digest = bundle::read(&bytes).map_err(debug)?.digest;
-    let base = crate::map::load(&bytes, &pins).map_err(debug)?;
-    boot::boot(
-        &bytes,
-        &boot::BootPins {
-            bundle: pins,
-            map_revision: crate::map::overlay::map_revision(&base),
-            start: crate::map::overlay::TilePos {
-                x: 32309,
-                y: 32805,
-                floor: -7,
-            },
-        },
-        world,
-        channel,
-        fixture::door_items,
-    )
-    .map_err(debug)
-}
 
 #[test]
 fn c08_conditions_postgres_logout_fresh_login_preserves_poison_haste_regeneration() -> TestResult {

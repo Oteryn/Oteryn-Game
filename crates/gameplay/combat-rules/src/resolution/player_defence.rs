@@ -33,7 +33,8 @@ struct HandItem {
 /// weapon the last other weapon. With a shield the value is the shield's defence plus the
 /// weapon's extra defence, scaled by shielding; with a weapon only, its defence plus extra
 /// defence, scaled by its skill; empty hands defend with the fist value and the fist skill.
-/// `None` (fail closed) when a hand item's policy is unknown or its weapon facts are not Known.
+/// An unauthored extra defence contributes zero. Unknown base defence or conflicting facts
+/// still leave the hand defence unresolved.
 pub fn hand_defence<'a>(
     content: &NativeGameplayState,
     constants: &AttackConstants,
@@ -51,18 +52,21 @@ pub fn hand_defence<'a>(
             ReferenceItemField::Known(weapon) => weapon,
             ReferenceItemField::Unknown | ReferenceItemField::Conflict => return None,
         };
-        let (
-            ReferenceItemField::Known(kind),
-            ReferenceItemField::Known(defense),
-            ReferenceItemField::Known(extra_defense),
-        ) = (&facts.weapon_type, &facts.defense, &facts.extra_defense)
+        let (ReferenceItemField::Known(kind), ReferenceItemField::Known(defense)) =
+            (&facts.weapon_type, &facts.defense)
         else {
             return None;
+        };
+        // Crystal's ItemType initializes extraDefense to zero (items.hpp:305).
+        let extra_defense = match facts.extra_defense {
+            ReferenceItemField::Known(points) => points.0,
+            ReferenceItemField::Unknown | ReferenceItemField::NotApplicable => 0,
+            ReferenceItemField::Conflict => return None,
         };
         let item = HandItem {
             kind: *kind,
             defense: defense.0,
-            extra_defense: extra_defense.0,
+            extra_defense,
         };
         if matches!(
             *kind,
