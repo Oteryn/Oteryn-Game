@@ -484,7 +484,10 @@ async fn buy_watch(
         || conversation.open.map(|open| open.0) != Some(actor)
         || !lubo_greeting_matches(&conversation.lines)
     {
-        return Err("step=seller observed=missing-new-lubo-greeting".into());
+        return Err(format!(
+            "step=seller expected=authored-lubo-greeting reply_sequence={greeting} delta_sequence={} open={:?} lines={:?}",
+            delta.server_sequence, conversation.open, conversation.lines
+        ).into());
     }
     let trade = talk(client, actor, "trade").await?;
     let delta = client
