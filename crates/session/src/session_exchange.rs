@@ -1,7 +1,46 @@
 //! Session session exchange.
 use super::*;
 
+/// Original outbound and inbound envelopes for a correlated Highscores query.
+pub struct HighscoresExchange {
+    pub game_session_id: GameSessionId,
+    pub request_frame: Vec<u8>,
+    pub result_frame: Vec<u8>,
+    pub error_code: u32,
+}
+
 impl<S: SessionStream> Session<S> {
+    /// Query Highscores once and retain the original frames for qualification replay.
+    pub async fn capture_highscores_exchange(
+        &mut self,
+        payload: &[u8],
+    ) -> Result<HighscoresExchange, SessionError> {
+        use oteryn_protocol_oteryn::highscores::{
+            CAPABILITY_HIGHSCORES_V1, COMMAND_TYPE_HIGHSCORES_QUERY_V1,
+        };
+        self.ensure_usable()?;
+        if !self.is_selected(CAPABILITY_HIGHSCORES_V1) {
+            return Err(SessionError::CapabilityNotSelected {
+                capability: CAPABILITY_HIGHSCORES_V1,
+            });
+        }
+        let mut capture = HighscoresExchange {
+            game_session_id: self.join_snapshot.game_session_id,
+            request_frame: Vec::new(),
+            result_frame: Vec::new(),
+            error_code: 0,
+        };
+        let result = self
+            .exchange_result(
+                COMMAND_TYPE_HIGHSCORES_QUERY_V1,
+                payload,
+                Some(&mut capture),
+            )
+            .await;
+        self.poison_on_error(result)?;
+        Ok(capture)
+    }
+
     pub(super) fn terminal_protocol_error(
         &self,
         envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>,
@@ -190,6 +229,15 @@ impl<S: SessionStream> Session<S> {
         command_type: u32,
         payload: &[u8],
     ) -> Result<ReceivedResult, SessionError> {
+        self.exchange_result(command_type, payload, None).await
+    }
+
+    async fn exchange_result(
+        &mut self,
+        command_type: u32,
+        payload: &[u8],
+        mut capture: Option<&mut HighscoresExchange>,
+    ) -> Result<ReceivedResult, SessionError> {
         let command_id = self.next_command_id;
         // Consumed before the write: an attempted (possibly half-written) command's id is never
         // reused.
@@ -207,17 +255,31 @@ impl<S: SessionStream> Session<S> {
             write_frame(&mut self.stream, &frame),
         )
         .await?;
+        if let Some(capture) = capture.as_deref_mut() {
+            capture.request_frame.clone_from(&frame);
+        }
 
         loop {
-            let (message_type, server_sequence, result_payload) =
-                self.read_sequenced_push("CommandResult").await?;
+            let result_frame = self.read_post_admission("CommandResult").await?;
+            let envelope = decode_wire_envelope(&result_frame)?;
+            let message_type = envelope.message_type();
+            if !matches!(
+                message_type,
+                MessageType::CommandResult | MessageType::StateDelta
+            ) {
+                return Err(SessionError::UnexpectedMessage {
+                    expected: MessageType::CommandResult,
+                    actual: message_type,
+                });
+            }
+            let server_sequence = self.next_sequence(&envelope)?;
             if message_type == MessageType::StateDelta {
                 // Pushed before the result (the session never predicts the next frame's domain).
-                let event = self.apply_state_delta(server_sequence, &result_payload)?;
+                let event = self.apply_state_delta(server_sequence, envelope.payload())?;
                 self.queue_event(event)?;
                 continue;
             }
-            let result = decode_command_result(&result_payload)?;
+            let result = decode_command_result(envelope.payload())?;
             if matches!(
                 result.status,
                 CommandStatus::DuplicateReplay | CommandStatus::DuplicateOutcomeExpired
@@ -254,12 +316,17 @@ impl<S: SessionStream> Session<S> {
                     actual: result.command_id,
                 });
             }
-            return Ok(ReceivedResult {
+            let received = ReceivedResult {
                 command_id,
                 status: result.status,
                 server_sequence,
                 payload: result.payload.to_vec(),
-            });
+            };
+            if let Some(capture) = capture {
+                capture.error_code = result.error_code;
+                capture.result_frame = result_frame;
+            }
+            return Ok(received);
         }
     }
 

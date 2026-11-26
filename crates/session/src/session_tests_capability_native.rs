@@ -460,6 +460,57 @@ fn highscores_query_uses_selected_session_and_preserves_live_result() -> Result<
 }
 
 #[test]
+fn highscores_capture_preserves_the_correlated_refusal_frame() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer(&mut server, &[9], &[9], &[]).await?;
+                    let request = read_frame(&mut server).await?;
+                    let envelope = decode_wire_envelope(&request)?;
+                    let command = envelope.client_command(1)?;
+                    assert_eq!(command.command_type, 14);
+                    let refusal = oteryn_protocol_oteryn::encode_command_error_result(
+                        1,
+                        41,
+                        command.command_id,
+                        FoundationProtocolError::NotSupported,
+                    )?;
+                    write_frame(&mut server, &refusal).await?;
+                    Ok::<_, BoxError>((request, refusal))
+                });
+                let mut session = Session::admit(client, admission_with(&[9])?).await?;
+                let query = highscores::encode_highscores_query(highscores::HighscoresQuery {
+                    world: None,
+                    details: true,
+                    category: 15,
+                    vocation: 0,
+                    page: 1,
+                    snapshot_id: 0,
+                })
+                .map_err(|e| format!("{e:?}"))?;
+                let captured = session.capture_highscores_exchange(&query).await?;
+                let (request, refusal) = peer.await??;
+                assert_eq!(
+                    captured.game_session_id,
+                    session.join_snapshot().game_session_id
+                );
+                assert_eq!(captured.request_frame, request);
+                assert_eq!(captured.result_frame, refusal);
+                assert_eq!(
+                    captured.error_code,
+                    FoundationProtocolError::NotSupported.code()
+                );
+                Ok(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "highscores capture test panicked")?
+}
+
+#[test]
 fn market_reply_mirrored_into_domain_28_is_applied_not_rejected() -> Result<(), BoxError> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
