@@ -17,12 +17,13 @@ const PROBES: [(&str, u32); 2] = [
     ("afflicted outfit item", AFFLICTED_OUTFIT_PIECE),
 ];
 const AFFLICTED_PIECES: [u32; 6] = [12551, 12552, 12553, 12554, 12555, 12556];
+const DOLL_COMMAND_WINDOW: u64 = 1024;
 const NEEDED: &str = "needed:outfit-or-mount-item-6579-or-12551-in-inventory;no-npc-seller(content/services/trade);drops-only-from-high-level-creatures(content/loot)";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result =
-        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    // The duplicate can require hundreds of read-only exchanges before its single USE.
+    let result = verdict::indexed_timeout(Duration::from_secs(900), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
@@ -271,7 +272,7 @@ async fn plan_owned_doll_use(
 
     let first = client.next_command_id();
     let mut scheduled = None;
-    for command in first..first + 1024 {
+    for command in first..first + DOLL_COMMAND_WINDOW {
         if expected_doll_choice(client, source, command)?.owned == known.owned {
             scheduled = Some(command);
             break;
@@ -300,6 +301,9 @@ async fn plan_owned_doll_use(
             return Err(format!("step=doll-duplicate-sequence command={command} observed=unexpected-query-result").into());
         }
         baseline.get_or_insert(reply);
+        if (command - first).is_multiple_of(32) {
+            evidence(&format!("W19D_DRAW_PREPARATION_CHECK PASS command={command} scheduled={scheduled}"));
+        }
     }
     Ok(())
 }
