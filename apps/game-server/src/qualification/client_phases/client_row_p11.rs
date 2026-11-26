@@ -124,20 +124,56 @@ async fn observe<S: SessionStream>(client: &mut Session<S>) -> TestResult<Observ
     })
 }
 
-fn provenance(transcript: &[u8], live: &Observation, character: &[u8; 16]) -> TestResult<String> {
+#[derive(Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CapturedCommandResult {
+    command_id: u64,
+    game_session_id: String,
+    payload: Vec<u8>,
+    server_sequence: u64,
+    status: u32,
+}
+
+fn command_envelopes(
+    transcript: &[u8],
+    session: [u8; 16],
+) -> TestResult<Vec<CapturedCommandResult>> {
     use oteryn_protocol_oteryn::{MessageType, decode_command_result};
-    use sha2::{Digest, Sha256};
+    if session[6] >> 4 != 7 || session[8] & 0xc0 != 0x80 {
+        return Err("P11 admitted session is not UUIDv7".into());
+    }
+    let game_session_id = uuid_text(&session);
     let Reply::Frames(records) = frames(transcript) else {
         return Err("P11 capture has no server frames".into());
     };
-    let mut results = Vec::new();
+    let mut envelopes = Vec::new();
     for record in records {
         let frame = decode_wire_envelope(&record)?;
         if frame.message_type() == MessageType::CommandResult {
             let result = decode_command_result(frame.payload())?;
-            results.push((result.command_id, frame.server_sequence()));
+            envelopes.push(CapturedCommandResult {
+                command_id: result.command_id,
+                game_session_id: game_session_id.clone(),
+                payload: result.payload.to_vec(),
+                server_sequence: frame.server_sequence(),
+                status: result.status as u32,
+            });
         }
     }
+    Ok(envelopes)
+}
+
+fn provenance(
+    transcript: &[u8],
+    live: &Observation,
+    character: &[u8; 16],
+    envelopes: &[CapturedCommandResult],
+) -> TestResult<String> {
+    use sha2::{Digest, Sha256};
+    let results: Vec<_> = envelopes
+        .iter()
+        .map(|record| (record.command_id, record.server_sequence))
+        .collect();
     if results.len() != 4
         || !results.iter().take(3).map(|&(id, _)| id).eq(live.commands)
         || live.commands[2].checked_add(1) != Some(results[3].0)
@@ -157,6 +193,39 @@ fn provenance(transcript: &[u8], live: &Observation, character: &[u8; 16]) -> Te
 }
 
 #[test]
+fn p11_capture_envelope_requires_the_exact_five_fields() -> TestResult {
+    let envelope = CapturedCommandResult {
+        command_id: 2,
+        game_session_id: "01934f10-7c00-7000-8000-000000000004".into(),
+        payload: vec![8, 1],
+        server_sequence: 3,
+        status: 1,
+    };
+    let value = serde_json::to_value(&envelope)?;
+    let object = value.as_object().ok_or("P11 envelope is not an object")?;
+    assert_eq!(object.len(), 5);
+    assert_eq!(
+        serde_json::from_value::<CapturedCommandResult>(value.clone())?,
+        envelope
+    );
+    for field in [
+        "command_id",
+        "game_session_id",
+        "payload",
+        "server_sequence",
+        "status",
+    ] {
+        let mut missing = object.clone();
+        assert!(missing.remove(field).is_some());
+        assert!(serde_json::from_value::<CapturedCommandResult>(missing.into()).is_err());
+    }
+    let mut extra = object.clone();
+    extra.insert("extra".into(), serde_json::Value::Null);
+    assert!(serde_json::from_value::<CapturedCommandResult>(extra.into()).is_err());
+    Ok(())
+}
+
+#[test]
 fn e2e_p11_original_frame_replay() -> TestResult {
     let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
         assert!(std::env::var_os("OTERYN_P11_LIVE_PROVENANCE").is_none());
@@ -170,6 +239,8 @@ fn e2e_p11_original_frame_replay() -> TestResult {
     let metadata: serde_json::Value = serde_json::from_str(&expected)?;
     let character: [u8; 16] = serde_json::from_value(metadata["character"].clone())?;
     let transcript = std::fs::read(directory.join("p11-frames.bin"))?;
+    let envelopes: Vec<CapturedCommandResult> =
+        serde_json::from_slice(&std::fs::read(directory.join("p11-envelopes.json"))?)?;
     if transcript.is_empty() || transcript.len() > MAX_CAPTURE_BYTES {
         return Err("P11 capture has invalid length".into());
     }
@@ -190,7 +261,9 @@ fn e2e_p11_original_frame_replay() -> TestResult {
             };
             let mut session = Session::admit(stream, admission).await?;
             let replay = observe(&mut session).await?;
-            if provenance(&transcript, &replay, &character)? != expected {
+            if command_envelopes(&transcript, replay.session)? != envelopes
+                || provenance(&transcript, &replay, &character, &envelopes)? != expected
+            {
                 return Err(
                     "P11 replay did not match live session, commands, sequences or full page"
                         .into(),
@@ -410,10 +483,13 @@ async fn journey(clients: &SeamClients<'_>, core: &SeamClients<'_>) -> TestResul
     let transcript = bytes
         .into_inner()
         .map_err(|_| "P11 capture lock poisoned")?;
-    let metadata = provenance(&transcript, &live, &clients.characters[index])?;
+    let envelopes = command_envelopes(&transcript, live.session)?;
+    let metadata = provenance(&transcript, &live, &clients.characters[index], &envelopes)?;
+    let envelopes_json = serde_json::to_vec(&envelopes)?;
     use std::io::Write;
     for (name, data) in [
         ("p11-frames.bin", transcript.as_slice()),
+        ("p11-envelopes.json", envelopes_json.as_slice()),
         ("p11-provenance.json", metadata.as_bytes()),
     ] {
         std::fs::OpenOptions::new()
