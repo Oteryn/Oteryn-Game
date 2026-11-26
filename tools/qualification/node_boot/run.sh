@@ -1862,6 +1862,54 @@ if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
   exit "$?"
 fi
 
+s11_client_selected() {
+  [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]] || return 1
+  local groups=${NODE_BOOT_E2E_ONLY:-}
+  [[ -z "${groups//[[:space:]]/}" || ",${groups//[[:space:]]/}," == *,rows,* ]] || return 1
+  python3 - "${OTERYN_E2E_ROW_BATCH:-0:15}" <<'PY_S11_BATCH'
+import re
+import sys
+
+batch = sys.argv[1]
+if batch == "all":
+    sys.exit(0)
+match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+if not match:
+    sys.exit(1)
+start, count = (part.lstrip("0") or "0" for part in match.groups())
+if len(start) > 3 or len(count) > 20:
+    sys.exit(1)
+start, count = int(start), int(count)
+sys.exit(not (count <= 2 * sys.maxsize + 1 and 0 <= 210 - start < count))
+PY_S11_BATCH
+}
+
+s11_client_replay() {
+  local started=$SECONDS log="$WORK/s11-client.log"
+  local capture_dir="${NODE_BOOT_S11_CAPTURE_DIR:?}"
+  local test=highscores::e2e_s11::e2e_s11_ranking_page_replays_into_the_highscores_panel
+  local reason=missing-live-capture
+  if grep -q '^SEAM_EVIDENCE e2e_capture scenario=S11\.client status=CAPTURED ' "$WORK/stage-seam_stages.log" &&
+    [[ -s "$capture_dir/s11-page1.bin" && -s "$capture_dir/s11-expected.txt" ]]; then
+    reason=panel-replay-failed
+    if E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact > "$log" 2>&1 &&
+      grep -Fxq "test $test ... ok" "$log" &&
+      grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$log"; then
+      cat "$log"
+      printf 'SEAM_EVIDENCE e2e_all scenario=S11.client status=PASS seconds=%d evidence=live-capture-native-panel-replay\n' "$((SECONDS - started))"
+      return 0
+    fi
+    cat "$log"
+  fi
+  printf 'SEAM_EVIDENCE e2e_all scenario=S11.client status=FAIL seconds=%d evidence=%s cause=assertion root=S11.client/replay\n' "$((SECONDS - started))" "$reason"
+  return 1
+}
+
+if s11_client_selected; then
+  NODE_BOOT_S11_CAPTURE_DIR="$(mktemp -d "$WORK/s11-capture.XXXXXX")"
+  export NODE_BOOT_S11_CAPTURE_DIR
+fi
+
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
@@ -1891,6 +1939,9 @@ else
   fi
   stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
+fi
+if s11_client_selected; then
+  stage s11_client_replay "$seam_stage_name" -- s11_client_replay
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then

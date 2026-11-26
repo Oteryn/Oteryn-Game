@@ -7,20 +7,21 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::highscores::{self, wire};
 use oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse;
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S11_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
+    for variable in ["NODE_BOOT_S11_CAPTURE_DIR", "E2E_ALL_CAPTURE_DIR"] {
+        if let Some(root) = std::env::var_os(variable) {
+            std::fs::write(Path::new(&root).join(name), bytes)?;
+        }
     }
+    Ok(())
 }
 
 async fn exchange(
     client: &mut DevClientSession,
     query: wire::HighscoresQuery,
 ) -> TestResult<ServerMechanicResponse> {
-    let command = highscores::command(query).map_err(|error| format!("ranking input: {error:?}"))?;
+    let command =
+        highscores::command(query).map_err(|error| format!("ranking input: {error:?}"))?;
     Ok(client
         .session_mut()
         .gated_command(command.capability, command.command_type, &command.payload)
@@ -44,35 +45,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         page: 1,
         snapshot_id: 0,
     };
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
-    let accepted = loop {
-        let reply = exchange(&mut client, query).await?;
-        if reply.status == CommandStatus::Accepted {
-            break reply;
-        }
-        // The durable root can be briefly busy while the snapshot job publishes: retry only an
-        // explicit empty refusal, within a fixed deadline.
-        if reply.status != CommandStatus::Rejected
-            || !reply.payload.is_empty()
-            || tokio::time::Instant::now() >= deadline
-        {
-            return Err(format!("step=query observed={reply:?}").into());
-        }
-        client.service_liveness(Duration::from_millis(100)).await?;
-        client.take_events();
-    };
+    let accepted = exchange(&mut client, query).await?;
+    if accepted.status != CommandStatus::Accepted {
+        return Err(format!("step=query observed={accepted:?}").into());
+    }
     let page = wire::decode_highscores_result(&accepted.payload)
         .map_err(|error| format!("step=decode observed={error:?}"))?;
-    if page.category != 1 || page.page != 1 || page.snapshot_id == 0 || page.rows.len() > wire::MAX_HIGHSCORES_PAGE_ROWS {
+    if page.category != 1
+        || page.page != 1
+        || page.snapshot_id == 0
+        || page.rows.len() > wire::MAX_HIGHSCORES_PAGE_ROWS
+    {
         return Err(format!("step=identity observed={page:?}").into());
     }
-    // Category 13 is reserved on the wire: the server must refuse it with an empty payload.
+    // Goshnar's Taint is reserved (15). Loyalty (13) is served with capability 498.
     let refused = exchange(
         &mut client,
         wire::HighscoresQuery {
             world: None,
             details: false,
-            category: 13,
+            category: 15,
             ..query
         },
     )
@@ -94,11 +86,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     expected.push_str(&format!(
         "own={}\nrefused={:?}\n",
-        page.own_row.as_ref().map_or_else(|| "none".into(), row_text),
+        page.own_row
+            .as_ref()
+            .map_or_else(|| "none".into(), row_text),
         refused.status
     ));
-    capture("s11-page1.bin", &accepted.payload);
-    capture("s11-expected.txt", expected.as_bytes());
+    capture("s11-page1.bin", &accepted.payload)?;
+    capture("s11-expected.txt", expected.as_bytes())?;
     let _ = client.session_mut().logout().await;
     Ok(format!(
         "snapshot={} rows={} own={}",
@@ -109,7 +103,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=S11.client status=CAPTURED evidence={observed}"
         )),
