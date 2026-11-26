@@ -1554,8 +1554,8 @@ n02_client_replay() {
   local capture binding
   local test_name=play::feature_0148_wheel_allocation::view::presets::e2e_n02::e2e_n02_named_build_export_import_and_malformed_code
   local output pattern
-  capture="$(grep -E '^SEAM_EVIDENCE e2e_all scenario=N02\.client status=CAPTURED ' "$WORK/stage-seam_stages.log" || true)"
-  pattern='^SEAM_EVIDENCE e2e_all scenario=N02\.client status=CAPTURED seconds=([0-9]+\.[0-9]+) live_session=([a-f0-9-]{36}) query_sequence=([0-9]+) save_sequence=([0-9]+) evidence=(revision=0->1\|core_slot=0->25)$'
+  capture="$(grep -E '^SEAM_EVIDENCE e2e_capture scenario=N02\.client status=CAPTURED ' "$WORK/stage-seam_stages.log" || true)"
+  pattern='^SEAM_EVIDENCE e2e_capture scenario=N02\.client status=CAPTURED seconds=([0-9]+\.[0-9]+) live_session=([a-f0-9-]{36}) query_sequence=([0-9]+) save_sequence=([0-9]+) evidence=(revision=0->1\|core_slot=0->25)$'
   if [[ "$capture" == *$'\n'* || ! "$capture" =~ $pattern ]]; then
     echo 'SEAM_EVIDENCE e2e_all scenario=N02.client status=FAIL evidence=invalid-live-capture'
     return 1

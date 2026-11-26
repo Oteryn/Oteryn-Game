@@ -315,7 +315,7 @@ cargo() {
     printf '%s\\n' "$REPLAY_OUTPUT"
 }
 """
-        capture = ("SEAM_EVIDENCE e2e_all scenario=N02.client status=CAPTURED seconds=1.000 "
+        capture = ("SEAM_EVIDENCE e2e_capture scenario=N02.client status=CAPTURED seconds=1.000 "
                    "live_session=01934f10-7c00-7000-8000-000000000020 "
                    "query_sequence=10 save_sequence=20 evidence=revision=0->1|core_slot=0->25\n")
         passed = ("test play::feature_0148_wheel_allocation::view::presets::e2e_n02::e2e_n02_named_build_export_import_and_malformed_code ... ok\n"
