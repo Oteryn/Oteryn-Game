@@ -1895,6 +1895,11 @@ if [[ $failures == 0 ]]; then
     result=NODE_BOOT_D150_PASS
   else
     result=NODE_BOOT_PASS
+    if [[ -f "$WORK/stage-$seam_stage_name.log" ]] &&
+      grep -q '^SEAM_EVIDENCE e2e_capture scenario=I09\.client status=CAPTURED ' "$WORK/stage-$seam_stage_name.log"; then
+      result=NODE_BOOT_CAPTURE_READY
+      exit 3
+    fi
   fi
 elif [[ $failures == 1 && ${STATUS[stack_kept]:-} == SKIP* ]]; then
   # Every stage that ran passed and the stack stays up; still not a qualification pass.

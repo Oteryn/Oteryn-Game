@@ -63,6 +63,16 @@ summarize() {
       printf "%s|%s|%s\n", substr($3, 10), substr($5, 8), reason
     }' < "$log") || return 1
 
+  local capture_ready=0
+  if [[ "$result" == NODE_BOOT_CAPTURE_READY ]]; then
+    capture_ready=1
+    result=NODE_BOOT_FAIL
+    if [[ "$group" == rows && "$status" == 0 ]] &&
+      [[ $(grep -c '^I09\.client|' <<< "$rows") == 1 ]] &&
+      grep -qx 'I09\.client|PASS|' <<< "$rows"; then
+      result=NODE_BOOT_PASS
+    fi
+  fi
   if [[ "$result" == NODE_BOOT_PASS ]] && grep -qE '^[^|]+\.client\|FAIL\|' <<< "$rows"; then
     result=NODE_BOOT_FAIL
   fi
@@ -75,6 +85,8 @@ summarize() {
     grep -aFw -- "$row" "$log" | grep -Ei 'GAP|Error|refus|DIAG' \
       | grep -vEi 'password|postgres://|postgresql://|secret|token|key=' | head -n 6
   done < <(awk -F '|' '$2 == "FAIL" && !seen[$1]++ { print $1 }' <<< "$rows")
+  [[ "$capture_ready" == 0 || "$result" == NODE_BOOT_PASS ]]
+
 }
 
 if [[ ${1:-} == --summarize ]]; then
@@ -140,6 +152,9 @@ for group in "$@"; do
     E2E_ALL_CAPTURE_DIR="$capture_dir" python3 tools/qualification/node_boot/client_replay.py "$log" \
       | tee -a "$log"
     replay_pipeline=("${PIPESTATUS[@]}")
+    if [[ "$status" == 3 ]] && grep -q '^NODE_BOOT_RESULT=NODE_BOOT_CAPTURE_READY ' "$log"; then
+      status=0
+    fi
     if (( replay_pipeline[0] != 0 || replay_pipeline[1] != 0 )); then
       status=1
     fi

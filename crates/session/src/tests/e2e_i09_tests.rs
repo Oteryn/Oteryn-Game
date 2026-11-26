@@ -11,10 +11,10 @@
 //! chair update. Node Boot supplies the session, command and reply/delta sequences from the live
 //! log. The transcript must agree with that binding, the exact chair, and the original map
 //! revision chain. The raw predecessor payload and metadata verify the replay's derived state:
-//! - `i09-original-frames.bin` and `i09-relog-frames.bin`: original length-prefixed frames.
-//! - `i09-envelopes.json` and `i09-relog-envelopes.json`: one #3521 envelope per received frame.'"
+//! - `i09-{original,relog,observer}-frames.bin`: original length-prefixed frames.
+//! - `i09-envelopes.json` and `i09-{relog,observer}-envelopes.json`: one #3521 envelope per frame.
 //! - `i09-binding.txt`: session UUID, pre-USE sequence, USE command and reply/delta sequences,
-//!   logout command and reply sequence, and relog UUID.
+//!   logout command and reply sequence, and distinct relog and public observer UUIDs.
 //! - `i09-map-before.bin`: raw predecessor map snapshot payload.
 //! - `i09-map-before.txt`: predecessor sequence, domain, snapshot type and revision.
 //! - `i09-expected.txt`: base/new revisions, delta sequence, definition, appearance,
@@ -260,6 +260,7 @@ async fn replay_original(root: &Path) -> Result<(), BoxError> {
         logout_command,
         logout_sequence,
         relog_id,
+        observer_id,
     ] = fields.as_slice()
     else {
         return Err("invalid I09 capture binding".into());
@@ -307,7 +308,15 @@ async fn replay_original(root: &Path) -> Result<(), BoxError> {
         y: saved_y.parse()?,
         floor: saved_floor.parse()?,
     };
-    if *session_id == *relog_id
+    if saved
+        != (ActorPosition {
+            x: 32356,
+            y: 32206,
+            floor: 7,
+        })
+        || *session_id == *observer_id
+        || *relog_id == *observer_id
+        || *session_id == *relog_id
         || stale_command <= command
         || stale_sequence <= delta_sequence
         || logout_command <= stale_command
@@ -372,11 +381,11 @@ async fn replay_original(root: &Path) -> Result<(), BoxError> {
         },
         ..*before_item
     };
-    let expected_chair = |tiles: &[MapTile]| {
-        tiles
-            .iter()
-            .any(|tile| tile.position == target && tile.items.contains(&rotated_item))
-    };
+    if !has_unique_chair(&before_map.tiles, target, ordinal, before_item) {
+        return Err("I09 captured predecessor contains an ambiguous chair".into());
+    }
+    let expected_chair =
+        |tiles: &[MapTile]| has_unique_chair(tiles, target, ordinal, &rotated_item);
     for frame in &frames[joined..] {
         frame.validate(Direction::ServerToClient, true)?;
         if frame.connection_generation() != generation {
@@ -482,7 +491,103 @@ async fn replay_original(root: &Path) -> Result<(), BoxError> {
             "I09 original relog state differs from the saved position or rotated chair".into(),
         );
     }
+    let observer_bytes = std::fs::read(root.join("i09-observer-frames.bin"))?;
+    let observer_frames = validate_envelopes(
+        root,
+        "i09-observer-envelopes.json",
+        &observer_bytes,
+        observer_id,
+    )?;
+    let (mut observer, joined) =
+        admit_original(&observer_bytes, &observer_frames, observer_id).await?;
+    let mut previous_sequence = observer.last_server_sequence();
+    for frame in &observer_frames[joined..] {
+        frame.validate(Direction::ServerToClient, true)?;
+        if frame.connection_generation() != observer_frames[1].connection_generation() {
+            return Err("I09 observer crossed connection generations".into());
+        }
+        let sequence = frame.server_sequence();
+        if sequence != 0 {
+            if previous_sequence.checked_add(1) != Some(sequence) {
+                return Err("I09 observer frame sequence is discontinuous".into());
+            }
+            previous_sequence = sequence;
+        }
+        if frame.message_type() == MessageType::StateDelta
+            && decode_state_delta(frame.payload())?.domain_id
+                == world_map::STATE_DOMAIN_WORLD_MAP_VIEW
+        {
+            map_transport::apply(&mut observer, sequence, frame.payload())?;
+        }
+    }
+    if !observer
+        .world_map_snapshot()
+        .is_some_and(|map| expected_chair(&map.tiles))
+    {
+        return Err("I09 distinct observer did not see the exact public chair rotation".into());
+    }
     Ok(())
+}
+
+fn has_unique_chair(
+    tiles: &[MapTile],
+    target: ActorPosition,
+    ordinal: u8,
+    expected: &world_map::MapItem,
+) -> bool {
+    let mut chairs = tiles.iter().filter(|tile| tile.position == target)
+        .flat_map(|tile| &tile.items)
+        .filter(|item| matches!(item.appearance_id, 2358 | 2359)
+            || matches!(item.origin, MapOrigin::BaseOrdinal { ordinal: actual, .. } if actual == ordinal));
+    chairs.next() == Some(expected) && chairs.next().is_none()
+}
+
+#[test]
+fn furniture_rotation_rejects_duplicate_and_character_local_views() {
+    let target = ActorPosition {
+        x: 32355,
+        y: 32206,
+        floor: 7,
+    };
+    let rotated = world_map::MapItem {
+        count: 1,
+        sub_type: 0,
+        origin: MapOrigin::BaseOrdinal {
+            ordinal: 1,
+            object_revision: 1,
+        },
+        definition: MapDefinition::Item(NonZeroU32::MIN),
+        appearance_id: 2359,
+    };
+    let original = world_map::MapItem {
+        origin: MapOrigin::BaseOrdinal {
+            ordinal: 1,
+            object_revision: 0,
+        },
+        appearance_id: 2358,
+        ..rotated
+    };
+    let mut tile = MapTile {
+        position: target,
+        items: vec![rotated],
+        more: false,
+        ground_speed: 100,
+    };
+    assert!(has_unique_chair(
+        std::slice::from_ref(&tile),
+        target,
+        1,
+        &rotated
+    ));
+    tile.items.push(original);
+    assert!(!has_unique_chair(
+        std::slice::from_ref(&tile),
+        target,
+        1,
+        &rotated
+    ));
+    tile.items.remove(0);
+    assert!(!has_unique_chair(&[tile], target, 1, &rotated));
 }
 
 fn assert_logout_receipt(
@@ -519,13 +624,13 @@ fn assert_malformed_map_is_atomic<S: SessionStream>(
         world_map::DELTA_TYPE_WORLD_MAP_VIEW_DELTA_V1,
         &[0xff],
     )?;
-    assert!(
-        map_transport::apply(session, sequence, decode_wire_envelope(&framed)?.payload()).is_err()
-    );
-    assert_eq!(session.gated_snapshot(domain), Some(&snapshot));
-    assert_eq!(session.map_header, header);
-    assert_eq!(session.gated_revisions, revisions);
-    assert!(session.take_events().is_empty());
+    for malformed in [&[0xff][..], decode_wire_envelope(&framed)?.payload()] {
+        assert!(map_transport::apply(session, sequence, malformed).is_err());
+        assert_eq!(session.gated_snapshot(domain), Some(&snapshot));
+        assert_eq!(session.map_header, header);
+        assert_eq!(session.gated_revisions, revisions);
+        assert!(session.take_events().is_empty());
+    }
     Ok(())
 }
 
