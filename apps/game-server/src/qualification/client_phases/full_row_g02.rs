@@ -6,7 +6,6 @@
 //! 3. Press Save Wheel: the server must confirm the imported points with a revision advance.
 //! 4. Log out, freshly admit, refresh: the durable allocation must equal the imported build.
 //! 5. Reset the Wheel through the panel and confirm the zero allocation (cleanup, same route).
-use super::full_row_p20::{approach_npc, talk};
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::wheel_allocation;
@@ -17,6 +16,15 @@ use oteryn_protocol_oteryn::wheel::CAPABILITY_WHEEL_ALLOCATION_V1;
 const CORE_SLOT: usize = 20;
 const POINTS: u16 = 10;
 const LEVEL: u32 = 60;
+const CASTLE_DOOR: TilePos = TilePos {
+    x: 32314,
+    y: 32180,
+    floor: -7,
+};
+const CASTLE_APPROACH: TilePos = TilePos {
+    y: 32181,
+    ..CASTLE_DOOR
+};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -74,7 +82,152 @@ fn admitted_panel(client: &DevClientSession) -> WheelPanel {
 async fn logout(client: &mut DevClientSession) -> TestResult {
     let reply = client.session_mut().logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("step=logout observed=refused".into());
+        return Err(format!("step=logout observed={reply:?}").into());
+    }
+    Ok(())
+}
+
+async fn paced_step(
+    client: &mut DevClientSession,
+    direction: StepDirection,
+    expected: TilePos,
+) -> TestResult {
+    let reply = client.step(direction).await?;
+    let actual = tile(client.world_spatial().actor_position)?;
+    if reply.status != CommandStatus::Accepted
+        || reply.disposition != StepDisposition::Moved
+        || reply.world_spatial_delta.is_none()
+        || actual != expected
+    {
+        return Err(format!(
+            "step=promotion-walk expected={expected:?} actual={actual:?} reply={reply:?}"
+        )
+        .into());
+    }
+    verdict::Harness::global().progress("G02 promotion walk");
+    if reply.step_wait_ms > 0 {
+        client
+            .service_liveness(Duration::from_millis(u64::from(reply.step_wait_ms)))
+            .await?;
+    }
+    client.take_events();
+    Ok(())
+}
+
+async fn walk_to(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    goal: impl Fn(TilePos) -> bool,
+) -> TestResult {
+    let mut at = tile(client.world_spatial().actor_position)?;
+    let path = route(world, at, goal).ok_or("step=promotion-walk observed=no-authored-path")?;
+    for direction in path {
+        at = destination(world, at, direction).ok_or("step=promotion-walk observed=no-landing")?;
+        paced_step(client, direction, at).await?;
+    }
+    Ok(())
+}
+
+async fn promotion_line(
+    client: &mut DevClientSession,
+    npc: oteryn_dev_client::EntityRef,
+    text: &str,
+) -> TestResult<Vec<String>> {
+    use oteryn_protocol_oteryn::npc_service as wire;
+    let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
+        npc_actor: npc,
+        text: text.into(),
+    })
+    .map_err(|error| format!("step=promotion-{text} encode={error:?}"))?;
+    let response = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_NPC_SERVICE_V1,
+            wire::COMMAND_TYPE_NPC_TALK_INTENT,
+            &payload,
+        )
+        .await?;
+    let disposition = wire::decode_npc_intent_result(&response.payload);
+    if response.status != CommandStatus::Accepted
+        || disposition != Ok(wire::NpcIntentDisposition::Ok)
+    {
+        return Err(format!(
+            "step=promotion-{text} status={:?} disposition={disposition:?}",
+            response.status
+        )
+        .into());
+    }
+    loop {
+        let delta = client
+            .session_mut()
+            .read_gated_delta(wire::STATE_DOMAIN_NPC_CONVERSATION, 1)
+            .await?;
+        if delta.server_sequence <= response.server_sequence {
+            continue;
+        }
+        let conversation = wire::decode_npc_conversation(&delta.payload)
+            .map_err(|error| format!("step=promotion-{text} conversation={error:?}"))?;
+        if conversation.open.map(|(actor, _)| actor) != Some(npc) {
+            return Err(format!("step=promotion-{text} observed=wrong-npc-conversation").into());
+        }
+        return Ok(conversation.lines);
+    }
+}
+
+async fn promote(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    use crate::map::door::AuthoredClosedDoor;
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+    let key = crate::map::view::placement_key(CASTLE_DOOR, 1)
+        .ok_or("step=castle-door observed=no-placement-key")?;
+    if world.facts().doors().authored_closed(key) != Some(AuthoredClosedDoor::KeyUnlocked) {
+        return Err("step=castle-door observed=wrong-authored-door".into());
+    }
+    walk_to(client, world, |at| at == CASTLE_APPROACH).await?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let reply = client.use_object(&placement, 0).await?;
+    if reply.status != CommandStatus::Accepted || reply.disposition != UseDisposition::Committed {
+        return Err(format!("step=castle-door observed={reply:?}").into());
+    }
+    paced_step(client, StepDirection::North, CASTLE_DOOR).await?;
+
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let king = metadata
+        .npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == "oteryn:npc.king_tibianus")
+        .ok_or("step=promotion observed=no-authored-king")?;
+    let [place] = king.placements.as_slice() else {
+        return Err("step=promotion observed=ambiguous-king-placement".into());
+    };
+    walk_to(client, world, |at| {
+        at.floor == place.floor && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
+    })
+    .await?;
+    let basis = spatial_basis::current(client)?;
+    let position = ActorPosition {
+        x: i32::from(place.x),
+        y: i32::from(place.y),
+        floor: basis.floor(place.floor),
+    };
+    let npc = client
+        .world_entities()
+        .and_then(|view| {
+            view.iter().find(|actor| {
+                actor.kind == oteryn_dev_client::EntityKind::Npc && actor.position == position
+            })
+        })
+        .map(|actor| actor.entity)
+        .ok_or("step=promotion observed=no-king-at-authored-placement")?;
+    if promotion_line(client, npc, "hi").await?.is_empty()
+        || promotion_line(client, npc, "promotion").await?
+            != ["Do you want to be promoted for 20000 gold coins?"]
+        || promotion_line(client, npc, "yes").await? != ["You are now promoted."]
+    {
+        return Err("step=prepare observed=promotion-dialogue-did-not-confirm".into());
     }
     Ok(())
 }
@@ -118,22 +271,7 @@ async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
         "G02_CHECK step=derived-vitals level={LEVEL} max_health={health} max_mana={mana}"
     ));
     let world = full_e2ef7::qualification_world(clients)?;
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let king = approach_npc(
-        &mut client,
-        world,
-        &metadata.npcs,
-        "oteryn:npc.king_tibianus",
-    )
-    .await?;
-    if talk(&mut client, king, "hi").await?.is_empty()
-        || talk(&mut client, king, "promotion").await?
-            != ["Do you want to be promoted for 20000 gold coins?"]
-        || talk(&mut client, king, "yes").await? != ["You are now promoted."]
-    {
-        return Err("step=prepare observed=promotion-dialogue-did-not-confirm".into());
-    }
+    promote(&mut client, world).await?;
     logout(&mut client).await?;
     drop(client);
     connect_character(clients, 0xe1, 0).await
