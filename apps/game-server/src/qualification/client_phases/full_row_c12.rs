@@ -3,8 +3,8 @@
 //! effect is measured, never inferred from a mana debit or a slot.
 //!
 //! 1. `acquire-50271`: purchase the Fists of Enlightenment (50271) from Enpa-Deia Pema.
-//! 2. `baseline-cast`: reach a reachable creature spawn whose content health is high enough that a
-//!    spell hit is never health-capped, attack it, and CAST Greater Tiger Clash repeatedly without
+//! 2. `baseline-cast`: place one authored Training Machine through the node fixture, attack it,
+//!    and CAST Greater Tiger Clash repeatedly without
 //!    the item; require `Cast` and a mana debit each time and record the spell damage the server
 //!    attributes to the cast (the presentation events sharing the cast's decision ordinal).
 //! 3. `augmented-cast`: ITEM_MOVE the item to the right hand, CAST again and require attributed
@@ -28,7 +28,8 @@ const PREPARATION: character_prep::Seeded = character_prep::Seeded {
 const ITEM_ID: u32 = 50_271;
 const AUGMENT_BPS: u64 = 800;
 const PEMA_PRICE: u64 = 20_000;
-const PREREQUISITES: &str = "level-20-monk,premium,purchase-gold,mana-potions";
+const PREREQUISITES: &str = "level-20-monk,premium,purchase-gold,mana-potions,training-machine";
+const FIXTURE_TARGET: &str = "oteryn:creature.training_machine";
 const CRYSTAL_COIN: u32 = 3043;
 const CRYSTAL_COIN_VALUE: u64 = 10_000;
 const MANA_POTION: u32 = 268;
@@ -295,199 +296,42 @@ fn own_entity(client: &DevClientSession) -> TestResult<oteryn_dev_client::Entity
         .ok_or_else(|| "own-entity-missing".into())
 }
 
-fn adjacent_creature(
-    client: &DevClientSession,
-    display_name: &str,
-) -> Option<oteryn_dev_client::EntityRef> {
-    let at = client.world_spatial().actor_position;
-    client
-        .world_entities()?
-        .iter()
-        .find(|entry| {
-            entry.kind == EntityKind::Creature
-                && entry
-                    .display_name
-                    .is_some_and(|name| name.as_str().is_ok_and(|name| name == display_name))
-                && entry.position.floor == at.floor
-                && entry
-                    .position
-                    .x
-                    .abs_diff(at.x)
-                    .max(entry.position.y.abs_diff(at.y))
-                    <= 1
-        })
-        .map(|entry| entry.entity)
-}
-
-/// Select the reachable creature with the lowest content health of at least 3,000.
-fn pick_creature(
-    spawns: &oteryn_world_bundle::spawn::Table,
-    health: impl Fn(&str) -> Option<u64>,
-    search: impl FnOnce(&dyn Fn(TilePos) -> bool),
-    combat_tile: impl Fn(TilePos) -> bool,
-) -> TestResult<(String, u64)> {
-    use std::cell::Cell;
-    use std::collections::HashMap;
-
-    let mut targets = HashMap::new();
-    for source in &spawns.sources {
-        for point in &source.points {
-            let index = point.creature as usize;
-            let Some(hp) = spawns
-                .creatures
-                .get(index)
-                .and_then(|creature| health(&creature.key))
-            else {
-                continue;
-            };
-            if hp < 3_000 {
-                continue;
-            }
-            let candidate = (hp, index);
-            for x in point.x.saturating_sub(1)..=point.x.saturating_add(1) {
-                for y in point.y.saturating_sub(1)..=point.y.saturating_add(1) {
-                    let at = TilePos {
-                        x,
-                        y,
-                        floor: source.floor,
-                    };
-                    targets
-                        .entry(at)
-                        .and_modify(|best| *best = candidate.min(*best))
-                        .or_insert(candidate);
-                }
-            }
-        }
-    }
-    let best_possible = targets
-        .values()
-        .min()
-        .copied()
-        .ok_or("no creature spawn has content health")?;
-    let best_reached = Cell::new(None);
-    // Visit each reachable tile once. Stop early only at the best possible
-    // candidate, otherwise retain the best target seen when the search ends.
-    search(&|at| {
-        if let Some(candidate) = targets.get(&at).copied().filter(|_| combat_tile(at)) {
-            best_reached.set(Some(
-                best_reached
-                    .get()
-                    .map_or(candidate, |best| candidate.min(best)),
-            ));
-        }
-        best_reached.get() == Some(best_possible)
-    });
-    let (hp, index) = best_reached
-        .into_inner()
-        .ok_or("no reachable creature spawn has content health")?;
-    Ok((spawns.creatures[index].key.clone(), hp))
-}
-
-#[test]
-fn c12_selects_spell_target_in_one_reachability_search() -> TestResult {
-    use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
-
-    let from = TilePos {
-        x: 25,
-        y: 25,
-        floor: -7,
-    };
-    let points = [(0, 25), (1, 29), (2, 27), (3, 26)].map(|(creature, x)| Point {
-        creature,
-        x,
-        y: 25,
-        direction: Direction::North,
-        respawn_ms: 60_000,
-        boss_policy: None,
-    });
-    let health = [
-        ("fallback", 500),
-        ("inaccessible", 3_000),
-        ("preferred", 3_100),
-        ("stronger", 4_000),
-    ];
-    let spawns = Table {
-        creatures: health
-            .iter()
-            .map(|(key, _)| Creature {
-                key: (*key).into(),
-                period: Period::All,
-            })
-            .collect(),
-        sources: vec![Source {
-            key: "source".into(),
-            floor: -7,
-            x: 25,
-            y: 25,
-            points: points.into(),
-        }],
-    };
-    let mut traversals = 0;
-    let selected = pick_creature(
-        &spawns,
-        |key| {
-            health
-                .iter()
-                .find_map(|(candidate, hp)| (*candidate == key).then_some(*hp))
-        },
-        |goal| {
-            traversals += 1;
-            let _ = find_route(from, goal, |at, step| {
-                (step == StepDirection::East && at.x < 27).then_some(TilePos { x: at.x + 1, ..at })
-            });
-        },
-        |at| at != from,
-    )?;
-    assert_eq!(selected, ("preferred".into(), 3_100));
-    assert_eq!(traversals, 1);
-    Ok(())
-}
-
-struct Hunt<'a> {
-    world: &'a BundleWorld,
-    spawns: &'a oteryn_world_bundle::spawn::Table,
-    creature: String,
-    profile: &'a CreatureProfile,
+struct Hunt {
+    entity: oteryn_dev_client::EntityRef,
+    profile: CreatureProfile,
     cast_evidence_log: std::path::PathBuf,
 }
 
-impl Hunt<'_> {
-    async fn approach(&self, client: &mut DevClientSession) -> TestResult {
-        let from = tile(client.world_spatial().actor_position)?;
-        let path = route(self.world, from, |at| {
-            self.world
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|tile| !tile.protection_zone())
-                && self.spawns.sources.iter().any(|source| {
-                    at.floor == source.floor
-                        && source.points.iter().any(|point| {
-                            at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) == 1
-                                && self
-                                    .spawns
-                                    .creatures
-                                    .get(point.creature as usize)
-                                    .is_some_and(|entry| entry.key == self.creature)
-                        })
-                })
-        })
-        .ok_or("no route to the selected C12 creature spawn")?;
-        walk_exact_route(client, self.world, &path).await
-    }
-
-    async fn wait_visible_target(
-        &self,
-        client: &mut DevClientSession,
-    ) -> TestResult<oteryn_dev_client::EntityRef> {
+impl Hunt {
+    async fn wait_visible_target(&self, client: &mut DevClientSession) -> TestResult {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
         loop {
-            if let Some(entity) = adjacent_creature(client, &self.profile.display_name) {
-                return Ok(entity);
+            let at = client.world_spatial().actor_position;
+            if let Some(entry) = client
+                .world_entities()
+                .and_then(|entities| entities.get(&self.entity))
+            {
+                if entry.kind != EntityKind::Creature
+                    || entry.display_name.is_none_or(|name| {
+                        name.as_str().ok() != Some(self.profile.display_name.as_str())
+                    })
+                    || entry.position.floor != at.floor
+                    || entry
+                        .position
+                        .x
+                        .abs_diff(at.x)
+                        .max(entry.position.y.abs_diff(at.y))
+                        != 1
+                {
+                    return Err(format!(
+                        "C12 fixture target differs or is out of range: {entry:?} at={at:?}"
+                    )
+                    .into());
+                }
+                return Ok(());
             }
             if tokio::time::Instant::now() >= deadline {
-                return Err(
-                    format!("no live {} adjacent at the selected spawn", self.creature).into(),
-                );
+                return Err(format!("C12 fixture target never appeared: {:?}", self.entity).into());
             }
             client.service_liveness(Duration::from_millis(100)).await?;
             client.take_events();
@@ -498,7 +342,8 @@ impl Hunt<'_> {
         &self,
         client: &mut DevClientSession,
     ) -> TestResult<oteryn_dev_client::EntityRef> {
-        let entity = self.wait_visible_target(client).await?;
+        self.wait_visible_target(client).await?;
+        let entity = self.entity;
         if combat_target(client)? != Some(entity) {
             let sequence = client.last_server_sequence();
             let reply = verdict::indexed_timeout(
@@ -577,7 +422,7 @@ impl Hunt<'_> {
                 .world_entities()
                 .is_none_or(|entities| entities.get(&victim).is_none())
         {
-            return Err(format!("damage={damage} may be capped by {} health={}; needed=creature-with-spell-proof-health", self.creature, self.profile.health).into());
+            return Err(format!("damage={damage} may be capped by {} health={}; needed=creature-with-spell-proof-health", self.profile.display_name, self.profile.health).into());
         }
         let session = client.join_snapshot().game_session_id;
         let marker = format!(
@@ -686,7 +531,7 @@ pub(super) fn cast_damage_in(
 }
 
 async fn samples(
-    hunt: &Hunt<'_>,
+    hunt: &Hunt,
     client: &mut DevClientSession,
     spell: NonZeroU32,
     bps: u64,
@@ -1181,36 +1026,55 @@ async fn acquire_pema(
     Ok(gold_after)
 }
 
-fn select_hunt<'a>(
-    client: &DevClientSession,
-    world: &'a BundleWorld,
-    spawns: &'a oteryn_world_bundle::spawn::Table,
-    profiles: &'a std::collections::BTreeMap<String, CreatureProfile>,
-) -> TestResult<Hunt<'a>> {
-    let from = tile(client.world_spatial().actor_position)?;
-    let (creature, _) = pick_creature(
-        spawns,
-        |key| profiles.get(key).map(|profile| profile.health),
-        |goal| {
-            let _ = route(world, from, goal);
-        },
-        |at| {
-            world
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|tile| !tile.protection_zone())
-        },
-    )?;
+async fn prepare_fixture_hunt(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+) -> TestResult<Hunt> {
+    let mut profiles = creature_profiles()?;
     let profile = profiles
-        .get(&creature)
-        .ok_or("selected creature profile absent")?;
-    Ok(Hunt {
-        world,
-        spawns,
-        creature,
+        .remove(FIXTURE_TARGET)
+        .ok_or("C12 fixture Training Machine absent from authored profiles")?;
+    if profile.health != 1_000_000 || profile.display_name != "Training Machine" {
+        return Err("C12 fixture Training Machine authored profile differs".into());
+    }
+    let combat_tile = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| tile.walkable() && !tile.protection_zone())
+            && world.enterable(at)
+    };
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| {
+        combat_tile(at)
+            && [(0, -1), (1, 0), (0, 1), (-1, 0)]
+                .into_iter()
+                .any(|(dx, dy)| {
+                    at.x.checked_add_signed(dx)
+                        .zip(at.y.checked_add_signed(dy))
+                        .is_some_and(|(x, y)| {
+                            combat_tile(TilePos {
+                                x,
+                                y,
+                                floor: at.floor,
+                            })
+                        })
+                })
+    })
+    .ok_or("C12 fixture has no reachable combat tile")?;
+    walk_exact_route(client, world, &path).await?;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(session, FIXTURE_TARGET.into())
+        .await
+        .map_err(|reason| format!("C12 fixture spawn refused: {reason}"))?;
+    let hunt = Hunt {
+        entity: parse_spawned_entity(&answer)?,
         profile,
         cast_evidence_log: required("NODE_BOOT_CAST_EVIDENCE_LOG")?.into(),
-    })
+    };
+    hunt.wait_visible_target(client).await?;
+    eprintln!("FIXTURE C12 target={FIXTURE_TARGET} {answer}");
+    Ok(hunt)
 }
 
 async fn fresh_c12_admission(
@@ -1452,9 +1316,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     require_current_premium(client.session_mut()).await?;
     let spell_index = spell(&mut client)?;
     let augment = content_augment()?;
-    let profiles = creature_profiles()?;
-    let hunt = select_hunt(&client, world, &metadata.spawns, &profiles)?;
-    hunt.approach(&mut client).await?;
+    let hunt = prepare_fixture_hunt(&mut client, world).await?;
 
     let baseline_weapon = weapon(&client)?;
     if baseline_weapon == Some(definition) {

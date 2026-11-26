@@ -171,6 +171,26 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         session.service_liveness(Duration::from_millis(25)).await?;
         session.take_events();
     }
+    let damage_before = inspect_damage(id, target).await;
+    let cast_origin = session.world_spatial().actor_position;
+    let target_before = session
+        .world_entities()
+        .and_then(|entities| entities.get(&target))
+        .ok_or("C12.client selected target absent immediately before CAST")?;
+    let target_position = target_before.position;
+    let target_detail = target_before.detail;
+    if target_position.floor != cast_origin.floor
+        || target_position
+            .x
+            .abs_diff(cast_origin.x)
+            .max(target_position.y.abs_diff(cast_origin.y))
+            != 1
+    {
+        return Err(format!("C12.client selected target out of range at CAST: {target:?} origin={cast_origin:?} position={target_position:?}").into());
+    }
+    evidence(&format!(
+        "C12_CLIENT_CAST_TARGET target={target:?} origin={cast_origin:?} position={target_position:?} detail={target_detail:?} owner_damage_before={damage_before:?}"
+    ));
     let before = session
         .actor_vitals()
         .ok_or("C12 actor vitals absent before cast")?
@@ -205,6 +225,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let sequence = delta.server_sequence;
     let command = cast.command_id;
     let result_sequence = cast.result_server_sequence;
+    let target_identity = hex_bytes(&target.identity);
+    let marker = format!(
+        "SEAM_EVIDENCE c12_base_damage session={session_id} command={command} target={target_identity} generation={} ",
+        target.generation
+    );
     let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
     let damage = loop {
         let dealt: u64 = session
@@ -216,15 +241,24 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             break dealt;
         }
         if tokio::time::Instant::now() >= deadline {
+            let damage_after = inspect_damage(id, target).await;
+            let owner_cast = full_row_c12::committed_base_damage(
+                &path,
+                offset,
+                &marker,
+                full_row_c12::content_augment()?,
+            );
+            let target_after = session
+                .world_entities()
+                .and_then(|entities| entities.get(&target));
+            evidence(&format!(
+                "C12_CLIENT_CAST_DIAGNOSTIC session={session_id} command={command} mana={before}->{} target_after={target_after:?} owner_damage_before={damage_before:?} owner_damage_after={damage_after:?} committed_cast={owner_cast:?}",
+                vitals.mana
+            ));
             return Err("C12.client cast did not serve attributed damage".into());
         }
         session.service_liveness(Duration::from_millis(25)).await?;
     };
-    let target_identity = hex_bytes(&target.identity);
-    let marker = format!(
-        "SEAM_EVIDENCE c12_base_damage session={session_id} command={command} target={target_identity} generation={} ",
-        target.generation
-    );
     let (_, augmented) = full_row_c12::committed_base_damage(
         &path,
         offset,
@@ -267,6 +301,29 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         "C12_CAPTURE session={session_id} command={command} result_sequence={result_sequence} delta_sequence={sequence}"
     ));
     Ok(())
+}
+
+async fn inspect_damage(
+    session: oteryn_protocol_oteryn::GameSessionId,
+    target: oteryn_dev_client::EntityRef,
+) -> Result<u64, String> {
+    let answer = request_fixture_control(
+        uuid_text(session.as_bytes()),
+        "--inspect-damage",
+        format!(
+            "{} {}",
+            full_row_c12::hex_bytes(&target.identity),
+            target.generation
+        ),
+    )
+    .await?;
+    let mut fields = answer.split_ascii_whitespace();
+    match (fields.next(), fields.next(), fields.next(), fields.next()) {
+        (Some("damage"), Some(total), Some(_), None) => total
+            .parse()
+            .map_err(|error| format!("C12 damage inspection total: {error}")),
+        _ => Err(format!("C12 damage inspection response: {answer}")),
+    }
 }
 
 async fn visible_hunt_target<S: oteryn_dev_client::native_session::SessionStream>(
