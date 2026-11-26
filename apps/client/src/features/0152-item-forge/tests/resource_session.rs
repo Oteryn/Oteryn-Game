@@ -207,3 +207,149 @@ fn forge_resource_actual_session_requires_confirm_and_displays_receipt_history()
         .join()
         .map_err(|_| "Forge resources session thread panicked")?
 }
+
+struct G20CapturePeer(Option<GatedCommandResult>);
+
+impl Stepper for G20CapturePeer {
+    fn feature_selected(&self, capability: u32) -> bool {
+        capability == wire::CAPABILITY_FORGE_PREVIEW_V1
+    }
+
+    fn server_mechanic_selected(&self, capability: u32) -> bool {
+        self.feature_selected(capability)
+    }
+
+    async fn feature(
+        &mut self,
+        command: &FeatureCommand,
+    ) -> Result<GatedCommandResult, SessionError> {
+        assert_eq!(command.capability, wire::CAPABILITY_FORGE_PREVIEW_V1);
+        assert_eq!(command.kind, wire::COMMAND_TYPE_FORGE_PREVIEW);
+        assert_eq!(
+            wire::Request::decode(&command.payload),
+            Some(wire::Request {
+                nonce: 2,
+                selection: wire::Selection::Resource(Operation::DustLimit),
+            }),
+        );
+        self.0.take().ok_or(SessionError::SessionUnusable)
+    }
+
+    async fn server_mechanic(
+        &mut self,
+        _: &ServerMechanicCommand,
+    ) -> Result<ServerMechanicResponse, SessionError> {
+        panic!("a preview must not send a paid Forge command");
+    }
+
+    async fn serve(&mut self, duration: Duration) -> Result<(), SessionError> {
+        tokio::time::sleep(duration).await;
+        Ok(())
+    }
+
+    fn drain(&mut self) -> Vec<SessionEvent> {
+        vec![]
+    }
+
+    async fn step(&mut self, _: StepDirection) -> Result<StepOutcome, SessionError> {
+        Err(SessionError::SessionUnusable)
+    }
+
+    async fn combat(&mut self, _: CombatCommand) -> Result<CombatReport, SessionError> {
+        Err(SessionError::SessionUnusable)
+    }
+
+    async fn logout(&mut self) -> Result<Option<LogoutResult>, SessionError> {
+        Ok(None)
+    }
+}
+
+#[test]
+#[ignore = "requires a live G20 capture from the shared replay runner"]
+fn e2e_g20_funded_preview_replay() -> Result<(), Error> {
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Envelope {
+        game_session_id: String,
+        command_id: u64,
+        server_sequence: u64,
+        status: u32,
+        payload: Vec<u8>,
+    }
+
+    let directory =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("G20 replay requires E2E_ALL_CAPTURE_DIR")?;
+    let data = std::fs::read(std::path::Path::new(&directory).join("g20-funded.json"))?;
+    let frame: Envelope = serde_json::from_slice(&data)?;
+    assert!(!frame.game_session_id.is_empty());
+    assert!(frame.command_id > 0 && frame.server_sequence > 0);
+    assert_eq!(frame.status, CommandStatus::Accepted as u32);
+    let result = GatedCommandResult {
+        command_id: frame.command_id,
+        server_sequence: frame.server_sequence,
+        status: CommandStatus::Accepted,
+        payload: frame.payload,
+    };
+
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?;
+            rt.block_on(async {
+                let (link, rx, outbox) = play_channel();
+                let task = tokio::spawn(run_session(G20CapturePeer(Some(result)), rx, outbox));
+                wait(&link, |panel| panel.selected && panel.preview.selected).await?;
+                {
+                    let mut mailbox = lock(&link.mailbox);
+                    assert!(mailbox.item_forge.resource_dialog.content.is_none());
+                    // The captured resource request followed the live Browse request.
+                    mailbox.item_forge.preview.nonce = 1;
+                    activate(
+                        &mut mailbox,
+                        &link.commands,
+                        Action::Legacy(Operation::DustLimit),
+                    );
+                }
+                wait(&link, |panel| panel.resource_dialog.confirming())
+                    .await
+                    .map_err(|_| "live Forge reply did not open the Dust Limit confirmation")?;
+                let panel = link.item_forge_panel();
+                assert!(panel.preview.pending.is_none());
+                assert!(!panel.pending);
+                let content = panel
+                    .resource_dialog
+                    .content
+                    .ok_or("missing confirmation")?;
+                assert_eq!(
+                    content,
+                    Content::Confirm {
+                        operation: Operation::DustLimit,
+                        quote: Some(wire::ResourceQuote {
+                            operation: Operation::DustLimit,
+                            full_resources: false,
+                            before: wire::Resources {
+                                dust: 30,
+                                dust_limit: 100,
+                                ..Default::default()
+                            },
+                            after_dust: 5,
+                            after_limit: 101,
+                            after_slivers: 0,
+                            after_cores: 0,
+                        }),
+                    },
+                );
+                let text = dialog_text(&content, 0);
+                assert!(text.contains("Raise the dust limit?"));
+                assert!(text.contains("Dust: 30 → 5\nDust limit: 100 → 101"));
+                println!("G20_CLIENT_CONFIRM dust=30->5 limit=100->101");
+                drop(link);
+                task.await?;
+                Ok::<(), Error>(())
+            })
+        })?
+        .join()
+        .map_err(|_| "G20 client replay thread panicked")?
+}

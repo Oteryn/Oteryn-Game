@@ -875,36 +875,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore = "requires a live G20 capture from the shared replay runner"]
-    fn e2e_g20_funded_preview_replay() -> TestResult {
-        #[derive(serde::Deserialize)]
-        #[serde(deny_unknown_fields)]
-        struct Envelope {
-            game_session_id: String,
-            command_id: u64,
-            server_sequence: u64,
-            status: u32,
-            payload: Vec<u8>,
-        }
-
-        let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR")
-            .ok_or("G20 replay requires E2E_ALL_CAPTURE_DIR")?;
-        let data = std::fs::read(Path::new(&directory).join("g20-funded.json"))?;
-        let envelope: Envelope = serde_json::from_slice(&data)?;
-        assert!(!envelope.game_session_id.is_empty());
-        assert!(envelope.command_id > 0);
-        assert!(envelope.server_sequence > 0);
-        assert_eq!(
-            envelope.status,
-            oteryn_protocol_oteryn::CommandStatus::Accepted as u32
-        );
-        let reply =
-            wire::Reply::decode(&envelope.payload).ok_or("invalid captured Forge preview")?;
-        assert_eq!(reply.nonce, 2);
-        check_funded_dust_limit(reply.payload)
-    }
-
-    #[test]
     fn browse_suffix_rejects_a_repeated_first_page() -> TestResult {
         let first = wire::Page {
             after: 0,

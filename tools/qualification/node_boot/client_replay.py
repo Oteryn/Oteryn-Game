@@ -199,10 +199,9 @@ def g20_replay_cause(captures, server, log):
     if log.read_text(errors="replace").splitlines().count(marker) != 1:
         return "capture-session-mismatch"
     return replay_cause(
-        "g20", "oteryn-game-server", "e2e_g20_funded_preview_replay",
+        "g20", "oteryn-client", "e2e_g20_funded_preview_replay",
         {"g20-funded.json"}, captures, server, log,
-        ("--features", "qualification-clock,qualification-unprivileged"),
-        ("--ignored",),
+        test_args=("--ignored",),
     )
 
 
