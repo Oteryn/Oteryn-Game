@@ -558,6 +558,7 @@ fn scenario(
             action: QuickLootAction::Click,
             corpse: Some(visible_corpse.identity),
             selected_item: None,
+            review_filters: false,
             category: None,
             recipient: None,
             recipient_id: None,
