@@ -1,4 +1,4 @@
-//! Owner-defined PARITY_PENDING starting values; official news 8834 supplies the envelope.
+//! The 2026-11-25 owner decision retains the interpolation; official news 8834 supplies the envelope.
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -15,7 +15,7 @@ impl DiscoverySpeed {
             "../../../../../../content/cyclopedia/discovery-speed.json"
         ))
         .ok()?;
-        (value.qualification == "PARITY_PENDING"
+        (value.qualification == "OWNER_DECIDED"
             && !value.owner_decision.is_empty()
             && value.minimum > 0
             && value.maximum >= value.minimum)
@@ -36,6 +36,36 @@ impl DiscoverySpeed {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn discovery_speed_bonus_matches_documented_envelope() -> Result<(), &'static str> {
+        let rules = DiscoverySpeed::embedded().ok_or("speed content")?;
+        let (minimum, maximum) = (100, 195);
+        // Strict growth needs one distinct integer bonus per completed-area count.
+        let distinct_bonuses = u32::from(maximum - minimum) + 1;
+        for total in (2..=distinct_bonuses).chain([100]) {
+            assert_eq!(rules.bonus(1, total, true), minimum);
+            assert_eq!(rules.bonus(total, total, true), maximum);
+            let mut previous = 0;
+            for completed in 1..=total {
+                assert_eq!(rules.bonus(completed, total, false), 0);
+                let bonus = rules.bonus(completed, total, true);
+                assert!(
+                    previous <= bonus,
+                    "bonus decreased at {completed}/{total} completed areas"
+                );
+                if total <= distinct_bonuses {
+                    assert!(
+                        previous < bonus,
+                        "bonus did not increase at {completed}/{total} completed areas"
+                    );
+                }
+                previous = bonus;
+            }
+        }
+        Ok(())
+    }
+
     #[test]
     fn discovery_speed_owner_formula_endpoints_floor_and_single_area() -> Result<(), &'static str> {
         let rules = DiscoverySpeed::embedded().ok_or("speed content")?;

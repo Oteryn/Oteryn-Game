@@ -130,7 +130,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             bound.checked_sub(1).and_then(|max|u16::try_from(max).ok()).and_then(|max|random.amount(0,current,0,max).ok()).map(u32::from).unwrap_or(bound)
                         }).map_err(|_|DurabilityError::Unavailable)?;
                         for at in plan.candidates(){map.read(runtime,*at).await;}
-                        plan.select(|at|map.source_placement_cell_in_world(runtime,key,at,context),|_,_|Some(true)).map_err(|_|DurabilityError::Unavailable)?
+                        plan.select(
+                            |at| {
+                                map.source_placement_cell_in_world(runtime, key, at, context)
+                                    .or_else(|| {
+                                        use crate::content::{LogicalCell, SpellTileLookupError};
+                                        let cells = room.movement_cells();
+                                        let cell = LogicalCell { x: at.x, y: at.y, z: i32::from(at.floor) };
+                                        // A pinned bundle tile with unresolved static items cannot
+                                        // admit the birth. Keep searching the donor's neighbours.
+                                        // Missing data for an otherwise qualified tile still retries.
+                                        if cells.spell_tiles().lookup(cells.scope(), cell)
+                                            != Err(SpellTileLookupError::Unknown)
+                                        {
+                                            return None;
+                                        }
+                                        Some(crate::movement::source_placement::SourcePlacementCell {
+                                            exists: map.source_tile_exists_in_world(runtime, at, context)?,
+                                            query_add: false,
+                                            protection_zone: map.protection_zone(runtime, at)?,
+                                            teleport: crate::map::floor::is_teleport(cells, cell),
+                                        })
+                                    })
+                            },
+                            |_, _| Some(true),
+                        ).map_err(|_|DurabilityError::Unavailable)?
                     };
                     if !map.validate_transaction(runtime).await{return Err(DurabilityError::Unavailable)}
                     let stamp=runtime.issue_owner_work().map_err(|_|DurabilityError::Unavailable)?;

@@ -21,7 +21,7 @@ class NativeGoalCorpseProof(unittest.TestCase):
         manifest = 'content/spells.manifest.json'
         generated = {path: (root / path).read_bytes() for path in (profiles, manifest)}
         original = json.loads(generated[profiles])
-        keys = {f'oteryn:item.tibia.i{i}' for i in (3990, 4103, 4104)}
+        keys = {f'oteryn:item.tibia.i{i}' for i in (3990, 4103, 4104, 4143)}
         selected = lambda doc: {r['production_definition']['production_key']: r
             for r in doc['records'] if r['production_definition']['production_key'] in keys}
         order = lambda r: r['production_definition']['production_key']
@@ -40,7 +40,7 @@ class NativeGoalCorpseProof(unittest.TestCase):
         import sys
         sys.path.insert(0, str(native.ROOT / 'tools/content-migration'))
         import encounter_loot_item_admissions as source
-        profiles = source.facts(native.ROOT, {3990, 4103, 4104}, allow_containers=True)
+        profiles = source.facts(native.ROOT, {3990, 4103, 4104, 4143}, allow_containers=True)
         items = {d['identity']['key']: d for d in definitions()}
         for key, profile in profiles.items():
             with self.subTest(item=key):
@@ -49,7 +49,7 @@ class NativeGoalCorpseProof(unittest.TestCase):
 
     def test_full_decay_closure_keeps_source_weights_and_capacities(self):
         policies, weights = native.policies()
-        self.assertEqual(len(policies), 29)
+        self.assertEqual(len(policies), 44)
         self.assertEqual({item: policies[item] for item in (7535, 7537, 7538, 7539, 7540)}, {
             7535: (7, 10000, 7537),
             7537: (7, 10000, 7538),
@@ -79,7 +79,8 @@ class NativeGoalCorpseProof(unittest.TestCase):
             self.assertTrue(new['materializable'])
             self.assertEqual(new['semantics']['physical']['value']['pickupable']['value'],
                              new['identity']['key'] in {'oteryn:item.tibia.i3990',
-                                 'oteryn:item.tibia.i4103', 'oteryn:item.tibia.i4104'})
+                                 'oteryn:item.tibia.i4103', 'oteryn:item.tibia.i4104',
+                                 'oteryn:item.tibia.i4143'})
             for group, accepted in old.get('semantics', {}).items():
                 if group not in native.GROUPS:
                     self.assertEqual(new['semantics'][group], accepted)

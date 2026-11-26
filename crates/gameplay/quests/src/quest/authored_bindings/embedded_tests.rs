@@ -617,7 +617,21 @@ mod main_native_contract {
         let after = explicit.catalogue();
         // Rottin Wall repair adds its legacy wall-count track (`classic_dialogue::extend_rottin`).
         // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
-        assert_eq!(before.tracks.len(), 2137 + 7);
+        // The integrated quests add 44 native tracks, including Vampire Hunter's two tracks.
+        assert_eq!(before.tracks.len(), 2137 + 7 + 44);
+        for (name, max) in [("rank", 6), ("door", 1)] {
+            let key = format!("oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/{name}");
+            assert_eq!(
+                before.tracks.get(&key),
+                Some(&QuestTrack {
+                    key: key.clone(),
+                    quest: "oteryn:quest.vampire_hunter_quest".into(),
+                    initial: 0,
+                    min: 0,
+                    max,
+                })
+            );
+        }
         for pharaoh in ["omruc", "vashresamun"] {
             let key = format!(
                 "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/{pharaoh}_sarcophagus_claim"

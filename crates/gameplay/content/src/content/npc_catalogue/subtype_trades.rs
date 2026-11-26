@@ -4,6 +4,28 @@ use crate::content::{
     ProjectV2CandidateValue, ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2ServiceOffer,
 };
 
+pub const REGIONAL_DATA: &str = include_str!("../../../../../../content/npcs/regional-trade.json");
+
+#[derive(serde::Deserialize)]
+struct RegionalTrades {
+    services: std::collections::BTreeMap<String, RegionalShop>,
+}
+
+#[derive(serde::Deserialize)]
+struct RegionalShop {
+    offers: Vec<ProjectV2ServiceOffer>,
+}
+
+fn regional_offers(service: &str) -> impl Iterator<Item = &'static ProjectV2ServiceOffer> {
+    static TRADES: std::sync::OnceLock<Option<RegionalTrades>> = std::sync::OnceLock::new();
+    TRADES
+        .get_or_init(|| serde_json::from_str(REGIONAL_DATA).ok())
+        .as_ref()
+        .and_then(|trades| trades.services.get(service))
+        .into_iter()
+        .flat_map(|shop| &shop.offers)
+}
+
 pub fn fluid_container(key: &str) -> bool {
     matches!(
         key,
@@ -163,6 +185,16 @@ pub(super) fn declarations(
                 if !restored.iter().any(|row| same_variant(row, &offer)) {
                     restored.push(offer);
                 }
+            }
+            for offer in regional_offers(&reference.key) {
+                restored.retain(|existing| {
+                    existing.item != offer.item
+                        || existing.direction != offer.direction
+                        || existing.currency != offer.currency
+                        || existing.count.unwrap_or(1) != offer.count.unwrap_or(1)
+                        || existing.sub_type != offer.sub_type
+                });
+                restored.push(offer.clone());
             }
             if &restored == offers {
                 return None;
