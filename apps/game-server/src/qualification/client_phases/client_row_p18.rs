@@ -88,31 +88,27 @@ fn replay(root: &Path, session: [u8; 16], frames: &[LiveReply]) -> TestResult {
         }
         let expected = match (index, &panel.decoded) {
             (0, Some(reply::Reply::History(rows))) if rows.is_empty() => "No forge operations yet",
-            (1, Some(reply::Reply::Result(receipt)))
-                if receipt.reason.as_deref() == Some("INVALID_ITEM_HANDLE") =>
-            {
+            (1, Some(reply::Reply::Result(_))) => "DustToSlivers: succeeded; attempt applied",
+            (2, Some(reply::Reply::Result(_))) => "DustLimit: succeeded; attempt applied",
+            (3, Some(reply::Reply::Result(_))) => {
                 "Fusion: failed; no changes applied (INVALID_ITEM_HANDLE)"
             }
-            (2, Some(reply::Reply::Result(receipt)))
-                if receipt.reason.as_deref() == Some("INSUFFICIENT_DUST") =>
-            {
+            (4, Some(reply::Reply::Result(_))) => {
                 "DustToSlivers: failed; no changes applied (INSUFFICIENT_DUST)"
             }
-            (3, Some(reply::Reply::Result(receipt)))
-                if receipt.reason.as_deref() == Some("INSUFFICIENT_DUST") =>
-            {
+            (5, Some(reply::Reply::Result(_))) => {
                 "DustLimit: failed; no changes applied (INSUFFICIENT_DUST)"
             }
             _ => return Err(format!("unexpected Forge panel decode at frame {index}").into()),
         };
         if index != 0 {
-            let reason = if index == 1 {
-                "INVALID_ITEM_HANDLE"
-            } else {
-                "INSUFFICIENT_DUST"
-            };
             let body = serde_json::from_slice(&payload)?;
-            check_refusal(&body, reason)?;
+            match index {
+                1 => check_funded(&body, Operation::DustToSlivers)?,
+                2 => check_funded(&body, Operation::DustLimit)?,
+                3 => check_refusal(&body, "INVALID_ITEM_HANDLE")?,
+                _ => check_refusal(&body, "INSUFFICIENT_DUST")?,
+            }
         }
         let dialog_matches = match (&panel.resource_dialog.content, &panel.decoded) {
             (
@@ -122,8 +118,8 @@ fn replay(root: &Path, session: [u8; 16], frames: &[LiveReply]) -> TestResult {
                     donor: None,
                 }),
                 Some(reply::Reply::Result(decoded)),
-            ) if index == 1 => receipt == decoded,
-            (Some(Content::Result(dialog)), Some(decoded)) if index != 1 => dialog == decoded,
+            ) if index == 3 => receipt == decoded,
+            (Some(Content::Result(dialog)), Some(decoded)) if index != 3 => dialog == decoded,
             _ => false,
         };
         if panel.resource_dialog.serial == previous_dialog || !dialog_matches {
@@ -218,18 +214,63 @@ fn check_refusal(body: &serde_json::Value, reason: &str) -> TestResult {
     Ok(())
 }
 
+// Seed only the disposable dedicated character's starting resource. Keep the
+// native chain constraints enabled and let the two wire commands own all spends.
+async fn seed_dust(clients: &SeamClients<'_>) -> TestResult {
+    let [character] = clients.characters else {
+        return Err("funded Forge fixture requires one dedicated character".into());
+    };
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let mut tx = sqlx::Connection::begin(&mut connection).await?;
+    let character = uuid_text(character);
+    let entry = uuid_text(&v7(0x44, 0xa1));
+    sqlx::query("INSERT INTO game_character_forge_dust(character_id,balance,dust_limit) VALUES($1::uuid,0,100)")
+        .bind(&character).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_character_forge_dust_entries
+        (entry_id,character_id,kind,cause,cause_occurrence_id,transaction_id,amount,lost_amount,balance_before,balance_after,dust_limit_before,dust_limit_after)
+        VALUES($1::uuid,$2::uuid,'GAIN','creature_kill',$3::uuid,$4::uuid,100,0,0,100,100,100)")
+        .bind(&entry).bind(&character).bind(uuid_text(&v7(0x44, 0xa2)))
+        .bind(uuid_text(&v7(0x44, 0xa3))).execute(&mut *tx).await?;
+    sqlx::query("UPDATE game_character_forge_dust SET balance=100,last_entry_id=$1::uuid WHERE character_id=$2::uuid")
+        .bind(&entry).bind(&character).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+fn check_funded(body: &serde_json::Value, operation: Operation) -> TestResult {
+    let expected = match operation {
+        Operation::DustToSlivers => serde_json::json!({
+            "operation":"dust_to_slivers","succeeded":true,"applied":true,"reason":null,"bonus":0,
+            "result":{"first_item":null,"first_tier":null,"second_item":null,"second_tier":null,
+            "dust":40,"dust_limit":100,"gold_spent":0,"cores_spent":0,
+            "slivers_spent":0,"slivers_created":3,"cores_created":0}
+        }),
+        Operation::DustLimit => serde_json::json!({
+            "operation":"dust_limit","succeeded":true,"result":{"dust":15,"dust_limit":120}
+        }),
+        _ => return Err("unexpected funded Forge action".into()),
+    };
+    if *body != expected {
+        return Err(
+            format!("funded Forge {operation:?} result: expected {expected}, got {body}").into(),
+        );
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("Forge capture directory missing")?;
     let root = Path::new(&root);
-    let mut client = connect_world(clients, 0x44).await?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_P18_ACCOUNT").await?;
+    let scope = dedicated.clients(clients);
+    let clients = &scope;
+    seed_dust(clients).await?;
+    let mut client = connect_character(clients, 0x44, 0).await?;
     let session = client.join_snapshot().game_session_id;
     let pair = same_item_pair(&client)?;
-    let inventory = client
-        .inventory()
-        .cloned()
-        .ok_or("pre-state inventory missing")?;
+
     let balance = dust(&mut client).await?;
-    if balance != (0, 100) {
+    if balance != (100, 100) {
         return Err(format!("unexpected Forge pre-state {balance:?}").into());
     }
     let (history_bytes, history) =
@@ -241,6 +282,48 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("fresh Forge history was not empty".into());
     }
     let mut frames = vec![history_bytes];
+    let sliver_key = "oteryn:item.tibia.i37109";
+    let definitions = provisioning::item_index()?;
+    let revision = definitions
+        .revision(sliver_key)
+        .ok_or("Forge sliver definition missing")?;
+    let sliver = definitions
+        .definition_ref("Item", sliver_key, revision)
+        .ok_or("Forge sliver reference missing")?;
+    if super::full_e2ef7::units(&client, sliver) != 0 {
+        return Err("funded Forge pre-state already contains slivers".into());
+    }
+    let mut applied = Vec::new();
+    for (ordinal, operation, expected_balance) in [
+        (10, Operation::DustToSlivers, (40, 100)),
+        (11, Operation::DustLimit, (15, 120)),
+    ] {
+        client.service_liveness(Duration::from_millis(490)).await?;
+        let (frame, body) = forge(
+            &mut client,
+            operation,
+            occurrence(session, ordinal),
+            None,
+            0,
+        )
+        .await?;
+        check_funded(&body, operation)?;
+        if dust(&mut client).await? != expected_balance
+            || super::full_e2ef7::units(&client, sliver) != 3
+        {
+            return Err(format!(
+                "funded {operation:?} did not change balance, cap and slivers to expected values"
+            )
+            .into());
+        }
+        applied.push(body);
+        frames.push(frame);
+    }
+    let balance = (15, 120);
+    let inventory = client
+        .inventory()
+        .cloned()
+        .ok_or("funded inventory missing")?;
     for (ordinal, (name, operation, expected_reason)) in [
         // A repeated item handle is rejected before a Forge pair can be reserved.
         ("fusion", Operation::Fusion, "INVALID_ITEM_HANDLE"),
@@ -273,8 +356,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     client.service_liveness(Duration::from_millis(490)).await?;
     let (_, final_history) = forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
-    if final_history != history {
-        return Err("Forge refusal history changed before logout".into());
+    let expected_history = serde_json::json!([
+        {"ordinal":2,"receipt":applied[1]},
+        {"ordinal":1,"receipt":applied[0]}
+    ]);
+    if final_history != expected_history {
+        return Err("Forge history does not contain exactly the funded outcomes".into());
     }
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -282,7 +369,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("Forge capture logout refused".into());
     }
     drop(client);
-    let mut fresh = connect_world(clients, 0x45).await?;
+    let mut fresh = connect_character(clients, 0x45, 0).await?;
     if fresh.join_snapshot().game_session_id == session
         || fresh
             .inventory()
@@ -291,13 +378,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             != Some(super::full_row_p18::durable_inventory(inventory))
         || dust(&mut fresh).await? != balance
     {
-        return Err("Forge refusal state changed after relog".into());
+        return Err("Forge funded state changed after relog".into());
     }
     fresh.service_liveness(Duration::from_millis(490)).await?;
     let (_, persisted_history) =
         forge(&mut fresh, Operation::QueryHistory, [0; 16], None, 50).await?;
-    if persisted_history != history {
-        return Err("Forge refusal history changed after relog".into());
+    if persisted_history != expected_history {
+        return Err("Forge funded history changed after relog".into());
     }
     if fresh.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
