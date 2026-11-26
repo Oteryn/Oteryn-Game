@@ -252,16 +252,17 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
         "exercise sword i28552",
         "exercise range and charge persistence",
     );
-    let mut setup = connect_character(clients, 0xb4, 0).await?;
+    let setup = connect_character(clients, 0xb4, 0).await?;
     character_prep::grant_item(&setup, EXERCISE_SWORD, 1).await?;
-    if setup.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("fixture setup logout refused".into());
-    }
+    let setup_session = setup.join_snapshot().game_session_id;
+    // The fixture writes outside the player's inventory stream. End its
+    // transport and let fresh admission wait for the normal terminal release.
     drop(setup);
 
     let mut client = connect_character(clients, 0xb5, 0).await?;
+    if client.join_snapshot().game_session_id == setup_session {
+        return Err("exercise journey reused the fixture session".into());
+    }
     let initial = command(&mut client, wire::ExerciseIntent::Status, Accepted).await?;
     if initial.disposition != 2 || initial.revision == 0 {
         return Err(format!("STATUS reply={initial:?}; need=stopped durable state").into());
