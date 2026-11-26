@@ -1,4 +1,5 @@
 //! Personal display facts; only the existing live-fenced Quest writer creates them.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use oteryn_gameplay_quests::quest::map_marks::{MAX_PERSONAL_QUEST_MAP_MARKS, QuestMapMark};
 use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
@@ -115,7 +116,7 @@ impl DurabilityRoot {
                             marker,
                         });
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(QuestMapMarksSnapshot {
                         character_revision: root.revision,
                         marks,

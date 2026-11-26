@@ -17,6 +17,7 @@
 //! first, charges [`ProficiencyModificationRateCap`](crate::domain::weapon_proficiency::ProficiencyModificationRateCap) only for an unseen occurrence, then
 //! commits through a [`RevisionSlot`](super::character_revision_sequencer::RevisionSlot).
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_forge_dust::{
     ForgeDustOutcome, ForgeDustSpendCause, ForgeDustWriteError, ForgeDustWriteIds,
@@ -1118,7 +1119,7 @@ impl DurabilityRoot {
                         }
                         Replay::Unseen => None,
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(result))
                 })
             })
@@ -1137,7 +1138,7 @@ impl DurabilityRoot {
                     )
                     .fetch_one(&mut *tx)
                     .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(<[u8; 32]>::try_from(secret)
                         .map_err(|_| DurabilityError::InvalidStoredState)?))
                 })

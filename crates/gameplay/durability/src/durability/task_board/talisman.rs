@@ -2,6 +2,7 @@
 //! active bounty and the four existing quest tracks are read under the caller's
 //! current Character root lock; a missing board never activates a weekly task.
 
+use crate::durability::db::commit_semantic_read;
 use std::collections::BTreeMap;
 
 use oteryn_gameplay_quests::quest::task_board::{
@@ -14,9 +15,7 @@ use super::super::character_authority::{ReconciledCharacterAuthority, assert_rec
 use super::super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence,
 };
-use super::super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
-};
+use super::super::db::{begin_semantic_transaction, lock_admission_relations};
 use super::super::runtime_scope_assignment::NodeIncarnationProof;
 use super::super::{DurabilityError, DurabilityRoot};
 
@@ -179,7 +178,7 @@ impl DurabilityRoot {
                         return Ok(Err(error));
                     }
                     let snapshot = read_talisman_in_transaction(&mut tx, fence).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(snapshot))
                 })
             })

@@ -1,4 +1,5 @@
 //! Viewer-authorized same-guild observations. Other Guild IDs and membership are not disclosed.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 impl DurabilityRoot {
     pub async fn read_battle_guild_allies(
@@ -26,7 +27,7 @@ impl DurabilityRoot {
                 rows.iter().map(|row|row.try_get("same").map_err(GuildError::from)).collect::<Result<Vec<bool>>>()
             }.await;
             match result {
-                Ok(data)=>{commit_semantic_transaction(tx,deadline).await?;Ok(Ok(data))},
+                Ok(data)=>{commit_semantic_read(tx,deadline).await?;Ok(Ok(data))},
                 Err(GuildError::Unavailable(error))=>{tx.rollback().await?;Err(error)},
                 Err(error)=>{tx.rollback().await?;Ok(Err(error))},
             }

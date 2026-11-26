@@ -2,6 +2,7 @@
 use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::super::{DurabilityError, DurabilityRoot};
 use super::profile_b_wire::{Answer, CommercialState, Hint, Item, Message, Request, time};
+use crate::durability::db::commit_semantic_read;
 use sqlx::Row;
 type Tx<'a> = sqlx::Transaction<'a, sqlx::Postgres>;
 #[derive(Debug, Clone, Default)]
@@ -83,7 +84,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let result = view(&mut tx, &id).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })
@@ -163,7 +164,7 @@ impl DurabilityRoot {
             let rows=sqlx::query("SELECT p.account_id::text,p.product_id,p.product_version,p.hint_revision FROM jsonb_array_elements_text($1::jsonb) a(account_id) CROSS JOIN jsonb_to_recordset($2::jsonb) AS k(product_id TEXT,product_version BIGINT) JOIN game_profile_b_products p ON p.account_id=a.account_id::uuid AND p.product_id=k.product_id AND p.product_version=k.product_version WHERE p.hint_revision>0 ORDER BY p.account_id,p.product_id,p.product_version LIMIT 8500")
                 .bind(accounts).bind(products).fetch_all(&mut *tx).await?;
             let result=rows.into_iter().map(|r|Ok::<_,sqlx::Error>(Hint{account_id:r.try_get("account_id")?,product_id:r.try_get("product_id")?,product_version:r.try_get::<i64,_>("product_version")? as u64,lifecycle_revision:r.try_get::<i64,_>("hint_revision")? as u64})).collect::<Result<Vec<_>,_>>()?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(result)
+            commit_semantic_read(tx,deadline).await?;Ok(result)
         })).await
     }
     pub async fn profile_b_hint_revision(
@@ -182,7 +183,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             let revision:Option<i64>=sqlx::query_scalar("SELECT hint_revision FROM game_profile_b_products WHERE account_id=$1::uuid AND product_id=$2 AND product_version=$3").bind(id).bind(product).bind(version as i64).fetch_optional(&mut *tx).await?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(revision.unwrap_or(0) as u64)
+            commit_semantic_read(tx,deadline).await?;Ok(revision.unwrap_or(0) as u64)
         })).await
     }
     pub async fn profile_b_changes_cursor(
@@ -191,7 +192,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             let row:(Option<String>,bool)=sqlx::query_as("SELECT stream_cursor,stopped FROM game_profile_b_changes_cursor WHERE singleton").fetch_one(&mut *tx).await?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(row)
+            commit_semantic_read(tx,deadline).await?;Ok(row)
         })).await
     }
     pub async fn stop_profile_b_changes(&self) -> Result<(), DurabilityError> {

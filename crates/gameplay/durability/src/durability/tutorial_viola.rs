@@ -83,7 +83,7 @@ impl DurabilityRoot {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let result = load(&mut tx, character, command, None).await?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })
