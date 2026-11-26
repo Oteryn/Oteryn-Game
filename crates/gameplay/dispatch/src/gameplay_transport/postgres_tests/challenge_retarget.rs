@@ -109,7 +109,7 @@ async fn scenario(harness: &Harness) -> TestResult {
             vec![(
                 (2, 12, -7),
                 60_000,
-                "oteryn:creature.rat".into(),
+                "oteryn:creature.rat".to_owned(),
                 rat_health,
                 false,
             )],

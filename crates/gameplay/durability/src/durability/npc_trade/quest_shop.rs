@@ -5,11 +5,33 @@ use oteryn_gameplay_content::content::{
     npc_catalogue::quest_shops,
 };
 
+async fn track_value(
+    tx: &mut Type2Transaction<'_>,
+    character: CharacterId,
+    quest: &str,
+    track: &str,
+) -> std::result::Result<Option<i64>, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks \
+         WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 AND track_key=$3",
+    )
+    .bind(character.as_bytes().as_slice())
+    .bind(quest)
+    .bind(track)
+    .fetch_optional(&mut ***tx)
+    .await
+}
+
 pub(super) async fn permitted(
     tx: &mut Type2Transaction<'_>,
     character: CharacterId,
     request: &NpcTradeRequest,
 ) -> std::result::Result<bool, sqlx::Error> {
+    if let Some((quest, track)) = quest_shops::ordinary_requirement(&request.cause.npc_key)
+        && track_value(tx, character, quest, track).await? != Some(quest_shops::ORDINARY_UNLOCK_VALUE)
+    {
+        return Ok(false);
+    }
     let direction = match request.cause.side {
         NpcTradeSide::Buy => ProjectV2ServiceOfferDirection::SellToPlayer,
         // These exchanges have their own pinned source and custody guards.
@@ -44,8 +66,7 @@ pub(super) async fn permitted(
         Err(_) => return Ok(false),
     };
     for requirement in &offer.requirements {
-        let value:Option<i64>=sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 AND track_key=$3")
-            .bind(character.as_bytes().as_slice()).bind(&requirement.quest).bind(&requirement.track).fetch_optional(&mut ***tx).await?;
+        let value = track_value(tx, character, &requirement.quest, &requirement.track).await?;
         if !(requirement.minimum..=requirement.maximum)
             .contains(&value.unwrap_or(requirement.initial))
         {

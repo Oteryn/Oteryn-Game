@@ -19,7 +19,7 @@ fn qm55_donor_unavailable_missions_have_no_offer_or_durable_personal_progress() 
                 .block_on(async {
                     let started = std::time::Instant::now();
                     let h = f::Harness::create(admin, "qm55_unavailable", true).await?;
-                    let result = exercise(&h).await;
+                    let result = exercise(&h, false).await;
                     h.cleanup().await?;
                     result?;
                     assert!(started.elapsed().as_secs_f64() > 0.01);
@@ -36,32 +36,93 @@ fn qm55_donor_unavailable_missions_have_no_offer_or_durable_personal_progress() 
         .map_err(Into::into)
 }
 
-async fn exercise(h: &f::Harness) -> f::TestResult {
-    let catalogue = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-        .map_err(f::debug)?;
-    let offers = reward_callbacks::offered_for(catalogue.catalogue())?;
-    let retained = reward_callbacks::load_for(catalogue.catalogue())?;
+#[test]
+fn bankrob_no_personal_offer_or_progress() -> f::TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            f::runtime()
+                .map_err(f::debug)?
+                .block_on(async {
+                    let h = f::Harness::create(admin, "bankrob_no_personal", true).await?;
+                    eprintln!("bankrob-marker: bankrob_no_personal_offer_or_progress db ready");
+                    let result = exercise(&h, true).await;
+                    h.cleanup().await?;
+                    result
+                })
+                .map_err(f::debug)
+        })?
+        .join()
+        .map_err(|_| "Bank Robbery unavailable worker failed")?
+        .map_err(Into::into)
+}
+
+async fn start_robbery(
+    h: &f::Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+) -> f::TestResult {
+    use crate::durability::world_event::bank_robbery;
+    use crate::foundation::ScopeOwnershipGeneration;
+    let scope = f::scope()?;
+    let world = scope.world_id();
+    let generation = ScopeOwnershipGeneration::new(1).map_err(f::debug)?;
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month)
+        VALUES(encode($1,'hex')::uuid,1,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),to_char(clock_timestamp() AT TIME ZONE 'Europe/Berlin','YYYY-MM'))")
+        .bind(world.as_bytes().as_slice()).bind([7u8;32].as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,1)")
+        .bind(world.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
+    let sites = [true; 4];
     assert!(
-        retained.iter().any(
-            |callback| callback.quest == "oteryn:quest.authored.bank_robbery_mini_world_change"
-        ),
-        "unavailable offers must retain historical callback evidence"
+        h.root
+            .poll_bank_robbery(authority, &h.node, scope, generation, 1, sites)
+            .await?
+            .is_none()
     );
-    assert!(offers.iter().all(authored_bindings::personal_event_offered));
+    sqlx::query(
+        "UPDATE game_bank_robbery_occurrences SET boot_ms=boot_ms-3600000 WHERE reset_epoch=1",
+    )
+    .execute(&h.pool)
+    .await?;
     assert!(
-        !offers.iter().any(
-            |callback| callback.quest == "oteryn:quest.authored.bank_robbery_mini_world_change"
+        bank_robbery::with_test_roll(
+            "thais",
+            h.root
+                .poll_bank_robbery(authority, &h.node, scope, generation, 1, sites)
         )
+        .await?
+        .is_some()
     );
-    assert!(!offers.iter().any(|callback| {
-        oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&callback.key).is_some()
-    }));
+    Ok(())
+}
+
+async fn exercise(h: &f::Harness, robbery: bool) -> f::TestResult {
     let seal = h.recovery.seal_current().map_err(f::debug)?;
     let authority = h
         .root
         .open_character_authority(&seal)
         .await
         .map_err(f::debug)?;
+    if robbery {
+        start_robbery(h, &authority).await?;
+    }
+    let catalogue = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(f::debug)?;
+    let offers = reward_callbacks::offered_for(catalogue.catalogue())?;
+    if robbery {
+        let key = "oteryn:quest.authored.bank_robbery_mini_world_change";
+        let retained = reward_callbacks::load_for(catalogue.catalogue())?;
+        assert!(retained.iter().any(|callback| callback.quest == key));
+        assert!(!offers.iter().any(|callback| callback.quest == key));
+    }
+    assert!(offers.iter().all(authored_bindings::personal_event_offered));
+    assert!(!offers.iter().any(|callback| {
+        oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&callback.key).is_some()
+    }));
     for quest in [
         "bank_robbery_mini_world_change",
         "chakoya_iceberg_mini_world_change",
@@ -73,7 +134,10 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         "jungle_camp_mini_world_change",
         "kingsday_mini_world_change",
         "lumberjack_mini_world_change",
-    ] {
+    ]
+    .into_iter()
+    .filter(|quest| (*quest == "bank_robbery_mini_world_change") == robbery)
+    {
         let quest = format!("oteryn:quest.authored.{quest}");
         let authored_bindings::PersonalEventProfile::Unavailable { source, line } =
             authored_bindings::personal_event_profile(&quest).ok_or("missing donor profile")?

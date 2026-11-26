@@ -69,6 +69,18 @@ fn i05_crystal_charged_amulet_matches() {
     assert!(target.is_none());
 }
 
+#[test]
+fn death_ring_uses_crystal_active_time_budget() {
+    let controller = native();
+    let native = native_state(&controller);
+    let definition = typed_of(native, 6299).expect("death ring");
+    let equipped = equipped_definition(native, &definition).expect("active death ring");
+    assert_eq!(equipped.production_key, key(6300));
+    let (budget, target) = facts(native, &definition).expect("active death ring budget");
+    assert_eq!(budget.full.remaining_ms(), Some(480_000));
+    assert!(target.is_none());
+}
+
 /// Time ring 3053 -> 3090 (600 s) and dwarven ring 3097 -> 3099 (3,600 s, Crystal
 /// `items.xml:7458-7489`, decayTo 0) are admitted with their active-time budgets and no decay
 /// item. The power, sword, axe and club rings 3050/3091/3092/3093 -> 3087/3094/3095/3096

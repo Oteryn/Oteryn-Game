@@ -69,6 +69,25 @@ impl QualifiedHousePlacement {
     }
 }
 impl QualifiedHouseTiles {
+    #[cfg(feature = "test-support")]
+    pub(super) fn for_bundle_test(
+        scope: EngineeringStaticCellScope,
+        house: ProjectV2DefinitionRef,
+        cells: BTreeSet<LogicalCell>,
+        entry: LogicalCell,
+    ) -> Self {
+        Self {
+            scope,
+            houses: Some(vec![QualifiedHousePlacement {
+                house,
+                cells,
+                entry,
+                doors: BTreeMap::new(),
+                beds: BTreeMap::new(),
+            }]),
+        }
+    }
+
     /// Reset's HOUSE-1a seam admits only a qualified, explicitly empty catalogue.
     /// Unknown metadata and every actual House remain closed until that owner lands.
     pub fn is_known_empty(&self) -> bool {

@@ -342,6 +342,10 @@ pub struct SessionContinuity {
     /// CAP-NEG-1: the capabilities selected at this GameSession's fresh admission. A resume or
     /// channel transfer carries them unchanged and never widens them.
     pub selected_capabilities: SelectedCapabilities,
+    /// Whether this transport still owes the durable first-input receipt for
+    /// a House handoff. A replacement cannot clear the old transport's flag.
+    /// None preserves the admission authority's guard for other owners.
+    pub house_input_pending: Option<bool>,
     /// ITEM-VIEW-1b: the item handle counter, the domain 9 and 11 high-water revisions and the
     /// open corpse. Used only with capability 4; a resume or channel transfer carries it.
     pub item_view: ItemViewContinuity,
@@ -398,6 +402,7 @@ impl SessionContinuity {
         vitals_revision: 0,
         achievement_notice_revision: None,
         selected_capabilities: SelectedCapabilities::NONE,
+        house_input_pending: None,
         item_view: ItemViewContinuity {
             handle_counter: 0,
             inventory_revision: 0,

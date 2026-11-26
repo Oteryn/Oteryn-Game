@@ -8,6 +8,7 @@ No source fetches or original asset redistribution. Existing native rules qualif
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 import build_source_item_profiles as native
@@ -35,6 +36,15 @@ def build():
     physical = {row['server_item_id']: row for row in native.policies(appearances, xml, IDS)}
     records = [native.profile(item, index[item], objects[item], physical[item], bindings, None)
                for item in sorted(IDS)]
+    sys.path.insert(0, str(ROOT / 'tools/content-migration'))
+    from ranged_item_profiles import build as ranged_profiles
+
+    ranged, _, _ = ranged_profiles(xml)
+    # Crystal 201189f8 data/items/items.xml:42491-42523 attests the same
+    # attack facts as the retained XML, including the Chiller's Druid registration.
+    by_id = dict(zip(sorted(IDS), records, strict=True))
+    for item in (21348, 21350):
+        by_id[item]['authoring']['ranged'] = ranged[item]
     # The source kit explicitly equips the lit torch in CONST_SLOT_AMMO
     # (Newhaven.starterItems, newhaven.lua:10,29,48,66,84). Its XML omits an
     # equip script; retain that audited primary slot instead of guessing one.

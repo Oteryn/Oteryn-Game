@@ -4,13 +4,6 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 
-async fn complete_parent(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
-) -> TestResult {
-    complete_parent_key(owner, admitted, "oteryn:quest.authored.make_believe_quest").await
-}
-
 pub(super) async fn complete_parent_key(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
@@ -49,7 +42,7 @@ pub(super) async fn complete_parent_key(
                 }],
                 completes: true,
                 experience: None,
-        world_change: None,
+                world_change: None,
             }],
         )
         .map_err(debug)?,
@@ -104,7 +97,8 @@ pub(super) async fn exercise(
     super::classic_quests_fixtures::talk(owner, admitted, elane, 1300, "hi").await?;
     let before:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     let result =
-        super::qengine_rewards_fixtures::talk(owner, admitted, elane, 1301, "hunter commission").await?;
+        super::qengine_rewards_fixtures::talk(owner, admitted, elane, 1301, "hunter commission")
+            .await?;
     if name.ends_with("no-premium") {
         assert_eq!(
             result,
@@ -122,35 +116,152 @@ pub(super) async fn exercise(
             assert_eq!(level, 1000);
         } else {
             assert!(level < 1000);
-            complete_parent(owner, admitted).await?;
         }
         super::classic_quests_fixtures::talk(owner, admitted, wayland, 1310, "hi").await?;
-        let refused =
-            super::qengine_rewards_fixtures::talk(owner, admitted, wayland, 1311, "illuminated commission")
-                .await?;
-        assert_eq!(
-            refused,
-            NpcIntentDisposition::Rejected,
-            "missing level or parent prerequisite must refuse"
-        );
-        if name.ends_with("high") {
-            complete_parent(owner, admitted).await?;
-            let parent_before:String=sqlx::query_scalar("SELECT completed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.authored.make_believe_quest'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
-            assert_eq!(
-                super::qengine_rewards_fixtures::talk(
-                    owner,
-                    admitted,
-                    wayland,
-                    1312,
-                    "illuminated commission"
+        if name == "questpc7-eligibility-outfit-high" {
+            let parent_exists: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_character_quest_states
+                 WHERE character_id=encode($1,'hex')::uuid
+                 AND quest_key='oteryn:quest.authored.make_believe_quest')",
+            )
+            .bind(id(41).as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(!parent_exists, "fresh character has no Make Believe state");
+            for command in [1311, 1312] {
+                let menu = super::classic_quests_fixtures::talk(
+                    owner, admitted, wayland, command, "outfit",
                 )
-                .await?,
-                NpcIntentDisposition::Ok
-            );
-            let parent_after:String=sqlx::query_scalar("SELECT completed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.authored.make_believe_quest'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+                .await?
+                .join(" ")
+                .to_ascii_lowercase();
+                for option in ["basic", "insignia", "halo"] {
+                    assert!(
+                        menu.contains(option),
+                        "outfit request {command} missing {option}: {menu}"
+                    );
+                }
+            }
+            let receipts: Vec<String> = sqlx::query_scalar(
+                "SELECT transition_key FROM game_character_quest_receipts
+                 WHERE character_id=encode($1,'hex')::uuid
+                 AND quest_key='oteryn:quest.authored.illuminated_warrior_outfits_quest'",
+            )
+            .bind(id(41).as_slice())
+            .fetch_all(&h.pool)
+            .await?;
             assert_eq!(
-                parent_after, parent_before,
-                "eligibility never rewrites its parent completion fact"
+                receipts,
+                ["oteryn:quest-reward/questpc7-illuminated-intro"],
+                "the second outfit request is read-only"
+            );
+            return Ok(());
+        }
+        let intro =
+            super::qengine_rewards_fixtures::talk(owner, admitted, wayland, 1311, "outfit").await?;
+        if name.ends_with("high") {
+            assert_eq!(
+                intro,
+                NpcIntentDisposition::Ok,
+                "Wayland starts without Make Believe"
+            );
+            // Supply the full commission's payment separately from the boss loot tests.
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query(
+                "WITH backpack AS (
+                    SELECT * FROM game_item_container_slots
+                    WHERE character_id=encode($1,'hex')::uuid
+                 ), bags AS (
+                    INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
+                        definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+                    SELECT uuidv7(),world_id,'Item','oteryn:item.tibia.i2854','definition-r1',1,1,uuidv7()
+                    FROM backpack CROSS JOIN generate_series(1,3)
+                    RETURNING item_instance_id,world_id
+                 ), placed AS (
+                    INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,
+                        item_instance_id,placement_ordinal,placed_transaction_id)
+                    SELECT b.character_id,b.world_id,b.item_instance_id,g.item_instance_id,
+                        (SELECT COALESCE(max(e.placement_ordinal),0) FROM game_item_container_entries e
+                         WHERE e.parent_item_instance_id=b.item_instance_id) + row_number() OVER (),uuidv7()
+                    FROM bags g CROSS JOIN backpack b RETURNING item_instance_id
+                 ), inputs AS MATERIALIZED (
+                    SELECT p.item_instance_id AS bag, b.world_id, b.character_id,
+                           uuidv7() AS item, n
+                    FROM (SELECT item_instance_id, row_number() OVER (ORDER BY item_instance_id) AS index FROM placed) p
+                    CROSS JOIN backpack b CROSS JOIN LATERAL generate_series(1, 16 + (p.index < 3)::integer) n
+                 ), minted AS (
+                    INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
+                        definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+                    SELECT item,world_id,'Item','oteryn:item.tibia.i54640','definition-r1',100,1,uuidv7()
+                    FROM inputs RETURNING item_instance_id
+                 )
+                 INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,
+                    item_instance_id,placement_ordinal,placed_transaction_id)
+                 SELECT character_id,world_id,bag,item,n,uuidv7() FROM inputs
+                 JOIN minted ON minted.item_instance_id=inputs.item",
+            ).bind(id(41).as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+            for (command, stage, addon, remaining) in [
+                (1312, "basic", 0, 2500),
+                (1314, "insignia", 1, 1250),
+                (1316, "halo", 2, 0),
+            ] {
+                for (id, words) in [(command, stage), (command + 1, "yes")] {
+                    let result =
+                        super::qengine_rewards_fixtures::talk(owner, admitted, wayland, id, words)
+                            .await?;
+                    assert_eq!(result, NpcIntentDisposition::Ok, "Wayland {stage}: {words}");
+                }
+                let scraps: i64 = sqlx::query_scalar(
+                    "SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances
+                     WHERE definition_production_key='oteryn:item.tibia.i54640' AND lifecycle=1",
+                )
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(
+                    scraps, remaining,
+                    "Wayland {stage} charges its exact scrap price"
+                );
+                let granted: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM game_account_appearance_unlocks
+                     WHERE unlock_key=$1)",
+                )
+                .bind(format!(
+                    "oteryn:outfit.illuminated_warrior/quest-grant/{addon}"
+                ))
+                .fetch_one(&h.pool)
+                .await?;
+                assert!(
+                    granted,
+                    "Wayland {stage} grants the corresponding appearance"
+                );
+            }
+            let completed: bool = sqlx::query_scalar(
+                "SELECT completed_character_revision IS NOT NULL
+                 FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid
+                 AND quest_key='oteryn:quest.authored.illuminated_warrior_outfits_quest'",
+            )
+            .bind(id(41).as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(completed, "Wayland completes the commission after halo");
+            let parent_exists: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_character_quest_states
+                 WHERE character_id=encode($1,'hex')::uuid
+                 AND quest_key='oteryn:quest.authored.make_believe_quest')",
+            )
+            .bind(id(41).as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(!parent_exists, "Wayland leaves Make Believe untouched");
+        } else {
+            assert_eq!(
+                intro,
+                NpcIntentDisposition::Rejected,
+                "Wayland retains the level gate"
             );
         }
     }
