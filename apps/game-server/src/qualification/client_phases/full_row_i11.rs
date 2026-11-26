@@ -101,7 +101,7 @@ async fn reach_station(
     })?;
     let path = route(world, here, |at| nearby_station(at, &stations).is_some())
         .ok_or_else(|| format!("step={name}-route missing=reachable-compiled-world-station"))?;
-    walk(client, world, &path).await?;
+    walk_once(client, world, &path).await?;
     let arrived = tile(client.world_spatial().actor_position)?;
     nearby_station(arrived, &stations).ok_or_else(|| format!("step={name}-route observed=no-station-within-use-distance-after-STEP").into())
 }
@@ -111,31 +111,50 @@ async fn mill_wheat(
     world: &BundleWorld,
     bytes: &[u8],
 ) -> TestResult {
-    super::full_row_i14::acquire(client, world, WHEAT, 1).await.map_err(|error|
-        verdict::context(format!("step=wheat-purchase observed={error}"), error)
-    )?;
     let here = tile(client.world_spatial().actor_position)?;
-    let (mill, ordinal) = reach_station(client, world, bytes, here, &MILLSTONES, "millstone").await?;
+    let (mill, ordinal) =
+        reach_station(client, world, bytes, here, &MILLSTONES, "millstone").await?;
     let index = provisioning::item_index()?;
     let wheat = provisioning::item_reference(&index, WHEAT)?;
     let flour = provisioning::item_reference(&index, FLOUR)?;
     let before_wheat = quantity(client, wheat)?;
+    if before_wheat != 1 {
+        return Err(format!("step=millstone expected=one-wheat observed={before_wheat}").into());
+    }
     let before_flour = quantity(client, flour)?;
-    let handle = client.inventory().and_then(|inventory| inventory.entries.iter().find(|entry| entry.item_definition_ref == wheat))
-        .ok_or("step=millstone observed=purchased-wheat-handle-missing")?.handle;
-    let key = crate::map::view::placement_key(mill, ordinal).ok_or("step=millstone observed=placement-key-missing")?;
+    let handle = client
+        .inventory()
+        .and_then(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .find(|entry| entry.item_definition_ref == wheat)
+        })
+        .ok_or("step=millstone observed=fixture-wheat-handle-missing")?
+        .handle;
+    let key = crate::map::view::placement_key(mill, ordinal)
+        .ok_or("step=millstone observed=placement-key-missing")?;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let payload = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(handle),
         use_with: None,
-        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget { placement, expected_revision: 0 })),
+        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
+            placement,
+            expected_revision: 0,
+        })),
         use_with_position: None,
-    }).map_err(|error| format!("step=millstone encode={error:?}"))?;
+    })
+    .map_err(|error| format!("step=millstone encode={error:?}"))?;
     let reply = client.session_mut().world_context_use(&payload).await?;
-    let disposition = decode_use_result(&reply.payload).map_err(|error| format!("step=millstone decode={error:?}"))?;
+    let disposition = decode_use_result(&reply.payload)
+        .map_err(|error| format!("step=millstone decode={error:?}"))?;
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
-        return Err(format!("step=millstone status={:?} disposition={disposition:?}", reply.status).into());
+        return Err(format!(
+            "step=millstone status={:?} disposition={disposition:?}",
+            reply.status
+        )
+        .into());
     }
     wait_quantities(client, wheat, before_wheat - 1, flour, before_flour + 1).await?;
     evidence("I11_CHECK wheat-to-flour PASS");
@@ -160,40 +179,58 @@ async fn mix_dough(
     let flour = provisioning::item_reference(index, FLOUR)?;
     let bucket = provisioning::item_reference(index, BUCKET)?;
     let carried_bucket = |client: &oteryn_dev_client::DevClientSession, subtype| {
-        client.inventory()?.entries.iter()
+        client
+            .inventory()?
+            .entries
+            .iter()
             .find(|item| item.item_definition_ref == bucket && item.sub_type == subtype)
             .map(|item| item.handle)
     };
-    if carried_bucket(client, 1).is_none() {
-        if carried_bucket(client, 0).is_none() {
-            super::full_row_i14::acquire(client, world, BUCKET, 1).await.map_err(|error|
-                verdict::context(format!("step=dough-water-bucket observed={error}"), error)
-            )?;
+    if carried_bucket(client, 1).is_some() {
+        return Err("step=dough-water observed=bucket-already-filled-before-USE".into());
+    }
+    let here = tile(client.world_spatial().actor_position)?;
+    let (water, ordinal) =
+        reach_station(client, world, bytes, here, &WATER_SOURCES, "dough-water").await?;
+    let key = crate::map::view::placement_key(water, ordinal)
+        .ok_or("step=dough-water missing=placement-key")?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let empty = carried_bucket(client, 0).ok_or("step=dough-water missing=empty-bucket")?;
+    use_for_mixing(
+        client,
+        empty,
+        MapUseTarget::Object(WorldObjectTarget {
+            placement,
+            expected_revision: 0,
+        }),
+        "dough-water",
+    )
+    .await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while carried_bucket(client, 1).is_none() {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step=dough-water missing=filled-bucket-inventory-delta".into());
         }
-        let here = tile(client.world_spatial().actor_position)?;
-        let (water, ordinal) = reach_station(client, world, bytes, here, &WATER_SOURCES, "dough-water").await?;
-        let key = crate::map::view::placement_key(water, ordinal)
-            .ok_or("step=dough-water missing=placement-key")?;
-        let mut placement = world.base().digest().to_vec();
-        placement.extend_from_slice(&key.to_be_bytes());
-        let empty = carried_bucket(client, 0).ok_or("step=dough-water missing=empty-bucket")?;
-        use_for_mixing(client, empty, MapUseTarget::Object(WorldObjectTarget {
-            placement, expected_revision: 0,
-        }), "dough-water").await?;
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-        while carried_bucket(client, 1).is_none() {
-            if tokio::time::Instant::now() >= deadline {
-                return Err("step=dough-water missing=filled-bucket-inventory-delta".into());
-            }
-            client.service_liveness(Duration::from_millis(50)).await?;
-        }
+        client.service_liveness(Duration::from_millis(50)).await?;
     }
     let water = carried_bucket(client, 1).ok_or("step=dough-mix missing=water-bucket")?;
-    let source = client.inventory().and_then(|inventory| inventory.entries.iter()
-        .find(|item| item.item_definition_ref == flour))
-        .ok_or("step=dough-mix missing=milled-flour")?.handle;
+    let source = client
+        .inventory()
+        .and_then(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .find(|item| item.item_definition_ref == flour)
+        })
+        .ok_or("step=dough-mix missing=milled-flour")?
+        .handle;
     let bucket_units = |client: &oteryn_dev_client::DevClientSession, subtype| -> TestResult<u64> {
-        Ok(client.inventory().ok_or("step=dough-mix missing=inventory")?.entries.iter()
+        Ok(client
+            .inventory()
+            .ok_or("step=dough-mix missing=inventory")?
+            .entries
+            .iter()
             .filter(|item| item.item_definition_ref == bucket && item.sub_type == subtype)
             .map(|item| u64::from(item.count.get()))
             .sum())
@@ -250,7 +287,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_character(clients, 0xb8, 0).await?;
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_Q_I11_ACCOUNT").await?;
+    let clients = identity.clients(clients);
+    character_prep::declare_seeded(
+        "I11.full",
+        "wheat=1,empty-bucket=1,rope=1",
+        "the journey exercises live millstone, water source, and oven conversions",
+    );
+    let mut client = prepare_inputs(&clients, &[WHEAT, BUCKET, ROPE]).await?;
     mill_wheat(&mut client, world, &bytes).await?;
     let index = provisioning::item_index()?;
     let dough = provisioning::item_reference(&index, DOUGH)?;
@@ -288,10 +332,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     })
     .map_err(|error| format!("step-2_observed=encode-{error:?}"))?;
     client.take_events();
-    let reply = client
-        .session_mut()
-        .world_context_use(&payload)
-        .await?;
+    let reply = client.session_mut().world_context_use(&payload).await?;
     let disposition = decode_use_result(&reply.payload)
         .map_err(|error| format!("step-2_observed=reply-decode-{error:?}"))?;
 
@@ -302,7 +343,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    wait_quantities(&mut client, dough, before_dough - 1, bread, before_bread + 1).await?;
+    wait_quantities(
+        &mut client,
+        dough,
+        before_dough - 1,
+        bread,
+        before_bread + 1,
+    )
+    .await?;
     let refusal_source = client
         .inventory()
         .and_then(|inventory| {
@@ -350,11 +398,51 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step-3_observed=unsupported-use-mutated-inventory".into());
     }
     logout(&mut client).await?;
-    let reloaded = connect_character(clients, 0xb9, 0).await?;
+    drop(client);
+    let mut reloaded = connect_character(&clients, 0xb9, 0).await?;
     if quantity(&reloaded, dough)? != before_dough - 1
         || quantity(&reloaded, bread)? != before_bread + 1
     {
         return Err("step-4_observed=baked-quantities-not-durable".into());
+    }
+    logout(&mut reloaded).await?;
+    Ok(())
+}
+
+pub(super) async fn prepare_inputs(
+    clients: &SeamClients<'_>,
+    items: &[u32],
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    let mut prep = connect_character(clients, 0xb7, 0).await?;
+    for &item in items {
+        character_prep::grant_item(&prep, item, 1).await?;
+    }
+    logout(&mut prep).await?;
+    drop(prep);
+    connect_character(clients, 0xb8, 0).await
+}
+
+pub(super) async fn walk_once(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, from, direction);
+        let step = client.step(direction).await?;
+        let arrived = tile(client.world_spatial().actor_position)?;
+        if step.status != CommandStatus::Accepted
+            || step.disposition != StepDisposition::Moved
+            || step.world_spatial_delta.is_none()
+            || Some(arrived) != expected
+        {
+            return Err(format!(
+                "I11 station approach {direction:?} from={from:?} expected={expected:?} arrived={arrived:?} disposition={:?}",
+                step.disposition
+            ).into());
+        }
+        verdict::Harness::global().progress("walk");
     }
     Ok(())
 }

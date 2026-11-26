@@ -1,51 +1,35 @@
 //! I11 client-capture scenario, derived from the matrix/audit and the production craft owner:
 //! 1. Admit the provisioned character and walk beside a compiled-world oven.
-//! 2. Acquire dough through ordinary play (loot or an NPC purchase), then send native USE-with
-//!    dough -> oven; expect an accepted/Committed reply and inventory deltas consuming one dough
-//!    and adding one bread.
+//! 2. Bake fixture-supplied dough using native USE-with and verify the dough debit and bread credit.
 //! 3. Send native USE-with using an unsupported carried item -> the same oven; expect a rejected
 //!    NothingToUse reply and no inventory delta (the refusal path).
 //! 4. Logout, freshly admit the same character, and re-check the durable dough/bread quantities.
-//!
-//! The node-boot provisioning deliberately supplies only normal tools, not recipe inputs. This
-//! journey therefore still sends the station-conversion command with a legitimately carried item
-//! when no dough can be acquired, records the observed server refusal, and reports the missing
-//! ordinary acquisition surface rather than manufacturing a PASS.
 use super::*;
+use oteryn_protocol_oteryn::item_view;
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
     encode_item_use_intent,
 };
-use oteryn_protocol_oteryn::item_view;
+use std::io::Write;
 
 const DOUGH: u32 = 3604;
 const BREAD: u32 = 3600;
-const OVENS: [&str; 4] = [
-    "oteryn:item.tibia.i2535",
-    "oteryn:item.tibia.i2537",
-    "oteryn:item.tibia.i2539",
-    "oteryn:item.tibia.i2541",
-];
+const ROPE: u32 = 3003;
+const OVEN: TilePos = TilePos {
+    x: 32355,
+    y: 32208,
+    floor: -7,
+};
+const OVEN_KEY: &str = "oteryn:item.tibia.i2535";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "client-inventory-payload-captured".to_owned()),
-        Ok(Err(error)) if error.to_string().contains("MISSING-SERVER:") => {
-            evidence(&format!(
-                "I11_GAP {}",
-                error.to_string().replace([' ', '\n', '\r'], "_")
-            ));
-            (
-                "MISSING-SERVER",
-                "source:crates/gameplay/dispatch/src/gameplay_transport/item_craft.rs:154".to_owned(),
-            )
-        }
-        Ok(Err(error)) => (
-            "FAIL",
-            error.to_string().replace([' ', '\n', '\r'], "_"),
-        ),
+        Ok(Err(error)) => ("FAIL", error.to_string().replace([' ', '\n', '\r'], "_")),
         Err(_) => ("FAIL", "step-timeout-observed=no-reply".to_owned()),
     };
     evidence(&format!(
@@ -63,36 +47,32 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut oven = None;
-    oteryn_world_bundle::bundle::visit(&bytes, |manifest, sector| {
-        for tile in sector.tiles {
-            for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
-                if OVENS.contains(&manifest.palette[item.palette as usize].key.as_str()) {
-                    oven.get_or_insert((
-                        TilePos { x: tile.x, y: tile.y, floor: sector.floor },
-                        u8::try_from(ordinal).map_err(|_| {
-                            oteryn_world_bundle::Error::Limit("I11 oven ordinal".into())
-                        })?,
-                    ));
-                }
-            }
-        }
-        Ok(())
-    })?;
-    let (oven, ordinal) = oven.ok_or("step-1_observed=no-compiled-world-oven")?;
-    let mut client = connect_character(clients, 0xb8, 0).await?;
+    let ordinal = oven_ordinal(&bytes)?;
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_Q_I11_ACCOUNT").await?;
+    let clients = identity.clients(clients);
+    character_prep::declare_seeded(
+        "I11.client",
+        "dough=1,rope=1",
+        "the client row exercises baking and inventory replay",
+    );
+    let mut client = super::full_row_i11::prepare_inputs(&clients, &[DOUGH, ROPE]).await?;
+
     let here = tile(client.world_spatial().actor_position)?;
     let path = route(world, here, |at| {
-        at.floor == oven.floor && at.x.abs_diff(oven.x).max(at.y.abs_diff(oven.y)) <= 1
+        at.floor == OVEN.floor && at.x.abs_diff(OVEN.x).max(at.y.abs_diff(OVEN.y)) <= 1
     })
     .ok_or("step-1_observed=no-walk-route-to-oven")?;
-    walk(&mut client, world, &path).await?;
+    super::full_row_i11::walk_once(&mut client, world, &path).await?;
 
     let index = provisioning::item_index()?;
     let dough = provisioning::item_reference(&index, DOUGH)?;
     let bread = provisioning::item_reference(&index, BREAD)?;
+    let rope = provisioning::item_reference(&index, ROPE)?;
     let before_dough = quantity(&client, dough)?;
     let before_bread = quantity(&client, bread)?;
+    if before_dough != 1 {
+        return Err(format!("step-2_observed=expected-one-dough-actual-{before_dough}").into());
+    }
     let snapshot = client
         .session_mut()
         .gated_snapshot(item_view::STATE_DOMAIN_CHARACTER_INVENTORY)
@@ -105,13 +85,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 .entries
                 .iter()
                 .find(|entry| entry.item_definition_ref == dough)
-                .or_else(|| inventory.entries.first())
         })
         .ok_or("step-2_observed=no-carried-item-for-real-use")?
         .handle;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(
-        &crate::map::view::placement_key(oven, ordinal)
+        &crate::map::view::placement_key(OVEN, ordinal)
             .ok_or("step-2_observed=oven-placement-unavailable")?
             .to_be_bytes(),
     );
@@ -126,34 +105,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     })
     .map_err(|error| format!("step-2_observed=encode-{error:?}"))?;
     client.take_events();
-    let reply = client
-        .session_mut()
-        .world_context_use(&payload)
-        .await?;
+    let reply = client.session_mut().world_context_use(&payload).await?;
     let disposition = decode_use_result(&reply.payload)
         .map_err(|error| format!("step-2_observed=reply-decode-{error:?}"))?;
-    capture("i11-result.bin", &reply.payload);
-
-    if before_dough == 0 {
-        if reply.status != CommandStatus::Accepted || disposition != UseDisposition::NothingToUse {
-            return Err(format!(
-                "step-2_observed=status-{:?}-disposition-{disposition:?}-need=ordinary-dough-acquisition",
-                reply.status
-            )
-            .into());
-        }
-        let snapshot = client.inventory().cloned();
-        client.service_liveness(Duration::from_millis(100)).await?;
-        if client.inventory() != snapshot.as_ref() {
-            return Err("step-3_observed=unsupported-use-mutated-inventory".into());
-        }
-        logout(&mut client).await?;
-        let reloaded = connect_character(clients, 0xb9, 0).await?;
-        if quantity(&reloaded, dough)? != 0 || quantity(&reloaded, bread)? != before_bread {
-            return Err("step-4_observed=refused-use-changed-durable-quantities".into());
-        }
-        return Err("MISSING-SERVER:step-2_observed=NothingToUse_no_legitimate_dough_source_need=server-player-acquisition_path".into());
-    }
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(format!(
             "step-2_observed=status-{:?}-disposition-{disposition:?}",
@@ -169,32 +123,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         before_bread + 1,
     )
     .await?;
+    if delta.base_revision != snapshot.revision {
+        return Err("step-2_observed=bake-delta-does-not-follow-admission-inventory".into());
+    }
     let delta_payload = item_view::encode_character_inventory(&delta.value)
         .map_err(|error| format!("I11 inventory capture encode: {error:?}"))?;
-    capture("i11-snapshot.bin", &snapshot.payload);
-    capture("i11-inventory.bin", &delta_payload);
-    capture(
-        "i11-revisions.txt",
-        format!(
-            "{} {} {} {}",
-            snapshot.revision, delta.base_revision, delta.new_revision, delta.server_sequence
-        )
-        .as_bytes(),
-    );
-    capture("i11-expected.txt", visible_inventory(&delta.value).as_bytes());
     let refusal_source = client
         .inventory()
         .and_then(|inventory| {
             inventory
                 .entries
                 .iter()
-                .find(|entry| entry.item_definition_ref != bread)
+                .find(|entry| entry.item_definition_ref == rope)
         })
         .ok_or("step-3_observed=no-unsupported-carried-item")?
         .handle;
     let mut refusal_placement = world.base().digest().to_vec();
     refusal_placement.extend_from_slice(
-        &crate::map::view::placement_key(oven, ordinal)
+        &crate::map::view::placement_key(OVEN, ordinal)
             .ok_or("step-3_observed=oven-placement-unavailable")?
             .to_be_bytes(),
     );
@@ -229,13 +175,53 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step-3_observed=unsupported-use-mutated-inventory".into());
     }
     logout(&mut client).await?;
-    let reloaded = connect_character(clients, 0xb9, 0).await?;
+    drop(client);
+    let mut reloaded = connect_character(&clients, 0xb9, 0).await?;
     if quantity(&reloaded, dough)? != before_dough - 1
         || quantity(&reloaded, bread)? != before_bread + 1
     {
         return Err("step-4_observed=baked-quantities-not-durable".into());
     }
+    logout(&mut reloaded).await?;
+    capture("i11-result.bin", &reply.payload)?;
+    capture("i11-snapshot.bin", &snapshot.payload)?;
+    capture("i11-inventory.bin", &delta_payload)?;
+    capture(
+        "i11-revisions.txt",
+        format!(
+            "{} {} {} {}",
+            snapshot.revision, delta.base_revision, delta.new_revision, delta.server_sequence
+        )
+        .as_bytes(),
+    )?;
+    capture(
+        "i11-expected.txt",
+        visible_inventory(&delta.value).as_bytes(),
+    )?;
     Ok(())
+}
+
+fn oven_ordinal(bytes: &[u8]) -> TestResult<u8> {
+    let mut ordinal = None;
+    oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
+        if sector.floor != OVEN.floor {
+            return Ok(());
+        }
+        for tile in sector.tiles {
+            if (tile.x, tile.y) != (OVEN.x, OVEN.y) {
+                continue;
+            }
+            for (index, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
+                if manifest.palette[item.palette as usize].key == OVEN_KEY {
+                    ordinal = Some(u8::try_from(index).map_err(|_| {
+                        oteryn_world_bundle::Error::Limit("I11 oven ordinal".into())
+                    })?);
+                }
+            }
+        }
+        Ok(())
+    })?;
+    ordinal.ok_or_else(|| "step-1_observed=no-compiled-world-oven".into())
 }
 
 fn quantity(
@@ -263,6 +249,7 @@ async fn wait_quantities(
     loop {
         for event in client.take_events() {
             if let oteryn_dev_client::SessionEvent::Inventory(delta) = event
+                && client.inventory() == Some(&delta.value)
                 && quantity(client, first)? == first_expected
                 && quantity(client, second)? == second_expected
             {
@@ -284,16 +271,16 @@ fn visible_inventory(inventory: &oteryn_dev_client::CharacterInventory) -> Strin
         .collect()
 }
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(std::path::Path::new(&path).join(name), bytes) {
-        evidence(&format!(
-            "I11_CAPTURE_WRITE_ERROR file={name} error={}",
-            error.to_string().replace([' ', '\n', '\r'], "_")
-        ));
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
+    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(std::path::Path::new(&path).join(name))
+            .and_then(|mut file| file.write_all(bytes))
+            .map_err(|error| format!("I11_CAPTURE_WRITE_ERROR file={name} error={error}"))?;
     }
+    Ok(())
 }
 
 async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
