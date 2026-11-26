@@ -442,6 +442,77 @@ pub(super) fn destroy_remains(item_id: u32) -> Option<DestroyRemains> {
 #[cfg(test)]
 mod destroy_tests {
     use super::*;
+
+    #[test]
+    fn wooden_bars_destroy_remains_resolve_in_pinned_generation()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                use crate::content::native_gameplay::test_support::activated_with_loot_tables;
+                use crate::content::{ReferenceItemField, native_gameplay_test_world_id};
+                use crate::durability::item_mint::TypedDefinitionRef;
+                use oteryn_gameplay_items::item_ref_admission::generation_ground_item_facts;
+
+                let (controller, _) =
+                    activated_with_loot_tables(native_gameplay_test_world_id()?, None);
+                let native = controller
+                    .active()
+                    .and_then(|generation| generation.native_gameplay())
+                    .ok_or("missing active native gameplay")?;
+                let index = native.item_index().ok_or("missing active item index")?;
+                let remains = destroy_remains(2295).ok_or("wooden bars must be destroyable")?;
+                assert_eq!(remains.item_id, 3145);
+
+                let definition = |id| -> Result<TypedDefinitionRef, String> {
+                    let key = format!("oteryn:item.tibia.i{id}");
+                    Ok(TypedDefinitionRef {
+                        family: "Item".into(),
+                        revision_ref: index.revision(&key).ok_or_else(|| key.clone())?.into(),
+                        production_key: key,
+                    })
+                };
+                let bars = definition(2295)?;
+                let broken = definition(remains.item_id)?;
+                for (definition, blocks_movement) in [(&bars, true), (&broken, false)] {
+                    let facts = generation_ground_item_facts(native, definition)
+                        .map_err(|error| format!("{}: {error:?}", definition.production_key))?;
+                    assert_eq!(&facts.definition, definition);
+                    assert_eq!(
+                        facts.stack,
+                        crate::durability::item_transfer::ItemStackClass::Unknown
+                    );
+                    let policy = native
+                        .item_policy(&definition.production_key, &definition.revision_ref)
+                        .ok_or("missing wooden bars policy")?;
+                    let record = policy.record();
+                    assert_eq!(record.attributes.blocks_movement, Some(blocks_movement));
+                    assert!(!record.admission.materializable);
+                }
+
+                let policy = native
+                    .item_policy(&broken.production_key, &broken.revision_ref)
+                    .ok_or("missing trashed wooden bars policy")?;
+                let ReferenceItemField::Known(temporal) = &policy.record().semantics.temporal
+                else {
+                    return Err("missing trashed wooden bars decay".into());
+                };
+                let ReferenceItemField::Known(duration) = temporal.duration else {
+                    return Err("missing trashed wooden bars duration".into());
+                };
+                let ReferenceItemField::Known(target) = &temporal.decay_target else {
+                    return Err("missing trashed wooden bars decay target".into());
+                };
+                assert_eq!(duration.0, u64::from(remains.duration_ms));
+                assert_eq!(remains.decay_target, 2295);
+                assert_eq!(target.key, bars.production_key);
+                assert_eq!(target.revision, bars.revision_ref);
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "wooden bars native content thread panicked")?
+    }
+
     #[test]
     fn destroy_roll_uses_inclusive_eighty_sided_attack_threshold() {
         for attack in [0, 9, 10] {
