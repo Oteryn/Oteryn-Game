@@ -128,7 +128,8 @@ pub(super) async fn case(
             disposition: 1,
             transaction_id: Some(offer)
         }
-        .encode()?
+        .encode()
+        .map_err(debug)?
     );
     assert_eq!(values[1].2, [8, 2]);
     assert_eq!(wire::returner::Reply::decode(&values[2].2)?.state, 2);
