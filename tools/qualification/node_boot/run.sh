@@ -163,6 +163,11 @@ case "$NODE_BOOT_D150_LEGACY" in
 esac
 NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"
 case "$NODE_BOOT_WORLD_PROFILE" in
+  p02)
+    [[ "${NODE_BOOT_E2E_ONLY:-}:${OTERYN_E2E_ROW_BATCH:-}" == rows:61:1 ]] \
+      || blocked p02_world_profile_requires_full_row
+    WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt");125,124;130,122;131,122"
+    ;;
   # Real Thais/town outskirts and the default-start and seller regions.
   town)
     WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt");125,124"
