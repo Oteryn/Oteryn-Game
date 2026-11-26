@@ -1298,12 +1298,29 @@ pub struct DurabilityRoot {
     /// Connect options for the chat relay pool (CHAT-2B): the root endpoint without the WP3
     /// budget. `None` when the root was built without them.
     relay_options: Option<Box<PgConnectOptions>>,
-    /// A separately admitted holder shared by all retained-receipt publishers for this root.
+    /// The separate connection for retained-receipt publishers and indexed USE existence reads.
     retained_receipt_publisher_pool: Arc<OnceLock<Option<PgPool>>>,
     _root_i_charge: Option<Arc<RootICharge>>,
     pub(super) staff_trust: Arc<
         std::sync::OnceLock<Option<Arc<oteryn_gameplay_durability::durability::staff::StaffTrust>>>,
     >,
+}
+
+/// Exact receipt families probed before handing ordinary USE to its live owner.
+#[derive(Clone, Copy)]
+pub enum PlainUseReceipt {
+    Cake,
+    CoinExchange,
+    ConsumeTransform,
+    Craft,
+    DromeCube,
+    Gourmet,
+    Hireling,
+    HouseDecoration,
+    KooldownAid,
+    MapHarvest,
+    QuestCarried(crate::domain::CharacterId),
+    Timed([u8; 16]),
 }
 
 /// Foreground preference lasts until this owner finishes or its future is cancelled.
@@ -1505,6 +1522,62 @@ impl DurabilityRoot {
             })
             .as_ref()
             .ok_or(DurabilityError::RootUnavailable)
+    }
+
+    /// Existence is a bounded read on the existing receipt-publisher connection.
+    /// A hit is historical evidence only: the owning semantic pass must still
+    /// verify the original intent and all applicable current fences.
+    pub async fn plain_use_receipt_exists(
+        &self,
+        family: PlainUseReceipt,
+        command: crate::foundation::CommandRef,
+    ) -> Result<bool, DurabilityError> {
+        let sql = match family {
+            PlainUseReceipt::Cake => "SELECT EXISTS(SELECT 1 FROM game_cake_bite_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)",
+            PlainUseReceipt::CoinExchange => "SELECT EXISTS(SELECT 1 FROM game_coin_exchange_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)",
+            PlainUseReceipt::ConsumeTransform => "SELECT EXISTS(SELECT 1 FROM game_item_consume_transform_records WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)",
+            PlainUseReceipt::Craft => "SELECT EXISTS(SELECT 1 FROM game_item_craft_records WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)",
+            PlainUseReceipt::DromeCube => "SELECT EXISTS(SELECT 1 FROM game_item_use_records WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND cause_kind=578)",
+            PlainUseReceipt::Gourmet => "SELECT EXISTS(SELECT 1 FROM game_hireling_gourmet_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)",
+            PlainUseReceipt::Hireling => "SELECT EXISTS(SELECT 1 FROM game_house_hireling_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)",
+            PlainUseReceipt::HouseDecoration => "SELECT EXISTS(SELECT 1 FROM game_house_base_decoration_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)",
+            PlainUseReceipt::KooldownAid => "SELECT EXISTS(SELECT 1 FROM game_item_use_records WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND cause_kind=527 AND source_definition_production_key='oteryn:item.tibia.i36723')",
+            PlainUseReceipt::MapHarvest => "SELECT EXISTS(SELECT 1 FROM game_terrain_tool_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)",
+            PlainUseReceipt::QuestCarried(_) => "SELECT EXISTS(
+                SELECT 1 FROM game_quest_callback_consumptions WHERE character_id=encode($3,'hex')::uuid AND cause_id=encode($1,'hex')::uuid AND cause_ordinal=$2::text::numeric
+                UNION ALL SELECT 1 FROM game_quest_world_tool_reads WHERE character_id=encode($3,'hex')::uuid AND cause_id=encode($1,'hex')::uuid AND cause_ordinal=$2::text::numeric)",
+            PlainUseReceipt::Timed(_) => "SELECT EXISTS(SELECT 1 FROM game_item_timed_commands WHERE session_id=encode($1,'hex')::uuid AND transaction_id=$2::text::uuid)",
+        };
+        let key = match family {
+            PlainUseReceipt::Timed(transaction) => transaction.iter().map(|byte| format!("{byte:02x}")).collect(),
+            _ => command.command_id().get().to_string(),
+        };
+        let session = command.game_session_id();
+        let mut query = sqlx::query_scalar(sql).bind(session.as_bytes().as_slice()).bind(key);
+        if let PlainUseReceipt::QuestCarried(ref character) = family {
+            query = query.bind(character.as_bytes().as_slice());
+        }
+        self.read_gameplay_existence(query, TokioInstant::now() + DB_PASS_DEADLINE).await
+    }
+
+    pub(super) async fn read_gameplay_existence(
+        &self,
+        query: sqlx::query::QueryScalar<'_, Postgres, bool, sqlx::postgres::PgArguments>,
+        deadline: TokioInstant,
+    ) -> Result<bool, DurabilityError> {
+        let pool = self.retained_receipt_publisher_pool()?;
+        let mut connection = tokio::time::timeout_at(deadline, pool.acquire())
+            .await
+            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
+        match tokio::time::timeout_at(deadline, query.fetch_one(&mut *connection))
+        .await
+        {
+            Ok(result) => result.map_err(Into::into),
+            Err(_) => {
+                connection.close_on_drop();
+                Err(DurabilityError::RootPassDeadlineExceeded)
+            }
+        }
     }
 
     #[cfg(any(test, feature = "test-support"))]

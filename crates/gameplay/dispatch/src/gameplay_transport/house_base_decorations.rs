@@ -338,20 +338,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             oteryn_protocol_oteryn::world_object::encode_use_intent(target).ok()?
         };
         let bundle = map.overlay.base().digest();
-        match self
-            .root
-            .replay_house_base_decoration(
-                self.holder,
-                &context,
-                bundle,
-                command.command_id,
-                &intent,
-            )
-            .await
-        {
-            Ok(Some(disposition)) => return outcome(disposition),
-            Ok(None) => {}
-            Err(_) => return outcome(UseDisposition::NotPossible),
+        let historical = if rotate {
+            true
+        } else {
+            let id = crate::foundation::CommandId::new(command.command_id).ok()?;
+            match self
+                .root
+                .plain_use_receipt_exists(
+                    crate::durability::PlainUseReceipt::HouseDecoration,
+                    crate::foundation::CommandRef::new(command.game_session_id, id),
+                )
+                .await
+            {
+                Ok(present) => present,
+                Err(_) if rotate => return outcome(UseDisposition::NotPossible),
+                Err(_) => {
+                    return Some(super::use_receipt_refused(
+                        command,
+                        "house_decoration_existence",
+                    ));
+                }
+            }
+        };
+        if historical {
+            match self
+                .root
+                .replay_house_base_decoration(
+                    self.holder,
+                    &context,
+                    bundle,
+                    command.command_id,
+                    &intent,
+                )
+                .await
+            {
+                Ok(Some(disposition)) => return outcome(disposition),
+                Ok(None) => {}
+                Err(_) => {
+                    return Some(super::use_receipt_refused(
+                        command,
+                        "house_decoration_replay",
+                    ));
+                }
+            }
         }
         let Some(changes) = self.house_base_decoration_facts(&context, bundle).await else {
             return outcome(UseDisposition::NotPossible);

@@ -27,22 +27,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .chain_update(id)
             .finalize()
             .into();
-        let replay = self
+        let reference = crate::foundation::CommandRef::new(
+            command.game_session_id,
+            crate::foundation::CommandId::new(command.command_id).ok()?,
+        );
+        let historical = match self
             .root
-            .read_timed_command(
-                self.character,
-                command.game_session_id,
-                transaction,
-                binding,
+            .plain_use_receipt_exists(
+                crate::durability::PlainUseReceipt::Timed(transaction),
+                reference,
             )
-            .await;
-        if matches!(
-            replay,
-            Err(crate::durability::item_timed_state::TimedWriteError::Unavailable(_))
-        ) {
-            return Some(None);
-        }
-        if !matches!(replay, Ok(Some(_))) {
+            .await
+        {
+            Ok(present) => present,
+            Err(_) => return Some(Some(super::use_receipt_refused(command, "timed_existence"))),
+        };
+        let replay = if historical {
+            match self
+                .root
+                .read_timed_command(
+                    self.character,
+                    command.game_session_id,
+                    transaction,
+                    binding,
+                )
+                .await
+            {
+                Ok(Some(replay)) => Some(replay),
+                _ => return Some(Some(super::use_receipt_refused(command, "timed_replay"))),
+            }
+        } else {
+            None
+        };
+        if replay.is_none() {
             let backpack = self
                 .root
                 .read_character_backpack(self.character, fence.character_id)

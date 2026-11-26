@@ -97,28 +97,64 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             target: None,
             intent: encoded,
         };
-        let permit = self.spell_lane_permit().await.ok_or(())?;
-        let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
-        // The original bounded USE bytes identify history even when both item and view handle
-        // have retired. No current inventory or target read may precede this probe.
-        let budget = super::AdmissionRetryBudget::for_command(self.root);
-        let replay = budget
-            .retry_command_guard(async || {
-                self.root
-                    .consume_transform_detailed(
-                        &permit,
-                        self.character,
-                        self.holder,
-                        fence,
-                        request.clone(),
-                        native,
-                        &content,
-                        true,
-                    )
-                    .await
-            })
+        let historical = match self
+            .root
+            .plain_use_receipt_exists(
+                crate::durability::PlainUseReceipt::ConsumeTransform,
+                command_ref,
+            )
             .await
-            .map_err(|_| ())?;
+        {
+            Ok(present) => present,
+            Err(_) => {
+                return Ok(Some(super::use_receipt_refused(
+                    command,
+                    "event_item_existence",
+                )));
+            }
+        };
+        if !historical && pending_source.is_none() && !matches!(source, Some(ItemKey::Instance(_)))
+        {
+            return Ok(None);
+        }
+        let Some(permit) = self.spell_lane_permit().await else {
+            return Ok(Some(super::use_receipt_refused(
+                command,
+                "event_item_permit",
+            )));
+        };
+        let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
+        let replay = if historical || pending_source.is_some() {
+            let budget = super::AdmissionRetryBudget::for_command(self.root);
+            match budget
+                .retry_command_guard(async || {
+                    self.root
+                        .consume_transform_detailed(
+                            &permit,
+                            self.character,
+                            self.holder,
+                            fence,
+                            request.clone(),
+                            native,
+                            &content,
+                            true,
+                        )
+                        .await
+                })
+                .await
+            {
+                Ok(Some(replay)) => Some(replay),
+                Ok(None) if !historical => None,
+                _ => {
+                    return Ok(Some(super::use_receipt_refused(
+                        command,
+                        "event_item_replay",
+                    )));
+                }
+            }
+        } else {
+            None
+        };
         if let Some(receipt) = replay.as_ref() {
             if receipt.disposition == UseDisposition::Committed {
                 if serde_json::from_value::<NoveltyEffects>(receipt.effects.clone()).is_ok() {
@@ -142,11 +178,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome));
         }
-        let inventory = self
+        let inventory = match self
             .root
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
-            .map_err(|_| ())?;
+        {
+            Ok(inventory) => inventory,
+            Err(_) => {
+                return Ok(Some(super::use_receipt_refused(
+                    command,
+                    "event_item_inventory",
+                )));
+            }
+        };
         let carried = inventory
             .backpack
             .iter()

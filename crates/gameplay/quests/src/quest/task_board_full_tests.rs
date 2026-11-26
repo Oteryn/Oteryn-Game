@@ -35,14 +35,14 @@ fn apply(
 }
 
 #[test]
-fn difficulty_gates_counts_and_caps_match_crystal() -> Result<(), TaskBoardRefusal> {
+fn weekly_difficulty_gates_counts_and_caps() -> Result<(), TaskBoardRefusal> {
     let catalogue = creatures();
     let mut ctx = context(&catalogue);
     for (difficulty, minimum, kills, any, cap) in [
         (0, 8, 50, 1000, 200000),
         (1, 30, 100, 2000, 800000),
         (2, 150, 200, 3000, 3000000),
-        (3, 300, 300, 4000, 799999880000008),
+        (3, 400, 300, 4000, 799999880000008),
     ] {
         let mut data = TaskBoardData::default();
         let mut balances = TaskBoardBalances::default();
@@ -93,6 +93,35 @@ fn difficulty_gates_counts_and_caps_match_crystal() -> Result<(), TaskBoardRefus
     }
     assert_eq!(minimum_level(4), None);
     assert_eq!(weekly_experience(8, 4), Err(TaskBoardRefusal::InvalidInput));
+    Ok(())
+}
+
+#[test]
+fn master_weekly_and_bounty_require_level_400() -> Result<(), TaskBoardRefusal> {
+    let catalogue = creatures();
+    let mut ctx = context(&catalogue);
+    for action in [
+        TaskBoardAction::StartWeekly { difficulty: 3 },
+        TaskBoardAction::ChangeBountyDifficulty { difficulty: 3 },
+    ] {
+        let mut data = TaskBoardData::default();
+        let mut balances = TaskBoardBalances::default();
+        ctx.level = 399;
+        assert_eq!(
+            apply_action(&mut data, &mut balances, &action, &ctx, &mut |_| 0),
+            Err(TaskBoardRefusal::LevelTooLow)
+        );
+        assert_eq!(data, TaskBoardData::default());
+        ctx.level = 400;
+        apply_action(&mut data, &mut balances, &action, &ctx, &mut |_| 0)?;
+        match action {
+            TaskBoardAction::StartWeekly { .. } => {
+                assert_eq!(data.weekly.as_ref().map(|board| board.difficulty), Some(3))
+            }
+            TaskBoardAction::ChangeBountyDifficulty { .. } => assert_eq!(data.bounty.difficulty, 3),
+            _ => unreachable!(),
+        }
+    }
     Ok(())
 }
 
@@ -384,6 +413,7 @@ fn second_weekly_start_preserves_progress_and_accrued_rewards_until_reset()
             .rewards()?,
         (100, 2)
     );
+    ctx.level = 400;
     let mut draws = 0;
     let refused = apply_action(
         &mut data,
@@ -704,6 +734,7 @@ fn difficulty_changes_wait_for_reroll_and_preserve_active_reward() -> Result<(),
     let mut selected = offers[0].clone();
     selected.difficulty = 2;
     assert_eq!(data.bounty.active, Some(selected.clone()));
+    ctx.level = 400;
     apply(
         &mut data,
         &mut balances,

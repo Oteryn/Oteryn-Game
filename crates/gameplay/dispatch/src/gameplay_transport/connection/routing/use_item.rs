@@ -308,7 +308,6 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             return Ok(Dispatch::Use(outcome));
         }
     }
-<<<<<<< HEAD
     // Direct USE can open a reachable container even with rune USE selected.
     // Only probe plain handles, leaving targeted actions and their receipts alone.
     let container = match (&decoded, item_view.as_ref(), container_views.as_ref()) {
@@ -322,14 +321,15 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             Some(view),
             Some(views),
         ) => match view.resolve(*handle) {
-            Some(key) => authority
-                .observe_container_with_house_capacity(
-                    actor,
-                    admitted.item_fence,
-                    key,
-                    views.house_capacity_v2(),
-                )
-                .await,
+            Some(key) => match authority
+                .observe_container_for_use(actor, admitted.item_fence, key, views.house_capacity_v2())
+                .await
+            {
+                Ok(observation) => observation,
+                Err(crate::durability::DurabilityError::SessionUseAuthorization(_)) => return Err("bag_session_fence"),
+                Err(crate::durability::DurabilityError::RootUnavailable | crate::durability::DurabilityError::RootPassDeadlineExceeded) => return Ok(super::refuse_use(command, "bag_read_budget")),
+                Err(_) => return Ok(super::refuse_use(command, "bag_read_failed")),
+            },
             None => None,
         },
         _ => None,
@@ -338,10 +338,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         container,
         Some(ContainerObservation::Container { .. } | ContainerObservation::TooFar)
     );
-    Some({
-=======
     Ok({
->>>>>>> 7de856db0 (Keep bag and lever USE on the typed dispatch path during holder contention)
         match decoded {
             Ok(intent) if intent.use_with_map_item.is_some() => {
                 let source = match intent.target {
