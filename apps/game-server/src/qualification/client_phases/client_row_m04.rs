@@ -29,7 +29,9 @@ fn position(at: TilePos) -> ActorPosition {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+            .await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("M04.client capture timed out".into()),
@@ -65,18 +67,48 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut pusher = connect_character(clients, 0x94, 0).await?;
-    let mut target = connect_character(clients, 0x95, 0).await?;
+    let mut pusher = connect_world(clients, 0x94).await?;
+    let mut target =
+        provisioning::with_peer_liveness(&mut pusher, connect_character(clients, 0x95, 0)).await?;
     let pusher_at = tile(pusher.world_spatial().actor_position)?;
-    let path = route(world, tile(target.world_spatial().actor_position)?, |at| {
-        distance(at, pusher_at) == 1
-            && DIRECTIONS.into_iter().any(|direction| {
-                destination(world, at, direction)
-                    .is_some_and(|next| next != pusher_at && distance(next, pusher_at) == 1)
-            })
-    })
+    let start = tile(target.world_spatial().actor_position)?;
+    let path = provisioning::with_peer_liveness(
+        &mut pusher,
+        route_work(&mut target, move || {
+            Ok(route(world, start, |at| {
+                at.floor == pusher_at.floor
+                    && distance(at, pusher_at) == 1
+                    && DIRECTIONS.into_iter().any(|direction| {
+                        destination(world, at, direction).is_some_and(|next| {
+                            next.floor == at.floor
+                                && next != pusher_at
+                                && distance(next, pusher_at) == 1
+                        })
+                    })
+            }))
+        }),
+    )
+    .await?
     .ok_or("M04 no adjacent player push lane")?;
-    walk(&mut target, world, &path).await?;
+    provisioning::with_peer_liveness(&mut pusher, async {
+        for direction in path {
+            let from = tile(target.world_spatial().actor_position)?;
+            let expected =
+                destination(world, from, direction).ok_or("M04 approach landing missing")?;
+            let outcome = target.step(direction).await?;
+            if outcome.disposition != StepDisposition::Moved
+                || outcome.world_spatial_delta.is_none()
+                || tile(target.world_spatial().actor_position)? != expected
+            {
+                return Err(
+                    format!("M04 approach step {direction:?} from {from:?}: {outcome:?}").into(),
+                );
+            }
+            verdict::Harness::global().progress("walk");
+        }
+        Ok(())
+    })
+    .await?;
     let before = tile(target.world_spatial().actor_position)?;
     let reference = own(&target)?.entity;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
@@ -118,7 +150,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let landing = DIRECTIONS
         .into_iter()
         .filter_map(|direction| destination(world, before, direction))
-        .find(|at| *at != pusher_at && distance(*at, pusher_at) == 1)
+        .find(|at| at.floor == before.floor && *at != pusher_at && distance(*at, pusher_at) == 1)
         .ok_or("M04 no free push landing")?;
     let intent = encode_creature_push_intent(&CreaturePushIntent {
         target: reference,
@@ -175,7 +207,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             ("m04-expected.txt", expected.as_bytes()),
         ] {
             if let Err(error) = std::fs::write(directory.join(name), contents) {
-                evidence(&format!("M04_CAPTURE_WRITE_ERROR file={name} error={error}"));
+                evidence(&format!(
+                    "M04_CAPTURE_WRITE_ERROR file={name} error={error}"
+                ));
             }
         }
     }
