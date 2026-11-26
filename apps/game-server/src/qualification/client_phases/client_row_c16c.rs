@@ -245,7 +245,12 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
     let corpse = verdict::indexed_timeout(Duration::from_secs(25), async {
         loop {
             if let Some(current) = client.world_entities().and_then(|world| world.get(&corpse.entity))
-                && matches!(current.detail, oteryn_dev_client::EntityDetail::Object { item_definition_ref, .. } if item_definition_ref == movable.get())
+                && matches!(
+                    current.detail,
+                    oteryn_dev_client::EntityDetail::Object { item_definition_ref, .. }
+                        | oteryn_dev_client::EntityDetail::ObjectWithAppearance { item_definition_ref, .. }
+                        if item_definition_ref == movable.get()
+                )
             {
                 return Ok::<_, Box<dyn std::error::Error>>(*current);
             }
