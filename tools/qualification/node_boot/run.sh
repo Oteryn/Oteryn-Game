@@ -407,6 +407,48 @@ for account in accounts:
 PY_MP_SEED
 }
 
+# W15c needs a producer-owned entitlement that survives the preparation relog.
+w15c_batch_selected() {
+  case ",${NODE_BOOT_E2E_ONLY//[[:space:]]/}," in
+    ,,|*,rows,*) ;;
+    *) return 1 ;;
+  esac
+  local batch="${OTERYN_E2E_ROW_BATCH:-0:15}"
+  [[ "$batch" == all ]] && return 0
+  python3 - "$batch" <<'PY_W15C_BATCH'
+import re
+import sys
+
+batch = re.fullmatch(r"[+]?[0-9]+:[+]?[0-9]+", sys.argv[1])
+if batch is None:
+    sys.exit(1)
+start, count = map(int, batch[0].split(":"))
+sys.exit(not start <= 298 < start + count)
+PY_W15C_BATCH
+}
+
+seed_w15c_premium() {
+  local database
+  database="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["database"])' "$WORK/portal-report.json")"
+  [[ "$database" =~ ^portal_e2e_[0-9a-f]{12}$ && "$GP_PG_CONTAINER" == "$WP5_PROJECT-portal-postgres" ]] || return 1
+  docker exec -i "$GP_PG_CONTAINER" psql -Xq -v ON_ERROR_STOP=1 -U game_platform_admin -d "$database" \
+    -v account="$W15C_ACCOUNT" <<'SQL_W15C_PREMIUM'
+BEGIN;
+INSERT INTO premium_authority(account_id) VALUES (:'account');
+INSERT INTO premium_ledger(
+  request_id, account_id, actor_id, event_type, duration_days, reason_sha256,
+  entitlement_id, lifecycle_revision, delta_seconds, effective_from, effective_until
+)
+SELECT :'account', :'account', :'account', 'GRANT', 1,
+       sha256(convert_to('W15c disposable travel fixture', 'UTF8')),
+       :'account', 1, 86400, starts_at, starts_at + interval '24 hours'
+FROM (SELECT date_trunc('second', clock_timestamp()) - interval '1 minute' AS starts_at) AS fixture;
+INSERT INTO premium_audit(request_id, actor_id, account_id, event_name)
+VALUES (:'account', :'account', :'account', 'products.premium_granted');
+COMMIT;
+SQL_W15C_PREMIUM
+}
+
 result=NODE_BOOT_FAIL
 compose() {
   docker compose --project-name "$WP5_PROJECT" --file "$GAME_SOURCE/$COMPOSE_FILE" \
@@ -628,6 +670,9 @@ ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_
 game_platform_start
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
   seed_mp_accounts
+  if NODE_BOOT_E2E_ONLY="${NODE_BOOT_E2E_ONLY:-}" w15c_batch_selected; then
+    seed_w15c_premium || blocked w15c_premium_seed_failed
+  fi
 fi
 
 # Shipped binaries and the SEAM client harness.
@@ -877,6 +922,11 @@ if [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
     "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
     "OTERYN_PLATFORM_STREAMS_URL=https://localhost:$WP5_PORT"
     "OTERYN_PLATFORM_STREAMS_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
+  if NODE_BOOT_E2E_ONLY="${NODE_BOOT_E2E_ONLY:-}" w15c_batch_selected; then
+    NODE_GAMEPLAY_ENV+=("OTERYN_PREMIUM_SNAPSHOT_URL=https://localhost:$WP5_PORT"
+      "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
+      "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
+  fi
 fi
 fi # NODE_BOOT_REUSE_STACK == 0
 start_pg_sampler

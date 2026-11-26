@@ -47,10 +47,12 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         "Drive Grizzly's eligible task conversation within the row budget",
     );
     let started = std::time::Instant::now();
-    // The authored walk from the Port Hope landing alone is 208 paced STEP commands.
-    let result =
-        verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients)))
-            .await;
+    // The first 89 paced steps took about 280 seconds; the authored route adds 208.
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(1080),
+        verdict::observe(journey(clients)),
+    )
+    .await;
     let (status, detail) = match result {
         Ok(Ok(Outcome::Started(task))) => (
             "PASS",
@@ -413,20 +415,40 @@ async fn sail_to_port_hope(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
-) -> TestResult {
-    let index = provisioning::item_index()?;
-    let coins = [
-        (provisioning::item_reference(&index, 3031)?, 1),
-        (provisioning::item_reference(&index, 3035)?, 100),
-        (provisioning::item_reference(&index, 3043)?, 10_000),
-    ];
-    let before = carried_gold(client, &coins)?;
+    coins: &[(std::num::NonZeroU32, u64)],
+) -> TestResult<u64> {
+    let before = carried_gold(client, coins)?;
     if before < FARE {
         return Err(format!("step=fare observed={before} expected=at-least-{FARE}").into());
     }
     climb_dock_ladder(client, world).await?;
     let captain = reach(client, world, npcs, CAPTAIN).await?;
     say(client, captain, "hi").await?;
+    use oteryn_protocol_oteryn::{character_info, premium_overview};
+    let reply = client
+        .session_mut()
+        .gated_command(
+            character_info::CAPABILITY_CHARACTER_INFO_V1,
+            character_info::COMMAND_TYPE_CHARACTER_INFO,
+            &[premium_overview::OPERATION],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step=premium-prestate status={:?}", reply.status).into());
+    }
+    let overview = premium_overview::Overview::decode(&reply.payload)
+        .ok_or("step=premium-prestate malformed overview")?;
+    if overview.state != premium_overview::State::Active || overview.valid_for_us == 0 {
+        return Err(format!(
+            "step=premium-prestate state={:?} valid_for_us={}",
+            overview.state, overview.valid_for_us
+        )
+        .into());
+    }
+    evidence(&format!(
+        "row=W15c.full step=premium-prestate active=true valid_for_us={}",
+        overview.valid_for_us
+    ));
     let quote = say(client, captain, "port hope").await?;
     let expected = format!("Do you seek a passage to port_hope for {FARE} gold?");
     if quote.as_slice() != [expected] {
@@ -440,12 +462,12 @@ async fn sail_to_port_hope(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
     loop {
         let position = tile(client.world_spatial().actor_position)?;
-        let gold = carried_gold(client, &coins)?;
+        let gold = carried_gold(client, coins)?;
         if position == PORT_HOPE && gold == before - FARE {
             evidence(&format!(
                 "row=W15c.full step=travel arrival={position:?} before_gold={before} after_gold={gold}"
             ));
-            return Ok(());
+            return Ok(gold);
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("step=travel-arrival observed={position:?}-gold-{gold} expected={PORT_HOPE:?}-gold-{}", before - FARE).into());
@@ -476,7 +498,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         PROFILE.into(),
     )
     .await?;
-    character_prep::grant_premium(&client).await?;
     character_prep::grant_item(&client, 3035, 2).await?;
     logout(&mut client).await?;
     drop(client);
@@ -486,7 +507,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         return Err("step=build observed=reused-session".into());
     }
     assert_build(&mut client).await?;
-    sail_to_port_hope(&mut client, world, &metadata.npcs).await?;
+    let index = provisioning::item_index()?;
+    let coins = [
+        (provisioning::item_reference(&index, 3031)?, 1),
+        (provisioning::item_reference(&index, 3035)?, 100),
+        (provisioning::item_reference(&index, 3043)?, 10_000),
+    ];
+    let gold_after_fare = sail_to_port_hope(&mut client, world, &metadata.npcs, &coins).await?;
     let actor = reach(&mut client, world, &metadata.npcs, NPC).await?;
     const NONMEMBER: &str = "Would you like to join the Paw and Fur - Hunting Elite?";
     const MEMBER: &str =
@@ -548,6 +575,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         return Err("step=fresh-admission observed=reused-session-or-wrong-position".into());
     }
     assert_build(&mut client).await?;
+    let gold_after_relog = carried_gold(&client, &coins)?;
+    if gold_after_relog != gold_after_fare {
+        return Err(format!(
+            "step=durable-fare observed={gold_after_relog} expected={gold_after_fare}"
+        )
+        .into());
+    }
     let actor = reach(&mut client, world, &metadata.npcs, NPC).await?;
     expect(
         &say(&mut client, actor, "hi").await?,
