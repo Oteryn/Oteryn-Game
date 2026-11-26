@@ -11,14 +11,21 @@ pub(super) async fn reward_selection(
     {
         return Err("World reward qualification requires the daily boost capability".into());
     }
-    let response = client
-        .session_mut()
-        .gated_command(
-            wire::CAPABILITY_DAILY_BOOST_V1,
-            wire::COMMAND_TYPE_DAILY_BOOST_QUERY,
-            &[],
-        )
-        .await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    let response = loop {
+        let response = client
+            .session_mut()
+            .gated_command(
+                wire::CAPABILITY_DAILY_BOOST_V1,
+                wire::COMMAND_TYPE_DAILY_BOOST_QUERY,
+                &[],
+            )
+            .await?;
+        if response.status != CommandStatus::Rejected || tokio::time::Instant::now() >= deadline {
+            break response;
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    };
     let mut panel = DailyBoostPanel {
         selected: true,
         ..Default::default()

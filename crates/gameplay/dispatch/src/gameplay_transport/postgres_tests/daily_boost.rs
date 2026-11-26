@@ -367,6 +367,27 @@ fn scenario(preadmission: bool) -> TestResult {
             .0,
             CommandStatus::Rejected
         );
+        // A busy holder may refuse this read. The same admission can retry
+        // the query once the holder is available.
+        let holder = h.root.try_issue_semantic_pass().map_err(debug)?;
+        assert!(matches!(
+            owner
+                .daily_boost_wire(admitted, 5, COMMAND_TYPE_DAILY_BOOST_QUERY, &[])
+                .await,
+            crate::gameplay_transport::guild_intent::GuildReply::Rejected
+        ));
+        drop(holder);
+        super::maintain_authority_ready(&owner).await;
+        let (retried, selection) = support::exchange(
+            &owner,
+            &mut admitted,
+            5,
+            COMMAND_TYPE_DAILY_BOOST_QUERY,
+            &[],
+        )
+        .await?;
+        assert_eq!(retried, CommandStatus::Accepted);
+        assert_eq!(selection, first);
         let mut reset_tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *reset_tx)
