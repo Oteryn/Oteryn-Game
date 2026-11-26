@@ -6,7 +6,7 @@
 //!    List command reports no public/relationship permission.
 //! 2. The caster says `exiva "<target>"`; the server rejects the spell and
 //!    sends the protected-character reply, without changing caster vitals.
-//! 3. The target sends AddName(`<caster>`); the server accepts it and List
+//! 3. The target enables player-list mode and sends AddName(`<caster>`); List
 //!    returns mode 2 plus the caster's resolved character id and name.
 //! 4. The caster repeats `exiva "<target>"`; the server accepts the spell,
 //!    debits mana, and sends the directional Find Person reply.
@@ -37,6 +37,9 @@ const ACTIONS: &[&str] = &[
     "remove-player",
     "removed-cast-refusal",
 ];
+
+const PROTECTED_REPLY: &str =
+    "The character you are trying to find with Exiva is currently protected from your spell.";
 
 struct Row {
     passed: BTreeSet<&'static str>,
@@ -132,7 +135,7 @@ async fn malformed_refused(client: &mut DevClientSession) -> TestResult {
             &[0, 32],
         )
         .await?;
-    if reply.status != CommandStatus::Rejected || !reply.payload.is_empty() {
+    if reply.status != CommandStatus::Rejected || reply.payload != [0] {
         return Err(format!(
             "step 5 malformed SetModes was not refused: status={:?} payload={:?}",
             reply.status, reply.payload
@@ -184,9 +187,14 @@ async fn cast(
             text: format!("exiva \"{target}\""),
         })
         .await?;
-    if outcome.status != CommandStatus::Accepted || outcome.disposition != expected {
+    let expected_status = if expected == ChatDisposition::Rejected {
+        CommandStatus::Rejected
+    } else {
+        CommandStatus::Accepted
+    };
+    if outcome.status != expected_status || outcome.disposition != expected {
         return Err(format!(
-            "Exiva reply: status={:?} disposition={:?} expected={expected:?}",
+            "Exiva reply: status={:?} disposition={:?} expected={expected_status:?}/{expected:?}",
             outcome.status, outcome.disposition
         )
         .into());
@@ -207,7 +215,7 @@ async fn cast(
     if expected == ChatDisposition::Rejected && after != before {
         return Err(format!("refused Exiva changed vitals: {before:?} -> {after:?}").into());
     }
-    if expected == ChatDisposition::Ok && after.mana >= before.mana {
+    if expected == ChatDisposition::Ok && before.mana.checked_sub(20) != Some(after.mana) {
         return Err(format!("allowed Exiva did not debit mana: {before:?} -> {after:?}").into());
     }
     Ok((outcome.result_server_sequence, messages))
@@ -234,17 +242,26 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let target_name = own_name(&target)?;
     let caster_name = own_name(&caster)?;
 
-    if settings(&mut target, &[0, 0]).await? != [1] || list(&mut target).await?.modes != 0 {
+    if settings(&mut target, &[0, 0]).await? != [1]
+        || list(&mut target).await?
+            != (PlayerList {
+                modes: 0,
+                players: Vec::new(),
+            })
+    {
         return Err("step 1 SetModes(0) lacked accepted receipt/list state delta".into());
     }
     row.pass("deny-modes", 0_u8);
 
     let (_, denied) = cast(&mut caster, &target_name, ChatDisposition::Rejected).await?;
-    if !denied.iter().any(|line| line.contains("protected")) {
+    if !denied.iter().any(|line| line == PROTECTED_REPLY) {
         return Err(format!("step 2 denial lacked protected reply: {denied:?}").into());
     }
     row.pass("denied-cast", denied);
 
+    if settings(&mut target, &[0, 2]).await? != [1] {
+        return Err("step 3 SetModes(2) lacked accepted receipt".into());
+    }
     let mut add = vec![6];
     add.extend(caster_name.as_bytes());
     if settings(&mut target, &add).await? != [1] {
@@ -255,7 +272,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .players
         .first()
         .ok_or("step 3 List lacked added player delta")?;
-    if allowed.modes != 2 || allowed.players.len() != 1 || listed_name != &caster_name {
+    if allowed.modes != 2
+        || allowed.players.len() != 1
+        || *caster_id != clients.characters[1]
+        || listed_name != &caster_name
+    {
         return Err(format!("step 3 unexpected List delta: {allowed:?}").into());
     }
     row.pass("add-name", &allowed);
@@ -276,11 +297,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     logout(&mut target).await?;
     drop(target);
     let mut target = connect_character(clients, 0xd6, 0).await?;
-    if target.join_snapshot().game_session_id == previous_session || list(&mut target).await? != allowed
+    if target.join_snapshot().game_session_id == previous_session
+        || list(&mut target).await? != allowed
     {
         return Err("step 6 fresh admission did not retain the durable allow-list".into());
     }
-    row.pass("fresh-admission-state", target.join_snapshot().game_session_id);
+    row.pass(
+        "fresh-admission-state",
+        target.join_snapshot().game_session_id,
+    );
 
     let mut remove = vec![2];
     remove.extend(caster_id);
@@ -299,7 +324,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         caster.take_events();
     }
     let (_, denied) = cast(&mut caster, &target_name, ChatDisposition::Rejected).await?;
-    if !denied.iter().any(|line| line.contains("protected")) {
+    if !denied.iter().any(|line| line == PROTECTED_REPLY) {
         return Err(format!("step 8 denial lacked protected reply: {denied:?}").into());
     }
     row.pass("removed-cast-refusal", denied);
