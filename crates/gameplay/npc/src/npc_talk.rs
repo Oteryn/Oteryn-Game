@@ -222,6 +222,7 @@ pub struct NpcTalkEntry {
     farewell_reply: String,
     source_name_templates: bool,
     source_walkaway: Option<String>,
+    shop_reply: Option<String>,
     /// The service lines, joined; `None` when the NPC has no service.
     topic_reply: Option<String>,
     /// The admitted offers of every Service of the NPC, in source order (NPC-CMD-1b).
@@ -238,6 +239,11 @@ impl NpcTalkEntry {
     /// The admitted offers the trade window projects.
     pub fn offers(&self) -> &[ProjectV2ServiceOffer] {
         &self.offers
+    }
+
+    /// Authored reply for a catalogue merchant's successfully opened shop window.
+    pub fn shop_reply(&self) -> Option<&str> {
+        self.shop_reply.as_deref()
     }
 
     /// Whether the message contains a greeting authored for this NPC.
@@ -313,6 +319,7 @@ impl NpcTalkEntry {
             farewell_reply: "Farewell.".to_owned(),
             source_name_templates: false,
             source_walkaway: None,
+            shop_reply: None,
             topic_reply: topic.map(str::to_owned),
             offers: Vec::new(),
             premium_services: Vec::new(),
@@ -416,8 +423,7 @@ impl NpcTalkBook {
         &self.source_voices
     }
 
-    /// Entries for every NPC with generated replies. An NPC with an admitted Dialogue is left out
-    /// until a dialogue packet reads it.
+    /// Entries for generated replies, authored merchants and explicitly supported dialogues.
     pub fn from_model(model: &NpcServiceModel) -> Self {
         Self::from_model_with_native_quests(model, &[])
     }
@@ -436,7 +442,7 @@ impl NpcTalkBook {
         let journal_npcs = world_change_journals::npc_keys(source).unwrap_or_default();
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1|sinatuki-fish-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v2|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1|sinatuki-fish-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::quest_access::book_digest(
                     &crate::content::npc_catalogue::quest_shops::book_digest(
                         &crate::content::npc_catalogue::grizzly_shop::book_digest(
@@ -538,6 +544,7 @@ impl NpcTalkBook {
             let mut journal_fallback = false;
             let mut regional_source = false;
             let mut regional_walkaway = None;
+            let mut merchant_dialogue = None;
             let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if native_quest
                 && matches!(
                     reference.key.as_str(),
@@ -916,7 +923,25 @@ impl NpcTalkBook {
                     regional_keywords().cloned().collect(),
                 )
             } else {
-                continue;
+                let Some(dialogue) = npc.bank_dialogue.as_ref().filter(|_| {
+                    npc.services
+                        .iter()
+                        .filter_map(|reference| model.services().get(reference))
+                        .any(|service| {
+                            !service.offers.is_empty() || !service.held_offers.is_empty()
+                        })
+                }) else {
+                    continue;
+                };
+                // Catalogue merchants can open focus and use their existing offers.
+                // Stateful keywords still need their native callers.
+                merchant_dialogue = Some(dialogue);
+                (
+                    dialogue.greet.first().cloned().unwrap_or_default(),
+                    dialogue.farewell.first().cloned().unwrap_or_default(),
+                    None,
+                    Vec::new(),
+                )
             };
             let mut dialogue_keywords = dialogue_keywords;
             if merged_regional_keywords
@@ -949,6 +974,9 @@ impl NpcTalkBook {
                         .filter_map(|reference| model.services().get(reference))
                         .any(|service| service.bank),
                     greetings: match reference.key.as_str() {
+                        // Global Blind Orc uses Orcish to negotiate. Keep his catalogue
+                        // entry without enabling standard focus before that flow exists.
+                        "oteryn:npc.blind_orc" if merchant_dialogue.is_some() => Vec::new(),
                         "oteryn:npc.baa_leal"
                         | "oteryn:npc.gabel"
                         | "oteryn:npc.malor"
@@ -977,6 +1005,7 @@ impl NpcTalkBook {
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: bank
+                        || merchant_dialogue.is_some()
                         || regional_dialogue.is_some()
                         || regional.is_some()
                         || regional_source
@@ -1007,6 +1036,7 @@ impl NpcTalkBook {
                             .and_then(|dialogue| dialogue.walkaway.first().cloned())
                     } else {
                         regional_walkaway
+                            .or_else(|| merchant_dialogue?.walkaway.first().cloned())
                             .or_else(|| isle_messages.map(|messages| messages.walkaway))
                             .or_else(|| reward_messages.map(|messages| messages.walkaway.clone()))
                             .or_else(|| {
@@ -1027,6 +1057,12 @@ impl NpcTalkBook {
                                 })
                             })
                     },
+                    shop_reply: merchant_dialogue.and_then(|dialogue| {
+                        let [line] = dialogue.send_trade.as_slice() else {
+                            return None;
+                        };
+                        Some(line.clone())
+                    }),
                     topic_reply,
                     dialogue_keywords,
                     offers: npc
