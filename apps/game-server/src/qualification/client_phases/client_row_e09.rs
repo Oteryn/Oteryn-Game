@@ -134,8 +134,10 @@ async fn acquire(
             if text == "hi" {
                 continue;
             }
-            let window = npc_service::decode_npc_trade_window(&delta.payload)
-                .map_err(|e| format!("trade window: {e:?}"))?;
+            let window = super::full_row_i14::decode_trade_window(
+                client.selected_capabilities(),
+                &delta.payload,
+            )?;
             let Some((index, offer)) = window.offers.iter().enumerate().find(|(_, offer)| {
                 offer.side == npc_service::NpcTradeSide::Buy
                     && offer.item_definition_ref == definition.get()
