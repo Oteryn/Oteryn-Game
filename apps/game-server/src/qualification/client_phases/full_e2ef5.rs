@@ -4012,6 +4012,14 @@ async fn player_corpse(
     owned: &[oteryn_dev_client::EntityRef],
 ) -> TestResult<(oteryn_dev_client::WorldSpatialEntity, u64)> {
     let target = wild_rat(client, world, owned).await?;
+    kill_rat_for_corpse(client, world, target).await
+}
+
+async fn kill_rat_for_corpse(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    target: oteryn_dev_client::WorldSpatialEntity,
+) -> TestResult<(oteryn_dev_client::WorldSpatialEntity, u64)> {
     let index = provisioning::item_index()?;
     let corpse_ref = provisioning::item_reference(&index, 5964)?;
     let existing = census(client)?;
@@ -4132,16 +4140,33 @@ pub(super) async fn capture_animate_dead(
         return Err("C16c Animate Dead rune grant absent from fresh inventory".into());
     }
 
-    let rat = wild_rat(&mut caster, world, &[]).await?;
+    non_pz(&mut caster, world).await?;
+    let encounter = caster.world_spatial().actor_position;
     let mut scout = connect_character(clients, 0xd6, 0).await?;
-    with_observer_liveness(&mut caster, approach_melee(&mut scout, world, rat.position)).await?;
+    with_observer_liveness(&mut caster, approach_melee(&mut scout, world, encounter)).await?;
     let (logout, detail, _, _) = with_observer_liveness(&mut caster, logout_retrying_busy(&mut scout)).await?;
     if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("C16c scout logout refused: {detail}").into());
     }
     drop(scout);
 
-    let (corpse, _) = player_corpse(&mut caster, world, &[]).await?;
+    let session = uuid_text(caster.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(session, "oteryn:creature.rat".into())
+        .await.map_err(|reason| format!("C16c qualification Rat spawn refused: {reason}"))?;
+    let expected = parse_spawned_entity(&answer)?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let rat = loop {
+        if let Some(rat) = caster.world_entities().and_then(|view| view.get(&expected)).copied()
+            && rat.kind == oteryn_dev_client::EntityKind::Creature
+        {
+            break rat;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C16c did not observe the fixture Rat on the wire".into());
+        }
+        caster.service_liveness(Duration::from_millis(50)).await?;
+    };
+    let (corpse, _) = kill_rat_for_corpse(&mut caster, world, rat).await?;
     let mut observer = with_observer_liveness(&mut caster, connect_character(clients, 0xd7, 0)).await?;
     if observer.world_entities().and_then(|view| view.get(&corpse.entity)).is_none() {
         return Err("C16c fresh observer did not see the exact corpse".into());
