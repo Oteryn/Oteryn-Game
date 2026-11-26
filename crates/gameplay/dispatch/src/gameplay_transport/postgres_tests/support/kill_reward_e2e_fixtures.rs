@@ -56,6 +56,27 @@ pub(super) fn scenario_with_decay(reconcile: Option<bool>) -> TestResult {
     scenario_with_charms(reconcile, None)
 }
 
+#[derive(Clone, Copy)]
+enum CorpseCheck {
+    None,
+    Decay(bool),
+    Use,
+}
+
+pub(super) fn scenario_with_corpse_use() -> TestResult {
+    scenario_with_creature_observed(
+        CorpseCheck::Use,
+        false,
+        None,
+        false,
+        false,
+        false,
+        (None, None, None),
+        false,
+        None,
+    )
+}
+
 type CharmSamples = Vec<(i64, u32)>;
 
 type KillScenarioSettings<'a> = (
@@ -121,7 +142,7 @@ pub(super) fn scenario_with_creature_charmed(
     settings: KillScenarioSettings<'_>,
 ) -> TestResult {
     scenario_with_creature_observed(
-        reconcile,
+        reconcile.map_or(CorpseCheck::None, CorpseCheck::Decay),
         capacity,
         radiant,
         settle_radiant,
@@ -135,7 +156,7 @@ pub(super) fn scenario_with_creature_charmed(
 
 pub(super) fn analyser_scenario() -> TestResult {
     scenario_with_creature_observed(
-        None,
+        CorpseCheck::None,
         false,
         None,
         false,
@@ -149,7 +170,7 @@ pub(super) fn analyser_scenario() -> TestResult {
 
 pub(super) fn dwarf_letter_scenario(creature: &str) -> TestResult {
     scenario_with_creature_observed(
-        None,
+        CorpseCheck::None,
         false,
         None,
         false,
@@ -166,7 +187,7 @@ pub(super) fn dwarf_letter_scenario(creature: &str) -> TestResult {
     reason = "existing composed scenario options plus analyser observation"
 )]
 fn scenario_with_creature_observed(
-    reconcile: Option<bool>,
+    corpse_check: CorpseCheck,
     capacity: bool,
     radiant: Option<&str>,
     settle_radiant: bool,
@@ -318,7 +339,7 @@ fn scenario_with_creature_observed(
         // that bonus (`scheduled_events::test_clock` sets one on this thread).
         let event_rates = oteryn_gameplay_foundation::scheduled_events::current_rates();
         let expected_xp = 2 * (expected_xp * i64::from(event_rates.experience) / 100);
-        if settle_radiant {
+        if settle_radiant || matches!(corpse_check, CorpseCheck::Use) {
             // Select a positive real occurrence without changing a drop probability.
             // Roll back unused player reservations to advance the reusable creature
             // slot's generation (player slot 1, creature slot 2), then spawn and kill that actual native creature.
@@ -1661,20 +1682,23 @@ fn scenario_with_creature_observed(
         } else {
             children
         };
-        let decay = match reconcile.filter(|_| !settle_radiant) {
-            Some(reconcile) => {
+        let corpse_result = match corpse_check {
+            CorpseCheck::Decay(reconcile) if !settle_radiant => {
                 super::corpse_decay_fixtures::qualify(&mut owner, &harness, children, reconcile)
                     .await
                     .map_err(|error| format!("corpse decay qualification: {error}").into())
             }
-            None => Ok(()),
+            CorpseCheck::Use => {
+                super::corpse_use_fixtures::qualify(&owner, &harness, &mut admitted).await
+            }
+            _ => Ok(()),
         };
 
         drop(owner);
         drop(authority);
         drop(seal);
         harness.cleanup().await?;
-        decay
+        corpse_result
     })
 }
 

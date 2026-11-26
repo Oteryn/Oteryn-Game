@@ -1162,6 +1162,35 @@ fn attach_spatial_handles(
     }
 }
 
+#[cfg(test)]
+pub(super) async fn dispatch_corpse_use_for_test(
+    authority: &impl FreshAdmissionAuthority,
+    admitted: &mut AdmittedSession,
+    view: &mut Option<SessionItemView>,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+) -> Option<
+    Result<
+        (OpenDecision, Option<ItemViewDelta>),
+        oteryn_protocol_oteryn::world_object::UseDisposition,
+    >,
+> {
+    match routing::use_item::route(
+        authority,
+        admitted.runtime_actor?,
+        admitted,
+        command,
+        view,
+        &mut None,
+        &None,
+    )
+    .await?
+    {
+        Dispatch::UseItem(decision, delta) => Some(Ok((decision, delta))),
+        Dispatch::Use(outcome) => Some(Err(outcome.disposition)),
+        _ => None,
+    }
+}
+
 /// VIS-3: the frame of one visibility refresh after `sequence` and domain 1 `revision`, with the
 /// sequence and revision it leaves: a sequenced delta to the next revision, or nothing.
 ///
