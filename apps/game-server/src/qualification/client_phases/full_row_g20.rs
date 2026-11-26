@@ -13,8 +13,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
-            "forge-preview-exact-outcomes-and-unchanged-custody-after-each-request-and-relog"
-                .to_owned(),
+            "forge-preview-cursor-funded-and-empty-dust-exact-custody-after-relog".to_owned(),
         ),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
         Err(_) => ("FAIL", "step=journey-observed=timeout".to_owned()),
@@ -171,15 +170,59 @@ async fn preview_unchanged(
     custody: &ForgeCustody,
 ) -> TestResult<wire::Payload> {
     let reply = preview(client, nonce, selection).await?;
-    if client.inventory() != Some(inventory)
-        || forge_custody(connection, character).await? != *custody
-    {
+    let observed = forge_custody(connection, character).await?;
+    if client.inventory() != Some(inventory) || check_custody(custody, &observed).is_err() {
         return Err(format!(
             "step=preview nonce={nonce} changed inventory or durable Forge custody"
         )
         .into());
     }
     Ok(reply)
+}
+
+fn check_custody(expected: &ForgeCustody, observed: &ForgeCustody) -> TestResult {
+    if observed != expected {
+        return Err("durable Forge custody changed".into());
+    }
+    Ok(())
+}
+
+fn check_first_page(page: &wire::Page) -> TestResult {
+    if page.after != 0 || page.next.is_some() {
+        return Err(format!(
+            "step=browse requested after=0 with no continuation, observed after={} next={:?}",
+            page.after, page.next
+        )
+        .into());
+    }
+    Ok(())
+}
+
+const FUNDED_DUST: u32 = 30;
+const INITIAL_DUST_LIMIT: u32 = 100;
+const FIRST_DUST_LIMIT_COST: u32 = 25;
+const NEXT_DUST_LIMIT: u32 = 120;
+
+fn check_funded_dust_limit(reply: wire::Payload) -> TestResult {
+    let expected = wire::ResourceQuote {
+        operation: Operation::DustLimit,
+        full_resources: false,
+        before: wire::Resources {
+            dust: FUNDED_DUST,
+            dust_limit: INITIAL_DUST_LIMIT,
+            ..Default::default()
+        },
+        after_dust: FUNDED_DUST - FIRST_DUST_LIMIT_COST,
+        after_limit: NEXT_DUST_LIMIT,
+        after_slivers: 0,
+        after_cores: 0,
+    };
+    if reply != wire::Payload::Resource(expected) {
+        return Err(
+            format!("step=funded-dust-limit observed={reply:?} expected={expected:?}").into(),
+        );
+    }
+    Ok(())
 }
 
 /// Two distinct positions holding the same definition at the same tier, neither a container.
@@ -211,9 +254,7 @@ fn browse(
     let wire::Payload::Page(page) = reply else {
         return Err("step=browse observed=not-a-page".into());
     };
-    if page.after != 0 || page.next.is_some() {
-        return Err("step=browse expected the complete first candidate page".into());
-    }
+    check_first_page(&page)?;
     let gold = custody.gold;
     if i64::try_from(page.resources.carried_gold)? != gold {
         return Err(format!(
@@ -295,6 +336,7 @@ async fn body(
         return Err(format!("step=container-effects observed={refused:?}").into());
     }
     if page.resources.dust != 0
+        || page.resources.dust_limit != INITIAL_DUST_LIMIT
         || page.resources.slivers != SLIVERS_PER_CORE
         || page.resources.cores != 0
     {
@@ -351,7 +393,7 @@ async fn body(
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     character_prep::declare_seeded(
         "G20.full",
-        "two-tier-zero-swords,50-slivers",
+        "two-tier-zero-swords,50-slivers,funded-case-30-dust",
         "Forge preview",
     );
     let owner = character_prep::dedicated_character(clients, "NODE_BOOT_Q_G20_ACCOUNT").await?;
@@ -390,8 +432,87 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     closed?;
     drop(client);
 
-    let mut fresh = connect_character(&clients, 0x82, 0).await?;
-    if fresh.join_snapshot().game_session_id == active {
+    verify_relog(&clients, &mut connection, active, &custody, resources).await?;
+    let credited = seed_funded_dust(&mut connection, &clients).await?;
+    let funded = forge_custody(&mut connection, character).await?;
+    let mut custody_with_dust = custody;
+    custody_with_dust.dust.clone_from(&funded.dust);
+    check_custody(&custody_with_dust, &funded)?;
+    if credited != i64::from(FUNDED_DUST)
+        || funded
+            .dust
+            .as_ref()
+            .and_then(|dust| dust["balance"].as_u64())
+            != Some(u64::from(FUNDED_DUST))
+        || funded
+            .dust
+            .as_ref()
+            .and_then(|dust| dust["dust_limit"].as_u64())
+            != Some(u64::from(INITIAL_DUST_LIMIT))
+    {
+        return Err("step=funded-pre-state missing exact dust credit and initial limit".into());
+    }
+
+    let mut client = connect_character(&clients, 0x82, 0).await?;
+    let funded_session = client.join_snapshot().game_session_id;
+    let inventory = client
+        .inventory()
+        .ok_or("step=funded missing inventory")?
+        .clone();
+    let quote = verdict::observe(preview_unchanged(
+        &mut client,
+        1,
+        wire::Selection::Resource(Operation::DustLimit),
+        &inventory,
+        &mut connection,
+        character,
+        &funded,
+    ))
+    .await
+    .and_then(check_funded_dust_limit);
+    let closed = verdict::observe(finish(&mut client)).await;
+    quote?;
+    closed?;
+    drop(client);
+    verify_relog(
+        &clients,
+        &mut connection,
+        funded_session,
+        &funded,
+        wire::Resources {
+            dust: FUNDED_DUST,
+            ..resources
+        },
+    )
+    .await
+}
+
+async fn seed_funded_dust(
+    connection: &mut sqlx::PgConnection,
+    clients: &SeamClients<'_>,
+) -> TestResult<i64> {
+    let mut tx = connection.begin().await?;
+    let credited = sqlx::query_scalar(include_str!(
+        "../../../../../tools/qualification/node_boot/g20_forge_dust.sql"
+    ))
+    .bind(clients.characters[0].as_slice())
+    .bind(clients.world.as_slice())
+    .bind(i64::from(FUNDED_DUST))
+    .fetch_one(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(credited)
+}
+
+async fn verify_relog(
+    clients: &SeamClients<'_>,
+    connection: &mut sqlx::PgConnection,
+    previous: oteryn_protocol_oteryn::GameSessionId,
+    custody: &ForgeCustody,
+    resources: wire::Resources,
+) -> TestResult {
+    let mut fresh = connect_character(clients, 0x82, 0).await?;
+    if fresh.join_snapshot().game_session_id == previous {
         return Err("step=read-only-relog reused original session".into());
     }
     let inventory = fresh
@@ -403,12 +524,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         1,
         wire::Selection::Browse { after: 0 },
         &inventory,
-        &mut connection,
-        character,
-        &custody,
+        connection,
+        &clients.characters[0],
+        custody,
     ))
-    .await;
-    let durable = durable.and_then(|reply| browse(&fresh, reply, &custody));
+    .await
+    .and_then(|reply| browse(&fresh, reply, custody));
     let closed = verdict::observe(finish(&mut fresh)).await;
     if durable?.0.resources != resources {
         return Err("step=read-only-relog Forge previews changed resources".into());
@@ -419,6 +540,78 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn first_page_rejects_wrong_cursor_and_unexpected_continuation() -> TestResult {
+        let mut page = wire::Page {
+            after: 0,
+            next: None,
+            items: Vec::new(),
+            resources: wire::Resources::default(),
+        };
+        check_first_page(&page)?;
+        page.after = 1;
+        assert!(check_first_page(&page).is_err());
+        page.after = 0;
+        page.next = Some(1);
+        assert!(check_first_page(&page).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn funded_dust_limit_requires_the_exact_positive_quote() -> TestResult {
+        assert!(check_funded_dust_limit(wire::Payload::Refused).is_err());
+        let mut quote = wire::ResourceQuote {
+            operation: Operation::DustLimit,
+            full_resources: false,
+            before: wire::Resources {
+                dust: 30,
+                dust_limit: 100,
+                ..Default::default()
+            },
+            after_dust: 5,
+            after_limit: 120,
+            after_slivers: 0,
+            after_cores: 0,
+        };
+        check_funded_dust_limit(wire::Payload::Resource(quote))?;
+        quote.after_dust = 30;
+        assert!(check_funded_dust_limit(wire::Payload::Resource(quote)).is_err());
+        quote.after_dust = 5;
+        quote.after_limit = 100;
+        assert!(check_funded_dust_limit(wire::Payload::Resource(quote)).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn custody_rejects_equivalent_replacements_and_moved_slots() -> TestResult {
+        let snapshot = || ForgeCustody {
+            backpack: "backpack-a".into(),
+            items: serde_json::json!([
+                {"item_instance_id":"sword-a","placement_ordinal":1,"quantity":1,"tier":0},
+                {"item_instance_id":"sword-b","placement_ordinal":2,"quantity":1,"tier":0},
+                {"item_instance_id":"slivers-a","placement_ordinal":3,"quantity":50,"tier":0},
+            ]),
+            dust: None,
+            gold: 50,
+            slivers: 50,
+            swords: 2,
+            entry_count: 3,
+        };
+        let expected = snapshot();
+        check_custody(&expected, &snapshot())?;
+        let mut replaced_swords = snapshot();
+        replaced_swords.items[0]["item_instance_id"] = "sword-c".into();
+        replaced_swords.items[1]["item_instance_id"] = "sword-d".into();
+        assert!(check_custody(&expected, &replaced_swords).is_err());
+        let mut replaced_slivers = snapshot();
+        replaced_slivers.items[2]["item_instance_id"] = "slivers-b".into();
+        assert!(check_custody(&expected, &replaced_slivers).is_err());
+        let mut moved = snapshot();
+        moved.items[0]["placement_ordinal"] = 4.into();
+        assert!(check_custody(&expected, &moved).is_err());
+        Ok(())
+    }
 
     #[test]
     fn compact_is_one_bounded_token() {
