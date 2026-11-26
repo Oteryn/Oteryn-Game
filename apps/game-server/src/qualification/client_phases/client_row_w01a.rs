@@ -256,6 +256,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     client.take_events();
     let mut fight = Segment::begin(&client, "fight", target.entity)?;
+    let player_before_attack = client.world_spatial().actor_position;
+    let mana_before_attack = client.actor_vitals().map(|vitals| vitals.mana);
     let attack = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -276,7 +278,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             break (health_percent, entity.position);
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("W01a client capture: rat never reached the low-health boundary".into());
+            return Err(format!(
+                "W01a client capture: rat never reached the low-health boundary initial={:?} rat={:?} player_before={player_before_attack:?} player_after={:?} mana_before={mana_before_attack:?} mana_after={:?}",
+                fight.initial,
+                (entity.position, entity.detail),
+                client.world_spatial().actor_position,
+                client.actor_vitals().map(|vitals| vitals.mana)
+            )
+            .into());
         }
     };
     let stopped = client.session_mut().attack_target(None).await?;
