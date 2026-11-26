@@ -242,7 +242,15 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             "P19 rewards {classification} fresh_admission={restored:?}"
         ));
     }
-    require_logout(&mut client).await
+    // Both reward proofs have completed. Release the fixture character for the runner.
+    let (result, detail, attempts, _) = fixture_logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!(
+            "P19 fixture cleanup logout failed after {attempts} attempt(s): {detail}"
+        )
+        .into());
+    }
+    Ok(())
 }
 
 async fn equip_fixture_axe(client: &mut DevClientSession, axe: NonZeroU32) -> TestResult {
