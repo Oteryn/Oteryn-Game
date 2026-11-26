@@ -62,6 +62,44 @@ impl ReleaseRetryStage {
     }
 }
 
+/// Retained across release attempts so a checkpoint retry uses the same fence and budget.
+#[derive(Default)]
+pub(super) struct ReleaseProgress<'r> {
+    pub(super) settled_death: Option<super::actor_spell::PlayerDeath>,
+    pub(super) kills: Option<super::KillReleaseMark>,
+    logout_root: Option<&'r crate::durability::DurabilityRoot>,
+    retry: Option<AdmissionRetryBudget<'r>>,
+}
+
+impl ReleaseProgress<'_> {
+    pub(super) async fn retry(&mut self, stage: ReleaseRetryStage) -> bool {
+        #[cfg(test)]
+        let _ = LOGOUT_RELEASE_PROBE.try_with(|probe| {
+            probe
+                .retry_count
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            if probe.first_retry.set(stage).is_ok() {
+                probe.retry_observed.notify_one();
+            }
+        });
+        #[cfg(not(test))]
+        let _ = stage;
+
+        let Some(root) = self.logout_root else {
+            return false;
+        };
+        // Start on the first deferral. A checkpoint already in flight settles its
+        // outcome normally, and a retry may only start inside the command window.
+        let retry = self
+            .retry
+            .get_or_insert_with(|| AdmissionRetryBudget::for_command(root));
+        retry
+            .retries_unavailable(AdmissionRefusal::Unavailable)
+            .await
+            && retry.check_deadline().is_ok()
+    }
+}
+
 #[cfg(test)]
 #[derive(Default)]
 pub(super) struct LogoutReleaseProbe {
@@ -383,45 +421,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             token
         };
         let mut hold = FenceHold::new(session, token);
-        let mut settled_death = None;
-        let mut kills = None;
         let step = {
-            let mut retry = None;
+            let mut progress = ReleaseProgress {
+                logout_root: (!channel_switch).then_some(self.root),
+                ..ReleaseProgress::default()
+            };
             loop {
                 let step = self
-                    .release_attempt(
-                        &admitted,
-                        &store,
-                        release,
-                        &mut hold,
-                        &mut settled_death,
-                        &mut kills,
-                    )
+                    .release_attempt(&admitted, &store, release, &mut hold, &mut progress)
                     .await;
                 let Err(stage) = step else {
                     break step;
                 };
-                #[cfg(test)]
-                let _ = LOGOUT_RELEASE_PROBE.try_with(|probe| {
-                    probe
-                        .retry_count
-                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                    if probe.first_retry.set(stage).is_ok() {
-                        probe.retry_observed.notify_one();
-                    }
-                });
-                // Start the window at the first deferred step. Retry starts are bounded,
-                // but an in-flight save or release must finish and classify its outcome.
-                if channel_switch
-                    || !retry
-                        .get_or_insert_with(|| AdmissionRetryBudget::for_command(self.root))
-                        .retries_unavailable(AdmissionRefusal::Unavailable)
-                        .await
-                {
-                    break Err(stage);
+                // Conditions already used the remaining window at their save point.
+                if stage == ReleaseRetryStage::Conditions || !progress.retry(stage).await {
+                    break step;
                 }
             }
         };
+        if let Err(stage) = step
+            && !channel_switch
+        {
+            operator_event(&format!(
+                "event=logout_busy stage=release_retry_exhausted phase={}",
+                stage.label()
+            ));
+        }
         Ok(match step {
             Ok(ReleaseAttempt::Done(GraceExpiryResult::Released)) => {
                 LogoutReply::Result(LogoutResult::Accepted)
@@ -440,14 +465,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(stage) => match self.settle_unended(&store, actor, &mut hold).await {
                 UnendedSettle::Lifted if channel_switch => {
                     operator_event(&format!(
-                        "event=logout_busy stage=release_retry_lifted retry_stage={}",
+                        "event=logout_busy stage=release_retry_lifted phase={}",
                         stage.label()
                     ));
                     LogoutReply::Result(LogoutResult::Busy)
                 }
                 UnendedSettle::Lifted => {
                     operator_event(&format!(
-                        "event=logout_unknown stage=release_retry_lifted kind=deadline retry_stage={}",
+                        "event=logout_unknown stage=release_retry_lifted kind=deadline phase={}",
                         stage.label()
                     ));
                     LogoutReply::Unknown
@@ -467,7 +492,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 UnendedSettle::Unknown => {
                     self.states.fence_holders.keep(hold);
                     operator_event(&format!(
-                        "event=logout_unknown stage=logout_settle kind=unknown retry_stage={}",
+                        "event=logout_unknown stage=logout_settle kind=unknown phase={}",
                         stage.label()
                     ));
                     LogoutReply::Unknown

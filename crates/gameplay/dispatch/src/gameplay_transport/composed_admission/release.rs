@@ -1,4 +1,4 @@
-use super::super::logout::ReleaseRetryStage;
+use super::super::logout::{ReleaseProgress, ReleaseRetryStage};
 use super::*;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -71,8 +71,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return GraceExpiryResult::Unknown;
         };
         let mut hold = FenceHold::new(session, token);
-        let mut settled_death = None;
-        let mut kills = None;
+        let mut progress = ReleaseProgress::default();
         let abandoned = matches!(release, TerminalRelease::Abandoned(_));
         let mut backoff = RECONCILE_BACKOFF;
         let mut next_backoff = || {
@@ -84,14 +83,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         while retries_release(attempt, abandoned) {
             attempt = attempt.saturating_add(1);
             let step = self
-                .release_attempt(
-                    &admitted,
-                    &store,
-                    release,
-                    &mut hold,
-                    &mut settled_death,
-                    &mut kills,
-                )
+                .release_attempt(&admitted, &store, release, &mut hold, &mut progress)
                 .await;
             match step.unwrap_or(ReleaseAttempt::Retry) {
                 ReleaseAttempt::Done(result) => return result,
@@ -111,14 +103,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Every attempt gave up its kill hold, so the kill mark is reconciled, not settled.
             return match self.settle_unended(&store, actor, &mut hold).await {
                 UnendedSettle::Terminal => {
-                    self.reconcile_kill_release(kills, ReleaseEnd::Committed)
+                    self.reconcile_kill_release(progress.kills, ReleaseEnd::Committed)
                         .await;
                     let result = self.retire_reconciled(account, session, actor).await;
-                    self.forget_kill_release(kills).await;
+                    self.forget_kill_release(progress.kills).await;
                     result
                 }
                 UnendedSettle::Lifted => {
-                    self.reconcile_kill_release(kills, ReleaseEnd::Retryable)
+                    self.reconcile_kill_release(progress.kills, ReleaseEnd::Retryable)
                         .await;
                     GraceExpiryResult::Unknown
                 }
@@ -135,15 +127,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     /// One attempt of a terminal release (`release_terminal`, `release_logout`): the death
     /// settle, the fence, the actor-end saves, the §1.3 kill seal, the durable transaction and
-    /// its settle. `kills` keeps the attempt's kill mark for a later reconcile.
+    /// its settle. The progress keeps the attempt's kill mark for a later reconcile.
     pub(in crate::gameplay_transport) async fn release_attempt(
         &self,
         admitted: &AdmittedSession,
         store: &FreshAdmissionStore,
         release: TerminalRelease,
         hold: &mut FenceHold,
-        settled_death: &mut Option<actor_spell::PlayerDeath>,
-        kills: &mut Option<KillReleaseMark>,
+        progress: &mut ReleaseProgress<'_>,
     ) -> Result<ReleaseAttempt, ReleaseRetryStage> {
         let Some(actor) = admitted.runtime_actor else {
             return Ok(ReleaseAttempt::Done(GraceExpiryResult::NotApplicable));
@@ -165,7 +156,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let account_id = canonical_uuid(&account);
         if !self
-            .settle_released_death(actor, session, settled_death)
+            .settle_released_death(actor, session, &mut progress.settled_death)
             .await
         {
             return Err(ReleaseRetryStage::Death);
@@ -224,15 +215,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             probe.before_conditions.notify_one();
             probe.resume_conditions.notified().await;
         }
-        if !self.save_conditions_at_actor_end(actor, session).await {
-            return Err(ReleaseRetryStage::Conditions);
+        // Retry this checkpoint under the existing logout fence. The holder can now
+        // serve the deferred read/write directly, without re-running earlier saves.
+        while !self.save_conditions_at_actor_end(actor, session).await {
+            if !progress.retry(ReleaseRetryStage::Conditions).await {
+                return Err(ReleaseRetryStage::Conditions);
+            }
         }
         // KILL-REWARD-COMP-1 §1.3: the session's own kills settle before it ends.
-        *kills = match self.seal_kill_rewards(session).await {
+        progress.kills = match self.seal_kill_rewards(session).await {
             KillRelease::Send(mark) => mark,
             KillRelease::Deferred => return Err(ReleaseRetryStage::KillRewards),
         };
-        let kills = *kills;
+        let kills = progress.kills;
         // The familiar's actor-end snapshot is the last save before the durable release, so no
         // retryable step can follow a committed logout snapshot and leave the session running
         // on it (#2127 Codex P1 4279636456).
