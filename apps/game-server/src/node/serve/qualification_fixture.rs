@@ -156,6 +156,40 @@ pub(super) async fn spawn(
     .await
 }
 
+/// Observe live native spawns without advancing the population owner.
+#[cfg(any(test, feature = "qualification-spawn"))]
+pub(super) async fn inspect_forge(
+    config: &NodeConfig,
+    owners: Option<SpawnOwners<'_>>,
+    request: &[u8],
+) -> Option<String> {
+    if !config.qualification_fixture {
+        return None;
+    }
+    let session = parse_operation_id(request.strip_prefix(b"inspect-forge ")?)?;
+    let session = crate::foundation::GameSessionId::decode(&session).ok()?;
+    let runtime = owners?.runtime.lock().await;
+    runtime.positioned_player_for_session(session).ok()??;
+    let marked: Vec<_> = runtime
+        .spawn_point_creatures()
+        .into_iter()
+        .filter_map(|(_, _, actor)| {
+            let actor = actor?;
+            let snapshot = runtime.companion_snapshot(actor).ok()?;
+            let stacks = snapshot.forge?.reward_stacks();
+            Some(serde_json::json!({
+                "identity": actor.placement_identity(),
+                "generation": actor.actor_local_generation(),
+                "x": snapshot.position.x,
+                "y": snapshot.position.y,
+                "floor": snapshot.position.floor,
+                "stacks": stacks,
+            }))
+        })
+        .collect();
+    serde_json::to_string(&marked).ok()
+}
+
 #[cfg(any(test, feature = "qualification-spawn"))]
 pub(super) async fn inspect_damage(
     config: &NodeConfig,

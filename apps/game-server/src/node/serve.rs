@@ -3101,6 +3101,13 @@ async fn control_loop(
                     .unwrap_or_else(|| "rejected reason=damage_unavailable".to_owned()),
                     "qualification_damage",
                 ),
+                #[cfg(any(test, feature = "qualification-spawn"))]
+                Some(request) if request.starts_with(b"inspect-forge ") => (
+                    qualification_fixture::inspect_forge(config, spawn, &request)
+                        .await
+                        .unwrap_or_else(|| "rejected reason=forge_census_unavailable".to_owned()),
+                    "qualification_forge",
+                ),
                 Some(request) if request.starts_with(b"spawn ") => (
                     Box::pin(qualification_fixture::spawn(
                         root, authority, proof, config, native, spawn, &request,
@@ -3126,6 +3133,12 @@ async fn control_loop(
             match event_name {
                 "ops_health" => event_traced("event=ops_health result=served", connection),
                 "qualification_damage" => {}
+                "qualification_forge" => {
+                    event_traced(
+                        &format!("event=qualification_forge DIAGNOSTIC marked={answer}"),
+                        connection,
+                    );
+                }
                 "ops_diagnose" => {
                     event_traced("event=ops_diagnose result=served", connection);
                 }
