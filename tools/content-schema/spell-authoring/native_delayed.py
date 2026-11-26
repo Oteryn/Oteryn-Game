@@ -5,9 +5,11 @@ The schemas deliberately qualify these four snapshots only: any semantic edit ne
 new evidence and a new candidate. Wiki-stated facts outrank S21 source selection;
 unknown interaction/timing decisions remain explicit and fail runtime admission.
 """
-from copy import deepcopy
 import hashlib
+from copy import deepcopy
 from pathlib import Path
+
+from build_executable_catalog import apply_c18b_death_echo_formula
 
 REVISIONS = {
     'canary': '99902524e052f37574194466c2949c576e4ab269',
@@ -298,7 +300,18 @@ def _closed_snapshot_schema(value):
 
 
 def schemas():
-    """Strict parameter snapshots, keyed by their two candidate discriminants."""
-    return {key: {'oneOf': [_closed_snapshot_schema(_snapshot(name)['parameters']) for name in FILES
-                           if _snapshot(name)['key'] == key]}
-            for key in ('delayed_strike', 'owned_field_buff')}
+    """Qualify exact donor snapshots and the separately selected C18b Death Echo."""
+    schemas = {
+        key: {
+            "oneOf": [
+                _closed_snapshot_schema(_snapshot(name)["parameters"])
+                for name in FILES
+                if _snapshot(name)["key"] == key
+            ]
+        }
+        for key in ("delayed_strike", "owned_field_buff")
+    }
+    registered = _snapshot("death echo")["parameters"]
+    apply_c18b_death_echo_formula(registered)
+    schemas["delayed_strike"]["oneOf"].append(_closed_snapshot_schema(registered))
+    return schemas

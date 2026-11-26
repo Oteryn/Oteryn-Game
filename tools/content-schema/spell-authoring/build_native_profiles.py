@@ -10,10 +10,9 @@ import json
 import re
 from pathlib import Path
 
-from jsonschema import Draft202012Validator
-
 import native_catalog
-from build_executable_catalog import apply_c18b_spell_header
+from build_executable_catalog import apply_c18b_spell_policy
+from jsonschema import Draft202012Validator
 from validate_spell import validate, walk
 
 REVISION = 'spell-p2-r20'
@@ -212,15 +211,10 @@ def assemble(profiles):
             raise ValueError('native profile name/carrier/execution disagrees with spell')
         check_revisions(profile['spell'], profile_id(profile) + '/spell')
         check_revisions(profile['dependencies'], profile_id(profile) + '/dependencies')
-        apply_c18b_spell_header(profile['spell'])
         identity = profile_id(profile)
-        if identity == 'rune-destroy_field_rune':
-            # PKG1R2, owner 2026-10-30; Global revs 1189762 / 1182654.
-            # The current map viewport and LOS replace the donor's five-tile limit.
-            targeting = profile['spell']['targeting']
-            if targeting.get('range_tiles') not in (None, 5):
-                raise ValueError('unexpected Destroy Field donor range')
-            targeting.pop('range_tiles', None)
+        if (identity == 'rune-destroy_field_rune'
+                and profile['spell']['targeting'].get('range_tiles') not in (None, 5)):
+            raise ValueError('unexpected Destroy Field donor range')
         check_operation_owner(profile, owners)
         execution = profile['execution']
         native = execution.get('native_behavior')
@@ -248,12 +242,25 @@ def assemble(profiles):
     return {'revision': REVISION, 'profiles': sorted(profiles, key=lambda profile: (profile['carrier'], profile['name']))}
 
 
+def register_profile(profile):
+    spell = profile["spell"]
+    apply_c18b_spell_policy(spell)
+    profile["execution"] = copy.deepcopy(spell["execution"])
+    if profile_id(profile) == "rune-destroy_field_rune":
+        # PKG1R2, owner 2026-10-30; Global revs 1189762 / 1182654.
+        targeting = spell["targeting"]
+        if targeting.get("range_tiles") not in (None, 5):
+            raise ValueError("unexpected Destroy Field donor range")
+        targeting.pop("range_tiles", None)
+
+
 def build(bundles):
     profiles = []
     for directory in sorted(Path(bundles).iterdir()):
         if directory.is_dir():
             profile = profile_from_bundle(directory)
             if profile is not None:
+                register_profile(profile)
                 profiles.append(profile)
     return assemble(profiles)
 

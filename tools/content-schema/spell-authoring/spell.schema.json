@@ -5695,6 +5695,472 @@
                         "const": "before_immediate_combat_result"
                       }
                     }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "spell_name",
+                      "delay_ms",
+                      "requires_caster_online",
+                      "base_power",
+                      "schedule_bound",
+                      "repeat_resource_cost",
+                      "position_source",
+                      "position_timing",
+                      "target_resolution",
+                      "area",
+                      "damage_element",
+                      "effect_asset_binding",
+                      "formula",
+                      "immediate_strike",
+                      "delay_multiplier",
+                      "value_timing",
+                      "source_value_timing",
+                      "suppress_charms",
+                      "immediate_suppress_charms",
+                      "ignore_caster_floor",
+                      "elemental_stance_snapshot",
+                      "identity_gate",
+                      "schedule_after_successful_immediate_strike"
+                    ],
+                    "properties": {
+                      "spell_name": {
+                        "const": "death echo"
+                      },
+                      "delay_ms": {
+                        "const": 1000
+                      },
+                      "requires_caster_online": {
+                        "const": true
+                      },
+                      "base_power": {
+                        "const": 85
+                      },
+                      "schedule_bound": {
+                        "const": 1
+                      },
+                      "repeat_resource_cost": {
+                        "const": false
+                      },
+                      "position_source": {
+                        "const": "cast_position"
+                      },
+                      "position_timing": {
+                        "const": "at_cast"
+                      },
+                      "target_resolution": {
+                        "const": "area_creatures_at_each_occurrence"
+                      },
+                      "area": {
+                        "type": "array",
+                        "minItems": 5,
+                        "maxItems": 5,
+                        "prefixItems": [
+                          {
+                            "type": "array",
+                            "minItems": 5,
+                            "maxItems": 5,
+                            "prefixItems": [
+                              {
+                                "const": 0
+                              },
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 0
+                              }
+                            ],
+                            "items": false
+                          },
+                          {
+                            "type": "array",
+                            "minItems": 5,
+                            "maxItems": 5,
+                            "prefixItems": [
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 1
+                              }
+                            ],
+                            "items": false
+                          },
+                          {
+                            "type": "array",
+                            "minItems": 5,
+                            "maxItems": 5,
+                            "prefixItems": [
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 3
+                              },
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 1
+                              }
+                            ],
+                            "items": false
+                          },
+                          {
+                            "type": "array",
+                            "minItems": 5,
+                            "maxItems": 5,
+                            "prefixItems": [
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 1
+                              }
+                            ],
+                            "items": false
+                          },
+                          {
+                            "type": "array",
+                            "minItems": 5,
+                            "maxItems": 5,
+                            "prefixItems": [
+                              {
+                                "const": 0
+                              },
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 1
+                              },
+                              {
+                                "const": 0
+                              }
+                            ],
+                            "items": false
+                          }
+                        ],
+                        "items": false
+                      },
+                      "damage_element": {
+                        "const": "death"
+                      },
+                      "effect_asset_binding": {
+                        "const": "canary.appearance:effect/death_echo"
+                      },
+                      "formula": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "inputs",
+                          "minimum",
+                          "maximum",
+                          "selection_rule"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "player_expression"
+                          },
+                          "inputs": {
+                            "const": "level_magic"
+                          },
+                          "minimum": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "op",
+                              "args"
+                            ],
+                            "properties": {
+                              "op": {
+                                "const": "add"
+                              },
+                              "args": {
+                                "type": "array",
+                                "minItems": 2,
+                                "maxItems": 2,
+                                "prefixItems": [
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "fn",
+                                      "args"
+                                    ],
+                                    "properties": {
+                                      "fn": {
+                                        "const": "level_base_damage_healing"
+                                      },
+                                      "args": {
+                                        "type": "array",
+                                        "minItems": 1,
+                                        "maxItems": 1,
+                                        "prefixItems": [
+                                          {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "required": [
+                                              "var"
+                                            ],
+                                            "properties": {
+                                              "var": {
+                                                "const": "level"
+                                              }
+                                            }
+                                          }
+                                        ],
+                                        "items": false
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "op",
+                                      "args"
+                                    ],
+                                    "properties": {
+                                      "op": {
+                                        "const": "mul"
+                                      },
+                                      "args": {
+                                        "type": "array",
+                                        "minItems": 2,
+                                        "maxItems": 2,
+                                        "prefixItems": [
+                                          {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "required": [
+                                              "var"
+                                            ],
+                                            "properties": {
+                                              "var": {
+                                                "const": "magic_level"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "required": [
+                                              "const"
+                                            ],
+                                            "properties": {
+                                              "const": {
+                                                "const": "2.4"
+                                              }
+                                            }
+                                          }
+                                        ],
+                                        "items": false
+                                      }
+                                    }
+                                  }
+                                ],
+                                "items": false
+                              }
+                            }
+                          },
+                          "maximum": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "op",
+                              "args"
+                            ],
+                            "properties": {
+                              "op": {
+                                "const": "add"
+                              },
+                              "args": {
+                                "type": "array",
+                                "minItems": 2,
+                                "maxItems": 2,
+                                "prefixItems": [
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "fn",
+                                      "args"
+                                    ],
+                                    "properties": {
+                                      "fn": {
+                                        "const": "level_base_damage_healing"
+                                      },
+                                      "args": {
+                                        "type": "array",
+                                        "minItems": 1,
+                                        "maxItems": 1,
+                                        "prefixItems": [
+                                          {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "required": [
+                                              "var"
+                                            ],
+                                            "properties": {
+                                              "var": {
+                                                "const": "level"
+                                              }
+                                            }
+                                          }
+                                        ],
+                                        "items": false
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "op",
+                                      "args"
+                                    ],
+                                    "properties": {
+                                      "op": {
+                                        "const": "mul"
+                                      },
+                                      "args": {
+                                        "type": "array",
+                                        "minItems": 2,
+                                        "maxItems": 2,
+                                        "prefixItems": [
+                                          {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "required": [
+                                              "var"
+                                            ],
+                                            "properties": {
+                                              "var": {
+                                                "const": "magic_level"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "required": [
+                                              "const"
+                                            ],
+                                            "properties": {
+                                              "const": {
+                                                "const": "3.6"
+                                              }
+                                            }
+                                          }
+                                        ],
+                                        "items": false
+                                      }
+                                    }
+                                  }
+                                ],
+                                "items": false
+                              }
+                            }
+                          },
+                          "selection_rule": {
+                            "const": "C18b"
+                          }
+                        }
+                      },
+                      "immediate_strike": {
+                        "const": true
+                      },
+                      "delay_multiplier": {
+                        "const": "0.5"
+                      },
+                      "value_timing": {
+                        "const": "at_expiry"
+                      },
+                      "source_value_timing": {
+                        "const": "at_expiry"
+                      },
+                      "suppress_charms": {
+                        "const": true
+                      },
+                      "immediate_suppress_charms": {
+                        "const": false
+                      },
+                      "ignore_caster_floor": {
+                        "const": true
+                      },
+                      "elemental_stance_snapshot": {
+                        "type": "array",
+                        "minItems": 8,
+                        "maxItems": 8,
+                        "prefixItems": [
+                          {
+                            "const": "elementalStanceIntrinsicType"
+                          },
+                          {
+                            "const": "elementalStanceResolvedType"
+                          },
+                          {
+                            "const": "elementalStanceStateRevision"
+                          },
+                          {
+                            "const": "elementalStanceSpellId"
+                          },
+                          {
+                            "const": "elementalStanceDamageMultiplier"
+                          },
+                          {
+                            "const": "elementalStanceCriticalChance"
+                          },
+                          {
+                            "const": "elementalStanceCriticalDamage"
+                          },
+                          {
+                            "const": "elementalStanceConverted"
+                          }
+                        ],
+                        "items": false
+                      },
+                      "identity_gate": {
+                        "const": "player_id_and_guid"
+                      },
+                      "schedule_after_successful_immediate_strike": {
+                        "const": true
+                      }
+                    }
                   }
                 ]
               }

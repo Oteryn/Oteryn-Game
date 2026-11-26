@@ -1832,7 +1832,7 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
-        "base_power": 75,
+        "base_power": 85,
         "execution": {
           "native_behavior": {
             "key": "delayed_strike",
@@ -1840,7 +1840,7 @@
               "spell_name": "death echo",
               "delay_ms": 1000,
               "requires_caster_online": true,
-              "base_power": 75,
+              "base_power": 85,
               "schedule_bound": 1,
               "repeat_resource_cost": false,
               "position_source": "cast_position",
@@ -1889,118 +1889,54 @@
                 "kind": "player_expression",
                 "inputs": "level_magic",
                 "minimum": {
-                  "op": "mul",
+                  "op": "add",
                   "args": [
                     {
-                      "op": "add",
+                      "fn": "level_base_damage_healing",
                       "args": [
                         {
-                          "fn": "level_base_damage_healing",
-                          "args": [
-                            {
-                              "var": "level"
-                            }
-                          ]
-                        },
-                        {
-                          "op": "add",
-                          "args": [
-                            {
-                              "op": "mul",
-                              "args": [
-                                {
-                                  "op": "div",
-                                  "args": [
-                                    {
-                                      "var": "base_power"
-                                    },
-                                    {
-                                      "const": "25"
-                                    }
-                                  ]
-                                },
-                                {
-                                  "var": "magic_level"
-                                }
-                              ]
-                            },
-                            {
-                              "op": "div",
-                              "args": [
-                                {
-                                  "var": "base_power"
-                                },
-                                {
-                                  "const": "4"
-                                }
-                              ]
-                            }
-                          ]
+                          "var": "level"
                         }
                       ]
                     },
                     {
-                      "const": "0.9"
+                      "op": "mul",
+                      "args": [
+                        {
+                          "var": "magic_level"
+                        },
+                        {
+                          "const": "2.4"
+                        }
+                      ]
                     }
                   ]
                 },
                 "maximum": {
-                  "op": "mul",
+                  "op": "add",
                   "args": [
                     {
-                      "op": "add",
+                      "fn": "level_base_damage_healing",
                       "args": [
                         {
-                          "fn": "level_base_damage_healing",
-                          "args": [
-                            {
-                              "var": "level"
-                            }
-                          ]
-                        },
-                        {
-                          "op": "add",
-                          "args": [
-                            {
-                              "op": "mul",
-                              "args": [
-                                {
-                                  "op": "div",
-                                  "args": [
-                                    {
-                                      "var": "base_power"
-                                    },
-                                    {
-                                      "const": "25"
-                                    }
-                                  ]
-                                },
-                                {
-                                  "var": "magic_level"
-                                }
-                              ]
-                            },
-                            {
-                              "op": "div",
-                              "args": [
-                                {
-                                  "var": "base_power"
-                                },
-                                {
-                                  "const": "4"
-                                }
-                              ]
-                            }
-                          ]
+                          "var": "level"
                         }
                       ]
                     },
                     {
-                      "const": "1.1"
+                      "op": "mul",
+                      "args": [
+                        {
+                          "var": "magic_level"
+                        },
+                        {
+                          "const": "3.6"
+                        }
+                      ]
                     }
                   ]
                 },
-                "selection_rule": "S5/S21"
+                "selection_rule": "C18b"
               },
               "immediate_strike": true,
               "delay_multiplier": "0.5",
@@ -2035,7 +1971,7 @@
             "spell_name": "death echo",
             "delay_ms": 1000,
             "requires_caster_online": true,
-            "base_power": 75,
+            "base_power": 85,
             "schedule_bound": 1,
             "repeat_resource_cost": false,
             "position_source": "cast_position",
@@ -2084,118 +2020,54 @@
               "kind": "player_expression",
               "inputs": "level_magic",
               "minimum": {
-                "op": "mul",
+                "op": "add",
                 "args": [
                   {
-                    "op": "add",
+                    "fn": "level_base_damage_healing",
                     "args": [
                       {
-                        "fn": "level_base_damage_healing",
-                        "args": [
-                          {
-                            "var": "level"
-                          }
-                        ]
-                      },
-                      {
-                        "op": "add",
-                        "args": [
-                          {
-                            "op": "mul",
-                            "args": [
-                              {
-                                "op": "div",
-                                "args": [
-                                  {
-                                    "var": "base_power"
-                                  },
-                                  {
-                                    "const": "25"
-                                  }
-                                ]
-                              },
-                              {
-                                "var": "magic_level"
-                              }
-                            ]
-                          },
-                          {
-                            "op": "div",
-                            "args": [
-                              {
-                                "var": "base_power"
-                              },
-                              {
-                                "const": "4"
-                              }
-                            ]
-                          }
-                        ]
+                        "var": "level"
                       }
                     ]
                   },
                   {
-                    "const": "0.9"
+                    "op": "mul",
+                    "args": [
+                      {
+                        "var": "magic_level"
+                      },
+                      {
+                        "const": "2.4"
+                      }
+                    ]
                   }
                 ]
               },
               "maximum": {
-                "op": "mul",
+                "op": "add",
                 "args": [
                   {
-                    "op": "add",
+                    "fn": "level_base_damage_healing",
                     "args": [
                       {
-                        "fn": "level_base_damage_healing",
-                        "args": [
-                          {
-                            "var": "level"
-                          }
-                        ]
-                      },
-                      {
-                        "op": "add",
-                        "args": [
-                          {
-                            "op": "mul",
-                            "args": [
-                              {
-                                "op": "div",
-                                "args": [
-                                  {
-                                    "var": "base_power"
-                                  },
-                                  {
-                                    "const": "25"
-                                  }
-                                ]
-                              },
-                              {
-                                "var": "magic_level"
-                              }
-                            ]
-                          },
-                          {
-                            "op": "div",
-                            "args": [
-                              {
-                                "var": "base_power"
-                              },
-                              {
-                                "const": "4"
-                              }
-                            ]
-                          }
-                        ]
+                        "var": "level"
                       }
                     ]
                   },
                   {
-                    "const": "1.1"
+                    "op": "mul",
+                    "args": [
+                      {
+                        "var": "magic_level"
+                      },
+                      {
+                        "const": "3.6"
+                      }
+                    ]
                   }
                 ]
               },
-              "selection_rule": "S5/S21"
+              "selection_rule": "C18b"
             },
             "immediate_strike": true,
             "delay_multiplier": "0.5",

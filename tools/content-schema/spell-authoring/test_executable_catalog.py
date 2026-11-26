@@ -5,7 +5,7 @@ import pathlib
 import unittest
 from unittest.mock import patch
 
-from build_executable_catalog import build, build_selection
+from build_executable_catalog import build, build_selection, collect_source_bundles
 
 SOURCE = pathlib.Path("/workspace/spells-r20-implemented")
 
@@ -35,7 +35,7 @@ class ExecutableCatalogTest(unittest.TestCase):
             self.assertEqual([x["carrier"] for x in catalog["removed"] if x["name"] == name], ["instant"])
 
     def test_every_manifest_hash_is_the_source_byte_hash(self):
-        for entry in build(SOURCE)["bundles"]:
+        for entry in collect_source_bundles(SOURCE)["bundles"]:
             identity = entry["source_identities"][0]
             source = SOURCE / "bundles" / identity["bundle_id"] / "manifest.json"
             self.assertEqual(identity["manifest_sha256"], hashlib.sha256(source.read_bytes()).hexdigest())
