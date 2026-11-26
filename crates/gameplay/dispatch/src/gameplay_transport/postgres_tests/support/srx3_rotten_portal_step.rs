@@ -3,7 +3,7 @@
 use super::{
     TestResult,
     fixture::{Harness, debug},
-    srx3_native_source_cast_fixtures::{NativeOwnerClock, next_native_melee_deadline},
+    srx3_native_source_cast_fixtures::NativeOwnerClock,
 };
 
 use crate::foundation::{MovementLocalPosition, RuntimeScopeRefV1};
@@ -32,8 +32,6 @@ pub(super) async fn exercise(
     clock.set(clock_view.owner_now().get());
     super::srx3_activity_source_fixture::drive_native_cycle(&clock_view).await?;
     // Move the real target away, allowing the native boss to vacate the centre.
-    // One real lure step vacates the boss centre without drawing the source
-    // Elders beyond the separate two-tile STEP predicate.
     for direction in [D::West] {
         clock.set(clock_view.owner_now().get() + 1_000_000);
         let view = owner.runtime_view(&registered);
@@ -78,9 +76,8 @@ pub(super) async fn exercise(
         y: 32335,
         floor: 15,
     };
-    // Lure from one tile away so an Elder adjacent to the player can also
-    // satisfy the portal's two-tile STEP requirement on either side of the player.
-    let lure = {
+    // Approach the room centre without crossing the active charge.
+    let approach = {
         let view = owner.runtime_view(&registered);
         let runtime = view.runtime.lock().await;
         let mut occupied = runtime
@@ -106,25 +103,14 @@ pub(super) async fn exercise(
             false,
         )?
     };
-    const LURE_TURNS: usize = 5;
     assert!(
-        lure.len() <= LURE_TURNS,
+        approach.len() <= 5,
         "actual Elder lure stays inside the portal lifetime"
     );
-    const MAX_NATIVE_TURNS: usize = 32;
-    let lure_started = clock_view.owner_now().get();
-    let lure_deadline = lure_started + LURE_TURNS as u64 * 1_000_000;
-    for (turn, direction) in lure.into_iter().enumerate() {
-        let next_step = lure_started + turn as u64 * 1_000_000;
+    for direction in approach {
+        clock.set(clock_view.owner_now().get() + 1_000_000);
         let view = owner.runtime_view(&registered);
-        // Service native movement deadlines while the target still holds its
-        // previous tile. A jump straight to the next player STEP coalesces them.
-        for _ in 0..MAX_NATIVE_TURNS {
-            if !advance_lure_turn(&view, &clock, next_step).await? {
-                break;
-            }
-        }
-        assert_eq!(view.owner_now().get(), next_step, "bounded Elder chase work");
+        super::srx3_activity_source_fixture::settle_native_work(&view).await?;
         let (step, _) = view
             .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
             .await;
@@ -135,38 +121,9 @@ pub(super) async fn exercise(
         );
         super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
     }
-    let mut chase_turns = 0..MAX_NATIVE_TURNS;
-    let route = loop {
+    let route = {
         let view = owner.runtime_view(&registered);
         let runtime = view.runtime.lock().await;
-        let elders: Vec<_> = runtime
-            .positioned_actor_census()
-            .map_err(debug)?
-            .into_iter()
-            .filter_map(|(candidate, at, session)| {
-                (session.is_none()
-                    && runtime.companion_snapshot(candidate).is_ok_and(|s| {
-                        s.health > 0
-                            && s.state.policy.definition_key == "oteryn:creature.elder_bloodjaw"
-                    }))
-                .then_some(at.position())
-            })
-            .collect();
-        let elder_in_step_range = elders.iter().any(|at| {
-            at.floor == centre.floor && at.x.abs_diff(centre.x) <= 2 && at.y.abs_diff(centre.y) <= 2
-        });
-        if !elder_in_step_range
-            && view.owner_now().get() < lure_deadline
-            && chase_turns.next().is_some()
-        {
-            drop(runtime);
-            advance_lure_turn(&view, &clock, lure_deadline).await?;
-            continue;
-        }
-        assert!(
-            elder_in_step_range,
-            "source STEP requires a current Elder within2, not merely the90s creator's15: {elders:?}"
-        );
         let occupied = runtime
             .visible_entities()
             .creatures
@@ -174,7 +131,7 @@ pub(super) async fn exercise(
             .map(|c| runtime.read_actor_position(c.actor).map(|p| p.position()))
             .collect::<Result<Vec<_>, _>>()
             .map_err(debug)?;
-        break super::srx3_primal_terminal::source_route(
+        super::srx3_primal_terminal::source_route(
             view.effective_movement_cells(),
             runtime
                 .read_actor_position(player)
@@ -183,19 +140,23 @@ pub(super) async fn exercise(
             centre,
             &occupied,
             false,
-        )?;
+        )?
     };
     assert!(
         route.len() < 10,
         "source portal must be approached within its real15s lifetime"
     );
     let mut step_window = None;
-    for direction in route {
+    let step_count = route.len();
+    for (index, direction) in route.into_iter().enumerate() {
         clock.set(clock_view.owner_now().get() + 1_000_000);
         let view = owner.runtime_view(&registered);
         let started = view.owner_now().get();
         // The owner clock advance can select an older Item continuation before onMove.
         super::srx3_activity_source_fixture::settle_native_work(&view).await?;
+        if index + 1 == step_count {
+            place_elder_for_ingress(&view, centre).await?;
+        }
         let (step, _) = view
             .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
             .await;
@@ -382,17 +343,54 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-async fn advance_lure_turn(
+async fn place_elder_for_ingress(
     view: &ComposedFreshAdmission<'_, '_, '_>,
-    clock: &NativeOwnerClock<'_>,
-    limit: u64,
-) -> TestResult<bool> {
-    let now = view.owner_now().get();
-    if now >= limit {
-        return Ok(false);
+    centre: MovementLocalPosition,
+) -> TestResult {
+    let mut runtime = view.runtime.lock().await;
+    let elders = |runtime: &crate::foundation::ChannelRuntimeV1| {
+        runtime.positioned_actor_census().map(|census| {
+            census
+                .into_iter()
+                .filter(|(actor, _, session)| {
+                    session.is_none()
+                        && runtime.companion_snapshot(*actor).is_ok_and(|snapshot| {
+                            snapshot.health > 0
+                                && snapshot.state.policy.definition_key
+                                    == "oteryn:creature.elder_bloodjaw"
+                        })
+                })
+                .collect::<Vec<_>>()
+        })
+    };
+    let in_step_range = |at: MovementLocalPosition| {
+        at.floor == centre.floor && at.x.abs_diff(centre.x) <= 2 && at.y.abs_diff(centre.y) <= 2
+    };
+    let live = elders(&runtime).map_err(debug)?;
+    if !live.iter().any(|(_, at, _)| in_step_range(at.position())) {
+        let (elder, _, _) = live.first().ok_or("actual source Elder for portal STEP")?;
+        // The 90s callback can mint with Elders farther away. Stage an actual
+        // room Elder on the west flank after the last AI drain, clear of ingress.
+        crate::movement::relocate::relocate_creature(
+            &mut runtime,
+            *elder,
+            view.effective_movement_cells(),
+            &std::collections::BTreeSet::new(),
+            MovementLocalPosition {
+                x: centre.x - 2,
+                ..centre
+            },
+        )
+        .map_err(debug)?;
     }
-    clock.set(next_native_melee_deadline(view).await?.clamp(now, limit));
-    view.root.await_ready().await?;
-    super::srx3_activity_source_fixture::drive_native_cycle(view).await?;
-    Ok(true)
+    let elders: Vec<_> = elders(&runtime)
+        .map_err(debug)?
+        .into_iter()
+        .map(|(_, at, _)| at.position())
+        .collect();
+    assert!(
+        elders.iter().copied().any(in_step_range),
+        "source STEP requires a current Elder within2, not merely the90s creator's15: {elders:?}"
+    );
+    Ok(())
 }
