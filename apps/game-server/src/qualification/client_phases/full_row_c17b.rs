@@ -16,6 +16,7 @@ const ACTIONS: &[&str] = &[
     "monster-drops-invisible",
     "player-sees-invisible",
     "cooldown-no-cost",
+    "caster-damages-rat",
     "fresh-admission-condition",
 ];
 
@@ -637,16 +638,44 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("Global parity: other players must still see the invisible caster".into());
     }
     row.pass("player-sees-invisible", observer.last_server_sequence())?;
+    use oteryn_protocol_oteryn::{attack::AttackIntentDisposition, presentation::{PresentationEventKind, PresentationValueKind}};
+    let rat_position = caster.world_entities().and_then(|view| view.get(&rat)).ok_or("C17b exact Rat absent before caster attack")?.position;
+    full_e2ef5::with_observer_liveness(&mut observer, full_e2ef5::approach_melee(&mut caster, world, rat_position)).await?;
+    caster.take_events();
+    let selected = caster.session_mut().attack_target(Some(&rat)).await?;
+    if selected.disposition != AttackIntentDisposition::Ok { return Err(format!("C17b Rat target refused: {selected:?}").into()); }
+    let damage = full_e2ef5::with_observer_liveness(&mut observer, async {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+        loop {
+            for event in caster.take_events() {
+                if let SessionEvent::Presentation(delta) = event
+                    && delta.server_sequence > selected.result_server_sequence
+                    && delta.value.iter().any(|event| matches!(event.kind,
+                        PresentationEventKind::ValueText {kind: PresentationValueKind::DamageDealt, attacker: Some(attacker), target, primary, ..}
+                        if attacker == caster_ref && target == rat && primary.value > 0))
+                { return Ok(delta.server_sequence); }
+            }
+            if tokio::time::Instant::now() >= deadline { return Err("C17b invisible caster did not damage the exact Rat".into()); }
+            caster.service_liveness(Duration::from_millis(100)).await?;
+        }
+    }).await?;
+    row.pass("caster-damages-rat", damage)?;
+    let clear = caster.session_mut().attack_target(None).await?;
+    if clear.disposition != AttackIntentDisposition::Ok || caster.session_mut().combat_state().is_none_or(|state| state.target.is_some()) {
+        return Err("C17b Rat target did not clear".into());
+    }
+    observer.take_events();
+
     let session = caster.join_snapshot().game_session_id;
     let position = caster.world_spatial().actor_position;
     let durable_vitals =
-        provisioning::with_peer_liveness(&mut observer, logout_after_rat_combat(&mut caster))
+        full_e2ef5::with_observer_liveness(&mut observer, logout_after_rat_combat(&mut caster))
             .await?;
     if durable_vitals.0 >= before.mana {
         return Err("C17b spent mana did not persist until logout".into());
     }
     wait_visible(&mut observer, caster_ref, false).await?;
-    caster = provisioning::with_peer_liveness(&mut observer, connect_character(&caster_clients, 0xb3, 0)).await?;
+    caster = full_e2ef5::with_observer_liveness(&mut observer, connect_character(&caster_clients, 0xb3, 0)).await?;
     if caster.join_snapshot().game_session_id == session
         || caster.world_spatial().actor_position != position
         || caster

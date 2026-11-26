@@ -50,12 +50,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Some(name) => name,
                         None => {
                             match Box::pin(self.chat_speaker_name_with_budget(session, &retry))
-                                .await
+                                .await?
                             {
-                                Ok((name, ..)) => name,
-                                Err(AdmissionRefusal::Rejected)
-                                    if entity.identity != channel.observer =>
-                                {
+                                Some((name, ..)) => name,
+                                None if entity.identity != channel.observer => {
                                     // A peer can finish logout between capturing the interest set
                                     // and resolving its session. Let the next refresh see any new incarnation.
                                     channel
@@ -63,7 +61,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                         .retain(|entry| entry.identity != entity.identity);
                                     continue;
                                 }
-                                Err(error) => return Err(error),
+                                None => return Err(AdmissionRefusal::Rejected),
                             }
                         }
                     };
