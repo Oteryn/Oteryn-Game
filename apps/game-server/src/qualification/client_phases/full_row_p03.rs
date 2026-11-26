@@ -41,11 +41,9 @@ async fn accepted(
     request: wire::Request,
     step: &str,
 ) -> TestResult<Reply> {
+    let is_query = matches!(request, wire::Request::Query);
     let response = command(client, request).await?;
-    if !matches!(
-        response.status,
-        CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) {
+    if response.status != CommandStatus::Accepted {
         return Err(format!(
             "P03 step={step} observed-command-status={:?}",
             response.status
@@ -56,10 +54,14 @@ async fn accepted(
     if receipt.status != 0 {
         return Err(format!("P03 step={step} observed-prey-status={}", receipt.status).into());
     }
-    match response.current {
-        Some(current) => decoded(&current, step),
-        None => Ok(receipt),
+    if is_query {
+        return Ok(receipt);
     }
+    let current = response
+        .current
+        .as_deref()
+        .ok_or_else(|| format!("P03 step={step} observed=missing-current-state"))?;
+    decoded(current, step)
 }
 
 async fn query(client: &mut oteryn_dev_client::DevClientSession, step: &str) -> TestResult<Reply> {
@@ -75,18 +77,13 @@ fn slot(reply: &Reply, number: u8) -> TestResult<&wire::Slot> {
 }
 
 fn same_checkpoint(left: &wire::Slot, right: &wire::Slot) -> bool {
-    left.state == right.state
-        && left.selected == right.selected
-        && left.bonus == right.bonus
-        && left.grade == right.grade
-        && left.percent == right.percent
-        && left.hunting_seconds == right.hunting_seconds
-        && left.free_reroll_at == right.free_reroll_at
-        && left.selection_epoch == right.selection_epoch
+    left == right
 }
 
 fn valid_bonus_reroll(before: &wire::Slot, after: &wire::Slot) -> bool {
-    after.selected == before.selected
+    after.state == 2
+        && after.hunting_seconds == 7_200
+        && after.selected == before.selected
         && before.selection_epoch.checked_add(1) == Some(after.selection_epoch)
         && (after.bonus, after.grade, after.percent) != (before.bonus, before.grade, before.percent)
 }
@@ -119,7 +116,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     let draw = slot(&drawn, number)?;
-    if draw.state != 1 || draw.creatures.is_empty() || draw.free_reroll_at <= before_deadline {
+    if drawn.status != 0
+        || draw.state != 1
+        || !draw.selected.is_empty()
+        || draw.hunting_seconds != 0
+        || draw.creatures.is_empty()
+        || draw.creatures == unlocked.creatures
+        || draw.free_reroll_at <= before_deadline
+    {
         return Err(format!(
             "P03 step=draw-reroll observed=state:{}-candidates:{}-deadline:{}",
             draw.state,
@@ -154,22 +158,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     let selected = slot(&active, number)?.clone();
-    if selected.state != 2
+    if active.status != 0
+        || selected.state != 2
         || selected.selected != *creature
         || selected.bonus == 0
         || selected.grade == 0
         || selected.percent == 0
         || selected.hunting_seconds != 7_200
-        || selected.selection_epoch == 0
+        || draw.selection_epoch.checked_add(1) != Some(selected.selection_epoch)
+        || selected.free_reroll_at != draw.free_reroll_at
+        || active.wildcard_balance != drawn.wildcard_balance
     {
         return Err(format!("P03 step=select observed={selected:?}").into());
     }
 
     let bonus_reroll = command(&mut client, wire::Request::BonusReroll { slot: number }).await?;
-    let selected = if matches!(
-        bonus_reroll.status,
-        CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) {
+    let expected_balance = active.wildcard_balance.saturating_sub(1);
+    let selected = if active.wildcard_balance > 0 && bonus_reroll.status == CommandStatus::Accepted
+    {
         let receipt = decoded(&bonus_reroll.payload, "bonus-reroll")?;
         let current = decoded(
             bonus_reroll
@@ -180,7 +186,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )?;
         let rerolled = slot(&current, number)?.clone();
         if receipt.status != 0
-            || receipt.wildcard_balance.checked_add(1) != Some(active.wildcard_balance)
+            || current.status != 0
+            || receipt.wildcard_balance != expected_balance
+            || current.wildcard_balance != expected_balance
             || !valid_bonus_reroll(&selected, &rerolled)
         {
             return Err(format!(
@@ -189,9 +197,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             .into());
         }
         rerolled
-    } else if bonus_reroll.status == CommandStatus::Rejected {
+    } else if active.wildcard_balance == 0 && bonus_reroll.status == CommandStatus::Rejected {
         let after = query(&mut client, "bonus-reroll-refusal-check").await?;
-        if !same_checkpoint(&selected, slot(&after, number)?) {
+        if after != active {
             return Err("P03 step=bonus-reroll-refusal observed=active-state-mutated".into());
         }
         selected
@@ -219,7 +227,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     let after_refusal = query(&mut client, "refusal-check").await?;
-    if !same_checkpoint(&selected, slot(&after_refusal, number)?) {
+    if after_refusal.wildcard_balance != expected_balance
+        || !same_checkpoint(&selected, slot(&after_refusal, number)?)
+    {
         return Err("P03 step=refusal observed=active-state-mutated".into());
     }
 
@@ -233,12 +243,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(500)).await?;
     }
     full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, &selected.selected).await?;
-    let checkpoint = query(&mut client, "effect-checkpoint").await?;
-    let checkpoint = slot(&checkpoint, number)?.clone();
+    let checkpoint_reply = query(&mut client, "effect-checkpoint").await?;
+    let checkpoint = slot(&checkpoint_reply, number)?.clone();
     if checkpoint.state != 2
         || checkpoint.selected != selected.selected
         || checkpoint.bonus != selected.bonus
+        || checkpoint.grade != selected.grade
         || checkpoint.percent != selected.percent
+        || checkpoint_reply.wildcard_balance != expected_balance
         || checkpoint.selection_epoch != selected.selection_epoch
         || checkpoint.hunting_seconds >= selected.hunting_seconds
     {
@@ -252,7 +264,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("P03 step=fresh-admission observed=reused-session".into());
     }
     let durable = query(&mut client, "fresh-admission-query").await?;
-    if !same_checkpoint(&checkpoint, slot(&durable, number)?) {
+    if durable.wildcard_balance != expected_balance
+        || !same_checkpoint(&checkpoint, slot(&durable, number)?)
+    {
         return Err(format!(
             "P03 step=fresh-admission observed={:?}-expected={checkpoint:?}",
             slot(&durable, number)?
@@ -350,6 +364,7 @@ mod tests {
     fn bonus_reroll_requires_the_next_occurrence() {
         let before = active_slot();
         let mut after = before.clone();
+        after.hunting_seconds = 7_200;
         after.grade += 1;
         after.percent += 2;
         after.selection_epoch += 1;
@@ -369,6 +384,7 @@ mod tests {
 
         let mut unchanged_bonus = before.clone();
         unchanged_bonus.selection_epoch += 1;
+        unchanged_bonus.hunting_seconds = 7_200;
         assert!(!valid_bonus_reroll(&before, &unchanged_bonus));
     }
 
@@ -377,6 +393,12 @@ mod tests {
         let mut left = active_slot();
         let right = left.clone();
         assert!(same_checkpoint(&left, &right));
+        left.creatures.push("oteryn:creature.bear".to_owned());
+        assert!(!same_checkpoint(&left, &right));
+        left.creatures.clear();
+        left.option += 1;
+        assert!(!same_checkpoint(&left, &right));
+        left.option -= 1;
         left.selection_epoch += 1;
         assert!(!same_checkpoint(&left, &right));
         left.selection_epoch -= 1;
