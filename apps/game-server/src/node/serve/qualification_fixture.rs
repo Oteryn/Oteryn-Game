@@ -835,6 +835,8 @@ async fn prepare_build(
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
+    #[cfg(feature = "qualification-spawn")]
+    let content = context.content.clone();
     let (vocation, level) = match profile {
         "knight-underlevel" => ("knight", 66),
         "explorer" => ("knight", 100),
@@ -863,6 +865,90 @@ async fn prepare_build(
         deadline,
     )
     .await?;
+    #[cfg(feature = "qualification-spawn")]
+    if profile == "p11-corridor-knight" {
+        use crate::durability::character_build::{
+            BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildOccurrence, DurableBuildState,
+        };
+        use crate::durability::character_progression::CurrentCharacterGameplayFence;
+        use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
+
+        let sequencer = CharacterRevisionSequencer::new();
+        let mut slot = sequencer.acquire(character).await;
+        let before = qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            qualification_build::progression_busy,
+            async || root.read_character_build_state(authority, character).await,
+        )
+        .await
+        .map_err(qualification_build::debug)?;
+        let mut skills = before.skills();
+        if skills[2] != (10, 0) {
+            return Err("P11 fixture requires untrained sword skill".into());
+        }
+        skills[2] = (350, 0);
+        let after = DurableBuildState::new(before.vocation(), before.magic(), skills)
+            .map_err(qualification_build::debug)?;
+        let fence = CurrentCharacterGameplayFence {
+            character_id: character,
+            game_session_id: current.current_game_session_id(),
+            connection_generation: current.current_connection_generation(),
+            character_lease_generation: current.current_character_lease().generation(),
+            runtime_scope: scope,
+            scope_ownership_generation: current.current_scope_generation(),
+            expected_character_revision: qualification_build::retry_holder(
+                Some(root),
+                deadline,
+                qualification_build::authority_busy,
+                async || root.read_current_character(authority, character).await,
+            )
+            .await
+            .map_err(qualification_build::debug)?
+            .revision,
+        };
+        let occurrence = BuildOccurrence::from_bytes(fixture_occurrence(
+            character.as_bytes(),
+            profile,
+            b"sword-training",
+        ))
+        .map_err(qualification_build::debug)?;
+        let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
+            include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/build-training.json"
+            ),
+            &content,
+        )
+        .map_err(qualification_build::debug)?;
+        let outcome = qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            qualification_build::progression_busy,
+            async || {
+                slot.commit_build(
+                    root,
+                    authority,
+                    proof,
+                    fence,
+                    BuildChangeRequest {
+                        occurrence,
+                        cause: BuildCause::Training,
+                        before: before.clone(),
+                        after: after.clone(),
+                        pruned_stance: None,
+                    },
+                    &formula,
+                    None,
+                )
+                .await
+            },
+        )
+        .await
+        .map_err(qualification_build::debug)?;
+        if !matches!(outcome, BuildCommitOutcome::Committed(receipt) if receipt.after == after) {
+            return Err("P11 fixture sword training did not commit its exact build".into());
+        }
+    }
     #[cfg(feature = "qualification-spawn")]
     if spell_build(profile).is_some() {
         return Ok(());
