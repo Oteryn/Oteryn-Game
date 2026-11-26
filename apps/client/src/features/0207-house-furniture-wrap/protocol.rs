@@ -85,20 +85,23 @@ pub(in crate::play) fn apply(
         }
         Some(wire::Reply::Refused(reason)) if !accepted => {
             panel.catalogue = None;
-            match reason {
-                wire::Refusal::NotInHouse => tr!("Enter your house first"),
-                wire::Refusal::NoAccess => tr!("You cannot edit this house"),
-                wire::Refusal::NotWrapable => tr!("This item cannot be wrapped or placed"),
-                wire::Refusal::Stale => tr!("Furniture or house access changed. Refresh the list"),
-                wire::Refusal::Blocked => {
-                    tr!("The placement is blocked. Move and refresh the list")
-                }
-                wire::Refusal::InventoryFull => tr!("Your backpack is full"),
-            }
-            .into()
+            refusal_feedback(reason).into()
         }
         _ => tr!("Invalid furniture response").into(),
     };
+}
+
+fn refusal_feedback(reason: wire::Refusal) -> &'static str {
+    match reason {
+        wire::Refusal::NotInHouse => tr!("Enter your house first"),
+        wire::Refusal::NoAccess => tr!("You cannot edit this house"),
+        wire::Refusal::NotWrapable => tr!("This item cannot be wrapped or placed"),
+        wire::Refusal::Stale => tr!("Furniture or house access changed. Refresh the list"),
+        wire::Refusal::Blocked => {
+            tr!("The placement is blocked. Move and refresh the list")
+        }
+        wire::Refusal::InventoryFull => tr!("Your backpack is full"),
+    }
 }
 
 #[cfg(test)]
