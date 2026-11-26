@@ -28,6 +28,84 @@ pub(super) fn debug(error: impl std::fmt::Debug) -> String {
     format!("{error:?}")
 }
 
+#[cfg(any(test, feature = "qualification-spawn"))]
+pub(super) const PRIMAL_AXE_ITEM: u32 = 3319;
+#[cfg(any(test, feature = "qualification-spawn"))]
+pub(super) const PRIMAL_AXE_SKILL: u16 = 420;
+
+/// Admit the W10 knight normally with a high live damage input.
+#[cfg(feature = "qualification-spawn")]
+pub(super) async fn seed_primal_axe_skill(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    current: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    content_revision: &str,
+    occurrence: [u8; 16],
+) -> TestResult {
+    let character =
+        CharacterId::from_bytes(*current.current_character_lease().character_id().as_bytes())
+            .map_err(debug)?;
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut slot = sequencer.acquire(character).await;
+    let before = root
+        .read_character_build_state(authority, character)
+        .await
+        .map_err(debug)?;
+    if before.vocation() != "knight" {
+        return Err("Primal axe fixture expected knight vocation".into());
+    }
+    let mut skills = before.skills();
+    skills[3] = (PRIMAL_AXE_SKILL, 0);
+    let after = DurableBuildState::new(before.vocation(), before.magic(), skills).map_err(debug)?;
+    if before != after {
+        let fence = CurrentCharacterGameplayFence {
+            character_id: character,
+            game_session_id: current.current_game_session_id(),
+            connection_generation: current.current_connection_generation(),
+            character_lease_generation: current.current_character_lease().generation(),
+            runtime_scope: current.current_runtime_scope(),
+            scope_ownership_generation: current.current_scope_generation(),
+            expected_character_revision: root
+                .read_current_character(authority, character)
+                .await
+                .map_err(debug)?
+                .revision,
+        };
+        let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
+            include_bytes!("../../../tools/content-schema/native-gameplay/build-training.json"),
+            content_revision,
+        )
+        .map_err(debug)?;
+        slot.commit_build(
+            root,
+            authority,
+            node,
+            fence,
+            BuildChangeRequest {
+                occurrence: BuildOccurrence::from_bytes(occurrence).map_err(debug)?,
+                cause: BuildCause::Training,
+                before,
+                after: after.clone(),
+                pruned_stance: None,
+            },
+            &formula,
+            None,
+        )
+        .await
+        .map_err(debug)?;
+    }
+    if root
+        .read_character_build_state(authority, character)
+        .await
+        .map_err(debug)?
+        != after
+    {
+        return Err("Primal axe fixture did not commit the exact requested build".into());
+    }
+    Ok(())
+}
+
 /// Retry only holder acquisition failure, which occurs before the semantic pass runs.
 /// Fenced writes retain their request/occurrence across attempts; ambiguous writes are final.
 pub(super) async fn retry_holder<T, E>(

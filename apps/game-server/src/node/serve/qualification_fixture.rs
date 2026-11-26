@@ -864,6 +864,28 @@ async fn prepare_build(
     )
     .await?;
     #[cfg(feature = "qualification-spawn")]
+    if profile == "w10-primal" {
+        qualification_build::seed_primal_axe_skill(
+            root,
+            authority,
+            proof,
+            &current,
+            content_revision,
+            fixture_occurrence(character.as_bytes(), profile, b"primal-axe"),
+        )
+        .await?;
+        return prepare_items(
+            root,
+            authority,
+            proof,
+            &current,
+            native,
+            deadline,
+            Some((qualification_build::PRIMAL_AXE_ITEM, 1)),
+        )
+        .await;
+    }
+    #[cfg(feature = "qualification-spawn")]
     if spell_build(profile).is_some() {
         return Ok(());
     }
