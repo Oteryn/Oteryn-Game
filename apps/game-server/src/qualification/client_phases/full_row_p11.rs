@@ -177,7 +177,7 @@ async fn wait_for_lever_arrival(
 }
 
 const CORRIDOR_Y: u16 = 31659;
-const WEAPON_ID: u32 = 7405;
+const WEAPON_ID: u32 = 7384; // Mystic Blade has a fully specified one-hand policy.
 const POTION_ID: u32 = 7643;
 const REWARD_ID: u32 = 3388;
 
