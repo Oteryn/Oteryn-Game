@@ -31,34 +31,7 @@ C18B_SOURCE = {
     "repository": "zimbadev/crystalserver",
     "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
 }
-DEATH_ECHO_BASE_POWER = 85
 C18B_HEADERS = {
-    "death_echo": (
-        (("costs", "mana"), 155, "mana", 107, "supersedes S15/S24's 150 mana"),
-        (
-            ("base_power",),
-            DEATH_ECHO_BASE_POWER,
-            "basePower",
-            108,
-            "supersedes S3's base power 75",
-        ),
-    ),
-    "divine_grenade": (
-        (
-            ("requirements", "level"),
-            300,
-            "level",
-            102,
-            "supersedes S22's level 0; Wheel unlock still applies",
-        ),
-        (
-            ("targeting", "range_tiles"),
-            7,
-            "range",
-            106,
-            "supersedes S3's four-tile registration range",
-        ),
-    ),
     "divine_barrage": (
         (
             ("targeting", "needs_target"),
@@ -153,21 +126,21 @@ def apply_crystal_grenade_parameters(parameters):
 def apply_c18b_spell_policy(spell):
     key = spell["identity"]["key"]
     slug = key.removeprefix("candidate:spell/")
-    for path, value, _, _, _ in C18B_HEADERS.get(slug, ()):
-        parent = spell if len(path) == 1 else spell[path[0]]
-        parent[path[-1]] = value
+    for (section, field), value, *_ in C18B_HEADERS.get(slug, ()):
+        spell[section][field] = value
     if slug == "death_echo":
+        # Official news 8872 and the spell library govern base power and mana.
         apply_c18b_death_echo_formula(
             spell["execution"]["native_behavior"]["parameters"]
         )
     elif slug == "divine_grenade":
+        # Keep the S22 Wheel unlock and the Global four-tile range.
         apply_crystal_grenade_parameters(
             spell["execution"]["native_behavior"]["parameters"]
         )
 
 
 def apply_c18b_death_echo_formula(parameters):
-    parameters["base_power"] = DEATH_ECHO_BASE_POWER
     minimum, maximum = _crystal_damage_bounds("death_echo")
     parameters["formula"].update(
         minimum=minimum, maximum=maximum, selection_rule="C18b"
@@ -177,15 +150,18 @@ def apply_c18b_death_echo_formula(parameters):
 def _apply_c18b_entry(entry):
     spell = entry["bundle"]["spell"]
     slug = spell["identity"]["key"].removeprefix("candidate:spell/")
-    if slug not in C18B_HEADERS:
+    if slug not in C18B_HEADERS and slug not in {"death_echo", "divine_grenade"}:
         return
     apply_c18b_spell_policy(spell)
+    if slug == "divine_grenade":
+        _bind_manifest(entry)
+        return
     manifest = entry["manifest"]
     if C18B_SOURCE not in manifest["sources"]:
         manifest["sources"].append(C18B_SOURCE.copy())
     source_index = manifest["sources"].index(C18B_SOURCE)
     path = f"data/scripts/spells/attack/{slug}.lua"
-    for pointer, _, field, line, decision in C18B_HEADERS[slug]:
+    for pointer, _, field, line, decision in C18B_HEADERS.get(slug, ()):
         destination = "/spell/spell/" + "/".join(pointer)
         manifest["entries"] = [
             row
@@ -212,10 +188,13 @@ def _apply_c18b_entry(entry):
             }
         )
 
-    if slug != "divine_grenade":
-        _record_crystal_formula(entry, slug, path, source_index)
+    _record_crystal_formula(entry, slug, path, source_index)
+    _bind_manifest(entry)
 
+
+def _bind_manifest(entry):
     # The runtime checks that every source identity binds the selected manifest.
+    manifest = entry["manifest"]
     digest = hashlib.sha256(canonical_bytes(manifest)).hexdigest()
     for identity in entry["source_identities"]:
         identity["sources"] = manifest["sources"]

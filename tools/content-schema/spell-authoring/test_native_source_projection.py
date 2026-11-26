@@ -271,12 +271,11 @@ def private_disintegrate(target):
 
 
 class NativeProjectionTests(unittest.TestCase):
-    def test_c18b_spell_headers_match_crystal_201189f8(self):
-        # Crystal data/scripts/spells/attack at 201189f8.
+    def test_c18b_spell_headers_follow_selected_sources(self):
         cases = (
-            ("Death Echo", "costs", "mana", 155),  # death_echo.lua:107
-            ("Divine Grenade", "requirements", "level", 300),  # divine_grenade.lua:102
-            ("Divine Grenade", "targeting", "range_tiles", 7),  # divine_grenade.lua:106
+            ("Death Echo", "costs", "mana", 150),  # Official spell library, S24
+            ("Divine Grenade", "requirements", "level", 0),  # Client spell list, S22
+            ("Divine Grenade", "targeting", "range_tiles", 4),  # TibiaWiki BR 436982
             (
                 "Divine Barrage",
                 "targeting",
