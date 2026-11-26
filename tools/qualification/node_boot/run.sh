@@ -1504,7 +1504,7 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
     # I07's full and client batches each start with untouched character custody.
     local i07_full_operation=01934f10-7c04-7025-805b-3b1122334425
     python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
-      "$WORK" "$I07_ACCOUNT" "$WORLD_ID" "$i07_full_operation" "${INTERPRETATION[@]}" "Quick Loot Full" "$vocation"
+      "$WORK" "$I07_ACCOUNT" "$WORLD_ID" "$i07_full_operation" "${INTERPRETATION[@]}" "Quick Loot Full" Paladin
     ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$i07_full_operation"
   fi
   evidence "characters=${#BOOTSTRAP_ACCOUNTS[@]} source=platform_intents path=control_socket retry=idempotent"

@@ -965,8 +965,8 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         .into());
     }
     evidence("I07_CLIENT_INVENTORY final_relog=exact_definitions_and_quantities");
-    if let Some((quiver, arrows)) = quiver {
-        require_quiver(&mut database, character, &quiver, &arrows).await?;
+    if let Some((quiver, ammunition)) = quiver {
+        require_quiver(&mut database, character, &quiver, &ammunition).await?;
         let index = provisioning::item_index()?;
         let definition = provisioning::item_reference(&index, 35562)?;
         if !inventory
@@ -976,7 +976,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         {
             return Err("I07 full relog inventory omitted the equipped quiver".into());
         }
-        evidence("I07_FULL_QUIVER arrows=7 backpack_debit=7 after_relog=true");
+        evidence("I07_FULL_QUIVER bolts=7 backpack_debit=7 after_relog=true");
     }
     require_logout(&mut readback).await?;
     evidence(
@@ -1014,18 +1014,27 @@ async fn require_quiver(
     quiver: &[u8],
     arrows: &[Placement],
 ) -> TestResult {
-    // Storage slot 6 is the quiver's shield-hand slot, independent of wire slot numbers.
-    let worn: Option<Vec<u8>> = sqlx::query_scalar(
-        "SELECT uuid_send(item_instance_id) FROM game_character_equipment_slots
-         WHERE character_id=encode($1,'hex')::uuid AND slot=6",
-    )
-    .bind(character)
-    .fetch_optional(&mut *database)
-    .await?;
+    let worn = worn_quiver(database, character).await?;
     if worn.as_deref() != Some(quiver) {
         return Err(format!("I07 quiver equipment custody differs: {worn:?}").into());
     }
     require_placements(database, Storage::Quiver, character, quiver, arrows).await
+}
+
+async fn worn_quiver(
+    database: &mut sqlx::PgConnection,
+    character: &[u8],
+) -> TestResult<Option<Vec<u8>>> {
+    // Storage slot 6 is the shield hand, independent of wire slot numbers.
+    Ok(sqlx::query_scalar(
+        "SELECT uuid_send(i.item_instance_id) FROM game_character_equipment_slots s
+         JOIN game_item_instances i USING (item_instance_id, world_id)
+         WHERE s.character_id=encode($1,'hex')::uuid AND s.slot=6
+           AND i.lifecycle=1 AND i.quantity=1 AND i.definition_production_key='oteryn:item.tibia.i35562'",
+    )
+    .bind(character)
+    .fetch_optional(database)
+    .await?)
 }
 
 async fn exercise_quiver(
@@ -1033,53 +1042,52 @@ async fn exercise_quiver(
     database: &mut sqlx::PgConnection,
     character: &[u8],
     backpack: &[u8],
-) -> TestResult<(Vec<u8>, [Placement; 1])> {
+) -> TestResult<(Vec<u8>, Vec<Placement>)> {
     use oteryn_dev_client::{ItemMoveOutcome, client_runtime::hotkey_equip::equip_definition};
 
+    let quiver = worn_quiver(database, character)
+        .await?
+        .ok_or("I07 full Paladin starter quiver is absent from the shield hand")?;
+    let mut expected = placements(database, Storage::Quiver, character, &quiver).await?;
+    if !expected
+        .iter()
+        .map(|item| (item.key.as_str(), item.quantity, item.slot))
+        .eq([
+            ("oteryn:item.tibia.i3447", 100, 1),
+            ("oteryn:item.tibia.i3447", 100, 2),
+        ])
+    {
+        return Err(format!("I07 full starter quiver custody differs: {expected:?}").into());
+    }
     let before = placements(database, Storage::Backpack, character, backpack).await?;
-    character_prep::grant_item(client, 35562, 1).await?;
-    character_prep::grant_item(client, 3447, 7).await?;
-    evidence("FIXTURE I07.full quiver=35562 arrows=3447 count=7");
+    character_prep::grant_item(client, 3446, 7).await?;
+    evidence("FIXTURE I07.full bolts=3446 count=7");
     let seeded = placements(database, Storage::Backpack, character, backpack).await?;
     let added: Vec<_> = seeded
         .iter()
         .filter(|item| !before.contains(item))
         .collect();
-    let [quiver, arrows] = added.as_slice() else {
-        return Err("I07 full fixture must add exactly two unequipped items".into());
+    let [bolts] = added.as_slice() else {
+        return Err("I07 full fixture must add exactly one stack to the backpack".into());
     };
-    if (
-        quiver.key.as_str(),
-        quiver.quantity,
-        arrows.key.as_str(),
-        arrows.quantity,
-    ) != ("oteryn:item.tibia.i35562", 1, "oteryn:item.tibia.i3447", 7)
+    if (bolts.key.as_str(), bolts.quantity) != ("oteryn:item.tibia.i3446", 7)
+        || seeded.len() != before.len() + 1
     {
-        return Err(format!("I07 full fixture custody differs: {added:?}").into());
+        return Err(format!("I07 full bolt fixture custody differs: {added:?}").into());
     }
+    require_quiver(database, character, &quiver, &expected).await?;
+
     let index = provisioning::item_index()?;
-    let quiver_definition = provisioning::item_reference(&index, 35562)?;
-    let arrow_definition = provisioning::item_reference(&index, 3447)?;
-
-    let reply = equip_definition(client.session_mut(), arrow_definition).await?;
-    if reply != ItemMoveOutcome::SlotMismatch {
-        return Err(format!("I07 arrows without equipped quiver: {reply:?}").into());
-    }
-    require_placements(database, Storage::Backpack, character, backpack, &seeded).await?;
-    let reply = equip_definition(client.session_mut(), quiver_definition).await?;
+    let definition = provisioning::item_reference(&index, 3446)?;
+    let reply = equip_definition(client.session_mut(), definition).await?;
     if reply != ItemMoveOutcome::Moved {
-        return Err(format!("I07 equip quiver: {reply:?}").into());
+        return Err(format!("I07 equip bolts into the worn quiver: {reply:?}").into());
     }
-    require_quiver(database, character, &quiver.item, &[]).await?;
-
-    let reply = equip_definition(client.session_mut(), arrow_definition).await?;
-    if reply != ItemMoveOutcome::Moved {
-        return Err(format!("I07 equip arrows into quiver: {reply:?}").into());
-    }
-    let mut credited = (*arrows).clone();
-    credited.slot = 1;
-    let credited = [credited];
-    require_quiver(database, character, &quiver.item, &credited).await?;
+    let mut credited = (*bolts).clone();
+    credited.slot = 3;
+    expected.push(credited);
+    require_quiver(database, character, &quiver, &expected).await?;
     require_placements(database, Storage::Backpack, character, backpack, &before).await?;
-    Ok((quiver.item.clone(), credited))
+    evidence("I07_FULL_QUIVER bolts=7 backpack_debit=7 first_attempt=true");
+    Ok((quiver, expected))
 }
