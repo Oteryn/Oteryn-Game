@@ -35,6 +35,7 @@ selected_client_replays() {
       printf '%s %s %s\n' "$row" "$package" "$case_name"
     fi
   done <<'REPLAYS'
+185 W01a.client oteryn-session e2e_w01a_rat_chase_damage_and_flight_replay
 190 W04.client oteryn-client e2e_w04_replays_raid_schedule_state_and_refusal
 192 W05c.client oteryn-client-ui w05c_rashid_payloads_replay_into_service_panel
 193 W10.client oteryn-client-ui e2e_w10_replays_hazard_state_selection_and_locked_refusal

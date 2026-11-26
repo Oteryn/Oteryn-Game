@@ -12,13 +12,13 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
     encode_world_spatial_entities_snapshot,
 };
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W01A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    use std::io::Write as _;
+
+    std::fs::File::create_new(root.join(name))
+        .and_then(|mut file| file.write_all(bytes))
+        .map_err(|error| format!("W01a capture file={name}: {error}"))?;
+    Ok(())
 }
 
 fn distance(a: ActorPosition, b: ActorPosition) -> u32 {
@@ -123,10 +123,14 @@ impl Segment {
         Ok(())
     }
 
-    fn write(&self, expected: &mut String) {
-        capture(&format!("w01a-{}-snapshot.bin", self.name), &self.snapshot);
+    fn write(&self, root: &Path, expected: &mut String) -> TestResult {
+        capture(
+            root,
+            &format!("w01a-{}-snapshot.bin", self.name),
+            &self.snapshot,
+        )?;
         for (index, bytes) in self.deltas.iter().enumerate() {
-            capture(&format!("w01a-{}-delta{index}.bin", self.name), bytes);
+            capture(root, &format!("w01a-{}-delta{index}.bin", self.name), bytes)?;
         }
         expected.push_str(&format!(
             "{n}.target={}:{}\n{n}.initial={}\n{n}.trace={}\n",
@@ -136,6 +140,7 @@ impl Segment {
             self.trace.join(";"),
             n = self.name
         ));
+        Ok(())
     }
 }
 
@@ -147,6 +152,8 @@ fn target_state(client: &DevClientSession, target: EntityRef) -> Option<WorldSpa
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let capture_dir = required("E2E_ALL_CAPTURE_DIR")?;
+    let capture_dir = Path::new(&capture_dir);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -164,6 +171,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .and_then(|entities| {
             entities.iter().find(|entry| {
                 entry.kind == oteryn_dev_client::EntityKind::Creature
+                    && entry
+                        .display_name
+                        .is_some_and(|name| name.as_str() == Ok("Rat"))
                     && entry.position.floor == here.floor
                     && distance(entry.position, here) <= 1
             })
@@ -262,21 +272,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     };
 
     let mut expected = String::new();
-    chase.write(&mut expected);
-    fight.write(&mut expected);
+    chase.write(capture_dir, &mut expected)?;
+    fight.write(capture_dir, &mut expected)?;
     expected.push_str(&format!(
         "chase.final={},{},{}\nlow={low}\nflee.final={},{},{}\n",
         chased.x, chased.y, chased.floor, fled.x, fled.y, fled.floor
     ));
-    capture("w01a-expected.txt", expected.as_bytes());
+    capture(capture_dir, "w01a-expected.txt", expected.as_bytes())?;
     Ok(expected)
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
-        return;
-    }
-    match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=W01a.client status=CAPTURED evidence={:?}",
             expected.replace('\n', ";")

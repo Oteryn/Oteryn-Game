@@ -720,6 +720,22 @@ class ClientReplayTests(unittest.TestCase):
                 else:
                     self.assertEqual(result.stdout, '')
 
+    def test_w01a_client_replay_is_selected_with_its_row(self):
+        helper = str(HERE / 'client_replay.sh')
+        row = 'W01a.client oteryn-session e2e_w01a_rat_chase_damage_and_flight_replay'
+        for batch in ('185:1', '184:2', 'all'):
+            with self.subTest(batch=batch):
+                result = bash('source "$REPLAY_HELPER"; selected_client_replays',
+                              {'REPLAY_HELPER': helper, 'OTERYN_E2E_ROW_BATCH': batch})
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.splitlines().count(row), 1)
+        for batch in ('25:1', '184:1', '186:1'):
+            with self.subTest(batch=batch):
+                result = bash('source "$REPLAY_HELPER"; selected_client_replays',
+                              {'REPLAY_HELPER': helper, 'OTERYN_E2E_ROW_BATCH': batch})
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertNotIn(row, result.stdout.splitlines())
+
 
 class CloudRunSummaryTests(unittest.TestCase):
     def test_cloud_uses_first_eligible_work_parent(self):
