@@ -535,7 +535,7 @@ fn natural_minion_and_forge_keep_source_order_rounding_and_fill_health_once() ->
                 vec![(
                     (105, 105, 7),
                     60_000,
-                    "oteryn:creature.rat".into(),
+                    "oteryn:creature.rat".to_owned(),
                     101,
                     false,
                 )],

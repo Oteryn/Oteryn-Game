@@ -5,7 +5,7 @@ use crate::durability::exercise_training::{
     ExerciseCheckpoint, ExerciseCommitted, ExerciseDummyKey, TrainingWeapon,
 };
 use crate::durability::item_timed_state::TimedDefinitionFacts;
-use oteryn_protocol_oteryn::loop_training::ExerciseIntent;
+use oteryn_protocol_oteryn::loop_training::{COMMAND_TYPE_EXERCISE_TRAINING, ExerciseIntent};
 
 pub(super) struct Run {
     actor: ExactActorRef,
@@ -101,13 +101,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return true;
         }
+        // Exercise commands own their cadence and stop decisions after decoding.
+        if kind == COMMAND_TYPE_EXERCISE_TRAINING {
+            return true;
+        }
         let (Some(actor), Some(fence)) = (admitted.runtime_actor, admitted.item_fence) else {
             return true;
         };
         self.training_before_save_bound(
             actor,
             admitted.game_session_id,
-            !matches!(kind, 13 | 30 | 67),
+            !matches!(kind, 13 | 30),
             Some(fence),
         )
         .await
@@ -419,14 +423,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if command.item_fence != Some(item) || self.training_fence(item).await.is_none() {
             return Some(TrainingResult::REFUSED);
         }
-        let stop = matches!(intent, ExerciseIntent::Stop | ExerciseIntent::Start { .. });
-        if !self
-            .training_before_save_bound(actor, admitted.game_session_id, stop, Some(item))
-            .await
-        {
-            return None;
-        }
         if let ExerciseIntent::Start { .. } = intent {
+            // Serialize Starts for this session through spell save and run installation.
+            // A forced spell save also stops exercise, so refuse before calling it.
+            let start = {
+                let mut sessions = self.states.training.sessions.lock().await;
+                let state = sessions.entry(admitted.game_session_id).or_default();
+                Arc::clone(&state.exercise_start)
+            };
+            let _start = start.lock().await;
+            if self
+                .states
+                .training
+                .sessions
+                .lock()
+                .await
+                .get(&admitted.game_session_id)
+                .is_some_and(|state| state.exercise.is_some())
+            {
+                // Crystal 201189f exercise_training_weapons.lua:159-164.
+                return Some(TrainingResult::REFUSED);
+            }
             if matches!(
                 self.save_spell_training(actor, admitted.game_session_id, true)
                     .await,
@@ -542,6 +559,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 checkpoint_due: now.checked_add(60_000_000)?,
                 pending: None,
             });
+        } else if !self
+            .training_before_save_bound(
+                actor,
+                admitted.game_session_id,
+                intent == ExerciseIntent::Stop,
+                Some(item),
+            )
+            .await
+        {
+            return None;
         }
         let root = self
             .root

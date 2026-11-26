@@ -2556,6 +2556,2302 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/nah_bob.lua:146:sha256:7598ed6c02bba9fe6705c56d9b63601d3727259ead8561a4f0db3e3ca8acdb83"
       ]
+    },
+    {
+      "npc": "oteryn:npc.black_bert",
+      "service": "oteryn:service.trade.black_bert",
+      "offers": [
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i1000",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i10009",
+            "revision": "definition-r1"
+          },
+          "unit_price": 700,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i10011",
+            "revision": "definition-r1"
+          },
+          "unit_price": 650,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i10025",
+            "revision": "definition-r1"
+          },
+          "unit_price": 600,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i10026",
+            "revision": "definition-r1"
+          },
+          "unit_price": 600,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i10027",
+            "revision": "definition-r1"
+          },
+          "unit_price": 550,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i10028",
+            "revision": "definition-r1"
+          },
+          "unit_price": 666,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i10183",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i10189",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i11329",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i11339",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i11341",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i11544",
+            "revision": "definition-r1"
+          },
+          "unit_price": 600,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i11545",
+            "revision": "definition-r1"
+          },
+          "unit_price": 4000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i11546",
+            "revision": "definition-r1"
+          },
+          "unit_price": 4000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i11547",
+            "revision": "definition-r1"
+          },
+          "unit_price": 4000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i11548",
+            "revision": "definition-r1"
+          },
+          "unit_price": 4000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i11549",
+            "revision": "definition-r1"
+          },
+          "unit_price": 4000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i11550",
+            "revision": "definition-r1"
+          },
+          "unit_price": 4000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i11551",
+            "revision": "definition-r1"
+          },
+          "unit_price": 4000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i11552",
+            "revision": "definition-r1"
+          },
+          "unit_price": 4000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i117",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i121",
+            "revision": "definition-r1"
+          },
+          "unit_price": 2000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i123",
+            "revision": "definition-r1"
+          },
+          "unit_price": 16000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i125",
+            "revision": "definition-r1"
+          },
+          "unit_price": 5000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i130",
+            "revision": "definition-r1"
+          },
+          "unit_price": 100,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i136",
+            "revision": "definition-r1"
+          },
+          "unit_price": 600,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i141",
+            "revision": "definition-r1"
+          },
+          "unit_price": 2000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i142",
+            "revision": "definition-r1"
+          },
+          "unit_price": 6000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i18933",
+            "revision": "definition-r1"
+          },
+          "unit_price": 4000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i22694",
+            "revision": "definition-r1"
+          },
+          "unit_price": 20000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i23734",
+            "revision": "definition-r1"
+          },
+          "unit_price": 20000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i24943",
+            "revision": "definition-r1"
+          },
+          "unit_price": 2000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i24944",
+            "revision": "definition-r1"
+          },
+          "unit_price": 2000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i24945",
+            "revision": "definition-r1"
+          },
+          "unit_price": 2000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i24947",
+            "revision": "definition-r1"
+          },
+          "unit_price": 2000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i25238",
+            "revision": "definition-r1"
+          },
+          "unit_price": 5000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i25239",
+            "revision": "definition-r1"
+          },
+          "unit_price": 2000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i25244",
+            "revision": "definition-r1"
+          },
+          "unit_price": 2000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i25295",
+            "revision": "definition-r1"
+          },
+          "unit_price": 5000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i25729",
+            "revision": "definition-r1"
+          },
+          "unit_price": 5000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i25731",
+            "revision": "definition-r1"
+          },
+          "unit_price": 5000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i25733",
+            "revision": "definition-r1"
+          },
+          "unit_price": 5000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i27370",
+            "revision": "definition-r1"
+          },
+          "unit_price": 3000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i27371",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1500,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i27372",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1500,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i27443",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1500,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i27444",
+            "revision": "definition-r1"
+          },
+          "unit_price": 10000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i27445",
+            "revision": "definition-r1"
+          },
+          "unit_price": 7000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i27461",
+            "revision": "definition-r1"
+          },
+          "unit_price": 15000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i27464",
+            "revision": "definition-r1"
+          },
+          "unit_price": 8000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i27465",
+            "revision": "definition-r1"
+          },
+          "unit_price": 7000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i27499",
+            "revision": "definition-r1"
+          },
+          "unit_price": 10000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i31414",
+            "revision": "definition-r1"
+          },
+          "unit_price": 50000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i31447",
+            "revision": "definition-r1"
+          },
+          "unit_price": 50000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3212",
+            "revision": "definition-r1"
+          },
+          "unit_price": 3000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3216",
+            "revision": "definition-r1"
+          },
+          "unit_price": 8000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3217",
+            "revision": "definition-r1"
+          },
+          "unit_price": 8000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3218",
+            "revision": "definition-r1"
+          },
+          "unit_price": 16000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3219",
+            "revision": "definition-r1"
+          },
+          "unit_price": 2000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3220",
+            "revision": "definition-r1"
+          },
+          "unit_price": 8000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3233",
+            "revision": "definition-r1"
+          },
+          "unit_price": 16000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3234",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i349",
+            "revision": "definition-r1"
+          },
+          "unit_price": 15000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i350",
+            "revision": "definition-r1"
+          },
+          "unit_price": 7000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i39136",
+            "revision": "definition-r1"
+          },
+          "unit_price": 10000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i39340",
+            "revision": "definition-r1"
+          },
+          "unit_price": 40000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i39577",
+            "revision": "definition-r1"
+          },
+          "unit_price": 10000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i39578",
+            "revision": "definition-r1"
+          },
+          "unit_price": 12000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i396",
+            "revision": "definition-r1"
+          },
+          "unit_price": 5000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i400",
+            "revision": "definition-r1"
+          },
+          "unit_price": 2000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i402",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i406",
+            "revision": "definition-r1"
+          },
+          "unit_price": 15000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i4827",
+            "revision": "definition-r1"
+          },
+          "unit_price": 18000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i4832",
+            "revision": "definition-r1"
+          },
+          "unit_price": 24000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i4834",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i4835",
+            "revision": "definition-r1"
+          },
+          "unit_price": 8000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i4836",
+            "revision": "definition-r1"
+          },
+          "unit_price": 15000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i4838",
+            "revision": "definition-r1"
+          },
+          "unit_price": 5000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i4841",
+            "revision": "definition-r1"
+          },
+          "unit_price": 3000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i4842",
+            "revision": "definition-r1"
+          },
+          "unit_price": 500,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i4843",
+            "revision": "definition-r1"
+          },
+          "unit_price": 500,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i4846",
+            "revision": "definition-r1"
+          },
+          "unit_price": 4000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i4847",
+            "revision": "definition-r1"
+          },
+          "unit_price": 6000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i5940",
+            "revision": "definition-r1"
+          },
+          "unit_price": 10000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i6105",
+            "revision": "definition-r1"
+          },
+          "unit_price": 16000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i6120",
+            "revision": "definition-r1"
+          },
+          "unit_price": 16000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i6124",
+            "revision": "definition-r1"
+          },
+          "unit_price": 40000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i7281",
+            "revision": "definition-r1"
+          },
+          "unit_price": 500,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i7874",
+            "revision": "definition-r1"
+          },
+          "unit_price": 25000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i7924",
+            "revision": "definition-r1"
+          },
+          "unit_price": 10000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i7936",
+            "revision": "definition-r1"
+          },
+          "unit_price": 7000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8200",
+            "revision": "definition-r1"
+          },
+          "unit_price": 25000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8453",
+            "revision": "definition-r1"
+          },
+          "unit_price": 50000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8717",
+            "revision": "definition-r1"
+          },
+          "unit_price": 20000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8718",
+            "revision": "definition-r1"
+          },
+          "unit_price": 25000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8719",
+            "revision": "definition-r1"
+          },
+          "unit_price": 30000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8720",
+            "revision": "definition-r1"
+          },
+          "unit_price": 4000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8746",
+            "revision": "definition-r1"
+          },
+          "unit_price": 50000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8764",
+            "revision": "definition-r1"
+          },
+          "unit_price": 3000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8774",
+            "revision": "definition-r1"
+          },
+          "unit_price": 7000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8818",
+            "revision": "definition-r1"
+          },
+          "unit_price": 8000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8820",
+            "revision": "definition-r1"
+          },
+          "unit_price": 8000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8822",
+            "revision": "definition-r1"
+          },
+          "unit_price": 20000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9187",
+            "revision": "definition-r1"
+          },
+          "unit_price": 5000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9188",
+            "revision": "definition-r1"
+          },
+          "unit_price": 5000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9191",
+            "revision": "definition-r1"
+          },
+          "unit_price": 5000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9236",
+            "revision": "definition-r1"
+          },
+          "unit_price": 10000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9237",
+            "revision": "definition-r1"
+          },
+          "unit_price": 12500,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9238",
+            "revision": "definition-r1"
+          },
+          "unit_price": 17000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9239",
+            "revision": "definition-r1"
+          },
+          "unit_price": 12500,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9240",
+            "revision": "definition-r1"
+          },
+          "unit_price": 13000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9241",
+            "revision": "definition-r1"
+          },
+          "unit_price": 10000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9247",
+            "revision": "definition-r1"
+          },
+          "unit_price": 13500,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9248",
+            "revision": "definition-r1"
+          },
+          "unit_price": 12500,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9249",
+            "revision": "definition-r1"
+          },
+          "unit_price": 13000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9251",
+            "revision": "definition-r1"
+          },
+          "unit_price": 8000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9252",
+            "revision": "definition-r1"
+          },
+          "unit_price": 13000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9255",
+            "revision": "definition-r1"
+          },
+          "unit_price": 25000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9308",
+            "revision": "definition-r1"
+          },
+          "unit_price": 5250,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9390",
+            "revision": "definition-r1"
+          },
+          "unit_price": 8500,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9391",
+            "revision": "definition-r1"
+          },
+          "unit_price": 10000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9537",
+            "revision": "definition-r1"
+          },
+          "unit_price": 350,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9696",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9697",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9698",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i9699",
+            "revision": "definition-r1"
+          },
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+              "initial": 0,
+              "minimum": 9,
+              "maximum": 9
+            }
+          ]
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:211-219",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/black_bert.lua:23-154:sha256:d4e83b34b3f20b62f0e1f06a764c6dadea0010a61f252048300c44eda27e6e0c"
+      ]
     }
   ]
 }

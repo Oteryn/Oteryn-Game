@@ -24,7 +24,7 @@ pub(super) async fn native_death(
     admitted: &mut AdmittedSession,
     fence: CurrentCharacterItemFence,
     creature: &str,
-    atomic_fault: bool,
+    case: Case,
 ) -> TestResult {
     let native = owner
         .active_generation
@@ -136,7 +136,7 @@ pub(super) async fn native_death(
         );
         batch
     };
-    if atomic_fault {
+    if matches!(case, Case::AtomicDeathFault) {
         for statement in [
             "CREATE SEQUENCE overlordcr_chest_fault",
             "CREATE FUNCTION overlordcr_chest_fault() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NOT EXISTS (SELECT 1 FROM game_character_boss_reward_chests) THEN RAISE EXCEPTION 'chests must precede XP in the same transaction'; END IF; PERFORM nextval('overlordcr_chest_fault'); RAISE EXCEPTION 'fault after chests before XP' USING ERRCODE='23514'; END $$",
@@ -233,6 +233,9 @@ pub(super) async fn native_death(
         count.3
     );
     let death: [u8; 16] = before.0.try_into().map_err(|_| "death UUID")?;
+    if matches!(case, Case::NestedCustody) {
+        return assert_nested_custody(h, owner, admitted, death, count.3).await;
+    }
     let browse = encode_browse_request(&BrowseRequest {
         death,
         after_ordinal: 0,
@@ -267,5 +270,75 @@ pub(super) async fn native_death(
         bytes, replay,
         "physical collection command replay preserves its receipt"
     );
+    Ok(())
+}
+
+async fn assert_nested_custody(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    death: [u8; 16],
+    entitlement_count: i64,
+) -> TestResult {
+    assert_eq!(entitlement_count, 2, "the bag and gold both settle");
+    let browse = encode_browse_request(&BrowseRequest {
+        death,
+        after_ordinal: 0,
+    })
+    .map_err(debug)?;
+    let (_, bytes) = exchange(owner, admitted, 1, COMMAND_TYPE_BOSS_REWARD_BROWSE, &browse).await?;
+    let page = decode_browse_reply(&bytes).map_err(debug)?;
+    assert_eq!(page.status, BossRewardStatus::Ok);
+    assert_eq!(
+        page.rows.len(),
+        1,
+        "only the bag is independently claimable"
+    );
+    let bag = page.rows.first().ok_or("bag reward")?;
+    let child = encode_take_request(&TakeRequest {
+        death,
+        ordinal: bag.ordinal + 1,
+    })
+    .map_err(debug)?;
+    let (_, bytes) = exchange(owner, admitted, 2, COMMAND_TYPE_BOSS_REWARD_TAKE, &child).await?;
+    assert_eq!(decode_collect_reply(&bytes).map_err(debug)?.moved, 0);
+
+    let take = encode_take_request(&TakeRequest {
+        death,
+        ordinal: bag.ordinal,
+    })
+    .map_err(debug)?;
+    let (_, bytes) = exchange(owner, admitted, 3, COMMAND_TYPE_BOSS_REWARD_TAKE, &take).await?;
+    let result = decode_collect_reply(&bytes).map_err(debug)?;
+    assert_eq!(result.status, BossRewardStatus::Ok);
+    assert_eq!((result.moved, result.remaining), (2, 0));
+    let (_, replay) = exchange(owner, admitted, 3, COMMAND_TYPE_BOSS_REWARD_TAKE, &take).await?;
+    assert_eq!(replay, bytes);
+
+    let (_, bytes) = exchange(owner, admitted, 4, COMMAND_TYPE_BOSS_REWARD_TAKE, &take).await?;
+    assert_eq!(decode_collect_reply(&bytes).map_err(debug)?.moved, 0);
+    let (collections, nested, loose): (i64, i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_boss_reward_item_collections),
+          (SELECT count(*) FROM game_boss_reward_item_collections child
+           JOIN game_item_nested_entries n ON n.item_instance_id=child.item_instance_id
+             AND n.placed_transaction_id=child.transaction_id
+           JOIN game_item_instances gold ON gold.item_instance_id=child.item_instance_id
+           JOIN game_boss_reward_item_collections parent ON parent.item_instance_id=n.parent_item_instance_id
+             AND parent.death_id=child.death_id AND parent.command_id=child.command_id
+           JOIN game_item_instances bag ON bag.item_instance_id=parent.item_instance_id
+           JOIN game_item_container_entries entry ON entry.item_instance_id=bag.item_instance_id
+           JOIN game_item_container_slots backpack ON backpack.item_instance_id=entry.parent_item_instance_id
+             AND backpack.character_id=parent.character_id
+           WHERE bag.definition_production_key='oteryn:item.tibia.i2863' AND bag.lifecycle=1
+             AND gold.definition_production_key='oteryn:item.tibia.i3031' AND gold.lifecycle=1
+             AND gold.quantity=1 AND n.placement_ordinal=1),
+          (SELECT count(*) FROM game_boss_reward_item_collections c
+           JOIN game_item_container_entries entry USING(item_instance_id)
+           JOIN game_item_instances i USING(item_instance_id)
+           WHERE i.definition_production_key='oteryn:item.tibia.i3031')",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!((collections, nested, loose), (2, 1, 0));
     Ok(())
 }

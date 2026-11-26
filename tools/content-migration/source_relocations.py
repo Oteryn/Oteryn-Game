@@ -23,7 +23,7 @@ QUEST_PLAN_PLACEMENT_RELOCATIONS = {
         "86d294671104ff928bc6070e4fab19b68c2f1598fbddbf9e0496ee37eee33197",
     ): (
         "content/world/placements/index.json",
-        "c5eabc5644d58fdd404fd5f12eed7d51757edcd2ed39345e20c6cecbf196ff18",
+        "43df88ca90c2710e5e2f858f2ceb10347dcbc86ff9fb0362b83c719947a6d9d5",
     ),
     (
         "content/world/placements/region-z07-x130-y127.b3",
