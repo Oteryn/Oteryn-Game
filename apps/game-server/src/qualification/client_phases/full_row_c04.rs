@@ -1,8 +1,7 @@
 //! C04 full-row journey, derived from the matrix, re-audit, and the cast gate owner.
 //!
 //! 1. Admit the provisioned Character in the temple PZ; send an aggressive indexed CAST and
-//!    require a rejected command and cast disposition, no vitals delta, and no
-//!    mana change.
+//!    require a rejected command and cast disposition, no vitals delta, and no mana change.
 //! 2. Walk out of the PZ using native STEP commands; send the same CAST and require `Cast`, an
 //!    authoritative vitals delta, and the exact mana debit.
 //! 3. Send that spell again immediately; require `CoolingDown`, no vitals delta, and no debit.
