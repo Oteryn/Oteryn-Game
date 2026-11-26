@@ -711,6 +711,7 @@ pub(super) async fn actions(
             let choose_list = loot::encode_quick_loot_request(&loot::QuickLootRequest {
                 action: loot::QuickLootAction::FilterSelect,
                 corpse: None,
+                selected_item: None,
                 category: None,
                 recipient: None,
                 recipient_id: None,
