@@ -156,7 +156,8 @@ mod tests {
         let price = rules
             .pick_again_price(100, "oteryn:creature.ghastly_dragon")
             .map_err(|error| format!("{error:?}"))?;
-        assert_eq!(price, 100_920);
+        // Derived from prey-model-results regenerated in strain-4.
+        assert_eq!(price, 124_353);
         Ok(())
     }
 
