@@ -86,7 +86,7 @@ impl NativeQuestDeath {
                 NativeDeathSource::Source(_) => {
                     self.definition_hash.is_none()
                         && oteryn_gameplay_quests::quest::source_deaths::rule(&self.transition)
-                            .is_some_and(|rule| rule.creature == self.creature && rule.creature != oteryn_gameplay_quests::quest::source_deaths::ARBAZILOTH_ENRAGED)
+                            .is_some_and(|rule| rule.matches_creature(&self.creature) && rule.creature != oteryn_gameplay_quests::quest::source_deaths::ARBAZILOTH_ENRAGED)
                 }
                 NativeDeathSource::ArbazilothHard { .. } => {
                     self.definition_hash.is_none()

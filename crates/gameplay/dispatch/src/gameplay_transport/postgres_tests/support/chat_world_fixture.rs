@@ -18,7 +18,7 @@ use crate::durability::runtime_scope_assignment::{
 };
 
 use crate::foundation::admission_authority_publication::{
-    AdmissionAuthorityGuardKeyV1, AdmissionAuthorityPublicationV1,
+    AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1, AdmissionAuthorityPublicationV1,
     AdmissionPublicationPreconditionV1,
 };
 
@@ -53,18 +53,26 @@ pub(super) async fn clock(h: &Harness) -> TestResult<i64> {
 pub(super) async fn admit_second_node(
     h: &Harness,
 ) -> TestResult<(NodeIncarnationProof, Dependencies)> {
-    admit_second_node_inner(h, false).await
+    admit_second_node_inner(h, false, id(RECIPIENT_ACCOUNT)).await
 }
 
 pub(super) async fn admit_existing_second_node(
     h: &Harness,
 ) -> TestResult<(NodeIncarnationProof, Dependencies)> {
-    admit_second_node_inner(h, true).await
+    admit_second_node_inner(h, true, id(RECIPIENT_ACCOUNT)).await
+}
+
+pub(super) async fn admit_second_node_for_account(
+    h: &Harness,
+    account: [u8; 16],
+) -> TestResult<(NodeIncarnationProof, Dependencies)> {
+    admit_second_node_inner(h, false, account).await
 }
 
 async fn admit_second_node_inner(
     h: &Harness,
     existing_character: bool,
+    account_id: [u8; 16],
 ) -> TestResult<(NodeIncarnationProof, Dependencies)> {
     let node = super::fixture::registered_node(&h.root, 2).await?;
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
@@ -93,7 +101,7 @@ async fn admit_second_node_inner(
         let (account, world, name): (Vec<u8>, Vec<u8>, String) = sqlx::query_as(
             "SELECT uuid_send(account_id),uuid_send(world_id),name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
         ).bind(id(RECIPIENT).as_slice()).fetch_one(&h.pool).await?;
-        assert_eq!(account, id(RECIPIENT_ACCOUNT));
+        assert_eq!(account, account_id);
         assert_eq!(world, id(42));
         assert_eq!(name, RECIPIENT_NAME);
     } else {
@@ -101,7 +109,7 @@ async fn admit_second_node_inner(
         &h.pool,
         501,
         crate::domain::CharacterId::from_bytes(id(RECIPIENT)).map_err(debug)?,
-        id(RECIPIENT_ACCOUNT),
+        account_id,
         id(42),
         RECIPIENT_NAME,
     )
@@ -109,11 +117,33 @@ async fn admit_second_node_inner(
     }
     let now = clock(h).await?;
     let mut current = Source::new(now)?.current;
-    current.account_id = uuid(id(RECIPIENT_ACCOUNT));
+    current.account_id = uuid(account_id);
     current.character_id = crate::foundation::CharacterId::decode(&id(RECIPIENT)).map_err(debug)?;
     current.channel_id = channel;
     current.scope_ownership_generation = receipt.assignment.ownership_generation;
+    let mut runtime_source = Source::with_current(now, current.clone())?;
+    runtime_source
+        .rows
+        .retain(|row| matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)));
+    let runtime_publication =
+        AdmissionAuthorityPublicationV1::prepare(&runtime_source, now).map_err(debug)?;
+    h.root
+        .publish_runtime_readiness(&node, &runtime_publication)
+        .await
+        .map_err(debug)?;
+
+    let now = clock(h).await?;
     let mut source = Source::with_current(now, current)?;
+    let runtime = source
+        .rows
+        .iter_mut()
+        .find(|row| matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)))
+        .ok_or("runtime row")?;
+    *runtime = runtime_publication
+        .changes()
+        .first()
+        .ok_or("runtime publication")?
+        .clone();
     let guards = AdmissionGuardStore::from_root(h.root.clone());
     let signing_key = source
         .rows
@@ -142,16 +172,50 @@ async fn admit_second_node_inner(
     signing.source.source_revision = prior.source.source_revision + 1;
     signing.source.decision_identity =
         format!("platform-observation-{}", signing.source.source_revision);
-    let all_rows = source.rows.clone();
-    source
-        .rows
-        .retain(|row| matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)));
-    let publication = AdmissionAuthorityPublicationV1::prepare(&source, now).map_err(debug)?;
-    h.root
-        .publish_runtime_readiness(&node, &publication)
+    let account_key = AdmissionAuthorityGuardKeyV1::Account {
+        account_id: uuid(account_id),
+    };
+    if let Some(prior) = guards
+        .load(std::slice::from_ref(&account_key))
         .await
-        .map_err(debug)?;
-    source.rows = all_rows.clone();
+        .map_err(debug)?
+        .into_iter()
+        .next()
+        .flatten()
+    {
+        // The preceding Character has logged out. Reobserve Platform security
+        // while retaining the exact released account claim.
+        let account = source
+            .rows
+            .iter_mut()
+            .find(|row| row.key == account_key)
+            .ok_or("account row")?;
+        *account = prior;
+        account.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+            expected_publication_revision: account.publication_revision,
+        };
+        account.publication_revision += 1;
+        account.source.source_revision += 1;
+        account.source.decision_identity =
+            format!("game-security-refresh-{}", account.source.source_revision);
+        account.source.source_observed_at = now;
+        let AdmissionAuthorityGuardStateV1::Account { security, presence } = &mut account.state
+        else {
+            return Err("account guard state".into());
+        };
+        assert!(
+            presence.is_none(),
+            "the prior Character must release the account"
+        );
+        let proof = &mut security.provenance;
+        proof.publication_revision = account.publication_revision;
+        proof.source_revision += 1;
+        proof.accepted_source_revision = proof.source_revision;
+        proof.decision_identity = format!("platform-observation-{}", proof.source_revision);
+        proof.accepted_decision_identity = proof.decision_identity.clone();
+        proof.source_observed_at = now;
+    }
+    let all_rows = source.rows.clone();
     source
         .rows
         .retain(|row| !matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)));
@@ -207,7 +271,7 @@ async fn admit_second_node_inner(
     dependencies.admitted.controller = Some(ControllerBinding {
         transport: crate::foundation::AuthenticatedTransportRefV1::decode(&[8; 16])
             .map_err(debug)?,
-        account_id: id(RECIPIENT_ACCOUNT),
+        account_id,
     });
     let mut fence = super::fixture::fence(1)?.item_fence();
     fence.character_id = crate::domain::CharacterId::from_bytes(id(RECIPIENT)).map_err(debug)?;

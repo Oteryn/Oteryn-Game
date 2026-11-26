@@ -211,6 +211,12 @@ pub enum BankError {
     /// A deposit would consume more than 20 input stacks; nothing is written.
     CapacityExceeded,
     ConflictingOccurrence,
+    Suspended,
+    SuspendedConfirmation {
+        npc_key: String,
+        npc_identity: [u8; 16],
+        npc_generation: u64,
+    },
     Unavailable(DurabilityError),
 }
 
@@ -234,6 +240,9 @@ impl std::fmt::Display for BankError {
             Self::CapacityExceeded => formatter.write_str("bank deposit needs too many stacks"),
             Self::ConflictingOccurrence => {
                 formatter.write_str("bank occurrence was reused with a different binding")
+            }
+            Self::Suspended | Self::SuspendedConfirmation { .. } => {
+                formatter.write_str("bank service is suspended during the robbery")
             }
             Self::Unavailable(error) => write!(formatter, "bank storage failed: {error:?}"),
         }
@@ -545,6 +554,9 @@ impl DurabilityRoot {
                             && stored.npc_identity == source.npc_identity && stored.npc_key == source.npc_key && stored.npc_generation == source.npc_generation
                             && stored.catalogue_revision == source.catalogue_revision && stored.prompt_generation == source.prompt_generation { Ok(()) } else { Err(BankError::ConflictingOccurrence) });
             }
+            if robbery_suspended(&mut tx, &fence, Some(&source.npc_key)).await? {
+                return Ok(Err(BankError::Suspended));
+            }
             let Some(acting) = hireling::acting_npc_fence(&mut tx, &node, &fence, Some(&source.npc_key)).await? else { return Ok(Err(BankError::AuthorityRejected)); };
             if let Err(error) = lock_acting_root(&mut tx, &acting).await { return nested_bank_error(error); }
             let world_id=acting.world_id; let channel_id=acting.channel_id;
@@ -588,9 +600,26 @@ impl DurabilityRoot {
             lock_admission_relations(&mut tx).await?;
             lock_npc_bank_command(&mut tx, command).await?;
             let Some(stored) = read_npc_bank_command(&mut tx, &fence, command).await? else { return Ok(Ok(None)); };
+            let suspended_confirmation = || BankError::SuspendedConfirmation {
+                npc_key: stored.npc_key.clone(),
+                npc_identity: stored.npc_identity,
+                npc_generation: stored.npc_generation,
+            };
+            if npc_bank_suspension(&mut tx, command).await? {
+                return Ok(Err(suspended_confirmation()));
+            }
             let request = match thaw_npc_bank(&stored.bytes) { Ok(request) => request, Err(error) => return nested_bank_error(error) };
             let outcome = match bank_operation_with_npc(&mut tx, &node, &fence, &request,Some(&stored.npc_key)).await {
-                Ok(outcome) => outcome, Err(error) => return nested_bank_error(error),
+                Ok(outcome) => outcome,
+                Err(BankError::Suspended) => {
+                    sqlx::query("INSERT INTO game_npc_bank_robbery_suspensions(game_session_id,command_id)
+                        VALUES(encode($1,'hex')::uuid,$2::text::numeric)")
+                        .bind(command.game_session_id().as_bytes().as_slice())
+                        .bind(command.command_id().get().to_string()).execute(&mut *tx).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    return Ok(Err(suspended_confirmation()));
+                }
+                Err(error) => return nested_bank_error(error),
             };
             sqlx::query("UPDATE game_npc_bank_confirmations SET completed = TRUE WHERE game_session_id = encode($1,'hex')::uuid AND command_id = $2::text::numeric AND NOT completed")
                 .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).execute(&mut *tx).await?;
@@ -599,6 +628,24 @@ impl DurabilityRoot {
                         npc_identity: stored.npc_identity, npc_generation: stored.npc_generation })))
         })).await?
     }
+}
+
+async fn npc_bank_suspension(
+    tx: &mut PgConnection,
+    command: CommandRef,
+) -> std::result::Result<bool, DurabilityError> {
+    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_npc_bank_robbery_suspensions
+        WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)")
+        .bind(command.game_session_id().as_bytes().as_slice())
+        .bind(command.command_id().get().to_string()).fetch_one(tx).await?)
+}
+
+async fn robbery_suspended(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    npc_key: Option<&str>,
+) -> std::result::Result<bool, DurabilityError> {
+    super::world_event::bank_robbery::bank_suspended(tx, fence.runtime_scope.world_id(), npc_key).await
 }
 
 async fn lock_npc_bank_command(
@@ -677,6 +724,19 @@ impl DurabilityRoot {
             .await
     }
 
+    /// Preview an admitted public banker using its native NPC identity.
+    pub async fn preview_named_npc_bank(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        coins: Option<BankCoinFacts>,
+        recipient_name: Option<CharacterName>,
+        npc_key: String,
+    ) -> Result<BankNpcPreview> {
+        self.preview_bank(authority, node, fence, coins, recipient_name, Some(npc_key)).await
+    }
+
     /// Exact active Hireling and character-wide Banker entitlement, under named House custody.
     pub async fn preview_hireling_bank(
         &self,
@@ -709,6 +769,9 @@ impl DurabilityRoot {
                 let mut tx = begin_semantic_transaction(holder, deadline).await?;
                 assert_recovery_fence(&mut tx, &recovery).await?;
                 lock_admission_relations(&mut tx).await?;
+                if robbery_suspended(&mut tx, &fence, npc_key.as_deref()).await? {
+                    return Ok(Err(BankError::Suspended));
+                }
                 let Some(acting) = hireling::acting_npc_fence(&mut tx,&node,&fence,npc_key.as_deref()).await? else {
                     return Ok(Err(BankError::AuthorityRejected));
                 };
@@ -986,9 +1049,13 @@ async fn bank_operation_with_npc(
     if let Some(record) = load_operation(tx, occurrence, &binding).await? {
         return Ok(BankOperationOutcome::Replayed(record));
     }
+    let suspended = robbery_suspended(tx, fence, npc_key).await?;
     let Some(acting) = hireling::acting_npc_fence(tx, node, fence, npc_key).await? else {
         return Err(BankError::AuthorityRejected);
     };
+    if suspended {
+        return Err(BankError::Suspended);
+    }
     let record = match request {
         BankRequest::Deposit(request) => deposit(tx, &acting, request, &binding).await?,
         BankRequest::Withdraw(request) => withdraw(tx, &acting, request, &binding).await?,

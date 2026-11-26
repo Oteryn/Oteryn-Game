@@ -12,6 +12,7 @@ import galthen_boss_loot
 import import_spell_families as producer
 import item_detail_source_facts as item_details
 import monster_seven_spell_overlay as overlay
+import pegasus_feather_item_profile
 import qengine_reward_item_profiles as qengine
 import register_spell_families as registration
 import soul_war_appearance_profiles as source_appearances
@@ -109,6 +110,7 @@ class AcceptedOverlayTests(unittest.TestCase):
         # source-qualified reward Item proof alongside the registered SEASON outputs.
         successor_proofs = {
             elephant_corpse_profiles.PROOF,
+            pegasus_feather_item_profile.PROOF,
             "tools/content-schema/native-gameplay/engnpc2-slug-corpse-profiles.json",
             "tools/content-schema/native-gameplay/m42-hot-ingredient-profile.json",
             "tools/content-schema/native-gameplay/questpc5-parchment-profile.json",
