@@ -104,6 +104,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
 
     let absent = NonZeroU64::new(u64::MAX).ok_or("step-3: invalid test handle")?;
+    let inventory_before = client
+        .inventory()
+        .ok_or("missing inventory before refusal")?
+        .clone();
+    let position_before = client.world_spatial().actor_position;
+    if inventory_before
+        .main_backpack
+        .iter()
+        .chain(&inventory_before.entries)
+        .any(|entry| entry.handle == absent)
+        || inventory_before
+            .equipment
+            .iter()
+            .any(|entry| entry.item.handle == absent)
+    {
+        return Err("step-3: negative handle is already present".into());
+    }
     let refusal = look(&mut client, wire::ItemLookTarget::Item(absent)).await?;
     if refusal
         != (
@@ -114,6 +131,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(
             format!("step-3 unavailable-item refusal mismatch; observed={refusal:?}").into(),
         );
+    }
+
+    if client.inventory() != Some(&inventory_before)
+        || client.world_spatial().actor_position != position_before
+    {
+        return Err("step-3: unavailable LOOK changed inventory or position".into());
     }
 
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
