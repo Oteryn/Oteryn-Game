@@ -23,6 +23,7 @@ fn request(action: QuickLootAction) -> QuickLootRequest {
         action,
         corpse: None,
         selected_item: None,
+        review_filters: false,
         category: None,
         recipient: None,
         recipient_id: None,

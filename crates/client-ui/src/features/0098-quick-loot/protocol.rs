@@ -35,6 +35,7 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
         action: QuickLootAction::LootAll,
         corpse: None,
         selected_item: None,
+        review_filters: false,
         category: None,
         recipient: None,
         recipient_id: None,
@@ -119,6 +120,13 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) -> boo
         ) {
             if panel.confirmed.len() == 100 {
                 panel.confirmed.remove(0);
+            }
+            match action {
+                Action::Add { mode, .. }
+                | Action::Remove { mode, .. }
+                | Action::Select(mode)
+                | Action::Clear(mode) => panel.filter_mode = Some(mode),
+                _ => {}
             }
             match &action {
                 Action::Add { mode, definition } => {

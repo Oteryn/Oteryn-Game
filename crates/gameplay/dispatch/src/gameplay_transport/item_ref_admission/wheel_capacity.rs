@@ -60,6 +60,9 @@ impl ItemLoopContent for WheelItemWeights<'_> {
     fn loop_definition(&self, reference: u32) -> Option<TypedDefinitionRef> {
         self.content.loop_definition(reference)
     }
+    fn loop_definition_ref(&self, key: &str) -> Option<u32> {
+        self.content.loop_definition_ref(key)
+    }
     fn is_quiver(&self, definition: &TypedDefinitionRef) -> bool {
         self.content.is_quiver(definition)
     }
