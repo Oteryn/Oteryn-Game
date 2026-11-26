@@ -180,7 +180,7 @@ pub(super) async fn funded_character(
     for &(id, count) in grants {
         grant_item(&client, id, count).await?;
     }
-    let (result, detail, _, _) = logout_retrying_busy(&mut client).await?;
+    let (result, detail, _, _) = fixture_logout_retrying_busy(&mut client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("funded character logout refused: {detail}").into());
     }

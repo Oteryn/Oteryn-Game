@@ -521,7 +521,7 @@ async fn greet_ten_journey(
         Ok(())
     }
     .await;
-    let release = logout_retrying_busy(&mut client)
+    let release = logout_once(&mut client)
         .await
         .and_then(|(status, diagnostic, _, _)| {
             if status != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
