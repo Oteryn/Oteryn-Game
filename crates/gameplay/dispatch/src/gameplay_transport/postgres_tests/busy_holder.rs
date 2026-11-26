@@ -335,7 +335,7 @@ fn ground_projection_waits_for_a_busy_holder_postgres() -> TestResult {
             let h = Harness::create_with_admission_seed(admin, "ground_projection_busy", true, false).await?;
             let fence = super::fixture::fence(1)?;
             let read = crate::gameplay_transport::loop_move::projection_read(
-                || h.root.read_item_loop_ground_for_scope(fence.runtime_scope).await,
+                || h.root.read_item_loop_ground_for_scope(fence.runtime_scope),
                 crate::gameplay_transport::root_holder_busy,
             );
             assert!(priority_handoff(&h.root, async { read.await.is_some() }).await?);
