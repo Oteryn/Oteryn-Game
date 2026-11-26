@@ -13,6 +13,7 @@ use oteryn_protocol_oteryn as wire;
 pub(super) enum Case {
     BrowseField,
     DailyBoost,
+    DailyBoostAfterRelog,
     DepotSearch,
     Hireling,
     HotkeyEquip,
@@ -71,7 +72,14 @@ fn body(case: Case, admin: String) -> TestResult {
     run(async move |_| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "client_e2e", true, false).await?;
-        prepare_current_session(&h).await?;
+        let recovery = if matches!(case, Case::DailyBoostAfterRelog) {
+            let recovery = super::super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::super::house_transfer_fixtures::prepare_owned_session(&h).await?;
+            Some(recovery)
+        } else {
+            prepare_current_session(&h).await?;
+            None
+        };
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -199,6 +207,9 @@ fn body(case: Case, admin: String) -> TestResult {
         }
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
+        if let Some(recovery) = &recovery {
+            owner.evidence = &recovery.evidence;
+        }
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
         if !matches!(case, Case::Hireling) {
@@ -222,7 +233,9 @@ fn body(case: Case, admin: String) -> TestResult {
             crate::gameplay_transport::daily_boost::offered(&offers, owner.daily_boost_available());
         let capability = match case {
             Case::BrowseField => 230,
-            Case::DailyBoost => 151,
+            Case::DailyBoost | Case::DailyBoostAfterRelog => {
+                wire::daily_boost::CAPABILITY_DAILY_BOOST_V1
+            }
             Case::DepotSearch => 153,
             Case::Hireling => 165,
             Case::HotkeyEquip => wire::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
@@ -234,6 +247,9 @@ fn body(case: Case, admin: String) -> TestResult {
         };
         // Use the registry's real prerequisite closure; never manufacture an offer.
         let mut supported = vec![capability];
+        if matches!(case, Case::DailyBoostAfterRelog) {
+            supported.push(wire::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1);
+        }
         let mut at = 0;
         while at < supported.len() {
             if let Some(offer) = offers.iter().find(|offer| offer.id == supported[at]) {
@@ -259,6 +275,7 @@ fn body(case: Case, admin: String) -> TestResult {
         match case {
             Case::BrowseField => super::browse_field::exercise(&h, &owner, &mut admitted).await?,
             Case::DailyBoost => super::daily_boost::exercise(&h, &owner, &mut admitted).await?,
+            Case::DailyBoostAfterRelog => super::daily_boost::exercise_relog(&owner, admitted).await?,
             Case::DepotSearch => super::depot_search::exercise(&h, &owner, &mut admitted).await?,
             Case::Hireling => super::hireling::exercise(&h, &owner, &mut admitted).await?,
             Case::HotkeyEquip => super::hotkey_equip::exercise(&h, &owner, &mut admitted).await?,

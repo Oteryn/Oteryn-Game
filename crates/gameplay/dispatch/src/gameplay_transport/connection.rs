@@ -71,6 +71,11 @@ tokio::task_local! {
     static CONNECTION_TRACE: ConnectionTraceContext;
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static AFTER_COMMAND_INPUT_GUARDS: std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
 pub(super) async fn with_connection_trace<F: Future>(trace: [u8; 16], future: F) -> F::Output {
     with_connection_trace_state(trace, false, future).await
 }
