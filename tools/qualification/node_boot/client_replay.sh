@@ -24,9 +24,14 @@ selected_client_replays() {
   if [[ $batch == all ]]; then
     start=0
     length=197
-  elif [[ $batch =~ ^([0-9]{1,7}):([0-9]{1,7})$ ]]; then
-    start=$((10#${BASH_REMATCH[1]}))
-    length=$((10#${BASH_REMATCH[2]}))
+  elif [[ $batch =~ ^[+]?0*([0-9]+):[+]?0*([0-9]+)$ ]]; then
+    start=${BASH_REMATCH[1]}
+    length=${BASH_REMATCH[2]}
+    # Every registered index is below 1,000. Bound arithmetic even for large inputs.
+    (( ${#start} <= 3 )) || return 0
+    if (( ${#length} > 3 )); then length=1000; fi
+    start=$((10#$start))
+    length=$((10#$length))
   else
     return 0
   fi
@@ -35,6 +40,7 @@ selected_client_replays() {
       printf '%s %s %s\n' "$row" "$package" "$case_name"
     fi
   done <<'REPLAYS'
+186 W01b.client oteryn-session e2e_w01b_rat_kill_and_respawn_replay
 190 W04.client oteryn-client e2e_w04_replays_raid_schedule_state_and_refusal
 192 W05c.client oteryn-client-ui w05c_rashid_payloads_replay_into_service_panel
 193 W10.client oteryn-client-ui e2e_w10_replays_hazard_state_selection_and_locked_refusal

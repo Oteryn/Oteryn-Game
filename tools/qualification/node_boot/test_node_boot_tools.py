@@ -682,6 +682,19 @@ class PgObserveTests(unittest.TestCase):
 
 
 class ClientReplayTests(unittest.TestCase):
+    def test_w01b_replay_uses_the_session_case_for_selected_batches(self):
+        expected = 'W01b.client oteryn-session e2e_w01b_rat_kill_and_respawn_replay'
+        for batch, selected in [('185:1', False), ('185:2', True), ('186:1', True),
+                                ('186:0', False), ('187:1', False), ('all', True),
+                                ('+00000000186:+01', True), ('1:100000000', True)]:
+            with self.subTest(batch=batch):
+                result = bash(
+                    'source "$REPLAY_HELPER"; selected_client_replays',
+                    {'REPLAY_HELPER': str(HERE / 'client_replay.sh'), 'OTERYN_E2E_ROW_BATCH': batch},
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(expected in result.stdout.splitlines(), selected)
+
     def test_scoped_replay_requires_a_unique_live_capture_and_one_passing_test(self):
         capture = 'SEAM_EVIDENCE e2e_capture scenario=W04.client status=CAPTURED evidence=fresh'
         failure = 'SEAM_EVIDENCE e2e_all scenario=W04.client status=FAIL seconds=0.000'

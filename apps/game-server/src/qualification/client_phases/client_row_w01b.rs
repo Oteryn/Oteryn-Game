@@ -12,13 +12,14 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
     encode_world_spatial_entities_snapshot,
 };
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W01B_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
+    use std::io::Write as _;
+
+    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .ok_or("W01b client capture: E2E_ALL_CAPTURE_DIR missing")?;
+    let result = std::fs::File::create_new(Path::new(&root).join(name))
+        .and_then(|mut file| file.write_all(bytes));
+    result.map_err(|error| format!("W01b client capture: write {name}: {error}").into())
 }
 
 fn distance(a: ActorPosition, b: ActorPosition) -> u32 {
@@ -123,10 +124,10 @@ impl Segment {
         Ok(())
     }
 
-    fn write(&self, expected: &mut String) {
-        capture(&format!("w01b-{}-snapshot.bin", self.name), &self.snapshot);
+    fn write(&self, expected: &mut String) -> TestResult {
+        capture(&format!("w01b-{}-snapshot.bin", self.name), &self.snapshot)?;
         for (index, bytes) in self.deltas.iter().enumerate() {
-            capture(&format!("w01b-{}-delta{index}.bin", self.name), bytes);
+            capture(&format!("w01b-{}-delta{index}.bin", self.name), bytes)?;
         }
         expected.push_str(&format!(
             "{n}.target={}:{}\n{n}.initial={}\n{n}.trace={}\n",
@@ -136,6 +137,7 @@ impl Segment {
             self.trace.join(";"),
             n = self.name
         ));
+        Ok(())
     }
 }
 
@@ -298,10 +300,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("W01b client capture: killed actor returned".into());
     }
     let respawn = Segment::begin(&client, "respawn", replacement.entity)?;
-    capture("w01b-respawn-snapshot.bin", &respawn.snapshot);
+    capture("w01b-respawn-snapshot.bin", &respawn.snapshot)?;
 
     let mut expected = String::new();
-    kill.write(&mut expected);
+    kill.write(&mut expected)?;
     expected.push_str(&format!(
         "corpse={}:{}\ncorpse.position={},{},{}\nspawn={},{},{}\nreplacement={}:{}\nreplacement.position={},{},{}\nkilled.absent=true\n",
         hex(&corpse.entity.identity),
@@ -318,17 +320,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         replacement.position.y,
         replacement.position.floor,
     ));
-    capture("w01b-expected.txt", expected.as_bytes());
+    capture("w01b-expected.txt", expected.as_bytes())?;
     Ok(expected)
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
+        evidence("e2e_all scenario=W01b.client status=FAIL evidence=missing-capture-directory");
         return;
     }
-    match verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
-            "e2e_all scenario=W01b.client status=CAPTURED evidence={:?}",
+            "e2e_capture scenario=W01b.client status=CAPTURED evidence={:?}",
             expected.replace('\n', ";")
         )),
         Ok(Err(error)) => evidence(&format!(
