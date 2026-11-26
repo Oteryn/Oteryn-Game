@@ -4095,6 +4095,73 @@ async fn animate_corpse(
     let (skeleton, _) = companion_spawn(client, &before, "Skeleton", corpse.position).await?;
     Ok((skeleton, sequence))
 }
+pub(super) async fn capture_animate_dead(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    write_capture: impl FnOnce([(&'static str, Vec<u8>); 3]) -> TestResult,
+) -> TestResult {
+    let book = native_spell_book()?;
+    let spell = book.rune(3203).ok_or("Animate Dead rune absent")?;
+    let mut caster = connect_character(clients, 0xd5, 1).await?;
+    let actual_level = level(&mut caster).await?;
+    if actual_level < spell.level {
+        let (logout, detail, _, _) = logout_retrying_busy(&mut caster).await?;
+        if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("C16c prerequisite logout refused: {detail}").into());
+        }
+        return Err(format!("C16c Animate Dead requires served level {}; admitted level {actual_level}", spell.level).into());
+    }
+    character_prep::declare_seeded("C16c.client", "rune-3203=1", "native Animate Dead capture");
+    let reference = provisioning::item_reference(&provisioning::item_index()?, 3203)?;
+    let before = rune_quantity(&mut caster, reference)?;
+    character_prep::grant_item(&caster, 3203, 1).await?;
+    character_prep::reload(&mut caster, clients).await?;
+    if before.checked_add(1) != Some(rune_quantity(&mut caster, reference)?) {
+        return Err("C16c Animate Dead rune grant absent from fresh inventory".into());
+    }
+
+    let rat = wild_rat(&mut caster, world, &[]).await?;
+    let mut scout = connect_character(clients, 0xd6, 0).await?;
+    with_observer_liveness(&mut caster, approach_melee(&mut scout, world, rat.position)).await?;
+    let (logout, detail, _, _) = with_observer_liveness(&mut caster, logout_retrying_busy(&mut scout)).await?;
+    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C16c scout logout refused: {detail}").into());
+    }
+    drop(scout);
+
+    let (corpse, _) = player_corpse(&mut caster, world, &[]).await?;
+    let mut observer = with_observer_liveness(&mut caster, connect_character(clients, 0xd7, 0)).await?;
+    if observer.world_entities().and_then(|view| view.get(&corpse.entity)).is_none() {
+        return Err("C16c fresh observer did not see the exact corpse".into());
+    }
+    let (summon, _) = with_observer_liveness(&mut observer, animate_corpse(&mut caster, spell, reference, corpse)).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let files = loop {
+        let session = observer.session_mut();
+        let limit = oteryn_dev_client::native_session::REPLAY_DELTA_LIMIT;
+        if session.raw_world_entity_deltas().len() >= limit || session.raw_appearance_deltas().len() >= limit {
+            return Err("C16c observer reached the replay retention limit".into());
+        }
+        if let Some(files) = session.c16c_capture_files(summon) {
+            break files;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C16c observer did not retain a complete live summon transcript".into());
+        }
+        observer.service_liveness(Duration::from_millis(50)).await?;
+    };
+    write_capture(files)?;
+    let (logout, detail, _, _) = with_observer_liveness(&mut caster, logout_retrying_busy(&mut observer)).await?;
+    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C16c observer logout refused: {detail}").into());
+    }
+    let (logout, detail, _, _) = logout_retrying_busy(&mut caster).await?;
+    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C16c caster logout refused: {detail}").into());
+    }
+    Ok(())
+}
+
 async fn acquired_companions(
     row: &mut Row,
     client: &mut DevClientSession,
