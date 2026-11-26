@@ -1,14 +1,15 @@
 //! I18c: browse field, move up from a ground container.
-//! Buys a bag (2853), drops it on the character's tile, browses the tile, opens the bag from the
+//! Drops a fixture-supplied bag (2853) on the character's tile, browses the tile, opens it from the
 //! browse view in place and expects the bag view's parent to be the browse view's container,
-//! then sends `Up` and expects the browse view of that tile back. The bag is picked up again.
+//! then sends `Up` and expects the browse view of that tile back. Pickup is verified after relog.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
-use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -24,20 +25,15 @@ fn token(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join("-")
 }
 
-fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
-    let mut values = BTreeMap::new();
-    for item in &client
+fn quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
+    Ok(client
         .inventory()
         .ok_or("inventory snapshot absent")?
         .entries
-    {
-        *values.entry(item.item_definition_ref.get()).or_default() += u64::from(item.count.get());
-    }
-    Ok(values)
-}
-
-fn quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
-    Ok(*quantities(client)?.get(&reference.get()).unwrap_or(&0))
+        .iter()
+        .filter(|item| item.item_definition_ref == reference)
+        .map(|item| u64::from(item.count.get()))
+        .sum())
 }
 
 async fn wait_quantity(
@@ -65,122 +61,6 @@ async fn wait_quantity(
     }
 }
 
-async fn acquire(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    id: u32,
-    amount: u32,
-) -> TestResult<u64> {
-    use oteryn_dev_client::client_runtime::npc_shop as runtime;
-    use oteryn_protocol_oteryn::npc_service as wire;
-    let index = provisioning::item_index()?;
-    let reference = provisioning::item_reference(&index, id)?;
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/services/trade/trade-00000-00323.json"),
-    )?)?;
-    let key = format!("oteryn:item.tibia.i{id}");
-    let sellers: BTreeSet<_> = trades["records"]
-        .as_array()
-        .ok_or("trade records absent")?
-        .iter()
-        .filter_map(|record| {
-            let declaration = &record["declaration"];
-            declaration["offers"]
-                .as_array()?
-                .iter()
-                .any(|offer| offer["direction"] == "SellToPlayer" && offer["item"]["key"] == key)
-                .then(|| declaration["identity"]["key"].as_str())
-                .flatten()?
-                .strip_prefix("oteryn:service.trade.")
-                .map(|name| format!("oteryn:npc.{name}"))
-        })
-        .collect();
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let (npc, path) = metadata
-        .npcs
-        .npcs
-        .iter()
-        .filter(|npc| sellers.contains(&npc.key))
-        .filter_map(|npc| {
-            route(world, here, |at| {
-                npc.placements
-                    .iter()
-                    .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
-            })
-            .map(|path| (npc, path))
-        })
-        .min_by_key(|(_, path)| path.len())
-        .ok_or_else(|| format!("no walk route to seller for item {id}; sellers={sellers:?}"))?;
-    walk(client, world, &path).await?;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Npc
-                    && npc.placements.iter().any(|p| {
-                        entity.position.x == i32::from(p.x)
-                            && entity.position.y == i32::from(p.y)
-                            && entity.position.floor == -i16::from(p.floor)
-                    })
-            })
-        })
-        .map(|entry| entry.entity)
-        .ok_or("seller not visible after walk")?;
-    for text in ["hi", "trade"] {
-        let reply = runtime::talk(
-            client.session_mut(),
-            &wire::NpcTalkIntent {
-                npc_actor: actor,
-                text: text.into(),
-            },
-        )
-        .await?;
-        if reply != wire::NpcIntentDisposition::Ok {
-            return Err(format!("NPC {text} reply={reply:?}").into());
-        }
-    }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
-        .await?;
-    let window = wire::decode_npc_trade_window(&delta.payload)
-        .map_err(|error| format!("trade window decode: {error:?}"))?;
-    let (offer_index, offer) = window
-        .offers
-        .iter()
-        .enumerate()
-        .find(|(_, offer)| {
-            offer.side == wire::NpcTradeSide::Buy && offer.item_definition_ref == reference.get()
-        })
-        .ok_or("live seller omitted requested offer")?;
-    let before = quantity(client, reference)?;
-    client.take_events();
-    let reply = runtime::buy(
-        client.session_mut(),
-        &wire::NpcTradeIntent {
-            npc_actor: actor,
-            catalogue_revision: window.open.ok_or("trade window closed")?.1,
-            offer_index: u32::try_from(offer_index)?,
-            side: offer.side,
-            quantity: amount,
-            expected_unit_price: offer.unit_price,
-        },
-    )
-    .await?;
-    if reply != wire::NpcIntentDisposition::Ok {
-        return Err(format!(
-            "buy item={id} reply={reply:?} price={} quantity={amount}",
-            offer.unit_price
-        )
-        .into());
-    }
-    let expected = before + u64::from(offer.count) * u64::from(amount);
-    wait_quantity(client, reference, expected).await
-}
-
 async fn logout(client: &mut DevClientSession) -> TestResult {
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -188,17 +68,6 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
         return Err("logout refused".into());
     }
     Ok(())
-}
-
-async fn open_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    load_world(
-        bytes,
-        &pin,
-        WorldId::decode(&clients.world)?,
-        ChannelId::decode(&clients.channel)?,
-    )
 }
 
 fn reference(id: u32) -> TestResult<std::num::NonZeroU32> {
@@ -273,7 +142,10 @@ async fn view_intent(
             tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
         )
         .await?;
-    Ok((outcome, view_of(client.selected_capabilities(), &delta.payload)?.views))
+    Ok((
+        outcome,
+        view_of(client.selected_capabilities(), &delta.payload)?.views,
+    ))
 }
 
 fn here(client: &DevClientSession) -> WorldTilePosition {
@@ -294,27 +166,18 @@ fn ground(client: &DevClientSession) -> WorldTilePosition {
     }
 }
 
-/// Drops the first backpack entry on the actor's own tile and returns its definition and count.
-async fn drop_first(
-    client: &mut DevClientSession,
-    prefer: Option<std::num::NonZeroU32>,
-) -> TestResult<(std::num::NonZeroU32, std::num::NonZeroU32)> {
+async fn drop_bag(client: &mut DevClientSession, bag: std::num::NonZeroU32) -> TestResult {
     let item = client
         .inventory()
         .and_then(|inventory| {
-            prefer
-                .and_then(|want| {
-                    inventory
-                        .entries
-                        .iter()
-                        .find(|item| item.item_definition_ref == want)
-                })
-                .or(inventory.entries.first())
+            inventory
+                .entries
+                .iter()
+                .find(|item| item.item_definition_ref == bag)
         })
         .copied()
-        .ok_or("step=drop observed=no-backpack-item;needed:player-acquired-item")?;
+        .ok_or("step=drop observed=fixture-bag-absent")?;
     let at = ground(client);
-    let before = quantity(client, item.item_definition_ref)?;
     client.take_events();
     let moved = client
         .move_item(&ItemMoveIntent {
@@ -326,14 +189,14 @@ async fn drop_first(
         return Err(format!("step=drop observed={:?};needed=Moved", moved.outcome).into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    while quantity(client, item.item_definition_ref)? >= before {
+    while quantity(client, bag)? != 0 {
         client.take_events();
         if tokio::time::Instant::now() >= deadline {
             return Err("step=drop observed=no-inventory-debit".into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
-    Ok((item.item_definition_ref, item.count))
+    Ok(())
 }
 
 /// Moves a browse entry into the main backpack and waits for the inventory credit.
@@ -372,17 +235,36 @@ fn has(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let world = open_world(clients).await?;
-    let mut client = connect_world(clients, 0xf3).await?;
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_I18C_ACCOUNT").await?;
+    let clients = identity.clients(clients);
     let bag = reference(2853)?;
-    acquire(&mut client, world, 2853, 1)
-        .await
-        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=buy-bag observed={error};needed:player-gold-and-reachable-seller"), error) })?;
+    let mut client = connect_character(&clients, 0xf3, 0).await?;
+    if quantity(&client, bag)? != 0 {
+        return Err("step=prepare observed=bag-already-present".into());
+    }
+    character_prep::declare_seeded(
+        "I18c.full",
+        "bag-2853",
+        "bag acquisition is outside browse-field navigation",
+    );
+    character_prep::grant_item(&client, 2853, 1).await?;
+    let session = client.join_snapshot().game_session_id;
+    logout(&mut client).await?;
+    drop(client);
+    let mut client = connect_character(&clients, 0xf3, 0).await?;
+    if client.join_snapshot().game_session_id == session || quantity(&client, bag)? != 1 {
+        return Err("step=prepare needed=fresh-session-with-exactly-one-bag".into());
+    }
     let at = here(&client);
-    drop_first(&mut client, Some(bag)).await?;
+    drop_bag(&mut client, bag).await?;
     let (outcome, view) = browse_open(&mut client, at).await?;
     let browse_view =
         view.ok_or_else(|| format!("step=browse observed={outcome:?};needed=Opened-with-view"))?;
+    if outcome != tree::ContainerViewOutcome::Opened
+        || !browse_view.browse.is_some_and(|page| page.position == at)
+    {
+        return Err("step=browse needed=Opened-view-of-drop-tile".into());
+    }
     let entry = has(&browse_view, bag).ok_or("step=browse observed=bag-not-listed")?;
     let (opened, views) = view_intent(
         &mut client,
@@ -397,6 +279,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .find(|view| view.container_handle == entry.handle)
         .ok_or_else(|| format!("step=open-bag observed={opened:?};needed=bag-view"))?;
     if opened != tree::ContainerViewOutcome::Opened
+        || inner.view_id != browse_view.view_id
         || inner.parent_handle != Some(browse_view.container_handle)
     {
         return Err(format!(
@@ -411,9 +294,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         tree::ContainerViewIntent::Up { view_id: inner_id },
     )
     .await?;
-    let restored = views
-        .iter()
-        .find(|view| view.browse.is_some_and(|page| page.position == at));
+    let restored = views.iter().find(|view| {
+        view.view_id == inner_id
+            && view.container_handle == browse_view.container_handle
+            && view.browse.is_some_and(|page| page.position == at)
+    });
     if up != tree::ContainerViewOutcome::Opened || restored.is_none() {
         return Err(format!(
             "step=up observed={up:?}-views:{};needed=Opened-browse-view",
@@ -421,10 +306,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         )
         .into());
     }
-    let entry = restored
+    let restored_entry = restored
         .and_then(|view| has(view, bag))
-        .ok_or("step=up observed=bag-not-listed-in-restored-view")?;
-    take_entry(&mut client, &entry).await?;
+        .filter(|restored| restored.handle == entry.handle && restored.count == entry.count)
+        .ok_or("step=up observed=original-bag-not-listed-in-restored-view")?;
+    take_entry(&mut client, &restored_entry).await?;
+    let session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
-    Ok("up-returned-to-browse-view-of-the-tile".to_owned())
+    drop(client);
+    let mut fresh = connect_character(&clients, 0xf3, 0).await?;
+    if fresh.join_snapshot().game_session_id == session || quantity(&fresh, bag)? != 1 {
+        return Err("step=relog needed=fresh-session-with-exactly-one-recovered-bag".into());
+    }
+    logout(&mut fresh).await?;
+    Ok("up-returned-to-browse-view-of-the-tile;recovered-bag-persisted".to_owned())
 }
