@@ -1,5 +1,5 @@
 //! P17 client replay capture: the real Exiva List payloads after the target denies everyone, adds
-//! a named player and removes it again, plus the empty rejection of a malformed SetModes. The
+//! a named player and removes it again, plus the rejection of a malformed SetModes. The
 //! consumer is `ExivaPanel::apply` and `panel_text` in
 //! `crates/client-ui/src/features/0147-exiva-settings`.
 use super::*;
@@ -8,13 +8,20 @@ use oteryn_protocol_oteryn::exiva::{
     CAPABILITY_EXIVA_SETTINGS_V1, COMMAND_TYPE_EXIVA_SETTINGS, PlayerList,
 };
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P17_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    use std::io::Write;
+
+    std::fs::File::create_new(root.join(name))?.write_all(bytes)?;
+    Ok(())
+}
+
+async fn logout(client: &mut DevClientSession) -> TestResult {
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("P17 client logout refused".into());
     }
+    Ok(())
 }
 
 async fn settings(
@@ -59,9 +66,12 @@ fn own_name(client: &DevClientSession) -> TestResult<String> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let capture_root =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("P17 capture directory absent")?;
+    let capture_root = Path::new(&capture_root);
     let mut caster = connect_character(clients, 0x43, 1).await?;
     let caster_name = own_name(&caster)?;
-    let _ = caster.session_mut().logout().await?;
+    logout(&mut caster).await?;
     drop(caster);
     let mut target = connect_character(clients, 0x42, 0).await?;
     let (_, initial) = list(&mut target).await?;
@@ -73,8 +83,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if denied.modes != 0 || !denied.players.is_empty() {
         return Err(format!("deny-all List mismatch: {denied:?}").into());
     }
-    capture("p17-denied.bin", &denied_bytes);
+    capture(capture_root, "p17-denied.bin", &denied_bytes)?;
 
+    if accepted(&mut target, &[0, 2]).await? != [1] {
+        return Err("SetModes(2) lacked the accepted receipt".into());
+    }
     let mut add = vec![6];
     add.extend(caster_name.as_bytes());
     if accepted(&mut target, &add).await? != [1] {
@@ -84,13 +97,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let [(caster_id, listed_name)] = allowed.players.as_slice() else {
         return Err(format!("allow List mismatch: {allowed:?}").into());
     };
-    if allowed.modes != 2 || listed_name != &caster_name {
+    if allowed.modes != 2 || *caster_id != clients.characters[1] || listed_name != &caster_name {
         return Err(format!("allow List mismatch: {allowed:?}").into());
     }
-    capture("p17-allowed.bin", &allowed_bytes);
+    capture(capture_root, "p17-allowed.bin", &allowed_bytes)?;
 
     let (status, refused) = settings(&mut target, &[0, 32]).await?;
-    if status != CommandStatus::Rejected || !refused.is_empty() {
+    if status != CommandStatus::Rejected || refused != [0] {
         return Err(format!("malformed SetModes: status={status:?} payload={refused:?}").into());
     }
     let (after_bytes, _) = list(&mut target).await?;
@@ -107,21 +120,37 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if removed.modes != 2 || !removed.players.is_empty() {
         return Err(format!("removal List mismatch: {removed:?}").into());
     }
-    capture("p17-removed.bin", &removed_bytes);
+    capture(capture_root, "p17-removed.bin", &removed_bytes)?;
+    let previous_session = target.join_snapshot().game_session_id;
+    logout(&mut target).await?;
+    drop(target);
+    let mut target = connect_character(clients, 0x44, 0).await?;
+    if target.join_snapshot().game_session_id == previous_session
+        || list(&mut target).await?.1 != removed
+    {
+        return Err("fresh admission did not retain the removed list".into());
+    }
     // Leave the target's permissions as found.
-    accepted(&mut target, &[0, initial.modes]).await?;
+    if accepted(&mut target, &[0, initial.modes]).await? != [1]
+        || list(&mut target).await?.1 != initial
+    {
+        return Err("restoring the target's initial settings did not take".into());
+    }
+    logout(&mut target).await?;
+    release_row_characters(clients).await?;
     let id_hex: String = caster_id.iter().map(|byte| format!("{byte:02x}")).collect();
     let expected = format!(
         "denied_modes={}\nallowed_modes={}\nplayer={id_hex} {caster_name}\nremoved_modes={}\nrefused_status=Rejected\n",
         denied.modes, allowed.modes, removed.modes
     );
-    capture("p17-expected.txt", expected.as_bytes());
-    let _ = target.session_mut().logout().await?;
+    capture(capture_root, "p17-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";").replace(' ', "_"))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P17.client status=CAPTURED evidence={expected}"
         )),

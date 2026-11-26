@@ -659,6 +659,65 @@ class PgObserveTests(unittest.TestCase):
 
 
 class CloudRunSummaryTests(unittest.TestCase):
+    def test_exiva_replay_selection_matches_the_registered_row(self):
+        cloud = (HERE / "cloud_run.sh").read_text()
+        helper = cloud[cloud.index("selected_exiva_replay()"):cloud.index("replay_exiva_capture()")]
+        world = (HERE.parents[2] / "apps/game-server/src/qualification/client_phases/world.rs").read_text()
+        index = int(re.search(r'e2e_row_selected\((\d+)\) \{\s*verdict::indexed\("P17\.client"', world)[1])
+        for group, batch, selected in [
+            ("rows", f"{index}:1", True),
+            ("rows", f"+000{index - 1}:0002", True),
+            ("rows", "0:999999999", True),
+            ("rows", "all", True),
+            ("rows", f"{index - 1}:1", False),
+            ("rows", f"{index}:0", False),
+            ("rows", "invalid", False),
+            ("core", f"{index}:1", False),
+        ]:
+            with self.subTest(group=group, batch=batch):
+                result = subprocess.run(
+                    ["bash", "-c", helper + 'OTERYN_E2E_ROW_BATCH="$2" selected_exiva_replay "$1"',
+                     "test", group, batch],
+                    capture_output=True,
+                )
+                self.assertEqual(result.returncode, 0 if selected else 1)
+
+    def test_exiva_replay_requires_capture_and_an_executed_test(self):
+        cloud = (HERE / "cloud_run.sh").read_text()
+        helper = cloud[cloud.index("replay_exiva_capture()"):cloud.index("selected_loyalty_replay()")]
+        capture = 'SEAM_EVIDENCE e2e_all scenario=P17.client status=CAPTURED evidence=live\n'
+        failure = 'SEAM_EVIDENCE e2e_all scenario=P17.client status=FAIL evidence=row-error\n'
+        command = helper + textwrap.dedent(r'''
+            cargo() {
+              [[ "$E2E_ALL_CAPTURE_DIR" == "$EXPECTED_CAPTURE" ]] || return 1
+              case "$REPLAY_RESULT" in
+                pass) printf 'test %s ... ok\n' "$7" ;;
+                unmatched) printf 'running 0 tests\n' ;;
+                fail) return 1 ;;
+              esac
+            }
+            export EXPECTED_CAPTURE="$2"
+            replay_exiva_capture "$1" "$2" "$3"
+            ''')
+        for node_log, replay_result, passed in [
+            (capture, "pass", True),
+            (capture, "unmatched", False),
+            (capture, "fail", False),
+            ("", "pass", False),
+            (failure, "pass", False),
+            (capture + failure, "pass", False),
+        ]:
+            with self.subTest(node_log=node_log, replay_result=replay_result), tempfile.TemporaryDirectory() as temp:
+                log = Path(temp, "node.log")
+                log.write_text(node_log)
+                result = subprocess.run(
+                    ["bash", "-c", command, "test", str(log), temp, str(Path(temp, "client.log"))],
+                    env={**os.environ, "REPLAY_RESULT": replay_result},
+                    capture_output=True,
+                )
+                self.assertEqual(result.returncode, 0 if passed else 1)
+                self.assertEqual('scenario=P17.client status=PASS ' in log.read_text(), passed)
+
     def test_loyalty_replay_selection_matches_the_registered_row(self):
         cloud = (HERE / "cloud_run.sh").read_text()
         helper = cloud[cloud.index("selected_loyalty_replay()"):cloud.index("replay_loyalty_capture()")]

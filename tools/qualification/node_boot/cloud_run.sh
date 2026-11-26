@@ -39,9 +39,10 @@ summarize() {
     result=NODE_BOOT_FAIL
   fi
 
-  rows=$(awk '
+  rows=$(awk -v group="$group" '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=([[:alnum:]_.-]+\.full|P13\.client)$/ && $4 ~ /^status=(PASS|FAIL)$/ {
+      ($3 ~ /^scenario=([[:alnum:]_.-]+\.full|P13\.client)$/ ||
+        (group == "rows" && $3 == "scenario=P17.client")) && $4 ~ /^status=(PASS|FAIL)$/ {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)
@@ -66,6 +67,34 @@ summarize() {
     grep -aFw -- "$row" "$log" | grep -Ei 'GAP|Error|refus|DIAG' \
       | grep -vEi 'password|postgres://|postgresql://|secret|token|key=' | head -n 6
   done < <(awk -F '|' '$2 == "FAIL" && !seen[$1]++ { print $1 }' <<< "$rows")
+}
+
+selected_exiva_replay() {
+  [[ "$1" == rows ]] || return 1
+  local batch=${OTERYN_E2E_ROW_BATCH:-}
+  [[ "$batch" == all ]] && return 0
+  # Only the distance to row 173 matters. A length of 174 or more covers
+  # that distance from any eligible start. Strip leading zeros before arithmetic.
+  [[ "$batch" =~ ^\+?0*([0-9]{1,3}):\+?0*([0-9]+)$ ]] || return 1
+  local first=$((10#${BASH_REMATCH[1]})) length=${BASH_REMATCH[2]}
+  (( first <= 173 )) || return 1
+  (( ${#length} > 3 || 10#$length > 173 - first ))
+}
+
+replay_exiva_capture() {
+  local log=$1 capture_dir=$2 replay_log=$3 started=$SECONDS
+  local test=exiva_settings::e2e_p17::e2e_p17_replays_exiva_deny_add_and_remove_lists
+  if grep -q '^SEAM_EVIDENCE e2e_all scenario=P17\.client status=FAIL ' "$log"; then
+    return 1
+  fi
+  if grep -q '^SEAM_EVIDENCE e2e_all scenario=P17\.client status=CAPTURED ' "$log" &&
+    E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact >"$replay_log" 2>&1 &&
+    grep -Fqx "test $test ... ok" "$replay_log"; then
+    printf 'SEAM_EVIDENCE e2e_all scenario=P17.client status=PASS seconds=%s evidence=live-capture-replayed\n' "$((SECONDS - started))" >>"$log"
+    return 0
+  fi
+  printf 'SEAM_EVIDENCE e2e_all scenario=P17.client status=FAIL seconds=%s evidence=client-replay-failed\n' "$((SECONDS - started))" >>"$log"
+  return 1
 }
 
 selected_loyalty_replay() {
@@ -145,8 +174,8 @@ for group in "$@"; do
   started=$SECONDS
   status=0
   capture_dir=
-  if selected_loyalty_replay "$group"; then
-    capture_dir=$(mktemp -d "$work_dir/$index-loyalty.XXXXXX") || blocked work_dir_unavailable
+  if selected_exiva_replay "$group" || selected_loyalty_replay "$group"; then
+    capture_dir=$(mktemp -d "$work_dir/$index-capture.XXXXXX") || blocked work_dir_unavailable
   fi
   (
     [[ -z "$capture_dir" ]] || export E2E_ALL_CAPTURE_DIR="$capture_dir"
@@ -156,7 +185,11 @@ for group in "$@"; do
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
-  if [[ -n "$capture_dir" ]] && ! replay_loyalty_capture "$log" "$capture_dir" "$work_dir/$index-loyalty.log"; then
+  if selected_loyalty_replay "$group" && ! replay_loyalty_capture "$log" "$capture_dir" "$work_dir/$index-loyalty.log"; then
+    status=1
+  fi
+  if selected_exiva_replay "$group" && [[ "$status" == 0 ]] &&
+    ! replay_exiva_capture "$log" "$capture_dir" "$work_dir/$index-exiva.log"; then
     status=1
   fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
