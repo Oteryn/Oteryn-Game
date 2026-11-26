@@ -247,8 +247,16 @@ async fn move_listener(
     receipts: &mut Vec<CommandReceipt>,
 ) -> TestResult {
     let from = tile(listener.world_spatial().actor_position)?;
-    let path = route_avoiding(world, from, &|at| at == target, |at| at != speaker)
-        .ok_or("S18 listener geometry has no authored route")?;
+    // Quentin occupies this authored temple cell. Plan around it before sending any step.
+    const QUENTIN: TilePos = TilePos {
+        x: 32368,
+        y: 32240,
+        floor: -7,
+    };
+    let path = route_avoiding(world, from, &|at| at == target, |at| {
+        at != speaker && at != QUENTIN
+    })
+    .ok_or("S18 listener geometry has no authored route")?;
     for direction in path {
         let from = tile(listener.world_spatial().actor_position)?;
         let expected = destination(world, from, direction).ok_or("S18 route landing absent")?;
