@@ -664,8 +664,6 @@ class CloudRunSummaryTests(unittest.TestCase):
         helper = cloud[cloud.index("selected_forge_replay()"):cloud.index('if [[ ${1:-} == --summarize ]]')]
         world = (HERE.parents[2] / "apps/game-server/src/qualification/client_phases/world.rs").read_text()
         index = int(re.search(r'e2e_row_selected\((\d+)\) \{\s*verdict::indexed\("P18\.client"', world)[1])
-        capture = "SEAM_EVIDENCE e2e_capture scenario=P18.client status=CAPTURED evidence=live\n"
-        failure = "SEAM_EVIDENCE e2e_all scenario=P18.client status=FAIL evidence=row-error\n"
         for batch, selected in [
             (f"{index}:1", True), ("all", True), (f"+0{index}:000000001", True),
             (f"{index - 1}:1", False), (f"{index}:0", False), ("invalid", False),
@@ -678,40 +676,17 @@ class CloudRunSummaryTests(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, 0 if selected else 1)
 
-        command = helper + textwrap.dedent("""
-            cargo() {
-              [[ "$E2E_ALL_CAPTURE_DIR" == "$EXPECTED_CAPTURE" ]] || return 1
-              if [[ "$REPLAY_EXECUTED" == yes ]]; then
-                printf 'test %s ... ok\\n' "$7"
-              else
-                printf 'running 0 tests\\n'
-              fi
-            }
-            export EXPECTED_CAPTURE="$2"
-            replay_forge_capture "$1" "$2" "$3" "$4"
-            """)
-        for node_log, boot_status, executed, passed in [
-            (capture, "0", "yes", True),
-            ("", "0", "yes", False),
-            (capture, "0", "no", False),
-            (capture, "1", "yes", False),
-            (capture + failure, "0", "yes", False),
-        ]:
-            with self.subTest(node_log=node_log, boot_status=boot_status, executed=executed):
-                with tempfile.TemporaryDirectory() as temp:
-                    log = Path(temp, "node.log")
-                    log.write_text(node_log)
-                    result = subprocess.run(
-                        ["bash", "-c", command, "test", str(log), temp,
-                         str(Path(temp, "client.log")), boot_status],
-                        env={**os.environ, "REPLAY_EXECUTED": executed},
-                        capture_output=True,
-                    )
-                    self.assertEqual(result.returncode, 0 if passed else 1)
-                    verdicts = [line for line in log.read_text().splitlines()
-                                if "e2e_all scenario=P18.client" in line]
-                    self.assertEqual(len(verdicts), 1)
-                    self.assertIn("status=PASS" if passed else "status=FAIL", verdicts[0])
+        passed = "SEAM_EVIDENCE e2e_all scenario=P18.client status=PASS seconds=1 evidence=live-capture-replayed session=live\n"
+        failed = "SEAM_EVIDENCE e2e_all scenario=P18.client status=FAIL evidence=row-error\n"
+        for node_log, expected in [(passed, 0), ("", 1), (failed, 1), (passed + failed, 1)]:
+            with self.subTest(node_log=node_log), tempfile.TemporaryDirectory() as temp:
+                log = Path(temp, "node.log")
+                log.write_text(node_log)
+                result = subprocess.run(
+                    ["bash", "-c", helper + 'require_forge_verdict "$1"', "test", str(log)],
+                    capture_output=True,
+                )
+                self.assertEqual(result.returncode, expected)
 
     def test_loyalty_replay_selection_matches_the_registered_row(self):
         cloud = (HERE / "cloud_run.sh").read_text()

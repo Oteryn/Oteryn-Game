@@ -118,22 +118,10 @@ sys.exit(0 if 0 <= forge_row - first < length else 1)
 PY_FORGE_BATCH
 }
 
-replay_forge_capture() {
-  local log=$1 capture_dir=$2 replay_log=$3 status=$4
-  local test=item_forge::protocol::e2e_p18::e2e_p18_replays_forge_history_and_operation_receipts
-  local started=$SECONDS
-  if grep -q '^SEAM_EVIDENCE e2e_all scenario=P18\.client status=FAIL ' "$log"; then
-    return 1
-  fi
-  if [[ "$status" == 0 ]] &&
-    grep -q '^SEAM_EVIDENCE e2e_capture scenario=P18\.client status=CAPTURED ' "$log" &&
-    E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact >"$replay_log" 2>&1 &&
-    grep -Fqx "test $test ... ok" "$replay_log"; then
-    printf 'SEAM_EVIDENCE e2e_all scenario=P18.client status=PASS seconds=%s evidence=live-capture-replayed\n' "$((SECONDS - started))" >>"$log"
-    return 0
-  fi
-  printf 'SEAM_EVIDENCE e2e_all scenario=P18.client status=FAIL seconds=%s evidence=client-replay-failed\n' "$((SECONDS - started))" >>"$log"
-  return 1
+require_forge_verdict() {
+  local log=$1
+  [[ $(grep -c '^SEAM_EVIDENCE e2e_all scenario=P18\.client status=' "$log") == 1 ]] &&
+    grep -Eq '^SEAM_EVIDENCE e2e_all scenario=P18\.client status=PASS (.* )?evidence=live-capture-replayed session=' "$log"
 }
 
 if [[ ${1:-} == --summarize ]]; then
@@ -204,7 +192,7 @@ for group in "$@"; do
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
-  if [[ "$forge_replay" == 1 ]] && ! replay_forge_capture "$log" "$capture_dir" "$work_dir/$index-forge.log" "$status"; then
+  if [[ "$forge_replay" == 1 ]] && ! require_forge_verdict "$log"; then
     status=1
   fi
   if selected_loyalty_replay "$group" && ! replay_loyalty_capture "$log" "$capture_dir" "$work_dir/$index-loyalty.log"; then
