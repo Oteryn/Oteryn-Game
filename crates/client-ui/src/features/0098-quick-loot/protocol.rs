@@ -6,10 +6,7 @@ use oteryn_client_runtime::server_mechanic::{
 pub enum Action {
     LootAll,
     Corpse([u8; 16]),
-    CorpseItem {
-        corpse: [u8; 16],
-        item: [u8; 16],
-    },
+    CorpseItem(std::num::NonZeroU64),
     Add {
         mode: QuickLootFilterMode,
         definition: u32,
@@ -49,10 +46,9 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
             wire.action = QuickLootAction::Click;
             wire.corpse = Some(*id);
         }
-        Action::CorpseItem { corpse, item } => {
+        Action::CorpseItem(handle) => {
             wire.action = QuickLootAction::Click;
-            wire.corpse = Some(*corpse);
-            wire.selected_item = Some(*item);
+            wire.selected_item = Some(*handle);
         }
         Action::Add { mode, definition } | Action::Remove { mode, definition } => {
             wire.action = if matches!(action, Action::Add { .. }) {
@@ -105,19 +101,26 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) -> boo
     let Some(action) = panel.pending.take() else {
         return false;
     };
+    if matches!(action, Action::CorpseItem(_)) {
+        panel.feedback = if matches!(
+            response.status,
+            CommandStatus::Accepted | CommandStatus::DuplicateReplay
+        ) && QuickLootClickOutcome::decode(&response.payload)
+            == Ok(QuickLootClickOutcome::Moved)
+        {
+            tr!("Confirmed by the server").into()
+        } else {
+            tr!("Loot request refused or invalid reply; try again").into()
+        };
+        return false;
+    }
     if matches!(
         response.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) && let Ok(result) = decode_quick_loot_result(&response.payload)
     {
-        let looted = matches!(
-            action,
-            Action::LootAll | Action::Corpse(_) | Action::CorpseItem { .. }
-        );
-        if !matches!(
-            action,
-            Action::LootAll | Action::Corpse(_) | Action::CorpseItem { .. }
-        ) {
+        let looted = matches!(action, Action::LootAll | Action::Corpse(_));
+        if !matches!(action, Action::LootAll | Action::Corpse(_)) {
             if panel.confirmed.len() == 100 {
                 panel.confirmed.remove(0);
             }

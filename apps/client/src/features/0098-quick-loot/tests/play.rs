@@ -54,7 +54,7 @@ fn cp02_0098_quick_loot_scenario() {
 fn cp02_quick_loot_native_session_scenario() -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_client_runtime::server_mechanic::ServerMechanicCommand;
     use oteryn_client_ui::quick_loot::*;
-    peer::scenario( |link, push, wait| {
+    peer::scenario(|link, push, wait| {
         wait(&|| link.quick_loot_panel().filter_mode == Some(QuickLootFilterMode::Accept));
         let panel = link.quick_loot_panel();
         assert_eq!(panel.skipped, std::collections::BTreeSet::from([4]));
@@ -335,7 +335,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         backpack: [u8; 16],
         accept: u32,
         pouch: [u8; 16],
-        corpse: [u8; 16],
+        selected_handle: u64,
         coin: [u8; 16],
         armor: [u8; 16],
         filtered: [u8; 16],
@@ -379,10 +379,10 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         )
     };
     let main = route(None, QuickLootRecipient::MainContainer, None, false);
-    let click = Action::CorpseItem {
-        corpse: expected.corpse,
-        item: expected.filtered,
-    };
+    let click = Action::CorpseItem(
+        oteryn_protocol_oteryn::item_view::ItemHandle::new(expected.selected_handle)
+            .ok_or("I07 selected handle must be nonzero")?,
+    );
     let skip = QuickLootFilterMode::Skip;
     let accept = QuickLootFilterMode::Accept;
     let gold_main = route(
@@ -463,11 +463,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             ],
             Some("Looted 1 of 5 items"),
         ),
-        (
-            click,
-            &[(expected.filtered, true)],
-            Some("Looted 1 of 1 items"),
-        ),
+        (click.clone(), &[], None),
         (Action::Select(skip), &[], None),
         (
             route(
@@ -508,14 +504,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             &[],
             None,
         ),
-        (
-            Action::CorpseItem {
-                corpse: expected.corpse,
-                item: expected.listed,
-            },
-            &[],
-            None,
-        ),
+        (click, &[], None),
     ];
     let (mut app, mut commands, outbox) = ui::fixture(true)?;
     app.add_plugins(bevy::ui_widgets::ButtonPlugin);
@@ -600,7 +589,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                         0,
                     )
                 }
-                Action::CorpseItem { .. } => link.quick_loot_action(action),
+                Action::CorpseItem(_) => link.quick_loot_action(action),
                 _ => return Err("unexpected I07 replay action".into()),
             }
         };
@@ -646,6 +635,11 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             continue;
         }
         assert_eq!(panel.feedback, "Confirmed by the server");
+        if key == 13 {
+            assert_eq!(panel.result, before_panel.result);
+            assert_eq!(notices(), before);
+            continue;
+        }
         let items = &panel
             .result
             .ok_or("I07 client omitted the loot result")?

@@ -1,8 +1,8 @@
 //! I07 client replay capture: real quick-loot filter, Gold Pouch destination and loot-all replies.
 use super::*;
 use oteryn_protocol_oteryn::quick_loot::{
-    QuickLootAction, QuickLootCategory, QuickLootFilterMode, QuickLootRecipient, QuickLootRequest,
-    decode_quick_loot_result, encode_quick_loot_request,
+    QuickLootAction, QuickLootCategory, QuickLootClickOutcome, QuickLootFilterMode,
+    QuickLootRecipient, QuickLootRequest, decode_quick_loot_result, encode_quick_loot_request,
 };
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -313,22 +313,36 @@ impl Capture<'_> {
             .into());
         }
         self.previous = (reply.command_id, reply.server_sequence);
-        let result =
-            decode_quick_loot_result(&reply.payload).map_err(|error| format!("{error:?}"))?;
-        let actual: std::collections::BTreeMap<_, _> = result
-            .items
-            .iter()
-            .map(|item| (item.item.as_slice(), item.accepted))
-            .collect();
-        let expected: std::collections::BTreeMap<_, _> = expected
-            .iter()
-            .map(|(item, accepted)| (item.item.as_slice(), *accepted))
-            .collect();
-        if actual != expected || result.items.len() != expected.len() {
-            return Err(format!(
-                "I07 probe {key} outcomes differ: expected={expected:?} actual={actual:?}"
-            )
-            .into());
+        if request.selected_item.is_some() {
+            let outcome = if expected_status == CommandStatus::Accepted {
+                QuickLootClickOutcome::Moved
+            } else {
+                QuickLootClickOutcome::Stale
+            };
+            if QuickLootClickOutcome::decode(&reply.payload) != Ok(outcome) {
+                return Err(format!(
+                    "I07 selected Click probe {key} expected {outcome:?}: {reply:?}"
+                )
+                .into());
+            }
+        } else {
+            let result =
+                decode_quick_loot_result(&reply.payload).map_err(|error| format!("{error:?}"))?;
+            let actual: std::collections::BTreeMap<_, _> = result
+                .items
+                .iter()
+                .map(|item| (item.item.as_slice(), item.accepted))
+                .collect();
+            let expected: std::collections::BTreeMap<_, _> = expected
+                .iter()
+                .map(|(item, accepted)| (item.item.as_slice(), *accepted))
+                .collect();
+            if actual != expected || result.items.len() != expected.len() {
+                return Err(format!(
+                    "I07 probe {key} outcomes differ: expected={expected:?} actual={actual:?}"
+                )
+                .into());
+            }
         }
         if self.directory.is_none()
             && matches!(
@@ -455,7 +469,6 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     let [corpse, stacked] = corpses.as_slice() else {
         return Err("I07 requires both fixture corpses on the admitted floor and tile".into());
     };
-    let corpse_id = corpse.as_slice().try_into()?;
     if capture_dir.is_none() {
         evidence("I07_FULL_INPUT corpses=2 source=qualification_fixture");
     }
@@ -676,11 +689,6 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     )
     .await?;
     capture.previous = (0, 0);
-    let click = QuickLootRequest {
-        corpse: Some(corpse_id),
-        selected_item: Some(filtered.item.as_slice().try_into()?),
-        ..request(QuickLootAction::Click)
-    };
     capture
         .probe(
             &mut fresh,
@@ -733,9 +741,17 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     );
 
     // Manual click bypasses the active Accept filter and targets only this corpse.
+    let (corpse_handle, selected, sibling) =
+        open_primary_corpse(&mut fresh, skip_reference).await?;
+    let click = QuickLootRequest {
+        selected_item: Some(selected),
+        ..request(QuickLootAction::Click)
+    };
     capture
         .probe(&mut fresh, 13, click, &[(filtered, true)])
         .await?;
+    require_corpse_view(&mut fresh, corpse_handle, &[sibling]).await?;
+    evidence("I07_HANDLE_CLICK status=moved corpse_view_delta=exact_sibling");
     let mut bag_filtered = filtered.clone();
     bag_filtered.slot = expected_backpack
         .last()
@@ -868,17 +884,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         )
         .await?;
     evidence("I07_INVALID_POUCH status=rejected");
-    capture
-        .probe(
-            &mut fresh,
-            20,
-            QuickLootRequest {
-                selected_item: Some(listed.item.as_slice().try_into()?),
-                ..click
-            },
-            &[],
-        )
-        .await?;
+    capture.probe(&mut fresh, 20, click, &[]).await?;
     require_placements(
         &mut database,
         Storage::Corpse,
@@ -895,7 +901,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         std::slice::from_ref(listed),
     )
     .await?;
-    evidence("I07_SELECTED_CLICK sibling=retained foreign_item=rejected");
+    evidence("I07_SELECTED_CLICK sibling=retained stale_handle=rejected");
     let quiver = if capture_dir.is_none() {
         Some(exercise_quiver(&mut fresh, &mut database, character, &backpack).await?)
     } else {
@@ -1003,7 +1009,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         write_capture(
             &capture_dir.join("i07-expected.txt"),
             &serde_json::to_vec(&serde_json::json!({
-                "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "corpse": corpse_id,
+                "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "selected_handle": selected.get(),
                 "coin": coin.item, "armor": armor.item, "filtered": filtered.item, "spare": spare.item, "other": other.item,
             }))?,
         )?;
@@ -1106,4 +1112,94 @@ async fn exercise_quiver(
     require_placements(database, Storage::Backpack, character, backpack, &before).await?;
     evidence("I07_FULL_QUIVER bolts=7 backpack_debit=7 first_attempt=true");
     Ok((quiver, expected))
+}
+
+async fn open_primary_corpse(
+    client: &mut oteryn_dev_client::DevClientSession,
+    item_definition: u32,
+) -> TestResult<(
+    oteryn_dev_client::ItemHandle,
+    oteryn_dev_client::ItemHandle,
+    oteryn_dev_client::ItemHandle,
+)> {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    use oteryn_protocol_oteryn::world_spatial_entities::EntityDetail;
+    let definition = provisioning::item_reference(&provisioning::item_index()?, 5973)?.get();
+    let position = client.world_spatial().actor_position;
+    let corpses: Vec<_> = client
+        .world_entities()
+        .ok_or("I07 corpse entities unavailable")?
+        .others()
+        .filter_map(|entity| match entity.detail {
+            EntityDetail::Object {
+                item_definition_ref,
+                item_handle,
+                ..
+            }
+            | EntityDetail::ObjectWithAppearance {
+                item_definition_ref,
+                item_handle,
+                ..
+            } if item_definition_ref == definition && entity.position == position => item_handle,
+            _ => None,
+        })
+        .collect();
+    let [corpse] = corpses.as_slice() else {
+        return Err(
+            format!("I07 expected one published corpse at the admitted tile: {corpses:?}").into(),
+        );
+    };
+    let reply = client.use_item(*corpse).await?;
+    if reply.status != CommandStatus::Accepted || reply.disposition != UseDisposition::Committed {
+        return Err(format!("I07 first corpse open refused: {reply:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    loop {
+        if let Some(view) = client
+            .open_container()
+            .filter(|view| view.container_handle == Some(*corpse))
+        {
+            let [selected, sibling] = view.entries.as_slice() else {
+                return Err("I07 opened corpse must contain the selected item and sibling".into());
+            };
+            if [selected, sibling].iter().any(|item| {
+                item.item_definition_ref.get() != item_definition || item.count.get() != 1
+            }) || selected.handle == sibling.handle
+            {
+                return Err(
+                    "I07 opened corpse did not expose two distinct expected item handles".into(),
+                );
+            }
+            evidence("I07_CORPSE_OPEN status=committed view_entries=2");
+            return Ok((*corpse, selected.handle, sibling.handle));
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("I07 committed corpse open omitted its container delta".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+}
+
+async fn require_corpse_view(
+    client: &mut oteryn_dev_client::DevClientSession,
+    corpse: oteryn_dev_client::ItemHandle,
+    expected: &[oteryn_dev_client::ItemHandle],
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    loop {
+        if client.open_container().is_some_and(|view| {
+            view.container_handle == Some(corpse)
+                && view
+                    .entries
+                    .iter()
+                    .map(|item| item.handle)
+                    .eq(expected.iter().copied())
+        }) {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("I07 selected Click omitted its exact corpse view delta".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
 }
