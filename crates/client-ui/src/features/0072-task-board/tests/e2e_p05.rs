@@ -12,6 +12,11 @@ struct Captured {
 }
 
 fn reply(refusal: u8, bounty_points: u64, damage: TalismanPath) -> Reply {
+    let mut talisman = [TalismanPath {
+        next_cost: 5,
+        ..TalismanPath::default()
+    }; 4];
+    talisman[0] = damage;
     Reply {
         weekly_results: None,
         refusal,
@@ -43,17 +48,12 @@ fn reply(refusal: u8, bounty_points: u64, damage: TalismanPath) -> Reply {
             active: None,
             lists: Vec::new(),
         },
-        talisman: [
-            damage,
-            TalismanPath::default(),
-            TalismanPath::default(),
-            TalismanPath::default(),
-        ],
+        talisman,
         shop: Vec::new(),
     }
 }
 
-fn fixture() -> Result<Captured, Error> {
+fn fixture(funded: bool) -> Result<Captured, Error> {
     let encode = |reply: &Reply| encode_reply(reply).map_err(|e| format!("{e:?}"));
     let before = TalismanPath {
         level: 0,
@@ -65,16 +65,24 @@ fn fixture() -> Result<Captured, Error> {
         bonus: 300,
         next_cost: 17,
     };
-    Ok(Captured {
-        query: encode(&reply(0, 30, before))?,
-        upgrade: encode(&reply(0, 25, after))?,
-        expected: "bounty_points_before=30\nbounty_points_after=25\ntalisman_before=0,0,5|0,0,0|0,0,0|0,0,0\ntalisman_after=1,300,17|0,0,0|0,0,0|0,0,0\n".into(),
-    })
+    if funded {
+        Ok(Captured {
+            query: encode(&reply(0, 30, before))?,
+            upgrade: encode(&reply(0, 25, after))?,
+            expected: "bounty_points_before=30\nbounty_points_after=25\ntalisman_before=0,0,5|0,0,5|0,0,5|0,0,5\ntalisman_after=1,300,17|0,0,5|0,0,5|0,0,5\nrefusal=0\n".into(),
+        })
+    } else {
+        Ok(Captured {
+            query: encode(&reply(0, 0, before))?,
+            upgrade: encode(&reply(4, 0, before))?,
+            expected: "bounty_points_before=0\nbounty_points_after=0\ntalisman_before=0,0,5|0,0,5|0,0,5|0,0,5\ntalisman_after=0,0,5|0,0,5|0,0,5|0,0,5\nrefusal=4\n".into(),
+        })
+    }
 }
 
 fn captured() -> Result<Captured, Error> {
     let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return fixture();
+        return fixture(true);
     };
     let path = std::path::Path::new(&path);
     Ok(Captured {
@@ -129,7 +137,15 @@ fn shown(panel: &TaskBoardPanel) -> Vec<String> {
 
 #[test]
 fn e2e_p05_replays_bounty_point_upgrade() -> Result<(), Error> {
-    let captured = captured()?;
+    check_replay(captured()?)
+}
+
+#[test]
+fn e2e_p05_preserves_talisman_when_bounty_points_are_insufficient() -> Result<(), Error> {
+    check_replay(fixture(false)?)
+}
+
+fn check_replay(captured: Captured) -> Result<(), Error> {
     let e = captured.expected.as_str();
     let mut panel = TaskBoardPanel {
         selected: true,
@@ -158,7 +174,14 @@ fn e2e_p05_replays_bounty_point_upgrade() -> Result<(), Error> {
         &mut panel,
         &result(CommandStatus::Accepted, &captured.upgrade),
     );
-    assert_eq!(panel.feedback, None);
+    let refusal = value(e, "refusal")?;
+    let expected_feedback = match refusal {
+        "0" => None,
+        "4" => Some("The server refused: insufficient points, tokens, or rule resources"),
+        "6" => Some("The server refused: progression or claim limit reached"),
+        _ => return Err(format!("unexpected upgrade refusal {refusal}").into()),
+    };
+    assert_eq!(panel.feedback, expected_feedback);
     assert_eq!(shown(&panel), talisman_lines(value(e, "talisman_after")?));
     assert_eq!(
         panel
@@ -168,7 +191,15 @@ fn e2e_p05_replays_bounty_point_upgrade() -> Result<(), Error> {
             .as_deref(),
         Some(value(e, "bounty_points_after")?)
     );
-    assert_ne!(value(e, "talisman_before")?, value(e, "talisman_after")?);
+    if refusal == "0" {
+        assert_ne!(value(e, "talisman_before")?, value(e, "talisman_after")?);
+    } else {
+        assert_eq!(value(e, "talisman_before")?, value(e, "talisman_after")?);
+        assert_eq!(
+            value(e, "bounty_points_before")?,
+            value(e, "bounty_points_after")?
+        );
+    }
 
     // A malformed reply keeps the confirmed board.
     let kept = panel.weekly.clone();

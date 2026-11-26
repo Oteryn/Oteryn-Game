@@ -174,7 +174,7 @@ fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
             );
             entry(
                 &mut rows,
-                "Jewellers sell Bounty Talismans for 5,000 gold.".into(),
+                "Jewellers sell Bounty Talismans for 5,000 gold.",
                 None,
             );
             for (path, (value, name)) in r

@@ -101,7 +101,7 @@ Refused commands do not spend currency or consume items.
 | 9 | Invalid server random draw |
 | 10 | Insufficient qualified creature or delivery catalogue |
 | 11 | Checked rule arithmetic overflow |
-| 12 | Retired legacy select/claim action |
+| 12 | Retired Task Board action |
 | 13 | Insufficient deliverable items |
 | 14 | Existing gold owner refused insufficient funds |
 | 15 | Item or decoration-kit delivery is unavailable |

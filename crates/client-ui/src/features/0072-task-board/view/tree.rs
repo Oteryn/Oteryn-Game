@@ -153,7 +153,7 @@ pub(super) fn refusal_message(code: u8) -> Option<&'static str> {
         9 => "The server refused: invalid random draw; refresh the board",
         10 => "The server refused: insufficient admitted creatures or deliveries",
         11 => "The server refused: reward arithmetic limit reached",
-        12 => "The server refused: legacy weekly claims are retired; weekly payout is automatic",
+        12 => "The server refused: this Task Board action is retired",
         13 => "The server refused: insufficient deliverable items",
         14 => "The server refused: insufficient gold",
         15 => "The server refused: item or decoration-kit delivery unavailable",

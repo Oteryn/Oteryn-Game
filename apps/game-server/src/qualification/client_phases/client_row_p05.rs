@@ -9,7 +9,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P05_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "P05_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -38,24 +40,26 @@ async fn send(client: &mut DevClientSession, action: u8) -> TestResult<(Reply, V
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_character(clients, 0x27, 0).await?;
-    let (mut before, mut query) = send(&mut client, 4).await?;
-    for _ in 0..2 {
-        if before.bounty_points >= u64::from(before.talisman[0].next_cost) {
-            break;
+    let (before, query) = send(&mut client, 4).await?;
+    let (after, upgrade) = send(&mut client, 18).await?;
+    let prior = before.talisman[0];
+    let unchanged =
+        after.bounty_points == before.bounty_points && after.talisman == before.talisman;
+    let expected = match (
+        prior.next_cost,
+        before.bounty_points.checked_sub(u64::from(prior.next_cost)),
+    ) {
+        (0, _) => after.refusal == 6 && unchanged,
+        (_, None) => after.refusal == 4 && unchanged,
+        (_, Some(remaining)) => {
+            after.refusal == 0
+                && after.bounty_points == remaining
+                && prior.level.checked_add(1) == Some(after.talisman[0].level)
+                && after.talisman[1..] == before.talisman[1..]
         }
-        let (opened, _) = send(&mut client, 7).await?;
-        full_row_p05::complete_bounty(&mut client, clients, &opened).await?;
-        (before, query) = send(&mut client, 4).await?;
-    }
-    let (upgraded, upgrade) = send(&mut client, 18).await?;
-    if before.talisman[0].level.checked_add(1) != Some(upgraded.talisman[0].level)
-        || before
-            .bounty_points
-            .checked_sub(u64::from(before.talisman[0].next_cost))
-            != Some(upgraded.bounty_points)
-        || upgraded.refusal != 0
-    {
-        return Err(format!("Bounty Point upgrade did not commit: {upgraded:?}").into());
+    };
+    if before.refusal != 0 || !expected {
+        return Err(format!("unexpected Bounty Point upgrade reply: {after:?}").into());
     }
     capture("p05-query.bin", &query);
     capture("p05-upgrade.bin", &upgrade);
@@ -68,18 +72,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             .join("|")
     };
     let expected = format!(
-        "bounty_points_before={}\nbounty_points_after={}\ntalisman_before={}\ntalisman_after={}\n",
+        "bounty_points_before={}\nbounty_points_after={}\ntalisman_before={}\ntalisman_after={}\nrefusal={}\n",
         before.bounty_points,
-        upgraded.bounty_points,
+        after.bounty_points,
         level(&before),
-        level(&upgraded)
+        level(&after),
+        after.refusal
     );
     capture("p05-expected.txt", expected.as_bytes());
     Ok(expected.replace('\n', ";"))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P05.client status=CAPTURED evidence={expected}"
         )),
