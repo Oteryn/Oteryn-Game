@@ -31,7 +31,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let active = provisioning::item_reference(&index, ACTIVE_ENERGY_RING)?;
 
     character_prep::declare_seeded("I05.client", "one base energy ring", "equipment transform");
-    let mut client = connect_character(clients, 0xb2, 0).await?;
+    let client = connect_character(clients, 0xb2, 0).await?;
     character_prep::grant_item(&client, ENERGY_RING, 1).await?;
     logout(client).await?;
 
