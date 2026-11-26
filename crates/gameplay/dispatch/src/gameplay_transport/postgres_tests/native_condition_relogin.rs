@@ -2,7 +2,7 @@ use super::house_transfer_fixtures::{RecoverySource, prepare_owned_session};
 use super::*;
 use crate::durability::item_use::ItemUseError;
 use crate::gameplay_transport::connection::{
-    ConnectionIdentifiers, FirstEntryOutcome, LogoutReply,
+    ConnectionIdentifiers, FirstEntryOutcome, FreshAdmissionAuthority, LogoutReply,
 };
 use crate::gameplay_transport::paced_movement::underwater_drown::{
     DROWN_DEFINITION_KEY, DROWN_SOURCE, drown_definition,
