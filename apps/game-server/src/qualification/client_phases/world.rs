@@ -880,7 +880,7 @@ async fn walk_with_landings(
 async fn walk_with_landing_budget(
     client: &mut oteryn_dev_client::DevClientSession,
     path: &[StepDirection],
-    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos> + Clone + Send + Sync + 'static,
     step_budget: Option<Duration>,
 ) -> TestResult {
     let mut path = VecDeque::from(path.to_vec());
