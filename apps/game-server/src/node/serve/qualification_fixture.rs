@@ -735,13 +735,40 @@ async fn prepare_build(
     // Independently resolve current admission, never synthesize a fence from
     // fixture SQL or expose the node proof to the client process.
     let store = crate::durability::fresh_admission::FreshAdmissionStore::from_root(root.clone());
-    let current = qualification_build::retry_holder(
-        Some(root),
-        deadline,
-        |error| matches!(error, DurabilityError::RootUnavailable),
-        async || store.current_session(session).await,
-    )
-    .await
+    let current = if qualification_build::STRICT_W20B_SEED.try_with(|()| ()).is_ok() {
+        let mut waiting = None;
+        let mut attempt = 1;
+        loop {
+            let outcome = store.current_session(session).await;
+            if !matches!(outcome, Err(DurabilityError::RootUnavailable))
+                || attempt == 5
+                || tokio::time::Instant::now() >= deadline
+            {
+                break outcome;
+            }
+            waiting.get_or_insert_with(|| (root.foreground_demand().ok(), root.holder_waiter()));
+            if !root.wait_holder_turn(tokio::time::Instant::now(), deadline).await {
+                match tokio::time::timeout_at(deadline, root.await_ready()).await {
+                    Ok(Ok(())) => {}
+                    Ok(Err(error)) => break Err(error),
+                    Err(_) => break outcome,
+                }
+            }
+            if tokio::time::Instant::now() >= deadline {
+                break outcome;
+            }
+            attempt += 1;
+            eprintln!("FIXTURE_RETRY row=W20b step=prepare_build cause=RootUnavailable attempt={attempt}");
+        }
+    } else {
+        qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            |error| matches!(error, DurabilityError::RootUnavailable),
+            async || store.current_session(session).await,
+        )
+        .await
+    }
     .map_err(|error| format!("qualification admission: {error:?}"))?;
     let scope = current.current_runtime_scope();
     if Some(*scope.world_id().as_bytes()) != super::super::uuid_bytes(&config.scope.world_id)
