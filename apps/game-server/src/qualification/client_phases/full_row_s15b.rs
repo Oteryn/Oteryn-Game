@@ -1,9 +1,9 @@
 //! S15b — login protection: monster targeting protection after reconnect.
 //!
 //! Concrete player scenario, derived from the S15b matrix/audit row and its runtime owner:
-//! 1. Admit the node-boot character, walk from town to a compiled rat spawn, wait through the
-//!    fresh-login window, and require a monster-attributed damage presentation plus a lower HP
-//!    delta. This proves that the live monster can perceive and target this character.
+//! 1. Admit the node-boot character, walk out of town protection and place a Rat with the
+//!    qualification spawn fixture. After fresh-login protection expires, require a damage
+//!    frame attributed to that Rat and an HP loss.
 //! 2. Lose the real TLS connection and resume it with the native reconnect command. Require the
 //!    same session/actor continuity supplied by the shared recovery helper.
 //! 3. During the four-second reentry window, send SET_FIGHT_MODES, ATTACK_TARGET and
@@ -13,25 +13,28 @@
 //! 4. After the window, require a new monster-attributed damage frame and HP loss. Then send
 //!    LOGOUT while in fight and require the server's refusal; retry only until the ordinary
 //!    combat lock expires and require an accepted logout.
-//! 5. Perform a fresh admission, walk back to a live rat using player STEP commands, require the
-//!    fresh-login protection interval to suppress monster damage, then require damage after its
+//! 5. Freshly admit, return to the same Rat approach with STEP, and check that the
+//!    fresh-login protection suppresses monster damage, then require damage after its
 //!    expiry. This re-check proves that logout did not durably retain or extend the reconnect
 //!    epoch; only the separately owned fresh-admission window applies.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, EntityRef, SessionEvent};
+use oteryn_dev_client::{DevClientSession, EntityRef, SessionEvent};
 use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
 
 const ROW: &str = "S15b";
+const JOURNEY_TIMEOUT: Duration = Duration::from_secs(240);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(JOURNEY_TIMEOUT, verdict::observe(journey(clients))).await;
     let result = match result {
         Ok(result) => result,
-        Err(_) => Err(
-            "step=journey observed=timeout-240s need=responsive monster AI and combat-lock expiry"
-                .into(),
-        ),
+        Err(_) => Err(format!(
+            "step=journey observed=timeout-{}s need=responsive monster AI and combat-lock expiry",
+            JOURNEY_TIMEOUT.as_secs()
+        )
+        .into()),
     };
     if let Err(error) = &result {
         evidence(&format!("S15B_GAP {error}"));
@@ -60,7 +63,10 @@ fn compact(value: &str) -> String {
         .collect()
 }
 
-const EXPIRY_OBSERVATION: Duration = Duration::from_secs(2);
+const COMBAT_STATE_OBSERVATION: Duration = Duration::from_secs(2);
+// The live two-second expiry probe ended at unchanged HP despite cardinal adjacency.
+// Allow the Rat to retarget and complete three authored two-second swing intervals.
+const EXPIRY_OBSERVATION: Duration = Duration::from_secs(6);
 fn reconnect_quiet_window() -> Duration {
     Duration::from_secs(4)
 }
@@ -74,7 +80,6 @@ fn fresh_quiet_budget(elapsed: Duration) -> Duration {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
         bytes,
@@ -83,12 +88,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0x8b).await?;
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    let (monster, own) = actors(&client)?;
+    stow_equipment(&mut client).await?;
+    let (monster, approach) = approach_rat(&mut client, world).await?;
+    require_attribution(&client)?;
+    client
+        .service_liveness(fresh_quiet_budget(Duration::ZERO))
+        .await?;
     require_damage(
         &mut client,
         monster,
-        own,
         Duration::from_secs(20),
         "step=1 baseline targeting",
     )
@@ -101,49 +109,53 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         StepDirection::West,
     )
     .map(actor_position);
-    let resume_started = tokio::time::Instant::now();
-    client = client_disconnect_resume::recover(client, clients, expected)
-        .await
-        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=2 reconnect observed={error} need=committed CompleteReconnect"), error) })?;
-    let resumed_at = tokio::time::Instant::now();
-    if resumed_at.duration_since(resume_started) >= reconnect_quiet_window() {
+    let (recovered, resume_sent, resume_joined) =
+        client_disconnect_resume::recover_with_resume_bounds(client, clients, expected)
+            .await
+            .map_err(|error| {
+                verdict::record_error(verdict::IndexedError::as_error(&error));
+                verdict::context(
+                    format!("step=2 reconnect observed={error} need=committed CompleteReconnect"),
+                    error,
+                )
+            })?;
+    client = recovered;
+    if resume_sent.elapsed() >= reconnect_quiet_window() {
         return Err(
             "step=3 reentry need=observable-recovery-commit-window-before-protection-expires"
                 .into(),
         );
     }
-    let (monster, own) = actors(&client)?;
+    require_attribution(&client)?;
     evidence("S15B_CHECK step=2 committed-reconnect PASS");
 
-    let hp_before_commands = health(&client, own)?;
+    let hp_before_commands = health(&client)?;
     player_commands(
         &mut client,
         monster,
         AttackIntentDisposition::ReentryProtected,
     )
     .await?;
-    if health(&client, own)? < hp_before_commands {
+    if health(&client)? < hp_before_commands {
         return Err("step=3 reentry need=no-monster-damage-during-protected-commands".into());
     }
-    let remaining = reconnect_quiet_window().saturating_sub(resume_started.elapsed());
+    let remaining = reconnect_quiet_window().saturating_sub(resume_sent.elapsed());
     if remaining.is_zero() {
         return Err("step=3 reentry need=protected-observation-after-native-commands".into());
     }
     require_quiet(
         &mut client,
         monster,
-        own,
         remaining,
         "step=3 four-second protection",
     )
     .await?;
     evidence("S15B_CHECK step=3 reentry-refusal-and-monster-suppression PASS");
-    require_damage(
+    require_expiry_damage(
         &mut client,
+        world,
         monster,
-        own,
-        (resumed_at + reconnect_quiet_window() + EXPIRY_OBSERVATION)
-            .saturating_duration_since(tokio::time::Instant::now()),
+        resume_joined + reconnect_quiet_window() + EXPIRY_OBSERVATION,
         "step=4 reentry expiry",
     )
     .await?;
@@ -164,10 +176,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     drop(client);
 
     let admission_started = tokio::time::Instant::now();
-    let mut fresh = connect_world(clients, 0x8c)
-        .await
-        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=5 fresh admission observed={error}"), error) })?;
+    let mut fresh = connect_world(clients, 0x8c).await.map_err(|error| {
+        verdict::record_error(verdict::IndexedError::as_error(&error));
+        verdict::context(format!("step=5 fresh admission observed={error}"), error)
+    })?;
     let admitted_at = tokio::time::Instant::now();
+    if !fresh
+        .inventory()
+        .is_some_and(|view| view.equipment.is_empty())
+    {
+        return Err("step=5 fresh-login need=unarmoured-fixture-retained-on-relog".into());
+    }
     // The commit is between the request start and the joined-session receipt.
     // Demand silence only through the earliest possible expiry.
     if admitted_at.duration_since(admission_started) >= fresh_quiet_budget(Duration::ZERO) {
@@ -176,8 +195,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 .into(),
         );
     }
-    walk_during_fresh_protection(&mut fresh, world, &metadata.spawns, admission_started).await?;
-    let (monster, own) = actors(&fresh)?;
+    require_attribution(&fresh)?;
+    walk_during_fresh_protection(&mut fresh, world, approach, admission_started).await?;
     let remaining = fresh_quiet_budget(admission_started.elapsed());
     if remaining.is_zero() {
         return Err(
@@ -187,17 +206,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     require_quiet(
         &mut fresh,
         monster,
-        own,
         remaining,
         "step=5 fresh-login protection",
     )
     .await?;
-    require_damage(
+    require_expiry_damage(
         &mut fresh,
+        world,
         monster,
-        own,
-        (admitted_at + fresh_quiet_budget(Duration::ZERO) + EXPIRY_OBSERVATION)
-            .saturating_duration_since(tokio::time::Instant::now()),
+        admitted_at + fresh_quiet_budget(Duration::ZERO) + EXPIRY_OBSERVATION,
         "step=5 fresh-login expiry",
     )
     .await?;
@@ -205,39 +222,149 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     retreat_and_logout(&mut fresh, world).await
 }
 
+async fn stow_equipment(client: &mut DevClientSession) -> TestResult {
+    use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
+
+    // Remove mitigation as a possible explanation for an otherwise legal zero-damage swing.
+    let equipment = client
+        .inventory()
+        .ok_or("step=setup need=equipment-view")?
+        .equipment
+        .clone();
+    for entry in equipment {
+        let moved = client
+            .move_item(&ItemMoveIntent {
+                source: entry.item.handle,
+                destination: ItemMoveDestination::MainBackpack,
+            })
+            .await?;
+        if moved.outcome != ItemMoveOutcome::Moved {
+            return Err(format!("step=setup could not stow {:?}: {moved:?}", entry.slot).into());
+        }
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while !client
+        .inventory()
+        .is_some_and(|view| view.equipment.is_empty())
+    {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step=setup need=served-unarmoured-combat-character".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+    Ok(())
+}
+
+async fn approach_rat(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+) -> TestResult<(EntityRef, TilePos)> {
+    let started = tokio::time::Instant::now();
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        unprotected(world, at)
+    })
+    .ok_or("step=setup need=walkable-unprotected-tile")?;
+    walk(client, world, &path).await?;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let spawn = request_spawn(session, "oteryn:creature.rat".into())
+        .await
+        .map_err(|error| format!("step=setup Rat fixture refused: {error}"))?;
+    let rat = parse_spawned_entity(&spawn)?;
+    let visible_by = tokio::time::Instant::now() + Duration::from_secs(5);
+    while !client
+        .world_entities()
+        .is_some_and(|view| view.get(&rat).is_some())
+    {
+        if tokio::time::Instant::now() >= visible_by {
+            return Err("step=setup need=exact-spawned-Rat-visible".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+    let (here, target) = approach_exact_rat(client, world, rat).await?;
+    evidence(&format!(
+        "S15B_TARGET actor={here:?} rat={target:?} distance=1 approach_seconds={:.3}",
+        started.elapsed().as_secs_f64()
+    ));
+    Ok((rat, here))
+}
+
+async fn approach_exact_rat(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    rat: EntityRef,
+) -> TestResult<(TilePos, TilePos)> {
+    for _ in 0..32 {
+        let here = tile(client.world_spatial().actor_position)?;
+        let target = client
+            .world_entities()
+            .and_then(|entities| entities.iter().find(|entry| entry.entity == rat))
+            .ok_or("S15b rat left the served entity view")?;
+        let target = tile(target.position)?;
+        let path = route_avoiding(
+            world,
+            here,
+            |at| cardinal_neighbor(at, target.x, target.y, target.floor) && unprotected(world, at),
+            |at| at != target,
+        )
+        .ok_or("S15b has no cardinal, unprotected approach to the visible rat")?;
+        let Some(direction) = path.first() else {
+            return Ok((here, target));
+        };
+        walk(client, world, &[*direction]).await?;
+    }
+    Err("S15b rat moved away from every cardinal approach".into())
+}
+
+async fn require_expiry_damage(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    rat: EntityRef,
+    deadline: tokio::time::Instant,
+    step: &str,
+) -> TestResult {
+    let latest_expiry = deadline - EXPIRY_OBSERVATION;
+    client
+        .service_liveness(latest_expiry.saturating_duration_since(tokio::time::Instant::now()))
+        .await?;
+    client.take_events();
+    // A consumed or retried STEP can land the resumed actor away from the original
+    // melee tile. Recheck the exact live Rat within the same damage deadline.
+    let (actor, target) = tokio::time::timeout_at(deadline, approach_exact_rat(client, world, rat))
+        .await
+        .map_err(|_| format!("{step} need=cardinal-rat-approach-before-damage-deadline"))??;
+    evidence(&format!(
+        "S15B_TARGET step={step} actor={actor:?} rat={target:?} distance=1"
+    ));
+    require_damage(
+        client,
+        rat,
+        deadline.saturating_duration_since(tokio::time::Instant::now()),
+        step,
+    )
+    .await
+}
+
+fn cardinal_neighbor(at: TilePos, x: u16, y: u16, floor: i8) -> bool {
+    at.floor == floor && u32::from(at.x.abs_diff(x)) + u32::from(at.y.abs_diff(y)) == 1
+}
+
+fn unprotected(world: &BundleWorld, at: TilePos) -> bool {
+    world
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .is_some_and(|tile| !tile.protection_zone())
+}
+
 async fn walk_during_fresh_protection(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
+    approach: TilePos,
     admitted_at: tokio::time::Instant,
 ) -> TestResult {
     let here = tile(client.world_spatial().actor_position)?;
-    let path = route(world, here, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
-            && spawns.sources.iter().any(|source| {
-                source.floor == at.floor
-                    && source.points.iter().any(|point| {
-                        spawns
-                            .creatures
-                            .get(point.creature as usize)
-                            .is_some_and(|creature| creature.key == "oteryn:creature.rat")
-                            && at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) <= 1
-                    })
-            })
-    })
-    .ok_or("step=5 fresh-login need=walkable-route-to-rat")?;
-    let entities = client
-        .world_entities()
-        .ok_or("step=5 fresh-login need=entity-snapshot")?;
-    let own = entities
-        .iter()
-        .find(|entry| entry.entity.identity == *entities.own_identity())
-        .map(|entry| entry.entity)
-        .ok_or("step=5 fresh-login need=own-actor")?;
-    let before = health(client, own)?;
+    let path = route(world, here, |at| at == approach)
+        .ok_or("step=5 fresh-login need=walkable-route-to-rat")?;
+    let before = health(client)?;
     for direction in path {
         if fresh_quiet_budget(admitted_at.elapsed()).is_zero() {
             return Err("step=5 fresh-login route exceeded the protection window".into());
@@ -256,11 +383,11 @@ async fn walk_during_fresh_protection(
             )
             .into());
         }
-        let lost_health = health(client, own)? < before;
+        let lost_health = health(client)? < before;
         let saw_damage = client
             .take_events()
             .iter()
-            .any(|event| incoming_damage(event, None, own));
+            .any(|event| incoming_damage(event, None));
         if lost_health || saw_damage {
             return Err("step=5 fresh-login observed=damage-during-route-to-rat".into());
         }
@@ -289,29 +416,15 @@ fn actor_position(at: TilePos) -> ActorPosition {
     }
 }
 
-fn actors(client: &DevClientSession) -> TestResult<(EntityRef, EntityRef)> {
-    let entities = client
-        .world_entities()
-        .ok_or("step=setup observed=missing entity snapshot")?;
-    let own = entities
-        .iter()
-        .find(|entry| entry.entity.identity == *entities.own_identity())
-        .map(|entry| entry.entity)
-        .ok_or("step=setup observed=own actor absent")?;
-    let here = client.world_spatial().actor_position;
-    let monster = entities
-        .iter()
-        .filter(|entry| entry.kind == EntityKind::Creature && entry.position.floor == here.floor)
-        .min_by_key(|entry| {
-            entry
-                .position
-                .x
-                .abs_diff(here.x)
-                .max(entry.position.y.abs_diff(here.y))
-        })
-        .map(|entry| entry.entity)
-        .ok_or("step=setup observed=no visible monster")?;
-    Ok((monster, own))
+fn require_attribution(client: &DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1;
+    if !client
+        .selected_capabilities()
+        .contains(&CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1)
+    {
+        return Err("step=setup need=negotiated-damage-attribution".into());
+    }
+    Ok(())
 }
 
 async fn player_commands(
@@ -335,72 +448,71 @@ async fn player_commands(
         return Err(format!("step=attack-target observed={attack:?} need={expected:?}").into());
     }
     let target = (expected == AttackIntentDisposition::Ok).then_some(monster);
-    if client
-        .session_mut()
-        .combat_state()
-        .is_none_or(|state| state.target != target || state.modes != modes)
-    {
-        return Err(
-            format!("step=attack-target observed=wrong-combat-state need=target-{target:?}-and-modes-{modes:?}").into(),
-        );
-    }
+    wait_combat_state(client, target, &modes, "step=attack-target").await?;
     let clear = client.session_mut().attack_target(None).await?;
-    if clear.disposition != AttackIntentDisposition::Ok
-        || client
-            .session_mut()
-            .combat_state()
-            .is_none_or(|state| state.target.is_some())
-    {
+    if clear.disposition != AttackIntentDisposition::Ok {
         return Err(format!(
             "step=3 command=ATTACK_TARGET(None) observed={clear:?} need=Ok plus cleared delta"
         )
         .into());
     }
-    Ok(())
+    wait_combat_state(client, None, &modes, "step=clear-attack-target").await
 }
 
-fn monster_damage(event: &SessionEvent, monster: EntityRef, own: EntityRef) -> bool {
-    incoming_damage(event, Some(monster), own)
-}
-
-fn incoming_damage(
-    event: &SessionEvent,
-    attacker_filter: Option<EntityRef>,
-    own: EntityRef,
-) -> bool {
-    use oteryn_protocol_oteryn::presentation::PresentationEventKind;
-    matches!(event, SessionEvent::Presentation(delta) if delta.value.iter().any(|event|
-        matches!(&event.kind, PresentationEventKind::ValueText { target, attacker: Some(attacker), primary, .. }
-            if *target == own && attacker_filter.is_none_or(|wanted| wanted == *attacker) && primary.value > 0)))
-}
-
-fn health(client: &DevClientSession, own: EntityRef) -> TestResult<u8> {
-    let entry = client
-        .world_entities()
-        .and_then(|entities| entities.iter().find(|entry| entry.entity == own))
-        .ok_or("observed=own actor left entity snapshot")?;
-    match entry.detail {
-        EntityDetail::Actor { health_percent, .. } => Ok(health_percent),
-        _ => Err("observed=own actor has no health delta".into()),
+async fn wait_combat_state(
+    client: &mut DevClientSession,
+    target: Option<EntityRef>,
+    modes: &FightModes,
+    step: &str,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + COMBAT_STATE_OBSERVATION;
+    loop {
+        let observed = client.session_mut().combat_state();
+        if observed.is_some_and(|state| state.target == target && &state.modes == modes) {
+            return Ok(());
+        }
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err(format!(
+                "{step} observed={observed:?} need=target-{target:?}-and-modes-{modes:?}"
+            )
+            .into());
+        }
+        client
+            .service_liveness(remaining.min(Duration::from_millis(25)))
+            .await?;
     }
+}
+
+fn incoming_damage(event: &SessionEvent, attacker_filter: Option<EntityRef>) -> bool {
+    use oteryn_protocol_oteryn::analyser::{AnalyserDamageSource, AnalyserFact};
+    matches!(event, SessionEvent::AnalyserAttributedFacts(delta) if delta.value.iter().any(|hit|
+        attacker_filter.is_none_or(|attacker| hit.attacker == Some(attacker))
+            && matches!(&hit.fact, AnalyserFact::DamageInput { source: AnalyserDamageSource::Creature(_), .. })))
+}
+
+fn health(client: &DevClientSession) -> TestResult<u32> {
+    client
+        .actor_vitals()
+        .map(|vitals| vitals.health)
+        .ok_or_else(|| "observed=own-actor-vitals-unavailable".into())
 }
 
 async fn require_quiet(
     client: &mut DevClientSession,
     monster: EntityRef,
-    own: EntityRef,
     duration: Duration,
     step: &str,
 ) -> TestResult {
-    let before = health(client, own)?;
+    let before = health(client)?;
     let deadline = tokio::time::Instant::now() + duration;
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     loop {
         if client
             .take_events()
             .iter()
-            .any(|event| monster_damage(event, monster, own))
-            || health(client, own)? < before
+            .any(|event| incoming_damage(event, Some(monster)))
+            || health(client)? < before
         {
             return Err(format!("{step} observed=monster damage/HP loss before protection deadline need=no eligible monster target").into());
         }
@@ -417,11 +529,10 @@ async fn require_quiet(
 async fn require_damage(
     client: &mut DevClientSession,
     monster: EntityRef,
-    own: EntityRef,
     duration: Duration,
     step: &str,
 ) -> TestResult {
-    let before = health(client, own)?;
+    let before = health(client)?;
     let deadline = tokio::time::Instant::now() + duration;
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut frame = false;
@@ -430,12 +541,12 @@ async fn require_damage(
         frame |= client
             .take_events()
             .iter()
-            .any(|event| monster_damage(event, monster, own));
-        if frame && health(client, own)? < before {
+            .any(|event| incoming_damage(event, Some(monster)));
+        if frame && health(client)? < before {
             return Ok(());
         }
     }
-    Err(format!("{step} observed=damage-frame:{frame},hp-before:{before},hp-after:{} need=monster-attributed damage frame and lower HP", health(client, own)?).into())
+    Err(format!("{step} observed=damage-frame:{frame},hp-before:{before},hp-after:{} need=monster-attributed damage frame and lower HP", health(client)?).into())
 }
 
 async fn logout_after_combat(client: &mut DevClientSession) -> TestResult {
@@ -485,6 +596,6 @@ fn reconnect_observation_covers_the_last_second() {
 }
 
 #[test]
-fn expiry_observation_is_bounded_to_one_attack_interval() {
-    assert_eq!(EXPIRY_OBSERVATION, Duration::from_secs(2));
+fn expiry_observation_is_bounded_to_three_rat_attack_intervals() {
+    assert_eq!(EXPIRY_OBSERVATION, Duration::from_secs(6));
 }

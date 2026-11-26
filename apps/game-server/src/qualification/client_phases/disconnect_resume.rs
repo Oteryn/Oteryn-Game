@@ -6,6 +6,33 @@ pub(super) async fn recover(
     clients: &SeamClients<'_>,
     expected_after_step: Option<ActorPosition>,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
+    Ok(recover_inner(client, clients, expected_after_step, false)
+        .await?
+        .0)
+}
+
+pub(super) async fn recover_with_resume_bounds(
+    client: oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    expected_after_step: Option<ActorPosition>,
+) -> TestResult<(
+    oteryn_dev_client::DevClientSession,
+    tokio::time::Instant,
+    tokio::time::Instant,
+)> {
+    recover_inner(client, clients, expected_after_step, true).await
+}
+
+async fn recover_inner(
+    client: oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    expected_after_step: Option<ActorPosition>,
+    replay_unconsumed_step: bool,
+) -> TestResult<(
+    oteryn_dev_client::DevClientSession,
+    tokio::time::Instant,
+    tokio::time::Instant,
+)> {
     let session = *client.join_snapshot().game_session_id.as_bytes();
     let position = client.world_spatial().actor_position;
     let next = client.next_command_id();
@@ -37,6 +64,7 @@ pub(super) async fn recover(
         now_seconds()?,
         [0x72; 32],
     );
+    let resume_sent = tokio::time::Instant::now();
     let mut resumed = oteryn_dev_client::resume_session(
         oteryn_dev_client::RecoveryTransport {
             address: clients.address,
@@ -54,18 +82,32 @@ pub(super) async fn recover(
         },
     )
     .await?;
+    let resume_joined = tokio::time::Instant::now();
     evidence("mechanic=disconnect_resume phase=replacement_transport_joined");
+    if replay_unconsumed_step
+        && resumed.join_snapshot().game_session_id.as_bytes() == &session
+        && resumed.world_spatial().actor_position == position
+        && resumed.last_server_sequence() >= sequence
+        && resumed.next_command_id() == next
+    {
+        // Recovery advertises the first unconsumed command. A successful TLS write
+        // before disconnect does not guarantee the old transport dispatched it.
+        let replay = resumed.step(StepDirection::West).await?;
+        evidence(&format!(
+            "mechanic=disconnect_resume phase=unconsumed_step_retried command_id={next} disposition={:?}",
+            replay.disposition
+        ));
+    }
+    let expected_next = next.checked_add(1).ok_or("pending step id exhausted")?;
+    let after_admissions = committed_admissions(clients.url).await?;
     if resumed.join_snapshot().game_session_id.as_bytes() != &session
         || (resumed.world_spatial().actor_position != position
             && Some(resumed.world_spatial().actor_position) != expected_after_step)
-        || resumed.next_command_id() != next.checked_add(1).ok_or("pending step id exhausted")?
+        || resumed.next_command_id() != expected_next
         || resumed.last_server_sequence() < sequence
-        || committed_admissions(clients.url).await? != admissions
+        || after_admissions != admissions
     {
-        return Err(
-            "dev client recovery changed session, position, command continuity or admissions"
-                .into(),
-        );
+        return Err(format!("dev client recovery continuity failed: same_session={} position={:?} expected={position:?}/{expected_after_step:?} next={}/{} server_sequence={}/{} admissions={after_admissions}/{admissions}", resumed.join_snapshot().game_session_id.as_bytes() == &session, resumed.world_spatial().actor_position, resumed.next_command_id(), expected_next, resumed.last_server_sequence(), sequence).into());
     }
     client_party::party(&mut resumed).await?;
     if resumed.next_command_id() <= next || resumed.last_server_sequence() <= sequence {
@@ -77,5 +119,5 @@ pub(super) async fn recover(
         resumed.next_command_id(),
         resumed.last_server_sequence()
     ));
-    Ok(resumed)
+    Ok((resumed, resume_sent, resume_joined))
 }
