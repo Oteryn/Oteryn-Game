@@ -37,6 +37,11 @@ use oteryn_protocol_oteryn::{
 
 use std::time::Duration;
 
+#[path = "parameter_spell/cooldowns.rs"]
+mod cooldowns;
+
+pub(super) const COOLDOWN_CASE: u8 = 7;
+
 pub(super) fn scenario(case: u8) -> TestResult {
     scenario_in_world(case, None)
 }
@@ -69,7 +74,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     );
     prepare_current_session(&h).await?;
     h.seed_pvp_target().await?;
-    if !matches!(case, 1 | 5 | 6) {
+    if !matches!(case, 1 | 5 | 6 | COOLDOWN_CASE) {
         observer::admit(&h).await?;
     }
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -101,7 +106,11 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         pin.identity().client_artifact_digest(),
         room.frame_binding().digest(),
         room.map_revision_digest(),
-        (2, 11, -7),
+        if case == COOLDOWN_CASE {
+            (12, 14, -7) // Walkable, ground-only protection-zone tile in the pinned Thalom map.
+        } else {
+            (2, 11, -7)
+        },
     );
     let mut deps = Dependencies::with_content_and_capacity(
         cp,
@@ -229,7 +238,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             .map_err(debug)?;
     }
     let target_session = GameSessionId::decode(&id(110)).map_err(debug)?;
-    let target_actor = if !matches!(case, 1 | 5 | 6) {
+    let target_actor = if !matches!(case, 1 | 5 | 6 | COOLDOWN_CASE) {
         Some(observer::initialize(&deps, &owner).await?)
     } else {
         None
@@ -253,7 +262,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
     for current_session in [
         Some(session),
-        (!matches!(case, 1 | 5 | 6)).then_some(target_session),
+        (!matches!(case, 1 | 5 | 6 | COOLDOWN_CASE)).then_some(target_session),
     ]
     .into_iter()
     .flatten()
@@ -291,6 +300,13 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             .ok_or("install equipment effects")?;
     }
     admitted.first_entry = FirstEntryOutcome::Positioned;
+    if case == COOLDOWN_CASE {
+        cooldowns::check(&owner, admitted, &deps.spells).await?;
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;

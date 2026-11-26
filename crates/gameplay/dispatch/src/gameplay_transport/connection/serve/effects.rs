@@ -68,6 +68,42 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    use oteryn_protocol_oteryn::presentation as wire;
+    // Both indexed and spoken spells reach this committed-cast path. The casting
+    // client consumes the cooldown delta before its awaited ACTOR_VITALS delta.
+    if outcome.disposition == SpellCastDisposition::Cast
+        && session
+            .selected_capabilities
+            .contains(wire::CAPABILITY_PRESENTATION_V1)
+        && let Some(payload) = authority
+            .spell_cooldown_delta(session.admitted, &mut session.cooldowns)
+            .await
+    {
+        let revision = session
+            .cooldown_revision
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        let sequence = session
+            .sequence
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        let frame = encode_state_delta(
+            session.generation,
+            sequence,
+            wire::STATE_DOMAIN_ACTOR_COOLDOWNS,
+            session.cooldown_revision,
+            revision,
+            wire::DELTA_TYPE_ACTOR_COOLDOWNS_V1,
+            &payload,
+        )
+        .map_err(|_| ServeEnd::Disconnected)?;
+        write_frame(stream, &frame)
+            .await
+            .map_err(|_| ServeEnd::Disconnected)?;
+        session.cooldown_revision = revision;
+        session.sequence = sequence;
+        session.admitted.continuity.server_sequence = sequence;
+    }
     // ACTOR_VITALS (domain 3, delta type 1) carries the owner's own per-actor
     // revision: a committed cast advances it by exactly one. Revisions start at 1, so
     // 0 means the join carried no ACTOR_VITALS snapshot: there is no base to delta
