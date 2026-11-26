@@ -5,7 +5,7 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::{NativeEntryStart, channel_content_pin::ChannelContentPin};
 use crate::foundation::WorldId;
 use crate::gameplay_transport::{
-    SeamRooms, capabilities::SelectedCapabilities, connection::FreshAdmissionAuthority,
+    capabilities::SelectedCapabilities, connection::FreshAdmissionAuthority,
 };
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::{CommandStatus, boss_rewards};
@@ -107,7 +107,6 @@ async fn exercise(h: &Harness) -> TestResult {
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = Some(active);
     owner.movement_cells = (&cells).into();
-    owner.rooms = SeamRooms::new(Some(&room), Some(&room));
     owner.reset_epoch = 1;
     let quests = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
         .map_err(debug)?;

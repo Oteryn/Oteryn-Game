@@ -14,6 +14,7 @@ ROOT = crystal.ROOT
 BASE = '3e09916423181c795c829eca5e5414dde3f29a3e'
 PREFIX = 'tools/content-schema/native-gameplay/'
 CAPTURE = PREFIX + 'cloot3-item-profiles.json'
+CORPSE_CAPTURE = PREFIX + 'zamulosh-corpse-item-profile.json'
 BINDINGS = PREFIX + 'cloot3-item-bindings.json'
 COHORT = PREFIX + 'cloot3-creatures.txt'
 LOOT = PREFIX + 'loot-tables.json'
@@ -54,6 +55,11 @@ def has_native_custody(reference, row):
         return (row['admission'] == crystal.corpse_admission(ZAMULOSH_CORPSE)
                 and native_corpse_capacity(reference, row, reward_boss=True) is not None)
     return native_loot_yield_facts(reference, row) is not None
+
+
+def encode_carried_records(records):
+    return (b'{"source_revision":"' + crystal.PIN.encode() + b'","records":[\n'
+            + b',\n'.join(crystal.encode(row).rstrip(b'\n') for row in records) + b'\n]}\n')
 
 
 def capture(root, source_cache):
@@ -103,6 +109,7 @@ def capture(root, source_cache):
         bindings[external] = binding
     weights = load_weights(root)
     records = []
+    corpse = None
     for identifier in sorted(pending):
         node = xml.get(identifier)
         if node is None and identifier not in NEW_BINDINGS:
@@ -134,23 +141,34 @@ def capture(root, source_cache):
             })
         if not has_native_custody(reference, row):
             raise ValueError(f'CLOOT3_DONOR_CUSTODY:{identifier}')
-        records.append(row)
+        if identifier == ZAMULOSH_CORPSE:
+            corpse = row
+        else:
+            records.append(row)
+    if corpse is None:
+        raise ValueError('ZAMULOSH_CORPSE_MISSING')
     return {
         COHORT: ''.join(creature + '\n' for creature in cohort).encode(),
-        CAPTURE: b'{"source_revision":"' + crystal.PIN.encode() + b'","records":[\n'
-                 + b',\n'.join(crystal.encode(row).rstrip(b'\n') for row in records) + b'\n]}\n',
+        CAPTURE: encode_carried_records(records),
+        CORPSE_CAPTURE: crystal.encode({'source_revision': crystal.PIN, 'record': corpse}),
         BINDINGS: json.dumps(extra, indent=2).encode() + b'\n',
     }
 
 
 def complete_records(root, records, order):
     packet = json.loads((root / CAPTURE).read_bytes())
-    if packet['source_revision'] != crystal.PIN:
+    corpse = json.loads((root / CORPSE_CAPTURE).read_bytes())
+    if packet['source_revision'] != crystal.PIN or corpse['source_revision'] != crystal.PIN:
         raise ValueError('CLOOT3_SOURCE_REVISION')
+    corpse_ref = item_ref(ZAMULOSH_CORPSE)
+    if (corpse['record']['production_binding']['target'] != corpse_ref
+            or any(row['production_binding']['target'] == corpse_ref for row in packet['records'])
+            or not has_native_custody(corpse_ref, corpse['record'])):
+        raise ValueError('ZAMULOSH_CORPSE_CUSTODY')
     accepted = crystal.binding_index((root / CRYSTAL_BINDINGS).read_bytes())
     accepted.update((row['external_id'], row) for row in json.loads((root / BINDINGS).read_bytes()))
     current = {row['production_definition']['production_key']: row for row in records}
-    for observed in packet['records']:
+    for observed in [*packet['records'], corpse['record']]:
         binding = observed['production_binding']
         reference = binding['target']
         key = reference['key']
