@@ -76,10 +76,10 @@ async fn accepted(
 }
 
 async fn finish(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=logout observed=refused".into());
+    let position = client.world_spatial().actor_position;
+    let outcome = client.session_mut().logout().await?;
+    if outcome.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={outcome:?} position={position:?}").into());
     }
     Ok(())
 }
@@ -109,8 +109,17 @@ struct ClaimEvidence {
     transaction: [u8; 16],
     epoch: u64,
     day: u8,
-    lines: Vec<RewardLine>,
 }
+
+const DAY: u8 = 1;
+const FREE_TIER: details::Tier = details::Tier {
+    cosmetic_tokens: 2,
+    prey_wildcards: 0,
+    temple_scrolls: 0,
+    xp_percent: 0,
+    xp_minutes: 0,
+    bounty_tokens: 1,
+};
 
 fn expected_lines(tier: details::Tier) -> Vec<RewardLine> {
     [
@@ -151,6 +160,19 @@ async fn delivery(clients: &SeamClients<'_>, data: &ClaimEvidence) -> TestResult
     ).bind(clients.characters[0].as_slice()).bind(clients.world.as_slice())
         .bind(data.epoch.to_string()).bind(data.transaction.as_slice()).bind(i16::from(data.day))
         .fetch_all(&mut connection).await?)
+}
+
+async fn balances(clients: &SeamClients<'_>) -> TestResult<(i64, i64)> {
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    Ok(sqlx::query_as(
+        "SELECT COALESCE((SELECT balance FROM game_character_cosmetic_tokens
+                          WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid), 0),
+                COALESCE((SELECT balance FROM game_character_bounty_reroll_tokens
+                          WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid), 0)",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(clients.world.as_slice())
+    .fetch_one(&mut connection).await?)
 }
 
 async fn claim_tier(clients: &SeamClients<'_>, transaction: &[u8; 16]) -> TestResult<bool> {
@@ -203,6 +225,35 @@ fn shrine_tile(world: &BundleWorld, start: TilePos) -> TestResult<TilePos> {
     Err("step=shrine observed=no-reachable-daily-shrine-in-town-window".into())
 }
 
+async fn walk_once(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, from, direction).ok_or("G16 invalid route step")?;
+        let reply = client.step(direction).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if reply.disposition != StepDisposition::Moved
+            || reply.world_spatial_delta.is_none()
+            || actual != expected
+        {
+            return Err(format!(
+                "step=walk observed={:?} from={from:?} expected={expected:?} actual={actual:?}",
+                reply.disposition
+            )
+            .into());
+        }
+        verdict::Harness::global().progress("walk");
+        client.take_events();
+        if reply.step_wait_ms > 0 {
+            tokio::time::sleep(Duration::from_millis(u64::from(reply.step_wait_ms))).await;
+        }
+    }
+    Ok(())
+}
+
 async fn body(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
@@ -211,7 +262,13 @@ async fn body(
     let table = accepted(client, CAPABILITY, details::COMMAND_TYPE, &[]).await?;
     let table = details::Details::decode(&table)?;
     let initial = wall(client).await?;
-    if initial.claimed || initial.claim_enabled {
+    if initial.claimed
+        || initial.claim_enabled
+        || initial.lane_day != DAY
+        || initial.streak != 0
+        || table.history.iter().any(Option::is_some)
+        || table.days.first().map(|tiers| tiers.free) != Some(FREE_TIER)
+    {
         return Err(format!(
             "step=wall observed={initial:?}-epoch:{} needed=unclaimed-unopened-day",
             table.epoch
@@ -224,7 +281,7 @@ async fn body(
         at.floor == shrine.floor && at.x.abs_diff(shrine.x).max(at.y.abs_diff(shrine.y)) <= 1
     })
     .ok_or("step=shrine observed=walking-route-disappeared")?;
-    walk(client, world, &path).await?;
+    walk_once(client, world, &path).await?;
     let opened = client
         .session_mut()
         .use_object(b"oteryn:placement/daily-reward-shrine", 0)
@@ -233,10 +290,10 @@ async fn body(
         return Err(format!("step=shrine observed={opened:?}").into());
     }
     let ready = wall(client).await?;
-    if !ready.claim_enabled || ready.claimed {
+    if !ready.claim_enabled || ready.claimed || ready.lane_day != DAY {
         return Err(format!("step=shrine observed=wall:{ready:?}").into());
     }
-    if claim_count(clients, table.epoch).await? != 0 {
+    if claim_count(clients, table.epoch).await? != 0 || balances(clients).await? != (0, 0) {
         return Err("step=claim observed=preexisting-epoch-receipt".into());
     }
     let reply = accepted(
@@ -253,25 +310,10 @@ async fn body(
     let transaction = result
         .transaction_id
         .ok_or("step=claim observed=no-transaction")?;
-    let day = ready.lane_day;
-    let tiers = table
-        .days
-        .get(
-            usize::from(day)
-                .checked_sub(1)
-                .ok_or("step=claim observed=day-zero")?,
-        )
-        .ok_or("step=claim observed=day-outside-catalogue")?;
-    let tier = if claim_tier(clients, &transaction).await? {
-        tiers.premium
-    } else {
-        tiers.free
-    };
     let data = ClaimEvidence {
         transaction,
         epoch: table.epoch,
-        day,
-        lines: expected_lines(tier),
+        day: DAY,
     };
     verify(client, clients, &data).await?;
     let reply = accepted(
@@ -287,6 +329,18 @@ async fn body(
     }
     verify(client, clients, &data).await?;
     Ok(data)
+}
+
+fn matches_free_delivery(lines: &[RewardLine], premium: bool, balances: (i64, i64)) -> bool {
+    let expected = expected_lines(FREE_TIER);
+    !expected.is_empty()
+        && lines == expected
+        && !premium
+        && balances
+            == (
+                i64::from(FREE_TIER.cosmetic_tokens),
+                i64::from(FREE_TIER.bounty_tokens),
+            )
 }
 
 async fn verify(
@@ -307,19 +361,24 @@ async fn verify(
         .count()
         == 1;
     let lines = delivery(clients, data).await?;
+    let expected = expected_lines(FREE_TIER);
+    let delivered = balances(clients).await?;
+    let premium = claim_tier(clients, &data.transaction).await?;
     if claim_count(clients, data.epoch).await? != 1
         || !history_matches
         || !wall.claimed
         || wall.claim_enabled
-        || data.lines.is_empty()
-        || lines != data.lines
+        || !matches_free_delivery(&lines, premium, delivered)
     {
-        return Err(format!("step=verify observed=wall:{wall:?},history:{history_matches},lines:{lines:?} needed={:?}", data.lines).into());
+        return Err(format!("step=verify observed=wall:{wall:?},history:{history_matches},lines:{lines:?},premium:{premium},balances:{delivered:?} needed={expected:?}").into());
     }
+    evidence("G16_CHECK pg=receipt-lines-and-delivered-balances status=PASS");
     Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_G16_ACCOUNT").await?;
+    let clients = &fixture.clients(clients);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -343,6 +402,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn first_free_claim_requires_both_balances_and_the_free_receipt() {
+        let lines = expected_lines(FREE_TIER);
+        assert!(matches_free_delivery(&lines, false, (2, 1)));
+        assert!(!matches_free_delivery(&lines, false, (0, 0)));
+        assert!(!matches_free_delivery(&lines, false, (2, 2)));
+        assert!(!matches_free_delivery(&lines, true, (2, 1)));
+        let premium = expected_lines(details::Tier {
+            cosmetic_tokens: 4,
+            ..FREE_TIER
+        });
+        assert!(!matches_free_delivery(&premium, true, (4, 1)));
+        assert!(!matches_free_delivery(&[], false, (2, 1)));
+    }
 
     #[test]
     fn compact_is_one_bounded_token() {
