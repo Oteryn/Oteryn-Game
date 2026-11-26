@@ -59,7 +59,7 @@ summarize() {
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
       $3 ~ /^scenario=[[:alnum:]_.-]+\.client$/ && $4 ~ /^replay=[[:alnum:]_]+$/ &&
       $5 ~ /^status=(PASS|FAIL)$/ {
-      reason = ($6 ~ /^cause=(capture-missing|replay-not-run|replay-failed|server-failed)$/ ? substr($6, 7) : "")
+      reason = ($6 ~ /^cause=(capture-missing|capture-digest-missing|capture-digest-mismatch|replay-not-run|replay-failed|server-failed)$/ ? substr($6, 7) : "")
       printf "%s|%s|%s\n", substr($3, 10), substr($5, 8), reason
     }' < "$log") || return 1
 
@@ -141,6 +141,15 @@ for group in "$@"; do
       | tee -a "$log"
     replay_pipeline=("${PIPESTATUS[@]}")
     if (( replay_pipeline[0] != 0 || replay_pipeline[1] != 0 )); then
+      status=1
+    fi
+  fi
+  if grep -q '^NODE_BOOT_CAPTURE_RESULT=S18_REPLAY_PENDING mode=unprivileged$' "$log"; then
+    if [[ $status == 0 ]] &&
+      grep -q '^SEAM_EVIDENCE e2e_all scenario=S18\.client replay=e2e_s18_say_and_whisper_echo_replay status=PASS$' "$log"; then
+      printf 'NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged\n' >> "$log"
+    else
+      printf 'NODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged\n' >> "$log"
       status=1
     fi
   fi

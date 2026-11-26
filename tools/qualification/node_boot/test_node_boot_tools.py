@@ -823,15 +823,18 @@ class CloudRunSummaryTests(unittest.TestCase):
                     self.assertIn(f'STAGE_STATUS={status}', result.stdout)
 
     def test_client_replay_verdicts(self):
+        import hashlib
+
         cases = [
-            (False, 0, 1, 'PASS', 'FAIL cause=capture-missing', False),
-            (True, 0, 0, 'PASS', 'FAIL cause=replay-not-run', True),
-            (True, 1, 0, 'PASS', 'FAIL cause=replay-failed', True),
-            (True, 0, 2, 'PASS', 'FAIL cause=replay-failed', True),
+            (False, 0, 1, 'CAPTURED', 'FAIL cause=capture-missing', False),
+            (True, 0, 0, 'CAPTURED', 'FAIL cause=replay-not-run', True),
+            (True, 1, 0, 'CAPTURED', 'FAIL cause=replay-failed', True),
+            (True, 0, 2, 'CAPTURED', 'FAIL cause=replay-failed', True),
             (True, 0, 1, None, 'FAIL cause=replay-not-run', False),
-            (True, 0, 1, 'FAIL', 'FAIL cause=server-failed', True),
+            (True, 0, 1, 'FAIL', 'FAIL cause=capture-digest-missing', False),
+            (True, 0, 1, 'CAPTURED', 'FAIL cause=capture-digest-mismatch', False),
             (True, 0, 1, 'CAPTURED', 'PASS', True),
-            (True, 0, 1, 'PASS', 'PASS', True),
+            (True, 0, 1, 'PASS', 'FAIL cause=capture-digest-missing', False),
         ]
         for capture, exit_code, count, server, verdict, called in cases:
             with self.subTest(capture=capture, exit_code=exit_code, count=count, server=server):
@@ -852,8 +855,19 @@ class CloudRunSummaryTests(unittest.TestCase):
                             (captures / name).write_bytes(b'fresh')
                     log = work / 'node.log'
                     kind = 'e2e_capture' if server == 'CAPTURED' else 'e2e_all'
+                    names = sorted(
+                        path for path in captures.iterdir()
+                        if path.name.startswith("s18-") and path.suffix != ".bin"
+                    )
+                    digest = hashlib.sha256(
+                        b''.join(hashlib.sha256(path.read_bytes()).digest() for path in names)
+                    ).hexdigest()
+                    claim = f' evidence=run=test;capture_sha256={digest}' if kind == 'e2e_capture' else ''
+                    if server == 'CAPTURED' and verdict == 'FAIL cause=capture-digest-mismatch':
+                        (captures / 's18-listener-relog.wire').write_bytes(b'current header\nstale relog')
+                        (captures / 's18-listener-relog.json').write_bytes(b'matching stale envelopes')
                     log.write_text(
-                        f'SEAM_EVIDENCE {kind} scenario=S18.client status={server}\n'
+                        f'SEAM_EVIDENCE {kind} scenario=S18.client status={server}{claim}\n'
                         if server else ''
                     )
                     cargo = work / 'cargo'
@@ -902,6 +916,18 @@ class CloudRunSummaryTests(unittest.TestCase):
                 'CLOUD_RUN group=rows result=NODE_BOOT_FAIL seconds=0',
                 'ROWS-BEGIN', 'S18.client|FAIL|replay-not-run', 'N07d.client|PASS|', 'ROWS-END',
             ])
+
+    def test_summary_waits_for_s18_replay_result(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / "node.log"
+            log.write_text("NODE_BOOT_CAPTURE_RESULT=S18_REPLAY_PENDING mode=unprivileged\n")
+            command = ['bash', str(HERE / 'cloud_run.sh'), '--summarize', str(log), 'rows']
+            self.assertIn("result=NODE_BOOT_FAIL", subprocess.check_output(command, text=True))
+            with log.open("a") as output:
+                output.write("SEAM_EVIDENCE e2e_all scenario=S18.client "
+                             "replay=e2e_s18_say_and_whisper_echo_replay status=PASS\n"
+                             "NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged\n")
+            self.assertIn("result=NODE_BOOT_PASS", subprocess.check_output(command, text=True))
 
     def test_summary_uses_full_row_verdicts_and_limits_filtered_diagnostics(self):
         result = subprocess.run(

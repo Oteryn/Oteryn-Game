@@ -4,8 +4,10 @@ use super::*;
 use oteryn_dev_client::native_session::{Admission, Session};
 use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, ChatSpeechMode, DevClientSession};
 use oteryn_protocol_oteryn::{
-    FrameLength, MessageType, chat, decode_command_result, decode_wire_envelope, logout::LogoutResult,
+    FrameLength, MessageType, chat, decode_command_result, decode_wire_envelope,
+    logout::LogoutResult,
 };
+use sha2::{Digest, Sha256};
 use std::cell::RefCell;
 use std::pin::Pin;
 use std::rc::Rc;
@@ -173,9 +175,13 @@ fn frame_envelopes(mut wire: &[u8], session: &[u8; 16]) -> TestResult<Vec<serde_
     let session = uuid_text(session);
     let mut frames = Vec::new();
     while !wire.is_empty() {
-        let (prefix, rest) = wire.split_at_checked(4).ok_or("S18 incomplete frame prefix")?;
+        let (prefix, rest) = wire
+            .split_at_checked(4)
+            .ok_or("S18 incomplete frame prefix")?;
         let length = FrameLength::from_prefix(prefix)?.get() as usize;
-        let (body, rest) = rest.split_at_checked(length).ok_or("S18 incomplete frame body")?;
+        let (body, rest) = rest
+            .split_at_checked(length)
+            .ok_or("S18 incomplete frame body")?;
         let envelope = decode_wire_envelope(body)?;
         let (command_id, status) = if envelope.message_type() == MessageType::CommandResult {
             let result = decode_command_result(envelope.payload())?;
@@ -237,11 +243,11 @@ async fn move_listener(
     listener: &mut RecordedSession,
     world: &BundleWorld,
     speaker: TilePos,
-    goal: impl Fn(TilePos) -> bool,
+    target: TilePos,
     receipts: &mut Vec<CommandReceipt>,
 ) -> TestResult {
     let from = tile(listener.world_spatial().actor_position)?;
-    let path = route_avoiding(world, from, &goal, |at| at != speaker)
+    let path = route_avoiding(world, from, &|at| at == target, |at| at != speaker)
         .ok_or("S18 listener geometry has no authored route")?;
     for direction in path {
         let from = tile(listener.world_spatial().actor_position)?;
@@ -257,7 +263,7 @@ async fn move_listener(
         receipts.push((outcome.command_id, outcome.result_server_sequence));
         tokio::time::sleep(Duration::from_millis(u64::from(outcome.step_wait_ms))).await;
     }
-    if !goal(tile(listener.world_spatial().actor_position)?) {
+    if tile(listener.world_spatial().actor_position)? != target {
         return Err("S18 listener did not reach the required geometry".into());
     }
     Ok(())
@@ -312,89 +318,89 @@ async fn journey(
         text: text.into(),
         position,
     };
-    let say = format!("s18-say-{run}");
-    let whisper = format!("s18-whisper-{run}");
-    let boundary = format!("s18-boundary-{run}");
-    let private = format!("s18-private-{run}");
-    let outside = format!("s18-outside-{run}");
-    let outside_whisper = format!("s18-outside-whisper-{run}");
     let mut speaker_receipts = Vec::new();
     let mut listener_receipts = Vec::new();
     let mut speaker_expected = Vec::new();
     let mut listener_expected = Vec::new();
 
-    for (range, mode, text, heard) in [
-        (1, ChatSpeechMode::Say, say.as_str(), Some(say.as_str())),
-        (
-            1,
-            ChatSpeechMode::Whisper,
-            whisper.as_str(),
-            Some(whisper.as_str()),
-        ),
-        (
-            2,
-            ChatSpeechMode::Say,
-            boundary.as_str(),
-            Some(boundary.as_str()),
-        ),
-        (2, ChatSpeechMode::Whisper, private.as_str(), Some("pspsps")),
-        (3, ChatSpeechMode::Say, outside.as_str(), None),
-        (3, ChatSpeechMode::Whisper, outside_whisper.as_str(), None),
+    for (dx, dy, label, audible) in [
+        (1, -1, "near", true),
+        (8, -6, "boundary", true),
+        (9, -6, "outside-x", false),
+        (8, -7, "outside-y", false),
     ] {
-        let goal = |at: TilePos| {
-            let dx = at.x.abs_diff(origin.x);
-            let dy = at.y.abs_diff(origin.y);
-            at.floor == origin.floor
-                && match range {
-                    1 => dx.max(dy) == 1,
-                    2 => dx <= 8 && dy <= 6 && (dx == 8 || dy == 6),
-                    _ => (dx == 9 && dy <= 6) || (dy == 7 && dx <= 8),
-                }
+        let target = TilePos {
+            x: origin
+                .x
+                .checked_add_signed(dx)
+                .ok_or("S18 x offset overflow")?,
+            y: origin
+                .y
+                .checked_add_signed(dy)
+                .ok_or("S18 y offset overflow")?,
+            floor: origin.floor,
         };
-        if !goal(tile(listener.world_spatial().actor_position)?) {
-            service_while(
-                &mut speaker,
-                move_listener(&mut listener, world, origin, goal, &mut listener_receipts),
-            )
-            .await?;
-        }
-        let outcome = service_while(&mut listener, async {
-            Ok(speaker
-                .chat(&ChatIntent::Say {
-                    mode,
-                    text: text.into(),
-                })
-                .await?)
-        })
+        service_while(
+            &mut speaker,
+            move_listener(&mut listener, world, origin, target, &mut listener_receipts),
+        )
         .await?;
-        require_mechanic_acceptance(outcome.status, "S18 speech")
-            .map_err(|error| format!("{error}: {outcome:?}"))?;
-        if outcome.disposition != ChatDisposition::Ok {
-            return Err(format!("speech {mode:?} first command refused: {outcome:?}").into());
-        }
-        speaker_receipts.push((outcome.command_id, outcome.result_server_sequence));
-        speaker_expected.push(line(mode, text));
-        if let Some(heard) = heard {
-            listener_expected.push(line(mode, heard));
-        }
-        let listener_at = listener.world_spatial().actor_position;
-        let phase = format!("listener range={range} mode={mode:?} position={listener_at:?}");
-        let (own_result, listener_result) = tokio::join!(
-            observe_delivery(
-                &mut speaker,
-                &speaker_expected,
-                "speaker echo attribution and order"
-            ),
-            observe_delivery(&mut listener, &listener_expected, &phase),
-        );
-        own_result?;
-        if let Err(error) = listener_result {
-            capture(
-                root,
-                "s18-diagnostic-listener.wire",
-                &listener_wire.borrow(),
-            )?;
-            return Err(error);
+        for (mode, suffix) in [
+            (ChatSpeechMode::Say, "say"),
+            (ChatSpeechMode::Whisper, "whisper"),
+        ] {
+            let text = format!("s18-{label}-{suffix}-{run}");
+            let heard =
+                audible.then_some(if label == "boundary" && mode == ChatSpeechMode::Whisper {
+                    "pspsps"
+                } else {
+                    text.as_str()
+                });
+            let outcome = service_while(&mut listener, async {
+                Ok(speaker
+                    .chat(&ChatIntent::Say {
+                        mode,
+                        text: text.clone(),
+                    })
+                    .await?)
+            })
+            .await?;
+            require_mechanic_acceptance(outcome.status, "S18 speech")
+                .map_err(|error| format!("{error}: {outcome:?}"))?;
+            if outcome.disposition != ChatDisposition::Ok {
+                return Err(format!("speech {mode:?} first command refused: {outcome:?}").into());
+            }
+            speaker_receipts.push((outcome.command_id, outcome.result_server_sequence));
+            speaker_expected.push(line(mode, &text));
+            if let Some(heard) = heard {
+                listener_expected.push(line(mode, heard));
+            }
+            let listener_at = listener.world_spatial().actor_position;
+            let phase = format!("listener case={label} mode={mode:?} position={listener_at:?}");
+            let (own_result, listener_result) = tokio::join!(
+                observe_delivery(
+                    &mut speaker,
+                    &speaker_expected,
+                    "speaker echo attribution and order"
+                ),
+                observe_delivery(&mut listener, &listener_expected, &phase),
+            );
+            own_result?;
+            if let Err(error) = listener_result {
+                capture(
+                    root,
+                    "s18-diagnostic-listener.wire",
+                    &listener_wire.borrow(),
+                )?;
+                return Err(error);
+            }
+            evidence(&format!(
+                "S18_DELIVERY case={label} mode={mode:?} x={} y={} floor={} heard={}",
+                listener_at.x,
+                listener_at.y,
+                listener_at.floor,
+                heard.is_some(),
+            ));
         }
     }
     let listener_landing = listener.world_spatial().actor_position;
@@ -427,7 +433,11 @@ async fn journey(
         bytes.extend_from_slice(&wire);
         capture(root, &format!("s18-{role}.wire"), &bytes)?;
         let envelopes = frame_envelopes(&wire, &session)?;
-        capture(root, &format!("s18-{role}.json"), &serde_json::to_vec(&envelopes)?)
+        capture(
+            root,
+            &format!("s18-{role}.json"),
+            &serde_json::to_vec(&envelopes)?,
+        )
     };
     save(
         "speaker",
@@ -480,15 +490,30 @@ async fn journey(
         "s18-expected.txt",
         format!("{binding}{expected}").as_bytes(),
     )?;
+    let mut digest = Sha256::new();
+    for file in [
+        "s18-expected.txt",
+        "s18-listener-relog.json",
+        "s18-listener-relog.wire",
+        "s18-listener.json",
+        "s18-listener.wire",
+        "s18-speaker-relog.json",
+        "s18-speaker-relog.wire",
+        "s18-speaker.json",
+        "s18-speaker.wire",
+    ] {
+        digest.update(Sha256::digest(std::fs::read(root.join(file))?));
+    }
+    let capture_digest = hex(&digest.finalize());
     Ok(format!(
-        "head={head};run={run};speaker=Packet_Two;near=verified;boundary=verified;outside=verified;relog=verified"
+        "head={head};run={run};speaker=Packet_Two;near=verified;boundary=verified;outside_x=verified;outside_y=verified;relog=verified;capture_sha256={capture_digest}"
     ))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     let started = tokio::time::Instant::now();
     let result = verdict::indexed_timeout(
-        Duration::from_secs(90),
+        Duration::from_secs(120),
         verdict::observe(async {
             let root = required("E2E_ALL_CAPTURE_DIR")?;
             let checkout = std::process::Command::new("git")

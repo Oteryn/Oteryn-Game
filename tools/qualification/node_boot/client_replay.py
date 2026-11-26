@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Gate the cloud wrapper's selected client rows on their fresh Rust replays."""
 
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -151,6 +152,20 @@ def replay_cause(row, package, test, names, captures, server, log):
         return "capture-missing"
     if not package or not server:
         return "replay-not-run"
+
+    if row == "S18":
+        claims = re.findall(
+            r"^SEAM_EVIDENCE e2e_capture scenario=S18\.client status=CAPTURED "
+            r"[^\n]*;capture_sha256=([0-9a-f]{64})$",
+            log.read_text(errors="replace"), re.MULTILINE,
+        )
+        if len(claims) != 1:
+            return "capture-digest-missing"
+        digest = hashlib.sha256()
+        for name in sorted(names):
+            digest.update(hashlib.sha256((captures / name).read_bytes()).digest())
+        if digest.hexdigest() != claims[0]:
+            return "capture-digest-mismatch"
 
     try:
         result = subprocess.run(

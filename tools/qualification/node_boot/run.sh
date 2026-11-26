@@ -490,6 +490,12 @@ interrupted() {
 }
 cleanup() {
   local rc=$?
+  local s18_replay_pending=0
+  if [[ $rc == 0 && ${NODE_BOOT_E2E_ONLY:-} == rows ]] &&
+    grep -qE '^SEAM_EVIDENCE e2e_capture scenario=S18\.client status=CAPTURED([[:space:]]|$)' \
+      "$WORK"/stage-*.log; then
+    s18_replay_pending=1
+  fi
   trap - EXIT INT TERM
   set +e
   # Flush the independent reader before either the server or its private log is removed.
@@ -538,6 +544,10 @@ cleanup() {
   fi
   evidence "cleanup=complete"
   evidence "result_scope world_bundle=$NODE_BOOT_WORLD spells=$NODE_BOOT_SPELLS stage=$ACTIVE_STAGE exit=$rc"
+  if [[ $s18_replay_pending == 1 ]]; then
+    printf 'NODE_BOOT_CAPTURE_RESULT=S18_REPLAY_PENDING%s\n' "${result_mode:-}"
+    exit "$rc"
+  fi
   echo "NODE_BOOT_RESULT=$result${result_mode:-}"
   exit "$rc"
 }

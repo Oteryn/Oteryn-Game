@@ -138,7 +138,8 @@ async fn replay(
             .is_empty()
     );
     let mut seen = 0;
-    let mut last_line = None;
+    let mut previous_command = 0;
+    let mut malformed_checked = false;
     let mut previous_sequence = session.last_server_sequence();
     while !session.stream.0.is_empty() {
         let frame = read_frame(&mut session.stream).await?;
@@ -158,11 +159,63 @@ async fn replay(
                     format!("S18 recorded command or server sequence mismatch: {receipt}").into(),
                 );
             }
+            assert_eq!(
+                outcome.command_id,
+                previous_command + 1,
+                "S18 first-attempt command ID"
+            );
+            assert_eq!(
+                outcome.status,
+                CommandStatus::Accepted,
+                "S18 first-attempt result"
+            );
+            previous_command = outcome.command_id;
+            if claimed_commands.peek().is_none() {
+                assert_eq!(
+                    oteryn_protocol_oteryn::logout::decode_logout_result(outcome.payload)
+                        .map_err(SessionError::Logout)?,
+                    oteryn_protocol_oteryn::logout::LogoutResult::Accepted,
+                    "S18 final command must be an accepted logout",
+                );
+            }
         }
         if envelope.message_type() == MessageType::StateDelta {
+            let delta = decode_state_delta(envelope.payload())?;
+            if seen == 0
+                && delta.domain_id == STATE_DOMAIN_CHAT
+                && delta.delta_type == oteryn_protocol_oteryn::chat::DELTA_TYPE_CHAT_LINE_V1
+            {
+                let malformed = oteryn_protocol_oteryn::encode_state_delta(
+                    envelope.connection_generation(),
+                    sequence,
+                    delta.domain_id,
+                    delta.base_revision,
+                    delta.new_revision,
+                    delta.delta_type,
+                    &delta.payload[..delta.payload.len() - 1],
+                )?;
+                let malformed = decode_wire_envelope(&malformed)?;
+                assert_eq!(
+                    decode_state_delta(malformed.payload())?.base_revision,
+                    session.chat_revision
+                );
+                assert!(
+                    matches!(
+                        session.apply_state_delta(sequence, malformed.payload()),
+                        Err(SessionError::Chat(_))
+                    ),
+                    "S18 malformed inner chat must reach the chat codec"
+                );
+                assert_eq!(session.chat_revision, delta.base_revision);
+                assert!(session.chat_log().ok_or("S18 chat log absent")?.is_empty());
+                println!(
+                    "S18_CHAT_CODEC_REJECTION sequence={sequence} revision={}",
+                    delta.base_revision
+                );
+                malformed_checked = true;
+            }
             let event = session.apply_state_delta(sequence, envelope.payload())?;
             if let SessionEvent::ChatLine(applied) = event {
-                let delta = decode_state_delta(envelope.payload())?;
                 assert_eq!(delta.domain_id, STATE_DOMAIN_CHAT);
                 assert_eq!(
                     (applied.base_revision, applied.new_revision),
@@ -170,7 +223,6 @@ async fn replay(
                 );
                 assert_eq!(expected.get(seen), Some(&applied.value), "S18 line {seen}");
                 seen += 1;
-                last_line = Some((sequence, envelope.payload().to_vec()));
             }
         }
     }
@@ -178,6 +230,11 @@ async fn replay(
         return Err("S18 missing recorded command result".into());
     }
     assert_eq!(seen, expected.len(), "S18 recorded chat line count");
+    assert_eq!(
+        malformed_checked,
+        !expected.is_empty(),
+        "S18 chat codec check"
+    );
     assert!(
         session
             .chat_log()
@@ -186,24 +243,6 @@ async fn replay(
             .eq(expected)
     );
 
-    // Only the negative assertion mutates bytes. It truncates the last real delta payload
-    // without creating a new envelope, and must leave both the log and revision unchanged.
-    if let Some((sequence, payload)) = last_line {
-        let revision = session.chat_revision;
-        assert!(
-            session
-                .apply_state_delta(sequence, &payload[..payload.len() - 1])
-                .is_err()
-        );
-        assert_eq!(session.chat_revision, revision);
-        assert!(
-            session
-                .chat_log()
-                .ok_or("S18 chat log absent")?
-                .lines()
-                .eq(expected)
-        );
-    }
     Ok((joined, session.world_spatial().actor_position))
 }
 
@@ -246,38 +285,33 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
     };
     let name = value(&metadata, "name")?;
     assert_eq!(name, "Packet Two");
-    let say = format!("s18-say-{run}");
-    let whisper = format!("s18-whisper-{run}");
-    let boundary = format!("s18-boundary-{run}");
-    let private = format!("s18-private-{run}");
-    let outside = format!("s18-outside-{run}");
-    let outside_whisper = format!("s18-outside-whisper-{run}");
-    let line = |mode, text: &str| ChatLine::Local {
+    let line = |mode, text: String| ChatLine::Local {
         speaker,
         speaker_name: name.into(),
         mode,
-        text: text.into(),
+        text,
         position,
     };
-    let common = [
-        line(ChatSpeechMode::Say, &say),
-        line(ChatSpeechMode::Whisper, &whisper),
-        line(ChatSpeechMode::Say, &boundary),
-    ];
-    let speaker_lines = [
-        common[0].clone(),
-        common[1].clone(),
-        common[2].clone(),
-        line(ChatSpeechMode::Whisper, &private),
-        line(ChatSpeechMode::Say, &outside),
-        line(ChatSpeechMode::Whisper, &outside_whisper),
-    ];
-    let listener_lines = [
-        common[0].clone(),
-        common[1].clone(),
-        common[2].clone(),
-        line(ChatSpeechMode::Whisper, "pspsps"),
-    ];
+    let mut speaker_lines = Vec::new();
+    let mut listener_lines = Vec::new();
+    for label in ["near", "boundary", "outside-x", "outside-y"] {
+        for (mode, suffix) in [
+            (ChatSpeechMode::Say, "say"),
+            (ChatSpeechMode::Whisper, "whisper"),
+        ] {
+            let text = format!("s18-{label}-{suffix}-{run}");
+            speaker_lines.push(line(mode, text.clone()));
+            match (label, mode) {
+                ("near", _) | ("boundary", ChatSpeechMode::Say) => {
+                    listener_lines.push(line(mode, text))
+                }
+                ("boundary", ChatSpeechMode::Whisper) => {
+                    listener_lines.push(line(mode, "pspsps".into()))
+                }
+                _ => {}
+            }
+        }
+    }
     block_on(async {
         for (role, envelope_file, relog_file, expected) in [
             (
