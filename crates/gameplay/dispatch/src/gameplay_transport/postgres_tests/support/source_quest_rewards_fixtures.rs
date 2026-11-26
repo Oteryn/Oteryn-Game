@@ -22,32 +22,46 @@ pub(super) async fn accept_outfox_mission(
     }
     Ok(())
 }
-use crate::durability::character_authority::ReconciledCharacterAuthority;
 
 pub(super) fn paradox_reward(claim: &str) -> bool {
     claim.starts_with("oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.")
 }
 
-pub(super) async fn seed_paradox_riddle(
+pub(super) async fn seed_paradox_reward_progress(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     harness: &Harness,
-    authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
-    // This cohort isolates chest USE. The story case earns this value by NPC talk.
-    let fence = owner.current_quest_fence(admitted.game_session_id).await
-        .map_err(|()| "quest fence")?.ok_or("quest fence")?;
-    let character_id = fence.character_id.as_bytes().as_slice();
-    let level: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
-        .bind(character_id).fetch_one(&harness.pool).await?;
-    super::l6_paradox_fixtures::raise_level(owner, admitted, authority, harness, u32::try_from(level)? + 1).await?;
+    // The full journey earns these values through the route and Riddler.
+    // Stage only the pre-claim state here so this cohort isolates chest USE.
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "quest fence")?
+        .ok_or("quest fence")?;
     let mut tx = harness.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx).await?;
-    let seeded = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,'oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics','oteryn:quest.the_paradox_tower_quest',2,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-        .bind(character_id)
-        .execute(&mut *tx).await?;
-    assert_eq!(seeded.rows_affected(), 1);
+        .execute(&mut *tx)
+        .await?;
+    let seeded = sqlx::query(
+        "INSERT INTO game_character_quest_tracks(
+            character_id, track_key, quest_key, value, committed_character_revision
+        )
+        SELECT character_id, progress.track_key, 'oteryn:quest.the_paradox_tower_quest',
+               progress.value, character_revision
+        FROM game_character_roots
+        CROSS JOIN (VALUES
+            ('oteryn:quest-progress/first_paradox_access', 1),
+            ('oteryn:quest-progress/l6/paradox/climb-complete', 1),
+            ('oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics', 2),
+            ('oteryn:quest-progress/quest/u7_24/the_paradox_tower/favorite_colour', 2)
+        ) AS progress(track_key, value)
+        WHERE character_id = encode($1,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(seeded.rows_affected(), 4);
     tx.commit().await?;
     Ok(())
 }
@@ -68,7 +82,8 @@ pub(super) async fn reward_premium(
     h: &super::fixture::Harness,
     claim: &str,
 ) -> TestResult<Option<SpellPremiumCoordinator>> {
-    if !claim.starts_with("oteryn:reward-claim.quest.u7_8.the_shattered_isles.")
+    if !paradox_reward(claim)
+        && !claim.starts_with("oteryn:reward-claim.quest.u7_8.the_shattered_isles.")
         && !claim.starts_with("oteryn:reward-claim.quest.u8_54.the_new_frontier.")
     {
         return Ok(None);

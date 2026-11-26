@@ -800,8 +800,14 @@ fn scenario_case(
             return cleaned;
         }
         let paradox_reward = super::source_quest_rewards_fixtures::paradox_reward(claim);
+        let paradox_premium = if paradox_reward {
+            super::source_quest_rewards_fixtures::reward_premium(&harness, claim).await?
+        } else {
+            None
+        };
         {
             let mut owner = deps.owner(&harness, &authority);
+            owner.premium_coordinator = paradox_premium.as_ref();
             if let Some(shard) = &authored_shard {
                 assert!(
                     owner
@@ -819,6 +825,14 @@ fn scenario_case(
             owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
             if paradox_reward {
+                super::source_quest_rewards_fixtures::admit_reward_character(
+                    &owner, &admitted, claim,
+                )
+                .await?;
+                super::l6_paradox_fixtures::raise_level(
+                    &owner, &admitted, &authority, &harness, 30,
+                )
+                .await?;
                 let outcome = owner.use_object(
                     deps.actor,
                     UseCommand {
@@ -832,9 +846,10 @@ fn scenario_case(
                 let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_receipts")
                     .fetch_one(&harness.pool).await?;
                 assert_eq!(count, 0, "the unlearned character cannot claim a cache");
-                super::source_quest_rewards_fixtures::seed_paradox_riddle(
-                    &owner, &admitted, &harness, &authority,
-                ).await?;
+                super::source_quest_rewards_fixtures::seed_paradox_reward_progress(
+                    &owner, &admitted, &harness,
+                )
+                .await?;
             }
             let mut stale = admitted;
             let mut stale_fence = fence;
@@ -1053,8 +1068,11 @@ fn scenario_case(
                 } else {
                     target.clone()
                 };
-            let premium =
-                super::source_quest_rewards_fixtures::reward_premium(&harness, claim).await?;
+            let premium = if paradox_reward {
+                paradox_premium
+            } else {
+                super::source_quest_rewards_fixtures::reward_premium(&harness, claim).await?
+            };
             let mut first_root = None;
             // One live stream starts at 1. Replay its retained result before
             // command 2 replaces the single terminal-record slot. A new owner
