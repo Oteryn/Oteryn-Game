@@ -1,5 +1,6 @@
 //! ANIMUS-1 durable, monotonic per-species mastery owner.
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence,
@@ -90,7 +91,7 @@ impl DurabilityRoot {
                         return Ok(Err(error));
                     }
                     let keys = read_in_transaction(&mut tx, fence.character_id).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(keys))
                 })
             })
@@ -112,7 +113,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let keys = read_in_transaction(&mut tx, character).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(keys))
                 })
             })

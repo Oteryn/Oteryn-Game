@@ -1,5 +1,6 @@
 //! Recover a Count encounter from the receipt that wrote the current hunt stage.
 use crate::domain::CharacterId;
+use crate::durability::db::commit_semantic_read;
 use crate::durability::{
     DurabilityError, DurabilityRoot,
     boss_encounter::reward_chest::scoped_death_id,
@@ -33,7 +34,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let encounter = pending_encounter(&mut tx, character).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(encounter)
                 })
             })

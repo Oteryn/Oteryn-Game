@@ -2,6 +2,7 @@
 //! Rules run against the complete bounded snapshot read under the Character root lock;
 //! callers supply an action, never a proposed storage delta. Item delivery remains with MINT.
 
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use oteryn_gameplay_quests::quest::grizzly_adams::{
     self as rules, GrizzlyAction, GrizzlyActor, GrizzlyRefusal, GrizzlyTransition,
@@ -233,7 +234,7 @@ impl DurabilityRoot {
                             })
                         })
                         .transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(reward))
                 })
             })
@@ -299,7 +300,7 @@ impl DurabilityRoot {
                             return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
                         }
                         let receipt = decode_receipt(&row)?;
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(Some(QuestTransitionOutcome::AlreadyCommitted(receipt))));
                     }
                     let refusal = match load_refusal(&mut tx, character, &request, &binding).await?
@@ -307,7 +308,7 @@ impl DurabilityRoot {
                         Ok(refusal) => refusal,
                         Err(error) => return Ok(Err(error)),
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(refusal.map(QuestTransitionOutcome::Refused)))
                 })
             })

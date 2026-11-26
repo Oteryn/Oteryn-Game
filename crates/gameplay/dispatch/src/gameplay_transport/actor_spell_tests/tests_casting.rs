@@ -41,6 +41,7 @@ fn a_cast_commits_once_and_a_repeated_proposal_never_pays_twice() {
     assert_eq!(
         cast_at(&runtime, &mut states, actor, session, 2, 500),
         SpellCastOutcome {
+            refresh_inventory: false,
             disposition: SpellCastDisposition::CoolingDown,
             vitals: None,
         }
@@ -75,6 +76,7 @@ fn reinitializing_a_present_actor_keeps_its_vitals_and_cooldowns() {
     assert_eq!(
         cast_at(&runtime, &mut states, actor, session, 2, 1),
         SpellCastOutcome {
+            refresh_inventory: false,
             disposition: SpellCastDisposition::CoolingDown,
             vitals: None,
         }

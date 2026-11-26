@@ -1035,6 +1035,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 return match replay {
                     Some(result) => ParameterCastDispatch {
                         cast: NativeCastDispatch::Outcome(SpellCastOutcome {
+                            refresh_inventory: false,
                             disposition: result.disposition,
                             vitals: super::observe_vitals(&runtime, &states, actor, session),
                         }),
@@ -1137,7 +1138,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     if let Some(history)=crate::durability::spell_parameter_result::read_parameter_result_in_transaction(&mut tx,&authority,&definition,&intent).await.map_err(|_|DurabilityError::Unavailable)?{
                         if !history.historical() || history.cost_transaction().is_some(){return Err(DurabilityError::Unavailable)}
                         let result=history.result().map_err(|_|DurabilityError::InvalidStoredState)?;
-                        return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition:result.disposition,vitals:None}),result:Some(result)})
+                        return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{refresh_inventory:false,disposition:result.disposition,vitals:None}),result:Some(result)})
                     }
                     let objects=owner.door.lock().await;
                     let prepared=match prepare_parameter(&mut tx,&authority,&FreshAdmissionStore::from_root(owner.root.clone()),runtime,states,room,&objects,content,owned.clone(),
@@ -1145,7 +1146,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         Ok(p)=>p,Err(disposition)=>{
                             #[cfg(feature = "qualification-cast-evidence")]
                             eprintln!("SEAM_EVIDENCE parameter_cast_refused spell={} command={} gate=prepare disposition={disposition:?}",spell.key,command.command_id().get());
-                            return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition,vitals:None}),result:None});
+                            return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{refresh_inventory:false,disposition,vitals:None}),result:None});
                         },
                     };
                     *pending=Some(prepared);
@@ -1198,7 +1199,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 } else {drop(tx);}
                 // A result-only cast installs nothing on the Channel.
                 let _=window.install();
-                return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition:private_result.disposition,vitals:None}),result:Some(private_result)})
+                return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{refresh_inventory:false,disposition:private_result.disposition,vitals:None}),result:Some(private_result)})
             };
             let outcome=match items::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&installation.request,verdict,&crate::gameplay_transport::world_required_field_guard::player_origin(&owner.required_capabilities)).await{
                 Ok(outcome)=>outcome,
@@ -1214,6 +1215,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     }
                     *pending=None;
                     return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{
+                        refresh_inventory: false,
                         disposition:SpellCastDisposition::Rejected,
                         vitals:super::observe_vitals(&runtime,&states,actor,session)}),result:None});
                 }
@@ -1290,7 +1292,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 // NPC-TALK-2: a caster the spell relocated out of talk range ends its conversation.
                 owner.states.chat.close_out_of_range(&runtime,session);
             }
-            Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition:private_result.disposition, vitals:super::observe_vitals(&runtime,&states,actor,session)}),result:Some(private_result)})
+            Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{refresh_inventory:false,disposition:private_result.disposition, vitals:super::observe_vitals(&runtime,&states,actor,session)}),result:Some(private_result)})
         })).await;
         let (_, _, writer, guards) = context;
         drop(guards);

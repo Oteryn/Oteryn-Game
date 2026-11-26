@@ -172,6 +172,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("W09 unexpected donor spell cooldown: {natural_cooldown:?}").into());
     }
     let wand = provisioning::item_reference(&index, 25760)?;
+    if expected.contains_key(&wand)
+        || !client
+            .inventory()
+            .is_some_and(|inventory| inventory.main_backpack.is_some())
+    {
+        return Err("W09 requires a main backpack with no Wand of Darkness".into());
+    }
     let first_cast = tokio::time::Instant::now();
     cast_wand(&mut client, spell).await?;
     *expected.entry(wand).or_default() += 1;

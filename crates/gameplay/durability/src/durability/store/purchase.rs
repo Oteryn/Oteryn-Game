@@ -1,3 +1,4 @@
+use crate::durability::db::commit_semantic_read;
 use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::super::{DurabilityError, DurabilityRoot};
 use super::codec::{MAX_ANSWER_BYTES, PurchaseRequest, StoreValidationError, uuid_string, uuid_v7};
@@ -26,7 +27,7 @@ impl DurabilityRoot {
                        WHERE conflict.operation_id=(convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids' ->> 0)::uuid)
                  ORDER BY h.purchased_at_ms,h.purchase_request_id LIMIT 1",
             ).bind(account.as_slice()).bind(offer).bind(world.as_slice()).fetch_optional(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(row.map(|(purchase_id, character_id, binding_digest)| super::PendingStorePurchase {
                 purchase_id: *purchase_id.as_bytes(),
                 character_id: *character_id.as_bytes(),
@@ -60,7 +61,7 @@ impl DurabilityRoot {
                  ORDER BY p.purchase_request_id LIMIT 20",
             ).bind(account.as_slice()).bind(world.as_slice()).bind(after.map(sqlx::types::Uuid::from_bytes))
                 .fetch_all(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(rows.into_iter().map(|(purchase_id, character_id, binding_digest)| super::PendingStorePurchase {
                 purchase_id: *purchase_id.as_bytes(),
                 character_id: *character_id.as_bytes(),
@@ -104,7 +105,7 @@ impl DurabilityRoot {
                  ORDER BY (p.binding_digest=ANY($4::bytea[])) DESC,p.created_at,p.purchase_request_id LIMIT 20",
             ).bind(account.as_slice()).bind(character.as_slice()).bind(world.as_slice()).bind(legacy_bindings).bind(removed_only)
                 .fetch_all(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(rows.into_iter().map(|(purchase_id, binding_digest)| super::PendingStorePurchase {
                 purchase_id: *purchase_id.as_bytes(),
                 character_id: character,
@@ -132,7 +133,7 @@ impl DurabilityRoot {
             ).bind(retry.purchase_request_id.as_slice()).bind(retry.account_id.as_slice())
                 .bind(retry.character_id.as_slice()).bind(retry.binding_digest().as_slice())
                 .fetch_optional(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(row.map(|(purchase_id, character_id, world_id, binding_digest)| super::PendingStorePurchase {
                 purchase_id: *purchase_id.as_bytes(), character_id: *character_id.as_bytes(),
                 world_id: *world_id.as_bytes(), binding_digest,
@@ -201,7 +202,7 @@ impl DurabilityRoot {
                     .bind(request.binding_digest().as_slice())
                     .fetch_optional(&mut *tx)
                     .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(answer))
                 })
             })
@@ -226,7 +227,7 @@ impl DurabilityRoot {
                      AND account_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid)"
                 ).bind(purchase_request_id.as_slice()).bind(account_id.as_slice())
                     .bind(character_id.as_slice()).fetch_one(&mut *tx).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(retained))
                 })
             })

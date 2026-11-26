@@ -1,4 +1,5 @@
 //! PLAT-WIRE-1 store passes: reconciled authority and existing durability deadlines.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::native_admission_source::public_projections::world_totals::{
     BATCH, TotalsFacts, TotalsSnapshot,
@@ -78,7 +79,7 @@ impl DurabilityRoot {
                             player_deaths: count(row, "player_deaths")?,
                         });
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(samples))
                 })
             })
@@ -143,7 +144,7 @@ impl DurabilityRoot {
                     observed_at: row.try_get("now")?,
                 })
             }).transpose()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(facts))
         })).await?
     }

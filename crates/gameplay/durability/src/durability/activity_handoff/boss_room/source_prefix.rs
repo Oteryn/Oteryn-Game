@@ -1,5 +1,6 @@
 //! Read-only source pad eligibility. Native effects still require the current
 //! physical owner, exact source policy and original command for every pad.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::foundation::CommandRef;
 use oteryn_gameplay_encounter_rules::boss_room::source_prefix::plan_on_use_extra_prefix;
@@ -159,7 +160,7 @@ impl ActivityHandoffOwner {
                 AdmissionRefusal::Position=>ActivityRefusal::Position,
                 AdmissionRefusal::Duplicate|AdmissionRefusal::InvalidPolicy=>ActivityRefusal::AuthorityRejected,
             });
-            commit_semantic_transaction(tx,deadline).await?;
+            commit_semantic_read(tx,deadline).await?;
             Ok(Some(QualifiedBossPadPrefix {pads,refusal}))
         })).await
     }

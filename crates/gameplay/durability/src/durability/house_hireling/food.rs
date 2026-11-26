@@ -1,4 +1,5 @@
 //! Cook delivery composes native Inbox MINT and the existing coin/bank fee owner.
+use crate::durability::db::commit_semantic_read;
 use super::super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
 };
@@ -7,7 +8,7 @@ use super::super::character_inbox::{
     RewardClaimInboxOutcome, RewardClaimInboxPlan,
 };
 use super::super::character_progression::CurrentCharacterGameplayFence;
-use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::super::db::{begin_semantic_transaction};
 use super::super::item_fee_burn::{
     FeeBurnCause, FeeBurnError, FeeBurnRequest, HirelingFeeChange, burn_hireling_fee_in_transaction,
 };
@@ -137,7 +138,7 @@ impl DurabilityRoot {
                 .bind(character.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice())
                 .bind(command.command_id().get().to_string()).fetch_optional(&mut *tx).await?;
             let result = match binding { None => Ok(false), Some(bound) if bound == intent_binding => Ok(true), Some(_) => Err(HirelingFoodError::Conflict) };
-            commit_semantic_transaction(tx,deadline).await?; Ok(result)
+            commit_semantic_read(tx,deadline).await?; Ok(result)
         })).await.map_err(HirelingFoodError::Unavailable)?
     }
 
