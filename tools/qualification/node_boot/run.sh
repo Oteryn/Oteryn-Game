@@ -1644,7 +1644,7 @@ n07c_client_replay() {
   local capture="$N07C_CAPTURE_DIR" seam_log="$1" started=$SECONDS
   local replay=e2e_n07c_replays_kill_facts_into_the_analyser_selector
   [[ -s "$capture/n07c-expected.txt" ]] || { fail "N07c live capture missing"; return 1; }
-  if ! grep -Eq '^SEAM_EVIDENCE e2e_all scenario=N07c[.]client status=CAPTURED ' "$seam_log" ||
+  if ! grep -Eq '^SEAM_EVIDENCE e2e_capture scenario=N07c[.]client status=CAPTURED ' "$seam_log" ||
      grep -q '^SEAM_EVIDENCE e2e_row_release .*error=' "$seam_log"; then
     fail "N07c live capture or character release did not complete"
     return 1
@@ -1662,7 +1662,7 @@ after = int(header["sequence_after"])
 marker = f"session={session};sequence_before={before};sequence_after={after};"
 verdict = [
     line for line in Path(sys.argv[2]).read_text().splitlines()
-    if line.startswith("SEAM_EVIDENCE e2e_all scenario=N07c.client status=CAPTURED ")
+    if line.startswith("SEAM_EVIDENCE e2e_capture scenario=N07c.client status=CAPTURED ")
 ]
 if (header.get("capture_kind") != "typed-events-v1"
         or not re.fullmatch(r"[0-9a-f]{32}", session) or len(verdict) != 1

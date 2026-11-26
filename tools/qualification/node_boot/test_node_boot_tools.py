@@ -531,7 +531,7 @@ n07c_client_replay "$WORK/seam.log"
             )
             seam_log = Path(work, 'seam.log')
             seam_log.write_text(
-                'SEAM_EVIDENCE e2e_all scenario=N07c.client status=CAPTURED '
+                'SEAM_EVIDENCE e2e_capture scenario=N07c.client status=CAPTURED '
                 f'evidence=session={session};sequence_before=3;sequence_after=5;\n'
             )
             env['REPLAY_TEST_RESULT'] = 'test result: ok. 0 passed; 0 failed; 0 ignored;'
