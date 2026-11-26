@@ -720,6 +720,36 @@ class ClientReplayTests(unittest.TestCase):
                 else:
                     self.assertEqual(result.stdout, '')
 
+    def test_w10_missing_capture_marker_fails_even_with_prior_capture_files(self):
+        with tempfile.TemporaryDirectory() as work:
+            work = Path(work)
+            (work / 'node.log').touch()
+            for capture in ('w10-query.bin', 'w10-select.bin', 'w10-expected.txt'):
+                (work / capture).write_text('prior run')
+            result = bash(
+                'source "$REPLAY_HELPER"; node_boot_client_replays node.log',
+                {'REPLAY_HELPER': str(HERE / 'client_replay.sh'), 'CARGO': 'false',
+                 'E2E_ALL_CAPTURE_DIR': str(work), 'OTERYN_E2E_ROW_BATCH': '193:1'},
+                cwd=work,
+            )
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertIn('scenario=W10.client status=FAIL', result.stdout)
+
+    def test_w10_replay_selection_matches_rust_batch_forms(self):
+        for batch, selected in [('193:1', True), ('+0193:+01', True),
+                                ('00000000193:1', True), ('all', True),
+                                ('192:2', True), ('193:0', False),
+                                ('192:1', False), ('194:1', False),
+                                ('193:18446744073709551616', False)]:
+            with self.subTest(batch=batch):
+                result = bash(
+                    'source "$REPLAY_HELPER"; selected_client_replays',
+                    {'REPLAY_HELPER': str(HERE / 'client_replay.sh'),
+                     'OTERYN_E2E_ROW_BATCH': batch},
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual('W10.client ' in result.stdout, selected)
+
 
 class CloudRunSummaryTests(unittest.TestCase):
     def test_cloud_uses_first_eligible_work_parent(self):

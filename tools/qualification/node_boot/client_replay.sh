@@ -28,10 +28,15 @@ selected_client_replays() {
     start=$((10#${BASH_REMATCH[1]}))
     length=$((10#${BASH_REMATCH[2]}))
   else
-    return 0
+    start=0
+    length=0
   fi
   while read -r index row package case_name; do
-    if (( index >= start && index - start < length )); then
+    if [[ $row == W10.client ]]; then
+      if w10_replay_selected "$batch" "$index"; then
+        printf '%s %s %s\n' "$row" "$package" "$case_name"
+      fi
+    elif (( index >= start && index - start < length )); then
       printf '%s %s %s\n' "$row" "$package" "$case_name"
     fi
   done <<'REPLAYS'
@@ -40,6 +45,22 @@ selected_client_replays() {
 193 W10.client oteryn-client-ui e2e_w10_replays_hazard_state_selection_and_locked_refusal
 196 W13.client oteryn-client-ui e2e_w13_replays_daily_boost_selection_and_refusal
 REPLAYS
+}
+
+w10_replay_selected() {
+  # Rust's usize parser accepts an optional plus and leading zeroes. Strip
+  # them before arithmetic so a long valid batch cannot skip verification.
+  local batch=$1 index=$2 start length
+  [[ $batch != all ]] || return 0
+  [[ $batch =~ ^[+]?0*([0-9]+):[+]?0*([0-9]+)$ ]] || return 1
+  start=${BASH_REMATCH[1]}
+  length=${BASH_REMATCH[2]}
+  (( ${#start} <= ${#index} && ${#length} <= 20 )) || return 1
+  if (( ${#length} == 20 )) && [[ $length > 18446744073709551615 ]]; then
+    return 1
+  fi
+  (( index >= start )) || return 1
+  (( ${#length} > ${#index} || index - start < length ))
 }
 
 node_boot_client_replays() {
