@@ -185,6 +185,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     character_prep::grant_item(&fixture, 3043, 3).await?;
     logout(&mut fixture).await?;
     drop(fixture);
+    super::client_row_p18::seed_dust("P18.full", &dedicated).await?;
 
     let mut client = connect_character(&dedicated, 0xd8, 0).await?;
     let session = client.join_snapshot().game_session_id;
@@ -230,6 +231,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         );
     }
     let initial_dust = super::client_row_p18::dust(&mut client).await?;
+    if initial_dust != (100, 100) {
+        return Err(format!(
+            "funded Fusion expected fixture dust 100/100, observed {initial_dust:?}"
+        )
+        .into());
+    }
     let mut fusion_outcome = None;
     let mut applied = Vec::new();
     let operations = [

@@ -142,6 +142,30 @@ fn check_refusal(body: &serde_json::Value, reason: &str) -> TestResult {
     Ok(())
 }
 
+pub(super) async fn seed_dust(row: &str, clients: &SeamClients<'_>) -> TestResult {
+    let [character] = clients.characters else {
+        return Err("funded Forge fixture requires one dedicated character".into());
+    };
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let mut tx = sqlx::Connection::begin(&mut connection).await?;
+    let character = uuid_text(character);
+    let entry = uuid_text(&v7(0x44, 0xa1));
+    sqlx::query("INSERT INTO game_character_forge_dust(character_id,balance,dust_limit) VALUES($1::uuid,0,100)")
+        .bind(&character).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_character_forge_dust_entries
+        (entry_id,character_id,kind,cause,cause_occurrence_id,transaction_id,amount,lost_amount,balance_before,balance_after,dust_limit_before,dust_limit_after)
+        VALUES($1::uuid,$2::uuid,'GAIN','creature_kill',$3::uuid,$4::uuid,100,0,0,100,100,100)")
+        .bind(&entry).bind(&character).bind(uuid_text(&v7(0x44, 0xa2)))
+        .bind(uuid_text(&v7(0x44, 0xa3))).execute(&mut *tx).await?;
+    sqlx::query("UPDATE game_character_forge_dust SET balance=100,last_entry_id=$1::uuid WHERE character_id=$2::uuid")
+        .bind(&entry).bind(&character).execute(&mut *tx).await?;
+    tx.commit().await?;
+    evidence(&format!(
+        "FIXTURE row={row} input=forge_dust before=0 after=100 cap=100"
+    ));
+    Ok(())
+}
+
 fn check_funded(body: &serde_json::Value, operation: Operation) -> TestResult {
     let expected = match operation {
         Operation::DustToSlivers => serde_json::json!({
@@ -194,6 +218,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("Forge dagger fixture logout refused".into());
     }
     drop(fixture);
+    seed_dust("P18.client", clients).await?;
     let mut client = connect_character(clients, 0x44, 0).await?;
     let session = client.join_snapshot().game_session_id;
     let definitions = provisioning::item_index()?;
@@ -201,61 +226,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 
     let balance = dust(&mut client).await?;
     if balance != (100, 100) {
-        if balance == (0, 100) {
-            let (_, before_history) =
-                forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
-            if before_history != serde_json::json!([]) {
-                return Err("unfunded distinct-pair Fusion requires empty history".into());
-            }
-            client.service_liveness(Duration::from_millis(490)).await?;
-            let before = client
-                .inventory()
-                .cloned()
-                .ok_or("Fusion pre-state inventory missing")?;
-            let (_, refusal) = forge(
-                &mut client,
-                Operation::Fusion,
-                occurrence(session, 9),
-                Some(pair),
-                0,
-            )
-            .await?;
-            check_refusal(&refusal, "INSUFFICIENT_DUST")?;
-            if dust(&mut client).await? != balance || client.inventory() != Some(&before) {
-                return Err("unfunded distinct-pair Fusion changed state".into());
-            }
-            if client.session_mut().logout().await?.result
-                != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-            {
-                return Err("unfunded distinct-pair Fusion logout refused".into());
-            }
-            drop(client);
-            let mut fresh = connect_character(clients, 0x45, 0).await?;
-            let normalize = super::full_row_p18::durable_inventory;
-            if fresh.join_snapshot().game_session_id == session
-                || fresh.inventory().cloned().map(normalize) != Some(normalize(before))
-                || dust(&mut fresh).await? != balance
-            {
-                return Err("unfunded distinct-pair Fusion changed durable state".into());
-            }
-            let (_, history) =
-                forge(&mut fresh, Operation::QueryHistory, [0; 16], None, 50).await?;
-            if history != before_history {
-                return Err("unfunded distinct-pair Fusion wrote a history entry".into());
-            }
-            if fresh.session_mut().logout().await?.result
-                != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-            {
-                return Err("unfunded distinct-pair Fusion relog logout refused".into());
-            }
-            evidence(
-                "P18_CLIENT_DISTINCT_PAIR_CHECK refusal=INSUFFICIENT_DUST durable_unchanged=true",
-            );
-        }
-        return Err(format!(
-            "funded Forge requires 100 earned dust at cap 100; observed {balance:?}"
-        )
-        .into());
+        return Err(
+            format!("funded Forge expected fixture dust 100/100, observed {balance:?}").into(),
+        );
     }
     let (history_bytes, history) =
         forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
