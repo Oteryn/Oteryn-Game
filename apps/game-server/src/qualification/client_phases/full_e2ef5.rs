@@ -4102,16 +4102,28 @@ pub(super) async fn capture_animate_dead(
 ) -> TestResult {
     let book = native_spell_book()?;
     let spell = book.rune(3203).ok_or("Animate Dead rune absent")?;
-    let mut caster = connect_character(clients, 0xd5, 1).await?;
-    let actual_level = level(&mut caster).await?;
-    if actual_level < spell.level {
-        let (logout, detail, _, _) = logout_retrying_busy(&mut caster).await?;
-        if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err(format!("C16c prerequisite logout refused: {detail}").into());
-        }
-        return Err(format!("C16c Animate Dead requires served level {}; admitted level {actual_level}", spell.level).into());
+    let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_C16C_ACCOUNT").await?;
+    let (accounts, characters) = fixture.replace_slot(clients, 1)?;
+    let scoped = SeamClients { accounts: &accounts, characters: &characters, ..*clients };
+    let clients = &scoped;
+    character_prep::declare_seeded("C16c.client", "level=27 vocation=sorcerer rune-3203=1", "native Animate Dead capture");
+    let mut caster = character_prep::Seeded {
+        profile: "c16c-sorcerer",
+        reason: "exact authored Animate Dead rune level",
+    }.connect(clients, 0xd5, 1).await?;
+    let stats = general_stats_payload(&mut caster).await?;
+    let actual_level = level_from_stats(&stats, general_stats::selected(&caster))?;
+    let experience = u64::from_le_bytes(stats[1..9].try_into()?);
+    let vocation = current_vocation(&mut caster).await?;
+    let vitals = caster.actor_vitals().copied().ok_or("C16c seeded vitals absent")?;
+    // Crystal 201189f8: level-8 bases 185/90, then Sorcerer gains 5/30.
+    if (actual_level, experience, vitals.max_health, vitals.max_mana, vitals.soul)
+        != (27, 262_600, 280, 660, 100)
+        || actual_level != spell.level || vocation != crate::spell::Vocation::Sorcerer
+    {
+        return Err(format!("C16c seeded build mismatch: level={actual_level} xp={experience} vocation={vocation:?} vitals={vitals:?}").into());
     }
-    character_prep::declare_seeded("C16c.client", "rune-3203=1", "native Animate Dead capture");
+    evidence("C16C_BUILD level=27 vocation=sorcerer xp=262600 max_health=280 max_mana=660 soul=100");
     let reference = provisioning::item_reference(&provisioning::item_index()?, 3203)?;
     let before = rune_quantity(&mut caster, reference)?;
     character_prep::grant_item(&caster, 3203, 1).await?;
