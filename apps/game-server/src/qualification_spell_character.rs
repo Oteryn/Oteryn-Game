@@ -29,7 +29,7 @@ pub(super) fn debug(error: impl std::fmt::Debug) -> String {
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
-pub(super) const PRIMAL_AXE_ITEM: u32 = 805;
+pub(super) const PRIMAL_AXE_ITEM: u32 = 20_072;
 #[cfg(any(test, feature = "qualification-spawn"))]
 pub(super) const PRIMAL_AXE_SKILL: u16 = 420;
 
