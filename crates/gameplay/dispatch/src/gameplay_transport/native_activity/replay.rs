@@ -303,7 +303,7 @@ impl <'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         &self,
         request: ActivityEnterRequest,
         wire: [u8; 32],
-    ) -> Result<NativeActivityOutcome, ()> {
+    ) -> Result<NativeActivityOutcome, NativeActivityEntryError> {
         self.enter_native_activity_inner(request, true, None, Some(wire))
             .await
     }
@@ -315,6 +315,7 @@ impl <'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
     ) -> Result<NativeActivityOutcome, ()> {
         self.enter_native_activity_inner(request, false, Some(entry), None)
             .await
+            .map_err(|_| ())
     }
     pub(super) async fn retry_native_soulpit(
         &self,

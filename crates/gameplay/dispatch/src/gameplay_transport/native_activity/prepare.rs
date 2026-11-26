@@ -5,7 +5,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         boss_room: bool,
         soulpit: Option<crate::durability::soulpit::SoulpitEntryRequest>,
         boss_pad_wire: Option<[u8; 32]>,
-    ) -> Result<NativeActivityOutcome, ()> {
+    ) -> Result<NativeActivityOutcome, NativeActivityEntryError> {
         let refuse = |reason| Ok(NativeActivityOutcome::Refused(reason));
         if request.command_id == 0
             || request.participants.is_empty()
@@ -49,7 +49,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .activity_runtimes
             .attempts
             .lock()
-            .map_err(|_| ())?
+            .map_err(|_| NativeActivityEntryError::Reconcile)?
             .get(&key)
             .cloned();
         if let Some(pending) = existing {
@@ -67,7 +67,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 return refuse(ActivityRefusal::ReplayConflict);
             }
             drop(attempt);
-            return self.finish_native_activity(pending).await;
+            return self
+                .finish_native_activity(pending)
+                .await
+                .map_err(|_| NativeActivityEntryError::Reconcile);
         }
         let first = request.participants[0].source;
         if !matches!(
@@ -174,7 +177,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         }
         for principal in principals {
             if source_view.drain_kill_rewards(principal).await == DrainOutcome::Deferred {
-                return Err(());
+                return Err(NativeActivityEntryError::Uncommitted);
             }
         }
         // Shared-XP settlement acquires its lane before recipient revisions.
@@ -204,7 +207,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 return refuse(ActivityRefusal::AuthorityRejected);
             };
             if !source_view.settle_activity_equipment(actor, session).await {
-                return Err(());
+                return Err(NativeActivityEntryError::Uncommitted);
             }
         }
         let mut slots = Vec::new();
@@ -459,6 +462,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 attacks: held_attacks,
                 kill_marks,
                 receipt: None,
+                boss_commit_uncertain: false,
                 moved: None,
                 entry_effect_starts: None,
                 states_installed: false,
@@ -483,6 +487,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if pending.lock().await.soulpit.is_some() {
             eprintln!("SRX3_SOULPIT HANDOFF_STAGE retained_attempt");
         }
-        self.finish_native_activity(pending).await
+        self.finish_native_activity(pending)
+            .await
+            .map_err(|_| NativeActivityEntryError::Reconcile)
     }
 }

@@ -127,6 +127,35 @@ pub(super) async fn exchange_command_capture(
     command_type: u32,
     capture: &mut Vec<Vec<u8>>,
 ) -> TestResult<(u64, BossActivityReply, Option<ActivityScopeSnapshot>)> {
+    exchange_wire(owner, admitted, boss, expect_switch, command_type, capture, false).await
+}
+
+pub(super) async fn exchange_replayed_refusal(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    boss: &str,
+) -> TestResult<(u64, BossActivityReply, Option<ActivityScopeSnapshot>)> {
+    exchange_wire(
+        owner,
+        admitted,
+        boss,
+        false,
+        wire::COMMAND_TYPE_BOSS_LEVER,
+        &mut Vec::new(),
+        true,
+    )
+    .await
+}
+
+async fn exchange_wire(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    boss: &str,
+    expect_switch: bool,
+    command_type: u32,
+    capture: &mut Vec<Vec<u8>>,
+    replay_refusal: bool,
+) -> TestResult<(u64, BossActivityReply, Option<ActivityScopeSnapshot>)> {
     let before = *admitted;
     let id = before.continuity.next_command_id;
     let body = wire::encode_boss_key(boss).map_err(debug)?;
@@ -156,20 +185,17 @@ pub(super) async fn exchange_command_capture(
             }
         }
         stage = "write boss command";
-        write_frame(
-            &mut client,
-            &encode_client_command_for_session(
-                before.continuity.connection_generation,
-                &ClientCommandValue {
-                    command_id: id,
-                    command_type,
-                    payload: &body,
-                },
-                before.game_session_id.as_bytes(),
-            )
-            .map_err(debug)?,
+        let command_frame = encode_client_command_for_session(
+            before.continuity.connection_generation,
+            &ClientCommandValue {
+                command_id: id,
+                command_type,
+                payload: &body,
+            },
+            before.game_session_id.as_bytes(),
         )
-        .await?;
+        .map_err(debug)?;
+        write_frame(&mut client, &command_frame).await?;
         stage = "command result";
         let mut reply = None;
         let mut barrier = None;
@@ -195,6 +221,8 @@ pub(super) async fn exchange_command_capture(
                         result.status,
                         if expect_switch {
                             CommandStatus::Accepted
+                        } else if replay_refusal && reply.is_some() {
+                            CommandStatus::DuplicateReplay
                         } else {
                             CommandStatus::Rejected
                         },
@@ -203,7 +231,18 @@ pub(super) async fn exchange_command_capture(
                         before.continuity.connection_generation,
                         result.payload
                     );
-                    reply = Some(decoded.map_err(debug)?);
+                    let decoded = decoded.map_err(debug)?;
+                    if !expect_switch && replay_refusal {
+                        if let Some(original) = reply.as_ref() {
+                            assert_eq!(original, &decoded, "retained refusal on the same stream");
+                            break;
+                        }
+                        stage = "replay refused boss command";
+                        reply = Some(decoded);
+                        write_frame(&mut client, &command_frame).await?;
+                        continue;
+                    }
+                    reply = Some(decoded);
                     if !expect_switch {
                         break;
                     }

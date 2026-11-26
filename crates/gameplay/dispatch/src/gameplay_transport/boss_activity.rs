@@ -1,17 +1,26 @@
 //! Boss lever commands compose authored content, native participants and the
 //! shared scope handoff. A client key never supplies an actor, position or grant.
 use super::connection::{AdmittedSession, ConnectionIdentifiers};
-use super::native_activity::{NativeActivityOutcome, boss_room_native_ready};
-use super::{ComposedFreshAdmission, SecureIdentifiers};
+use super::native_activity::{
+    NativeActivityEntryError, NativeActivityOutcome, boss_room_native_ready,
+};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission, SecureIdentifiers};
 use crate::durability::activity_handoff::{
     ActivityContentPin, ActivityEnterRequest, ActivityHandoffOwner, ActivityParticipant,
     ActivityRefusal, ActivityReturnReason,
 };
-use crate::durability::character_progression::CharacterProgressionError;
 use crate::foundation::{CharacterId, CommandStatus, MovementLocalPosition, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
 mod staged_room_admission;
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static PRIMAL_ROOM_LOOKUP: (
+        std::sync::Arc<tokio::sync::Notify>,
+        std::sync::Arc<tokio::sync::Notify>,
+    );
+}
 
 pub(super) type BossActivityResult = Option<(CommandStatus, Vec<u8>)>;
 
@@ -122,6 +131,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return self.boss_activity_result(retained);
         }
+        // Keep foreground preference across catalogue activation, lookup and
+        // admission. Each read also waits for an already checked-out holder.
+        let Ok(budget) = AdmissionRetryBudget::for_foreground_command(self.root) else {
+            return refusal(ActivityRefusal::AuthorityRejected);
+        };
         let origin_pin = {
             let runtime = self.runtime.lock().await;
             if runtime.binding().runtime_scope() != fence.runtime_scope
@@ -149,7 +163,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         }
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
             && primal
-            && let Err(reason) = self.prepare_primal_catalogue(admitted).await
+            && let Err(reason) = self.prepare_primal_catalogue(admitted, &budget).await
         {
             return refusal(reason);
         }
@@ -179,24 +193,29 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 Ok(Err(reason)) => {
                     return refusal(reason.into());
                 }
-                Err(CharacterProgressionError::AuthorityRejected) => {
-                    return refusal(ActivityRefusal::AuthorityRejected);
-                }
                 Ok(Ok(())) => {}
-                Err(_) => return None,
+                Err(_) => return refusal(ActivityRefusal::AuthorityRejected),
             };
         }
         let owner = ActivityHandoffOwner::new(self.root.clone());
-        let Some(definition) = owner
-            .read_boss_room_with_pin(
-                self.character,
-                self.holder,
-                fence,
-                &intent.boss_key,
-                origin_pin,
-            )
+        #[cfg(test)]
+        if primal && let Ok((reached, held)) = PRIMAL_ROOM_LOOKUP.try_with(Clone::clone) {
+            reached.notify_one();
+            held.notified().await;
+        }
+        let Ok(Some(definition)) = budget
+            .retry_command_guard(async || {
+                owner
+                    .read_boss_room_with_pin(
+                        self.character,
+                        self.holder,
+                        fence,
+                        &intent.boss_key,
+                        origin_pin,
+                    )
+                    .await
+            })
             .await
-            .ok()?
         else {
             return refusal(ActivityRefusal::ContentUnavailable);
         };
@@ -222,15 +241,20 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             {
                 return refusal(ActivityRefusal::AuthorityRejected);
             }
-            let request = difficulty::encode_request(&difficulty::Request::OpenWithProgress {
+            let Ok(request) = difficulty::encode_request(&difficulty::Request::OpenWithProgress {
                 boss_key: intent.boss_key,
-            })
-            .ok()?;
-            let reply = self
+            }) else {
+                return refusal(ActivityRefusal::InvalidInput);
+            };
+            let reply = match self
                 .root
                 .boss_difficulty_command(self.character, self.holder, fence, id, &request)
                 .await
-                .ok()??;
+            {
+                Ok(Some(reply)) => reply,
+                Ok(None) => return refusal(ActivityRefusal::AuthorityRejected),
+                Err(_) => return None,
+            };
             return Some((CommandStatus::Accepted, reply));
         }
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
@@ -280,7 +304,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if let Err(reason) = template_ready {
             return refusal(reason);
         }
-        let loaded = self.activity_runtimes.activity_owners().ok()?;
+        let Ok(loaded) = self.activity_runtimes.activity_owners() else {
+            return refusal(ActivityRefusal::AuthorityRejected);
+        };
         if !loaded.iter().any(|registered| {
             registered.template.as_ref().is_some_and(|template| {
                 template.key == definition.room_template_key
@@ -292,10 +318,16 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let mut after = None;
         let mut selected = None;
         loop {
-            let allocations = owner
-                .ready_allocations(self.character, self.holder, admitted.world_id, after)
+            let Ok(allocations) = budget
+                .retry_command_guard(async || {
+                    owner
+                        .ready_allocations(self.character, self.holder, admitted.world_id, after)
+                        .await
+                })
                 .await
-                .ok()?;
+            else {
+                return refusal(ActivityRefusal::NoCapacity);
+            };
             for allocation in &allocations {
                 let Some(registered) = self
                     .activity_runtimes
@@ -324,10 +356,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             let Some(RuntimeScopeRefV1::Instance { instance_id, .. }) =
                 allocations.last().map(|allocation| allocation.scope)
             else {
-                return None;
+                return refusal(ActivityRefusal::NoCapacity);
             };
             if after.is_some_and(|previous| previous >= instance_id) {
-                return None;
+                return refusal(ActivityRefusal::NoCapacity);
             }
             after = Some(instance_id);
         }
@@ -337,9 +369,14 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let mut participants = Vec::new();
         {
             let runtime = self.runtime.lock().await;
-            let census = runtime.positioned_actor_census().ok()?;
+            let Ok(census) = runtime.positioned_actor_census() else {
+                return refusal(ActivityRefusal::AuthorityRejected);
+            };
             let partition = if definition.boss_key == "oteryn:boss.bakragore" {
-                let cell = runtime.read_actor_position(actor).ok()?.position();
+                let Ok(position) = runtime.read_actor_position(actor) else {
+                    return refusal(ActivityRefusal::Position);
+                };
+                let cell = position.position();
                 let ordinal = definition
                     .lever_positions
                     .iter()
@@ -398,10 +435,19 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                         floor: definition.exit_position.floor,
                     },
                 );
+                let Some(&destination_cell) = definition.entry_positions.get(ordinal) else {
+                    return refusal(ActivityRefusal::ContentChanged);
+                };
+                let (Some(destination_game_session_id), Some(transport)) = (
+                    SecureIdentifiers.game_session_id(),
+                    SecureIdentifiers.transport_ref(),
+                ) else {
+                    return refusal(ActivityRefusal::NoCapacity);
+                };
                 participants.push(ActivityParticipant {
                     source: member_fence,
-                    destination_game_session_id: SecureIdentifiers.game_session_id()?,
-                    destination_transport: Some(SecureIdentifiers.transport_ref()?),
+                    destination_game_session_id,
+                    destination_transport: Some(transport),
                     selected_capabilities: member
                         .continuity
                         .selected_capabilities
@@ -409,7 +455,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                         .to_vec(),
                     source_position: saved.record,
                     source_position_write_sequence: saved.write_sequence,
-                    destination_cell: *definition.entry_positions.get(ordinal)?,
+                    destination_cell,
                     exit_position: exit.record,
                 });
             }
@@ -429,9 +475,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         // roster. Endgame quest gates therefore apply to every participant.
         if super::endgame_entry::encounter_for_boss_key(&intent.boss_key).is_some() {
             for participant in &participants {
-                let member = self
+                let Some(member) = self
                     .activity_runtimes
-                    .connection(participant.source.game_session_id)?;
+                    .connection(participant.source.game_session_id)
+                else {
+                    return refusal(ActivityRefusal::AuthorityRejected);
+                };
                 match self.endgame_boss_entry(member, payload).await {
                     Ok(Ok(())) => {}
                     Ok(Err(reason)) => return refusal(reason.into()),
@@ -447,10 +496,16 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 server_artifact_digest: runtime.content_pin().server_artifact_digest(),
             }
         };
+        let Some(handoff_id) = SecureIdentifiers.game_session_id() else {
+            return refusal(ActivityRefusal::NoCapacity);
+        };
+        let Ok(initiating_character_id) = CharacterId::decode(fence.character_id.as_bytes()) else {
+            return refusal(ActivityRefusal::AuthorityRejected);
+        };
         let request = ActivityEnterRequest {
-            handoff_id: *SecureIdentifiers.game_session_id()?.as_bytes(),
+            handoff_id: *handoff_id.as_bytes(),
             command_id: id,
-            initiating_character_id: CharacterId::decode(fence.character_id.as_bytes()).ok()?,
+            initiating_character_id,
             activity_key: definition.boss_key,
             template_revision: definition.template_revision,
             content_revision: definition.content_revision,
@@ -463,11 +518,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         };
         use sha2::Digest;
         let wire_binding = sha2::Sha256::digest(payload).into();
-        self.boss_activity_result(
-            self.enter_native_boss_activity(request, wire_binding)
-                .await
-                .ok()?,
-        )
+        match self.enter_native_boss_activity(request, wire_binding).await {
+            Ok(result) => self.boss_activity_result(result),
+            Err(NativeActivityEntryError::Uncommitted) => {
+                refusal(ActivityRefusal::AuthorityRejected)
+            }
+            Err(NativeActivityEntryError::Reconcile) => None,
+        }
     }
 
     fn boss_activity_result(&self, result: NativeActivityOutcome) -> BossActivityResult {

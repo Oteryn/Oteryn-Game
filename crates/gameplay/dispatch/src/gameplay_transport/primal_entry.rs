@@ -1,5 +1,5 @@
 //! Source-qualified Primal lever admission through the shared W02 handoff owner.
-use super::{ComposedFreshAdmission, connection::AdmittedSession};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission, connection::AdmittedSession};
 use crate::content::bosses::activity_template::{
     PinnedActivitySourceRoom, QualifiedActivityRoomTemplate,
 };
@@ -61,6 +61,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn prepare_primal_catalogue(
         &self,
         admitted: AdmittedSession,
+        budget: &AdmissionRetryBudget<'_>,
     ) -> Result<(), ActivityRefusal> {
         let template = self.primal_template()?;
         let active = self
@@ -81,11 +82,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
             return Err(ActivityRefusal::ContentUnavailable);
         }
+        let origin_pin = {
+            let runtime = self.runtime.lock().await;
+            let pin = runtime.content_pin();
+            let start = pin.entry_start();
+            crate::foundation::ChannelContentPin::from_activation(
+                pin.world_id(),
+                pin.activation_sequence(),
+                pin.server_artifact_digest(),
+                pin.client_artifact_digest(),
+                pin.frame_binding_digest(),
+                pin.map_revision_digest(),
+                (start.x, start.y, start.floor),
+            )
+        };
+        let world_origin = active
+            .qualify_published_world_context(origin, &origin_pin)
+            .map(|_| (origin, &origin_pin));
         let fence = admitted
             .item_fence
             .ok_or(ActivityRefusal::AuthorityRejected)?;
-        if !ActivityHandoffOwner::new(self.root.clone())
-            .activate_primal_boss_catalogue(self.character, self.holder, fence, active, &template)
+        let owner = ActivityHandoffOwner::new(self.root.clone());
+        // Both catalogue passes publish the same qualified content on replay.
+        if !budget
+            .retry_command_guard(async || {
+                owner
+                    .activate_primal_boss_catalogue(
+                        self.character,
+                        self.holder,
+                        fence,
+                        active,
+                        &template,
+                        world_origin,
+                    )
+                    .await
+            })
             .await
             .map_err(|_error| {
                 #[cfg(test)]

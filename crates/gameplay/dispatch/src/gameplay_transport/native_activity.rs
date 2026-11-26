@@ -63,6 +63,17 @@ pub(super) enum NativeActivityOutcome {
     Refused(ActivityRefusal),
 }
 
+pub(super) enum NativeActivityEntryError {
+    Uncommitted,
+    Reconcile,
+}
+
+impl From<()> for NativeActivityEntryError {
+    fn from((): ()) -> Self {
+        Self::Uncommitted
+    }
+}
+
 pub(super) struct NativeActivityAttempt<'a> {
     source: RegisteredRuntime<'a>,
     destination: RegisteredRuntime<'a>,
@@ -78,6 +89,9 @@ pub(super) struct NativeActivityAttempt<'a> {
     attacks: PreparedActivityAttackStates,
     kill_marks: Vec<KillReleaseMark>,
     receipt: Option<ActivityEnterReceipt>,
+    // Set before awaiting the durable writer so cancellation keeps the same
+    // retained request eligible for receipt reconciliation.
+    boss_commit_uncertain: bool,
     moved: Option<Vec<ActivityTransferredActor>>,
     entry_effect_starts: Option<Vec<(GameSessionId, u64)>>,
     states_installed: bool,
@@ -89,6 +103,49 @@ include!("native_activity/replay.rs");
 include!("native_activity/prepare.rs");
 
 impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
+    async fn commit_native_boss_room(
+        &self,
+        owner: &ActivityHandoffOwner,
+        attempt: &mut NativeActivityAttempt<'a>,
+    ) -> Result<ActivityEnterOutcome, crate::durability::DurabilityError> {
+        use crate::durability::DurabilityError;
+
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        let result = budget
+            .retry_command_guard(async || {
+                let previously_uncertain = attempt.boss_commit_uncertain;
+                attempt.boss_commit_uncertain = true;
+                let result = owner
+                    .enter_boss_room_with_premium(
+                        self.character,
+                        self.holder,
+                        attempt.request.clone(),
+                        &self.premium_coordinator,
+                    )
+                    .await;
+                // Statement/checkout errors precede COMMIT. PostgreSQL explicitly
+                // proves rollback for rejected or transaction-timed-out commits.
+                if matches!(
+                    &result,
+                    Err(DurabilityError::RootUnavailable
+                        | DurabilityError::Unavailable
+                        | DurabilityError::Database(_)
+                        | DurabilityError::CommitRejected
+                        | DurabilityError::CommitTransactionTimeout)
+                ) {
+                    attempt.boss_commit_uncertain = previously_uncertain;
+                }
+                result
+            })
+            .await;
+        match result {
+            Err(_) if !attempt.boss_commit_uncertain => Ok(ActivityEnterOutcome::Refused(
+                ActivityRefusal::AuthorityRejected,
+            )),
+            result => result,
+        }
+    }
+
     async fn finish_native_activity(
         &self,
         pending: Arc<tokio::sync::Mutex<NativeActivityAttempt<'a>>>,
@@ -141,13 +198,25 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 .collect::<Result<_, _>>()?;
             accounts.sort_unstable();
             accounts.dedup();
-            refresh_activity_accounts(self.evidence, self.root, self.holder, &accounts).await?;
+            let refreshed =
+                refresh_activity_accounts(self.evidence, self.root, self.holder, &accounts).await;
             #[cfg(test)]
             if attempt.soulpit.is_some() {
                 eprintln!("SRX3_SOULPIT HANDOFF_STAGE evidence_held_durable_enter");
             }
             let owner = ActivityHandoffOwner::new(self.root.clone());
-            let result = if let Some(entry) = &attempt.soulpit {
+            let result = if attempt.boss_room {
+                if refreshed.is_ok() {
+                    self.commit_native_boss_room(&owner, &mut attempt).await
+                } else if attempt.boss_commit_uncertain {
+                    return Err(());
+                } else {
+                    Ok(ActivityEnterOutcome::Refused(
+                        ActivityRefusal::AuthorityRejected,
+                    ))
+                }
+            } else if let Some(entry) = &attempt.soulpit {
+                refreshed?;
                 let native = self
                     .active_generation
                     .and_then(crate::content::ActiveGeneration::native_gameplay)
@@ -167,16 +236,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                         native,
                     )
                     .await
-            } else if attempt.boss_room {
-                owner
-                    .enter_boss_room_with_premium(
-                        self.character,
-                        self.holder,
-                        attempt.request.clone(),
-                        &self.premium_coordinator,
-                    )
-                    .await
             } else {
+                refreshed?;
                 owner
                     .enter(self.character, self.holder, attempt.request.clone())
                     .await
