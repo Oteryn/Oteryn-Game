@@ -51,6 +51,10 @@ KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
 class KnobTests(unittest.TestCase):
+
+    def test_world_stages_the_npc_catalogue_once(self):
+        staging = section('MAP_REVISION=map-s3b-1', 'install_owned "$SERVICE_UID" -d')
+        self.assertEqual(staging.count('stage_npc_data.py') + staging.count('node_boot_stage_npc_data'), 1)
     def test_world_node_launch_passes_pinned_npc_catalogue(self):
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)

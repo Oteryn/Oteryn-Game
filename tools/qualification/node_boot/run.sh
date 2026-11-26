@@ -701,7 +701,6 @@ PY_STAGE
   evidence "spell_input=full_manifest manifest_sha256=$(sha256sum "$NODE_BOOT_SPELL_MANIFEST" | cut -d ' ' -f 1) activation_wait_seconds=$NODE_ACTIVATION_WAIT_SECONDS"
 fi
 MAP_REVISION=map-s3b-1
-NODE_NPC_ARGS=()
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   evidence "world_profile=$NODE_BOOT_WORLD_PROFILE regions=$WORLD_REGIONS"
   compile_world=compile-regions
@@ -728,8 +727,6 @@ PY_REGION_PIN
   NODE_NPC_ARGS=(--npc-data-project "$BASE/npc-data/content/world"
     --npc-data-sha256 "$(<"$WORK/npc-data/PROJECT_SHA256")")
   MAP_REVISION="$WORLD_DIGEST"
-  source "$GAME_SOURCE/tools/qualification/node_boot/npc_data.sh"
-  node_boot_stage_npc_data
 fi
 install_owned "$SERVICE_UID" -d -m 0700 "$BASE/fence-parent/fence" "$BASE/run"
 install_owned "$SERVICE_UID" -d -m 0755 "$BASE/node/secrets"
