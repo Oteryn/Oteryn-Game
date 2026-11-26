@@ -368,6 +368,10 @@ async fn kill_and_observe_clear(
                                 .into());
                             }
                             cleared = Some(delta.server_sequence);
+                            evidence(&format!(
+                                "P19 marker-cleared entity={target:?} sequence={}",
+                                delta.server_sequence
+                            ));
                         }
                     }
                     SessionEvent::WorldSpatialEntities(delta) => {
@@ -379,16 +383,26 @@ async fn kill_and_observe_clear(
                         {
                             position = entity.position;
                         }
-                        left |= delta.value.leave.contains(&target);
+                        if delta.value.leave.contains(&target) {
+                            left = true;
+                            evidence(&format!(
+                                "P19 target-left entity={target:?} sequence={}",
+                                delta.server_sequence
+                            ));
+                        }
                         if left {
                             for entity in delta.value.enter.iter().chain(&delta.value.update) {
                                 if entity.kind == EntityKind::Corpse
                                     && entity.position == position
                                     && !existing.contains(&entity.entity)
-                                    && let EntityDetail::Object {
+                                    && let (EntityDetail::Object {
                                         item_handle: Some(handle),
                                         ..
-                                    } = entity.detail
+                                    }
+                                    | EntityDetail::ObjectWithAppearance {
+                                        item_handle: Some(handle),
+                                        ..
+                                    }) = entity.detail
                                 {
                                     corpse = Some(handle);
                                 }
@@ -398,10 +412,7 @@ async fn kill_and_observe_clear(
                     _ => {}
                 }
             }
-            if let (Some(handle), Some(sequence)) = (corpse, cleared) {
-                evidence(&format!(
-                    "P19 marker-cleared entity={target:?} sequence={sequence}"
-                ));
+            if let (Some(handle), Some(_)) = (corpse, cleared) {
                 return TestResult::Ok(handle);
             }
         }
