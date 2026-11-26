@@ -177,13 +177,45 @@ fn viewport_ground(
         .tiles
         .iter()
         .filter(|tile| tile.ground_speed > 0 && in_window(expected, tile.position))
-        .map(|tile| (tile.position.floor, tile.position.x, tile.position.y))
-        .collect::<std::collections::BTreeSet<_>>();
-    if !ground.iter().copied().eq(observed.iter().copied()) || ground.is_empty() {
+        .map(|tile| {
+            (
+                (tile.position.floor, tile.position.x, tile.position.y),
+                tile.ground_speed,
+            )
+        })
+        .collect::<std::collections::BTreeMap<_, _>>();
+    if !ground.iter().copied().eq(observed.keys().copied()) || ground.is_empty() {
         return Err(format!("N07d viewport ground differs from pinned World: origin={expected:?} expected={} actual={}", ground.len(), observed.len()).into());
     }
+    verify_ground_speeds(observed)?;
     ground.retain(|&(floor, _, _)| floor >= map.header.first_visible_floor);
     Ok(ground)
+}
+
+fn verify_ground_speeds(
+    observed: impl IntoIterator<Item = ((i16, i32, i32), u16)>,
+) -> TestResult<()> {
+    // Domain 17 uses the Engineering pacing speed for every pinned ground tile.
+    // The bundle's stored speed determines presence, while the wire contract fixes the value.
+    const ENGINEERING_GROUND_SPEED: u16 = 150;
+    for (position, speed) in observed {
+        if speed != ENGINEERING_GROUND_SPEED {
+            return Err(format!("N07d viewport ground speed at {position:?}: expected={ENGINEERING_GROUND_SPEED} actual={speed}").into());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn n07d_rejects_a_wrong_positive_ground_speed() -> TestResult<()> {
+    let at = (7, 32361, 32232);
+    verify_ground_speeds([(at, 150)])?;
+    let result = verify_ground_speeds([(at, 151)]);
+    assert_eq!(
+        result.err().map(|error| error.to_string()).as_deref(),
+        Some("N07d viewport ground speed at (7, 32361, 32232): expected=150 actual=151")
+    );
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
