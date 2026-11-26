@@ -225,27 +225,35 @@ async fn defeat_primal(
     .await
     .map_err(|error| format!("BLOCKED-SERVER: exact Primal corpse observed: {error}"))?;
     client.session_mut().attack_target(None).await?;
-    let handle = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find_map(|entity| {
-                if entity.kind != EntityKind::Corpse || entity.entity.identity != corpse {
-                    return None;
-                }
-                match entity.detail {
-                    EntityDetail::Object { item_handle, .. }
-                    | EntityDetail::ObjectWithAppearance { item_handle, .. } => item_handle,
-                    _ => None,
-                }
-            })
-        })
-        .ok_or("exact Primal corpse has no live item handle")?;
-    let loot = creature_sweep::open_corpse(client, handle).await?;
-    if !loot.is_empty() {
+    use oteryn_protocol_oteryn::quick_loot as loot;
+    let request = loot::encode_quick_loot_request(&loot::QuickLootRequest {
+        action: loot::QuickLootAction::Click,
+        corpse: Some(corpse),
+        category: None,
+        recipient: None,
+        recipient_id: None,
+        fallback_to_main: false,
+        filter_mode: None,
+        filter_definition_ref: None,
+    })
+    .map_err(|error| format!("Primal loot request: {error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            loot::CAPABILITY_QUICK_LOOT_V1,
+            loot::COMMAND_TYPE_QUICK_LOOT,
+            &request,
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("first Primal corpse loot refused: {reply:?}").into());
+    }
+    let loot = loot::decode_quick_loot_result(&reply.payload)
+        .map_err(|error| format!("Primal loot result: {error:?}"))?;
+    if !loot.items.is_empty() {
         return Err(format!("Primal corpse had unexpected physical loot: {loot:?}").into());
     }
-    evidence("W10_LOOT exact_corpse_open=accepted physical_items=0");
-
+    evidence("W10_LOOT exact_corpse_quick_loot=accepted physical_items=0");
     Ok(())
 }
 
