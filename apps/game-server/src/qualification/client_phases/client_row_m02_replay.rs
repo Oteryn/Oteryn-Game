@@ -88,6 +88,91 @@ struct Envelope {
 
 pub(super) type SequencedFrames = Vec<(u64, MessageType, Vec<u8>)>;
 
+pub(super) fn captured_motion(
+    frames: &[(u64, MessageType, Vec<u8>)],
+    capabilities: &[u32],
+    mut previous: ActorPosition,
+) -> TestResult<Vec<(u64, ActorPosition)>> {
+    use oteryn_protocol_oteryn::{decode_state_delta, world_spatial, world_spatial_entities};
+    let fields = world_spatial_entities::EntityFields::selected(capabilities);
+    let mut motion = Vec::new();
+    for (sequence, kind, payload) in frames {
+        if *kind != MessageType::StateDelta {
+            continue;
+        }
+        let delta = decode_state_delta(payload)?;
+        if delta.domain_id != world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
+            continue;
+        }
+        let position = match delta.delta_type {
+            world_spatial::DELTA_TYPE_WORLD_SPATIAL_V1 => {
+                world_spatial::decode_world_spatial(delta.payload)
+                    .map_err(|error| format!("M02 captured spatial observation: {error:?}"))?
+                    .actor_position
+            }
+            world_spatial_entities::DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2 => {
+                world_spatial_entities::decode_world_spatial_entities_delta_with_sidecar(
+                    delta.payload,
+                    fields,
+                )
+                .map_err(|error| format!("M02 captured spatial delta: {error:?}"))?
+                .0
+                .actor_position
+            }
+            _ => return Err("M02 captured unknown spatial delta type".into()),
+        };
+        if position != previous {
+            motion.push((*sequence, position));
+            previous = position;
+        }
+    }
+    Ok(motion)
+}
+
+pub(super) fn verify_live_motion(binding: &Capture, frames: &SequencedFrames) -> TestResult {
+    verify_motion(
+        binding,
+        &captured_motion(frames, &binding.capabilities, EXPECTED_ARRIVAL)?,
+    )
+}
+
+fn verify_motion(binding: &Capture, motion: &[(u64, ActorPosition)]) -> TestResult {
+    let mut retreat = Vec::new();
+    let mut walk = Vec::new();
+    let mut passage = Vec::new();
+    for &(sequence, position) in motion {
+        if sequence <= binding.setup_end {
+            retreat.push((binding.command_at(sequence), position));
+        } else if sequence < binding.result_sequence {
+            walk.push(position);
+        } else if sequence > binding.opening_end && sequence < binding.logout.1 {
+            passage.push((binding.command_at(sequence), position));
+        } else {
+            return Err(
+                format!("M02 unexpected movement at sequence {sequence}: {position:?}").into(),
+            );
+        }
+    }
+    if retreat
+        != [
+            (binding.setup[1].0, RETREAT[0]),
+            (binding.setup[2].0, RETREAT[1]),
+        ]
+        || !is_expected_walk(&walk)
+        || !passage.into_iter().eq(binding
+            .passage
+            .iter()
+            .map(|(command, _)| *command)
+            .zip(PASSAGE))
+    {
+        return Err(format!(
+            "M02 complete spatial stream differs from the pinned route: {motion:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
 pub(super) fn write_capture(
     root: &Path,
     binding: &Capture,
@@ -206,14 +291,12 @@ async fn replay(binding: &Capture, frames: &[Envelope], wire: &[Vec<u8>]) -> Tes
     }
 
     let mut previous = EXPECTED_ARRIVAL;
-    let mut steps = Vec::new();
     let mut gate = None;
     let mut arrival = None;
     let mut opening = None;
     let mut frames = frames.iter();
     let mut seeded = false;
-    let mut retreat_steps = Vec::new();
-    let mut passage_steps = Vec::new();
+    let mut motion = Vec::new();
     for body in &wire[join_end + 1..] {
         let raw = decode_wire_envelope(body)?;
         let sequence = raw.server_sequence();
@@ -240,7 +323,7 @@ async fn replay(binding: &Capture, frames: &[Envelope], wire: &[Vec<u8>]) -> Tes
                 .find(|tile| tile.position == GATE_POSITION);
             if !gate
                 .as_ref()
-                .is_some_and(|tile| gate_matches(tile, binding.ordinal, CLOSED_GATE, 0))
+                .is_some_and(|tile| gate_stack_matches(tile, binding.ordinal, CLOSED_GATE, 0))
             {
                 return Err("M02 replay setup did not observe the closed gate".into());
             }
@@ -319,22 +402,15 @@ async fn replay(binding: &Capture, frames: &[Envelope], wire: &[Vec<u8>]) -> Tes
             continue;
         }
         let event = event.ok_or("M02 expected a state event")?;
-        if let SessionEvent::WorldSpatialEntities(delta) = &event
-            && delta.value.actor_position != previous
-        {
-            previous = delta.value.actor_position;
-            if sequence <= binding.setup_end {
-                retreat_steps.push((frame.command_id, previous));
-            } else if sequence > binding.opening_end {
-                passage_steps.push((frame.command_id, previous));
-            } else {
-                if sequence >= binding.result_sequence {
-                    return Err("M02 replay moved after the USE result".into());
-                }
-                steps.push(previous);
-                if previous == EXPECTED_ARRIVAL {
-                    arrival = Some(sequence);
-                }
+        let position = session.world_spatial().actor_position;
+        if position != previous {
+            previous = position;
+            motion.push((sequence, position));
+            if sequence > binding.setup_end
+                && sequence < binding.result_sequence
+                && position == EXPECTED_ARRIVAL
+            {
+                arrival = Some(sequence);
             }
         }
         observe_gate(
@@ -364,32 +440,12 @@ async fn replay(binding: &Capture, frames: &[Envelope], wire: &[Vec<u8>]) -> Tes
     if opening.is_some_and(|sequence| sequence > binding.opening_end) {
         return Err("M02 gate first opened during passage".into());
     }
-    if retreat_steps
-        != [
-            (binding.setup[1].0, RETREAT[0]),
-            (binding.setup[2].0, RETREAT[1]),
-        ]
+    verify_motion(binding, &motion)?;
+    if !gate
+        .as_ref()
+        .is_some_and(|tile| gate_stack_matches(tile, binding.ordinal, OPEN_GATE, 1))
     {
-        return Err(
-            format!("M02 closed probe moved or retreat differed: {retreat_steps:?}").into(),
-        );
-    }
-    if passage_steps
-        != binding
-            .passage
-            .map(|(command, _)| command)
-            .into_iter()
-            .zip(PASSAGE)
-            .collect::<Vec<_>>()
-    {
-        return Err(format!("M02 original passage steps differ: {passage_steps:?}").into());
-    }
-    if !is_expected_walk(&steps)
-        || !gate
-            .as_ref()
-            .is_some_and(|tile| gate_matches(tile, binding.ordinal, OPEN_GATE, 1))
-    {
-        return Err("M02 recorded deltas do not prove the exact walk and open gate".into());
+        return Err("M02 recorded deltas do not prove the exact open gate stack".into());
     }
     Ok(())
 }
@@ -409,9 +465,9 @@ async fn m02_replay_captured_autowalk() -> TestResult {
     replay(&binding, &frames, &wire).await
 }
 
-#[test]
-fn m02_requires_exact_capture_identity() -> TestResult {
-    let binding = Capture {
+#[cfg(test)]
+fn test_binding() -> Capture {
+    Capture {
         game_session_id: "01934f10-7c00-7000-8000-000000000001".into(),
         command_id: 7,
         character: [0; 16],
@@ -429,7 +485,12 @@ fn m02_requires_exact_capture_identity() -> TestResult {
         reset_epoch: 0,
         first_visible_floor: 7,
         ordinal: 1,
-    };
+    }
+}
+
+#[test]
+fn m02_requires_exact_capture_identity() -> TestResult {
+    let binding = test_binding();
     let expected = binding.identity();
     let mut frames: Vec<_> = (10..=31)
         .map(|server_sequence| Envelope {
@@ -451,5 +512,73 @@ fn m02_requires_exact_capture_identity() -> TestResult {
     frames[1].server_sequence = 11;
     frames[1].command_id = 8;
     assert!(verify_identity(&binding, &expected, &frames).is_err());
+    Ok(())
+}
+
+#[test]
+fn m02_counts_extra_movement_and_return_on_spatial_sidecars() -> TestResult {
+    use oteryn_protocol_oteryn::{
+        guild_emblem, inventory_capacity, party_skull, world_spatial,
+        world_spatial_entities as entities,
+    };
+    let mut binding = test_binding();
+    binding.capabilities = vec![
+        party_skull::CAPABILITY_PARTY_SKULL_V1,
+        guild_emblem::CAPABILITY_GUILD_EMBLEM_V1,
+        inventory_capacity::CAPABILITY_INVENTORY_CAPACITY_V1,
+    ];
+    // Leave two real sequence slots after the last paced step and before logout.
+    binding.result_sequence = 17;
+    binding.opening_end = 18;
+    binding.passage = [(8, 19), (9, 21), (10, 23), (11, 25), (12, 27), (13, 29)];
+    binding.logout = (14, 34);
+    binding.last_sequence = 34;
+    let correct = [
+        (12, RETREAT[0]),
+        (14, RETREAT[1]),
+        (15, INTERMEDIATE),
+        (16, EXPECTED_ARRIVAL),
+        (20, PASSAGE[0]),
+        (22, PASSAGE[1]),
+        (24, PASSAGE[2]),
+        (26, PASSAGE[3]),
+        (28, PASSAGE[4]),
+        (30, PASSAGE[5]),
+    ];
+    verify_motion(&binding, &correct)?;
+    for sidecar in [
+        entities::DeltaSidecar::PartyIcons(vec![]),
+        entities::DeltaSidecar::GuildEmblems(vec![]),
+        entities::DeltaSidecar::InventoryCapacity(inventory_capacity::InventoryCapacity {
+            capacity: 100,
+            free: 100,
+        }),
+    ] {
+        let frames = [GATE_POSITION, FAR_SIDE]
+            .into_iter()
+            .enumerate()
+            .map(|(index, position)| {
+                let sequence = 31 + index as u64;
+                let delta = entities::encode_world_spatial_entities_sidecar_delta(
+                    [0; 32], position, &sidecar,
+                )
+                .map_err(|error| format!("{error:?}"))?;
+                let frame = oteryn_protocol_oteryn::encode_state_delta(
+                    1,
+                    sequence,
+                    world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    sequence,
+                    sequence + 1,
+                    entities::DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+                    &delta,
+                )?;
+                let raw = decode_wire_envelope(&frame)?;
+                Ok((sequence, raw.message_type(), raw.payload().to_vec()))
+            })
+            .collect::<TestResult<Vec<_>>>()?;
+        let extra = captured_motion(&frames, &binding.capabilities, FAR_SIDE)?;
+        assert_eq!(extra, [(31, GATE_POSITION), (32, FAR_SIDE)]);
+        assert!(verify_motion(&binding, &[correct.as_slice(), &extra].concat()).is_err());
+    }
     Ok(())
 }

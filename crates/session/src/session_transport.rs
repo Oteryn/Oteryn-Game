@@ -20,6 +20,12 @@ impl<S: SessionStream> Session<S> {
         self.qualification_frames = Some(Vec::new());
     }
 
+    /// Inspect the sequenced qualification capture while recording continues.
+    #[cfg(feature = "test-support")]
+    pub fn qualification_capture(&self) -> &[(u64, MessageType, Vec<u8>)] {
+        self.qualification_frames.as_deref().unwrap_or_default()
+    }
+
     /// End recording and return the original sequenced payloads in receive order.
     #[cfg(feature = "test-support")]
     pub fn take_qualification_capture(&mut self) -> Vec<(u64, MessageType, Vec<u8>)> {

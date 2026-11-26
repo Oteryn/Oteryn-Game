@@ -154,10 +154,10 @@ fn observe_gate(
             update_gate(gate, std::slice::from_ref(event));
             let closed = gate
                 .as_ref()
-                .is_some_and(|tile| gate_matches(tile, ordinal, CLOSED_GATE, 0));
+                .is_some_and(|tile| gate_stack_matches(tile, ordinal, CLOSED_GATE, 0));
             let open = gate
                 .as_ref()
-                .is_some_and(|tile| gate_matches(tile, ordinal, OPEN_GATE, 1));
+                .is_some_and(|tile| gate_stack_matches(tile, ordinal, OPEN_GATE, 1));
             match (*opening, closed, open) {
                 (None, true, false) => {}
                 (None, false, true) if allow_open => *opening = Some(delta.server_sequence),
@@ -219,20 +219,23 @@ fn gate_background(item_ref: u32, appearance_id: u16, ordinal: u8) -> MapItem {
     }
 }
 
+fn gate_stack_matches(tile: &MapTile, ordinal: u8, appearance: u16, revision: u64) -> bool {
+    ordinal == 2
+        && gate_matches(tile, ordinal, appearance, revision)
+        && tile.ground_speed == 150
+        && matches!(tile.items.as_slice(), [ground, decoration, door]
+            if *ground == gate_background(328, 103, 0)
+                && *decoration == gate_background(25930, 4532, 1)
+                && matches!(door.origin, MapOrigin::BaseOrdinal { ordinal: 2, .. }))
+}
+
 fn verify_closed_probe_tile(
     gate: Option<&MapTile>,
     ordinal: u8,
     occupants: impl IntoIterator<Item = ActorPosition>,
 ) -> TestResult {
     let gate = gate.ok_or("M02 closed collision tile is missing")?;
-    if ordinal != 2
-        || !gate_matches(gate, ordinal, CLOSED_GATE, 0)
-        || gate.ground_speed != 150
-        || !matches!(gate.items.as_slice(), [ground, decoration, door]
-            if *ground == gate_background(328, 103, 0)
-                && *decoration == gate_background(25930, 4532, 1)
-                && matches!(door.origin, MapOrigin::BaseOrdinal { ordinal: 2, .. }))
-    {
+    if !gate_stack_matches(gate, ordinal, CLOSED_GATE, 0) {
         return Err(format!(
             "M02 closed probe requires the complete authored gate stack: {gate:?}"
         )
@@ -245,6 +248,34 @@ fn verify_closed_probe_tile(
         return Err("M02 another entity occupied the closed collision tile".into());
     }
     Ok(())
+}
+
+fn verify_logout_release(state: Option<(i16, bool, bool)>) -> TestResult {
+    if state != Some((3, false, false)) {
+        return Err(
+            format!("M02 logout must already be terminal without control loss: {state:?}").into(),
+        );
+    }
+    Ok(())
+}
+
+async fn observe_logout_release(clients: &SeamClients<'_>, session: &[u8]) -> TestResult {
+    let state = tokio::time::timeout(Duration::from_secs(5), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        sqlx::query_as::<_, (i16, bool, bool)>(
+            "SELECT session_state::smallint, control_loss_epoch IS NOT NULL, current_transport_ref IS NOT NULL
+             FROM game_durability_reconnect_sessions
+             WHERE world_id = encode($1, 'hex')::uuid
+             AND character_id = encode($2, 'hex')::uuid
+             AND game_session_id = encode($3, 'hex')::uuid",
+        )
+        .bind(clients.world.as_slice())
+        .bind(clients.characters[1].as_slice())
+        .bind(session)
+        .fetch_optional(&mut connection)
+        .await
+    }).await??;
+    verify_logout_release(state)
 }
 
 fn verify_relog_position(position: ActorPosition) -> TestResult {
@@ -312,7 +343,7 @@ async fn journey_capture(
     let mut gate = walk_to_approach(&mut client, world).await?;
     if !gate
         .as_ref()
-        .is_some_and(|tile| gate_matches(tile, ordinal, CLOSED_GATE, 0))
+        .is_some_and(|tile| gate_stack_matches(tile, ordinal, CLOSED_GATE, 0))
     {
         return Err(
             "M02 approach did not observe the authored closed gate at revision zero".into(),
@@ -418,23 +449,23 @@ async fn journey_capture(
         return Err(format!("M02 far use did not commit: {result:?}").into());
     }
     let events = client.take_events();
-    let mut previous = APPROACH_POSITION;
-    let mut steps = Vec::new();
-    let mut arrival = None;
-    for event in &events {
-        if let SessionEvent::WorldSpatialEntities(delta) = event
-            && delta.value.actor_position != previous
-        {
-            if delta.server_sequence >= result.result_server_sequence {
-                return Err("M02 actor moved after the far-use result".into());
-            }
-            previous = delta.value.actor_position;
-            steps.push(previous);
-            if previous == EXPECTED_ARRIVAL {
-                arrival = Some(delta.server_sequence);
-            }
-        }
+    let motion = replay::captured_motion(
+        client.session_mut().qualification_capture(),
+        &capabilities,
+        EXPECTED_ARRIVAL,
+    )?;
+    let steps: Vec<_> = motion
+        .iter()
+        .filter(|(sequence, _)| *sequence > setup_end)
+        .map(|(_, position)| *position)
+        .collect();
+    if motion
+        .iter()
+        .any(|(sequence, _)| *sequence >= result.result_server_sequence)
+    {
+        return Err("M02 actor moved after the far-use result".into());
     }
+    let arrival = motion.last().map(|(sequence, _)| *sequence);
     if !is_expected_walk(&steps) {
         return Err(
             format!("M02 expected two consecutive eastward autowalk steps, got {steps:?}").into(),
@@ -444,7 +475,7 @@ async fn journey_capture(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while !gate
         .as_ref()
-        .is_some_and(|tile| gate_matches(tile, ordinal, OPEN_GATE, 1))
+        .is_some_and(|tile| gate_stack_matches(tile, ordinal, OPEN_GATE, 1))
     {
         let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
         if remaining.is_zero() {
@@ -524,6 +555,7 @@ async fn journey_capture(
     }
     let last_sequence = client.last_server_sequence();
     let frames = client.session_mut().take_qualification_capture();
+    observe_logout_release(clients, session.as_bytes()).await?;
     drop(client);
     let relog = connect_world(clients, 0xa3).await?;
     if relog.join_snapshot().game_session_id == session {
@@ -554,6 +586,7 @@ async fn journey_capture(
         first_visible_floor: map.first_visible_floor,
         ordinal,
     };
+    replay::verify_live_motion(&binding, &frames)?;
     Ok((binding, frames))
 }
 
@@ -622,18 +655,18 @@ fn m02_rejects_open_at_wrong_revision_and_reclose_during_passage() -> TestResult
                     origin: EXPECTED_ARRIVAL,
                     first_visible_floor: 0,
                 },
-                tiles: vec![test_gate(appearance, revision)],
+                tiles: vec![test_gate_stack(appearance, revision)],
                 cleared: vec![],
             },
         })
     };
     let mut opening = None;
-    let mut gate = Some(test_gate(CLOSED_GATE, 0));
+    let mut gate = Some(test_gate_stack(CLOSED_GATE, 0));
     assert!(
         observe_gate(
             &[update(10, OPEN_GATE, 2), update(11, OPEN_GATE, 1)],
             &mut gate,
-            1,
+            2,
             &mut opening,
             true,
         )
@@ -643,7 +676,7 @@ fn m02_rejects_open_at_wrong_revision_and_reclose_during_passage() -> TestResult
     observe_gate(
         &[update(12, OPEN_GATE, 1)],
         &mut gate,
-        1,
+        2,
         &mut opening,
         true,
     )?;
@@ -652,7 +685,7 @@ fn m02_rejects_open_at_wrong_revision_and_reclose_during_passage() -> TestResult
         observe_gate(
             &[update(13, CLOSED_GATE, 2), update(14, OPEN_GATE, 1)],
             &mut gate,
-            1,
+            2,
             &mut opening,
             true,
         )
@@ -729,6 +762,35 @@ fn m02_relog_rejects_saved_setup_and_autowalk_positions() -> TestResult {
         assert!(verify_relog_position(stale).is_err());
     }
     verify_relog_position(FAR_SIDE)
+}
+
+#[cfg(test)]
+fn test_gate_stack(appearance: u16, revision: u64) -> MapTile {
+    let mut gate = test_gate(appearance, revision);
+    gate.items[0].origin = MapOrigin::BaseOrdinal {
+        ordinal: 2,
+        object_revision: revision,
+    };
+    gate.items.insert(0, gate_background(25930, 4532, 1));
+    gate.items.insert(0, gate_background(328, 103, 0));
+    gate
+}
+
+#[test]
+fn m02_rejects_open_gate_with_removed_decoration() {
+    let mut open = test_gate_stack(OPEN_GATE, 1);
+    assert!(gate_stack_matches(&open, 2, OPEN_GATE, 1));
+    open.items.remove(1);
+    assert!(gate_matches(&open, 2, OPEN_GATE, 1));
+    assert!(!gate_stack_matches(&open, 2, OPEN_GATE, 1));
+}
+
+#[test]
+fn m02_rejects_grace_release_and_premature_logout_acceptance() -> TestResult {
+    assert!(verify_logout_release(Some((3, true, false))).is_err());
+    assert!(verify_logout_release(Some((2, false, true))).is_err());
+    assert!(verify_logout_release(None).is_err());
+    verify_logout_release(Some((3, false, false)))
 }
 
 #[test]
