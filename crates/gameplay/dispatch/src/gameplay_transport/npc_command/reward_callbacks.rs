@@ -2,8 +2,8 @@
 use super::super::{ComposedFreshAdmission, connection::UseCommand};
 use super::quest_dialogue::{self, Choice, Step, Topic};
 use super::*;
-use oteryn_gameplay_quests::quest::reward_callbacks;
 use oteryn_gameplay_quests::quest::world_callbacks::Storage;
+use oteryn_gameplay_quests::quest::{dark_trails::message_contains, reward_callbacks};
 use serde::Deserialize;
 
 #[cfg(test)]
@@ -144,7 +144,7 @@ pub(super) fn prepare(
             && !matches!(text.as_str(), "yes" | "hi" | "hello" | "bye" | "farewell")
             && offers
                 .iter()
-                .any(|offer| offer.npc == context.2 && offer.keywords.contains(&text)))
+                .any(|offer| offer.npc == context.2 && offer.matches_keyword(&text)))
     {
         let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
         sessions
@@ -228,7 +228,7 @@ pub(super) fn prepare(
                     c.carried_item.is_none()
                         && c.npc == context.2
                         && c.topic == topic
-                        && c.keywords.contains(&text)
+                        && matches_reward_keyword(c, &text)
                         && skip_opening != Some(c.key.as_str())
                         // Hairycles continues a saved source journey before
                         // offering the start of the separate authored route.
@@ -347,7 +347,7 @@ pub(super) fn prepare(
             let mut blocked = offers.filter(|offer| {
                 offer.npc == context.2
                     && offer.matches_topic(topic.number)
-                    && offer.keywords.contains(&text)
+                    && offer.matches_keyword(&text)
                     && eligible(&offer.storage)
                     && carried_matches(offer)
                     && account_matches(offer)
@@ -359,14 +359,14 @@ pub(super) fn prepare(
             {
                 return Some(choice);
             }
-            // A unique exchange owns its exact keyword even before eligibility.
+            // A unique exchange owns its keyword even before eligibility.
             // Let the locked writer return the stage refusal, rather than falling
             // through to an unrelated legacy dialogue with the same text.
             let mut matching = callbacks.filter(|c| {
                 c.carried_item.is_none()
                     && c.npc == context.2
                     && c.topic == topic.number
-                    && c.keywords.contains(&text)
+                    && matches_reward_keyword(c, &text)
             });
             let callback = matching.next()?;
             if let Some(other) = matching.next() {
@@ -492,9 +492,73 @@ pub(super) fn unhandled_confirmation(
                     || requested
                     // The forge requires a specific offer before it accepts yes.
                     || callback.key == "oteryn:quest-reward/qc-obsidian-draconian-steel")
-                && callback.keywords.contains(&text)
+                && matches_reward_keyword(callback, &text)
         })
     })
+}
+
+const JORGE: &str = "oteryn:npc.jorge";
+
+fn matches_menu_or_exact_keyword(npc: &str, keywords: &[String], text: &str) -> bool {
+    keywords.iter().any(|word| {
+        word == text || (npc == JORGE && word == "souvenir" && message_contains(text, word))
+    })
+}
+
+fn matches_reward_keyword(callback: &reward_callbacks::RewardCallback, text: &str) -> bool {
+    if callback.npc == JORGE
+        && callback.quest == "oteryn:quest.hunting_for_tokens"
+        && callback.topic == 1
+        && callback.give.is_some()
+    {
+        // Jorge opens the menu before checking item names, even at the purchase topic.
+        return !message_contains(text, "souvenir")
+            && callback
+                .keywords
+                .iter()
+                .any(|word| message_contains(text, word));
+    }
+    matches_menu_or_exact_keyword(&callback.npc, &callback.keywords, text)
+}
+
+#[cfg(test)]
+#[test]
+fn jorge_matches_souvenir_and_all_replica_names_in_messages() -> Result<(), String> {
+    let callbacks = reward_callbacks::load()?;
+    let jorge = callbacks.iter().filter(|callback| callback.npc == JORGE);
+    let menu = jorge
+        .clone()
+        .find(|callback| callback.key.ends_with("/questpc7-tokens-replica-rewards"))
+        .ok_or("Jorge's initial menu")?;
+    let repeat_menu = offers::embedded()
+        .and_then(|document| document.offers.iter().find(|offer| offer.npc == JORGE))
+        .ok_or("Jorge's repeat menu")?;
+    let menu_message = "What souvenirs do you have?";
+    assert!(matches_reward_keyword(menu, menu_message));
+    assert!(repeat_menu.matches_keyword(menu_message));
+    assert!(!matches_reward_keyword(menu, "xSouvenir souvenir"));
+    assert!(!repeat_menu.matches_keyword("xSouvenir souvenir"));
+
+    let exchanges = jorge.filter(|callback| callback.give.is_some());
+    assert_eq!(exchanges.clone().count(), 74);
+    for callback in exchanges {
+        for word in &callback.keywords {
+            assert!(
+                matches_reward_keyword(
+                    callback,
+                    &format!("I'd like {}, please", word.to_ascii_uppercase())
+                ),
+                "{} must accept {word} in a message",
+                callback.key
+            );
+            assert!(!matches_reward_keyword(callback, &format!("x{word}")));
+            assert!(!matches_reward_keyword(
+                callback,
+                &format!("souvenir {word}")
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn callback_keyword(npc: &str, text: &str) -> String {

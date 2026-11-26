@@ -98,7 +98,7 @@ pub(super) async fn exercise(
         NpcIntentDisposition::Ok
     );
     assert_eq!(
-        talk(owner, admitted, jorge, 6011, "souvenir").await?,
+        talk(owner, admitted, jorge, 6011, "I would like a souvenir, please").await?,
         NpcIntentDisposition::Ok
     );
     assert_eq!(progress(owner, admitted).await?, 0);
@@ -133,13 +133,13 @@ pub(super) async fn exercise(
         NpcIntentDisposition::Ok
     );
     assert_eq!(
-        talk(owner, admitted, jorge, 6015, "abacus").await?,
+        talk(owner, admitted, jorge, 6015, "An Abacus, please").await?,
         NpcIntentDisposition::Ok
     );
     assert_eq!(count(h, 19083).await?, 4, "consume exactly twenty across carried stacks");
     assert_eq!(count(h, 19151).await?, 1);
     assert_eq!(progress(owner, admitted).await?, 1);
-    talk(owner, admitted, jorge, 6015, "abacus").await?;
+    talk(owner, admitted, jorge, 6015, "An Abacus, please").await?;
     assert_eq!(
         count(h, 19083).await?,
         4,
@@ -161,11 +161,11 @@ pub(super) async fn exercise(
     mint(owner, admitted, 40, 6002).await?;
     for (menu, purchase) in [(6017, 6018), (6019, 6020)] {
         assert_eq!(
-            talk(owner, admitted, jorge, menu, "souvenir").await?,
+            talk(owner, admitted, jorge, menu, "Do you have any souvenirs?").await?,
             NpcIntentDisposition::Ok
         );
         assert_eq!(
-            talk(owner, admitted, jorge, purchase, "assassin doll").await?,
+            talk(owner, admitted, jorge, purchase, "An Assassin Doll, please").await?,
             NpcIntentDisposition::Ok
         );
     }
