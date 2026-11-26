@@ -2020,7 +2020,7 @@ mod tests {
                     .find(|route| route.keyword == keyword)
             });
             if let Some(binding) = route {
-                assert_eq!(binding.held, stem != "eremo", "{key}");
+                assert!(!binding.held, "{key}/{keyword}");
                 let route = &binding.route;
                 assert_eq!(
                     (route.price, route.premium, binding.quest_gate.as_deref()),

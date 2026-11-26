@@ -84,19 +84,6 @@ pub(super) fn line(outcome: &crate::gameplay_transport::npc_command::NpcTalkOutc
         .unwrap_or_default()
 }
 
-pub(super) fn with_kendra_anniversary_fixture(book: NpcTalkBook) -> TestResult<NpcTalkBook> {
-    const KENDRA: &str = "oteryn:npc.kendra";
-    let mut entry = book.get(KENDRA).cloned().ok_or("Kendra talk entry")?;
-    let route = entry
-        .travel_routes
-        .iter_mut()
-        .find(|route| route.route.key == "thais")
-        .ok_or("Crystal Thais route")?;
-    // Open the route in the test book to exercise the anniversary fare and settlement.
-    route.held = false;
-    Ok(book.with(KENDRA, entry))
-}
-
 pub(super) fn scenario_with_reward_callback() -> TestResult {
     scenario(true)
 }
@@ -261,7 +248,7 @@ pub(super) fn scenario_with_tour_pin(reward_fixture: bool, foreign_pin: bool) ->
         )
         .map_err(debug)?;
         let model = catalogue.service_model_for_project().map_err(debug)?;
-        let book = with_kendra_anniversary_fixture(NpcTalkBook::from_model(&model))?;
+        let book = NpcTalkBook::from_model(&model);
         owner
             .states
             .chat
@@ -971,15 +958,13 @@ pub(super) fn scenario_with_tour_pin(reward_fixture: bool, foreign_pin: bool) ->
                 let before = gold(&h).await?;
                 let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_newhaven_travel_receipts")
                     .fetch_one(&h.pool).await?;
-                let refused = talk(&owner, &dependencies, npc, command_id + 1, destination).await?;
-                assert!(line(&refused).contains("don't sail there"), "{captain}: {}", line(&refused));
-                let confirmed = talk(&owner, &dependencies, npc, command_id + 2, "yes").await?;
+                // Opening these routes must still require a fresh quote before departure.
+                let confirmed = talk(&owner, &dependencies, npc, command_id + 1, "yes").await?;
                 assert!(!confirmed.inventory_changed);
                 assert_eq!(gold(&h).await?, before);
                 let after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_newhaven_travel_receipts")
                     .fetch_one(&h.pool).await?;
                 assert_eq!(after, receipts);
-                continue;
             }
             let track = route.quest_gate.clone().or_else(|| route.yalahar_town_gate.as_ref()
                 .map(|town|format!("oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/{town}")));

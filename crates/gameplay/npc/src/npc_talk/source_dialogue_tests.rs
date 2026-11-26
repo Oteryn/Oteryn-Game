@@ -183,7 +183,7 @@ fn crystal_keywords_match_stems_and_first_occurrences_in_source_order() -> Resul
 }
 
 #[test]
-fn crystal_ferries_retain_oteryn_access_holds() -> Result<(), String> {
+fn crystal_ferries_have_no_extra_passenger_prerequisites() -> Result<(), String> {
     let book = book()?;
     for (npc, keyword) in [
         ("captain_jack", "tibia"),
@@ -192,6 +192,7 @@ fn crystal_ferries_retain_oteryn_access_holds() -> Result<(), String> {
         ("harlow_vengoth", "yalahar"),
         ("hawkhurst", "passage"),
         ("hawkhurst_ingol", "passage"),
+        ("kendra", "thais"),
         ("tonar", "passage"),
     ] {
         let key = format!("oteryn:npc.{npc}");
@@ -204,7 +205,28 @@ fn crystal_ferries_retain_oteryn_access_holds() -> Result<(), String> {
                     .find(|route| route.keyword == keyword)
             })
             .ok_or_else(|| format!("missing {key}/{keyword}"))?;
-        assert!(route.held, "unguarded {key}/{keyword}");
+        assert!(!route.held, "held {key}/{keyword}");
+        assert!(route.route.min_level.is_none(), "{key}/{keyword}");
+        assert!(
+            route.route.required_quest_tracks.is_empty(),
+            "{key}/{keyword}"
+        );
+        assert!(
+            route.quest_gate.is_none() && route.quest_clear_gate.is_none(),
+            "{key}/{keyword}"
+        );
+        assert!(
+            !route.yalahar_gate && route.yalahar_town_gate.is_none(),
+            "{key}/{keyword}"
+        );
+        assert!(
+            route.ticket.is_none() && route.return_origin.is_none(),
+            "{key}/{keyword}"
+        );
+        assert!(
+            route.world_changes.is_empty() && route.partial_quest_callback.is_none(),
+            "{key}/{keyword}"
+        );
     }
     Ok(())
 }
@@ -212,6 +234,7 @@ fn crystal_ferries_retain_oteryn_access_holds() -> Result<(), String> {
 #[test]
 fn crystal_return_ferries_resolve_source_routes() -> Result<(), String> {
     let book = book()?;
+    let mut held = Vec::new();
     for (npc, keyword, fare, destination) in [
         ("captain_jack", "tibia", 0, (32204, 31756, 6)),
         ("eremo", "cormaya", 0, (33288, 31956, 6)),
@@ -230,7 +253,9 @@ fn crystal_return_ferries_resolve_source_routes() -> Result<(), String> {
             .iter()
             .find(|route| route.keyword == keyword)
             .ok_or_else(|| format!("missing {key}/{keyword}"))?;
-        assert_eq!(route.held, npc != "eremo", "{key}");
+        if route.held {
+            held.push(format!("{key}/{keyword}"));
+        }
         assert_eq!(route.route.price, fare, "{key}");
         assert_eq!(route.route.premium, npc == "kendra", "{key}");
         assert_eq!(route.postman, matches!(npc, "kendra" | "tonar"), "{key}");
@@ -243,6 +268,7 @@ fn crystal_return_ferries_resolve_source_routes() -> Result<(), String> {
         let target = &route.route.destination;
         assert_eq!((target.x, target.y, target.floor), destination, "{key}");
     }
+    assert!(held.is_empty(), "ferries unexpectedly held: {held:?}");
     Ok(())
 }
 

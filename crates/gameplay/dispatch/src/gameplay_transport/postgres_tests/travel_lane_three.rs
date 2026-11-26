@@ -159,7 +159,6 @@ async fn check_source_quotes(h: &Harness) -> TestResult {
         ("melian", "marapur"),
         ("pino", "marapur"),
         ("tanyt", "marapur"),
-        ("tonar", "passage"),
         ("kendra_thais", "nostalgia"),
     ] {
         let actual = premium_quote(route(npc, destination)?).await.map_err(debug)?;
@@ -216,7 +215,6 @@ async fn check_source_quotes(h: &Harness) -> TestResult {
         ("melian", "marapur", 70),
         ("pino", "marapur", 70),
         ("tanyt", "marapur", 70),
-        ("tonar", "passage", 0),
     ] {
         let mut candidate = route(npc, destination)?;
         candidate.held = false;
@@ -227,8 +225,38 @@ async fn check_source_quotes(h: &Harness) -> TestResult {
             ));
         }
     }
+    // The Crystal helpers use StdModule.travel without an extra route-specific predicate.
+    for (npc, destination, fare) in [
+        ("captain_jack", "tibia", 0),
+        ("ferryman_kamil", "meluna", 0),
+        ("ferryman_kamil_meluna", "fibula", 0),
+        ("harlow_vengoth", "yalahar", 0),
+        ("hawkhurst", "passage", 400),
+        ("hawkhurst_ingol", "passage", 400),
+        ("tonar", "passage", 0),
+    ] {
+        let actual = quote(route(npc, destination)?).await.map_err(debug)?;
+        if actual != Ok(fare) {
+            mismatches.push(format!(
+                "{npc}/{destination}: {actual:?}, expected fare {fare}"
+            ));
+        }
+    }
+    let kendra = route("kendra", "thais")?;
+    assert_eq!(
+        quote(kendra.clone()).await.map_err(debug)?,
+        Err(TravelRefusal::PremiumRequired)
+    );
+    // The shared fixture has already earned the Grand Postman discount.
+    let actual = premium_quote(kendra).await.map_err(debug)?;
+    if actual != Ok(170) {
+        mismatches.push(format!(
+            "kendra/thais: {actual:?}, expected Grand Postman fare 170"
+        ));
+    }
     if !mismatches.is_empty() {
         return Err(mismatches.join("\n").into());
     }
+    eprintln!("POSTGRES_EXECUTED Crystal ferry quotes and Kendra Premium refusal");
     Ok(())
 }
