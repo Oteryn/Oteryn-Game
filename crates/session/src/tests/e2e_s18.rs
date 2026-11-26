@@ -3,7 +3,7 @@
 //! `DevClientSession` and the chat panel read.
 use super::*;
 use oteryn_protocol_oteryn::{decode_wire_envelope, encode_state_delta};
-use std::num::NonZeroU64;
+use std::path::Path;
 use tokio::io::DuplexStream;
 
 const SELECTED: &[u32] = &[7, 13];
@@ -14,41 +14,26 @@ fn value<'a>(text: &'a str, key: &str) -> Result<&'a str, BoxError> {
         .ok_or_else(|| format!("expected line {key} absent").into())
 }
 
-fn load() -> Result<(Vec<u8>, Vec<u8>, String), BoxError> {
-    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let root = std::path::Path::new(&root);
-        return Ok((
-            std::fs::read(root.join("s18-say.bin"))?,
-            std::fs::read(root.join("s18-whisper.bin"))?,
-            std::fs::read_to_string(root.join("s18-expected.txt"))?,
-        ));
+fn read_bound(root: &Path, file: &str, binding: &str) -> Result<Vec<u8>, BoxError> {
+    let bytes = std::fs::read(root.join(file))?;
+    bytes
+        .strip_prefix(binding.as_bytes())
+        .filter(|payload| !payload.is_empty())
+        .map(<[u8]>::to_vec)
+        .ok_or_else(|| format!("{file}: capture run/head mismatch or empty payload").into())
+}
+
+fn capture_binding(head: &str, run: &str) -> Result<String, BoxError> {
+    if head.len() != 40
+        || run.len() != 32
+        || !head
+            .bytes()
+            .chain(run.bytes())
+            .all(|b| b.is_ascii_hexdigit())
+    {
+        return Err("S18 replay requires a Git head and unique run token".into());
     }
-    let local = |mode, text: &str| ChatLine::Local {
-        speaker: ChatSpeaker {
-            identity: [0x18; 16],
-            generation: NonZeroU64::MIN,
-        },
-        speaker_name: "Aurelia".into(),
-        mode,
-        text: text.into(),
-        position: ActorPosition {
-            x: 7,
-            y: 9,
-            floor: 0,
-        },
-    };
-    let say = chat::encode_chat_line(&local(ChatSpeechMode::Say, "s18-say-line"))
-        .map_err(|error| format!("{error:?}"))?;
-    let whisper = chat::encode_chat_line(&local(ChatSpeechMode::Whisper, "s18-whisper-line"))
-        .map_err(|error| format!("{error:?}"))?;
-    Ok((
-        say,
-        whisper,
-        format!(
-            "speaker={}\ngeneration=1\nname=Aurelia\nx=7\ny=9\nfloor=0\nsay=s18-say-line\nwhisper=s18-whisper-line\n",
-            "18".repeat(16)
-        ),
-    ))
+    Ok(format!("{head} {run}\n"))
 }
 
 async fn admitted() -> Result<(Session<DuplexStream>, DuplexStream), BoxError> {
@@ -93,11 +78,21 @@ fn delta(
 }
 
 #[test]
+#[ignore = "live-only replay, run by tools/qualification/e2e_all/run_s18.sh"]
 fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
-    let (say, whisper, expected) = load()?;
+    let root =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("S18 live capture directory required")?;
+    let root = Path::new(&root);
+    let head = std::env::var("S18_CAPTURE_HEAD")?;
+    let run = std::env::var("S18_CAPTURE_RUN")?;
+    let binding = capture_binding(&head, &run)?;
+    let expected = String::from_utf8(read_bound(root, "s18-expected.txt", &binding)?)?;
     let speaker = ChatSpeaker {
         identity: {
             let hex = value(&expected, "speaker")?;
+            if hex.len() != 32 || !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
+                return Err("S18 capture speaker must be a 16-byte identity".into());
+            }
             let mut bytes = [0_u8; 16];
             for (index, byte) in bytes.iter_mut().enumerate() {
                 *byte = u8::from_str_radix(&hex[index * 2..index * 2 + 2], 16)?;
@@ -112,53 +107,79 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
         floor: value(&expected, "floor")?.parse()?,
     };
     let name = value(&expected, "name")?;
-    block_on(async {
-        let (mut session, _server) = admitted().await?;
-        assert_eq!(
-            session.chat_log().ok_or("chat log absent")?.lines().count(),
-            0
-        );
+    assert_eq!(name, "Packet Two");
 
-        let say_line = ChatLine::Local {
-            speaker,
-            speaker_name: name.into(),
-            mode: ChatSpeechMode::Say,
-            text: value(&expected, "say")?.into(),
-            position,
+    for role in ["speaker", "listener"] {
+        let whisper = if role == "listener" {
+            "pspsps".into()
+        } else {
+            format!("s18-private-{run}")
         };
-        let event = delta(&mut session, 41, 3, &say)?;
-        assert!(matches!(&event, SessionEvent::ChatLine(applied)
-            if (applied.base_revision, applied.new_revision) == (3, 4) && applied.value == say_line));
+        let mut lines = vec![
+            (ChatSpeechMode::Say, format!("s18-say-{run}")),
+            (ChatSpeechMode::Whisper, format!("s18-whisper-{run}")),
+            (ChatSpeechMode::Say, format!("s18-boundary-{run}")),
+            (ChatSpeechMode::Whisper, whisper),
+        ];
+        if role == "speaker" {
+            lines.push((ChatSpeechMode::Say, format!("s18-outside-{run}")));
+        }
+        block_on(async {
+            let (mut session, _server) = admitted().await?;
+            assert_eq!(
+                session.chat_log().ok_or("chat log absent")?.lines().count(),
+                0
+            );
+            let mut expected_log = Vec::new();
+            let mut last_payload = Vec::new();
+            for (index, (mode, text)) in lines.into_iter().enumerate() {
+                let base = 3 + index as u64;
+                let payload = read_bound(root, &format!("s18-{role}-{index}.bin"), &binding)?;
+                let line = ChatLine::Local {
+                    speaker,
+                    speaker_name: name.into(),
+                    mode,
+                    text,
+                    position,
+                };
+                let event = delta(&mut session, 41 + index as u64, base, &payload)?;
+                assert!(
+                    matches!(&event, SessionEvent::ChatLine(applied)
+                    if (applied.base_revision, applied.new_revision) == (base, base + 1) && applied.value == line),
+                    "{role} index {index}: {event:?}"
+                );
+                expected_log.push(line);
+                last_payload = payload;
+            }
+            assert!(
+                session
+                    .chat_log()
+                    .ok_or("chat log absent")?
+                    .lines()
+                    .eq(&expected_log)
+            );
 
-        let whisper_line = ChatLine::Local {
-            speaker,
-            speaker_name: name.into(),
-            mode: ChatSpeechMode::Whisper,
-            text: value(&expected, "whisper")?.into(),
-            position,
-        };
-        let event = delta(&mut session, 42, 4, &whisper)?;
-        assert!(matches!(&event, SessionEvent::ChatLine(applied)
-            if (applied.base_revision, applied.new_revision) == (4, 5) && applied.value == whisper_line));
-        assert_eq!(
-            session
-                .chat_log()
-                .ok_or("chat log absent")?
-                .lines()
-                .cloned()
-                .collect::<Vec<_>>(),
-            vec![say_line, whisper_line]
-        );
-
-        // A truncated line is refused whole: the log and the revision stay as applied.
-        let before = session.chat_log().ok_or("chat log absent")?.lines().count();
-        let before_revision = session.chat_revision;
-        assert!(delta(&mut session, 43, 5, &whisper[..whisper.len() - 1]).is_err());
-        assert_eq!(
-            session.chat_log().ok_or("chat log absent")?.lines().count(),
-            before
-        );
-        assert_eq!(session.chat_revision, before_revision);
-        Ok(())
-    })?
+            // A truncated line changes neither the applied log nor the revision.
+            let before_revision = session.chat_revision;
+            assert!(
+                delta(
+                    &mut session,
+                    49,
+                    3 + expected_log.len() as u64,
+                    &last_payload[..last_payload.len() - 1]
+                )
+                .is_err()
+            );
+            assert!(
+                session
+                    .chat_log()
+                    .ok_or("chat log absent")?
+                    .lines()
+                    .eq(&expected_log)
+            );
+            assert_eq!(session.chat_revision, before_revision);
+            Ok::<(), BoxError>(())
+        })??;
+    }
+    Ok(())
 }

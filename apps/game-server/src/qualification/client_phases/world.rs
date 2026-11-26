@@ -1091,9 +1091,13 @@ pub(super) async fn journeys(
         )
         .into());
     }
-    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+    if groups.runs("rows") && e2e_row_selected(184) {
+        client_row_s18::logout_once(&mut client, "S18 town entry").await?;
+    } else {
+        let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
+        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+        }
     }
     drop(client);
     {
@@ -2395,7 +2399,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(184) {
                 verdict::indexed("S18.client", async {
-                    client_row_s18::run_packet(clients).await;
+                    client_row_s18::run_packet(clients, world).await;
                     release_row_characters(clients).await
                 })
                 .await;
