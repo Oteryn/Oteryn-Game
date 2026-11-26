@@ -81,32 +81,61 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent: encode_item_use_intent(intent).map_err(|_| ())?,
             operand: None,
         };
-        let permit = self.spell_lane_permit().await.ok_or(())?;
-        // This pass has no operand, so it only classifies a previous receipt.
-        // Ordinary lever USE must survive a background pass borrowing the holder.
-        let budget = super::super::AdmissionRetryBudget::for_command(self.root);
-        if let Some(result) = budget
-            .retry_command_guard(async || {
-                self.root
-                    .harvest_map_item(
-                        &permit,
-                        self.character,
-                        self.holder,
-                        fence,
-                        request.clone(),
-                        native,
-                        &NativeItemWeights(native),
-                    )
-                    .await
-            })
+        let historical = match self
+            .root
+            .plain_use_receipt_exists(
+                crate::durability::PlainUseReceipt::MapHarvest,
+                request.command,
+            )
             .await
-            .map_err(|_| ())?
         {
-            drop(permit);
-            if result.disposition == UseDisposition::Committed {
-                self.refresh_terrain_tools().await;
+            Ok(present) => present,
+            Err(_) => {
+                return Ok(Some(super::super::use_receipt_refused(
+                    command,
+                    "harvest_existence",
+                )));
             }
-            return Ok(Some(outcome(result.disposition)));
+        };
+        let Some(permit) = self.spell_lane_permit().await else {
+            return Ok(Some(super::super::use_receipt_refused(
+                command,
+                "harvest_permit",
+            )));
+        };
+        if historical {
+            let budget = super::super::AdmissionRetryBudget::for_command(self.root);
+            match budget
+                .retry_command_guard(async || {
+                    self.root
+                        .harvest_map_item(
+                            &permit,
+                            self.character,
+                            self.holder,
+                            fence,
+                            request.clone(),
+                            native,
+                            &NativeItemWeights(native),
+                        )
+                        .await
+                })
+                .await
+            {
+                Ok(Some(result)) => {
+                    drop(permit);
+                    if result.disposition == UseDisposition::Committed {
+                        self.refresh_terrain_tools().await;
+                    }
+                    return Ok(Some(outcome(result.disposition)));
+                }
+                // A known receipt may not be replaced by current input.
+                Ok(None) | Err(_) => {
+                    return Ok(Some(super::super::use_receipt_refused(
+                        command,
+                        "harvest_replay",
+                    )));
+                }
+            }
         }
         let operand = {
             let runtime = self.runtime.lock().await;
@@ -140,9 +169,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             Ok(value) => value,
                             Err(_) => return Ok(None),
                         };
-                    let tile = view::compose_tile(&map.overlay, &facts, selected.pos)
-                        .map_err(|_| ())?
-                        .ok_or(())?;
+                    let Ok(Some(tile)) = view::compose_tile(&map.overlay, &facts, selected.pos)
+                    else {
+                        return Ok(Some(super::super::use_receipt_refused(
+                            command,
+                            "harvest_target",
+                        )));
+                    };
                     let Some(entry) = tile
                         .entries
                         .iter()
@@ -159,9 +192,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             placement_key,
                             ..
                         }) => {
-                            let tile = view::compose_tile(&map.overlay, &facts, pos)
-                                .map_err(|_| ())?
-                                .ok_or(())?;
+                            let Ok(Some(tile)) = view::compose_tile(&map.overlay, &facts, pos)
+                            else {
+                                return Ok(Some(super::super::use_receipt_refused(
+                                    command,
+                                    "harvest_target",
+                                )));
+                            };
                             let Some(entry) = tile
                                 .entries
                                 .iter()
@@ -183,9 +220,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             {
                                 return Ok(Some(outcome(UseDisposition::Rejected)));
                             }
-                            let tile = view::compose_tile(&map.overlay, &facts, pos)
-                                .map_err(|_| ())?
-                                .ok_or(())?;
+                            let Ok(Some(tile)) = view::compose_tile(&map.overlay, &facts, pos)
+                            else {
+                                return Ok(Some(super::super::use_receipt_refused(
+                                    command,
+                                    "harvest_target",
+                                )));
+                            };
                             let Some(entry) = tile.entries.iter().find(|entry|
                                 matches!(entry.source,view::EntrySource::Added(key) if key.get()==id)) else { return Ok(None); };
                             (pos, id, entry.facts)

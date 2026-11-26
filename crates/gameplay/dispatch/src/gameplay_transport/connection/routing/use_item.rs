@@ -496,7 +496,15 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 // BAGS-WIRE-1: with capability 14 a container in reach opens in a new view,
                 // and one out of reach is TOO_FAR; anything else takes the corpse path.
                 let container = match (key, &*container_views) {
-                    (Some(key), Some(_)) => authority.observe_container_with_house_capacity(actor, admitted.item_fence, key, admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2)).await,
+                    (Some(key), Some(_)) => match authority.observe_container_for_use(
+                        actor, admitted.item_fence, key,
+                        admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2),
+                    ).await {
+                        Ok(observation) => observation,
+                        Err(crate::durability::DurabilityError::SessionUseAuthorization(_)) => return Err("bag_session_fence"),
+                        Err(crate::durability::DurabilityError::RootUnavailable | crate::durability::DurabilityError::RootPassDeadlineExceeded) => return Ok(super::refuse_use(command, "bag_read_budget")),
+                        Err(_) => return Ok(super::refuse_use(command, "bag_read_failed")),
+                    },
                     _ => None,
                 };
                 let carried_entry = matches!(container, Some(ContainerObservation::NotAContainer));

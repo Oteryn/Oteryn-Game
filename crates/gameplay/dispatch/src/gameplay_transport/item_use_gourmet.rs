@@ -124,14 +124,31 @@ pub(super) async fn use_gourmet(
         return Some(Err(UseDisposition::Rejected));
     }
     let wire = binding(source)?;
+    let reference = crate::foundation::CommandRef::new(
+        command.game_session_id,
+        crate::foundation::CommandId::new(command.command_id).ok()?,
+    );
+    let refused = |stage| {
+        Some(Err(crate::gameplay_transport::use_receipt_refused(
+            command, stage,
+        )
+        .disposition))
+    };
     match owner
         .root
-        .read_gourmet_use_receipt(owner.character, fence, command.command_id, wire)
+        .plain_use_receipt_exists(crate::durability::PlainUseReceipt::Gourmet, reference)
         .await
     {
-        Ok(true) => return Some(Ok(UseDisposition::Committed)),
         Ok(false) => {}
-        Err(_) => return Some(Err(UseDisposition::Rejected)),
+        Ok(true) => match owner
+            .root
+            .read_gourmet_use_receipt(owner.character, fence, command.command_id, wire)
+            .await
+        {
+            Ok(true) => return Some(Ok(UseDisposition::Committed)),
+            Ok(false) | Err(_) => return refused("gourmet_replay"),
+        },
+        Err(_) => return refused("gourmet_existence"),
     }
     // A new definition hotkey can decline this action before a carried-tree read.
     if let UseSource::Definition(id) = source {
