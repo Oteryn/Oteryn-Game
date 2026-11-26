@@ -6,7 +6,9 @@
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::{ChannelId, WorldId};
+use serde::Deserialize;
 use sqlx::Row;
+use std::sync::OnceLock;
 
 type Result<T> = std::result::Result<T, DurabilityError>;
 
@@ -33,10 +35,49 @@ pub struct ContentActivationRecord {
     pub frame_binding_digest: [u8; 32],
 }
 
+#[derive(Deserialize)]
+struct HouseCatalogue {
+    houses: Vec<AuthoredHouse>,
+}
+
+#[derive(Deserialize)]
+struct AuthoredHouse {
+    identity: HouseIdentity,
+    kind: String,
+    rent_gold: i64,
+    #[serde(default)]
+    retired: bool,
+}
+
+#[derive(Deserialize)]
+struct HouseIdentity {
+    key: String,
+}
+
+/// The shipped content catalogue also supplies the keys and kinds for HOUSE QUERY.
+fn authored_houses() -> Result<&'static [AuthoredHouse]> {
+    static HOUSES: OnceLock<Option<Vec<AuthoredHouse>>> = OnceLock::new();
+    HOUSES
+        .get_or_init(|| {
+            let mut houses = Vec::new();
+            for shard in [
+                include_str!("../../../../../content/houses/houses-00000-00499.json"),
+                include_str!("../../../../../content/houses/houses-00500-00994.json"),
+            ] {
+                let catalogue: HouseCatalogue = serde_json::from_str(shard).ok()?;
+                houses.extend(catalogue.houses.into_iter().filter(|house| !house.retired));
+            }
+            Some(houses)
+        })
+        .as_deref()
+        .ok_or(DurabilityError::Unavailable)
+}
+
 impl DurabilityRoot {
     /// Control-plane: durably record one activation issuance. An exact replay succeeds; a
     /// conflicting replay, stale predecessor, non-newer sequence or missing exact-scope grant
-    /// is a definitive refusal, `Ok(false)`.
+    /// is a definitive refusal, `Ok(false)`. The current issuance registers its authored houses
+    /// in the same transaction.
     pub async fn record_content_activation(
         &self,
         request: &ContentActivationRequest,
@@ -49,15 +90,19 @@ impl DurabilityRoot {
         {
             return Err(DurabilityError::Unavailable);
         }
+        let houses = authored_houses()?;
+        let keys: Vec<_> = houses.iter().map(|house| house.identity.key.as_str()).collect();
+        let kinds: Vec<_> = houses.iter().map(|house| house.kind.as_str()).collect();
+        let rents: Vec<_> = houses.iter().map(|house| house.rent_gold).collect();
         let request = request.clone();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let recorded = sqlx::query(
-                        "SELECT game_content_record_activation(encode($1::bytea, 'hex')::uuid, \
+                        "SELECT game_content_record_activation_with_houses(encode($1::bytea, 'hex')::uuid, \
                          encode($2::bytea, 'hex')::uuid, $3::text::numeric(20,0), \
-                         $4::text::numeric(20,0), $5, $6, $7)",
+                         $4::text::numeric(20,0), $5, $6, $7, $8, $9, $10)",
                     )
                     .bind(request.world_id.as_bytes().as_slice())
                     .bind(request.channel_id.as_bytes().as_slice())
@@ -66,6 +111,9 @@ impl DurabilityRoot {
                     .bind(request.server_artifact_digest.as_slice())
                     .bind(request.client_artifact_digest.as_slice())
                     .bind(request.frame_binding_digest.as_slice())
+                    .bind(&keys)
+                    .bind(&kinds)
+                    .bind(&rents)
                     .execute(&mut *tx)
                     .await;
                     match recorded {
