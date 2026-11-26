@@ -380,11 +380,11 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+    let (result, detail, attempts, timed_out) = logout_retrying_busy(client).await?;
     expect(
-        reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
+        result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
         "logout",
-        reply.result,
+        (detail, attempts, timed_out),
     )
 }
 
