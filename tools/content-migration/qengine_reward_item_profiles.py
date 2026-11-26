@@ -274,13 +274,17 @@ SIDE_IDS |= {
 # Bushwhacking scenery is Ground-only; the wave owner schedules removal.
 MERCHANT_SCENERY = {12187, 12189}
 STATIC_IDS = MERCHANT_SCENERY | {
+    5858,  # Arito's placed scimitar.
+    7181,  # Arito's opened cave entrance.
     8995,
     7845,  # Crystal Brotherhood lever 3047 creates immovable lava.
     8995,
     8996,
     9527,
     17677,
+    17678,
     17679,
+    17680,
     17681,
     21573,
     23163,

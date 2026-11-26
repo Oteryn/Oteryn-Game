@@ -29,11 +29,10 @@ fn content() -> &'static NativeGameplayState {
     })
 }
 
-fn check_weapon_skill_damage(name: &str, aimed: bool, converted: bool) {
+fn check_weapon_skill_damage(name: &str, aimed: bool, immune: Option<&str>) {
+    let converted = immune.is_some();
     let (runtime, bindings, mut attributes) =
-        crate::spell_magnitude_owner_tests::native_weapon_damage_fixture(
-            converted.then_some("fire"),
-        );
+        crate::spell_magnitude_owner_tests::native_weapon_damage_fixture(immune);
     let content = content();
     let spell = content
         .spell_book()
@@ -114,7 +113,9 @@ fn check_weapon_skill_damage(name: &str, aimed: bool, converted: bool) {
     // isolation from charge, missile and world-presentation admission.
     let mut resolved_damage = Vec::new();
     let mut expected_damage = Vec::new();
-    let weapons: &[_] = if converted {
+    let weapons: &[_] = if immune == Some("physical") {
+        &[(3264, 14, 0)]
+    } else if converted {
         &[(53213, 60, 54)]
     } else {
         &[(49523, 52, 44), (3318, 33, 0)]
@@ -318,7 +319,11 @@ fn check_weapon_skill_damage(name: &str, aimed: bool, converted: bool) {
                     phase,
                     Some(DamageElement::Ice),
                     [
-                        (converted_raw - armor).max(0) * 95 / 100,
+                        if immune == Some("physical") {
+                            0
+                        } else {
+                            (converted_raw - armor).max(0) * 95 / 100
+                        },
                         converted_raw * 95 / 100,
                     ],
                 ));
@@ -340,20 +345,26 @@ fn check_weapon_skill_damage(name: &str, aimed: bool, converted: bool) {
 
 #[test]
 fn native_weapon_skill_front_sweep_splits_preview_and_paid_damage() {
-    check_weapon_skill_damage("Front Sweep", false, false);
+    check_weapon_skill_damage("Front Sweep", false, None);
 }
 
 #[test]
 fn native_weapon_skill_executioners_throw_splits_preview_and_paid_damage() {
-    check_weapon_skill_damage("Executioner's Throw", true, false);
+    check_weapon_skill_damage("Executioner's Throw", true, None);
 }
 
 #[test]
 fn native_weapon_skill_executioners_throw_replaces_immune_secondary_with_imbuement() {
-    check_weapon_skill_damage("Executioner's Throw", true, true);
+    check_weapon_skill_damage("Executioner's Throw", true, Some("fire"));
 }
 
 #[test]
 fn native_weapon_skill_berserk_replaces_immune_secondary_with_imbuement() {
-    check_weapon_skill_damage("Berserk", false, true);
+    check_weapon_skill_damage("Berserk", false, Some("fire"));
+}
+
+#[test]
+fn native_physical_sword_weapon_spells_apply_frost_imbuement() {
+    check_weapon_skill_damage("Berserk", false, Some("physical"));
+    check_weapon_skill_damage("Executioner's Throw", true, Some("physical"));
 }

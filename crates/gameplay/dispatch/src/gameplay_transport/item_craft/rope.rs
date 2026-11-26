@@ -100,6 +100,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.reset_epoch,
             self.owner_now(),
             Some(ground.overlay()),
+            Some(&self.states),
             || agent_tool_jams(command, &definition.production_key, tool),
         );
         let disposition = match turn {
@@ -261,6 +262,7 @@ fn rope_in_channel(
     reset_epoch: u64,
     now: SemanticTimeMicros,
     overlay: Option<&crate::map::overlay::ChannelOverlay>,
+    channel_states: Option<&crate::gameplay_transport::channel_states::ChannelSessionStates>,
     jam: impl FnOnce() -> bool,
 ) -> RopeTurn {
     let session = command.game_session_id;
@@ -310,9 +312,24 @@ fn rope_in_channel(
         return RopeTurn::Refused(UseDisposition::Rejected);
     };
     let blocking = crate::map::floor::BundleDoors(&at.map.facts);
+    let door_access = channel_states.map(|states_by_session| {
+        crate::gameplay_transport::paced_movement::PlayerDoorAccess {
+            inner: &blocking,
+            level: states
+                .get(runtime, actor, session)
+                .map(|state| state.character_facts().level),
+            states: states_by_session,
+            session,
+        }
+    });
+    let blocking: &dyn crate::map::floor::CellBlocker = door_access
+        .as_ref()
+        .map_or(&blocking as &dyn crate::map::floor::CellBlocker, |access| {
+            access
+        });
     let blocked = crate::gameplay_transport::pvp_live::pz_blocked(states, actor, session, now);
     let proof = match crate::map::floor::prepare_bundle_rope(
-        runtime, cells, actor, session, expected, spot, blocked, &blocking,
+        runtime, cells, actor, session, expected, spot, blocked, blocking,
     ) {
         Ok(proof) => proof,
         Err(crate::movement::MovementError::NotQualified) => {

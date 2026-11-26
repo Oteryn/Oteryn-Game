@@ -508,6 +508,33 @@ pub(super) async fn consume(
     if !context_is_current(tx, permit, fence, context).await? {
         return Ok(false);
     }
+    use oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual;
+    if callback.key == nomads_ritual::OPEN_ENTRANCE {
+        let water = nomads_ritual::WATER;
+        let key = oteryn_world_bundle::bundle::placement_key(water.floor, water.x, water.y, 0)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let digest = context
+            .map_revision
+            .strip_prefix("sha256:")
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let active: bool = sqlx::query_scalar(
+            "SELECT EXISTS (
+                SELECT 1 FROM game_item_fluid_splashes
+                WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid
+                  AND placement=decode($3,'hex')||$4 AND splash_item_id=2886
+                  AND fluid_subtype=$5 AND expires_at>clock_timestamp())",
+        )
+        .bind(world_id.as_bytes().as_slice())
+        .bind(channel_id.as_bytes().as_slice())
+        .bind(digest)
+        .bind(key.to_be_bytes().as_slice())
+        .bind(nomads_ritual::WATER_SUBTYPE)
+        .fetch_one(&mut **tx)
+        .await?;
+        if !active {
+            return Ok(false);
+        }
+    }
     if !completed_quests::require(tx, fence, &callback.required_completed_quests).await? {
         return Ok(false);
     }

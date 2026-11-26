@@ -161,10 +161,12 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         }
         self.assertEqual(
             {
+                "Knight Outfits Quest",
                 "Mad Mage Room Quest",
                 "Newhaven Legion Helmet Quest",
                 "Stealth Ring Quest",
                 "Power Ring Quest",
+                "Ring Quest",
                 "Silver Amulet Quest",
                 "Time Ring Quest",
                 "To Outfox a Fox Quest",

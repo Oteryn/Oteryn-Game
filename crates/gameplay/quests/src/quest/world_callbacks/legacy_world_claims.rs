@@ -36,6 +36,9 @@ pub const OUTFOX_CACHE: &str = "oteryn:quest-callback/tibia-tales/outfox-helmet"
 const OASIS_CALLBACKS: &str =
     include_str!("../../../../../../content/quests/world-callbacks/qd-steal-from-thieves.json");
 const OASIS_CLAIM: &str = "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_oasis";
+const SOURCE_OUTFITS: &str =
+    include_str!("../../../../../../content/quests/world-callbacks/source-outfits.json");
+const CROSSBOW_CLAIM: &str = "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow";
 const PAIRS: &[(&str, &str)] = &[
     (
         "l2-tome-children-1",
@@ -119,6 +122,7 @@ struct ClaimSource {
     explicit_uid: Option<u16>,
     action: Option<u16>,
     required_uid: Option<u16>,
+    native_ordinal: Option<u8>,
     premium: bool,
 }
 
@@ -128,6 +132,7 @@ const SOURCE_BOOKS: ClaimSource = ClaimSource {
     explicit_uid: None,
     action: None,
     required_uid: None,
+    native_ordinal: None,
     premium: false,
 };
 
@@ -137,6 +142,7 @@ const OUTFOX: ClaimSource = ClaimSource {
     explicit_uid: Some(6257),
     action: None,
     required_uid: None,
+    native_ordinal: None,
     premium: false,
 };
 
@@ -146,6 +152,7 @@ const SERPENTINE: ClaimSource = ClaimSource {
     explicit_uid: None,
     action: None,
     required_uid: None,
+    native_ordinal: None,
     premium: false,
 };
 
@@ -155,7 +162,18 @@ const OASIS: ClaimSource = ClaimSource {
     explicit_uid: None,
     action: Some(19910),
     required_uid: Some(6271),
+    native_ordinal: None,
     premium: true,
+};
+
+const CROSSBOW: ClaimSource = ClaimSource {
+    appearances: &[2472],
+    quest_alias: Some("hunter_outfits_quest"),
+    explicit_uid: None,
+    action: None,
+    required_uid: Some(6191),
+    native_ordinal: Some(1),
+    premium: false,
 };
 
 fn only(value: &Value, fields: &[&str]) -> bool {
@@ -209,14 +227,26 @@ fn bind_pairs<'a>(
         let [definition] = matching.as_slice() else {
             return Err("legacy World claim must be unique".into());
         };
-        let position = callback
-            .selector
-            .position
-            .ok_or("legacy World claim position")?;
-        let appearance = callback
-            .selector
-            .appearance
-            .ok_or("legacy World claim appearance")?;
+        let (position, appearance) = match (group.native_ordinal, &callback.selector.native) {
+            (None, None) => (
+                callback
+                    .selector
+                    .position
+                    .ok_or("legacy World claim position")?,
+                callback
+                    .selector
+                    .appearance
+                    .ok_or("legacy World claim appearance")?,
+            ),
+            (Some(ordinal), Some(native))
+                if native.ordinal == ordinal
+                    && callback.selector.position.is_none()
+                    && callback.selector.appearance.is_none() =>
+            {
+                (native.position, native.appearance)
+            }
+            _ => return Err(format!("legacy World claim selector mismatch: {key}")),
+        };
         let placements = definition["placements"]
             .as_array()
             .ok_or("legacy World placements")?;
@@ -286,7 +316,6 @@ fn bind_pairs<'a>(
                 .or(group.explicit_uid)
                 .is_some_and(|expected| uid != u64::from(expected))
             || callback.selector.action != group.action
-            || callback.selector.native.is_some()
             || callback.effects.item_reward.as_ref() != Some(&reward)
             || callback.effects.item_reward_cycle.is_some()
             || callback.effects.item_reward_per_use
@@ -368,6 +397,17 @@ fn bind_all() -> Result<Vec<Binding>, String> {
         )],
         &OASIS,
     )?);
+    bindings.extend(bind_pairs(
+        &super::parse(SOURCE_OUTFITS)?,
+        TIBIA_TALES_CLAIMS,
+        [(
+            "hunter-elane-crossbow-chest",
+            CROSSBOW_CLAIM.into(),
+            "oteryn:item.tibia.i5947",
+            1,
+        )],
+        &CROSSBOW,
+    )?);
     Ok(bindings)
 }
 
@@ -391,14 +431,22 @@ fn legacy_world_binding(callback: &Callback) -> Result<Option<&'static Binding>,
         .get_or_init(bind_all)
         .as_ref()
         .map_err(Clone::clone)?;
-    let bound =
-        bindings.iter().find(|binding| {
-            callback.key == binding.callback.key
-                || callback.selector.position == binding.callback.selector.position
-                || callback.selector.native.as_ref().is_some_and(|native| {
-                    Some(native.position) == binding.callback.selector.position
-                })
-        });
+    let bound = bindings.iter().find(|binding| {
+        callback.key == binding.callback.key
+            || match &binding.callback.selector.native {
+                Some(expected) => callback.selector.native.as_ref().is_some_and(|native| {
+                    native.position == expected.position && native.ordinal == expected.ordinal
+                }),
+                None => binding.callback.selector.position.is_some_and(|expected| {
+                    callback.selector.position == Some(expected)
+                        || callback
+                            .selector
+                            .native
+                            .as_ref()
+                            .is_some_and(|native| native.position == expected)
+                }),
+            }
+    });
     match bound {
         Some(binding) if callback == &binding.callback => Ok(Some(binding)),
         Some(_) => Err("legacy World claim callback changed".into()),
@@ -409,6 +457,20 @@ fn legacy_world_binding(callback: &Callback) -> Result<Option<&'static Binding>,
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hunter_crossbow_native_cache_and_uid_share_one_claim_identity() -> Result<(), String> {
+        const KEY: &str = "oteryn:quest-callback/hunter-elane-crossbow-chest";
+        let callbacks = super::super::load()?;
+        let callback = callbacks.iter().find(|row| row.key == KEY).ok_or(KEY)?;
+        assert_eq!(legacy_world_source_unique(callback)?, Some(6191));
+        let claim = legacy_world_claim(callback)?.ok_or("crossbow claim")?;
+        assert_eq!(
+            claim.key,
+            "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow"
+        );
+        Ok(())
+    }
 
     #[test]
     fn oasis_action_and_crystal_uid_share_one_claim_identity() -> Result<(), String> {
@@ -488,14 +550,24 @@ mod tests {
                 let mut changed = binding.callback.clone();
                 match mutation {
                     0 => changed.key.push_str("-alias"),
-                    1 => changed.selector.position.as_mut().ok_or("position")?.x += 1,
+                    1 => {
+                        if let Some(native) = &mut changed.selector.native {
+                            native.position.x += 1;
+                        } else {
+                            changed.selector.position.as_mut().ok_or("position")?.x += 1;
+                        }
+                    }
                     2 => {
-                        changed.selector.appearance =
-                            Some(if changed.selector.appearance == Some(2472) {
-                                2480
-                            } else {
-                                2472
-                            })
+                        if let Some(native) = &mut changed.selector.native {
+                            native.ordinal += 1;
+                        } else {
+                            changed.selector.appearance =
+                                Some(if changed.selector.appearance == Some(2472) {
+                                    2480
+                                } else {
+                                    2472
+                                });
+                        }
                     }
                     3 => changed.quest.push_str("_alias"),
                     4 => changed.storage.first_mut().ok_or("storage")?.set += 1,

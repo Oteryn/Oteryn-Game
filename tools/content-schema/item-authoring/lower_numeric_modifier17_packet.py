@@ -37,6 +37,7 @@ IDS13 = frozenset(
 IDS4 = frozenset((36672, 36673, 45639, 45640))
 IDS = IDS13 | IDS4
 NATIVE_PROFILES = "content/items/definitions/spell-native-profiles.json"
+REPLAY_DEFINITIONS = "content/world/definitions/reference.json"
 RUST_PIN = (
     ROOT
     / "crates/gameplay/content-promotion/src/content/item_numeric_modifier_promotion.rs"
@@ -288,8 +289,8 @@ def qualify(
     return {
         "source_item_id": iid,
         "target": target,
-        # WorldProject replays the promotion before the current native admission overlay.
-        "headers": current_headers,
+        # WorldProject applies the promotion to the pre-admission definition.
+        "headers": historical,
         "expected_name": obj["name"],
         "modifiers": vector,
     }
@@ -388,24 +389,41 @@ def build(root=ROOT):
                 for r in json.loads(path.read_bytes()).get("records", [])
                 if r.get("provenance", {}).get("item_pointer")
             )
+    replay_raw = (root / REPLAY_DEFINITIONS).read_bytes()
+    keys = {entry["item_key"] for entry in records}
+    replay = {}
+    for definition in json.loads(replay_raw)["records"]:
+        key = definition["identity"]["key"]
+        if key in keys:
+            if key in replay:
+                raise ValueError("duplicate WorldProject replay Item identity")
+            replay[key] = definition
+
     order, rows = shared.native_order(root), []
     for entry in records:
+        key = entry["item_key"]
         vector = source_vector(entry, indexed, pages, receipt["cutoff"], order)
-        rows.append(
-            qualify(
-                entry,
-                definitions.get(entry["item_key"]),
-                bindings.get(entry["item_key"]),
-                objects[entry["item_id"]],
-                members,
-                routed,
-                vector,
-                profiles.get(entry["item_key"]),
-                current_headers=receipt.get("native_header_successors", {}).get(
-                    str(entry["item_id"])
-                ),
-            )
+        row = qualify(
+            entry,
+            definitions.get(key),
+            bindings.get(key),
+            objects[entry["item_id"]],
+            members,
+            routed,
+            vector,
+            profiles.get(key),
+            current_headers=receipt.get("native_header_successors", {}).get(
+                str(entry["item_id"])
+            ),
         )
+        replay_definition = replay.get(key)
+        if (
+            not replay_definition
+            or replay_definition["identity"] != row["target"]
+            or {header: replay_definition[header] for header in HEADERS} != row["headers"]
+        ):
+            raise ValueError(f"WorldProject replay headers drift: {key}")
+        rows.append(row)
     if sum(len(r["modifiers"]) for r in rows) != 50:
         raise ValueError("closed50 atom count drift")
     return {
@@ -421,6 +439,10 @@ def build(root=ROOT):
             "native_profiles": {
                 "path": NATIVE_PROFILES,
                 "sha256": base.sha(profiles_raw),
+            },
+            "replay_definitions": {
+                "path": REPLAY_DEFINITIONS,
+                "sha256": base.sha(replay_raw),
             },
             "world_owner_inputs": maps,
         },

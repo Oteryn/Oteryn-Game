@@ -2339,6 +2339,7 @@
     },
     {
       "key": "oteryn:quest-npc/postman/kevin/rank_5",
+      "completes": true,
       "quest": "oteryn:quest.the_postman_missions_quest",
       "npc": "oteryn:npc.kevin",
       "trigger": "say",

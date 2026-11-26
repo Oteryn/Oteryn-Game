@@ -2428,11 +2428,20 @@ pub(super) async fn exercise(
             let (result, _, _) =
                 super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false)
                     .await?;
-            assert_eq!(
-                result,
-                NpcIntentDisposition::Rejected,
-                "missing exact carried recipe"
-            );
+            if glove_offer {
+                assert_eq!(result, NpcIntentDisposition::Ok);
+                assert_eq!(
+                    owner.states.npc_conversations.fixture_quest_topic(admitted.game_session_id)?,
+                    0,
+                    "the informational reply must not open an exchange without gloves"
+                );
+            } else {
+                assert_eq!(
+                    result,
+                    NpcIntentDisposition::Rejected,
+                    "missing exact carried recipe"
+                );
+            }
             assert_eq!(counts(h).await?, before);
         }
         for (index, item) in needed.iter().enumerate() {

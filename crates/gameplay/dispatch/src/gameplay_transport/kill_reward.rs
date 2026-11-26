@@ -208,6 +208,10 @@ pub(super) fn tracks_native_progression(creature: &str) -> bool {
 }
 
 impl PendingKillSettlement {
+    pub(super) fn has_boss_achievement_work(&self) -> bool {
+        self.boss_achievements.is_some()
+    }
+
     pub(super) async fn retain_boss_achievements_without_corpse(
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -3956,6 +3960,27 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 }
             }
         }
+        // A real death may owe account awards even when no ordinary corpse
+        // qualifies and the damage contributors have no payable experience.
+        let awards_without_corpse = entry.row.is_none() && entry.has_boss_achievement_work();
+        if awards_without_corpse {
+            let Some(permit) = admission.spell_lane_permit().await else {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            };
+            if admission
+                .settle_boss_without_experience(&permit, entry)
+                .await
+                .is_err()
+            {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            }
+        }
         if let Some(boss) = &entry.bosstiary_only {
             let Some(_permit) = admission.spell_lane_permit().await else {
                 return SettleReport {
@@ -4015,7 +4040,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 verdict: SettleVerdict::Final,
                 no_progression: false,
             };
-            return if result.is_ok() && encounter_xp_settled {
+            return if awards_without_corpse || (result.is_ok() && encounter_xp_settled) {
                 record_settled_boss_rewards(entry, report)
             } else {
                 report
@@ -4029,7 +4054,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 verdict: SettleVerdict::Final,
                 no_progression: false,
             };
-            return if encounter_xp_settled {
+            return if awards_without_corpse || encounter_xp_settled {
                 record_settled_boss_rewards(entry, report)
             } else {
                 report

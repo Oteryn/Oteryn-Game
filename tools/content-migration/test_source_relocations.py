@@ -1,5 +1,6 @@
 """The relocation ledger holds exactly, and fails closed on any other drift."""
 
+import gzip
 import json
 import shutil
 import sys
@@ -21,9 +22,15 @@ class SourceRelocationTests(unittest.TestCase):
             current_digest,
         ) in ledger.RELOCATIONS.items():
             self.assertNotEqual(pinned_digest, current_digest, pinned)
+            expected = (ROOT / current).read_bytes()
+            archive = ledger.FROZEN_COMPRESSED_SOURCES.get((pinned, pinned_digest))
+            if archive is not None:
+                self.assertEqual(ledger.digest(expected), current_digest)
+                expected = gzip.decompress((ROOT / archive).read_bytes())
+                self.assertEqual(ledger.digest(expected), pinned_digest)
             self.assertEqual(
                 ledger.read_pinned(ROOT, pinned, pinned_digest),
-                (ROOT / current).read_bytes(),
+                expected,
             )
             if pinned != current:
                 self.assertFalse((ROOT / pinned).exists(), pinned)

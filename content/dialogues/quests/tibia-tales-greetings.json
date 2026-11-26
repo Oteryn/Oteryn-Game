@@ -12,15 +12,6 @@
       "greet": "Welcome. What business brings you here?",
       "farewell": "Farewell.",
       "walkaway": "Farewell."
-    },
-    {
-      "npc": "oteryn:npc.umar",
-      "greet": "You know our greeting. What brings you to our fortress?",
-      "farewell": "Farewell.",
-      "walkaway": "Farewell.",
-      "greeting_words": [
-        "djanni'hah"
-      ]
     }
   ]
 }

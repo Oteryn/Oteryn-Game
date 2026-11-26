@@ -993,10 +993,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             other: None,
         };
+        use oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual;
+        let ritual_water = splash.as_ref().is_some_and(|splash| {
+            i16::from(splash.fluid_subtype) == nomads_ritual::WATER_SUBTYPE
+                && super::nomads_ritual::is_water_placement(&splash.placement)
+        });
         let disposition = self
             .commit_fluid_at(actor, &command, fence, request, splash, None)
             .await
             .unwrap_or_else(|d| d);
+        if ritual_water && disposition == UseDisposition::Committed {
+            self.advance_nomads_ritual(
+                actor,
+                command,
+                nomads_ritual::ENTRANCE,
+                nomads_ritual::OPEN_ENTRANCE,
+            )
+            .await;
+        }
         Some(UseOutcome {
             disposition,
             ..UseOutcome::rejected()

@@ -272,6 +272,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ) else {
                 return outcome(UseDisposition::NotPossible);
             };
+            if !self.states.player_trades.physical(session, None) {
+                return outcome(UseDisposition::Rejected);
+            }
             let Ok(snapshot) = runtime.commit_source_step_and_project(proof, || {
                 matches!(
                     doors.toggle(

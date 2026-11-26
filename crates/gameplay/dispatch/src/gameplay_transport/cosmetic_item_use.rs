@@ -794,6 +794,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
             let mut selected = bound.into_iter().filter(|c| {
                 quest_targets::accepts(c, intent)
+                    && reward_callbacks::fresh_carried_source(c, catalogue, tracks)
                     && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
                     && c.state_ops

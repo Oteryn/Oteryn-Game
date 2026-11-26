@@ -24,6 +24,7 @@
       "greet": "You know the word of greeting. Why are you here?",
       "farewell": "<salutes>Aaaa -tention!",
       "walkaway": "<salutes>Aaaa -tention!",
+      "greeting_words": ["djanni'hah"],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/umar.lua:73-93:sha256:392e2457a309053a4b12f27ea22368ec8a0b7b808e3151138d6791abcef91df7"
       ]

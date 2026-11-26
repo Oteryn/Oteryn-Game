@@ -378,11 +378,24 @@ fn scenario(
             .bind(id(41).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
         owner.admit_quest_session(&next).await;
+        let verify_trade = !closing && player_case.is_none();
+        if verify_trade {
+            owner.states.player_trades.seed_offered_for_test(
+                owner.runtime.lock().await.binding(),
+                next.game_session_id,
+                crate::foundation::GameSessionId::decode(&id(84)).map_err(debug)?,
+                id(72),
+            ).ok_or("open trade at quest door")?;
+            assert!(owner.states.player_trades.open(next.game_session_id));
+        }
         // Advance the owner clock beyond the declared USE rate gate without sleeping.
         owner.clock_origin -= std::time::Duration::from_secs(1);
         let (next, result, _) =
             super::item_craft_fixtures::exchange(&owner, next, 2, &payload, None).await?;
         assert_eq!(result, UseDisposition::Committed);
+        if verify_trade {
+            assert!(!owner.states.player_trades.open(next.game_session_id));
+        }
         assert_eq!(
             owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
             MovementLocalPosition { x: 6, y: 0, floor: 7 },

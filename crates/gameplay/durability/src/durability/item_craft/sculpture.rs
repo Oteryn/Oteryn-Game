@@ -80,7 +80,7 @@ pub(super) async fn lock_ground_material(
             AND g.stack_ordinal=$6 AND g.map_revision=$7 AND g.content_revision=$8
             AND g.native_room_placement_context=$9
             AND (game_item_loop_drop_ref(g.corpse_ref) OR game_item_action_ground_source(i.item_instance_id))
-          FOR UPDATE OF i,g",
+          FOR UPDATE OF i",
     )
     .bind(material.as_slice()).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
     .bind(fence.scope_ownership_generation.get().to_string()).bind(&target.position)

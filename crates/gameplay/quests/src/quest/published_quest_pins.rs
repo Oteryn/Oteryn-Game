@@ -693,6 +693,11 @@ const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
             b"8d75517e41359a25abea653c8fd44fa5b4d2768c1470d9acaa9442b73f543065",
         )],
     ),
+    (
+        "oteryn:quest.tibia_tales",
+        TIBIA_TALES_RITUAL_SUCCESSOR,
+        &[TIBIA_TALES_TRAIN_SUCCESSOR],
+    ),
     // The native crypt and parcel extensions preserve saves from 3e0991642.
     (
         "oteryn:quest.too_hot_to_handle_quest",
@@ -772,9 +777,22 @@ pub(super) const BROTHERHOOD_BEFORE_DREAD_LORD: DefinitionHash =
 const TIBIA_TALES_TRAIN_SUCCESSOR: DefinitionHash =
     hash(b"08ddd97de427afb52741eacdef7781de95f438f5a86a88915d484b447e885db7");
 
+const TIBIA_TALES_RITUAL_SUCCESSOR: DefinitionHash =
+    hash(b"f558acb742256047fe7ab150edb88a897e69041b362d7be409a635c39e3d918f");
+
 // Exact successors captured from the integrated production loader. The unit
 // hashes remain valid predecessors for their own quest.
 const CONTENT_TRAIN_SUCCESSORS: &[(&str, DefinitionHash, DefinitionHash)] = &[
+    (
+        "oteryn:quest.the_explorer_society_quest",
+        hash(b"f51489994ea4f58e5ed3bd18de0a2120cb2852b8005a63eaee08ff86b4128fb1"),
+        hash(b"f303676654b1838969e71f6327afe356168855d601e5fb1c46a1605f9c62ce8a"),
+    ),
+    (
+        "oteryn:quest.authored.nomads_land_quest",
+        hash(b"852db8606f6acf8a6d12e55c775a2f62a2eeac0594c6457af10ebb0f6b2e2325"),
+        hash(b"fca492eb36c2318f4633a8aae3d68b6e32e5943b2717ddfee7933fe6857dfd4f"),
+    ),
     (
         "oteryn:quest.ferumbras_ascension_quest",
         hash(b"69a1b3cfaa0d7f3b921da0ea7bb3bafd1de62a22e484e4c333541ba29c9b2a79"),
@@ -834,7 +852,10 @@ fn is_content_train_successor(
 
 fn is_successor(quest: &str, current: DefinitionHash, active: Option<DefinitionHash>) -> bool {
     active == Some(current)
-        || (quest == "oteryn:quest.tibia_tales" && active == Some(TIBIA_TALES_TRAIN_SUCCESSOR))
+        || (quest == "oteryn:quest.tibia_tales" && active == Some(TIBIA_TALES_RITUAL_SUCCESSOR))
+        || (quest == "oteryn:quest.tibia_tales"
+            && current != TIBIA_TALES_RITUAL_SUCCESSOR
+            && active == Some(TIBIA_TALES_TRAIN_SUCCESSOR))
         || is_content_train_successor(quest, current, active)
 }
 

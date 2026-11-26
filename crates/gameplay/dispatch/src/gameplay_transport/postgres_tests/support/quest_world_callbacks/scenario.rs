@@ -51,6 +51,9 @@ fn scenario_case(
         name
     };
     let classic_access = super::super::classic_quest_parity_fixtures::access(name);
+    let classic_ice = classic_access.is_some_and(|access|
+        super::super::classic_quest_parity_fixtures::ICE_DELIVERY.contains(&access.name)
+    );
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
@@ -1859,6 +1862,7 @@ fn scenario_case(
             || m03_use
             || engenc_asura
             || m03_pits
+            || classic_ice
             || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
             // The Stampede binding carries its Premium admission on the quest.
             || name == super::super::m01c_stampede_entry_fixtures::NAME
@@ -2182,8 +2186,11 @@ fn scenario_case(
             );
         }
         if explorer
+            || classic_ice
+            || name.contains("l8-hunter-")
             || koshei
             || paradox_source_probe
+            || paradox_journey
             || name == "nx6-wayfarer"
             || qm03
             || m07_too_hot
@@ -2199,6 +2206,9 @@ fn scenario_case(
             || name == super::super::qd_world_fixtures::AHMET
         {
             owner.admit_premium(id(40), admitted.game_session_id);
+        }
+        if classic_ice || name.contains("l8-hunter-") || paradox_journey {
+            assert!(owner.session_premium_gate(admitted.game_session_id).await.premium_current());
         }
         owner.admit_quest_session(&admitted).await;
         if koshei {
@@ -3050,8 +3060,12 @@ fn scenario_case(
             ))
             .await?;
         } else if name == "questpc7-golden" {
-            super::super::questpc7_golden_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
-                .await?;
+            if variant == "legacy" {
+                super::super::questpc7_golden_fixtures::legacy(&mut owner, &mut admitted, &h, &authority).await?;
+            } else {
+                super::super::questpc7_golden_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
+                    .await?;
+            }
         } else if outfit_world {
             Box::pin(super::super::qengine_access_fixtures::exercise(
                 &mut owner,

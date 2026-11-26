@@ -225,6 +225,38 @@ fn crystal_equipment_ethereal_cast_uses_qualified_projectile_element() {
         owned(equipment).with_quiver_ammunition(vec![projectile])
     };
     let loadouts = [direct, quiver_cast(10), quiver_cast(6)];
+    let standard = content
+        .item_policy_for_source_id(3447)
+        .expect("standard arrow");
+    let standard_def = &standard.record().production_definition;
+    let Some(ProjectV2RangedWeapon::Ammunition {
+        attack: standard_attack,
+        ..
+    }) = standard.record().authoring.ranged else {
+        unreachable!();
+    };
+    let mut low_level_equipment = equipment.clone();
+    let mut flaming = low_level_equipment.items.remove(1);
+    flaming.item_instance_id = [43; 16];
+    let mut standard = equip(10, &standard_def.production_key, &standard_def.revision_ref);
+    standard.item_instance_id = [44; 16];
+    let low_level = OwnedCastFacts::from_owner_reads(
+        binding.clone(),
+        DurableBuildState::new("paladin", (0, 0), [(100, 0); 7]).expect("paladin build"),
+        15,
+        low_level_equipment,
+        AccessProjections::default(),
+    ).expect("fenced low-level owner reads")
+        .with_quiver_ammunition(vec![flaming, standard]);
+    let lesser = content.spell_book().spells.iter()
+        .find(|spell| spell.key == "candidate:spell/lesser_ethereal_spear")
+        .expect("Lesser Ethereal Spear");
+    let damage = low_level.intrinsic_weapon_for_spell(lesser, &content)
+        .expect("eligible standard arrow");
+    assert_eq!(damage.total_attack(), u32::from(bow) + u32::from(standard_attack));
+    assert_eq!(damage.element, ProjectV2RangedElement::Physical);
+    assert_eq!(damage.elemental_attack, 0);
+
     for name in [
         "lesser_ethereal_spear",
         "ethereal_spear",

@@ -219,6 +219,11 @@ impl RopeProof<'_> {
             };
             if ground((x, y, floor)) == Ground::Walkable
                 && landable((x, y, floor))
+                && !player_door_entry_blocked(
+                    self.cells,
+                    LogicalCell { x, y, z: floor },
+                    self.closed,
+                )
                 && !runtime
                     .position_occupied_by_other(self.actor, next)
                     .map_err(MovementError::Actor)?

@@ -2,7 +2,7 @@
 -- BEGIN GENERATED FORGE POLICY
 -- Producer: tools/content-migration/forge_sql_admission.py --write
 -- Canonical native profiles + crates/gameplay/items/src/forge/prices.rs.
--- Projection SHA256: db6a255af718f29de9adafe981d17be0859ac7ee5a096bfea821352b56f81aa1
+-- Projection SHA256: 3f0f5d2105b14574bd8855b8301ebf7b328f6efee6cbea1830d9923755d39f2c
 CREATE OR REPLACE FUNCTION game_forge_admitted_profile(p_key TEXT,p_revision TEXT)
 RETURNS TABLE(classification INT,max_tier INT,equipment_slot TEXT)
 LANGUAGE sql IMMUTABLE AS $$
@@ -70,6 +70,7 @@ LANGUAGE sql IMMUTABLE AS $$
   ('oteryn:item.tibia.i19362','definition-r1',2,2,'hand'),
   ('oteryn:item.tibia.i19366','definition-r1',4,10,'legs'),
   ('oteryn:item.tibia.i19372','definition-r1',3,3,'armor'),
+  ('oteryn:item.tibia.i19374','definition-r1',4,10,'feet'),
   ('oteryn:item.tibia.i19391','definition-r1',4,10,'armor'),
   ('oteryn:item.tibia.i20066','definition-r1',4,10,'hand'),
   ('oteryn:item.tibia.i20067','definition-r1',2,2,'hand'),
@@ -413,6 +414,7 @@ LANGUAGE sql IMMUTABLE AS $$
   ('oteryn:item.tibia.i3573','definition-r1',3,3,'head'),
   ('oteryn:item.tibia.i3574','definition-r1',1,1,'head'),
   ('oteryn:item.tibia.i3575','definition-r1',2,2,'head'),
+  ('oteryn:item.tibia.i3576','definition-r1',1,1,'head'),
   ('oteryn:item.tibia.i36657','definition-r1',4,10,'hand'),
   ('oteryn:item.tibia.i36658','definition-r1',4,10,'hand'),
   ('oteryn:item.tibia.i36659','definition-r1',4,10,'hand'),

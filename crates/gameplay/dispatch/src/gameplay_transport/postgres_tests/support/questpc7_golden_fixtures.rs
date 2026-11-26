@@ -16,6 +16,40 @@ async fn money(h: &Harness) -> TestResult<i64> {
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }
 
+pub(super) async fn legacy(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    use super::classic_quests_fixtures::{install, progress, talk};
+    const LEGACY_TRACK: &str = "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit";
+    let [king] = install(owner, admitted, ["oteryn:npc.king_tibianus"]).await?;
+    sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now()) ON CONFLICT DO NOTHING")
+        .execute(&h.pool).await?;
+    seed_bank(h).await?;
+    for (command, word) in [(800, "hi"), (801, "outfit"), (802, "yes")] {
+        talk(owner, admitted, king, command, word).await?;
+    }
+    for (index, (keyword, price, stage)) in [("armor",100_000,1),("boots",50_000,2),("helmet",50_000,4)]
+        .into_iter().enumerate()
+    {
+        let command = 803 + 2 * u64::try_from(index)?;
+        let before = bank(h).await?;
+        let price_quote = talk(owner, admitted, king, command, keyword).await?;
+        assert!(price_quote.iter().any(|line| line.contains(&format!("{price} gold"))));
+        talk(owner, admitted, king, command + 1, "yes").await?;
+        assert_eq!(bank(h).await?, before - price);
+        assert_eq!(progress(owner, admitted, authority, LEGACY_TRACK).await?, stage);
+    }
+    let amount: i64 = sqlx::query_scalar(
+        "SELECT sum(bank_debit_gold_units)::bigint FROM game_item_fee_burns WHERE cause_kind=18",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(amount, 200_000);
+    assert_eq!(money(h).await?, 0);
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,

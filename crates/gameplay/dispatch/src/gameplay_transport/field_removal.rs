@@ -13,7 +13,14 @@ fn is_machete(key: &str) -> bool {
     matches!(
         oteryn_gameplay_world::terrain_tools::TerrainTool::from_production_key(key),
         Some(oteryn_gameplay_world::terrain_tools::TerrainTool::Machete)
-    ) || matches!(key, "oteryn:item.tibia.i9596" | "oteryn:item.tibia.i9598")
+    ) || is_agent_tool(key)
+}
+
+fn is_agent_tool(key: &str) -> bool {
+    matches!(
+        key,
+        "oteryn:item.tibia.i9594" | "oteryn:item.tibia.i9596" | "oteryn:item.tibia.i9598"
+    )
 }
 
 enum FieldUse {
@@ -54,15 +61,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         target: Option<super::item_view::ItemKey>,
     ) -> Option<Option<super::connection::UseOutcome>> {
         use super::item_view::ItemKey;
-        use oteryn_protocol_oteryn::world_object::UseDisposition;
+        use oteryn_protocol_oteryn::world_object::{UseDisposition, UseTarget};
         if intent.use_with_position.is_some()
             || intent.use_with.is_some()
             || intent.use_with_map_item.is_none()
         {
             return None;
         }
-        let Some(ItemKey::Instance(tool)) = source else {
-            return None;
+        let hotkey = match (&intent.target, source) {
+            (UseTarget::ItemByDefinition(definition), _) => Some(*definition),
+            (UseTarget::Item(_), Some(ItemKey::Instance(_))) => None,
+            _ => return None,
         };
         let fence = command.item_fence?;
         // Tool classification reads the durable inventory too. Serialize it with
@@ -75,6 +84,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
             .ok()?;
+        let tool = if let Some(definition) = hotkey {
+            use crate::durability::item_mint::TypedDefinitionRef;
+            let runtime = self.runtime.lock().await;
+            let index = super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
+            let (key, revision) = index.definition_at(definition)?;
+            if !is_agent_tool(key) {
+                return None;
+            }
+            inventory
+                .first_unreserved(
+                    &TypedDefinitionRef {
+                        family: "Item".into(),
+                        production_key: key.into(),
+                        revision_ref: revision.into(),
+                    },
+                    &[],
+                )
+                .ok()?
+        } else {
+            let Some(ItemKey::Instance(tool)) = source else {
+                return None;
+            };
+            tool
+        };
         let bag = inventory.backpack.as_ref()?;
         let carried = bag
             .entries
@@ -118,17 +151,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
-        if states.is_dead(actor)
-            || !states.spell_idle(&runtime, actor, command.game_session_id)
-            || !runtime
+        let field_ready = !states.is_dead(actor)
+            && states.spell_idle(&runtime, actor, command.game_session_id)
+            && runtime
                 .player_control_facts(actor, command.game_session_id)
-                .is_ok_and(|facts| facts.control_loss.is_none())
-        {
-            return refused();
-        }
-        let Some(room) = self.rooms().gate_field_step_ingress() else {
-            return refused();
-        };
+                .is_ok_and(|facts| facts.control_loss.is_none());
+        let room = self.rooms().gate_field_step_ingress();
         let Ok(position) = runtime.read_actor_position(actor) else {
             return refused();
         };
@@ -160,8 +188,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 (crate::foundation::MovementLocalPosition{x:decoded.x,y:decoded.y,floor:i16::try_from(decoded.z).map_err(|_|crate::durability::DurabilityError::Unavailable)?}, field_definition(&key, &revision))
             } else { return Ok(FieldUse::Declined) };
             let from=position.position();
+            if !field {
+                return Ok(FieldUse::Declined);
+            }
+            // Room readiness belongs to field removal. A landed corpse or
+            // another Ground item must still reach its own interaction owner.
+            let room = room.filter(|_| field_ready).ok_or(crate::durability::DurabilityError::Unavailable)?;
             if from.floor != wanted.floor || from.x.abs_diff(wanted.x)>1 || from.y.abs_diff(wanted.y)>1 {
-                return Ok(if field { FieldUse::OutOfReach } else { FieldUse::Declined });
+                return Ok(FieldUse::OutOfReach);
             }
             let address=SpellGroundTarget::for_native_tile_read(room,runtime,wanted).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let read=storage::read_standing_player_tile_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,native.source_digest(),&address).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
@@ -196,19 +230,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition: UseDisposition::Committed,
                 ..super::connection::UseOutcome::rejected()
             })),
-            // A non-field target must reach the terrain owner (9596 harvests wheat;
-            // 9598 opens the quest cask). mining::dispatch_map_use falls through
-            // only on NothingToUse, so TargetIllegal would hide those uses.
-            Ok(FieldUse::Declined)
-                if matches!(
-                    tool_item.item.definition.production_key.as_str(),
-                    "oteryn:item.tibia.i9596" | "oteryn:item.tibia.i9598"
-                ) =>
-            {
-                Some(Some(super::connection::UseOutcome {
-                    disposition: UseDisposition::NothingToUse,
-                    ..super::connection::UseOutcome::rejected()
-                }))
+            // Non-field targets retain their skinning, harvest or cask owner.
+            Ok(FieldUse::Declined) if is_agent_tool(&tool_item.item.definition.production_key) => {
+                None
             }
             Ok(FieldUse::Declined | FieldUse::OutOfReach) => refused(),
             Err(_) => {

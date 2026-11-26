@@ -25,7 +25,6 @@ const SOURCES: &[&str] = &[
     include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-m10.json"),
     include_str!("../../../../../../../content/quests/npc-offers/rookgaard-exchanges.json"),
     include_str!("../../../../../../../content/quests/npc-offers/threatened-dreams.json"),
-    include_str!("../../../../../../../content/quests/shared-reward-offers.json"),
     include_str!("../../../../../../../content/quests/npc-offers/classic-missions.json"),
     include_str!("../../../../../../../content/quests/npc-offers/newhaven-gustavo.json"),
     include_str!("../../../../../../../content/quests/npc-offers/quest-contacts.json"),
@@ -96,6 +95,19 @@ mod tests {
     #[test]
     fn quest_offers_accept_the_train_size_and_both_premium_spellings() -> Result<(), String> {
         let registered = embedded().ok_or("registered quest offers")?;
+        let sources = std::collections::BTreeSet::<_>::from_iter(SOURCES.iter().copied());
+        assert_eq!(
+            sources.len(),
+            SOURCES.len(),
+            "each offer shard has one owner"
+        );
+        let expected: usize = SOURCES
+            .iter()
+            .map(|source| serde_json::from_str::<Offers>(source).map(|shard| shard.offers.len()))
+            .sum::<Result<_, _>>()
+            .map_err(|error| error.to_string())?;
+        let rafzan = super::super::offer_match::rafzan_offers().ok_or("Rafzan offers")?;
+        assert_eq!(registered.offers.len(), expected + rafzan.offers.len());
         let offers = serde_json::json!({
             "schema": 1,
             "offers": (0..529).map(|next_topic| serde_json::json!({

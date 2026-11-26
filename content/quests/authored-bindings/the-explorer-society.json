@@ -634,6 +634,89 @@
           }
         },
         {
+          "key": "cut-ice-second-site",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/explorer-society/cut-ice-second-site",
+              "quest": "oteryn:quest.the_explorer_society_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 34040,
+                  "y": 31756,
+                  "floor": -10
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 4994,
+                "native": {
+                  "position": {
+                    "x": 34040,
+                    "y": 31756,
+                    "floor": -10
+                  },
+                  "ordinal": 3,
+                  "appearance": 4994
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+                  "minimum": 6,
+                  "maximum": 6,
+                  "set": 7
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+                  "minimum": 6,
+                  "maximum": 6,
+                  "set": 7,
+                  "add": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+                  "minimum": 1,
+                  "maximum": 6,
+                  "set": 7
+                }
+              ],
+              "offerings": [],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i4872",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "selected_instance": true,
+                "reusable": true
+              },
+              "requires_world_admission": true,
+              "world_requirements": [],
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "success_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_explorer_society/actions_icicle.lua:1-13"
+              ],
+              "activation": {
+                "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+                "minimum": 6,
+                "maximum": 6
+              },
+              "item_reward": {
+                "item": "oteryn:item.tibia.i4837",
+                "count": 1,
+                "contents": []
+              }
+            }
+          }
+        },
+        {
           "key": "return-ice",
           "completes": false,
           "trigger": {

@@ -63,6 +63,16 @@ pub(super) fn register(
     // Absent tracks retain their source defaults. Entries without an explicit
     // revision were measured on the complete deployed catalogue at 871c1dec7.
     for (quest, hash) in [
+        // Measured at the integrated main revision before Kevin's final promotion
+        // became a completion transition. The track definitions are unchanged.
+        (
+            "oteryn:quest.the_postman_missions_quest",
+            [
+                0x0a, 0xf6, 0xfe, 0x65, 0xe6, 0x5a, 0xce, 0xfe, 0xb8, 0x5e, 0xda, 0xee, 0x7d, 0x13,
+                0x42, 0x51, 0x21, 0x7c, 0xb9, 0xb5, 0xae, 0x12, 0xe9, 0x2c, 0x95, 0xb3, 0x74, 0xd3,
+                0x8c, 0xef, 0xf0, 0x5d,
+            ],
+        ),
         // Measured through the production loader at 7dc142a65.
         (
             "oteryn:quest.the_postman_missions_quest",

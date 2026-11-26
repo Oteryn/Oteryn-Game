@@ -10,6 +10,7 @@ import hireling_item_profiles
 import house_decoration_actions
 
 import register_spell_families
+from srx1_profile_updates import compact_item_record
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
@@ -60,7 +61,7 @@ class EventItemProfilePrecedence(unittest.TestCase):
             # The hireling owner installs source taxonomy before event admission.
             expected[key]['authoring']['taxonomy'] = taxonomy[key]
             self.assertEqual(expected[key]['semantics'], original_semantics[key], key)
-            self.assertEqual(actual[key], expected[key], key)
+            self.assertEqual(compact_item_record(actual[key]), compact_item_record(expected[key]), key)
 
     def test_yasir_doors_keep_exact_source_geometry_without_global_item_admission(self):
         source = json.loads((ROOT / 'tools/content-schema/native-gameplay/event-item-profiles.json').read_bytes())

@@ -7,7 +7,6 @@ use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
     encode_use_intent,
 };
-use oteryn_protocol_oteryn::world_spatial::StepDirection;
 use std::num::NonZeroU64;
 
 pub(super) const CHEST: Position = Position {
@@ -17,9 +16,11 @@ pub(super) const CHEST: Position = Position {
 };
 pub(super) const START: Position = Position { y: 32200, ..CHEST };
 const DOOR: Position = Position { y: 32199, ..CHEST };
-const CALLBACK: &str = "oteryn:quest-callback/outlaw-camp-treasure";
+const CALLBACK: &str = "oteryn:quest-callback/authored-outlaw-camp-s3-treasure";
+const QUEST: &str = "oteryn:quest.the_outlaw_camp_quest";
+const STAGE: &str = "oteryn:quest-progress/authored/outlaw-camp/stage";
 const TRACK: &str = "oteryn:quest-progress/quest/u6_4/outlaw_camp_quest";
-const KEY: &str = "oteryn:item.tibia.i2972";
+const KEY: &str = "oteryn:item.tibia.i2970";
 
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
@@ -62,12 +63,28 @@ pub(super) async fn exercise(
             &[4, 6, 11, 15, 18],
         )
         .ok_or("object and inventory capabilities")?;
+    super::classic_quest_parity_fixtures::set_test_level(h, 45, 1_328_800).await?;
+    // This crop starts just after the authored entrance, where the keys
+    // have qualified the player for the guarded passage.
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, &admitted, &[(STAGE.into(), 1)], 45,
+    ).await?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
     let key_id = id(71);
     let character = id(41);
+    let catalogue = owner.quest_catalogue.as_ref().ok_or("Outlaw Camp catalogue")?;
+    let pin = catalogue.definition_hash(QUEST).ok_or("Outlaw Camp definition pin")?;
+    assert_eq!(sqlx::query(
+        "INSERT INTO game_character_quest_states
+         (character_id, quest_key, pinned_content_revision, definition_hash,
+          started_character_revision, committed_character_revision)
+         SELECT character_id,$2,$3,$4,character_revision,character_revision
+         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    ).bind(character.as_slice()).bind(QUEST).bind(catalogue.content_revision()).bind(pin.as_slice())
+        .execute(&mut *tx).await?.rows_affected(), 1);
     let inserted = sqlx::query(
         "INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
          definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
@@ -95,13 +112,14 @@ pub(super) async fn exercise(
     .await?;
     sqlx::query(
         "INSERT INTO game_item_keys(item_instance_id,key_number,minted_transaction_id)
-        SELECT item_instance_id,3304,game_character_uuid_v7() FROM game_item_instances
+        SELECT item_instance_id,3303,game_character_uuid_v7() FROM game_item_instances
         WHERE item_instance_id=encode($1,'hex')::uuid",
     )
     .bind(key_id.as_slice())
     .execute(&mut *tx)
     .await?;
     tx.commit().await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
 
     let map = owner.bundle_map().ok_or("treasure room")?;
     let target = |at: Position, ordinal| -> TestResult<WorldObjectTarget> {
@@ -133,8 +151,13 @@ pub(super) async fn exercise(
         super::item_craft_fixtures::exchange(owner, admitted, command, &use_key, Some(tool))
             .await?;
     assert_eq!(unlocked, UseDisposition::Committed);
-    super::questpc7_ferumbras_fixtures::step(owner, &mut admitted, StepDirection::North).await?;
+    super::questpc7_ferumbras_fixtures::walk(owner, &mut admitted, START).await?;
+    super::questpc7_ferumbras_fixtures::walk(owner, &mut admitted, DOOR).await?;
 
+    let stage: i64 = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks WHERE track_key=$1"
+    ).bind(STAGE).fetch_one(&h.pool).await?;
+    assert_eq!(stage, 2, "crossing the keyed door qualifies the chest");
     let use_chest = encode_use_intent(&target(CHEST, 2)?).map_err(debug)?;
     let command = admitted.continuity.next_command_id;
     let (admitted, obtained, replay) =
@@ -167,8 +190,10 @@ pub(super) async fn exercise(
          AND q.cause_ordinal=m.command_id AND q.created_xact_id=m.created_xact_id
          JOIN game_character_quest_tracks t ON t.character_id=q.character_id
          WHERE m.claim_production_key=$1 AND q.transition_key=$1 AND q.completes
-         AND t.track_key=$2 AND t.value=1",
-    ).bind(CALLBACK).bind(TRACK).fetch_one(&h.pool).await?;
+         AND t.track_key=$2 AND t.value=1
+         AND EXISTS (SELECT 1 FROM game_character_quest_tracks stage
+                     WHERE stage.character_id=t.character_id AND stage.track_key=$3 AND stage.value=3)",
+    ).bind(CALLBACK).bind(TRACK).bind(STAGE).fetch_one(&h.pool).await?;
     assert_eq!(
         atomic, 1,
         "one atomic bag mint, completion and donor storage update"

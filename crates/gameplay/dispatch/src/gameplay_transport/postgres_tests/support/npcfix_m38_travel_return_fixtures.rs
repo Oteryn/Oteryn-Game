@@ -53,6 +53,7 @@ pub(super) async fn request(
     };
     Ok(PaidTravelRequest {
         command: CommandRef::new(session, CommandId::new(command).map_err(debug)?),
+        postman_catalogue: None,
         arrival: crate::durability::npc_travel::PendingArrival {
             occurrence,
             world_id: owner.world_id,

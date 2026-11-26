@@ -4,8 +4,7 @@ use oteryn_protocol_oteryn::npc_service::TRAVEL_CONFIRMATION_TIMEOUT_SECONDS;
 
 impl Prompt {
     pub(super) fn matches_source_confirmation(&self, lowercase: &str) -> bool {
-        // The Crystal KeywordHandler matches the "yes" child by substring.
-        lowercase.contains("yes")
+        super::contains_whole_keyword(lowercase, "yes")
             && (self.route.postman_tour_passage().is_some()
                 || (self.route.service == "oteryn:service.travel.eremo"
                     && self.route.route.key == "cormaya"))

@@ -6,6 +6,7 @@ use super::magnitude_owner::IntrinsicWeaponDamage;
 use super::{CasterState, SpellDefinition};
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{ProjectV2RangedWeapon, ReferenceItemField, ReferenceWeaponType};
+use crate::domain::equipment_policy_abi::{EquipmentBaseVocation, EquipmentPolicyLookup};
 use crate::durability::character_build::DurableBuildState;
 use crate::durability::character_equipment::{EquipmentSnapshot, EquippedItem};
 use crate::foundation::{ExactActorRef, GameSessionId};
@@ -267,10 +268,35 @@ impl OwnedCastFacts {
                 .chain(self.equipment.items.iter().filter(|item| item.slot == 10))
                 .filter(|item| item.quantity > 0)
                 .find_map(|item| {
-                    let projectile = content.item_policy(
-                        &item.definition.production_key,
-                        &item.definition.revision_ref,
-                    )?;
+                    let key = &item.definition.production_key;
+                    let revision = &item.definition.revision_ref;
+                    let equipment = content.equipment_policy(key, revision)?;
+                    let claims = equipment
+                        .claims()
+                        .iter()
+                        .find(|(slot, _)| *slot == 10)?
+                        .1
+                        .as_ref()
+                        .ok()?;
+                    if self.level < u32::from(claims.level) {
+                        return None;
+                    }
+                    if !claims.vocations.is_empty() {
+                        use super::Vocation;
+                        use EquipmentBaseVocation as Base;
+                        let vocation = match Vocation::from_key(self.build.vocation())? {
+                            Vocation::None => Base::None,
+                            Vocation::Druid | Vocation::ElderDruid => Base::Druid,
+                            Vocation::Knight | Vocation::EliteKnight => Base::Knight,
+                            Vocation::Monk | Vocation::ExaltedMonk => Base::Monk,
+                            Vocation::Paladin | Vocation::RoyalPaladin => Base::Paladin,
+                            Vocation::Sorcerer | Vocation::MasterSorcerer => Base::Sorcerer,
+                        };
+                        if !claims.vocations.contains(&vocation) {
+                            return None;
+                        }
+                    }
+                    let projectile = content.item_policy(key, revision)?;
                     let ProjectV2RangedWeapon::Ammunition {
                         attack,
                         ammunition: kind,
@@ -307,9 +333,7 @@ impl OwnedCastFacts {
             &item.definition.revision_ref,
         )?;
         if let Some(profile) = &policy.record().authoring.ranged {
-            return self
-                .ranged_skill_attack(content, profile)
-                .filter(|damage| damage.elemental_attack > 0);
+            return self.ranged_skill_attack(content, profile);
         }
         IntrinsicWeaponDamage::from_melee(self.main_hand_melee(content)?)
     }

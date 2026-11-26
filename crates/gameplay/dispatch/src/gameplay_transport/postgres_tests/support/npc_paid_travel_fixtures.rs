@@ -102,6 +102,10 @@ pub(super) fn scenario_with_reward_callback() -> TestResult {
 }
 
 pub(super) fn scenario(reward_fixture: bool) -> TestResult {
+    scenario_with_tour_pin(reward_fixture, false)
+}
+
+pub(super) fn scenario_with_tour_pin(reward_fixture: bool, foreign_pin: bool) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(
@@ -925,6 +929,22 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
             if index == S10T_PASSAGES.len() {
                 owner.premium_coordinator = Some(&free);
             }
+            let tour_stage = POSTMAN_TOUR.iter().position(|(npc, dest, ..)| npc == captain && dest == destination)
+                .map(|stage| i64::try_from(stage).map(|stage| stage + 1)).transpose()?;
+            if let Some(stage) = tour_stage.filter(|_| foreign_pin) {
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+                sqlx::query(
+                    "UPDATE game_character_quest_states SET definition_hash=sha256('unrecognized Postman pin')
+                     WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.the_postman_missions_quest'",
+                ).bind(id(41).as_slice()).execute(&mut *tx).await?;
+                sqlx::query(
+                    "UPDATE game_character_quest_tracks SET value=$2
+                     WHERE character_id=encode($1,'hex')::uuid
+                       AND track_key='oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01'",
+                ).bind(id(41).as_slice()).bind(stage).execute(&mut *tx).await?;
+                tx.commit().await?;
+            }
             sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
             let captain_key = format!("oteryn:npc.{captain}");
             let npc = at_start(captain).await?;
@@ -942,7 +962,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
             .into_iter()
             .find(|route| route.keyword == *destination)
             .ok_or("S10T route")?;
-            let command_id = 400 + u64::try_from(index)? * 10;
+            let command_id = 400 + u64::try_from(index)? * 12;
             owner.clock_origin -= std::time::Duration::from_secs(1);
             talk(&owner, &dependencies, npc, command_id, "hi").await?;
             if matches!(*captain, "captain_jack" | "ferryman_kamil" | "ferryman_kamil_meluna"
@@ -1107,6 +1127,27 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                         .contains(&format!("{fare} gold"))
                 );
             }
+            if !reward_fixture && (*captain == "eremo"
+                || POSTMAN_TOUR.iter().any(|(npc, dest, ..)| npc == captain && dest == destination))
+            {
+                let before_position = dependencies.runtime.lock().await.read_actor_position(dependencies.actor).map_err(debug)?;
+                let before_stage = mission().await?;
+                let invalid = talk(&owner, &dependencies, npc, command_id + 6, "yesterday").await?;
+                assert!(!invalid.unknown, "{captain}/{destination}: invalid answer attempted a departure");
+                assert_eq!(dependencies.runtime.lock().await.read_actor_position(dependencies.actor).map_err(debug)?, before_position);
+                assert_eq!(gold(&h).await?, before);
+                assert_eq!(mission().await?, before_stage);
+                let after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_newhaven_travel_receipts")
+                    .fetch_one(&h.pool).await?;
+                assert_eq!(after, receipts);
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+                if owner.states.chat.engaged(session).is_none() {
+                    talk(&owner, &dependencies, npc, command_id + 7, "hi").await?;
+                }
+                assert!(line(&talk(&owner, &dependencies, npc, command_id + 8, request).await?)
+                    .contains(&format!("{fare} gold")));
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+            }
             let fence = owner
                 .current_quest_fence(session)
                 .await
@@ -1116,8 +1157,6 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
             // Retain the exact production request across an injected transaction rollback,
             // then reconcile it and replay its durable receipt as in the original passage case.
             sqlx::raw_sql("CREATE FUNCTION s10t_travel_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'S10T injected arrival failure'; END; $$; CREATE TRIGGER s10t_travel_fail BEFORE INSERT ON game_character_pending_arrivals FOR EACH ROW EXECUTE FUNCTION s10t_travel_fail()").execute(&h.pool).await?;
-            let tour_stage = POSTMAN_TOUR.iter().position(|(npc, dest, ..)| npc == captain && dest == destination)
-                .map(|stage| i64::try_from(stage).map(|stage| stage + 1)).transpose()?;
             let confirmation = if !reward_fixture && (*captain == "eremo" || tour_stage.is_some()) {
                 "yes please"
             } else {
@@ -1128,7 +1167,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                     dependencies.actor,
                     UseCommand {
                         game_session_id: session,
-                        command_id: command_id + 6,
+                        command_id: command_id + 9,
                         item_fence: Some(fence),
                     },
                     NpcTalkIntent {
@@ -1137,7 +1176,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                     },
                 )
                 .await;
-            assert!(failed.unknown, "{captain}/{destination}: {confirmation:?} did not reach the arrival transaction");
+            assert!(failed.unknown, "{captain}/{destination}: {confirmation:?} did not reach the arrival transaction, got {:?}: {:?}", failed.disposition, line(&failed));
             assert_eq!(failed.disposition, NpcIntentDisposition::Rejected);
             assert_eq!(gold(&h).await?, before);
             if let Some(stage) = tour_stage {
@@ -1163,7 +1202,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                     dependencies.actor,
                     UseCommand {
                         game_session_id: session,
-                        command_id: command_id + 6,
+                        command_id: command_id + 9,
                         item_fence: Some(fence),
                     },
                 )
@@ -1201,13 +1240,13 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                 assert_eq!(mission().await?, 1, "Eremo is outside the Postman tour");
             }
             if let Some(stage) = tour_stage {
-                assert_eq!(mission().await?, stage + 1, "confirmed and replayed {captain} trip");
+                assert_eq!(mission().await?, stage + i64::from(!foreign_pin), "confirmed and replayed {captain} trip");
                 let receipts: i64 = sqlx::query_scalar(
                     "SELECT count(*) FROM game_character_quest_receipts
                      WHERE character_id=encode($1,'hex')::uuid
                        AND transition_key='oteryn:quest-transition/postman/complete-tour-passage'",
                 ).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
-                assert_eq!(receipts, stage, "one quest receipt per completed passage");
+                assert_eq!(receipts, if foreign_pin { 0 } else { stage }, "only compatible quest pins earn tour credit");
             }
             if *captain == "gurbasch" {
                 let award = super::achievement_granters::assert_progress(
@@ -1229,7 +1268,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
             );
         }
         assert!(decline_failures.is_empty(), "{}", decline_failures.join("\n"));
-        if !reward_fixture {
+        if !reward_fixture && !foreign_pin {
             let kevin = at_start("kevin").await?;
             owner.clock_origin -= std::time::Duration::from_secs(1);
             talk(&owner, &dependencies, kevin, 700, "hi").await?;

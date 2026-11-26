@@ -686,17 +686,137 @@ pub fn offered_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback
     Ok(callbacks)
 }
 
+/// Select one carried-use programme before evaluating its writable guards.
+/// The complete callback catalogue still owns replay for either programme.
+pub fn fresh_carried_source(
+    callback: &RewardCallback,
+    catalogue: &QuestStateCatalogue,
+    tracks: &BTreeMap<String, i64>,
+) -> bool {
+    const AUTHORED_SLUG: &str = "oteryn:quest-reward/questpc7-goblin-slug-sample";
+    const OLD_SLUG: &str = "oteryn:quest-reward/goblin-merchant/slug-sample";
+    const ODOURS: &str = "oteryn:quest-progress/questpc7/goblin/odours";
+    if callback.key == OLD_SLUG {
+        return catalogue.transition(AUTHORED_SLUG).is_none()
+            || tracks.get(ODOURS).is_none_or(|value| *value < 0);
+    }
+    const CHOSEN_VERSES: &str = "oteryn:quest-reward/chosen/hunter-outfits/verse-";
+    const SOURCE_VERSES: &str = "oteryn:quest-reward/hunter-hymn-verse-";
+    let chosen = callback.key.strip_prefix(CHOSEN_VERSES);
+    let source = callback.key.strip_prefix(SOURCE_VERSES);
+    let Some(verse) = chosen.or(source) else {
+        return true;
+    };
+    if catalogue
+        .transition(&format!("{CHOSEN_VERSES}{verse}"))
+        .is_none()
+        || catalogue
+            .transition(&format!("{SOURCE_VERSES}{verse}"))
+            .is_none()
+    {
+        return true;
+    }
+    let chosen_progress = (1..=4).any(|index| {
+        tracks.get(&format!(
+            "oteryn:quest-progress/hunter-outfits/verse-{index}"
+        )) == Some(&1)
+    });
+    let source_progress = (1..=4).any(|index| {
+        tracks.get(&format!(
+            "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet{index:02}"
+        )) == Some(&1)
+    });
+    chosen.is_some() == (chosen_progress || !source_progress)
+}
+
+#[cfg(test)]
+#[test]
+fn hunter_sheets_admit_one_fresh_family_and_continue_an_existing_verse() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let callbacks = load_for(catalogue)?;
+    let saved_source = BTreeMap::from([(
+        "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet01".into(),
+        1,
+    )]);
+    let empty = BTreeMap::new();
+    for (number, item) in (1..=4).zip(6087..=6090) {
+        let item = format!("oteryn:item.tibia.i{item}");
+        let candidates = callbacks
+            .iter()
+            .filter(|row| row.carried_item.as_deref() == Some(&item))
+            .collect::<Vec<_>>();
+        assert_eq!(candidates.len(), 2, "{item} keeps both receipt keys");
+        assert!(
+            candidates.iter().all(|row| row.take.len() == 1
+                && row.take[0].item == item
+                && row.take[0].count == 1)
+        );
+        for (tracks, key) in [
+            (
+                &empty,
+                format!("oteryn:quest-reward/chosen/hunter-outfits/verse-{number}"),
+            ),
+            (
+                &saved_source,
+                format!("oteryn:quest-reward/hunter-hymn-verse-{number}"),
+            ),
+        ] {
+            let routed = candidates
+                .iter()
+                .filter(|callback| fresh_carried_source(callback, catalogue, tracks))
+                .map(|callback| callback.key.as_str())
+                .collect::<Vec<_>>();
+            assert_eq!(routed, [key], "{item}");
+        }
+    }
+    Ok(())
+}
+
 fn retain_offered_callbacks(callbacks: &mut Vec<RewardCallback>) {
     // Elane's common sale handles free accounts and completed outfits. Keep the
     // earlier free-only transition available to replay its durable receipts.
     let elane_sale = callbacks.iter().any(|callback| {
         callback.key == "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves-sale"
     });
+    let elane_addon = callbacks
+        .iter()
+        .any(|callback| callback.key == "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves");
     callbacks.retain(|callback| {
         super::authored_bindings::personal_event_offered(callback)
             && (!elane_sale
                 || callback.key != "oteryn:quest-reward/l8-hunter-elane-gloves-sale-free")
+            && (!elane_addon || callback.key != "oteryn:quest-reward/l8-hunter-elane-gloves")
     });
+}
+
+#[cfg(test)]
+#[test]
+fn elane_has_one_fresh_addon_hand_in_and_both_receipt_keys() -> Result<(), String> {
+    const CHOSEN: &str = "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves";
+    const LEGACY: &str = "oteryn:quest-reward/l8-hunter-elane-gloves";
+    let callbacks = load()?;
+    let mut fresh = callbacks
+        .iter()
+        .filter(|callback| matches!(callback.key.as_str(), CHOSEN | LEGACY))
+        .cloned()
+        .collect::<Vec<_>>();
+    assert_eq!(fresh.len(), 2);
+    assert!(fresh.iter().all(|callback| {
+        callback.topic == 8
+            && callback.requires_premium
+            && callback.take.len() == 1
+            && callback.take[0].item == "oteryn:item.tibia.i5875"
+            && callback.take[0].count == 1
+    }));
+    retain_offered_callbacks(&mut fresh);
+    assert_eq!(
+        fresh.iter().map(|row| row.key.as_str()).collect::<Vec<_>>(),
+        [CHOSEN]
+    );
+    assert!(fresh[0].addon_only);
+    Ok(())
 }
 
 #[cfg(test)]

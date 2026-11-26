@@ -651,6 +651,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             },
             route: prompt.route.clone(),
+            postman_catalogue: self.quest_catalogue.clone(),
             fee: FeeBurnRequest {
                 cause: FeeBurnCause::NpcTravel {
                     service: prompt.route.service.clone(),

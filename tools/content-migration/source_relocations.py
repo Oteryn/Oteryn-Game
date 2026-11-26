@@ -39,7 +39,7 @@ QUEST_PLAN_PLACEMENT_RELOCATIONS = {
         "86d294671104ff928bc6070e4fab19b68c2f1598fbddbf9e0496ee37eee33197",
     ): (
         "content/world/placements/index.json",
-        "bbdfbfe9c5a41f92e0133bdac9b660e851f4e0e81a0214ed06a545c9b0fa47a7",
+        "73a6ed1758c0dd7f4a71530a817fff37b7c65fc1f6d3a563af8caca69ef0f6ec",
     ),
     (
         "content/world/placements/region-z07-x130-y127.b3",
@@ -79,21 +79,21 @@ RELOCATIONS = {
         "ce986ca83b92f5ea2b7aeaa5bdc75b591cb28d63ab1a93dce0077215ce90979f",
     ): (
         "content/world/terrain/index.json",
-        "03c4aa6be945eb2e7b20c48df135a4754cddc5e37605b6add12bca0ac957089c",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "2a7bf459e3422357840e701f4d606c7dad1cdf3189efbf8e9c442b6933e0c29a",
+        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "96b24f0cbedb168d73aeca26644536693d97b7fe2d2f49ecbd150bdfd4f3037b",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "2a7bf459e3422357840e701f4d606c7dad1cdf3189efbf8e9c442b6933e0c29a",
+        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
     ),
     # The source-qualified Anomaly ground retains its pre-existing Item route;
     # the complete terrain row otherwise remains byte-identical.
@@ -111,7 +111,7 @@ RELOCATIONS = {
         "704991a60238795986358b6d2bcb7ac25f2172a04723b541e3f959a50eb9d768",
     ): (
         "content/world/terrain/index.json",
-        "03c4aa6be945eb2e7b20c48df135a4754cddc5e37605b6add12bca0ac957089c",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
     ),
     (
         "content/world/terrain/terrain-05500-05999.json",
@@ -125,7 +125,7 @@ RELOCATIONS = {
         "db9150a3639c4d6bcd596c040b7d2ad39047fbc3f51c925761bebfbb6def26fd",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "2a7bf459e3422357840e701f4d606c7dad1cdf3189efbf8e9c442b6933e0c29a",
+        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
     ),
     (
         "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",
@@ -247,42 +247,42 @@ RELOCATIONS = {
         "0549b3567749436b9e6f91f79751d32d9ea4431fe6b1be7505566d50b797e27d",
     ): (
         "content/world/terrain/index.json",
-        "03c4aa6be945eb2e7b20c48df135a4754cddc5e37605b6add12bca0ac957089c",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
     ),
     (
         "content/world/terrain/index.json",
         "22cb600cca441ac68526501c8e3576ec9c1dd07f77b276db470c70b996028fec",
     ): (
         "content/world/terrain/index.json",
-        "03c4aa6be945eb2e7b20c48df135a4754cddc5e37605b6add12bca0ac957089c",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
     ),
     (
         "content/world/terrain/index.json",
         "360e65beb939450179cb6c99b5c19a0e2842051fd9c3beaf21e6366b9c9245a4",
     ): (
         "content/world/terrain/index.json",
-        "03c4aa6be945eb2e7b20c48df135a4754cddc5e37605b6add12bca0ac957089c",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
     ),
     (
         "content/world/terrain/index.json",
         "89ae879da01b6a81e1e6a1c6a06b2632a2678066e0eb71404a5a7882bd516c44",
     ): (
         "content/world/terrain/index.json",
-        "03c4aa6be945eb2e7b20c48df135a4754cddc5e37605b6add12bca0ac957089c",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
     ),
     (
         "content/world/terrain/index.json",
         "abffe2dd83dfec1ce1afd657bd0fcaae3760a10a509f8e1034e35834a714ba79",
     ): (
         "content/world/terrain/index.json",
-        "03c4aa6be945eb2e7b20c48df135a4754cddc5e37605b6add12bca0ac957089c",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
     ),
     (
         "content/world/terrain/index.json",
         "baf9f79b334c9478895ae824c67aad32e06eb4e7b09435570389dd64ad455836",
     ): (
         "content/world/terrain/index.json",
-        "03c4aa6be945eb2e7b20c48df135a4754cddc5e37605b6add12bca0ac957089c",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
     ),
     (
         "content/world/terrain/terrain-08614-08668.json",
@@ -296,21 +296,21 @@ RELOCATIONS = {
         "00878d28eb56c84f57734956505f60eb1fe7d248b7d1002c19209172a5125cfd",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "2a7bf459e3422357840e701f4d606c7dad1cdf3189efbf8e9c442b6933e0c29a",
+        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "8e41e838db44b527e4a243d4be1dc5245fe74def7145d9a68cdfc1436d609d5c",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "2a7bf459e3422357840e701f4d606c7dad1cdf3189efbf8e9c442b6933e0c29a",
+        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "ae1a4f2c09345efbda4293eee96a93f9054bb33e40f658ab483b8b0c88027477",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "2a7bf459e3422357840e701f4d606c7dad1cdf3189efbf8e9c442b6933e0c29a",
+        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
     ),
     (
         "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",

@@ -554,11 +554,11 @@ fn nbroute_step_rejections_have_closed_schema_operator_evidence() -> Result<(), 
     Ok(())
 }
 
-struct PlayerDoorAccess<'a> {
-    inner: &'a dyn crate::map::floor::CellBlocker,
-    level: Option<u32>,
-    states: &'a channel_states::ChannelSessionStates,
-    session: GameSessionId,
+pub(super) struct PlayerDoorAccess<'a> {
+    pub(super) inner: &'a dyn crate::map::floor::CellBlocker,
+    pub(super) level: Option<u32>,
+    pub(super) states: &'a channel_states::ChannelSessionStates,
+    pub(super) session: GameSessionId,
 }
 
 impl crate::map::floor::CellBlocker for PlayerDoorAccess<'_> {

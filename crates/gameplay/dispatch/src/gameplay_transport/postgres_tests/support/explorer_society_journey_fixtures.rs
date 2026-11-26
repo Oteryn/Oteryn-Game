@@ -27,11 +27,12 @@ const QUEST: &str = "oteryn:quest.the_explorer_society_quest";
 const TRACK: &str = "oteryn:quest-progress/quest/u7_6/explorer_society/";
 const ANGUS: Position = position(32670, 32730, -7);
 const UZGOD: Position = position(32664, 31894, -9);
-// The authored placement keeps the ferry's return cell at (32298, 32895) open.
-const MAX: Position = position(32298, 32896, -6);
+// The ferry returns one cell south of Captain Max's source position.
+const MAX: Position = position(32298, 32895, -6);
 const CALASSA: Position = position(31911, 32710, -6);
 const BROOCH: Position = position(32598, 31934, -15);
 const ICE: Position = position(32133, 31688, -9);
+const SECOND_ICE: Position = position(34040, 31756, -10);
 const BUTTERFLY: Position = position(32580, 32731, -7);
 const BELLS: Position = position(32548, 32836, -7);
 const URN: Position = position(32957, 32834, -8);
@@ -47,7 +48,7 @@ pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     let patches = [
-        ANGUS, UZGOD, MAX, CALASSA, BROOCH, ICE, BUTTERFLY, BELLS, URN, POETRY,
+        ANGUS, UZGOD, MAX, CALASSA, BROOCH, ICE, SECOND_ICE, BUTTERFLY, BELLS, URN, POETRY,
     ]
     .map(|p| (p.x - 3, p.y - 3, p.x + 3, p.y + 3, p.floor));
     super::questpc8_native_slice::world(
@@ -256,7 +257,7 @@ fn map_object(
             y: at.y,
             floor: at.floor,
         },
-        1,
+        if at == SECOND_ICE { 3 } else { 1 },
     )
     .ok_or("source object ordinal")?;
     let mut placement = map.overlay.base().digest().to_vec();
@@ -641,6 +642,30 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(lifetime, (600_000, 600_000));
+    let original_deadline: i64 = sqlx::query_scalar(
+        "SELECT expires_at_unix_ms FROM game_spell_item_temporal_schedules
+         WHERE definition_production_key='oteryn:item.tibia.i4837'",
+    ).fetch_one(&h.pool).await?;
+    let mut predecessor = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *predecessor).await?;
+    let removed = sqlx::query("DELETE FROM game_spell_item_temporal_schedules
+                                WHERE definition_production_key='oteryn:item.tibia.i4837'")
+        .execute(&mut *predecessor).await?;
+    assert_eq!(removed.rows_affected(), 1, "the predecessor only retained the original mint");
+    predecessor.commit().await?;
+    let migration = include_str!(concat!(env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/3131_explorer_ice_sample_deadline.sql"));
+    let backfill = migration.split_once("-- Carry forward live samples").ok_or("legacy backfill")?.1
+        .split_once("-- Retire due icicles").ok_or("backfill boundary")?.0;
+    let start = backfill.find("INSERT INTO game_spell_item_temporal_schedules")
+        .ok_or("backfill statement")?;
+    assert_eq!(sqlx::raw_sql(&backfill[start..])
+        .execute(&h.pool).await?.rows_affected(), 1);
+    let restored: i64 = sqlx::query_scalar(
+        "SELECT expires_at_unix_ms FROM game_spell_item_temporal_schedules
+         WHERE definition_production_key='oteryn:item.tibia.i4837'",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(restored, original_deadline, "the upgrade keeps the original mint clock");
 
     // Advance the test sample beyond its absolute deadline, keeping it carried.
     let mut tx = h.pool.begin().await?;
@@ -669,8 +694,8 @@ pub(super) async fn exercise(
         NpcIntentDisposition::Ok
     );
     state(h, 6, Some((ice, 6)), &[4872]).await?;
-    relocate(owner, session, position(ICE.x, ICE.y - 1, ICE.floor)).await?;
-    tool_use(owner, session, 4872, Some(ICE)).await?;
+    relocate(owner, session, position(SECOND_ICE.x - 1, SECOND_ICE.y, SECOND_ICE.floor)).await?;
+    tool_use(owner, session, 4872, Some(SECOND_ICE)).await?;
     state(h, 7, Some((ice, 7)), &[4837, 4872]).await?;
     relocate(owner, session, angus_side).await?;
     assert_eq!(
@@ -699,6 +724,13 @@ pub(super) async fn exercise(
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(samples, 1);
+    let consumed_corpse: (i16, i64, bool) = sqlx::query_as(
+        "SELECT i.lifecycle,i.quantity::bigint,
+                EXISTS (SELECT 1 FROM game_item_ground_locations g WHERE g.item_instance_id=i.item_instance_id)
+         FROM game_quest_corpse_samples s JOIN game_item_instances i ON i.item_instance_id=s.corpse_item
+         WHERE s.transition_key='oteryn:quest-reward/explorer-society/prepare-butterfly'",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(consumed_corpse, (2, 0, false), "another field-course player cannot reuse that corpse");
     relocate(owner, session, angus_side).await?;
     assert_eq!(
         talk(owner, session, angus, "butterfly hunt").await?,

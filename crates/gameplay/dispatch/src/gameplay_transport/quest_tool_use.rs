@@ -158,7 +158,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         || c.creature_target.is_some()
                         || c.self_target.is_some())
                         == intent.use_with.is_some()
-                }) && eligible(&c.storage)
+                }) && reward_callbacks::fresh_carried_source(c, catalogue, tracks)
+                    && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
                     && c.state_ops
                         .iter()

@@ -76,6 +76,7 @@ pub(super) async fn permits(
         return Ok(false);
     }
     // Any owned moss counts, including a copy kept in a nested bag or depot.
+    // An issued live copy also blocks recovery after a drop or transfer.
     // The item fence holds the Character root for this check and the mint.
     sqlx::query_scalar(
         "WITH RECURSIVE roots(item_instance_id) AS (
@@ -100,6 +101,13 @@ pub(super) async fn permits(
          ) AND NOT EXISTS (
            SELECT 1 FROM custody c JOIN game_item_instances i USING(item_instance_id)
            WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$5
+         ) AND NOT EXISTS (
+           SELECT 1 FROM game_reward_claims c
+           JOIN game_reward_claim_mint_receipts r ON r.transaction_id=c.claimed_transaction_id
+           JOIN game_item_instances i USING(item_instance_id)
+           WHERE c.character_id=encode($1,'hex')::uuid AND c.claim_family='RewardClaim'
+             AND (c.claim_production_key=$4 OR starts_with(c.claim_production_key,$6))
+             AND i.lifecycle=1
          )",
     )
     .bind(character.as_bytes().as_slice())
@@ -107,6 +115,7 @@ pub(super) async fn permits(
     .bind(MISSION)
     .bind(CLAIM)
     .bind(ITEM)
+    .bind(REPLACEMENT)
     .fetch_one(&mut **tx)
     .await
 }

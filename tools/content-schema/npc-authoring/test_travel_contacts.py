@@ -7,7 +7,7 @@ import convert_placements
 class TravelContactsTest(unittest.TestCase):
     def test_crystal_ferry_origins_are_published(self):
         expected = {
-            "captain_jack": (32190, 31957, 6),
+            "captain_jack": (32190, 31958, 6),
             "eremo": (33327, 31882, 7),
             "ferryman_kamil": (32152, 32457, 7),
             "ferryman_kamil_meluna": (32088, 32469, 7),
@@ -25,10 +25,20 @@ class TravelContactsTest(unittest.TestCase):
         ]
         for npc, (x, y, floor) in expected.items():
             with self.subTest(npc=npc):
+                rows = [p for p in placements if p["npc"] == f"oteryn:npc.{npc}"]
                 self.assertEqual(
-                    [p["cell"] for p in placements if p["npc"] == f"oteryn:npc.{npc}"],
+                    [p["cell"] for p in rows],
                     [{"x": x, "y": y, "floor": floor}],
                 )
+                donor_y = {"captain_jack": 31957, "ferryman_kamil_meluna": 32468}.get(npc)
+                if donor_y is not None:
+                    source_cells = [
+                        p["source_cell"] for p in rows[0]["provenance"]
+                        if p.get("basis") == "CHOSEN_OTERYN_APPROXIMATION"
+                    ]
+                    self.assertTrue(source_cells)
+                    self.assertEqual(source_cells, [{"x": x, "y": donor_y, "floor": floor}]
+                                     * len(source_cells))
 
 
 class PostmanContactsTest(unittest.TestCase):

@@ -7,6 +7,7 @@ from copy import deepcopy
 import forge_item_profiles
 import imbuement_item_profiles
 import quest_callback_profiles as accepted
+from srx1_profile_updates import compact_item_record
 
 PACKET = "tools/content-schema/native-gameplay/qready1-reward-item-profiles.json"
 IDS = {3068, 3323, 3383, 3579, 3734, 4871}
@@ -68,7 +69,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             qualified = {'records': [deepcopy(record)]}
             forge_item_profiles.project(qualified, forge_owners)
             imbuement_item_profiles.apply_crystal_audit(root, qualified, require_all=False)
-            if present[key] != qualified['records'][0]:
+            if compact_item_record(deepcopy(present[key])) != compact_item_record(qualified['records'][0]):
                 raise ValueError('QREADY1_NATIVE_REWARD_CONFLICT:' + key)
         else:
             present[key] = record

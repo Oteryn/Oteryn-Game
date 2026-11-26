@@ -833,11 +833,16 @@ pub(super) async fn exercise(
     );
     riddle(owner, admitted, h).await?;
 
+    // The middle approach to the chests forfeits Talons. Approach from the
+    // west before choosing whether to step on the Talon forfeiture tile.
+    tower::walk(owner, admitted, pos(32476, 31905, -1)).await?;
+    tower::walk(owner, admitted, pos(32476, 31901, -1)).await?;
     tower::walk(owner, admitted, pos(32478, 31901, -1)).await?;
+    let marker = format!("{RIDDLE}reward/talon");
+    assert!(matches!(track(h, &marker).await?, None | Some(-1 | 0)));
     if forfeit {
         let before = carried(owner, admitted, h).await?;
         tower::walk(owner, admitted, pos(32478, 31902, -1)).await?;
-        let marker = format!("{RIDDLE}reward/talon");
         assert_eq!(track(h, &marker).await?, Some(1), "AID 50310 forfeits talons");
         tower::walk(owner, admitted, pos(32478, 31901, -1)).await?;
         owner.clock_origin = owner.clock_origin

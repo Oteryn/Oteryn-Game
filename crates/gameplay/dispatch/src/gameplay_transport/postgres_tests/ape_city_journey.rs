@@ -100,7 +100,7 @@ fn ape_city_cask_mission_accepts_both_crowbars_through_wire_use_with() -> TestRe
 }
 
 #[test]
-fn ape_city_lost_moss_can_be_reclaimed_and_turned_in() -> TestResult {
+fn ape_city_moss_cannot_be_reminted_while_the_issued_copy_is_live() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -473,19 +473,10 @@ impl Journey<'_, '_, '_, '_> {
     }
 
     async fn say(&mut self, text: &str) -> TestResult<u64> {
-        self.say_then(text, None).await
-    }
-
-    async fn say_then(
-        &mut self,
-        text: &str,
-        confirmation: Option<(&str, NpcIntentDisposition)>,
-    ) -> TestResult<u64> {
         self.relocate(START).await?;
         self.owner.clock_origin -= std::time::Duration::from_secs(4);
         let greeting = self.next();
-        let mut lines = vec![("hi", NpcIntentDisposition::Ok), (text, NpcIntentDisposition::Ok)];
-        lines.extend(confirmation);
+        let lines = [("hi", NpcIntentDisposition::Ok), (text, NpcIntentDisposition::Ok)];
         let commands: Vec<_> = lines
             .iter()
             .zip(greeting..)
@@ -733,18 +724,8 @@ impl Journey<'_, '_, '_, '_> {
         };
         use UseDisposition::{Committed, NothingToUse};
 
-        let questline = "oteryn:quest-progress/quest/u7_6/the_ape_city/questline";
-        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
-            self.h,
-            self.owner,
-            self.admitted,
-            &[
-                (questline.into(), 1),
-                ("oteryn:quest-progress/quest/u7_6/the_ape_city/dworc_door".into(), 1),
-            ],
-            155,
-        ).await?;
-        self.owner.refresh_quest_session(self.admitted.game_session_id, false).await;
+        self.say("mission").await?;
+        self.check(1, [0; 5]).await?;
         self.use_object(MOSS_DOOR, Committed).await?;
         self.use_object(MOSS, Committed).await?;
         self.use_object(MOSS, NothingToUse).await?;
@@ -778,6 +759,8 @@ impl Journey<'_, '_, '_, '_> {
         ).await.map_err(|error| format!("moss drop transaction: {error:?}"))?
             .map_err(|error| format!("moss drop: {error:?}"))?;
         drop(permit);
+        self.use_object(MOSS, NothingToUse).await?;
+        let owner = &self.owner;
         let _source = super::house_transfer_fixtures::RecoverySource::start(self.h).await?;
         let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&self.h.pool).await?;
@@ -799,17 +782,43 @@ impl Journey<'_, '_, '_, '_> {
             &permit, owner.character, owner.holder, &peer,
             CommandRef::new(peer.game_session_id, CommandId::new(90101).map_err(debug)?),
             &weights,
-            LoopMoveRequest { item: moss, count: None, pickup_cell: Some(ground.spatial_position), destination: LoopDestination::MainBackpack },
+            LoopMoveRequest { item: moss, count: None, pickup_cell: Some(ground.spatial_position.clone()), destination: LoopDestination::MainBackpack },
         ).await.map_err(|error| format!("moss pickup transaction: {error:?}"))?
             .map_err(|error| format!("moss pickup: {error:?}"))?;
         drop(permit);
-        self.say_then("mission", Some(("yes", NpcIntentDisposition::Rejected))).await?;
-        self.use_object(MOSS, Committed).await?;
+        self.check(1, [0; 5]).await?;
         self.use_object(MOSS, NothingToUse).await?;
-        self.say_then("mission", Some(("yes", NpcIntentDisposition::Ok))).await?;
-        let saved = self.owner.root.read_character_quest_state(self.owner.character, fence.character_id)
-            .await.map_err(debug)?;
-        assert_eq!(saved.tracks().get(questline), Some(&2));
+        self.use_object(MOSS, NothingToUse).await?;
+        let live: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_item_instances
+             WHERE definition_production_key=$1 AND lifecycle=1",
+        ).bind(MOSS_ITEM).fetch_one(&self.h.pool).await?;
+        assert_eq!(live, 1, "peer custody must not create a second Whisper Moss");
+        let owner = &self.owner;
+        let permit = owner.spell_lane_permit().await.ok_or("item permit")?;
+        owner.root.commit_item_loop_move(
+            &permit, owner.character, owner.holder, &peer,
+            CommandRef::new(peer.game_session_id, CommandId::new(90102).map_err(debug)?),
+            &weights,
+            LoopMoveRequest { item: moss, count: None, pickup_cell: None, destination: LoopDestination::Ground(ground.clone()) },
+        ).await.map_err(|error| format!("peer returns moss transaction: {error:?}"))?
+            .map_err(|error| format!("peer returns moss: {error:?}"))?;
+        owner.root.commit_item_loop_move(
+            &permit, owner.character, owner.holder, &fence,
+            CommandRef::new(fence.game_session_id, CommandId::new(90103).map_err(debug)?),
+            &weights,
+            LoopMoveRequest { item: moss, count: None, pickup_cell: Some(ground.spatial_position), destination: LoopDestination::MainBackpack },
+        ).await.map_err(|error| format!("original moss pickup transaction: {error:?}"))?
+            .map_err(|error| format!("original moss pickup: {error:?}"))?;
+        drop(permit);
+        self.check(1, [0, 1, 0, 0, 0]).await?;
+        let returned = self.owner.root.read_character_backpack(self.owner.character, fence.character_id)
+            .await.map_err(debug)?.ok_or("returned moss backpack")?;
+        let copies = returned.entries.iter().filter(|entry| entry.item.definition.production_key == MOSS_ITEM);
+        assert_eq!(copies.map(|entry| entry.item.item_instance_id).collect::<Vec<_>>(), [moss]);
+        self.use_object(MOSS, NothingToUse).await?;
+        self.use_object(BANANA, Committed).await?;
+        self.check(2, [1, 1, 0, 0, 0]).await?;
         Ok(())
     }
 

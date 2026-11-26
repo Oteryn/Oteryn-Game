@@ -295,11 +295,52 @@ fn crystal_kevin_postgres_resumes_first_promotion_after_regreeting() -> TestResu
             assert_eq!(progress(&owner, admitted, &authority, rank).await?, 1);
             assert_eq!(progress(&owner, admitted, &authority, mission02).await?, 3);
 
+            super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
             talk(&mut owner, admitted, kevin, 7, "hi").await?;
             assert_eq!(
                 talk(&mut owner, admitted, kevin, 8, "mission").await?,
                 ["Are you ready for another mission?"]
             );
+            talk(&mut owner, admitted, kevin, 9, "yes").await?;
+            let mission03 = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03";
+            assert_eq!(progress(&owner, admitted, &authority, mission03).await?, 1);
+            assert_eq!(super::questpc7_outfit_items_fixtures::quantity(&h, 3216).await?, 1);
+
+            const POSTMAN: &str = "oteryn:quest.the_postman_missions_quest";
+            let mission09 = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission09";
+            let mission10 = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission10";
+            seed_quest_prerequisites(&h, &owner, admitted, &[(mission09.into(), 3)], 92).await?;
+            owner.refresh_quest_session(admitted.game_session_id, true).await;
+            talk(&mut owner, admitted, kevin, 10, "mission").await?;
+            talk(&mut owner, admitted, kevin, 11, "yes").await?;
+            assert_eq!(progress(&owner, admitted, &authority, mission10).await?, 1);
+            assert_eq!(super::questpc7_outfit_items_fixtures::quantity(&h, 3220).await?, 1);
+
+            seed_quest_prerequisites(
+                &h, &owner, admitted, &[(mission10.into(), 3), (rank.into(), 4)], 93,
+            ).await?;
+            let mut predecessor = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *predecessor).await?;
+            sqlx::query(
+                "UPDATE game_character_quest_states SET definition_hash=decode(
+                   '0af6fe65e65acefeb85edaee7d134251217cb9b5ae12e92c95b374d38ceff05d','hex')
+                 WHERE quest_key=$1",
+            ).bind(POSTMAN).execute(&mut *predecessor).await?;
+            predecessor.commit().await?;
+            owner.refresh_quest_session(admitted.game_session_id, true).await;
+            talk(&mut owner, admitted, kevin, 12, "advancement").await?;
+            talk(&mut owner, admitted, kevin, 13, "yes").await?;
+            owner.refresh_quest_session(admitted.game_session_id, true).await;
+            assert_eq!(progress(&owner, admitted, &authority, rank).await?, 5);
+            let completed: bool = sqlx::query_scalar(
+                "SELECT q.completed_character_revision IS NOT NULL AND EXISTS (
+                    SELECT 1 FROM game_character_quest_receipts r
+                    WHERE r.character_id=q.character_id AND r.quest_key=q.quest_key AND r.completes
+                    AND r.transition_key='oteryn:quest-npc/postman/kevin/rank_5')
+                 FROM game_character_quest_states q WHERE q.quest_key=$1",
+            ).bind(POSTMAN).fetch_one(&h.pool).await?;
+            assert!(completed, "the final promotion leaves durable completion and its receipt");
             drop(owner);
             drop(authority);
             drop(seal);

@@ -805,6 +805,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if entry.boss_reward.is_none()
             && !super::quest_kill_objectives::has_grave_boss_credit(entry)
             && oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_none()
+            && !entry.has_boss_achievement_work()
         {
             return Ok(());
         }
@@ -862,21 +863,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    let plan = entry
-                        .boss_reward_plan
-                        .get()
-                        .ok_or(DurabilityError::InvalidStoredState)?;
-                    if !owner
-                        .root
-                        .settle_boss_death_atomic(
-                            &mut tx,
-                            owner.character,
-                            owner.holder,
-                            entry.facts.death.runtime_scope(),
-                            entry.facts.death.scope_ownership_generation(),
-                            plan.clone(),
-                        )
-                        .await?
+                    let plan = entry.boss_reward_plan.get();
+                    if plan.is_none() && !entry.has_boss_achievement_work() {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    if let Some(plan) = plan
+                        && !owner
+                            .root
+                            .settle_boss_death_atomic(
+                                &mut tx,
+                                owner.character,
+                                owner.holder,
+                                entry.facts.death.runtime_scope(),
+                                entry.facts.death.scope_ownership_generation(),
+                                plan.clone(),
+                            )
+                            .await?
                     {
                         return Err(DurabilityError::Unavailable);
                     }

@@ -776,6 +776,7 @@ pub(super) async fn credit_postman_passage(
     fence: CurrentCharacterGameplayFence,
     command: CommandRef,
     passage: (i64, i64),
+    catalogue: &QuestStateCatalogue,
 ) -> StoredResult<CharacterRevision> {
     use oteryn_gameplay_content::content::npc_catalogue::travel::POSTMAN_TOUR_TRACK;
     use oteryn_gameplay_quests::quest::{
@@ -805,6 +806,11 @@ pub(super) async fn credit_postman_passage(
         .try_get::<Vec<u8>, _>("definition_hash")?
         .try_into()
         .map_err(|_| DurabilityError::InvalidStoredState)?;
+    if catalogue.definition_hash(QUEST) != Some(hash)
+        && oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(catalogue, QUEST, &hash).is_none()
+    {
+        return Ok(fence.expected_character_revision);
+    }
     let transition = QuestTransition {
         key: "oteryn:quest-transition/postman/complete-tour-passage".into(),
         quest: QUEST.into(),

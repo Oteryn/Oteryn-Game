@@ -1002,6 +1002,11 @@
     "oteryn:npc.minzy"
   ],
   "placement_adjustments": {
+    "oteryn:npc.captain_jack": {
+      "source": {"x": 32190, "y": 31957, "z": 6},
+      "target": {"x": 32190, "y": 31958, "z": 6},
+      "reason": "Use the adjacent dock tile to keep Dalbrect's Isle of the Kings arrival clear."
+    },
     "oteryn:npc.alternative_rock": {
       "source": {
         "x": 33466,

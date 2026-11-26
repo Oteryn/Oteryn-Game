@@ -50,6 +50,7 @@ pub struct PaidTravelRequest {
     pub command: crate::foundation::CommandRef,
     pub arrival: PendingArrival,
     pub route: TravelRoute,
+    pub postman_catalogue: Option<std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>>,
     pub fee: FeeBurnRequest,
 }
 
@@ -312,8 +313,11 @@ impl DurabilityRoot {
             // The quest writer owns the next Character revision. The item-only fare
             // binds to that revision and commits with the quest receipt and arrival.
             let mut fee_fence = fence;
-            if let Some(passage) = route.postman_tour_passage() {
-                fee_fence.expected_character_revision = credit_postman_passage(&mut tx, fence, request.command, passage).await?;
+            if let (Some(passage), Some(catalogue)) =
+                (route.postman_tour_passage(), request.postman_catalogue.as_deref())
+            {
+                fee_fence.expected_character_revision =
+                    credit_postman_passage(&mut tx, fence, request.command, passage, catalogue).await?;
             }
             if fare>0 {
                 match burn_fee_in_transaction(&mut tx,&fee_fence,&request.fee).await {

@@ -142,6 +142,7 @@ mod native_claim_reward;
 mod native_cue_offer;
 mod newhaven_arrival;
 mod newhaven_travel;
+mod nomads_ritual;
 mod novelty_item_use;
 mod npc_actor;
 mod npc_command;

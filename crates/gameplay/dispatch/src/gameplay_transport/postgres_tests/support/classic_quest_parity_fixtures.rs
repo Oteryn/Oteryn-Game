@@ -161,7 +161,11 @@ pub(super) fn access(name: &str) -> Option<Access> {
     if let Some(&key) = ICE_DELIVERY.iter().find(|&&key| key == name) {
         let callback = super::quest_world_callbacks_fixtures::callback(key).ok()?;
         let selected = callback.selector.native?;
-        let start = Position { x: selected.position.x - 1, ..selected.position };
+        let start = if key == ICE_DELIVERY[0] {
+            Position { y: selected.position.y - 1, ..selected.position }
+        } else {
+            Position { x: selected.position.x - 1, ..selected.position }
+        };
         let item = callback.item_on_target?.item;
         return Some(Access {
             name: key,
@@ -241,6 +245,7 @@ pub(super) async fn access_exercise(
         super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
             h, owner, admitted, &stage, 123,
         ).await?;
+        owner.refresh_quest_session(admitted.game_session_id, true).await;
     }
     let command = admitted.continuity.next_command_id;
     if case.name == MARID_LAMP {
@@ -639,7 +644,7 @@ pub(super) async fn npc_exercise(
     Ok(())
 }
 
-async fn set_test_level(h: &Harness, level: i64, experience: i64) -> TestResult {
+pub(super) async fn set_test_level(h: &Harness, level: i64, experience: i64) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)

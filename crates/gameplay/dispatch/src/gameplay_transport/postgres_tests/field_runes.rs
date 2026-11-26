@@ -201,17 +201,11 @@ fn field_runes_postgres_real_dispatch_casts_blocking_and_safe_barriers() -> Test
 fn field_runes_postgres_secret_agent_tool_removes_wild_growth() -> TestResult {
     large_stack(|| {
         run(async |admin| {
-            field_scenario(
-                admin,
-                3156,
-                1,
-                2130,
-                true,
-                false,
-                false,
-                Scenario::SecretMachete,
-            )
-            .await
+            for tool in [9594, 9596, 9598] {
+                field_scenario(admin.clone(), 3156, 1, 2130, true, false, false,
+                    Scenario::SecretMachete(tool)).await?;
+            }
+            Ok(())
         })
     })
 }
@@ -324,7 +318,7 @@ enum Scenario {
     Hardcore,
     SelfHardcore,
     SelfOpen,
-    SecretMachete,
+    SecretMachete(u32),
     SecretJam(u32),
     NoPvp,
     PzTick,
@@ -1065,7 +1059,7 @@ async fn field_scenario_inner(
     }
     let mut inventory = vec![(format!("oteryn:item.tibia.i{rune}"), 3)];
     let machete_id = match scenario {
-        Scenario::SecretMachete => 9594,
+        Scenario::SecretMachete(tool) => tool,
         Scenario::SecretJam(tool) => tool,
         _ => 3308,
     };
@@ -1591,7 +1585,11 @@ async fn field_scenario_inner(
             }
             if matches!(output, 2128 | 2130) {
                 let use_tool = UseIntent {
-                    target: UseTarget::Item(machete.ok_or("machete handle")?),
+                    target: if matches!(scenario, Scenario::SecretMachete(_) | Scenario::SecretJam(_)) {
+                        UseTarget::ItemByDefinition(machete_definition)
+                    } else {
+                        UseTarget::Item(machete.ok_or("machete handle")?)
+                    },
                     use_with: None,
                     use_with_map_item: Some(
                         oteryn_protocol_oteryn::world_object::MapUseTarget::Item(

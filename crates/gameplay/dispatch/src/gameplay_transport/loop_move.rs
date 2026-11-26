@@ -1405,6 +1405,24 @@ pub(super) async fn move_loop_item_with_house_capacity(
     if touches_ground && matches!(committed, Ok(Ok(_))) {
         admission.refresh_terrain_tools().await;
     }
+    use oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual;
+    let crack = nomads_ritual::CRACK;
+    if matches!(request.target, LoopTarget::Ground(to)
+        if (to.x,to.y,to.floor) == (i32::from(crack.x),i32::from(crack.y), i16::from(crack.floor)))
+        && matches!(&committed, Ok(Ok(receipt)) if !receipt.replayed)
+        && admission
+            .root
+            .read_ground_action_source(admission.character, fence, item)
+            .await
+            .is_ok_and(|source| {
+                source
+                    .is_some_and(|item| item.definition().production_key == nomads_ritual::SCIMITAR)
+            })
+    {
+        admission
+            .advance_nomads_ritual(actor, command, crack, nomads_ritual::PLACE_SCIMITAR)
+            .await;
+    }
     // ATTACK-2: a moved item may have been the swing weapon's container; the next swing reads
     // the equipment again.
     admission

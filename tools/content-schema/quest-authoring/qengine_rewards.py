@@ -977,7 +977,7 @@ def build():
         present=[(death_list, 1)],
     )
     referral_lines = [line.strip()[1:-2] for line in arito_referral if line.strip().startswith('"')]
-    # The scimitar and water ritual has no native entrance handler yet.
+    # Keep the referral and the authored hint for the native entrance ritual.
     callbacks[-1]["reply"] = [
         referral_lines[0],
         referral_lines[1].split(" Please go", 1)[0],
@@ -2914,9 +2914,9 @@ def build():
         golden_recipe,
     )
 
-    # The recipe supplies the milestone order. Crystal supplies the L10 fees.
-    path, index, raw, _, _ = golden_recipe(ROOT)
-    prices = golden_source_prices(inputs[GOLDEN_NPC_SOURCE])
+    # Both dialogue routes use the canonical commission milestone fees.
+    path, index, raw, _, prices = golden_recipe(ROOT)
+    golden_source_prices(inputs[GOLDEN_NPC_SOURCE])
     golden = "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit"
     base = "oteryn:outfit.golden"
     golden_sources = [

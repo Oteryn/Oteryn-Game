@@ -1251,6 +1251,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         target: &WorldObjectTarget,
         selected_tool: Option<([u8; 16], Vec<u8>)>,
     ) -> Option<UseOutcome> {
+        self.use_quest_callback_from(actor, command, map, target, selected_tool, None)
+            .await
+    }
+
+    pub(super) async fn use_quest_callback_from(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        map: &BundleMap,
+        target: &WorldObjectTarget,
+        selected_tool: Option<([u8; 16], Vec<u8>)>,
+        ritual: Option<&str>,
+    ) -> Option<UseOutcome> {
         if let Some(outcome) = self.use_rafzane_elevator(actor, command, map, target).await {
             return Some(outcome);
         }
@@ -1302,6 +1315,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|c| {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
+                    && super::nomads_ritual::accepts_callback(&c.key, ritual)
                     && !superseded_chest(c, callbacks)
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)

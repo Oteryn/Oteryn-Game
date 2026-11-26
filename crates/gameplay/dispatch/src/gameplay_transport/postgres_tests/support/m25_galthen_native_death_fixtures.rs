@@ -141,6 +141,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    takeover: bool,
 ) -> TestResult {
     // The shared quest scenario replaces the admitted runtime. Rebind only
     // its current durable Character lease before exercising native combat.
@@ -170,6 +171,11 @@ pub(super) async fn exercise(
         .ok_or("active native policies")?
         .install_companion_policies(&mut *owner.runtime.lock().await)
         .map_err(debug)?;
+    if takeover {
+        return assert_mitmah_reward_grant_boundary(
+            owner, admitted, h, "oteryn:creature.mitmah_vanguard", 60_010, true,
+        ).await;
+    }
     for (index, (creature, gate, stage)) in [
         ("oteryn:creature.ahau", "s4", "s5"),
         ("oteryn:creature.mitmah_vanguard", "s7", "s8"),
@@ -180,7 +186,7 @@ pub(super) async fn exercise(
         let command = 60000 + u64::try_from(index)? * 10;
         assert_eq!(value(h, gate).await?, 0);
         if stage == "s8" {
-            assert_mitmah_reward_grant_boundary(owner, admitted, h, creature, command).await?;
+            assert_mitmah_reward_grant_boundary(owner, admitted, h, creature, command, false).await?;
         } else {
             death(owner, admitted, creature, command).await?;
         }
@@ -248,6 +254,7 @@ async fn assert_mitmah_reward_grant_boundary(
     h: &Harness,
     creature: &str,
     command: u64,
+    takeover: bool,
 ) -> TestResult {
     use crate::gameplay_transport::kill_reward::DrainOutcome;
 
@@ -321,7 +328,10 @@ async fn assert_mitmah_reward_grant_boundary(
     sqlx::query("DROP TRIGGER reject_mitmah_award ON game_account_achievement_grant_requests")
         .execute(&h.pool)
         .await?;
-    // Discard the process-local kill queue before the successor's first drain.
+    if takeover {
+        return assert_mitmah_award_after_takeover(owner, admitted, h).await;
+    }
+    // Discard the process-local kill queue before retrying under the same generation.
     *owner.states.attack.lock().await = Default::default();
     super::qengine_kill_stories_fixtures::drain_deaths(owner, admitted, &[]).await?;
     assert_eq!(rewards().await?, settled, "grant retry cannot duplicate death rewards");
@@ -332,4 +342,76 @@ async fn assert_mitmah_reward_grant_boundary(
         1
     );
     retire_death_actor(owner, target).await
+}
+
+async fn assert_mitmah_award_after_takeover(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use crate::durability::runtime_scope_assignment::{
+        AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor, OperationKey,
+        RuntimeScopeAssignmentWriter,
+    };
+    use crate::foundation::ScopeOwnershipGeneration;
+
+    let fence = owner.current_quest_fence(admitted.game_session_id)
+        .await.map_err(debug)?.ok_or("Mitmah earning fence")?;
+    let scope = fence.runtime_scope;
+    let old_generation = fence.scope_ownership_generation;
+    let buyer = super::fixture::id(104);
+    let seller: String = sqlx::query_scalar(
+        "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    ).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    // Apply the ownership write of a completed sale while the award is retained.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("INSERT INTO game_character_account_guards VALUES(encode($1,'hex')::uuid)")
+        .bind(buyer.as_slice()).execute(&mut *tx).await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    assert_eq!(sqlx::query(
+        "UPDATE game_character_roots SET account_id=encode($1,'hex')::uuid
+         WHERE character_id=encode($2,'hex')::uuid",
+    ).bind(buyer.as_slice()).bind(fence.character_id.as_bytes().as_slice())
+        .execute(&mut *tx).await?.rows_affected(), 1);
+    tx.commit().await?;
+
+    sqlx::query(
+        "INSERT INTO game_control_scope_grants VALUES
+         (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 2)",
+    ).bind(owner.world_id.as_bytes().as_slice())
+        .bind(owner.channel_id.as_bytes().as_slice()).execute(&h.pool).await?;
+    let predecessor = h.root.read_runtime_scope_predecessor(scope)
+        .await.map_err(debug)?.ok_or("Mitmah predecessor")?;
+    let successor = super::fixture::registered_node(&h.root, 2).await?;
+    let writer = RuntimeScopeAssignmentWriter::open(h.root.clone(), "sequencer-writer")
+        .await.map_err(debug)?;
+    let AssignmentOutcome::Committed(moved) = writer.submit(&AssignmentRequest {
+        operation_key: OperationKey::from_bytes([204; 32]),
+        actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+        command: AssignmentCommand::Replace { scope, predecessor, target: successor.fact() },
+    }).await.map_err(debug)? else {
+        return Err("Mitmah scope replacement refused".into());
+    };
+    let generation = ScopeOwnershipGeneration::new(moved.assignment.ownership_generation)
+        .map_err(debug)?;
+    assert_eq!(generation.get(), 2);
+    super::source_boss_handoff_fixtures::publish_source_boss_successor_readiness(
+        h, &successor, &moved,
+    ).await?;
+    assert!(h.root.reconcile_boss_death_achievement(
+        owner.character, owner.holder, scope, old_generation,
+    ).await.is_err());
+    assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_boss_death_achievement_pending")
+        .fetch_one(&h.pool).await?, 1, "the old owner must leave the pending row intact");
+    assert!(!h.root.reconcile_boss_death_achievement(
+        owner.character, &successor, scope, generation,
+    ).await?);
+    assert!(h.root.reconcile_boss_death_achievement(
+        owner.character, &successor, scope, generation,
+    ).await?);
+    assert_eq!(sqlx::query_scalar::<_, String>(
+        "SELECT account_id::text FROM game_account_achievements
+         WHERE achievement_key='oteryn:achievement/museum_goer'",
+    ).fetch_all(&h.pool).await?, [seller]);
+    Ok(())
 }

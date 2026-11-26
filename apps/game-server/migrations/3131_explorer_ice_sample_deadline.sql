@@ -10,6 +10,7 @@ BEGIN
     EXECUTE overlay(body placing E'BEGIN\n' || $proof$
     IF NEW.definition_production_key='oteryn:item.tibia.i4837' THEN
         IF NEW.definition_family='Item' AND NEW.source_ordinal=1
+            AND NEW.duration_millis=600000
             AND num_nonnulls(NEW.target_family,NEW.target_production_key,NEW.target_revision)=0
             AND EXISTS (
                 SELECT 1 FROM game_quest_reward_sources s
@@ -17,7 +18,8 @@ BEGIN
                 JOIN game_item_instances i USING(item_instance_id)
                 WHERE s.transition_key IN ('oteryn:quest-callback/explorer-society-ice-delivery-1',
                                            'oteryn:quest-callback/explorer-society-ice-delivery-2',
-                                           'oteryn:quest-callback/explorer-society/cut-ice')
+                                           'oteryn:quest-callback/explorer-society/cut-ice',
+                                           'oteryn:quest-callback/explorer-society/cut-ice-second-site')
                   AND s.plan #>> '{give,item}'=NEW.definition_production_key
                   AND (r.character_id,r.game_session_id,r.command_id)=(s.character_id,s.cause_id,s.cause_ordinal)
                   AND r.transaction_id=NEW.source_transaction_id AND r.item_instance_id=NEW.item_instance_id
@@ -26,10 +28,10 @@ BEGIN
                     =(NEW.definition_family,NEW.definition_production_key,NEW.definition_revision)
                   AND i.minted_transaction_id=r.transaction_id AND i.lifecycle=1 AND i.quantity=1
                   AND NEW.expires_at_unix_ms=r.occurred_at+NEW.duration_millis
-                  AND s.created_xact_id=pg_current_xact_id() AND r.created_xact_id=s.created_xact_id
-                  AND NEW.created_xact_id=s.created_xact_id
+                  AND r.created_xact_id=s.created_xact_id
+                  AND NEW.created_xact_id=pg_current_xact_id()
             ) THEN RETURN NULL; END IF;
-        RAISE EXCEPTION 'ice sample deadline requires its same-transaction quest mint'
+        RAISE EXCEPTION 'ice sample deadline requires its original quest mint'
           USING ERRCODE='23514';
     END IF;
 $proof$ from begin_at for 5);
@@ -43,6 +45,29 @@ $proof$ from begin_at for 5);
                             AND p.definition_production_key='oteryn:item.tibia.i4837')
 $movement$);
 END $migration$;
+
+-- Carry forward live samples already in custody. The original mint time
+-- starts the clock, even for an overdue sample awaiting normal retirement.
+INSERT INTO game_spell_item_temporal_schedules (
+    item_instance_id,source_transaction_id,source_ordinal,duration_millis,
+    expires_at_unix_ms,definition_family,definition_production_key,definition_revision,content_digest
+)
+SELECT i.item_instance_id,r.transaction_id,1,600000,r.occurred_at+600000,
+       i.definition_family,i.definition_production_key,i.definition_revision_ref,
+       decode(substr(r.claim_revision_ref,8),'hex')
+FROM game_quest_reward_sources s
+JOIN game_reward_claim_mint_receipts r ON r.transaction_id=s.mint_transaction_id
+JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id
+WHERE s.transition_key IN ('oteryn:quest-callback/explorer-society-ice-delivery-1',
+                           'oteryn:quest-callback/explorer-society-ice-delivery-2',
+                           'oteryn:quest-callback/explorer-society/cut-ice')
+  AND s.plan #>> '{give,item}'='oteryn:item.tibia.i4837'
+  AND (r.character_id,r.game_session_id,r.command_id)=(s.character_id,s.cause_id,s.cause_ordinal)
+  AND r.created_xact_id=s.created_xact_id
+  AND r.claim_revision_ref ~ '^sha256:[0-9a-f]{64}$'
+  AND i.definition_family='Item' AND i.definition_production_key='oteryn:item.tibia.i4837'
+  AND i.minted_transaction_id=r.transaction_id AND i.lifecycle=1 AND i.quantity=1
+ON CONFLICT (item_instance_id) DO NOTHING;
 
 -- Retire due icicles in the same unattended custodies as terminal scrolls.
 -- Keep the exact custody, retirement and audit proofs on every removal path.

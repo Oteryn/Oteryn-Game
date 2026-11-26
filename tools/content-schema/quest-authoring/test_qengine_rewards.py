@@ -476,7 +476,11 @@ class QuestRewards(unittest.TestCase):
 
     def test_l10_golden_source_prices_and_order(self):
         rows = {c["key"].rsplit("/", 1)[-1]: c for c in self.callbacks["callbacks"]}
-        prices = q.golden_source_prices(q.donor_inputs()[q.GOLDEN_NPC_SOURCE])
+        from questpc7_selected_rewards import golden_recipe
+
+        source = q.donor_inputs()[q.GOLDEN_NPC_SOURCE]
+        self.assertEqual(q.golden_source_prices(source), [500_000_000, 250_000_000, 250_000_000])
+        _, _, _, _, prices = golden_recipe(q.ROOT)
         for bit, (suffix, after) in enumerate([("base", 1), ("boots", 2), ("helmet", 4)]):
             row = rows["l10-golden-" + suffix]
             self.assertEqual(row["fee"], {"gold": prices[bit], "include_bank": True})

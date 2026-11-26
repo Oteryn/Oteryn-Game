@@ -49,34 +49,47 @@ def overlay_outputs(outputs, root=world.ROOT):
         placed = entries == base_entries + [pickup]
         if house or (not placed and (previous or entries != base_entries)):
             raise ValueError(f"Spirit pickup stack drift at {(x, y, z)}")
-        if previous:
+        row = regions[path]
+        count = sum(len(tile[-1]) for _, tiles in sectors for tile in tiles)
+
+        def encode():
+            return codec.encode_region(
+                z,
+                rx,
+                ry,
+                {
+                    local: codec.encode_sector_tiles(
+                        rx * 8 + local % 8, ry * 8 + local // 8, tiles
+                    )
+                    for local, tiles in sectors
+                },
+            )
+
+        checksum = hashlib.sha256(original).hexdigest()
+        if placed and (row["items"], row["sha256"]) == (count, checksum):
             continue
         if placed:
-            # A merged region can already contain this exact stack while its
-            # shared index still describes the predecessor.
-            count = sum(len(tile[-1]) for _, tiles in sectors for tile in tiles)
-            delta = count - regions[path]["items"]
-            if delta not in (0, 1):
-                raise ValueError(f"Spirit pickup region count drift: {path}")
-            regions[path]["items"] = count
-            added += delta
-            continue
-        entries.append(pickup)
-        raw = codec.encode_region(
-            z,
-            rx,
-            ry,
-            {
-                local: codec.encode_sector_tiles(
-                    rx * 8 + local % 8, ry * 8 + local // 8, tiles
-                )
-                for local, tiles in sectors
-            },
-        )
-        outputs[path] = raw
-        regions[path]["sha256"] = hashlib.sha256(raw).hexdigest()
-        regions[path]["items"] += 1
-        summary["bytes_on_disk"] += len(raw) - len(original)
+            # A donor merge may supply the exact new region with its predecessor
+            # index. Reverse just this placement to verify the predecessor.
+            entries.pop()
+            predecessor = encode()
+            before = count - 1
+            raw = original
+        else:
+            predecessor = original
+            before = count
+            entries.append(pickup)
+            raw = encode()
+        if previous or (row["items"], row["sha256"]) != (
+            before,
+            hashlib.sha256(predecessor).hexdigest(),
+        ):
+            raise ValueError(f"Spirit pickup region metadata drift: {path}")
+        if not placed:
+            outputs[path] = raw
+        row["sha256"] = hashlib.sha256(raw).hexdigest()
+        row["items"] = before + 1
+        summary["bytes_on_disk"] += len(raw) - len(predecessor)
         added += 1
 
     if previous is None:

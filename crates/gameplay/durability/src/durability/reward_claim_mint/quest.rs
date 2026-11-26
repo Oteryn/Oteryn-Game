@@ -188,16 +188,21 @@ pub(crate) async fn apply(
     // The Character root is locked by the caller. Receipts are immutable, so an
     // optional source reset cannot erase an earlier earned milestone.
     for requirement in &callback.required_receipts {
+        let alternate = oteryn_gameplay_quests::quest::world_callbacks::nomads_window_alternate_receipt(
+            &callback.quest, &requirement.transition, &requirement.track, requirement.value,
+        );
         let earned: bool = sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM game_character_quest_receipts \
              WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 \
-               AND transition_key=$3 AND values_after[array_position(track_keys,$4)]=$5)",
+               AND (transition_key=$3 OR transition_key=$6) \
+               AND values_after[array_position(track_keys,$4)]=$5)",
         )
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(&callback.quest)
         .bind(&requirement.transition)
         .bind(&requirement.track)
         .bind(requirement.value)
+        .bind(alternate)
         .fetch_one(&mut **tx)
         .await?;
         if !earned {

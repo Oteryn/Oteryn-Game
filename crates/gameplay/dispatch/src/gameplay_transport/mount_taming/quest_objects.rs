@@ -19,7 +19,8 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                     && callback.quest == "oteryn:quest.the_explorer_society_quest")
                     || matches!(
                         callback.key.as_str(),
-                        "oteryn:quest-callback/authored-repenters-fill-vial"
+                        "oteryn:quest-callback/druid-ceiron-waterskin"
+                            | "oteryn:quest-callback/authored-repenters-fill-vial"
                             | "oteryn:quest-callback/authored-repenters-mushroom-01"
                             | "oteryn:quest-callback/authored-repenters-mushroom-02"
                             | "oteryn:quest-callback/authored-repenters-mushroom-03"
@@ -185,7 +186,8 @@ mod tests {
             ("authored-ape-city-", 5),
             ("authored-new-frontier/", 3),
             ("authored-shattered-isles-", 2),
-            ("explorer-society/", 2),
+            ("explorer-society/", 3),
+            ("druid-ceiron-waterskin", 1),
             ("to-blind-the-enemy/", 1),
         ] {
             let selected_tools: Vec<_> = callbacks

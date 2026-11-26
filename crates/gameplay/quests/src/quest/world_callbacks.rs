@@ -207,8 +207,10 @@ mod bindings;
 mod mammoth_tests;
 mod native;
 mod nomads_land;
+pub mod nomads_ritual;
 mod nomads_window;
 use native::valid_native_callback;
+pub use nomads_window::alternate_completion_receipt as nomads_window_alternate_receipt;
 pub use phase::select_storage_phase;
 
 /// Creature appearance projected only while this committed Quest track is in range.

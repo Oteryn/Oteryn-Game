@@ -1463,25 +1463,37 @@ async fn rabbit_jam_wire(
         .map_err(|error| format!("wire rabbit mint: {error}"))?;
     advance_rabbit_decay(owner, h, corpse, 11_000).await
         .map_err(|error| format!("wire rabbit decay: {error}"))?;
+    for (command, seed) in [(1, 76), (2, 77)] {
+        super::item_look_fixtures::force_seeded_tool_jam(h, admitted.game_session_id, command, seed).await?;
+    }
     // The fixture's corpse is a genuine durable mint. Bind that instance to a
     // session handle and pass an encoded command through production USE routing.
     let target = ItemKey::Instance(corpse);
     let mut view = crate::gameplay_transport::item_view::SessionItemView::resume(Default::default()).with_map_view();
-    let handle = view.map_view(&[target], |table| Ok(table.handle(&target)))
-        .map_err(debug)?.ok_or("mature rabbit handle")?;
+    let knife: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(item_instance_id) FROM game_item_instances
+         WHERE definition_production_key='oteryn:item.tibia.i9594' AND lifecycle=1",
+    ).fetch_one(&h.pool).await?;
+    let knife = ItemKey::Instance(knife.as_slice().try_into()?);
+    let (handle, knife_handle) = view.map_view(&[target, knife], |table| {
+        Ok((table.handle(&target), table.handle(&knife)))
+    }).map_err(debug)?;
+    let handle = handle.ok_or("mature rabbit handle")?;
+    let knife_handle = knife_handle.ok_or("selected Secret Agent tool handle")?;
     let mut items = Some(view);
     admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.item_fence = Some(fence);
     admitted.continuity.selected_capabilities = SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18]).ok_or("rabbit capability offer")?;
     let index = native.item_index().ok_or("item index")?;
-    for (command, seed) in [(1, 76), (2, 77)] {
-        super::item_look_fixtures::force_seeded_tool_jam(h, admitted.game_session_id, command, seed).await?;
-    }
     for (command_id, appearance) in [(1, 9594), (2, 9598)] {
         let key = format!("oteryn:item.tibia.i{appearance}");
         let definition = index.definition_ref("Item", &key, "definition-r1").ok_or("tool")?;
         let payload = oteryn_protocol_oteryn::world_object::encode_item_use_intent(&UseIntent {
-            target: UseTarget::ItemByDefinition(definition),
+            target: if appearance == 9594 {
+                UseTarget::Item(knife_handle)
+            } else {
+                UseTarget::ItemByDefinition(definition)
+            },
             use_with_map_item: Some(MapUseTarget::Item(handle)),
             ..skinning_intent()?
         }).map_err(debug)?;
@@ -1493,7 +1505,7 @@ async fn rabbit_jam_wire(
                 payload: &payload,
             },
         )?;
-        for _ in 0..2 {
+        for attempt in 1..=2 {
             let outcome = tokio::select! {
                 result = crate::gameplay_transport::connection::test_use_frame(owner, &mut admitted, &frame, &mut items) => {
                     result.ok_or("rabbit USE dispatch")?
@@ -1503,7 +1515,7 @@ async fn rabbit_jam_wire(
                     return Err("rabbit readiness driver ended".into());
                 }
             };
-            assert_eq!(outcome.disposition, UseDisposition::Committed);
+            assert_eq!(outcome.disposition, UseDisposition::Committed, "tool {appearance}, attempt {attempt}");
         }
         let definition: String = sqlx::query_scalar("SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(corpse.as_slice()).fetch_one(&h.pool).await?;

@@ -20,6 +20,15 @@
       "path": "tools/content-schema/quest-authoring/qh/top_of_the_city_items.json",
       "sha256": "be43ec8950be3011b62479a24eaaca87a4af685e5a285d1db3e2e3199b0b7308",
       "quest": "oteryn:quest.authored.top_of_the_city_quest"
+    },
+    {
+      "path": "content/dialogues/quest-rules-supplemental/postman.json",
+      "sha256": "21f60d59c85829f7ecbe07964151554a37e577b04f5e035c926cfec77a2cc8cc",
+      "quest": "oteryn:quest.the_postman_missions_quest"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/crystal-npc-shop-item-custody.json",
+      "sha256": "cf0b46544f4c6e2c9fe5892e81aa19ea6bdd422bb2cbd02c701bea900117f3ab"
     }
   ]
 }

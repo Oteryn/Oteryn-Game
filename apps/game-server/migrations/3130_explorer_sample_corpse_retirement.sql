@@ -148,6 +148,7 @@ $guard$ END;
  EXECUTE replace(body,anchor,$guard$
  IF source_row.plan->>'quest'='oteryn:quest.the_explorer_society_quest'
   AND source_row.transition_key IN (
+   'oteryn:quest-reward/explorer-society/prepare-butterfly',
    'oteryn:quest-reward/explorer-society/collect/butterfly-purple',
    'oteryn:quest-reward/explorer-society/collect/butterfly-blue',
    'oteryn:quest-reward/explorer-society/collect/butterfly-red',

@@ -495,13 +495,15 @@ impl IntrinsicWeaponDamage {
         weapon: oteryn_gameplay_combat_rules::resolution::SwingWeapon,
     ) -> Option<Self> {
         let oteryn_gameplay_combat_rules::resolution::SwingWeapon::Melee {
-            attack,
-            elemental: Some((elemental_attack, element)),
-            ..
+            attack, elemental, ..
         } = weapon
         else {
             return None;
         };
+        let (elemental_attack, element) = elemental.unwrap_or((
+            0,
+            oteryn_gameplay_content::content::ProjectV2RangedElement::Physical,
+        ));
         Some(Self {
             physical_attack: attack,
             elemental_attack,
@@ -1380,7 +1382,7 @@ impl PreparedMagnitudeOwner {
     }
 
     pub fn bind_intrinsic_weapon_damage(&mut self, damage: IntrinsicWeaponDamage) {
-        if damage.elemental_attack > 0
+        if damage.total_attack() > 0
             && matches!(&self.plan, NativeCombatPlan::Combat(combat) if combat.element == Element::Physical)
         {
             self.intrinsic_weapon = Some(damage);
@@ -1508,7 +1510,10 @@ impl PreparedMagnitudeOwner {
         let a = &self.resolved_attributes;
         let raw = signed_truncate(hit.magnitude as f64)?;
         // Crystal splits the callback roll by attack points and rounds each component.
-        let (raw, secondary) = if let Some(damage) = self.intrinsic_weapon {
+        let (raw, secondary) = if let Some(damage) = self
+            .intrinsic_weapon
+            .filter(|damage| damage.elemental_attack > 0)
+        {
             let factor = f64::from(damage.elemental_attack)
                 / (f64::from(damage.physical_attack) + f64::from(damage.elemental_attack));
             let secondary_value = signed_round(raw as f64 * factor)?;
@@ -1603,15 +1608,18 @@ impl PreparedMagnitudeOwner {
         let mut secondary = secondary
             .map(|(element, raw)| apply_raw_bonuses(raw, element).map(|value| (element, value)))
             .transpose()?;
-        if let Some((damage, (_, raw))) = self.intrinsic_weapon.zip(secondary) {
-            let offence = self.caster.equipped_offence();
-            if offence.elemental_conversion.is_some() {
-                // Conversion replaces the intrinsic secondary after critical
-                // and fatal, so only the new element reaches target blocking.
-                let (physical, converted, element) = offence
-                    .convert_physical(value, raw, damage.element)
-                    .ok_or(Error::InvalidMagnitude)?;
-                value = physical;
+        let offence = self.caster.equipped_offence();
+        if let Some(damage) = self.intrinsic_weapon
+            && offence.elemental_conversion.is_some()
+        {
+            // Weapon imbuement replaces any intrinsic component after critical
+            // and fatal, including on weapons whose intrinsic damage is physical.
+            let raw = secondary.map_or(0, |(_, raw)| raw);
+            let (physical, converted, element) = offence
+                .convert_physical(value, raw, damage.element)
+                .ok_or(Error::InvalidMagnitude)?;
+            value = physical;
+            if secondary.is_some() || converted != 0 {
                 secondary = Some((weapon_damage_element(element), converted));
             }
         }

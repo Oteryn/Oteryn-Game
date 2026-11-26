@@ -600,6 +600,8 @@ def test_source_cohort_includes_installed_successors() -> None:
         root = Path(temp)
         world = root / "content/world"
         batches = [{"batch_id": name} for name in (thaian, spawns, parity)]
+        index, _ = item_index_fixture(root)
+        write(root, DERIVED, index)
 
         def materialize():
             write(world, "definitions/reference.json", {"records": []})
@@ -671,6 +673,8 @@ def full_generation_trace(
 
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
+        index, _ = item_index_fixture(root)
+        write(root, DERIVED, index)
         for tool in rc.AUTHORING_TOOLS:
             write(root, tool, "")
         # Seed the committed inputs so the in-process Nomads refresh runs as usual.
