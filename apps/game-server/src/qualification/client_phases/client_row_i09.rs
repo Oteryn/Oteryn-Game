@@ -1,4 +1,4 @@
-//! CLIENT-I09: rotate compiled, fixed chair 2358 through ordinary USE and observe the
+//! CLIENT-I09: rotate compiled, fixed chair 2358 through the client Rotate menu and observe the
 //! domain-17 map delta that reports chair 2359. The replay owner is `oteryn-session`:
 //! `crates/session/src/map_transport.rs::apply` decodes and validates the delta and queues the
 //! client-visible `SessionEvent::WorldMap`; `Session::take_events` exposes it to the native client.
@@ -76,6 +76,36 @@ fn capture_envelopes(root: &Path, name: &str, mut transcript: &[u8], session: &s
         transcript = &transcript[end..];
     }
     capture(root, name, &serde_json::to_vec(&envelopes)?)
+}
+
+async fn rotate_menu_payload(
+    capture_root: &Path,
+    map: &[u8],
+    actor: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    target: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+) -> TestResult<Vec<u8>> {
+    let binary = required("OTERYN_I09_MENU_TEST")?;
+    let map_path = capture_root.join("i09-rotate-menu-map.bin");
+    capture(capture_root, "i09-rotate-menu-map.bin", map)?;
+    let coordinates = format!("{} {} {} {} {}", actor.x, actor.y, actor.floor, target.x, target.y);
+    let output = tokio::task::spawn_blocking(move || {
+        std::process::Command::new(binary)
+            .args(["qualification_i09_rotate_menu", "--ignored", "--nocapture"])
+            .env("OTERYN_I09_MENU_MAP", map_path)
+            .env("OTERYN_I09_CLICK", coordinates)
+            .env("OTERYN_ASSET_DIR", Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
+            .output()
+    }).await??;
+    let stdout = String::from_utf8(output.stdout)?;
+    if !output.status.success() {
+        return Err(format!("I09 Rotate context menu failed: {stdout} {}", String::from_utf8_lossy(&output.stderr)).into());
+    }
+    let mut payloads = stdout.lines().filter_map(|line| line.strip_prefix("I09_MENU_USE="));
+    let payload = payloads.next().ok_or("I09 Rotate context menu did not emit a command")?;
+    if payloads.next().is_some() {
+        return Err("I09 Rotate context menu emitted multiple commands".into());
+    }
+    Ok(serde_json::from_str(payload)?)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -174,7 +204,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     require_unique_chair(&before_map.tiles, target, before_item)?;
     client.take_events();
     let before_use_sequence = client.session_mut().last_server_sequence();
-    let reply = client.session_mut().world_context_use(&intent(0)?).await?;
+    let menu_payload = rotate_menu_payload(capture_root, &before.payload, client.world_spatial().actor_position, target).await?;
+    if menu_payload != intent(0)? {
+        return Err("I09 Rotate menu did not name the exact public chair placement and revision".into());
+    }
+    evidence("I09_MENU_ASSERTION rotate=clicked-public-chair command=USE_INTENT");
+    let reply = client.session_mut().world_context_use(&menu_payload).await?;
     require_mechanic_acceptance(reply.status, "I09 chair rotation")?;
     if decode_use_result(&reply.payload).map_err(|error| format!("I09 result decode: {error:?}"))?
         != UseDisposition::Committed
@@ -271,7 +306,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     require_unique_chair(&delta.value.tiles, target, item)?;
-    let stale = client.session_mut().world_context_use(&intent(0)?).await?;
+    let stale = client.session_mut().world_context_use(&menu_payload).await?;
     if stale.status != CommandStatus::Accepted
         || decode_use_result(&stale.payload)
             .map_err(|error| format!("I09 stale decode: {error:?}"))?

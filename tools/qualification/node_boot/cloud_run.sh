@@ -142,6 +142,10 @@ for group in "$@"; do
   if [[ "$group" == rows ]]; then
     capture_dir=$(mktemp -d "$work_dir/captures.XXXXXX") || blocked capture_dir_unavailable
     capture_env=(E2E_ALL_CAPTURE_DIR="$capture_dir")
+    menu_test=$(python3 tools/qualification/node_boot/i09_menu_test.py) || blocked i09_menu_test_build_failed
+    if [[ -n "$menu_test" ]]; then
+      capture_env+=(OTERYN_I09_MENU_TEST="$menu_test")
+    fi
   fi
   env "${capture_env[@]}" NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
