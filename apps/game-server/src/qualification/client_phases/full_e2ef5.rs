@@ -4012,14 +4012,13 @@ async fn player_corpse(
     owned: &[oteryn_dev_client::EntityRef],
 ) -> TestResult<(oteryn_dev_client::WorldSpatialEntity, u64)> {
     let target = wild_rat(client, world, owned).await?;
-    kill_rat_for_corpse(client, world, target, None).await
+    kill_rat_for_corpse(client, world, target).await
 }
 
 async fn kill_rat_for_corpse(
     client: &mut DevClientSession,
     world: &BundleWorld,
     target: oteryn_dev_client::WorldSpatialEntity,
-    opening_spell: Option<std::num::NonZeroU32>,
 ) -> TestResult<(oteryn_dev_client::WorldSpatialEntity, u64)> {
     let index = provisioning::item_index()?;
     let corpse_ref = provisioning::item_reference(&index, 5964)?;
@@ -4028,18 +4027,6 @@ async fn kill_rat_for_corpse(
     approach_melee(client, world, target.position).await?;
     client.take_events();
     select_monster(client, Some(target.entity)).await?;
-    if let Some(spell) = opening_spell {
-        use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget, SpellTargetPosition};
-        // The strike's held-target mode can resolve to the facing tile. Use
-        // the live Rat's exact tile so a diagonal approach cannot miss it.
-        let position = creature(client, target.entity)?.position;
-        let target = SpellTarget::Position(SpellTargetPosition { x: position.x, y: position.y, floor: position.floor });
-        let outcome = client.cast_spell(spell, target, false).await?;
-        if outcome.disposition != SpellCastDisposition::Cast {
-            return Err(format!("C16c Rat Energy Strike refused: {outcome:?}").into());
-        }
-        evidence(&format!("C16C_STRIKE target={position:?} sequence={}", outcome.result_server_sequence));
-    }
     let until = tokio::time::Instant::now() + Duration::from_secs(75);
     let mut damage = false;
     let mut removed = false;
@@ -4087,6 +4074,112 @@ async fn kill_rat_for_corpse(
         client.service_liveness(Duration::from_millis(25)).await?;
     }
 }
+// C16c alone uses a fixture Rat and explicit strikes. Keep the ordinary attack
+// disengaged so this isolated encounter has a single source of damage.
+async fn c16c_rat_corpse(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    rat: oteryn_dev_client::WorldSpatialEntity,
+    book: &crate::spell::SpellBook,
+) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
+    use oteryn_dev_client::{EntityDetail, EntityKind};
+    use oteryn_protocol_oteryn::actor_spell::{
+        SpellCastDisposition, SpellTarget, SpellTargetPosition,
+    };
+
+    let spell = book
+        .spoken("exori vis")
+        .ok_or("C16c Energy Strike absent")?
+        .spell;
+    let index = client_spell_journey::spell_index(book, "exori vis")?;
+    let recast = Duration::from_micros(
+        spell
+            .groups
+            .iter()
+            .map(|group| group.cooldown_micros)
+            .fold(spell.cooldown_micros, u64::max)
+            .saturating_add(200_000),
+    );
+    let corpse_ref = provisioning::item_reference(&provisioning::item_index()?, 5964)?;
+    approach_melee(client, world, rat.position).await?;
+    let existing = census(client)?;
+    let mut position = creature(client, rat.entity)?.position;
+    let mut health = hp(&creature(client, rat.entity)?)?;
+    let mut struck = false;
+    let mut damaged = false;
+    let mut removed = false;
+    let mut corpse = None;
+    client.take_events();
+    let until = tokio::time::Instant::now() + Duration::from_secs(75);
+    let mut next_cast = tokio::time::Instant::now();
+    while tokio::time::Instant::now() < until {
+        for event in client.take_events() {
+            let SessionEvent::WorldSpatialEntities(delta) = event else {
+                continue;
+            };
+            for entry in &delta.value.update {
+                if entry.entity == rat.entity {
+                    position = entry.position;
+                    let next_health = hp(entry)?;
+                    if struck && next_health < health {
+                        damaged = true;
+                        evidence(&format!(
+                            "C16C_RAT_HEALTH before={health} after={next_health} sequence={}",
+                            delta.server_sequence
+                        ));
+                    }
+                    health = next_health;
+                }
+            }
+            removed |= delta.value.leave.contains(&rat.entity);
+            for entry in delta.value.enter {
+                if entry.kind == EntityKind::Corpse
+                    && !existing.contains(&entry.entity)
+                    && entry.position == position
+                    && matches!(entry.detail,
+                        EntityDetail::Object { item_definition_ref, item_handle: Some(_), .. }
+                        | EntityDetail::ObjectWithAppearance { item_definition_ref, item_handle: Some(_), .. }
+                        if item_definition_ref == corpse_ref.get())
+                {
+                    corpse = Some(entry);
+                }
+            }
+        }
+        if struck
+            && removed
+            && let Some(corpse) = corpse
+        {
+            evidence(&format!(
+                "C16C_RAT_DEATH observed_nonlethal_damage={damaged} position={position:?} corpse={:?}",
+                corpse.entity
+            ));
+            return Ok(corpse);
+        }
+        if !removed && tokio::time::Instant::now() >= next_cast {
+            let target = SpellTarget::Position(SpellTargetPosition {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
+            });
+            let outcome = client.cast_spell(index, target, false).await?;
+            match outcome.disposition {
+                SpellCastDisposition::Cast => {
+                    struck = true;
+                    evidence(&format!(
+                        "C16C_STRIKE target={position:?} sequence={}",
+                        outcome.result_server_sequence
+                    ));
+                }
+                SpellCastDisposition::CoolingDown | SpellCastDisposition::NotEnoughMana => {}
+                _ => return Err(format!("C16c Rat Energy Strike refused: {outcome:?}").into()),
+            }
+            next_cast = tokio::time::Instant::now() + recast;
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+    Err(format!("C16c Rat kill lacks exact death evidence: cast={struck} health={health} damage={damaged} removed={removed} corpse={}", corpse.is_some()).into())
+}
+
 async fn animate_corpse(
     client: &mut DevClientSession,
     spell: &crate::spell::SpellDefinition,
@@ -4179,11 +4272,15 @@ pub(super) async fn capture_animate_dead(
         }
         caster.service_liveness(Duration::from_millis(50)).await?;
     };
-    let strike = client_spell_journey::spell_index(book, "exori vis")?;
-    let (corpse, _) = kill_rat_for_corpse(&mut caster, world, rat, Some(strike)).await?;
+    let corpse = c16c_rat_corpse(&mut caster, world, rat, book).await?;
     let mut observer = with_observer_liveness(&mut caster, connect_character(clients, 0xd7, 0)).await?;
     if observer.world_entities().and_then(|view| view.get(&corpse.entity)).is_none() {
         return Err("C16c fresh observer did not see the exact corpse".into());
+    }
+    let current_stats = with_observer_liveness(&mut observer, general_stats_payload(&mut caster)).await?;
+    let magic_level = u16::from_le_bytes(current_stats[13..15].try_into()?);
+    if let crate::spell::Carrier::Rune { magic_level: required, .. } = spell.carrier {
+        evidence(&format!("C16C_ANIMATE_ELIGIBILITY magic_level={magic_level} required_magic_level={required}"));
     }
     let (summon, _) = with_observer_liveness(&mut observer, animate_corpse(&mut caster, spell, reference, corpse)).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
