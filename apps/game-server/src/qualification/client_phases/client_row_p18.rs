@@ -14,6 +14,8 @@ use oteryn_dev_client::client_runtime::server_mechanic::{
 use oteryn_dev_client::client_ui::item_forge::{ItemForgePanel, apply_result, panel_text, reply};
 use oteryn_protocol_oteryn::item_forge::COMMAND_TYPE_FORGE_DUST_QUERY;
 
+type LiveReply = (u64, u64, u32, Vec<u8>);
+
 async fn dust(client: &mut DevClientSession) -> TestResult<(u64, u64)> {
     let result = client
         .session_mut()
@@ -24,19 +26,21 @@ async fn dust(client: &mut DevClientSession) -> TestResult<(u64, u64)> {
     }
     let body: serde_json::Value = serde_json::from_slice(&result.payload)?;
     Ok((
-        body["current_dust"].as_u64().ok_or("dust balance missing")?,
+        body["current_dust"]
+            .as_u64()
+            .ok_or("dust balance missing")?,
         body["dust_limit"].as_u64().ok_or("dust limit missing")?,
     ))
 }
 
-fn replay(root: &Path, session: [u8; 16], frames: &[(u64, u64, Vec<u8>)]) -> TestResult {
+fn replay(root: &Path, session: [u8; 16], frames: &[LiveReply]) -> TestResult {
     use std::io::Write as _;
     let path = root.join("p18-live.json");
     let mut file = std::fs::File::create_new(&path)?;
     serde_json::to_writer(&mut file, &(session, frames))?;
     file.flush()?;
     drop(file);
-    let (captured_session, captured): ([u8; 16], Vec<(u64, u64, Vec<u8>)>) =
+    let (captured_session, captured): ([u8; 16], Vec<LiveReply>) =
         serde_json::from_reader(std::fs::File::open(path)?)?;
     if captured_session != session || captured != frames {
         return Err("Forge capture session or command sequence mismatch".into());
@@ -45,7 +49,16 @@ fn replay(root: &Path, session: [u8; 16], frames: &[(u64, u64, Vec<u8>)]) -> Tes
         selected: true,
         ..Default::default()
     };
-    for (index, (command_id, server_sequence, payload)) in captured.into_iter().enumerate() {
+    for (index, (command_id, server_sequence, status, payload)) in captured.into_iter().enumerate()
+    {
+        if status != UiStatus::Accepted as u32
+            || command_id == 0
+            || server_sequence == 0
+            || index > 0
+                && (command_id <= frames[index - 1].0 || server_sequence <= frames[index - 1].1)
+        {
+            return Err(format!("invalid Forge reply metadata at frame {index}").into());
+        }
         panel.pending = true;
         apply_result(
             &mut panel,
@@ -118,7 +131,7 @@ async fn forge(
     occurrence: [u8; 16],
     pair: Option<(NonZeroU64, NonZeroU64)>,
     history_limit: u8,
-) -> TestResult<((u64, u64, Vec<u8>), serde_json::Value)> {
+) -> TestResult<(LiveReply, serde_json::Value)> {
     let payload = Request {
         operation,
         occurrence,
@@ -139,7 +152,12 @@ async fn forge(
     }
     let body: serde_json::Value = serde_json::from_slice(&reply.payload)?;
     Ok((
-        (reply.command_id, reply.server_sequence, reply.payload),
+        (
+            reply.command_id,
+            reply.server_sequence,
+            reply.status as u32,
+            reply.payload,
+        ),
         body,
     ))
 }
