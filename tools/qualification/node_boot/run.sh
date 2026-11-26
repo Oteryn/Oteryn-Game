@@ -1813,6 +1813,22 @@ if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
   exit "$?"
 fi
 
+# The node boot and e2e_all entry points share the live client replay stage.
+client_replay_enabled=0
+client_replay_groups=${NODE_BOOT_E2E_ONLY:-rows}
+case ",${client_replay_groups//[[:space:]]/}," in
+  *,rows,*)
+    if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+      source "$GAME_SOURCE/tools/qualification/node_boot/client_replay.sh"
+      if [[ -n "$(selected_client_replays)" ]]; then
+        export E2E_ALL_CAPTURE_DIR="${E2E_ALL_CAPTURE_DIR:-$WORK/client-captures}"
+        mkdir -p -- "$E2E_ALL_CAPTURE_DIR"
+        client_replay_enabled=1
+      fi
+    fi
+    ;;
+esac
+
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
@@ -1839,6 +1855,9 @@ else
   fi
   stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
+fi
+if [[ "$client_replay_enabled" == 1 && -f "$WORK/stage-$seam_stage_name.log" ]]; then
+  stage client_replays -- node_boot_client_replays "$WORK/stage-$seam_stage_name.log"
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then

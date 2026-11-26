@@ -658,6 +658,46 @@ class PgObserveTests(unittest.TestCase):
         self.assertIn('cp -R "$PG_OBS" "$NODE_BOOT_FAILURE_LOG_DIR/postgres-world', RUN_TEXT)
 
 
+class ClientReplayTests(unittest.TestCase):
+    def test_scoped_replay_requires_a_unique_live_capture_and_one_passing_test(self):
+        capture = 'SEAM_EVIDENCE e2e_capture scenario=W04.client status=CAPTURED evidence=fresh'
+        failure = 'SEAM_EVIDENCE e2e_all scenario=W04.client status=FAIL seconds=0.000'
+        cases = [
+            ('190:1', capture, 1, 0, 'status=PASS', True),
+            ('190:1', capture, 0, 1, 'status=FAIL', True),
+            ('190:1', '', 1, 1, 'status=FAIL', False),
+            ('190:1', capture + '\n' + capture, 1, 1, 'status=FAIL', False),
+            ('190:1', failure, 1, 1, '', False),
+            ('17:1', capture, 1, 0, '', False),
+        ]
+        for batch, line, passed, code, verdict, ran in cases:
+            with self.subTest(batch=batch, line=line, passed=passed), tempfile.TemporaryDirectory() as work:
+                work = Path(work)
+                (work / 'node.log').write_text(line + '\n')
+                cargo = work / 'cargo'
+                cargo.write_text(
+                    '#!/bin/sh\n'
+                    'test "$1 $2 $3 $4 $5 $6" = "test --locked -p oteryn-client --lib '
+                    'e2e_w04_replays_raid_schedule_state_and_refusal" || exit 2\n'
+                    'test -n "$E2E_ALL_CAPTURE_DIR" || exit 2\n'
+                    'touch invoked\n'
+                    f'echo "test result: ok. {passed} passed; 0 failed; 0 ignored;"\n'
+                )
+                cargo.chmod(0o700)
+                result = bash(
+                    'source "$REPLAY_HELPER"; node_boot_client_replays node.log',
+                    {'REPLAY_HELPER': str(HERE / 'client_replay.sh'), 'CARGO': str(cargo),
+                     'E2E_ALL_CAPTURE_DIR': str(work), 'OTERYN_E2E_ROW_BATCH': batch},
+                    cwd=work,
+                )
+                self.assertEqual(result.returncode, code, result.stderr)
+                self.assertEqual((work / 'invoked').exists(), ran)
+                if verdict:
+                    self.assertIn(verdict, result.stdout)
+                else:
+                    self.assertEqual(result.stdout, '')
+
+
 class CloudRunSummaryTests(unittest.TestCase):
     def test_cloud_uses_first_eligible_work_parent(self):
         cloud = (HERE / "cloud_run.sh").read_text()

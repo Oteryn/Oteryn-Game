@@ -28,31 +28,6 @@ select_work_parent() {
   return 1
 }
 
-replay_client() {
-  local log=$1 captures=$2 row=$3 package=$4 case_name=$5 started=$SECONDS
-  local status=FAIL
-  # The live journey and the exact client replay must both reach their assertions.
-  if grep -qF "e2e_capture scenario=$row status=CAPTURED " "$log" \
-    && ! grep -qF "e2e_all scenario=$row status=FAIL " "$log" \
-    && E2E_ALL_CAPTURE_DIR="$captures" cargo test --locked -p "$package" --lib "$case_name" \
-      > "$captures/replay.log" 2>&1 \
-    && grep -qE '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$captures/replay.log"; then
-    status=PASS
-  fi
-  printf 'SEAM_EVIDENCE e2e_all scenario=%s status=%s seconds=%s.000 evidence=live-capture-replay\n' \
-    "$row" "$status" "$((SECONDS - started))"
-  [[ "$status" == PASS ]]
-}
-
-selected_client_replay() {
-  case "$1" in
-    190:1) echo 'W04.client oteryn-client e2e_w04_replays_raid_schedule_state_and_refusal' ;;
-    193:1) echo 'W10.client oteryn-client-ui e2e_w10_replays_hazard_state_selection_and_locked_refusal' ;;
-    196:1) echo 'W13.client oteryn-client-ui e2e_w13_replays_daily_boost_selection_and_refusal' ;;
-    *) return 1 ;;
-  esac
-}
-
 summarize() {
   local log=$1 group=$2 seconds=${3:-0} status=${4:-0} result rows row
   result=$(awk '/^NODE_BOOT_RESULT=(NODE_BOOT_[A-Z0-9_]+|BLOCKED)([[:space:]]|$)/ {
@@ -142,24 +117,13 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
-  capture_dir=
-  if [[ "$group" == rows && -z "${E2E_ALL_CAPTURE_DIR+x}" ]] \
-    && replay=$(selected_client_replay "${OTERYN_E2E_ROW_BATCH:-}"); then
-    read -r replay_row replay_package replay_case <<< "$replay"
-    capture_dir="$work_dir/$index-captures"
-    mkdir -- "$capture_dir" || blocked capture_dir_unavailable
-  fi
-  capture_env=()
-  [[ -z "$capture_dir" ]] || capture_env+=("E2E_ALL_CAPTURE_DIR=$capture_dir")
-  env "${capture_env[@]}" NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
+  NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
+  grep -E '^SEAM_EVIDENCE e2e_all scenario=W(04|05c|10|13)[.]client status=(PASS|FAIL) seconds=[0-9]+[.]000 evidence=live-capture-replay$' "$log" || true
   [[ "$status" == 0 ]] || failed=1
-  if [[ -n "$capture_dir" ]]; then
-    replay_client "$log" "$capture_dir" "$replay_row" "$replay_package" "$replay_case" || failed=1
-  fi
 done
 exit "$failed"
