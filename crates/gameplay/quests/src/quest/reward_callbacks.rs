@@ -2545,7 +2545,8 @@ mod tests {
         // Storkus's authored acceptance, full deposit and paid confirmation
         // are joined by 209 additional quantities and partial-deposit states.
         let callbacks = load()?;
-        assert_eq!(callbacks.len(), 516 + 209);
+        // Wayland contributes three outfit exchanges.
+        assert_eq!(callbacks.len(), 516 + 209 + 3);
         assert_eq!(
             callbacks
                 .iter()
@@ -2612,7 +2613,7 @@ mod tests {
         let programmes = parse(include_str!(
             "../../../../../content/quests/npc-callbacks/questpc7-programmes.json"
         ))?;
-        assert_eq!(programmes.len(), 59);
+        assert_eq!(programmes.len(), 62);
         let published = published_markers::keys()?;
         for callback in &programmes {
             assert!(callback.key.starts_with("oteryn:quest-reward/questpc7-"));

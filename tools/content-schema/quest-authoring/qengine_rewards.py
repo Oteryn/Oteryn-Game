@@ -19,6 +19,7 @@ import taming_cosmetics
 import qb_barbarian
 import qb_citizen_warrior
 import wizard_cosmetics
+import earned_outfit_catalogue
 import engoutfit_m36
 import qengine_mounts
 import qmech_m39
@@ -213,6 +214,7 @@ def build():
             'starter_male': male['unlocked'] == 'yes', 'starter_addons_female': 0,
             'starter_addons_male': 0, 'premium': female['premium'] == 'yes',
             'unlock_sources': [source], 'source': source})
+    earned_outfit_catalogue.append_wiki_outfits(ROOT, outfits, looks, addon_patterns)
     item_capture_raw=(ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes()
     item_admission=load_module('qengine_item_admission','tools/content-schema/quest-authoring/qengine_item_acquisitions.py')
     table_parser=load_module('qengine_cosmetic_source_tables','tools/content-migration/event_item_actions.py')
@@ -226,6 +228,8 @@ def build():
     construction.append_glider(item_packet, inputs[construction_path].decode(), inputs['data/XML/mounts.xml'],
         table_parser, json.loads((ROOT/'content/presentations/bindings/client-ids.json').read_bytes()),
         {'reference':'crystal:'+construction_path,'revision':PIN,'sha256':sha(inputs[construction_path])})
+    qengine_mounts.append_pegasus_feather(item_packet)
+    earned_outfit_catalogue.append_consumptive_outfit_grants(item_packet, outfits)
     # Retain every source row, but bind construction costs to the existing atomic
     # pieces owner. The ordinary one-item taming path cannot execute these rows.
     native_taming=json.loads((ROOT/'content/cosmetics/taming.json').read_bytes())
@@ -261,6 +265,7 @@ def build():
                 mappings.append({'grant_key':row['key']+f'/quest-grant/{sex}/{addon}',
                         'target':{'kind':'Outfit','outfit_key':row['key']} if addon==0 else {'kind':'Addon','outfit_key':row['key'],'addon':addon},
                         'sex':sex,'compatible_provenance':[PROVENANCE]})
+    earned_outfit_catalogue.append_task_board_outfit_mappings(outfits, mappings)
     mount_source = {'reference': 'crystal:data/XML/mounts.xml', 'revision': PIN,
                     'sha256': sha(inputs['data/XML/mounts.xml'])}
     mounts, mount_mappings = qengine_mounts.populate(ROOT, inputs, looks, mount_source, item_packet)
