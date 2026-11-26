@@ -14,12 +14,12 @@ use crate::map::view::MapFacts;
 use oteryn_dev_client::client_runtime::quest_log as journal;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
-const SHRINE: TilePos = TilePos {
+pub(super) const SHRINE: TilePos = TilePos {
     x: 32454,
     y: 32292,
     floor: -7,
 };
-const APPEARANCE: u16 = 50242;
+pub(super) const APPEARANCE: u16 = 50242;
 
 struct Row {
     started: std::time::Instant,
@@ -29,10 +29,7 @@ struct Row {
 impl Row {
     fn fail(self, observed: impl std::fmt::Display) {
         let observed = observed.to_string();
-        evidence(&format!(
-            "W15D_GAP step={} observed={observed}",
-            self.step
-        ));
+        evidence(&format!("W15D_GAP step={} observed={observed}", self.step));
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=W15d.full status=FAIL seconds={:.3} evidence=step-{}:{}",
             self.started.elapsed().as_secs_f64(),
@@ -47,7 +44,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         started: std::time::Instant::now(),
         step: "admission",
     };
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(900),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=W15d.full status=PASS seconds={:.3}",
@@ -61,6 +62,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 async fn quest_list(
     client: &mut oteryn_dev_client::DevClientSession,
 ) -> TestResult<Vec<journal::QuestListEntry>> {
+    client.service_liveness(Duration::from_millis(1050)).await?;
     let snapshot = client
         .session_mut()
         .gated_snapshot(journal::STATE_DOMAIN_QUEST_LOG)
@@ -81,17 +83,22 @@ async fn quest_list(
         .await?;
     let log = journal::decode_quest_log(&delta.payload)
         .map_err(|error| format!("quest list delta: {error:?}"))?;
-    let journal::QuestLogView::List(entries) = log.view.ok_or("quest list delta has no view")? else {
+    let journal::QuestLogView::List(entries) = log.view.ok_or("quest list delta has no view")?
+    else {
         return Err("quest list delta is not a list".into());
     };
     Ok(entries)
 }
 
-fn shrine_target(world: &BundleWorld) -> TestResult<WorldObjectTarget> {
+pub(super) fn object_target(
+    world: &BundleWorld,
+    at: TilePos,
+    appearance: u16,
+) -> TestResult<WorldObjectTarget> {
     let tile = world
         .base()
-        .tile(SHRINE.x, SHRINE.y, SHRINE.floor)
-        .ok_or("authored guidance shrine tile absent")?;
+        .tile(at.x, at.y, at.floor)
+        .ok_or("authored object tile absent")?;
     let ordinal = tile
         .ids()
         .iter()
@@ -102,12 +109,12 @@ fn shrine_target(world: &BundleWorld) -> TestResult<WorldObjectTarget> {
             let ordinal = u8::try_from(ordinal).ok()?;
             world
                 .facts()
-                .base_entry(SHRINE, ordinal, *id)
-                .filter(|facts| facts.appearance_id == APPEARANCE)
+                .base_entry(at, ordinal, *id)
+                .filter(|facts| facts.appearance_id == appearance)
                 .map(|_| ordinal)
         })
-        .ok_or("authored guidance shrine appearance absent")?;
-    let key = crate::map::view::placement_key(SHRINE, ordinal).ok_or("shrine placement key")?;
+        .ok_or("authored object appearance absent")?;
+    let key = crate::map::view::placement_key(at, ordinal).ok_or("object placement key")?;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     Ok(WorldObjectTarget {
@@ -116,7 +123,233 @@ fn shrine_target(world: &BundleWorld) -> TestResult<WorldObjectTarget> {
     })
 }
 
-fn shrine_revision(base: u64, published: Option<u64>) -> TestResult<u64> {
+pub(super) async fn prepare(
+    row: &str,
+    scope: &SeamClients<'_>,
+    tag: u8,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    use oteryn_protocol_oteryn::cyclopedia_character as stats;
+    character_prep::declare_seeded(row, "monk-level-6", "Guidance Shrine level gate");
+    let mut client = connect_character(scope, tag, 0).await?;
+    let session = client.join_snapshot().game_session_id;
+    request_fixture_control(uuid_text(session.as_bytes()), "--profile", "q_w15d".into()).await?;
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("seeded character logout refused".into());
+    }
+    drop(client);
+    let mut client = connect_character(scope, tag, 0).await?;
+    if client.join_snapshot().game_session_id == session {
+        return Err("seeded stats require a fresh admission".into());
+    }
+    let reply = client
+        .session_mut()
+        .gated_command(
+            stats::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            stats::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[stats::CharacterTab::GeneralStats as u8, 0, 0, 1],
+        )
+        .await?;
+    let vocation = general_stats::validate(&reply.payload, general_stats::selected(&client))?;
+    let experience = u64::from_le_bytes(reply.payload[1..9].try_into()?);
+    let level = u32::from_le_bytes(reply.payload[9..13].try_into()?);
+    if reply.status != CommandStatus::Accepted
+        || reply.payload[0] != stats::CharacterTab::GeneralStats as u8
+        || vocation != stats::vocation_id("monk")
+        || (experience, level) != (1500, 6)
+    {
+        return Err(format!(
+            "seeded stats status={:?} vocation={vocation:?} xp={experience} level={level}",
+            reply.status
+        )
+        .into());
+    }
+    let vitals = client.actor_vitals().ok_or("seeded actor vitals absent")?;
+    if (vitals.max_health, vitals.max_mana) != (175, 80) {
+        return Err(format!("seeded level-6 Monk vitals observed={vitals:?}").into());
+    }
+    evidence(&format!(
+        "W15D_SEEDED_STATS row={row} vocation=monk xp={experience} level={level} max_health={} max_mana={}",
+        vitals.max_health, vitals.max_mana
+    ));
+    Ok(client)
+}
+
+async fn walk_to(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    goal: TilePos,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| {
+        at.floor == goal.floor && at.x.abs_diff(goal.x).max(at.y.abs_diff(goal.y)) == 1
+    })
+    .ok_or_else(|| format!("no playable route from {from:?} to {goal:?}"))?;
+    evidence(&format!(
+        "W15D_ROUTE from={from:?} goal={goal:?} steps={}",
+        path.len()
+    ));
+    for direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, from, direction).ok_or("planned step landing absent")?;
+        let moved = client.step(direction).await?;
+        let observed = tile(client.world_spatial().actor_position)?;
+        if moved.disposition != StepDisposition::Moved
+            || moved.world_spatial_delta.is_none()
+            || observed != expected
+        {
+            return Err(format!("first STEP from={from:?} direction={direction:?} expected={expected:?} observed={observed:?} result={moved:?}").into());
+        }
+        verdict::Harness::global().progress("walk");
+        let duration = client
+            .world_entities()
+            .and_then(|entities| {
+                entities
+                    .iter()
+                    .find(|entry| &entry.entity.identity == entities.own_identity())
+            })
+            .and_then(|entry| entry.motion)
+            .ok_or("moved actor motion duration missing")?
+            .step_duration_ms;
+        client
+            .service_liveness(Duration::from_millis(u64::from(duration)))
+            .await?;
+        client.take_events();
+    }
+    Ok(())
+}
+
+async fn use_portal(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    at: TilePos,
+    landing: TilePos,
+) -> TestResult {
+    walk_to(client, world, at).await?;
+    let target = object_target(world, at, 49948)?;
+    let result = client
+        .session_mut()
+        .use_object(&target.placement, target.expected_revision)
+        .await?;
+    if result.status != CommandStatus::Accepted || result.disposition != UseDisposition::Committed {
+        return Err(format!("Blue Valley portal USE at={at:?} result={result:?}").into());
+    }
+    client.service_liveness(Duration::from_secs(1)).await?;
+    let observed = tile(client.world_spatial().actor_position)?;
+    if observed != landing {
+        return Err(format!(
+            "Blue Valley portal at={at:?} expected={landing:?} observed={observed:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
+async fn start_pilgrimage(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+) -> TestResult {
+    use oteryn_protocol_oteryn::npc_service as npc;
+    let pema = TilePos {
+        x: 33603,
+        y: 31468,
+        floor: -7,
+    };
+    walk_to(client, world, pema).await?;
+    let actor = client
+        .world_entities()
+        .and_then(|entities| {
+            entities.iter().find(|entry| {
+                entry.kind == oteryn_dev_client::EntityKind::Npc
+                    && tile(entry.position).ok() == Some(pema)
+            })
+        })
+        .ok_or("authored Enpa-Deia Pema NPC unavailable")?
+        .entity;
+    for text in ["hi", "pilgrimage"] {
+        let payload = npc::encode_npc_talk_intent(&npc::NpcTalkIntent {
+            npc_actor: actor,
+            text: text.into(),
+        })
+        .map_err(|error| format!("Pema intent: {error:?}"))?;
+        let reply = client
+            .session_mut()
+            .gated_command(
+                npc::CAPABILITY_NPC_SERVICE_V1,
+                npc::COMMAND_TYPE_NPC_TALK_INTENT,
+                &payload,
+            )
+            .await?;
+        let disposition = npc::decode_npc_intent_result(&reply.payload)
+            .map_err(|error| format!("Pema result: {error:?}"))?;
+        if reply.status != CommandStatus::Accepted || disposition != npc::NpcIntentDisposition::Ok {
+            return Err(format!(
+                "Pema text={text} status={:?} disposition={disposition:?}",
+                reply.status
+            )
+            .into());
+        }
+        let delta = client
+            .session_mut()
+            .read_gated_delta(npc::STATE_DOMAIN_NPC_CONVERSATION, 1)
+            .await?;
+        let conversation = npc::decode_npc_conversation(&delta.payload)
+            .map_err(|error| format!("Pema conversation: {error:?}"))?;
+        if conversation.open.map(|(npc, _)| npc) != Some(actor)
+            || (text == "pilgrimage"
+                && !conversation
+                    .lines
+                    .iter()
+                    .any(|line| line.contains("You may now visit the shrines")))
+        {
+            return Err(format!("Pema text={text} observed={conversation:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(1050)).await?;
+    }
+    Ok(())
+}
+
+pub(super) async fn approach(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+) -> TestResult {
+    // Crystal's Blue Valley USE portals, at their authored positions.
+    use_portal(
+        client,
+        world,
+        TilePos {
+            x: 32456,
+            y: 32290,
+            floor: -7,
+        },
+        TilePos {
+            x: 33614,
+            y: 31494,
+            floor: -7,
+        },
+    )
+    .await?;
+    start_pilgrimage(client, world).await?;
+    use_portal(
+        client,
+        world,
+        TilePos {
+            x: 33605,
+            y: 31468,
+            floor: -7,
+        },
+        TilePos {
+            x: 32456,
+            y: 32291,
+            floor: -7,
+        },
+    )
+    .await?;
+    walk_to(client, world, SHRINE).await
+}
+
+pub(super) fn shrine_revision(base: u64, published: Option<u64>) -> TestResult<u64> {
     published.filter(|revision| *revision > base).ok_or_else(|| format!("repeat-use needs a newer published shrine revision, base={base} observed={published:?}").into())
 }
 
@@ -129,18 +362,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xd4).await?;
+    let character =
+        character_prep::dedicated_character(clients, "NODE_BOOT_Q_W15D_ACCOUNT").await?;
+    let scope = character.clients(clients);
+    let mut client = prepare("W15d.full", &scope, 0xd4).await?;
     row.step = "walk-to-guidance-shrine";
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at.floor == SHRINE.floor
-            && at.x.abs_diff(SHRINE.x).max(at.y.abs_diff(SHRINE.y)) <= 1
-            && at != SHRINE
-    })
-    .ok_or("no legitimate walking route to guidance shrine")?;
-    walk(&mut client, world, &path).await?;
+    approach(&mut client, world).await?;
 
     row.step = "first-use-commit";
-    let target = shrine_target(world)?;
+    let target = object_target(world, SHRINE, APPEARANCE)?;
     let before = quest_list(&mut client).await?;
     let first = client
         .session_mut()
@@ -159,7 +389,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
 
     row.step = "repeat-use-refusal";
-    let observed_revision = client.world_object_overlay().iter()
+    let observed_revision = client
+        .world_object_overlay()
+        .iter()
         .find(|entry| entry.placement == target.placement)
         .map(|entry| entry.revision);
     let revision = shrine_revision(target.expected_revision, observed_revision)?;
@@ -185,7 +417,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("logout refused after callback".into());
     }
     drop(client);
-    let mut fresh = connect_world(clients, 0xd5).await?;
+    let mut fresh = connect_character(&scope, 0xd5, 0).await?;
     if quest_list(&mut fresh).await? != after {
         return Err("fresh admission lost committed quest-log state".into());
     }
@@ -196,7 +428,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     Ok(())
 }
-
 
 #[cfg(test)]
 mod tests {
