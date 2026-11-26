@@ -37,7 +37,8 @@ const OVENS: [&str; 4] = [
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
+    // Three paced station approaches share the journey budget.
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "baked-refused-and-reloaded".to_owned()),
         Ok(Err(error)) => (
@@ -79,7 +80,7 @@ async fn reach_station(
     name: &str,
 ) -> TestResult<(TilePos, u8)> {
     let mut stations = std::collections::BTreeMap::new();
-    oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
+    let bundle = oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
         if here.floor.abs_diff(sector.floor) > 2 {
             return Ok(());
         }
@@ -99,8 +100,25 @@ async fn reach_station(
         }
         Ok(())
     })?;
-    let path = route(world, here, |at| nearby_station(at, &stations).is_some())
-        .ok_or_else(|| format!("step={name}-route missing=reachable-compiled-world-station"))?;
+    let occupied: std::collections::BTreeSet<_> = bundle
+        .npcs
+        .npcs
+        .iter()
+        .flat_map(|npc| &npc.placements)
+        .map(|placement| TilePos {
+            x: placement.x,
+            y: placement.y,
+            floor: placement.floor,
+        })
+        .collect();
+    let path = route_avoiding(
+        world,
+        here,
+        |at| nearby_station(at, &stations).is_some(),
+        |at| !occupied.contains(&at),
+    )
+    .ok_or_else(|| format!("step={name}-route missing=reachable-compiled-world-station"))?;
+    evidence(&format!("I11_STATION_ROUTE station={name} steps={}", path.len()));
     walk_once(client, world, &path).await?;
     let arrived = tile(client.world_spatial().actor_position)?;
     nearby_station(arrived, &stations).ok_or_else(|| format!("step={name}-route observed=no-station-within-use-distance-after-STEP").into())
