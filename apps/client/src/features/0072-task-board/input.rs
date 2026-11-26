@@ -57,20 +57,19 @@ pub(in crate::play) fn enqueue_talisman(
     if mailbox.world_input_blocked() {
         return false;
     }
-    if let talisman::Intent::Upgrade(path) = intent {
-        let Some(level) = mailbox
-            .task_board
-            .weekly
-            .as_ref()
-            .and_then(|r| r.talisman.get(usize::from(path)))
-        else {
-            mailbox.task_board.feedback = Some("Refresh the board and select a talisman path");
-            return false;
-        };
-        if level.level >= 355 {
-            mailbox.task_board.feedback = Some("Maximum talisman level reached");
-            return false;
-        }
+    let talisman::Intent::Upgrade(path) = intent;
+    let Some(level) = mailbox
+        .task_board
+        .weekly
+        .as_ref()
+        .and_then(|reply| reply.talisman.get(usize::from(path)))
+    else {
+        mailbox.task_board.feedback = Some("Refresh the board and select a talisman path");
+        return false;
+    };
+    if level.level >= talisman::MAX_LEVEL {
+        mailbox.task_board.feedback = Some("Maximum talisman level reached");
+        return false;
     }
     let Some(command) = talisman::request(&mut mailbox.task_board, intent) else {
         return false;
