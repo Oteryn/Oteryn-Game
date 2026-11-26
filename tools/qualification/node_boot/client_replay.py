@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Gate the cloud wrapper's selected client rows on their fresh Rust replays."""
 
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -132,7 +133,7 @@ def replay_targets():
     return targets
 
 
-def replay_cause(row, package, test, names, captures, server, log, features=()):
+def replay_cause(row, package, test, names, captures, server, log, features=(), test_args=()):
     # Some replays construct filenames from a prefix. Those replays check the
     # individual reads themselves, but still need at least one row-owned file.
     files = {path.name for path in captures.glob(f"{row.lower()}[-_.]*")
@@ -145,7 +146,7 @@ def replay_cause(row, package, test, names, captures, server, log, features=()):
     try:
         result = subprocess.run(
             [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package,
-             "--lib", *features, test, "--", "--nocapture"],
+             "--lib", *features, test, "--", "--nocapture", *test_args],
             cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
     except OSError:
@@ -182,9 +183,16 @@ def g20_replay_cause(captures, server, log):
         if not all(type(frame[key]) is int and frame[key] > 0
                    for key in ("command_id", "server_sequence", "status")):
             return "invalid-envelope"
+        payload = frame["payload"]
+        if not isinstance(payload, list) or not all(
+            type(byte) is int and 0 <= byte <= 255 for byte in payload
+        ):
+            return "invalid-envelope"
+        digest = hashlib.sha256(bytes(payload)).hexdigest()
         marker = (
             f"SEAM_EVIDENCE G20_FRAME game_session_id={session} command_id={frame['command_id']}"
             f" server_sequence={frame['server_sequence']} status={frame['status']}"
+            f" payload_sha256={digest}"
         )
     except (ValueError, TypeError, KeyError, AttributeError):
         return "invalid-envelope"
@@ -194,6 +202,7 @@ def g20_replay_cause(captures, server, log):
         "g20", "oteryn-game-server", "e2e_g20_funded_preview_replay",
         {"g20-funded.json"}, captures, server, log,
         ("--features", "qualification-clock,qualification-unprivileged"),
+        ("--ignored",),
     )
 
 

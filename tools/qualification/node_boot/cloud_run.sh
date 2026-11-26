@@ -54,16 +54,36 @@ summarize() {
       reason = (cause != "" ? cause : evidence)
       if (tolower(reason) ~ /password|postgres:\/\/|postgresql:\/\/|secret|token|key=/) reason = ""
       gsub(/\|/, "_", reason)
+      if (row == "G20") {
+        g20_live = verdict
+        g20_reason = reason
+        next
+      }
       printf "%s|%s|%s\n", row, verdict, reason
+    }
+    $1 == "SEAM_EVIDENCE" && $2 == "e2e_replay" && $3 == "scenario=G20.full" {
+      g20_replays++
+      g20_replay = $4
+      if ($5 ~ /^cause=[[:alnum:]_-]+$/) g20_replay_cause = substr($5, 7)
+      next
     }
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
       $3 ~ /^scenario=[[:alnum:]_.-]+\.client$/ && $4 ~ /^replay=[[:alnum:]_]+$/ &&
       $5 ~ /^status=(PASS|FAIL)$/ {
       reason = ($6 ~ /^cause=(capture-missing|replay-not-run|replay-failed|server-failed)$/ ? substr($6, 7) : "")
       printf "%s|%s|%s\n", substr($3, 10), substr($5, 8), reason
+    }
+    END {
+      if (g20_live == "PASS" && (g20_replays != 1 || g20_replay != "status=PASS")) {
+        g20_live = "FAIL"
+        if (g20_replays == 0) g20_reason = "replay-missing"
+        else if (g20_replays != 1) g20_reason = "replay-duplicate"
+        else g20_reason = (g20_replay_cause != "" ? g20_replay_cause : "replay-failed")
+      }
+      if (g20_live != "") printf "G20|%s|%s\n", g20_live, g20_reason
     }' < "$log") || return 1
 
-  if [[ "$result" == NODE_BOOT_PASS ]] && grep -qE '^[^|]+\.client\|FAIL\|' <<< "$rows"; then
+  if [[ "$result" == NODE_BOOT_PASS ]] && grep -qE '^(G20|[^|]+\.client)\|FAIL\|' <<< "$rows"; then
     result=NODE_BOOT_FAIL
   fi
   grep -aE '^NODE_BOOT_PORTS ([A-Z_]+=[0-9]+ ?)+$' "$log" | sort -u || true

@@ -5,6 +5,7 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::item_view::CharacterInventory;
 use oteryn_protocol_oteryn::{forge_preview as wire, item_forge::Operation};
+use sha2::{Digest, Sha256};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -65,8 +66,11 @@ async fn preview(
         .await?;
     if nonce == 2 && selection == wire::Selection::Resource(Operation::DustLimit) {
         evidence(&format!(
-            "G20_FRAME game_session_id={session} command_id={} server_sequence={} status={}",
-            response.command_id, response.server_sequence, response.status as u32,
+            "G20_FRAME game_session_id={session} command_id={} server_sequence={} status={} payload_sha256={}",
+            response.command_id,
+            response.server_sequence,
+            response.status as u32,
+            super::client_row_p20::hex(&Sha256::digest(&response.payload)),
         ));
         if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
             let file = std::fs::File::create_new(Path::new(&directory).join("g20-funded.json"))?;
@@ -509,6 +513,62 @@ async fn body(
     }
 }
 
+const BANK_FIXTURE_GOLD: i64 = 37;
+
+async fn seed_g20_bank_gold(
+    connection: &mut sqlx::PgConnection,
+    character: &[u8; 16],
+    channel: &[u8; 16],
+) -> TestResult {
+    // Match the native Forge PostgreSQL bank fixture. Only the input deposit
+    // bypasses ledger triggers in this disposable database.
+    let mut transaction = connection.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *transaction)
+        .await?;
+    let seeded = sqlx::query(
+        "WITH operation AS (
+            INSERT INTO game_account_bank_operations (
+                operation_occurrence_id, transaction_id, event_id, kind, request_binding,
+                acting_character_id, account_id, world_id, channel_id,
+                runtime_scope_ownership_generation, amount, outcome, occurred_at,
+                envelope_sha256, committed_at, planned_platinum_item_instance_id,
+                planned_gold_item_instance_id, backpack_item_instance_id
+            )
+            SELECT game_character_uuid_v7(), game_character_uuid_v7(), game_character_uuid_v7(),
+                1, sha256('g20-bank-fixture'), c.character_id, c.account_id, c.world_id,
+                encode($2, 'hex')::uuid, 1, $3, 0, 1, sha256('g20-bank-fixture'), 0,
+                game_character_uuid_v7(), game_character_uuid_v7(), b.item_instance_id
+            FROM game_character_roots c JOIN game_item_container_slots b USING (character_id)
+            WHERE c.character_id = encode($1, 'hex')::uuid
+            RETURNING transaction_id, account_id, world_id, acting_character_id
+        ), entry AS (
+            INSERT INTO game_account_bank_entries (
+                entry_id, transaction_id, account_id, world_id, kind, amount,
+                balance_before, balance_after, acting_character_id
+            )
+            SELECT game_character_uuid_v7(), transaction_id, account_id, world_id,
+                1, $3, 0, $3, acting_character_id
+            FROM operation RETURNING entry_id, account_id, world_id
+        )
+        INSERT INTO game_account_bank_balances (account_id, world_id, balance, last_entry_id)
+        SELECT account_id, world_id, $3, entry_id FROM entry",
+    )
+    .bind(character.as_slice())
+    .bind(channel.as_slice())
+    .bind(BANK_FIXTURE_GOLD)
+    .execute(&mut *transaction)
+    .await?;
+    if seeded.rows_affected() != 1 {
+        return Err("step=fixture-bank expected one funded dedicated account".into());
+    }
+    transaction.commit().await?;
+    evidence(&format!(
+        "FIXTURE row=G20.full input=bank_gold balance={BANK_FIXTURE_GOLD}"
+    ));
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     character_prep::declare_seeded(
         "G20.full",
@@ -536,6 +596,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let character = &clients.characters[0];
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
     let custody = forge_custody(&mut connection, character).await?;
+    if !custody.other_custody["bank"].is_null() {
+        return Err("step=pre-state expected an unfunded bank account".into());
+    }
     if custody.gold != STARTER_GOLD
         || custody.slivers != i64::try_from(SLIVERS_PER_CORE)?
         || custody.swords != 2
@@ -573,6 +636,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "g20-dust-input".into(),
     )
     .await?;
+    seed_g20_bank_gold(&mut connection, character, &clients.channel).await?;
     let funded = forge_custody(&mut connection, character).await?;
     let balances = funded.dust.as_ref();
     let dust = balances
@@ -588,6 +652,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let mut expected_funded = custody.clone();
     expected_funded.dust = funded.dust.clone();
+    let bank = &funded.other_custody["bank"];
+    if bank["balance"].as_i64() != Some(BANK_FIXTURE_GOLD) {
+        return Err("step=funded-pre-state expected the exact nonzero bank fixture balance".into());
+    }
+    expected_funded.other_custody["bank"] = bank.clone();
     let ledger = &funded.other_custody["dust_ledger"];
     let Some([credit]) = ledger.as_array().map(Vec::as_slice) else {
         return Err("step=funded-pre-state expected exactly one fixture dust entry".into());
@@ -612,6 +681,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .clone();
     let funded_resources = wire::Resources {
         dust: FUNDED_DUST,
+        bank_gold: u64::try_from(BANK_FIXTURE_GOLD)?,
         ..resources
     };
     let checks = verdict::observe(async {
@@ -725,6 +795,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore = "requires a live G20 capture from the shared replay runner"]
     fn e2e_g20_funded_preview_replay() -> TestResult {
         #[derive(serde::Deserialize)]
         #[serde(deny_unknown_fields)]
@@ -736,9 +807,8 @@ mod tests {
             payload: Vec<u8>,
         }
 
-        let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-            return Ok(());
-        };
+        let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+            .ok_or("G20 replay requires E2E_ALL_CAPTURE_DIR")?;
         let data = std::fs::read(Path::new(&directory).join("g20-funded.json"))?;
         let envelope: Envelope = serde_json::from_slice(&data)?;
         assert!(!envelope.game_session_id.is_empty());
@@ -908,7 +978,12 @@ mod tests {
         let mut appended_dust = snapshot();
         appended_dust.other_custody["dust_ledger"] = serde_json::json!([{"amount":1}]);
         assert!(check_custody(&expected, &appended_dust).is_err());
-        for table in ["forge_history", "dust_limit_reservations", "dust_limit_receipts", "dust_limit_history"] {
+        for table in [
+            "forge_history",
+            "dust_limit_reservations",
+            "dust_limit_receipts",
+            "dust_limit_history",
+        ] {
             let mut changed = snapshot();
             changed.other_custody[table] = serde_json::json!([{"unexpected": true}]);
             assert!(check_custody(&expected, &changed).is_err(), "{table}");

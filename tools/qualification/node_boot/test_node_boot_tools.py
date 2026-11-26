@@ -781,31 +781,36 @@ class CloudRunSummaryTests(unittest.TestCase):
                     self.assertIn(f'cause={cause}', result.stdout)
                 self.assertEqual(result.stderr, '')
 
-    def test_g20_replay_rejects_a_frame_with_a_different_sequence(self):
+    def test_g20_replay_rejects_stale_sequence_and_substituted_payload(self):
+        import hashlib
+
         with tempfile.TemporaryDirectory() as temporary:
             capture = Path(temporary)
             log = capture / "node.log"
             session = "01890f4c-3b2a-7c01-8d11-9a321b7c0004"
+            digest = hashlib.sha256(bytes([1])).hexdigest()
             log.write_text(
                 "SEAM_EVIDENCE e2e_all scenario=G20.full status=PASS\n"
                 f"SEAM_EVIDENCE G20_FRAME game_session_id={session} "
-                "command_id=2 server_sequence=6 status=1\n"
+                f"command_id=2 server_sequence=6 status=1 payload_sha256={digest}\n"
             )
-            (capture / "g20-funded.json").write_text(json.dumps({
-                "game_session_id": session,
-                "command_id": 2,
-                "server_sequence": 7,
-                "status": 1,
-                "payload": [],
-            }))
-            result = subprocess.run(
-                [sys.executable, str(HERE / "client_replay.py"), str(log)],
-                env={**os.environ, "OTERYN_E2E_ROW_BATCH": "252:1",
-                     "E2E_ALL_CAPTURE_DIR": temporary},
-                capture_output=True, text=True,
-            )
-            self.assertEqual(result.returncode, 1, result.stderr)
-            self.assertIn("cause=capture-session-mismatch", result.stdout)
+            for sequence, payload in [(7, [1]), (6, [2])]:
+                with self.subTest(sequence=sequence, payload=payload):
+                    (capture / "g20-funded.json").write_text(json.dumps({
+                        "game_session_id": session,
+                        "command_id": 2,
+                        "server_sequence": sequence,
+                        "status": 1,
+                        "payload": payload,
+                    }))
+                    result = subprocess.run(
+                        [sys.executable, str(HERE / "client_replay.py"), str(log)],
+                        env={**os.environ, "OTERYN_E2E_ROW_BATCH": "252:1",
+                             "E2E_ALL_CAPTURE_DIR": temporary},
+                        capture_output=True, text=True,
+                    )
+                    self.assertEqual(result.returncode, 1, result.stderr)
+                    self.assertIn("cause=capture-session-mismatch", result.stdout)
 
     def test_world_seam_stage_rejects_invalid_batch_and_missing_verdict(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -922,6 +927,28 @@ class CloudRunSummaryTests(unittest.TestCase):
                 'CLOUD_RUN group=rows result=NODE_BOOT_FAIL seconds=0',
                 'ROWS-BEGIN', 'S18.client|FAIL|replay-not-run', 'N07d.client|PASS|', 'ROWS-END',
             ])
+
+    def test_g20_summary_requires_exactly_one_passing_replay(self):
+        live = (
+            "SEAM_EVIDENCE e2e_all scenario=G20.full status=PASS\n"
+            "NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged\n"
+        )
+        replay = "SEAM_EVIDENCE e2e_replay scenario=G20.full status="
+        for verdicts, status, reason in [
+            ("", "FAIL", "replay-missing"),
+            (replay + "FAIL cause=capture-missing\n", "FAIL", "capture-missing"),
+            ((replay + "PASS\n") * 2, "FAIL", "replay-duplicate"),
+            (replay + "PASS\n", "PASS", ""),
+        ]:
+            with self.subTest(verdicts=verdicts), tempfile.TemporaryDirectory() as tmp:
+                log = Path(tmp) / "node.log"
+                log.write_text(live + verdicts)
+                result = subprocess.run(
+                    ["bash", str(HERE / "cloud_run.sh"), "--summarize", str(log), "rows"],
+                    capture_output=True, text=True, check=True,
+                )
+                self.assertIn(f"result=NODE_BOOT_{status} ", result.stdout)
+                self.assertIn(f"G20|{status}|{reason}\n", result.stdout)
 
     def test_summary_uses_full_row_verdicts_and_limits_filtered_diagnostics(self):
         result = subprocess.run(
