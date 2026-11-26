@@ -1838,9 +1838,13 @@ n03_replay() {
     echo 'SEAM_EVIDENCE e2e_all scenario=N03.client status=FAIL evidence=missing-current-capture'
     return 1
   fi
-  session=$(sed -n 's/^session=//p' "$NODE_BOOT_N03_CAPTURE_DIR/n03-expected.txt")
+  session=$(sed -n 's/^SEAM_EVIDENCE e2e_capture scenario=N03\.client status=CAPTURED .*session=\([^ ]*\).*/\1/p' "$WORK/stage-seam_stages.log")
   if [[ ! "$session" =~ ^[[:xdigit:]]{8}(-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12}$ ]]; then
     echo 'SEAM_EVIDENCE e2e_all scenario=N03.client status=FAIL evidence=missing-capture-session'
+    return 1
+  fi
+  if [[ $(sed -n 's/^session=//p' "$NODE_BOOT_N03_CAPTURE_DIR/n03-expected.txt") != "$session" ]]; then
+    echo 'SEAM_EVIDENCE e2e_all scenario=N03.client status=FAIL evidence=capture-session-mismatch'
     return 1
   fi
   if ! (cd "$GAME_SOURCE" && E2E_ALL_CAPTURE_DIR="$NODE_BOOT_N03_CAPTURE_DIR" \
@@ -1869,10 +1873,8 @@ fi
 n03_selected=0
 if n03_replay_selected; then
   n03_selected=1
-  export NODE_BOOT_N03_CAPTURE_DIR="${E2E_ALL_CAPTURE_DIR:-$WORK/n03-capture}"
-  if [[ -z "${E2E_ALL_CAPTURE_DIR:-}" ]]; then
-    mkdir -- "$NODE_BOOT_N03_CAPTURE_DIR"
-  fi
+  export NODE_BOOT_N03_CAPTURE_DIR="$WORK/n03-capture"
+  mkdir -m 700 -- "$NODE_BOOT_N03_CAPTURE_DIR"
 fi
 
 seam_stage_name=seam_stages

@@ -413,11 +413,14 @@ class N03ReplayTests(unittest.TestCase):
             replay = ('test play::feature_0153_depot_search::view::native::e2e_n03::'
                       'e2e_n03_depot_list_retrieve_one_and_refusals ... ok')
             verified = f'{replay}\nN03_NATIVE_REPLAY session={session}'
+            current = f'SEAM_EVIDENCE e2e_capture scenario=N03.client status=CAPTURED session={session} evidence=item=1'
+            stale = current.replace(session, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb')
             for marker, outcome, expected in (
                 ('', replay, 1),
-                ('SEAM_EVIDENCE e2e_capture scenario=N03.client status=CAPTURED evidence=item=1', '', 1),
-                ('SEAM_EVIDENCE e2e_capture scenario=N03.client status=CAPTURED evidence=item=1', replay, 1),
-                ('SEAM_EVIDENCE e2e_capture scenario=N03.client status=CAPTURED evidence=item=1', verified, 0),
+                (current, '', 1),
+                (current, replay, 1),
+                (stale, verified, 1),
+                (current, verified, 0),
             ):
                 log.write_text(marker + '\n')
                 result = bash(script, {'TEST_RESULT': outcome}, temp)

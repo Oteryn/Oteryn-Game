@@ -253,7 +253,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )?;
     capture(capture_root, "n03-expected.txt", expected.as_bytes())?;
     Ok(format!(
-        "item={client_id} pages={} depot={} retrieved={}",
+        "session={capture_id} item={client_id} pages={} depot={} retrieved={}",
         pages.len(),
         row.depot,
         retrieved.retrieved
