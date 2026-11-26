@@ -610,6 +610,81 @@ class PgObserveTests(unittest.TestCase):
 
 
 class CloudRunSummaryTests(unittest.TestCase):
+    def test_client_replay_verdicts(self):
+        cases = [
+            (False, 0, 1, 'PASS', 'FAIL cause=capture-missing', False),
+            (True, 0, 0, 'PASS', 'FAIL cause=replay-not-run', True),
+            (True, 1, 0, 'PASS', 'FAIL cause=replay-failed', True),
+            (True, 0, 2, 'PASS', 'FAIL cause=replay-failed', True),
+            (True, 0, 1, None, 'FAIL cause=replay-not-run', False),
+            (True, 0, 1, 'FAIL', 'FAIL cause=server-failed', True),
+            (True, 0, 1, 'CAPTURED', 'PASS', True),
+            (True, 0, 1, 'PASS', 'PASS', True),
+        ]
+        for capture, exit_code, count, server, verdict, called in cases:
+            with self.subTest(capture=capture, exit_code=exit_code, count=count, server=server):
+                with tempfile.TemporaryDirectory() as tmp:
+                    work = Path(tmp)
+                    captures = work / 'captures'
+                    captures.mkdir()
+                    (captures / 'n07d-stale-for-s18.bin').write_bytes(b'unrelated')
+                    (captures / 's18-say.bin').write_bytes(b'fresh')
+                    if capture:
+                        for name in ('s18-whisper.bin', 's18-expected.txt'):
+                            (captures / name).write_bytes(b'fresh')
+                    log = work / 'node.log'
+                    kind = 'e2e_capture' if server == 'CAPTURED' else 'e2e_all'
+                    log.write_text(
+                        f'SEAM_EVIDENCE {kind} scenario=S18.client status={server}\n'
+                        if server else ''
+                    )
+                    cargo = work / 'cargo'
+                    cargo.write_text(
+                        '#!/bin/bash\n'
+                        'printf "%s\\n" "$E2E_ALL_CAPTURE_DIR" "$*" >> "${0}.calls"\n'
+                        'echo "test tests::e2e_s18::e2e_s18_say_and_whisper_echo_replay ... ok"\n'
+                        f'echo "test result: ok. {count} passed; 0 failed; 0 ignored"\n'
+                        f'exit {exit_code}\n'
+                    )
+                    cargo.chmod(0o700)
+                    result = subprocess.run(
+                        [sys.executable, str(HERE / 'client_replay.py'), str(log)],
+                        env={**os.environ, 'E2E_ALL_CAPTURE_DIR': str(captures),
+                             'CARGO': str(cargo), 'OTERYN_E2E_ROW_BATCH': '184:1'},
+                        capture_output=True, text=True,
+                    )
+                    self.assertEqual(result.returncode, int(verdict != 'PASS'), result.stderr)
+                    self.assertEqual(result.stdout.strip(),
+                                     'SEAM_EVIDENCE e2e_all scenario=S18.client '
+                                     f'replay=e2e_s18_say_and_whisper_echo_replay status={verdict}')
+                    calls = work / 'cargo.calls'
+                    self.assertEqual(calls.exists(), called)
+                    if called:
+                        self.assertEqual(calls.read_text().splitlines(), [
+                            str(captures),
+                            'test --locked -p oteryn-session --lib '
+                            'e2e_s18_say_and_whisper_echo_replay -- --nocapture',
+                        ])
+
+    def test_summary_counts_client_replay_verdict_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / 'node.log'
+            log.write_text(
+                'SEAM_EVIDENCE e2e_all scenario=S18.client status=PASS seconds=1.000\n'
+                'SEAM_EVIDENCE e2e_all scenario=S18.client replay=e2e_s18 status=FAIL cause=replay-not-run\n'
+                'SEAM_EVIDENCE e2e_capture scenario=N07d.client status=CAPTURED\n'
+                'SEAM_EVIDENCE e2e_all scenario=N07d.client replay=e2e_n07d status=PASS\n'
+                'NODE_BOOT_RESULT=NODE_BOOT_PASS\n'
+            )
+            result = subprocess.run(
+                ['bash', str(HERE / 'cloud_run.sh'), '--summarize', str(log), 'rows'],
+                capture_output=True, text=True, check=True,
+            )
+            self.assertEqual(result.stdout.splitlines(), [
+                'CLOUD_RUN group=rows result=NODE_BOOT_FAIL seconds=0',
+                'ROWS-BEGIN', 'S18.client|FAIL|replay-not-run', 'N07d.client|PASS|', 'ROWS-END',
+            ])
+
     def test_summary_uses_full_row_verdicts_and_limits_filtered_diagnostics(self):
         result = subprocess.run(
             ['bash', str(HERE / 'cloud_run.sh'), '--summarize',

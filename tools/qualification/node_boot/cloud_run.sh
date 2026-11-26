@@ -34,8 +34,17 @@ summarize() {
       if (tolower(reason) ~ /password|postgres:\/\/|postgresql:\/\/|secret|token|key=/) reason = ""
       gsub(/\|/, "_", reason)
       printf "%s|%s|%s\n", row, verdict, reason
+    }
+    $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
+      $3 ~ /^scenario=[[:alnum:]_.-]+\.client$/ && $4 ~ /^replay=[[:alnum:]_]+$/ &&
+      $5 ~ /^status=(PASS|FAIL)$/ {
+      reason = ($6 ~ /^cause=(capture-missing|replay-not-run|replay-failed|server-failed)$/ ? substr($6, 7) : "")
+      printf "%s|%s|%s\n", substr($3, 10), substr($5, 8), reason
     }' < "$log") || return 1
 
+  if [[ "$result" == NODE_BOOT_PASS ]] && grep -qE '^[^|]+\.client\|FAIL\|' <<< "$rows"; then
+    result=NODE_BOOT_FAIL
+  fi
   printf 'CLOUD_RUN group=%s result=%s seconds=%s\nROWS-BEGIN\n' "$group" "$result" "$seconds"
   [[ -z "$rows" ]] || printf '%s\n' "$rows"
   printf 'ROWS-END\n'
@@ -81,8 +90,22 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
-  NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
-    bash tools/qualification/node_boot/run.sh > "$log" 2>&1 || status=$?
+  if [[ "$group" == rows ]]; then
+    (
+      E2E_ALL_CAPTURE_DIR=$(mktemp -d "$work_dir/captures.XXXXXX") || exit 1
+      export E2E_ALL_CAPTURE_DIR
+      boot_status=0
+      NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
+        bash tools/qualification/node_boot/run.sh > "$log" 2>&1 || boot_status=$?
+      python3 tools/qualification/node_boot/client_replay.py "$log" \
+        | tee -a "$log"
+      replay_pipeline=("${PIPESTATUS[@]}")
+      (( boot_status == 0 && replay_pipeline[0] == 0 && replay_pipeline[1] == 0 ))
+    ) || status=$?
+  else
+    NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
+      bash tools/qualification/node_boot/run.sh > "$log" 2>&1 || status=$?
+  fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1
 done
