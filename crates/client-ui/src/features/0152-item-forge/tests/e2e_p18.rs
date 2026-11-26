@@ -57,14 +57,31 @@ fn operation(name: &str) -> Result<Operation, Box<dyn std::error::Error>> {
     })
 }
 
-#[derive(serde::Deserialize)]
-#[serde(deny_unknown_fields)]
 struct ForgeEnvelope {
     command_id: u64,
     game_session_id: String,
     payload: Vec<u8>,
     server_sequence: u64,
     status: u32,
+}
+
+fn read_envelope(file: std::fs::File) -> Result<ForgeEnvelope, Box<dyn std::error::Error>> {
+    let mut frame: serde_json::Map<String, serde_json::Value> = serde_json::from_reader(file)?;
+    if frame.len() != 5 {
+        return Err("Forge envelope must contain exactly five fields".into());
+    }
+    let mut take = |key| {
+        frame
+            .remove(key)
+            .ok_or_else(|| format!("Forge envelope lacks {key}"))
+    };
+    Ok(ForgeEnvelope {
+        command_id: serde_json::from_value(take("command_id")?)?,
+        game_session_id: serde_json::from_value(take("game_session_id")?)?,
+        payload: serde_json::from_value(take("payload")?)?,
+        server_sequence: serde_json::from_value(take("server_sequence")?)?,
+        status: serde_json::from_value(take("status")?)?,
+    })
 }
 
 fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
@@ -93,7 +110,7 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
     for (index, (command_id, server_sequence, submitted_bytes)) in requests.into_iter().enumerate()
     {
         let file = std::fs::File::open(root.join(format!("p18-frame-{index}.json")))?;
-        let envelope: ForgeEnvelope = serde_json::from_reader(file)?;
+        let envelope = read_envelope(file)?;
         let status = match envelope.status {
             1 => CommandStatus::Accepted,
             2 => CommandStatus::Rejected,
