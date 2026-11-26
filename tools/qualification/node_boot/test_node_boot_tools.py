@@ -298,7 +298,7 @@ WORK=.
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 28)
+        self.assertEqual(len(accounts), 29)
         self.assertEqual(len(set(accounts)), len(accounts))
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 
@@ -680,7 +680,7 @@ class CharacterBootstrapTests(unittest.TestCase):
                     S13_ACCOUNT=unused LIGHT_ACCOUNT_ID=unused EXIVA_ACCOUNT_ID=unused
                     F5_C17A_ACCOUNT=unused F5_C17C_ACCOUNT=unused
                     F5_C13_ACCOUNT=unused F5_C18A_ACCOUNT=unused F5_C17D_ACCOUNT=unused
-                    C11_UNASSIGNED_ACCOUNT=unused C11_KNIGHT_ACCOUNT=unused C12_MONK_ACCOUNT=unused
+                    C11_UNASSIGNED_ACCOUNT=unused C11_KNIGHT_ACCOUNT=unused C12_MONK_ACCOUNT=unused N02_ACCOUNT=unused
                     C06_CASTER_ACCOUNT=unused
                     statuses=({statuses})
                     calls=0
