@@ -3,8 +3,7 @@
 //! Concrete player scenario derived from the P11 matrix/re-audit row and the routed owner:
 //! 1. Admit the provisioned character and send account-achievement page 0; expect an accepted,
 //!    internally consistent page and an achievement-notice watermark snapshot.
-//! 2. Refuse malformed query bytes at the local codec boundary without submission, then
-//!    re-query unchanged state. The typed core API cannot submit a malformed wire query.
+//! 2. Assert the live malformed-query refusal and unchanged pre-grant state.
 //! 3. Check page boundaries and re-admit the same character to verify the query
 //!    remains stable. A grant requires a reachable authored source and its notice.
 use super::*;
@@ -590,6 +589,7 @@ async fn journey(
     core: &SeamClients<'_>,
     placed_at: &std::cell::Cell<Option<std::time::Instant>>,
 ) -> TestResult {
+    client_row_p11::malformed_live(clients, 1).await?;
     let proof = earn_and_logout(clients, core, placed_at).await?;
     let mut fresh = connect_world(clients, 0xc2).await?;
     if fresh.join_snapshot().game_session_id.as_bytes() == &proof.session
@@ -598,7 +598,7 @@ async fn journey(
         return Err("step=relogin durable achievement page changed".into());
     }
     logout(&mut fresh).await?;
-    Err("step=coverage observed=bounded-grant-relogin-validated;unproven=malformed-core-command-10-wire-refusal;source=crates/session/src/account_achievements.rs:18".into())
+    Ok(())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {

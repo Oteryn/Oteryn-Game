@@ -235,7 +235,7 @@ async fn read_wire_frame(stream: &mut (impl AsyncRead + Unpin)) -> TestResult<Ve
     Ok(bytes)
 }
 
-async fn malformed_live(clients: &SeamClients<'_>, index: usize) -> TestResult {
+pub(super) async fn malformed_live(clients: &SeamClients<'_>, index: usize) -> TestResult {
     use oteryn_protocol_oteryn::{
         MessageType, decode_command_result, decode_server_accepted, logout,
     };
