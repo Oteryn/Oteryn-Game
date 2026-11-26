@@ -309,3 +309,248 @@ impl crate::play::Outbox {
         crate::play::mailbox::lock(&self.0).discovery.teams.selected = true;
     }
 }
+
+#[test]
+#[ignore = "requires this run's I07 node-boot capture"]
+fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::chat::NoticeScope;
+    use oteryn_client_ui::quick_loot::*;
+    use oteryn_session::{CommandStatus, GatedCommandResult};
+    use std::collections::BTreeMap;
+
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Expected {
+        skip: u32,
+        accept: u32,
+        pouch: [u8; 16],
+        corpse: [u8; 16],
+        stacked: [u8; 16],
+        coin: [u8; 16],
+        armor: [u8; 16],
+        filtered: [u8; 16],
+        other: [u8; 16],
+    }
+
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Reply {
+        command_id: u64,
+        game_session_id: String,
+        payload: Vec<u8>,
+        server_sequence: u64,
+        status: u32,
+    }
+
+    let directory = std::path::PathBuf::from(
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("I07 replay requires a fresh capture")?,
+    );
+    let expected: Expected =
+        serde_json::from_slice(&std::fs::read(directory.join("i07-expected.txt"))?)?;
+    let route = |category, recipient, id, fallback| Action::Destination {
+        category,
+        recipient,
+        id,
+        fallback,
+    };
+    let gold = route(
+        Some(QuickLootCategory::Gold),
+        QuickLootRecipient::GoldPouch,
+        Some(expected.pouch),
+        false,
+    );
+    let armor = |fallback| {
+        route(
+            Some(QuickLootCategory::Armor),
+            QuickLootRecipient::GoldPouch,
+            Some(expected.pouch),
+            fallback,
+        )
+    };
+    let main = route(None, QuickLootRecipient::MainContainer, None, false);
+    let click = Action::Corpse(expected.corpse);
+    let skip = QuickLootFilterMode::Skip;
+    let accept = QuickLootFilterMode::Accept;
+    let steps: [(Action, &[([u8; 16], bool)], Option<&str>); 15] = [
+        (
+            Action::Add {
+                mode: skip,
+                definition: expected.skip,
+            },
+            &[],
+            None,
+        ),
+        (
+            Action::Add {
+                mode: accept,
+                definition: expected.accept,
+            },
+            &[],
+            None,
+        ),
+        (
+            Action::Add {
+                mode: accept,
+                definition: expected.skip,
+            },
+            &[],
+            None,
+        ),
+        (main.clone(), &[], None),
+        (gold.clone(), &[], None),
+        (armor(false), &[], None),
+        (
+            Action::LootAll,
+            &[
+                (expected.coin, true),
+                (expected.armor, false),
+                (expected.filtered, false),
+                (expected.other, false),
+            ],
+            Some("Looted 1 of 4 items"),
+        ),
+        (armor(true), &[], None),
+        (
+            click.clone(),
+            &[(expected.armor, true), (expected.filtered, false)],
+            Some("Looted 1 of 2 items"),
+        ),
+        (Action::Select(skip), &[], None),
+        (
+            click,
+            &[(expected.filtered, true)],
+            Some("Looted 1 of 1 items"),
+        ),
+        (
+            route(
+                None,
+                QuickLootRecipient::GoldPouch,
+                Some(expected.pouch),
+                false,
+            ),
+            &[],
+            None,
+        ),
+        (
+            Action::Corpse(expected.stacked),
+            &[(expected.other, false)],
+            Some("Looted 0 of 1 items"),
+        ),
+        (main.clone(), &[], None),
+        (
+            Action::Corpse(expected.stacked),
+            &[(expected.other, true)],
+            Some("Looted 1 of 1 items"),
+        ),
+    ];
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    crate::play::mailbox::lock(&link.mailbox)
+        .local_preferences
+        .game_window
+        .loot_messages = true;
+    outbox.discovery_initialize(&Selected);
+    let mut sessions = [String::new(), String::new()];
+    let mut previous = (0, 0);
+    for (index, (action, expected_items, notice)) in steps.into_iter().enumerate() {
+        let key = index + 1;
+        let session_index = usize::from(key >= 9);
+        if key == 9 {
+            outbox.discovery_initialize(&Selected);
+            previous = (0, 0);
+            let panel = link.discovery_panel().loot;
+            assert!(panel.confirmed.is_empty() && panel.destinations.is_empty());
+        }
+        let reply: Reply =
+            serde_json::from_slice(&std::fs::read(directory.join(format!("i07-{key}.json")))?)?;
+        assert_eq!(
+            reply.status,
+            CommandStatus::Accepted as u32,
+            "I07 probe {key}"
+        );
+        assert!(
+            reply.command_id > previous.0 && reply.server_sequence > previous.1,
+            "I07 probe {key}"
+        );
+        previous = (reply.command_id, reply.server_sequence);
+        if key == 1 || key == 9 {
+            sessions[session_index].clone_from(&reply.game_session_id);
+        }
+        assert_eq!(
+            reply.game_session_id, sessions[session_index],
+            "I07 probe {key}"
+        );
+        assert!(link.quick_loot_action(action), "I07 probe {key}");
+        let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+            return Err("I07 client queued the wrong command".into());
+        };
+        assert_eq!((command.capability, command.command_type), (98, 114));
+        assert_eq!(
+            command.payload,
+            std::fs::read(directory.join(format!("i07-{key}-request.bin")))?,
+            "I07 probe {key}"
+        );
+        let notices = || {
+            let mailbox = crate::play::mailbox::lock(&link.mailbox);
+            let console = &mailbox.chat.console;
+            console
+                .notices
+                .scoped_text(console.filters, console.display, NoticeScope::LootOnly)
+        };
+        let before = notices();
+        outbox.discovery_result(
+            98,
+            &GatedCommandResult {
+                command_id: reply.command_id,
+                server_sequence: reply.server_sequence,
+                status: CommandStatus::Accepted,
+                payload: reply.payload,
+            },
+        );
+        let panel = link.discovery_panel().loot;
+        assert_eq!(panel.pending, None);
+        assert_eq!(panel.feedback, "Confirmed by the server");
+        let items = &panel
+            .result
+            .ok_or("I07 client omitted the loot result")?
+            .items;
+        assert_eq!(items.len(), expected_items.len());
+        assert_eq!(
+            items
+                .iter()
+                .map(|item| (item.item, item.accepted))
+                .collect::<BTreeMap<_, _>>(),
+            expected_items.iter().copied().collect(),
+            "I07 probe {key}"
+        );
+        let after = notices();
+        assert_eq!(
+            after.matches("[Loot]").count(),
+            before.matches("[Loot]").count() + usize::from(notice.is_some())
+        );
+        if let Some(notice) = notice {
+            assert!(
+                after
+                    .lines()
+                    .last()
+                    .is_some_and(|line| line.ends_with(notice))
+            );
+        }
+        if key == 8 {
+            assert_eq!(panel.skipped, [expected.skip].into_iter().collect());
+            assert_eq!(
+                panel.accepted,
+                [expected.accept, expected.skip].into_iter().collect()
+            );
+            assert_eq!(
+                panel.destinations,
+                [main.clone(), gold.clone(), armor(true)]
+            );
+        }
+    }
+    assert_ne!(sessions[0], sessions[1]);
+    println!(
+        "I07_NATIVE_REPLAY session={} relog={}",
+        sessions[0], sessions[1]
+    );
+    Ok(())
+}

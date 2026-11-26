@@ -138,27 +138,39 @@ struct Placement {
     slot: i64,
 }
 
+#[derive(Debug, Clone, Copy)]
+enum Storage {
+    Corpse,
+    Backpack,
+    InboxPouch,
+}
+
 async fn placements(
     database: &mut sqlx::PgConnection,
+    storage: Storage,
+    owner: &[u8],
     parent: &[u8],
 ) -> TestResult<Vec<Placement>> {
-    let rows: Vec<(Vec<u8>, String, i64, i64)> = sqlx::query_as(
+    let (table, ownership) = match storage {
+        Storage::Corpse => ("game_item_corpse_container_entries", ""),
+        Storage::Backpack => (
+            "game_item_container_entries",
+            "AND e.character_id=encode($2,'hex')::uuid",
+        ),
+        Storage::InboxPouch => ("game_item_nested_entries", ""),
+    };
+    let query = format!(
         "SELECT uuid_send(i.item_instance_id), i.definition_production_key, i.quantity, e.placement_ordinal::bigint
-         FROM (
-             SELECT item_instance_id, placement_ordinal FROM game_item_corpse_container_entries
-                WHERE parent_item_instance_id=encode($1,'hex')::uuid
-             UNION ALL
-             SELECT item_instance_id, placement_ordinal FROM game_item_container_entries
-                WHERE parent_item_instance_id=encode($1,'hex')::uuid
-             UNION ALL
-             SELECT item_instance_id, placement_ordinal FROM game_item_nested_entries
-                WHERE parent_item_instance_id=encode($1,'hex')::uuid
-         ) e JOIN game_item_instances i USING (item_instance_id)
-         WHERE i.lifecycle=1 ORDER BY e.placement_ordinal LIMIT 501",
-    )
-    .bind(parent)
-    .fetch_all(database)
-    .await?;
+         FROM {table} e JOIN game_item_instances i USING (item_instance_id, world_id)
+         WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 {ownership}
+         ORDER BY e.placement_ordinal LIMIT 501"
+    );
+    let mut query =
+        sqlx::query_as::<_, (Vec<u8>, String, i64, i64)>(sqlx::AssertSqlSafe(query)).bind(parent);
+    if matches!(storage, Storage::Backpack) {
+        query = query.bind(owner);
+    }
+    let rows = query.fetch_all(database).await?;
     if rows.len() > 500 {
         return Err("I07 placement snapshot exceeded its bound".into());
     }
@@ -175,53 +187,156 @@ async fn placements(
 
 async fn require_placements(
     database: &mut sqlx::PgConnection,
+    storage: Storage,
+    owner: &[u8],
     parent: &[u8],
     expected: &[Placement],
 ) -> TestResult {
-    let actual = placements(database, parent).await?;
+    let actual = placements(database, storage, owner, parent).await?;
     if actual != expected {
         return Err(
-            format!("I07 container delta: expected={expected:?} observed={actual:?}").into(),
+            format!("I07 {storage:?} custody: expected={expected:?} observed={actual:?}").into(),
         );
     }
     Ok(())
+}
+
+async fn owned_containers(
+    database: &mut sqlx::PgConnection,
+    character: &[u8],
+    world: &[u8],
+) -> TestResult<([u8; 16], [u8; 16])> {
+    let pouch: Vec<Vec<u8>> = sqlx::query_scalar(
+        "SELECT uuid_send(i.item_instance_id) FROM game_item_character_inbox_locations l
+         JOIN game_item_instances i USING (item_instance_id, world_id)
+         WHERE l.character_id=encode($1,'hex')::uuid AND l.world_id=encode($2,'hex')::uuid
+           AND i.lifecycle=1 AND i.quantity=1 AND i.definition_production_key='oteryn:item.tibia.i23721' LIMIT 2",
+    ).bind(character).bind(world).fetch_all(&mut *database).await?;
+    let [pouch] = pouch.as_slice() else {
+        return Err("I07 must own exactly one live Gold Pouch in the Inbox".into());
+    };
+    let backpack: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(i.item_instance_id) FROM game_item_container_slots s
+         JOIN game_item_instances i USING (item_instance_id, world_id)
+         WHERE s.character_id=encode($1,'hex')::uuid AND s.world_id=encode($2,'hex')::uuid
+           AND i.lifecycle=1 AND i.quantity=1",
+    )
+    .bind(character)
+    .bind(world)
+    .fetch_one(database)
+    .await?;
+    Ok((
+        pouch.as_slice().try_into()?,
+        backpack.as_slice().try_into()?,
+    ))
 }
 
 async fn require_routes(
     database: &mut sqlx::PgConnection,
     character: &[u8],
     pouch: &[u8],
+    fallback: bool,
 ) -> TestResult {
-    let route: bool = sqlx::query_scalar(
-        "SELECT EXISTS (
-          SELECT 1 FROM game_character_quick_loot_settings s
-          JOIN game_character_quick_loot_categories c USING (character_id)
-          WHERE s.character_id=encode($1,'hex')::uuid AND s.accept_only AND s.fallback_to_main
-            AND s.unassigned_gold_pouch AND s.unassigned_container_id=encode($2,'hex')::uuid
-            AND c.gold_pouch AND c.category=0 AND c.container_id=s.unassigned_container_id)",
-    )
-    .bind(character)
-    .bind(pouch)
-    .fetch_one(database)
-    .await?;
-    if !route {
-        return Err("I07 durable Gold and unassigned pouch routing differs".into());
+    let settings: (bool, bool, bool, Option<Vec<u8>>) = sqlx::query_as(
+        "SELECT accept_only, fallback_to_main, unassigned_gold_pouch, uuid_send(unassigned_container_id)
+         FROM game_character_quick_loot_settings WHERE character_id=encode($1,'hex')::uuid",
+    ).bind(character).fetch_one(&mut *database).await?;
+    let routes: Vec<(i16, bool, Option<Vec<u8>>)> = sqlx::query_as(
+        "SELECT category, gold_pouch, uuid_send(container_id)
+         FROM game_character_quick_loot_categories WHERE character_id=encode($1,'hex')::uuid ORDER BY category",
+    ).bind(character).fetch_all(database).await?;
+    if settings != (true, fallback, false, None)
+        || routes
+            != [
+                (0, true, Some(pouch.to_vec())),
+                (5, true, Some(pouch.to_vec())),
+            ]
+    {
+        return Err(format!(
+            "I07 durable routing differs: settings={settings:?} routes={routes:?}"
+        )
+        .into());
     }
     Ok(())
+}
+
+struct Capture<'a> {
+    directory: &'a Path,
+    previous: (u64, u64),
+}
+
+impl Capture<'_> {
+    async fn probe(
+        &mut self,
+        client: &mut oteryn_dev_client::DevClientSession,
+        key: usize,
+        request: QuickLootRequest,
+        expected: &[(&Placement, bool)],
+    ) -> TestResult {
+        let payload = encode_quick_loot_request(&request).map_err(|error| format!("{error:?}"))?;
+        let session = client.join_snapshot().game_session_id;
+        let reply = client
+            .session_mut()
+            .gated_command(98, 114, &payload)
+            .await?;
+        if reply.status != CommandStatus::Accepted
+            || client.join_snapshot().game_session_id != session
+            || reply.command_id <= self.previous.0
+            || reply.server_sequence <= self.previous.1
+        {
+            return Err(format!(
+                "I07 first probe {key} {request:?} refused or misbound: {reply:?}"
+            )
+            .into());
+        }
+        self.previous = (reply.command_id, reply.server_sequence);
+        let result =
+            decode_quick_loot_result(&reply.payload).map_err(|error| format!("{error:?}"))?;
+        let actual: std::collections::BTreeMap<_, _> = result
+            .items
+            .iter()
+            .map(|item| (item.item.as_slice(), item.accepted))
+            .collect();
+        let expected: std::collections::BTreeMap<_, _> = expected
+            .iter()
+            .map(|(item, accepted)| (item.item.as_slice(), *accepted))
+            .collect();
+        if actual != expected || result.items.len() != expected.len() {
+            return Err(format!(
+                "I07 probe {key} outcomes differ: expected={expected:?} actual={actual:?}"
+            )
+            .into());
+        }
+        write_capture(
+            &self.directory.join(format!("i07-{key}-request.bin")),
+            &payload,
+        )?;
+        write_capture(
+            &self.directory.join(format!("i07-{key}.json")),
+            &capture_envelope(
+                session.as_bytes(),
+                reply.command_id,
+                reply.server_sequence,
+                reply.status,
+                &reply.payload,
+            )?,
+        )?;
+        Ok(())
+    }
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     use sqlx::Connection as _;
     const FILTERS: [(bool, &str); 2] = [
         (false, "oteryn:item.tibia.i3031"),
-        (true, "oteryn:item.tibia.i3350"),
+        (true, "oteryn:item.tibia.i3357"),
     ];
     let capture_dir = std::env::var_os("E2E_ALL_CAPTURE_DIR")
         .ok_or("I07 requires a fresh E2E_ALL_CAPTURE_DIR")?;
     let capture_dir = Path::new(&capture_dir);
     let index = provisioning::item_index()?;
     let skip_reference = provisioning::item_reference(&index, 3031)?.get();
-    let accept_reference = provisioning::item_reference(&index, 3350)?.get();
+    let accept_reference = provisioning::item_reference(&index, 3357)?.get();
     let dedicated = character_prep::dedicated_named_character(
         clients,
         "NODE_BOOT_I07_ACCOUNT",
@@ -246,6 +361,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "i07-loot".into(),
     )
     .await?;
+    evidence("FIXTURE I07 premium=granted purpose=category_prerequisite");
     let character = &clients.characters[1];
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     require_filters(&mut database, character, false, &[]).await?;
@@ -265,247 +381,380 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut accept = request(QuickLootAction::FilterAdd);
     accept.filter_mode = Some(QuickLootFilterMode::Accept);
     accept.filter_definition_ref = Some(accept_reference);
-    let pouch_ids: Vec<Vec<u8>> = sqlx::query_scalar(
-        "SELECT uuid_send(i.item_instance_id) FROM game_item_character_inbox_locations l
-         JOIN game_item_instances i USING (item_instance_id, world_id)
-         WHERE l.character_id=encode($1,'hex')::uuid AND i.lifecycle=1
-           AND i.definition_production_key='oteryn:item.tibia.i23721' LIMIT 2",
-    )
-    .bind(character.as_slice())
-    .fetch_all(&mut database)
-    .await?;
-    let [pouch_id] = pouch_ids.as_slice() else {
-        return Err(format!(
-            "I07 needs exactly one real Inbox Gold Pouch; found {}",
-            pouch_ids.len()
-        )
-        .into());
-    };
-    let pouch_id: [u8; 16] = pouch_id.as_slice().try_into()?;
-    let corpse: Vec<u8> = sqlx::query_scalar(
-        "SELECT uuid_send(item_instance_id) FROM game_item_mint_receipts
+    let (pouch, backpack) = owned_containers(&mut database, character, &clients.world).await?;
+    let corpses: Vec<Vec<u8>> = sqlx::query_scalar(
+        "SELECT uuid_send(r.item_instance_id) FROM game_item_mint_receipts r
+         JOIN game_item_ground_locations g USING (item_instance_id)
          WHERE death_world_id=encode($1,'hex')::uuid AND death_channel_id=encode($2,'hex')::uuid
            AND death_scope_ownership_generation=$3::text::numeric
            AND corpse_top_damage_character_id=encode($4,'hex')::uuid
            AND loot_table_production_key='oteryn:qualification.i07.loot'
-           AND loot_purpose_key='CORPSE_MATERIALIZATION' AND draw_ordinal=0",
+           AND loot_purpose_key='CORPSE_MATERIALIZATION' AND draw_ordinal=0
+           AND g.spatial_position=$5
+         ORDER BY (SELECT count(*) FROM game_item_corpse_container_entries e
+                   WHERE e.parent_item_instance_id=r.item_instance_id) DESC, r.item_instance_id
+         LIMIT 3",
     )
     .bind(clients.world.as_slice())
     .bind(clients.channel.as_slice())
     .bind(clients.scope_generation.to_string())
     .bind(character.as_slice())
-    .fetch_one(&mut database)
-    .await?;
-    let ground: Vec<u8> = sqlx::query_scalar(
-        "SELECT spatial_position FROM game_item_ground_locations
-         WHERE item_instance_id=encode($1,'hex')::uuid",
+    .bind(
+        [
+            admitted_position.x.to_be_bytes().as_slice(),
+            admitted_position.y.to_be_bytes().as_slice(),
+            admitted_position.floor.to_be_bytes().as_slice(),
+        ]
+        .concat(),
     )
-    .bind(&corpse)
-    .fetch_one(&mut database)
+    .fetch_all(&mut database)
     .await?;
-    let expected_ground = [
-        admitted_position.x.to_be_bytes().as_slice(),
-        admitted_position.y.to_be_bytes().as_slice(),
-        admitted_position.floor.to_be_bytes().as_slice(),
-    ]
-    .concat();
-    if ground != expected_ground {
-        return Err(format!(
-            "I07 fixture corpse ground location differs: expected={expected_ground:?} observed={ground:?}"
-        )
-        .into());
-    }
-    let backpack: Vec<u8> = sqlx::query_scalar(
-        "SELECT uuid_send(item_instance_id) FROM game_item_container_slots
-         WHERE character_id=encode($1,'hex')::uuid",
-    )
-    .bind(character.as_slice())
-    .fetch_one(&mut database)
-    .await?;
-    let before = placements(&mut database, &corpse).await?;
+    let [corpse, stacked] = corpses.as_slice() else {
+        return Err("I07 requires both fixture corpses on the admitted floor and tile".into());
+    };
+    let corpse_id = corpse.as_slice().try_into()?;
+    let before = placements(&mut database, Storage::Corpse, character, corpse).await?;
+    let stacked_before = placements(&mut database, Storage::Corpse, character, stacked).await?;
+    let ([coin, armor, filtered], [other]) = (before.as_slice(), stacked_before.as_slice()) else {
+        return Err("I07 fixture corpse count differs".into());
+    };
     if !before
         .iter()
+        .chain(&stacked_before)
         .map(|row| (row.key.as_str(), row.quantity, row.slot))
         .eq([
             ("oteryn:item.tibia.i3031", 7, 1),
-            ("oteryn:item.tibia.i3350", 1, 2),
+            ("oteryn:item.tibia.i3357", 1, 2),
             ("oteryn:item.tibia.i3577", 1, 3),
+            ("oteryn:item.tibia.i3578", 1, 1),
         ])
     {
-        return Err(format!("I07 seeded corpse inputs differ: {before:?}").into());
+        return Err("I07 fixture item definition, count or slot differs".into());
     }
-    let [coin, armor, filtered] = before.as_slice() else {
-        return Err("I07 needs exactly three seeded corpse items".into());
-    };
-    let mut expected_backpack = placements(&mut database, &backpack).await?;
-    require_placements(&mut database, &pouch_id, &[]).await?;
+    let mut expected_backpack =
+        placements(&mut database, Storage::Backpack, character, &backpack).await?;
+    require_placements(&mut database, Storage::InboxPouch, character, &pouch, &[]).await?;
     let mut bag_armor = armor.clone();
     bag_armor.slot = expected_backpack.last().map_or(1, |item| item.slot + 1);
-    expected_backpack.push(bag_armor);
-    let expected_pouch = [coin.clone()];
-    let remaining = [filtered.clone()];
+    let mut pouch_coin = coin.clone();
+    pouch_coin.slot = 1;
+    let expected_pouch = [pouch_coin];
     let expected_filters = [FILTERS[0], (true, "oteryn:item.tibia.i3031"), FILTERS[1]];
     let original_session = client.join_snapshot().game_session_id;
     let session = uuid_text(original_session.as_bytes());
-    let mut pouch = request(QuickLootAction::Assign);
-    pouch.category = Some(QuickLootCategory::Gold);
-    pouch.recipient = Some(QuickLootRecipient::GoldPouch);
-    pouch.recipient_id = Some(pouch_id);
-    pouch.fallback_to_main = true;
-    let requests = [skip, accept, pouch, request(QuickLootAction::LootAll)];
-    let mut item_count = 0;
-    let mut previous = (0, 0);
-    for (index, request) in requests.into_iter().enumerate() {
-        let payload = encode_quick_loot_request(&request).map_err(|error| format!("{error:?}"))?;
-        let reply = client
-            .session_mut()
-            .gated_command(98, 114, &payload)
-            .await?;
-        if reply.status != CommandStatus::Accepted {
-            return Err(format!(
-                "I07 probe {} {:?} refused: {:?}",
-                index + 1,
-                request.action,
-                reply.status
-            )
-            .into());
-        }
-        if client.join_snapshot().game_session_id != original_session
-            || reply.command_id <= previous.0
-            || reply.server_sequence <= previous.1
-        {
-            return Err("I07 probe reply does not advance the same live session".into());
-        }
-        previous = (reply.command_id, reply.server_sequence);
-        if index == 0 {
-            require_filters(&mut database, character, false, &FILTERS[..1]).await?;
-        } else if index == 1 {
-            require_filters(&mut database, character, true, &FILTERS).await?;
-        }
-        if index == 1 {
-            let coin_filter = QuickLootRequest {
+    let mut capture = Capture {
+        directory: capture_dir,
+        previous: (0, 0),
+    };
+    let route = |category, recipient, recipient_id, fallback_to_main| QuickLootRequest {
+        category,
+        recipient: Some(recipient),
+        recipient_id,
+        fallback_to_main,
+        ..request(QuickLootAction::Assign)
+    };
+    let armor_route = |fallback| {
+        route(
+            Some(QuickLootCategory::Armor),
+            QuickLootRecipient::GoldPouch,
+            Some(pouch),
+            fallback,
+        )
+    };
+    let gold_route = route(
+        Some(QuickLootCategory::Gold),
+        QuickLootRecipient::GoldPouch,
+        Some(pouch),
+        false,
+    );
+    let unassigned = route(None, QuickLootRecipient::MainContainer, None, false);
+
+    capture.probe(&mut client, 1, skip, &[]).await?;
+    require_filters(&mut database, character, false, &FILTERS[..1]).await?;
+    capture.probe(&mut client, 2, accept, &[]).await?;
+    require_filters(&mut database, character, true, &FILTERS).await?;
+    capture
+        .probe(
+            &mut client,
+            3,
+            QuickLootRequest {
                 filter_definition_ref: Some(skip_reference),
                 ..accept
-            };
-            let unassigned_pouch = QuickLootRequest {
-                category: None,
-                ..pouch
-            };
-            for (key, extra) in [(5, coin_filter), (6, unassigned_pouch)] {
-                let payload =
-                    encode_quick_loot_request(&extra).map_err(|error| format!("{error:?}"))?;
-                let extra_reply = client
-                    .session_mut()
-                    .gated_command(98, 114, &payload)
-                    .await?;
-                if extra_reply.status != CommandStatus::Accepted {
-                    return Err(format!(
-                        "I07 supporting {:?} refused: {:?}",
-                        extra.action, extra_reply.status
-                    )
-                    .into());
-                }
-                if client.join_snapshot().game_session_id != original_session
-                    || extra_reply.command_id <= previous.0
-                    || extra_reply.server_sequence <= previous.1
-                {
-                    return Err(
-                        "I07 supporting reply does not advance the same live session".into(),
-                    );
-                }
-                previous = (extra_reply.command_id, extra_reply.server_sequence);
-                write_capture(
-                    &capture_dir.join(format!("i07-{key}-request.bin")),
-                    &payload,
-                )?;
-                write_capture(
-                    &capture_dir.join(format!("i07-{key}.json")),
-                    &capture_envelope(
-                        original_session.as_bytes(),
-                        extra_reply.command_id,
-                        extra_reply.server_sequence,
-                        extra_reply.status,
-                        &extra_reply.payload,
-                    )?,
-                )?;
-            }
-            require_filters(&mut database, character, true, &expected_filters).await?;
-        }
-        if index == 2 {
-            require_routes(&mut database, character, &pouch_id).await?;
-        }
-        if request.action == QuickLootAction::LootAll {
-            let result = decode_quick_loot_result(&reply.payload)
-                .map_err(|error| format!("quick-loot reply: {error:?}"))?
-                .items;
-            let moved: std::collections::BTreeMap<_, _> = result
-                .iter()
-                .map(|item| (item.item.as_slice(), item.accepted))
-                .collect();
-            let expected = [
-                (coin.item.as_slice(), true),
-                (armor.item.as_slice(), true),
-                (filtered.item.as_slice(), false),
-            ]
-            .into_iter()
-            .collect();
-            if result.len() != 3 || moved != expected {
-                return Err(format!("I07 LootAll item outcomes differ: {result:?}").into());
-            }
-            item_count = result.len();
-            require_placements(&mut database, &corpse, &remaining).await?;
-            require_placements(&mut database, &pouch_id, &expected_pouch).await?;
-            require_placements(&mut database, &backpack, &expected_backpack).await?;
-            evidence("I07_LOOT_CUSTODY pouch=3031x7@1 backpack=3350x1 filtered=3577x1@3");
-        }
-        let key = index + 1;
-        write_capture(
-            &capture_dir.join(format!("i07-{key}-request.bin")),
-            &payload,
-        )?;
-        write_capture(
-            &capture_dir.join(format!("i07-{key}.json")),
-            &capture_envelope(
-                original_session.as_bytes(),
-                reply.command_id,
-                reply.server_sequence,
-                reply.status,
-                &reply.payload,
-            )?,
-        )?;
+            },
+            &[],
+        )
+        .await?;
+    require_filters(&mut database, character, true, &expected_filters).await?;
+    for (key, request) in [(4, unassigned), (5, gold_route), (6, armor_route(false))] {
+        capture.probe(&mut client, key, request, &[]).await?;
     }
+    require_routes(&mut database, character, &pouch, false).await?;
+    capture
+        .probe(
+            &mut client,
+            7,
+            request(QuickLootAction::LootAll),
+            &[
+                (coin, true),
+                (armor, false),
+                (filtered, false),
+                (other, false),
+            ],
+        )
+        .await?;
+    let remaining = [armor.clone(), filtered.clone()];
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        corpse,
+        &remaining,
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        stacked,
+        &stacked_before,
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::InboxPouch,
+        character,
+        &pouch,
+        &expected_pouch,
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::Backpack,
+        character,
+        &backpack,
+        &expected_backpack,
+    )
+    .await?;
+    evidence(
+        "I07_LOOT_CUSTODY fallback=off gold=pouch armor=refused unassigned=main stacked=retained",
+    );
+
+    capture
+        .probe(&mut client, 8, armor_route(true), &[])
+        .await?;
+    require_routes(&mut database, character, &pouch, true).await?;
+    require_logout(&mut client).await?;
+    drop(client);
+    let mut fresh = connect_world(clients, 0x07).await?;
+    let fresh_session = fresh.join_snapshot().game_session_id;
+    if fresh_session == original_session
+        || owned_containers(&mut database, character, &clients.world).await? != (pouch, backpack)
+    {
+        return Err("I07 relog changed the original Inbox pouch or equipped backpack custody, or reused a session".into());
+    }
+    require_filters(&mut database, character, true, &expected_filters).await?;
+    require_routes(&mut database, character, &pouch, true).await?;
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        corpse,
+        &remaining,
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        stacked,
+        &stacked_before,
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::InboxPouch,
+        character,
+        &pouch,
+        &expected_pouch,
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::Backpack,
+        character,
+        &backpack,
+        &expected_backpack,
+    )
+    .await?;
+    capture.previous = (0, 0);
+    let click = QuickLootRequest {
+        corpse: Some(corpse_id),
+        ..request(QuickLootAction::Click)
+    };
+    capture
+        .probe(&mut fresh, 9, click, &[(armor, true), (filtered, false)])
+        .await?;
+    expected_backpack.push(bag_armor);
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        corpse,
+        std::slice::from_ref(filtered),
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        stacked,
+        &stacked_before,
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::InboxPouch,
+        character,
+        &pouch,
+        &expected_pouch,
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::Backpack,
+        character,
+        &backpack,
+        &expected_backpack,
+    )
+    .await?;
+    evidence(
+        "I07_LOOT_CUSTODY fallback=on relog=true armor=backpack filtered=corpse stacked=retained",
+    );
+
+    capture
+        .probe(
+            &mut fresh,
+            10,
+            QuickLootRequest {
+                filter_mode: Some(QuickLootFilterMode::Skip),
+                ..request(QuickLootAction::FilterSelect)
+            },
+            &[],
+        )
+        .await?;
+    require_filters(&mut database, character, false, &expected_filters).await?;
+    capture
+        .probe(&mut fresh, 11, click, &[(filtered, true)])
+        .await?;
+    let mut bag_filtered = filtered.clone();
+    bag_filtered.slot = expected_backpack
+        .last()
+        .ok_or("I07 backpack lost armor")?
+        .slot
+        + 1;
+    expected_backpack.push(bag_filtered);
+    require_placements(&mut database, Storage::Corpse, character, corpse, &[]).await?;
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        stacked,
+        &stacked_before,
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::Backpack,
+        character,
+        &backpack,
+        &expected_backpack,
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::InboxPouch,
+        character,
+        &pouch,
+        &expected_pouch,
+    )
+    .await?;
+    // Route the otherwise unclassified food to the coin-only pouch with fallback off.
+    // Ignoring this assignment would silently move it to the default backpack.
+    let stacked_click = QuickLootRequest {
+        corpse: Some(stacked.as_slice().try_into()?),
+        ..request(QuickLootAction::Click)
+    };
+    let unassigned_pouch = route(None, QuickLootRecipient::GoldPouch, Some(pouch), false);
+    capture.probe(&mut fresh, 12, unassigned_pouch, &[]).await?;
+    capture
+        .probe(&mut fresh, 13, stacked_click, &[(other, false)])
+        .await?;
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        stacked,
+        &stacked_before,
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::Backpack,
+        character,
+        &backpack,
+        &expected_backpack,
+    )
+    .await?;
+    capture.probe(&mut fresh, 14, unassigned, &[]).await?;
+    capture
+        .probe(&mut fresh, 15, stacked_click, &[(other, true)])
+        .await?;
+    let mut bag_other = other.clone();
+    bag_other.slot = expected_backpack
+        .last()
+        .ok_or("I07 backpack lost food")?
+        .slot
+        + 1;
+    expected_backpack.push(bag_other);
+    require_placements(&mut database, Storage::Corpse, character, stacked, &[]).await?;
+    require_placements(
+        &mut database,
+        Storage::Backpack,
+        character,
+        &backpack,
+        &expected_backpack,
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::InboxPouch,
+        character,
+        &pouch,
+        &expected_pouch,
+    )
+    .await?;
+    evidence("I07_LOOT_CUSTODY unassigned=pouch_refused_then_main_moved");
+    require_logout(&mut fresh).await?;
+    let fresh_session = uuid_text(fresh_session.as_bytes());
+    write_capture(
+        &capture_dir.join("i07-expected.txt"),
+        &serde_json::to_vec(&serde_json::json!({
+            "skip": skip_reference, "accept": accept_reference, "pouch": pouch, "corpse": corpse_id, "stacked": stacked,
+            "coin": coin.item, "armor": armor.item, "filtered": filtered.item, "other": other.item,
+        }))?,
+    )?;
+    evidence(&format!(
+        "I07_LIVE_CAPTURE session={session} relog={fresh_session}"
+    ));
+    Ok(())
+}
+
+async fn require_logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
     let logout = client.session_mut().logout().await?;
     if logout.status != CommandStatus::Accepted
         || logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
-        return Err(format!("I07 first logout refused: {logout:?}").into());
+        return Err(format!("I07 first-attempt logout refused: {logout:?}").into());
     }
-    drop(client);
-    let mut fresh = connect_world(clients, 0x07).await?;
-    if fresh.join_snapshot().game_session_id == original_session {
-        return Err("I07 relog reused its original session".into());
-    }
-    require_filters(&mut database, character, true, &expected_filters).await?;
-    require_routes(&mut database, character, &pouch_id).await?;
-    require_placements(&mut database, &pouch_id, &expected_pouch).await?;
-    require_placements(&mut database, &backpack, &expected_backpack).await?;
-    let logout = fresh.session_mut().logout().await?;
-    if logout.status != CommandStatus::Accepted
-        || logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err(format!("I07 post-readback logout refused: {logout:?}").into());
-    }
-    evidence(
-        "I07_FILTER_CUSTODY prestate=empty skip=3031 accept=3350 mode=accept fresh_session=true",
-    );
-    let pouch_hex: String = pouch_id.iter().map(|byte| format!("{byte:02x}")).collect();
-    write_capture(
-        &capture_dir.join("i07-expected.txt"),
-        format!(
-            "session={session}\npouch={pouch_hex}\nskip={skip_reference} accept={accept_reference} confirmed=3 destinations=1 results={item_count}\n"
-        )
-        .as_bytes(),
-    )?;
-    evidence(&format!("I07_LIVE_CAPTURE session={session}"));
     Ok(())
 }

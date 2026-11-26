@@ -127,22 +127,22 @@ def replay_targets():
         capture_names("e09", mail.read_text()),
     )]
     targets["e2e_i07"] = [(
-        "oteryn-client-ui", "replays_i07_quick_loot_results_and_rejects_invalid_payload",
+        "oteryn-client", "e2e_i07_real_replies_replay_through_play_outbox",
         {"i07-expected.txt"}
-        | {f"i07-{key}{suffix}" for key in range(1, 7) for suffix in (".json", "-request.bin")},
+        | {f"i07-{key}{suffix}" for key in range(1, 16) for suffix in (".json", "-request.bin")},
     )]
     return targets
 
 
 def read_i07_live_session(log, captures):
-    sessions = re.findall(r"^SEAM_EVIDENCE I07_LIVE_CAPTURE session=([^\s]+)$",
-                          log.read_text(), re.MULTILINE)
-    if len(sessions) != 1 or not re.fullmatch(
-        r"[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}",
-        sessions[0],
-    ):
+    uuid = r"[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+    sessions = re.findall(
+        rf"^SEAM_EVIDENCE I07_LIVE_CAPTURE session=({uuid}) relog=({uuid})$",
+        log.read_text(), re.MULTILINE,
+    )
+    if len(sessions) != 1 or sessions[0][0] == sessions[0][1]:
         return None
-    session = sessions[0]
+    first, relog = sessions[0]
     fields = {"command_id", "game_session_id", "payload", "server_sequence", "status"}
 
     def read_fields(pairs):
@@ -152,14 +152,14 @@ def read_i07_live_session(log, captures):
         return values
 
     try:
-        for key in range(1, 7):
+        for key in range(1, 16):
             envelope = json.loads((captures / f"i07-{key}.json").read_text(),
                                   object_pairs_hook=read_fields)
-            if not isinstance(envelope, dict) or envelope["game_session_id"] != session:
+            if not isinstance(envelope, dict) or envelope["game_session_id"] != (first if key < 9 else relog):
                 return None
     except (OSError, ValueError):
         return None
-    return session
+    return f"{first} relog={relog}"
 
 
 def replay_cause(row, package, test, names, captures, server, log):
@@ -202,7 +202,7 @@ def replay_cause(row, package, test, names, captures, server, log):
     if counts != [("1", "0")] or not passed_test:
         return "replay-failed"
     if row.lower() == "i07":
-        replay = re.findall(r"^I07_NATIVE_REPLAY session=([^\s]+)$",
+        replay = re.findall(r"^I07_NATIVE_REPLAY session=([^\s]+ relog=[^\s]+)$",
                             result.stdout, re.MULTILINE)
         if replay != [i07_session]:
             return "replay-failed"
@@ -211,7 +211,7 @@ def replay_cause(row, package, test, names, captures, server, log):
     return None
 
 
-def main(log, batch, validate=False):
+def main(log, batch, validate=False, *, mode=None):
     try:
         selected, registered = selected_rows(batch)
     except ValueError:
@@ -223,9 +223,13 @@ def main(log, batch, validate=False):
         return validate_rows(selected, registered, server_rows)
 
     rows = sorted(scenario for scenario in selected if scenario.endswith(".client"))
+    if mode == "--i07-only":
+        rows = [row for row in rows if row == "I07.client"]
+    elif mode == "--exclude-i07":
+        rows = [row for row in rows if row != "I07.client"]
     if not rows:
         return 0
-    captures = Path(os.environ["E2E_ALL_CAPTURE_DIR"])
+    captures = Path(os.environ.get("E2E_ALL_CAPTURE_DIR") or "/dev/null")
     targets = replay_targets()
     failed = False
     for scenario in rows:
@@ -242,5 +246,5 @@ def main(log, batch, validate=False):
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    validate = args[0] == "--validate"
-    sys.exit(main(Path(args[-1]), os.environ.get("OTERYN_E2E_ROW_BATCH"), validate))
+    mode = args[0] if len(args) > 1 else None
+    sys.exit(main(Path(args[-1]), os.environ.get("OTERYN_E2E_ROW_BATCH"), mode == "--validate", mode=mode))

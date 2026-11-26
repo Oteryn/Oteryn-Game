@@ -1882,6 +1882,20 @@ elif [[ ${STATUS[node_assigned_ready]:-PASS} == PASS ]]; then
   STATUS[stack_kept]="SKIP(shutdown and restart stages not run)"
 fi
 
+# I07 is a client verdict. Run its replay before publishing the node-boot result.
+row_groups=",${NODE_BOOT_E2E_ONLY:-},"
+row_groups=${row_groups//[[:space:]]/}
+if [[ "$NODE_BOOT_WORLD" == 1 && "$seam_stage_name" == seam_stages ]] &&
+  [[ $row_groups == *,rows,* || $row_groups == ,, ]] &&
+  [[ ${STATUS[seam_stages]:-} == PASS ]]; then
+  ORDER+=(i07_client_replay)
+  if python3 "$GAME_SOURCE/tools/qualification/node_boot/client_replay.py" --i07-only "$WORK/stage-seam_stages.log"; then
+    STATUS[i07_client_replay]=PASS
+  else
+    STATUS[i07_client_replay]="FAIL(client replay)"
+  fi
+fi
+
 # The failed rows of this pass, grouped by their first cause, ahead of the stage table.
 python3 "$GAME_SOURCE/tools/qualification/node_boot/failure_summary.py" "$WORK"/stage-*.log \
   ${GITHUB_STEP_SUMMARY:+--summary "$GITHUB_STEP_SUMMARY"} || true

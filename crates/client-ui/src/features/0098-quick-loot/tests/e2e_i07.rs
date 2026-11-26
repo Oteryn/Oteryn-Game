@@ -1,24 +1,4 @@
-//! I07 server-payload replay through the owning client projection.
-//!
-//! E2E_ALL_CAPTURE_DIR contains four probes keyed 1 (skip filter add), 2 (accept filter
-//! add), 3 (Gold Pouch assignment to the character's own pouch), and 4 (loot all). For each
-//! key, `i07-<key>-request.bin` holds the exact raw quick-loot request payload sent to the
-//! server and `i07-<key>.json` the reply envelope: `game_session_id` (hyphenated UUID),
-//! positive `command_id` and `server_sequence`, numeric `status` (Accepted=1, Rejected=2,
-//! DuplicateReplay=3, DuplicateOutcomeExpired=4) and `payload` (byte array, may be empty).
-//! Every probe is Accepted, shares one session and has strictly increasing command IDs and
-//! server sequences. Supporting probes 5 (accept gold) and 6 (assign unclassified loot to
-//! the pouch) occur between probes 2 and 3 and use the same envelope and request format.
-//! `i07-expected.txt` holds three LF-terminated UTF-8 lines: `session=<uuid>`,
-//! `pouch=<32 lowercase hex digits>` (the Gold Pouch item instance the server accepted) and
-//! `skip=<id> accept=<id> confirmed=3 destinations=1 results=<count>`.
-//! A replay of a capture prints `I07_NATIVE_REPLAY session=<uuid>` after every assertion
-//! passes. The node-boot wrapper opts in to this live-capture test.
-//!
-//! The payload consumer is `apply_result` in
-//! `crates/client-ui/src/features/0098-quick-loot/protocol.rs`; it decodes each
-//! `QuickLootResult` and updates `Panel` from
-//! `crates/client-ui/src/features/0098-quick-loot/state.rs`.
+//! Quick-loot projection tests using synthetic four-probe fixtures.
 use super::*;
 use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicResponse};
 use std::path::Path;
@@ -222,77 +202,6 @@ fn read_capture(path: &Path) -> Result<Capture, Error> {
         pouch,
         summary,
     })
-}
-
-#[test]
-#[ignore = "requires the current node-boot I07 capture"]
-fn replays_i07_quick_loot_results_and_rejects_invalid_payload() -> Result<(), Error> {
-    let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR")
-        .ok_or("I07 replay requires the current capture directory")?;
-    let directory = Path::new(&directory);
-    let capture = read_capture(directory)?;
-    replay(&capture)?;
-    replay_supporting_probes(directory, &capture)?;
-    println!("I07_NATIVE_REPLAY session={}", capture.session);
-    Ok(())
-}
-
-fn replay_supporting_probes(path: &Path, capture: &Capture) -> Result<(), Error> {
-    let skip = decode_quick_loot_request(&capture.probes[0].request)
-        .map_err(|error| format!("I07 invalid skip request: {error:?}"))?
-        .filter_definition_ref
-        .ok_or("I07 skip definition absent")?;
-    let before = &capture.probes[1].response;
-    let after = &capture.probes[2].response;
-    let mut previous = (before.command_id, before.server_sequence);
-    let mut panel = Panel {
-        selected: true,
-        ..Panel::default()
-    };
-    let assignment = Action::Destination {
-        category: None,
-        recipient: QuickLootRecipient::GoldPouch,
-        id: Some(capture.pouch),
-        fallback: true,
-    };
-    for (key, action) in [
-        (
-            5,
-            Action::Add {
-                mode: QuickLootFilterMode::Accept,
-                definition: skip,
-            },
-        ),
-        (6, assignment.clone()),
-    ] {
-        let probe = read_probe(path, key)?;
-        let response = probe.response;
-        if probe.session != capture.session
-            || response.status != CommandStatus::Accepted
-            || response.command_id <= previous.0
-            || response.server_sequence <= previous.1
-            || response.command_id >= after.command_id
-            || response.server_sequence >= after.server_sequence
-        {
-            return Err(format!("I07 supporting probe {key}: invalid live reply binding").into());
-        }
-        previous = (response.command_id, response.server_sequence);
-        let generated = request(&mut panel, action)
-            .ok_or_else(|| format!("I07 supporting probe {key}: client did not queue request"))?;
-        assert_eq!(
-            generated.payload, probe.request,
-            "I07 supporting probe {key}"
-        );
-        assert!(!apply_result(&mut panel, &response));
-        assert_eq!(panel.pending, None, "I07 supporting probe {key}");
-        assert_eq!(
-            panel.feedback, "Confirmed by the server",
-            "I07 supporting probe {key}"
-        );
-    }
-    assert_eq!(panel.accepted, [skip].into_iter().collect());
-    assert_eq!(panel.destinations, [assignment]);
-    Ok(())
 }
 
 fn replay(capture: &Capture) -> Result<(), Error> {
