@@ -2,7 +2,7 @@
 //! 1. Admit both provisioned characters and wait until each sees the other.
 //! 2. Each queries the metadata of the other player entity plus an unknown entity: the server
 //!    must fill in the other player's vocation and answer nothing for the unknown reference.
-//! 3. Log both out.
+//! 3. Require both first logout intents to be accepted.
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
@@ -77,12 +77,9 @@ async fn accepted(
 }
 
 async fn finish(client: &mut DevClientSession) -> TestResult {
-    let (result, reply, attempts, busy_timed_out) = logout_retrying_busy(client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!(
-            "step=logout observed={reply} attempts={attempts} busy_timed_out={busy_timed_out}"
-        )
-        .into());
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={reply:?} needed=first-attempt-accepted").into());
     }
     Ok(())
 }
