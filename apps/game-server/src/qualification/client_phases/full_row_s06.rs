@@ -372,8 +372,18 @@ async fn earn_addon(
         if carried(client, reference)? != 1 {
             return Err(format!("step=addon-acquisition item={item} need=one-fixture-item").into());
         }
+        let handle = client
+            .inventory()
+            .and_then(|inventory| {
+                inventory
+                    .entries
+                    .iter()
+                    .find(|entry| entry.item_definition_ref == reference)
+            })
+            .map(|entry| entry.handle)
+            .ok_or_else(|| format!("step=addon-acquisition item={item} need=inventory-handle"))?;
         let payload = world_object::encode_item_use_intent(&world_object::UseIntent {
-            target: world_object::UseTarget::ItemByDefinition(reference),
+            target: world_object::UseTarget::Item(handle),
             use_with: None,
             use_with_map_item: None,
             use_with_position: None,
