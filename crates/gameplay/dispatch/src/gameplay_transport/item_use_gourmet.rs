@@ -325,7 +325,23 @@ pub(in crate::gameplay_transport) async fn checkpoint(
     session: GameSessionId,
     force: bool,
 ) -> bool {
-    checkpoint_inner(owner, actor, session, force, false).await
+    checkpoint_inner(owner, actor, session, force, false, None).await
+}
+
+pub(in crate::gameplay_transport) async fn checkpoint_for_house_transport(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    fence: CurrentCharacterItemFence,
+) -> bool {
+    checkpoint_inner(
+        owner,
+        actor,
+        fence.game_session_id,
+        false,
+        false,
+        Some(fence),
+    )
+    .await
 }
 
 /// Actor-end owners may continue after a known stale authority refusal, just as
@@ -337,7 +353,7 @@ pub(in crate::gameplay_transport) async fn checkpoint_at_actor_end(
     actor: ExactActorRef,
     session: GameSessionId,
 ) -> bool {
-    checkpoint_inner(owner, actor, session, true, true).await
+    checkpoint_inner(owner, actor, session, true, true, None).await
 }
 
 async fn checkpoint_inner(
@@ -346,6 +362,7 @@ async fn checkpoint_inner(
     session: GameSessionId,
     force: bool,
     allow_fenced_out: bool,
+    admitted_fence: Option<CurrentCharacterItemFence>,
 ) -> bool {
     if !super::super::hireling::resolve_pending_lamp(owner, actor, session).await {
         return false;
@@ -369,16 +386,26 @@ async fn checkpoint_inner(
     let Some(_permit) = owner.spell_lane_permit().await else {
         return false;
     };
-    let store =
-        crate::durability::fresh_admission::FreshAdmissionStore::from_root(owner.root.clone());
-    let Ok((current_session, _)) = store.current_session_at(session).await else {
-        return false;
-    };
-    let Some(fence) = super::super::item_fence_of(current_session) else {
-        return false;
+    let fence = if let Some(fence) = admitted_fence {
+        fence
+    } else {
+        let store =
+            crate::durability::fresh_admission::FreshAdmissionStore::from_root(owner.root.clone());
+        let Ok((current_session, _)) = store.current_session_at(session).await else {
+            return false;
+        };
+        let Some(fence) = super::super::item_fence_of(current_session) else {
+            return false;
+        };
+        fence
     };
     let runtime = owner.runtime.lock().await;
     let mut states = owner.states.spell_states.lock().await;
+    if admitted_fence.is_some()
+        && !states.current_cooldown_transport(actor, session, fence.connection_generation.get())
+    {
+        return false;
+    }
     if !current(&runtime, actor, session, fence, true) {
         return allow_fenced_out;
     }

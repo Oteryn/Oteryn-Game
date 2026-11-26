@@ -10,16 +10,23 @@ pub(super) fn snapshot<A: FreshAdmissionAuthority>(
     feed: Option<&mut CooldownFeed>,
     rows: &mut [ItemViewSnapshotDomain],
 ) -> Result<(), ServeEnd> {
-    if let Some(feed) = feed {
-        let deadlines = feed.take_snapshot().ok_or(ServeEnd::Disconnected)?;
-        let row = rows
-            .iter_mut()
-            .find(|row| row.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS)
-            .ok_or(ServeEnd::Disconnected)?;
-        row.revision = admitted.continuity.cooldown_revision;
-        row.payload = owner::payload(&deadlines, authority.cooldown_clock_us(), true)
-            .map_err(|_| ServeEnd::Disconnected)?;
+    if !admitted
+        .continuity
+        .selected_capabilities
+        .contains(wire::CAPABILITY_PRESENTATION_V1)
+    {
+        return Ok(());
     }
+    let deadlines = feed
+        .and_then(CooldownFeed::take_snapshot)
+        .ok_or(ServeEnd::Disconnected)?;
+    let row = rows
+        .iter_mut()
+        .find(|row| row.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS)
+        .ok_or(ServeEnd::Disconnected)?;
+    row.revision = admitted.continuity.cooldown_revision;
+    row.payload = owner::payload(&deadlines, authority.cooldown_clock_us(), true)
+        .map_err(|_| ServeEnd::Disconnected)?;
     Ok(())
 }
 
@@ -41,7 +48,7 @@ pub(super) fn frames<A: FreshAdmissionAuthority>(
         let sparse = next
             .selected_capabilities
             .contains(wire::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1);
-        let delta_type = if rescued.is_some() {
+        let delta_type = if sparse && rescued.is_some() {
             wire::DELTA_TYPE_ACTOR_COOLDOWNS_WITH_VITALS_V1
         } else if sparse {
             wire::DELTA_TYPE_ACTOR_COOLDOWNS_SPARSE_V1

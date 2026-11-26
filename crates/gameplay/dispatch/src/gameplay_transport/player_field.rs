@@ -497,15 +497,40 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 runtime, actor, &next, magnitude, hit_kind, now_us,
             )
             .map_err(|_| DurabilityError::Unavailable)?;
-            next = successor;
+            let mana_after_shield =
+                if successor.wheel_gift_activation() != next.wheel_gift_activation() {
+                    // Reuse hit staging to measure shield spend on the same input
+                    // with only the rescue disabled. This successor is never committed.
+                    let mut without_gift = next.clone();
+                    let mut effects = next
+                        .wheel_effects_at(now_us)
+                        .ok_or(DurabilityError::Unavailable)?
+                        .clone();
+                    effects.revelation_stages.remove("gift_of_life");
+                    without_gift.install_wheel_effects(effects);
+                    crate::spell::actor_conditions::stage_typed_hit_in_world(
+                        runtime,
+                        actor,
+                        &without_gift,
+                        magnitude,
+                        hit_kind,
+                        now_us,
+                    )
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .0
+                    .vitals()
+                    .mana
+                } else {
+                    successor.vitals().mana
+                };
+            let mana_spent = mana_before
+                .checked_sub(mana_after_shield)
+                .ok_or(DurabilityError::Unavailable)?;
             let damage = hit
                 .applied
-                .checked_add(
-                    mana_before
-                        .checked_sub(next.vitals().mana)
-                        .ok_or(DurabilityError::Unavailable)?,
-                )
+                .checked_add(mana_spent)
                 .ok_or(DurabilityError::Unavailable)?;
+            next = successor;
             next.stage_committed_player_hit_history(
                 source,
                 source_session,

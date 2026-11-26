@@ -2734,6 +2734,7 @@ async fn player_health(
 
 async fn drive_gift_field_entry(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
     mut admitted: crate::gameplay_transport::connection::AdmittedSession,
     actor: crate::foundation::ExactActorRef,
     rollback: bool,
@@ -2784,7 +2785,7 @@ async fn drive_gift_field_entry(
         let mut states = owner.states.spell_states.lock().await;
         let state = states.get_mut(&runtime, actor, session).ok_or("victim")?;
         let facts = CharacterCastFacts {
-            vocation: crate::spell::Vocation::EliteKnight,
+            vocation: crate::spell::Vocation::ElderDruid,
             level: oteryn_gameplay_progression::wheel::WHEEL_LEVEL_OFFSET + 1,
             ..state.character_facts()
         };
@@ -2797,9 +2798,9 @@ async fn drive_gift_field_entry(
         ready.install_wheel_effects(effects);
         assert!(ready.restore_wheel_gift(0, now));
         ready.install_wheel_gift_spellbook(book);
-        // A PvP field records HP and mana lost. Start at full mana so this
-        // fixture isolates the HP rescue and cooldown reconciliation.
-        ready.restore_saved_vitals(1, facts.max_mana);
+        // Exercise zero mana on commit and a two-mana shield spend on restaging.
+        ready.restore_saved_vitals(1, if rollback { 2 } else { 0 });
+        ready.install_equipped_mana_shield(rollback);
         ready
             .cooldowns
             .spells
@@ -2831,7 +2832,7 @@ async fn drive_gift_field_entry(
                 .ok_or("field STEP recovery")?,
         );
     }
-    let (revision, vitals) = {
+    let (revision, vitals, attributed_damage) = {
         let runtime = owner.runtime.lock().await;
         let states = owner.states.spell_states.lock().await;
         let state = states.get(&runtime, actor, session).ok_or("victim")?;
@@ -2841,18 +2842,32 @@ async fn drive_gift_field_entry(
             "field STEP triggers Gift once"
         );
         assert!(state.vitals().health > 1, "Gift rescues the field victim");
+        assert_eq!(state.vitals().mana, state.character_facts().max_mana / 5);
         assert_eq!(
             state.cooldowns.spells[key].get().checked_sub(now),
             Some(30_000_000),
             "Gift leaves 30 seconds on the active instant spell",
         );
-        (state.revision(), state.vitals())
+        let vitals = state.vitals();
+        let health_spent = 1 + vitals.max_health / 5 - vitals.health;
+        (
+            state.revision(),
+            vitals,
+            health_spent + if rollback { 2 } else { 0 },
+        )
     };
     let published = feed
         .take(generation, None)
         .ok_or("current cooldown subscription")?;
     assert_eq!(published.deadlines, Some([(cooldown, shortened)].into()));
     assert_eq!(published.rescued, Some((revision, vitals)));
+    let harm: (i64, i64) = sqlx::query_as(
+        "SELECT count(*), COALESCE(sum(damage), 0)::bigint
+         FROM game_character_pvp_harm WHERE octet_length(field_occurrence)=32",
+    )
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(harm, (1, i64::from(attributed_damage)));
     Ok(())
 }
 
@@ -2890,7 +2905,7 @@ async fn drive_player_field(
     admitted.continuity.connection_generation = current.current_connection_generation().get();
     admitted.item_fence = item_fence_of(current);
     if let Scenario::GiftOfLife(rollback) = scenario {
-        return drive_gift_field_entry(owner, admitted, target, rollback).await;
+        return drive_gift_field_entry(owner, harness, admitted, target, rollback).await;
     }
     if scenario == Scenario::Death {
         owner.admit_progression_session(&mut admitted).await;

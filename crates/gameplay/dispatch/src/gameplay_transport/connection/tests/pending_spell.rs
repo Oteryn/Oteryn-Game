@@ -205,6 +205,10 @@ impl FreshAdmissionAuthority for RescuedCastAuthority {
         (Some((1, SERENE_VITALS)), Some(self.receipt.feed(admitted)))
     }
 
+    fn cooldown_clock_us(&self) -> u64 {
+        7_000_000
+    }
+
     async fn observe_vitals(
         &self,
         _: ExactActorRef,
@@ -235,10 +239,20 @@ impl FreshAdmissionAuthority for RescuedCastAuthority {
 
 #[test]
 fn accepted_cast_result_precedes_the_rescue_pair() -> Result<(), Box<dyn Error>> {
+    assert_rescue_cast_frames(true)
+}
+
+#[test]
+fn accepted_cast_result_precedes_legacy_cooldowns_and_rescued_vitals() -> Result<(), Box<dyn Error>>
+{
+    assert_rescue_cast_frames(false)
+}
+
+fn assert_rescue_cast_frames(sparse: bool) -> Result<(), Box<dyn Error>> {
     use oteryn_protocol_oteryn::{
         MessageType, decode_state_delta, decode_wire_envelope, presentation,
     };
-    run(async {
+    run(async move {
         let (_, actor, game_session_id) =
             super::super::actor_spell::tests::runtime_with_player(0x73);
         let mut continuity = SessionContinuity::FRESH;
@@ -246,9 +260,12 @@ fn accepted_cast_result_precedes_the_rescue_pair() -> Result<(), Box<dyn Error>>
             super::super::capabilities::PRODUCTION_OFFERED_CAPABILITIES,
             true,
         );
+        let mut supported = vec![6, presentation::CAPABILITY_PRESENTATION_V1];
+        if sparse {
+            supported.push(presentation::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1);
+        }
         continuity.selected_capabilities =
-            SelectedCapabilities::select(&offered, &[6, presentation::CAPABILITY_PRESENTATION_V1])
-                .ok_or("presentation selection")?;
+            SelectedCapabilities::select(&offered, &supported).ok_or("presentation selection")?;
         let admitted = AdmittedSession {
             game_session_id,
             world_id: WorldId::decode(&uuid_v7(0x60))?,
@@ -294,7 +311,22 @@ fn accepted_cast_result_precedes_the_rescue_pair() -> Result<(), Box<dyn Error>>
                     if delta.domain_id == presentation::STATE_DOMAIN_ACTOR_COOLDOWNS {
                         assert_eq!(
                             delta.delta_type,
-                            presentation::DELTA_TYPE_ACTOR_COOLDOWNS_WITH_VITALS_V1,
+                            if sparse {
+                                presentation::DELTA_TYPE_ACTOR_COOLDOWNS_WITH_VITALS_V1
+                            } else {
+                                presentation::DELTA_TYPE_ACTOR_COOLDOWNS_V1
+                            },
+                        );
+                        let update = presentation::decode_actor_cooldowns(delta.payload)
+                            .map_err(|error| format!("{error:?}"))?;
+                        assert_eq!(update.server_now_ms, if sparse { 0 } else { 7_000 });
+                        assert_eq!(
+                            update.entries,
+                            [presentation::ActorCooldown {
+                                kind: presentation::ActorCooldownKind::Spell,
+                                id: 1,
+                                expires_at_ms: if sparse { 23_000 } else { 30_000 },
+                            }],
                         );
                     }
                     frames.push((delta.domain_id, delta.new_revision));

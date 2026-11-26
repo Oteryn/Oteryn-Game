@@ -28,7 +28,7 @@ pub(super) async fn exercise(
     );
     // Omit item views in the holder-contention case so the test isolates the join's
     // vitals and cooldown read from independently required inventory snapshots.
-    let supported = if case == 104 {
+    let supported = if matches!(case, 104 | 106) {
         &[
             6,
             wire::CAPABILITY_PRESENTATION_V1,
@@ -149,30 +149,130 @@ pub(super) async fn exercise(
 
     assert_eq!(owner.lose_control(retained, Duration::ZERO, None).await, ControlLossResult::Recorded);
     let token = super::super::house_transfer_fixtures::RecoverySource::token(2)?;
-    let resumed = owner.resume(ResumeAttempt {
+    let resume = owner.resume(ResumeAttempt {
         game_session_id: session,
         recovery_material: token.as_bytes(),
         transport: crate::foundation::AuthenticatedTransportRefV1::decode(&[2; 16]).map_err(debug)?,
         last_applied_server_sequence: retained.continuity.server_sequence,
         supported_capabilities: supported,
-    }).await.map_err(debug)?;
+    });
+    let mut resumed = if case == 106 {
+        use crate::gameplay_transport::resume::{PREPARE_TEST_BARRIER, PrepareTestBarrier};
+        let barrier = std::sync::Arc::new(PrepareTestBarrier {
+            readback: true,
+            ..Default::default()
+        });
+        let readback = async {
+            barrier.committed.notified().await;
+            let held = owner.root.try_issue_semantic_pass();
+            barrier.readback_release.notify_one();
+            held
+        };
+        // Keep the sole holder checked out until the already committed resume
+        // exhausts its readback retries. Release it before the join attempt.
+        let (resumed, held) = tokio::time::timeout(Duration::from_secs(20), async {
+            let mut resume = std::pin::pin!(PREPARE_TEST_BARRIER.scope(barrier.clone(), resume));
+            let held = tokio::select! {
+                held = readback => held?,
+                early = &mut resume => return Err(format!("resume ended before readback: {early:?}").into()),
+            };
+            Ok::<_, Box<dyn std::error::Error>>((resume.await.map_err(debug)?, held))
+        }).await??;
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        assert!(
+            resumed.item_fence.is_none(),
+            "committed resume exhausted the fence read"
+        );
+        resumed
+    } else {
+        resume.await.map_err(debug)?
+    };
     assert_eq!(resumed.continuity.connection_generation, 2);
-    clock.set(1_250_000);
-    let expected_entries = expected(spell, 2_000, 2_000);
-    let (snapshot, mut continued) = rejoin(owner, resumed, case == 104, true).await?;
-    assert_eq!(snapshot.entries, expected_entries);
-    assert_eq!(snapshot.server_now_ms, 1_250);
-    assert_eq!(snapshot.rtt_ms, None);
+    assert!(retained.continuity.cooldown_revision > 0);
+    assert_eq!(
+        resumed.continuity.cooldown_revision,
+        retained.continuity.cooldown_revision
+    );
     if case == 106 {
-        let fence = continued.item_fence.as_mut().ok_or("recovered fence")?;
+        assert_cooldown_join_refused(owner, resumed).await?;
+        let current = owner
+            .root
+            .observe_current_gameplay_fence(owner.character, session, false)
+            .await
+            .map_err(debug)?
+            .ok_or("current resume fence")?;
+        let mut stale = resumed;
+        resumed.item_fence = Some(current.item_fence());
+        let mut fence = current.item_fence();
         fence.character_lease_generation = fence
             .character_lease_generation
             .checked_sub(1)
             .ok_or("stale lease generation")?;
-        let (stale, _) = rejoin(owner, continued, false, false).await?;
-        assert!(stale.entries.is_empty(), "a stale lease read committed cooldowns");
+        stale.item_fence = Some(fence);
+        assert_cooldown_join_refused(owner, stale).await?;
+    } else {
+        // A stale Channel join used to refresh the retained actor's Wheel state
+        // before refusing the old generation.
+        let boosted_max_health = {
+            let runtime = owner.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let state = states
+                .get_mut(&runtime, actor, session)
+                .ok_or("retained caster")?;
+            state.apply_wheel_maximum_bonus(50, 0).map_err(debug)?;
+            state.vitals().max_health
+        };
+        let (stale_vitals, stale_feed) = owner.observe_join_vitals(actor, retained, false).await;
+        assert!(stale_vitals.is_none() && stale_feed.is_none());
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let state = states
+            .get(&runtime, actor, session)
+            .ok_or("retained caster")?;
+        assert_eq!(
+            state.vitals().max_health,
+            boosted_max_health,
+            "stale join changed Wheel maxima"
+        );
+        drop(states);
+        drop(runtime);
     }
+
+    clock.set(1_250_000);
+    let expected_entries = expected(spell, 2_000, 2_000);
+    let (revision, snapshot) = rejoin(owner, resumed, case == 104).await?;
+    assert_eq!(revision, retained.continuity.cooldown_revision);
+    assert_eq!(snapshot.entries, expected_entries);
+    assert_eq!(snapshot.server_now_ms, 1_250);
+    assert_eq!(snapshot.rtt_ms, None);
     Ok(())
+}
+
+async fn assert_cooldown_join_refused(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serving = async {
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        drop(server);
+        end
+    };
+    let driving = async {
+        let bytes = read(&mut client).await?;
+        let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
+        assert_eq!(envelope.message_type(), MessageType::ProtocolError);
+        assert_eq!(
+            oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())
+                .map_err(debug)?
+                .error_code,
+            crate::foundation::FoundationProtocolError::SessionJoinUnavailable.code(),
+        );
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    tokio::time::timeout(Duration::from_secs(20), join_two(serving, driving))
+        .await?
+        .1
 }
 
 
@@ -387,8 +487,7 @@ async fn rejoin(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     hold_durability: bool,
-    read_barrier: bool,
-) -> TestResult<(wire::ActorCooldowns, AdmittedSession)> {
+) -> TestResult<(u64, wire::ActorCooldowns)> {
     let held = if hold_durability {
         owner.root.await_ready().await?;
         Some(owner.root.try_issue_background_semantic_pass()?)
@@ -398,15 +497,9 @@ async fn rejoin(
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async { serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await };
     let driving = async {
-        let (_, snapshot) = join_cooldowns(&mut client).await?;
+        let snapshot = join_cooldowns(&mut client).await?;
         if let Some(held) = held {
             held.run(|_, _| Box::pin(async { Ok(()) })).await?;
-        }
-        if !read_barrier {
-            // The stale lease may also be refused by command ingress. This leg's
-            // barrier is the committed snapshot, after the valid leg's command barrier.
-            client.shutdown().await?;
-            return Ok(snapshot);
         }
         let barrier = admitted.continuity.next_command_id;
         send(&mut client, 2, barrier, 65_535, &[]).await?;
@@ -425,12 +518,12 @@ async fn rejoin(
         client.shutdown().await?;
         Ok(snapshot)
     };
-    let (end, snapshot): (_, TestResult<wire::ActorCooldowns>) =
+    let (end, snapshot): (_, TestResult<(u64, wire::ActorCooldowns)>) =
         tokio::time::timeout(Duration::from_secs(20), join_two(serving, driving)).await?;
-    let ConnectionEnd::AdmittedThenDisconnected(continued) = end else {
+    if !matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)) {
         return Err(format!("rejoin connection ended: {end:?}").into());
-    };
-    Ok((snapshot?, continued))
+    }
+    snapshot
 }
 
 async fn join_cooldowns(client: &mut DuplexStream) -> TestResult<(u64, wire::ActorCooldowns)> {
