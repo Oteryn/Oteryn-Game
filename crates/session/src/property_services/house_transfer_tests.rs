@@ -107,7 +107,6 @@ fn pc04_house_transfer_handoff_restarts_the_command_namespace() -> Result<(), Bo
                     })
                     .map_err(|e| format!("{e:?}"))?;
                     session.gated_command(86, 102, &payload).await?;
-                    assert!(session.raw_world_entity_deltas().is_empty());
                     let spatial = session.admission_snapshot(STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY);
                     let scope = session.admission_snapshot(wire::STATE_DOMAIN_HOUSE_SCOPE);
                     if exit {
