@@ -556,3 +556,110 @@ fn battle_list_and_health_bar_accept_actors_with_icons() -> Result<(), Box<dyn s
     );
     Ok(())
 }
+
+/// G37: a shrine USE never reaches `Dispatch::Use`; it opens the panel and queries the
+/// selected item on command 85, the only imbuement route the server serves.
+#[test]
+fn shrine_use_opens_imbuement_panel_through_command_85() -> Result<(), Box<dyn std::error::Error>>
+{
+    use oteryn_protocol_oteryn::imbuement as wire;
+    fn wire_err(error: impl std::fmt::Debug) -> String {
+        format!("{error:?}")
+    }
+    let shrine_menu = |view: &mut PlayView, link: &crate::play::PlayLink, appearance: u16| {
+        let mut map = super::feature_local_world_view::live_snapshot(101);
+        map.tiles[0].items[0].origin = oteryn_session::world_map::MapOrigin::BaseOrdinal {
+            ordinal: 2,
+            object_revision: 7,
+        };
+        map.tiles[0].items[0].appearance_id = appearance;
+        view.set_live_map(&map)?;
+        view.world_context(TileCoord::new(101, 200), link)
+            .ok_or(BatchError::InvalidView)
+    };
+    let mut view = view()?;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.world_context_initialize(true, true);
+    outbox.imbue_initialize(true);
+
+    // No item selected: the panel opens and asks for one; nothing goes to the server.
+    let menu = shrine_menu(&mut view, &link, 24_964)?;
+    assert!(matches!(menu.target, Target::Object(_)));
+    assert!(view.world_context_choose(&link, &menu, Action::Use));
+    assert!(commands.try_recv().is_err());
+    let panel = link.imbue_panel();
+    assert!(panel.open);
+    assert!(panel.feedback.is_some());
+    assert!(link.world_context_feedback().is_none());
+
+    // An item selected: one Query on command 85 that the server decoder accepts.
+    let item = oteryn_session::ItemHandle::MIN;
+    link.imbue_item(item);
+    let menu = shrine_menu(&mut view, &link, 25_202)?;
+    assert!(view.world_context_choose(&link, &menu, Action::Use));
+    let crate::combat_input::PlayCommand::Imbue(command) = commands.try_recv()? else {
+        return Err("shrine USE did not send command 85".into());
+    };
+    assert!(commands.try_recv().is_err());
+    let sent = wire::decode_imbuement_request(&wire::encode_imbuement_request(&command.0).map_err(wire_err)?).map_err(wire_err)?;
+    assert_eq!(sent.item, item);
+    assert_eq!(sent.action, wire::ImbuementAction::Query);
+
+    // The server's reply bytes, decoded as the session does, fill the open panel.
+    let window = wire::ImbuementWindow {
+        slot_count: 2,
+        applied: Vec::new(),
+        offers: Vec::new(),
+        clear_gold: 15_000,
+    };
+    let bytes = wire::encode_imbuement_reply(&wire::ImbuementReply {
+        result: wire::ImbuementResult::Ok,
+        window: Some(window.clone()),
+    })
+    .map_err(wire_err)?;
+    outbox.imbue_result(&oteryn_client_runtime::imbue::ImbueResponse {
+        status: oteryn_session::CommandStatus::Accepted,
+        reply: Some(wire::decode_imbuement_reply(&bytes).map_err(wire_err)?),
+        success: Vec::new(),
+    });
+    let panel = link.imbue_panel();
+    assert!(panel.open);
+    assert_eq!(panel.item, Some(item));
+    assert_eq!(panel.window, Some(window));
+
+    // A shrine two tiles away is out of reach: it stays a world USE and opens nothing.
+    super::super::mailbox::lock(&outbox.0).imbue.open = false;
+    let mut map = super::feature_local_world_view::live_snapshot(101);
+    let mut far = map.tiles[0].clone();
+    far.position.x += 2;
+    far.items[0].origin = oteryn_session::world_map::MapOrigin::BaseOrdinal {
+        ordinal: 2,
+        object_revision: 7,
+    };
+    far.items[0].appearance_id = 24_964;
+    map.tiles.push(far);
+    view.set_live_map(&map)?;
+    let menu = view
+        .world_context(TileCoord::new(103, 200), &link)
+        .ok_or(BatchError::InvalidView)?;
+    assert!(view.world_context_choose(&link, &menu, Action::Use));
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::WorldContext(
+            oteryn_client_runtime::world_interaction::Command { action: Action::Use, .. }
+        )
+    ));
+    assert!(!link.imbue_panel().open);
+    super::super::mailbox::lock(&outbox.0).world_context.pending = false;
+
+    // Any other object still goes to the server as a world USE.
+    let menu = shrine_menu(&mut view, &link, 25_203)?;
+    assert!(view.world_context_choose(&link, &menu, Action::Use));
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::WorldContext(
+            oteryn_client_runtime::world_interaction::Command { action: Action::Use, .. })
+    ));
+    assert!(!link.imbue_panel().open);
+    Ok(())
+}

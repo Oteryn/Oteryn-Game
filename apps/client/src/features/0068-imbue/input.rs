@@ -48,6 +48,16 @@ impl PlayLink {
     }
 }
 
+/// Imbuing shrine client ids; the server's `SHRINE_KEYS` in
+/// `crates/gameplay/dispatch/src/gameplay_transport/imbuement.rs` list the same items.
+const SHRINES: [u16; 10] = [
+    24_964, 25_060, 25_061, 25_103, 25_104, 25_174, 25_175, 25_182, 25_183, 25_202,
+];
+
+pub(in crate::play) fn is_imbuing_shrine(appearance_id: u16) -> bool {
+    SHRINES.contains(&appearance_id)
+}
+
 pub(in crate::play) fn enqueue(
     mailbox: &mut Mailbox,
     commands: &UnboundedSender<PlayCommand>,
