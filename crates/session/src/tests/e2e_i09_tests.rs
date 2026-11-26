@@ -13,7 +13,8 @@
 //! revision chain. The raw predecessor payload and metadata verify the replay's derived state:
 //! - `i09-original-frames.bin` and `i09-relog-frames.bin`: original length-prefixed frames.
 //! - `i09-envelopes.json` and `i09-relog-envelopes.json`: one #3521 envelope per received frame.'"
-//! - `i09-binding.txt`: session UUID, USE command ID, reply/delta sequences, and relog UUID.
+//! - `i09-binding.txt`: session UUID, pre-USE sequence, USE command and reply/delta sequences,
+//!   logout command and reply sequence, and relog UUID.
 //! - `i09-map-before.bin`: raw predecessor map snapshot payload.
 //! - `i09-map-before.txt`: predecessor sequence, domain, snapshot type and revision.
 //! - `i09-expected.txt`: base/new revisions, delta sequence, definition, appearance,
@@ -237,8 +238,7 @@ async fn replay(root: Option<&Path>) -> Result<(), BoxError> {
         MapDefinition::Item(NonZeroU32::new(expected.3).ok_or("zero expected definition")?)
     );
     assert_eq!(item.appearance_id, expected.4);
-    assert!(map_transport::apply(&mut session, expected.2 + 1, &[0xff]).is_err());
-    assert!(session.take_events().is_empty());
+    assert_malformed_map_is_atomic(&mut session, expected.2 + 1)?;
     Ok(())
 }
 
@@ -253,14 +253,20 @@ async fn replay_original(root: &Path) -> Result<(), BoxError> {
     let fields: Vec<_> = binding.split_ascii_whitespace().collect();
     let [
         session_id,
+        before_use_sequence,
         command,
         reply_sequence,
         delta_sequence,
+        logout_command,
+        logout_sequence,
         relog_id,
     ] = fields.as_slice()
     else {
         return Err("invalid I09 capture binding".into());
     };
+    let before_use_sequence: u64 = before_use_sequence.parse()?;
+    let logout_command: u64 = logout_command.parse()?;
+    let logout_sequence: u64 = logout_sequence.parse()?;
     let command: u64 = command.parse()?;
     let reply_sequence: u64 = reply_sequence.parse()?;
     let delta_sequence: u64 = delta_sequence.parse()?;
@@ -301,7 +307,13 @@ async fn replay_original(root: &Path) -> Result<(), BoxError> {
         y: saved_y.parse()?,
         floor: saved_floor.parse()?,
     };
-    if *session_id == *relog_id || stale_command <= command || stale_sequence <= delta_sequence {
+    if *session_id == *relog_id
+        || stale_command <= command
+        || stale_sequence <= delta_sequence
+        || logout_command <= stale_command
+        || logout_sequence <= stale_sequence
+        || before_use_sequence >= reply_sequence
+    {
         return Err("inconsistent I09 session or stale command binding".into());
     }
     let (predecessor, map) = capture_predecessor(root)?;
@@ -323,33 +335,47 @@ async fn replay_original(root: &Path) -> Result<(), BoxError> {
     }
 
     let bytes = std::fs::read(root.join("i09-original-frames.bin"))?;
-    let frames = validate_envelopes(
-        root,
-        "i09-envelopes.json",
-        &bytes,
-        session_id,
-        Some((command, delta_sequence)),
-    )?;
+    let frames = validate_envelopes(root, "i09-envelopes.json", &bytes, session_id)?;
     let (mut session, joined) = admit_original(&bytes, &frames, session_id).await?;
     let generation = frames[1].connection_generation();
     let mut last_sequence = session.last_server_sequence();
     let mut committed = false;
     let mut rotated = false;
     let mut stale = false;
-    let mut last_result = None;
-    let origin = MapOrigin::BaseOrdinal {
-        ordinal,
-        object_revision: 1,
+    let mut logged_out = false;
+    let before_map = world_map::decode_world_map_snapshot(&map.payload)
+        .map_err(|error| format!("I09 predecessor map decode: {error:?}"))?;
+    let before_item = before_map
+        .tiles
+        .iter()
+        .find(|tile| tile.position == target)
+        .and_then(|tile| {
+            tile.items.iter().find(|item| {
+                item.origin
+                    == (MapOrigin::BaseOrdinal {
+                        ordinal,
+                        object_revision: 0,
+                    })
+            })
+        })
+        .filter(|item| {
+            item.appearance_id == 2358
+                && matches!(item.definition, MapDefinition::Item(id) if id != definition)
+        })
+        .ok_or("I09 captured predecessor did not contain the original chair")?;
+    let rotated_item = world_map::MapItem {
+        definition: MapDefinition::Item(definition),
+        appearance_id: 2359,
+        origin: MapOrigin::BaseOrdinal {
+            ordinal,
+            object_revision: 1,
+        },
+        ..*before_item
     };
     let expected_chair = |tiles: &[MapTile]| {
-        tiles.iter().any(|tile| {
-            tile.position == target
-                && tile.items.iter().any(|item| {
-                    item.origin == origin
-                        && item.definition == MapDefinition::Item(definition)
-                        && item.appearance_id == 2359
-                })
-        })
+        tiles
+            .iter()
+            .any(|tile| tile.position == target && tile.items.contains(&rotated_item))
     };
     for frame in &frames[joined..] {
         frame.validate(Direction::ServerToClient, true)?;
@@ -365,7 +391,10 @@ async fn replay_original(root: &Path) -> Result<(), BoxError> {
         }
         if frame.message_type() == MessageType::CommandResult {
             let result = decode_command_result(frame.payload())?;
-            last_result = Some((result.status, result.payload));
+            if sequence == logout_sequence {
+                assert_logout_receipt(logout_command, result)?;
+                logged_out = true;
+            }
             if sequence == reply_sequence {
                 if result.command_id != command
                     || result.status != CommandStatus::Accepted
@@ -392,15 +421,13 @@ async fn replay_original(root: &Path) -> Result<(), BoxError> {
         if delta.domain_id != world_map::STATE_DOMAIN_WORLD_MAP_VIEW {
             continue;
         }
-        if sequence != delta_sequence {
-            map_transport::apply(&mut session, sequence, frame.payload())?;
-            continue;
-        }
-        if !committed
-            || rotated
-            || delta.base_revision != base
-            || delta.new_revision != new
-            || session.gated_snapshot(map.domain_id) != Some(&map)
+        let is_rotation = sequence == delta_sequence;
+        if is_rotation
+            && (!committed
+                || rotated
+                || delta.base_revision != base
+                || delta.new_revision != new
+                || session.gated_snapshot(map.domain_id) != Some(&map))
         {
             return Err("I09 original rotation did not match the captured predecessor".into());
         }
@@ -409,18 +436,29 @@ async fn replay_original(root: &Path) -> Result<(), BoxError> {
         else {
             return Err("I09 original rotation did not publish a map update".into());
         };
+        let touches_chair = update.value.cleared.contains(&target)
+            || update
+                .value
+                .tiles
+                .iter()
+                .any(|tile| tile.position == target);
+        if !is_rotation {
+            if touches_chair
+                && sequence > before_use_sequence
+                && (!rotated || !expected_chair(&update.value.tiles))
+            {
+                return Err("I09 unexpected chair update outside the bound rotation".into());
+            }
+            continue;
+        }
         if !expected_chair(&update.value.tiles) {
             return Err("I09 original rotation did not change the exact chair".into());
         }
         rotated = true;
     }
-    use oteryn_protocol_oteryn::logout::{LogoutResult, decode_logout_result};
-    let Some((CommandStatus::Accepted, last_payload)) = last_result else {
-        return Err("I09 original logout receipt absent".into());
-    };
     if !rotated
         || !stale
-        || decode_logout_result(last_payload) != Ok(LogoutResult::Accepted)
+        || !logged_out
         || !session
             .world_map_snapshot()
             .is_some_and(|map| expected_chair(&map.tiles))
@@ -429,17 +467,11 @@ async fn replay_original(root: &Path) -> Result<(), BoxError> {
             "I09 original session did not retain the exact chair after stale USE and logout".into(),
         );
     }
-    assert!(map_transport::apply(&mut session, last_sequence + 1, &[0xff]).is_err());
-    assert!(session.take_events().is_empty());
+    assert_malformed_map_is_atomic(&mut session, last_sequence + 1)?;
 
     let relog_bytes = std::fs::read(root.join("i09-relog-frames.bin"))?;
-    let relog_frames = validate_envelopes(
-        root,
-        "i09-relog-envelopes.json",
-        &relog_bytes,
-        relog_id,
-        None,
-    )?;
+    let relog_frames =
+        validate_envelopes(root, "i09-relog-envelopes.json", &relog_bytes, relog_id)?;
     let (relogged, _) = admit_original(&relog_bytes, &relog_frames, relog_id).await?;
     if relogged.world_spatial().actor_position != saved
         || !relogged
@@ -451,6 +483,68 @@ async fn replay_original(root: &Path) -> Result<(), BoxError> {
         );
     }
     Ok(())
+}
+
+fn assert_logout_receipt(
+    expected_command: u64,
+    result: oteryn_protocol_oteryn::CommandResultView<'_>,
+) -> Result<(), BoxError> {
+    use oteryn_protocol_oteryn::logout::{LogoutResult, decode_logout_result};
+    if result.command_id != expected_command
+        || result.status != CommandStatus::Accepted
+        || decode_logout_result(result.payload) != Ok(LogoutResult::Accepted)
+    {
+        return Err("I09 original logout receipt did not match the live logout command".into());
+    }
+    Ok(())
+}
+
+fn assert_malformed_map_is_atomic<S: SessionStream>(
+    session: &mut Session<S>,
+    sequence: u64,
+) -> Result<(), BoxError> {
+    let domain = world_map::STATE_DOMAIN_WORLD_MAP_VIEW;
+    let snapshot = session
+        .gated_snapshot(domain)
+        .ok_or("I09 map absent")?
+        .clone();
+    let header = session.map_header;
+    let revisions = session.gated_revisions.clone();
+    let framed = encode_state_delta(
+        1,
+        sequence,
+        domain,
+        snapshot.revision,
+        snapshot.revision + 1,
+        world_map::DELTA_TYPE_WORLD_MAP_VIEW_DELTA_V1,
+        &[0xff],
+    )?;
+    assert!(
+        map_transport::apply(session, sequence, decode_wire_envelope(&framed)?.payload()).is_err()
+    );
+    assert_eq!(session.gated_snapshot(domain), Some(&snapshot));
+    assert_eq!(session.map_header, header);
+    assert_eq!(session.gated_revisions, revisions);
+    assert!(session.take_events().is_empty());
+    Ok(())
+}
+
+#[test]
+fn furniture_rotation_does_not_treat_a_use_result_as_the_logout_receipt() -> Result<(), BoxError> {
+    use oteryn_protocol_oteryn::{CommandResultView, logout, world_object};
+    let use_payload = world_object::encode_use_result(world_object::UseDisposition::Committed)
+        .map_err(|error| format!("{error:?}"))?;
+    let logout_payload = logout::encode_logout_result(logout::LogoutResult::Accepted)
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(use_payload, logout_payload);
+    let receipt = |command_id| CommandResultView {
+        command_id,
+        status: CommandStatus::Accepted,
+        error_code: 0,
+        payload: &logout_payload,
+    };
+    assert!(assert_logout_receipt(8, receipt(7)).is_err());
+    assert_logout_receipt(8, receipt(8))
 }
 
 #[derive(serde::Deserialize)]
@@ -468,7 +562,6 @@ fn validate_envelopes<'a>(
     name: &str,
     mut transcript: &'a [u8],
     session: &str,
-    rotation: Option<(u64, u64)>,
 ) -> Result<Vec<oteryn_protocol_oteryn::WireEnvelopeView<'a>>, BoxError> {
     use oteryn_protocol_oteryn::{FrameLength, decode_command_result};
 
@@ -487,8 +580,6 @@ fn validate_envelopes<'a>(
         let (command, status) = if frame.message_type() == MessageType::CommandResult {
             let reply = decode_command_result(frame.payload())?;
             (reply.command_id, reply.status as u32)
-        } else if let Some((command, _)) = rotation.filter(|(_, update)| *update == sequence) {
-            (command, CommandStatus::Accepted as u32)
         } else {
             (0, 0)
         };
@@ -518,11 +609,11 @@ fn furniture_rotation_rejects_modified_3521_envelopes() -> Result<(), BoxError> 
     transcript.extend_from_slice(&body);
     let session = "01234567-89ab-7cde-8f01-23456789abcd";
     let valid = serde_json::json!({
-        "command_id": 7,
+        "command_id": 0,
         "game_session_id": session,
         "payload": payload,
         "server_sequence": 42,
-        "status": CommandStatus::Accepted as u32,
+        "status": 0,
     });
     let root = std::env::temp_dir().join(format!(
         "oteryn-i09-envelope-{}-{}",
@@ -536,7 +627,7 @@ fn furniture_rotation_rejects_modified_3521_envelopes() -> Result<(), BoxError> 
     let result = (|| {
         std::fs::write(root.join(name), serde_json::to_vec(&[&valid])?)?;
         assert_eq!(
-            validate_envelopes(&root, name, &transcript, session, Some((7, 42)))?.len(),
+            validate_envelopes(&root, name, &transcript, session)?.len(),
             1
         );
         for (field, wrong) in [
@@ -544,13 +635,13 @@ fn furniture_rotation_rejects_modified_3521_envelopes() -> Result<(), BoxError> 
             ("game_session_id", serde_json::json!("another session")),
             ("payload", serde_json::json!([0])),
             ("server_sequence", serde_json::json!(43)),
-            ("status", serde_json::json!(0)),
+            ("status", serde_json::json!(CommandStatus::Accepted as u32)),
             ("extra", serde_json::json!(null)),
         ] {
             let mut changed = valid.clone();
             changed[field] = wrong;
             std::fs::write(root.join(name), serde_json::to_vec(&[changed])?)?;
-            assert!(validate_envelopes(&root, name, &transcript, session, Some((7, 42))).is_err());
+            assert!(validate_envelopes(&root, name, &transcript, session).is_err());
         }
         Ok(())
     })();

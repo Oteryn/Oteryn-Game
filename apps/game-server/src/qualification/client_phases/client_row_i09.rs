@@ -47,15 +47,8 @@ fn capture(directory: &Path, name: &str, bytes: &[u8]) -> TestResult {
     Ok(())
 }
 
-// A frame with no command or status carries zero. The rotation update is bound
-// to the exact initiating USE result checked by the live client.
-fn capture_envelopes(
-    root: &Path,
-    name: &str,
-    mut transcript: &[u8],
-    session: &str,
-    rotation: Option<(u64, u64)>,
-) -> TestResult {
+// Only command-result frames carry a command ID and status on the wire.
+fn capture_envelopes(root: &Path, name: &str, mut transcript: &[u8], session: &str) -> TestResult {
     use oteryn_protocol_oteryn::{
         FrameLength, MessageType, decode_command_result, decode_wire_envelope,
     };
@@ -70,8 +63,6 @@ fn capture_envelopes(
         let (command_id, status) = if wire.message_type() == MessageType::CommandResult {
             let reply = decode_command_result(wire.payload())?;
             (reply.command_id, reply.status as u32)
-        } else if let Some((command, _)) = rotation.filter(|(_, update)| *update == sequence) {
-            (command, CommandStatus::Accepted as u32)
         } else {
             (0, 0)
         };
@@ -180,21 +171,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let before_map = world_map::decode_world_map_snapshot(&before.payload)
         .map_err(|error| format!("I09 predecessor decode: {error:?}"))?;
     let original = provisioning::item_reference(&definitions, 2358)?;
-    if !before_map.tiles.iter().any(|tile| {
-        tile.position == target
-            && tile.items.iter().any(|item| {
-                item.origin
-                    == (MapOrigin::BaseOrdinal {
-                        ordinal,
-                        object_revision: 0,
-                    })
-                    && item.definition == MapDefinition::Item(original)
-                    && item.appearance_id == 2358
-            })
-    }) {
-        return Err("I09 predecessor omitted original chair at revision 0".into());
-    }
+    let before_item = before_map.tiles.iter().find(|tile| tile.position == target)
+        .and_then(|tile| tile.items.iter().find(|item| {
+            item.origin == (MapOrigin::BaseOrdinal { ordinal, object_revision: 0 })
+        }))
+        .filter(|item| item.definition == MapDefinition::Item(original) && item.appearance_id == 2358)
+        .ok_or("I09 predecessor omitted original chair at revision 0")?;
     client.take_events();
+    let before_use_sequence = client.session_mut().last_server_sequence();
     let reply = client.session_mut().world_context_use(&intent(0)?).await?;
     require_mechanic_acceptance(reply.status, "I09 chair rotation")?;
     if decode_use_result(&reply.payload).map_err(|error| format!("I09 result decode: {error:?}"))?
@@ -280,7 +264,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let MapDefinition::Item(definition) = item.definition else {
         return Err("rotated furniture was not an item".into());
     };
-    if definition != expected || item.appearance_id != 2359 {
+    if *item != (world_map::MapItem {
+        definition: MapDefinition::Item(expected),
+        appearance_id: 2359,
+        origin: MapOrigin::BaseOrdinal { ordinal, object_revision: 1 },
+        ..*before_item
+    }) {
         return Err(format!(
             "rotation expected definition {expected} and appearance 2359, observed {item:?}"
         )
@@ -299,8 +288,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     assert_chair(&mut client, target, item)?;
     let session = client.join_snapshot().game_session_id;
     let position = client.world_spatial().actor_position;
-    let (result, logout, _, _) = logout_once(&mut client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+    let logout = client.session_mut().logout().await?;
+    require_mechanic_acceptance(logout.status, "I09 logout")?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("I09 first logout refused: {logout:?}").into());
     }
     let transcript = oteryn_dev_client::take_qualification_transcript()
@@ -323,24 +313,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let initial_id = uuid_text(session.as_bytes());
     let relog_id = uuid_text(relogged.join_snapshot().game_session_id.as_bytes());
     let binding = format!(
-        "{initial_id} {} {} {} {relog_id}",
-        reply.command_id, reply.server_sequence, delta.server_sequence
+        "{initial_id} {before_use_sequence} {} {} {} {} {} {relog_id}",
+        reply.command_id,
+        reply.server_sequence,
+        delta.server_sequence,
+        logout.command_id,
+        logout.result_server_sequence
     );
     capture(capture_root, "i09-original-frames.bin", &transcript)?;
     capture(capture_root, "i09-relog-frames.bin", &relog_transcript)?;
-    capture_envelopes(
-        capture_root,
-        "i09-envelopes.json",
-        &transcript,
-        &initial_id,
-        Some((reply.command_id, delta.server_sequence)),
-    )?;
+    capture_envelopes(capture_root, "i09-envelopes.json", &transcript, &initial_id)?;
     capture_envelopes(
         capture_root,
         "i09-relog-envelopes.json",
         &relog_transcript,
         &relog_id,
-        None,
     )?;
     capture(capture_root, "i09-binding.txt", binding.as_bytes())?;
     capture(capture_root, "i09-map-before.bin", &before.payload)?;

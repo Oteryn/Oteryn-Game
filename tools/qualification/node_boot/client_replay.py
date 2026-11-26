@@ -147,7 +147,7 @@ def replay_cause(row, package, test, names, captures, server, log):
     replay_env = os.environ.copy()
     if row == "I09":
         bindings = re.findall(
-            r"^(?:SEAM_EVIDENCE )?I09_ORIGINAL_FRAME_BINDING ([0-9a-f-]{36} [0-9]+ [0-9]+ [0-9]+ [0-9a-f-]{36})$",
+            r"^(?:SEAM_EVIDENCE )?I09_ORIGINAL_FRAME_BINDING ([0-9a-f-]{36}(?: [0-9]+){6} [0-9a-f-]{36})$",
             log.read_text(errors="replace"), re.MULTILINE,
         )
         if len(bindings) != 1:
