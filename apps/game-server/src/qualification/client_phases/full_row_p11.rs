@@ -694,7 +694,11 @@ async fn prepare_knight(clients: &SeamClients<'_>, index: usize, leader: bool) -
             ));
         }
     }
-    logout(&mut initial).await
+    let (result, detail, _, _) = fixture_logout_retrying_busy(&mut initial).await?;
+    if result != Some(LogoutResult::Accepted) {
+        return Err(format!("P11 fixture logout refused: {detail}").into());
+    }
+    Ok(())
 }
 
 async fn connect_knight(
@@ -978,10 +982,9 @@ async fn journey(
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=logout observed=refused".into());
+    let (result, detail, _, _) = logout_once(client).await?;
+    if result != Some(LogoutResult::Accepted) {
+        return Err(format!("P11 mechanic logout refused: {detail}").into());
     }
     Ok(())
 }
