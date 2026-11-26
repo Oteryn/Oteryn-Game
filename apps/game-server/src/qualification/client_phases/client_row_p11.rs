@@ -3,7 +3,6 @@ use super::*;
 use oteryn_dev_client::native_session::{Admission, Session, SessionStream};
 use oteryn_protocol_oteryn::account_achievements as wire;
 use std::io::{self, Cursor};
-use std::os::unix::fs::DirBuilderExt;
 use std::pin::Pin;
 use std::sync::Mutex;
 use std::task::{Context, Poll};
@@ -125,45 +124,80 @@ async fn observe<S: SessionStream>(client: &mut Session<S>) -> TestResult<Observ
     })
 }
 
-// The aggregate qualification runner also consumes the original page payload.
-fn export_page(transcript: &[u8], live: &Observation, directory: &Path) -> TestResult {
-    use oteryn_protocol_oteryn::{CommandStatus, MessageType, decode_command_result};
+fn provenance(transcript: &[u8], live: &Observation, character: &[u8; 16]) -> TestResult<String> {
+    use oteryn_protocol_oteryn::{MessageType, decode_command_result};
+    use sha2::{Digest, Sha256};
     let Reply::Frames(records) = frames(transcript) else {
         return Err("P11 capture has no server frames".into());
     };
+    let mut results = Vec::new();
     for record in records {
-        let envelope = decode_wire_envelope(&record)?;
-        if envelope.message_type() != MessageType::CommandResult {
-            continue;
+        let frame = decode_wire_envelope(&record)?;
+        if frame.message_type() == MessageType::CommandResult {
+            let result = decode_command_result(frame.payload())?;
+            results.push((result.command_id, frame.server_sequence()));
         }
-        let result = decode_command_result(envelope.payload())?;
-        if result.command_id != live.commands[0] {
-            continue;
-        }
-        if result.status != CommandStatus::Accepted {
-            return Err("P11 first captured page result was not accepted".into());
-        }
-        std::fs::write(directory.join("p11-page.bin"), result.payload)?;
-        let rows: Vec<_> = live
-            .page
-            .rows
-            .iter()
-            .map(|row| format!("{}:{}:{}", row.key, row.grade, row.points))
-            .collect();
-        std::fs::write(
-            directory.join("p11-expected.txt"),
-            format!(
-                "page={}\ntotal_points={}\nfact_count={}\nhas_more={}\nrows={}\nmalformed_query=local-codec-refusal\nmalformed_wire_submission=false\n",
-                live.page.page,
-                live.page.total_points,
-                live.page.fact_count,
-                live.page.has_more,
-                rows.join("|")
-            ),
-        )?;
-        return Ok(());
     }
-    Err("P11 capture is missing the initial page result".into())
+    if results.len() != 4
+        || !results.iter().take(3).map(|&(id, _)| id).eq(live.commands)
+        || live.commands[2].checked_add(1) != Some(results[3].0)
+        || results.windows(2).any(|pair| pair[0].1 >= pair[1].1)
+    {
+        return Err("P11 capture command results do not match the four live commands".into());
+    }
+    Ok(serde_json::json!({
+        "frames_sha256": format!("{:x}", Sha256::digest(transcript)),
+        "character": character,
+        "session": uuid_text(&live.session),
+        "results": results,
+        "observation_sequences": live.sequences,
+        "page": format!("{:?}", live.page),
+    })
+    .to_string())
+}
+
+#[test]
+fn e2e_p11_original_frame_replay() -> TestResult {
+    let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+        assert!(std::env::var_os("OTERYN_P11_LIVE_PROVENANCE").is_none());
+        return Ok(());
+    };
+    let expected = std::env::var("OTERYN_P11_LIVE_PROVENANCE")?;
+    let directory = Path::new(&directory);
+    if std::fs::read_to_string(directory.join("p11-provenance.json"))? != expected {
+        return Err("P11 capture provenance differs from this run's live verdict".into());
+    }
+    let metadata: serde_json::Value = serde_json::from_str(&expected)?;
+    let character: [u8; 16] = serde_json::from_value(metadata["character"].clone())?;
+    let transcript = std::fs::read(directory.join("p11-frames.bin"))?;
+    if transcript.is_empty() || transcript.len() > MAX_CAPTURE_BYTES {
+        return Err("P11 capture has invalid length".into());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let stream = tokio::io::join(Cursor::new(transcript.as_slice()), tokio::io::sink());
+            let admission = Admission {
+                appearance_items: None,
+                schema_revision: 1,
+                character_id: crate::foundation::CharacterId::decode(&character)?,
+                // The bootstrap goes to the sink. No live admission grant is recorded.
+                admission_material: b"offline-replay",
+                client_build_id: "oteryn-dev-client/world-qualification",
+                supported_capabilities: oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES,
+                deadline: Duration::from_secs(20),
+            };
+            let mut session = Session::admit(stream, admission).await?;
+            let replay = observe(&mut session).await?;
+            if provenance(&transcript, &replay, &character)? != expected {
+                return Err(
+                    "P11 replay did not match live session, commands, sequences or full page"
+                        .into(),
+                );
+            }
+            Ok(())
+        })
 }
 
 async fn fresh_token(clients: &SeamClients<'_>, index: usize) -> TestResult<String> {
@@ -235,6 +269,7 @@ async fn malformed_live(clients: &SeamClients<'_>, index: usize) -> TestResult {
     {}
     let mut id = admitted.next_command_id;
     let mut pages = Vec::with_capacity(2);
+    let mut rejected_at: Option<std::time::Instant> = None;
     for (kind, payload, status) in [
         (
             wire::COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY,
@@ -279,6 +314,18 @@ async fn malformed_live(clients: &SeamClients<'_>, index: usize) -> TestResult {
                 }
             }
             let result = decode_command_result(envelope.payload())?;
+            if kind == logout::COMMAND_TYPE_LOGOUT_INTENT {
+                let elapsed = rejected_at
+                    .ok_or("P11 malformed rejection was never observed")?
+                    .elapsed();
+                evidence(&format!(
+                    "P11_CHECK first_logout command={id} sequence={} status={:?} payload={:02x?} elapsed_since_rejection_ms={}",
+                    envelope.server_sequence(),
+                    result.status,
+                    result.payload,
+                    elapsed.as_millis()
+                ));
+            }
             if result.command_id != id || result.status != status || result.error_code != 0 {
                 return Err(format!(
                     "P11 malformed test command={id} expected={status:?} actual={result:?}"
@@ -287,8 +334,9 @@ async fn malformed_live(clients: &SeamClients<'_>, index: usize) -> TestResult {
             }
             match (kind, status) {
                 (_, CommandStatus::Rejected) if result.payload.is_empty() => {
+                    rejected_at = Some(std::time::Instant::now());
                     evidence(&format!(
-                        "P11_CHECK malformed_wire=Rejected command={id} sequence={}",
+                        "P11_CHECK malformed_wire=Rejected command={id} sequence={} payload=08 error_code=0",
                         envelope.server_sequence()
                     ));
                 }
@@ -356,40 +404,31 @@ async fn journey(clients: &SeamClients<'_>, core: &SeamClients<'_>) -> TestResul
         return Err("P11 new session did not load the exact earned achievement".into());
     }
     drop(client);
-    let session = uuid_text(&live.session);
-    let root = std::env::temp_dir().join(format!("oteryn-p11-{session}"));
-    std::fs::DirBuilder::new().mode(0o700).create(&root)?;
-    let result = async {
-        let capture = root.join("server.frames");
-        let captured = bytes
-            .into_inner()
-            .map_err(|_| "P11 capture lock poisoned")?;
-        std::fs::write(&capture, &captured)?;
-        let input = std::fs::read(capture)?;
-        if input != captured {
-            return Err("P11 capture changed before replay".into());
-        }
-        let stream = tokio::io::join(Cursor::new(input), tokio::io::sink());
-        let mut replay = Session::admit(stream, admission).await?;
-        if observe(&mut replay).await? != live {
-            return Err("P11 replay changed the session, continuity or achievement page".into());
-        }
-        if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-            export_page(&captured, &live, Path::new(&directory))?;
-        }
-        Ok::<(), Box<dyn std::error::Error>>(())
+    let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .ok_or("P11 requires the wrapper's fresh capture directory")?;
+    let directory = Path::new(&directory);
+    let transcript = bytes
+        .into_inner()
+        .map_err(|_| "P11 capture lock poisoned")?;
+    let metadata = provenance(&transcript, &live, &clients.characters[index])?;
+    use std::io::Write;
+    for (name, data) in [
+        ("p11-frames.bin", transcript.as_slice()),
+        ("p11-provenance.json", metadata.as_bytes()),
+    ] {
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(directory.join(name))?
+            .write_all(data)?;
     }
-    .await;
-    let cleanup = std::fs::remove_dir_all(root);
-    result?;
-    cleanup?;
-    evidence(&format!(
-        "P11_CHECK replay=wire PASS capture=current-run session={session} commands={:?} sequences={:?}",
-        live.commands, live.sequences,
-    ));
+    evidence(&format!("P11_CAPTURE provenance={metadata}"));
     Ok(format!(
-        "session={session};page={};facts={};points={};malformed_query=local-codec-refusal;malformed_wire_submission=false",
-        live.page.page, live.page.fact_count, live.page.total_points,
+        "session={};page={};facts={};points={};malformed_wire=Rejected",
+        uuid_text(&live.session),
+        live.page.page,
+        live.page.fact_count,
+        live.page.total_points,
     ))
 }
 
@@ -401,12 +440,17 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, core: &SeamClients<'_>
     )
     .await;
     let (status, detail) = match result {
-        Ok(Ok(detail)) => ("PASS", detail),
+        Ok(Ok(detail)) => ("CAPTURED", detail),
         Ok(Err(error)) => ("FAIL", error.to_string()),
         Err(_) => ("FAIL", "timeout".to_owned()),
     };
+    let kind = if status == "CAPTURED" {
+        "e2e_capture"
+    } else {
+        "e2e_all"
+    };
     evidence(&format!(
-        "e2e_all scenario=P11.client status={status} seconds={:.3} evidence={detail}",
+        "{kind} scenario=P11.client status={status} seconds={:.3} evidence={detail}",
         start.elapsed().as_secs_f64()
     ));
 }
