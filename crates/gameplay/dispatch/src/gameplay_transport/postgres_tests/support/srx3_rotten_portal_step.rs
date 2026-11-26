@@ -3,6 +3,7 @@
 use super::{
     TestResult,
     fixture::{Harness, debug},
+    srx3_native_source_cast_fixtures::{NativeOwnerClock, next_native_melee_deadline},
 };
 
 use crate::foundation::{MovementLocalPosition, RuntimeScopeRefV1};
@@ -26,7 +27,7 @@ pub(super) async fn exercise(
         .get(fence.runtime_scope, fence.scope_ownership_generation.get())
         .ok_or("actual portal scope")?;
     let clock_view = owner.runtime_view(&registered);
-    let clock = super::srx3_native_source_cast_fixtures::NativeOwnerClock::new(&clock_view);
+    let clock = NativeOwnerClock::new(&clock_view);
     // Leave wall-clock scheduling out of the source movement and portal deadlines.
     clock.set(clock_view.owner_now().get());
     super::srx3_activity_source_fixture::drive_native_cycle(&clock_view).await?;
@@ -110,12 +111,20 @@ pub(super) async fn exercise(
         lure.len() <= LURE_TURNS,
         "actual Elder lure stays inside the portal lifetime"
     );
-    let mut chase_turns = lure.len()..LURE_TURNS;
-    for direction in lure {
-        clock.set(clock_view.owner_now().get() + 1_000_000);
+    const MAX_NATIVE_TURNS: usize = 32;
+    let lure_started = clock_view.owner_now().get();
+    let lure_deadline = lure_started + LURE_TURNS as u64 * 1_000_000;
+    for (turn, direction) in lure.into_iter().enumerate() {
+        let next_step = lure_started + turn as u64 * 1_000_000;
         let view = owner.runtime_view(&registered);
-        // The owner clock advance can select an older Item continuation before onMove.
-        super::srx3_activity_source_fixture::settle_native_work(&view).await?;
+        // Service native movement deadlines while the target still holds its
+        // previous tile. A jump straight to the next player STEP coalesces them.
+        for _ in 0..MAX_NATIVE_TURNS {
+            if !advance_lure_turn(&view, &clock, next_step).await? {
+                break;
+            }
+        }
+        assert_eq!(view.owner_now().get(), next_step, "bounded Elder chase work");
         let (step, _) = view
             .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
             .await;
@@ -126,6 +135,7 @@ pub(super) async fn exercise(
         );
         super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
     }
+    let mut chase_turns = 0..MAX_NATIVE_TURNS;
     let route = loop {
         let view = owner.runtime_view(&registered);
         let runtime = view.runtime.lock().await;
@@ -145,12 +155,12 @@ pub(super) async fn exercise(
         let elder_in_step_range = elders.iter().any(|at| {
             at.floor == centre.floor && at.x.abs_diff(centre.x) <= 2 && at.y.abs_diff(centre.y) <= 2
         });
-        if !elder_in_step_range && chase_turns.next().is_some() {
-            // Reaching the lure tile can precede an Elder's next native step.
-            // Use only the turns left in the original five-second lure budget.
+        if !elder_in_step_range
+            && view.owner_now().get() < lure_deadline
+            && chase_turns.next().is_some()
+        {
             drop(runtime);
-            clock.set(clock_view.owner_now().get() + 1_000_000);
-            super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
+            advance_lure_turn(&view, &clock, lure_deadline).await?;
             continue;
         }
         assert!(
@@ -370,4 +380,19 @@ pub(super) async fn exercise(
         );
     }
     Ok(())
+}
+
+async fn advance_lure_turn(
+    view: &ComposedFreshAdmission<'_, '_, '_>,
+    clock: &NativeOwnerClock<'_>,
+    limit: u64,
+) -> TestResult<bool> {
+    let now = view.owner_now().get();
+    if now >= limit {
+        return Ok(false);
+    }
+    clock.set(next_native_melee_deadline(view).await?.clamp(now, limit));
+    view.root.await_ready().await?;
+    super::srx3_activity_source_fixture::drive_native_cycle(view).await?;
+    Ok(true)
 }
