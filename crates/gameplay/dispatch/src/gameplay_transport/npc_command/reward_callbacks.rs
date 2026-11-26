@@ -63,8 +63,53 @@ impl NpcConversations {
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Phase {
-    Rewards,
+    Rewards { skip_opening: Option<&'static str> },
     Offers,
+}
+
+pub(super) fn alternate_opening(
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
+    npc: &str,
+    text: &str,
+) -> Option<&'static str> {
+    use oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog;
+
+    let (authored, has_source) = match (npc, text) {
+        ("oteryn:npc.hairycles", "mission") => (
+            "oteryn:quest-reward/ape-city/start",
+            NpcRuleCatalog::runtime()
+                .and_then(|rules| rules.admitted_for_npc(npc, catalogue))
+                .is_ok_and(|rules| rules.is_some()),
+        ),
+        ("oteryn:npc.angus", "join") => (
+            "oteryn:quest-reward/explorer-society/enrol-angus",
+            catalogue
+                .transition("oteryn:quest-reward/explorer-society/angus/enroll")
+                .is_some(),
+        ),
+        ("oteryn:npc.mortimer", "join") => (
+            "oteryn:quest-reward/explorer-society/enrol-mortimer",
+            catalogue
+                .transition("oteryn:quest-reward/explorer-society/mortimer/enroll")
+                .is_some(),
+        ),
+        _ => return None,
+    };
+    (has_source && catalogue.transition(authored).is_some()).then_some(authored)
+}
+
+pub(super) async fn prefer_source_start(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+) -> bool {
+    match (
+        admission.session_account(session),
+        admission.premium_coordinator,
+    ) {
+        (None, _) => true,
+        (Some(account), Some(owner)) => !owner.premium_gate(account).await.premium_current(),
+        (Some(_), None) => false,
+    }
 }
 
 pub(super) fn prepare(
@@ -107,7 +152,6 @@ pub(super) fn prepare(
             .quest_dialogue
             .reward_request = (text != "no").then_some(context);
     }
-    let catalogue = admission.quest_catalogue.as_deref()?;
     let mut failure_reply = Vec::new();
     let mut refused = false;
     let step = quest_dialogue::prepare(
@@ -172,7 +216,7 @@ pub(super) fn prepare(
                         .is_some_and(|value| (s.minimum..=s.maximum).contains(&value))
                 })
             };
-            if phase == Phase::Rewards {
+            if let Phase::Rewards { skip_opening } = phase {
                 let topic = if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN
                     && text == "mission"
                 {
@@ -185,6 +229,7 @@ pub(super) fn prepare(
                         && c.npc == context.2
                         && c.topic == topic
                         && c.keywords.contains(&text)
+                        && skip_opening != Some(c.key.as_str())
                         // Hairycles continues a saved source journey before
                         // offering the start of the separate authored route.
                         && !(c.key == "oteryn:quest-reward/ape-city/start"
@@ -202,6 +247,15 @@ pub(super) fn prepare(
                                     .all(|op| op.advisory_holds(catalogue, tracks))
                         })
                         && c.requires.iter().all(|r| r.holds(catalogue, tracks))
+                });
+                // Both programmes can teach Melchior's single greeting. The
+                // active Appease stage owns it when its transition is eligible.
+                let appease_greeting = context.2 == "oteryn:npc.melchior"
+                    && matching_stage
+                        .clone()
+                        .any(|c| c.key == "oteryn:quest-reward/tibia-tales/appease-learn-greeting");
+                let matching_stage = matching_stage.filter(|c| {
+                    !appease_greeting || c.key != "oteryn:quest-reward/marid-melchior-greeting"
                 });
                 let mut selected = matching_stage.clone().filter(|c| {
                     c.inventory
