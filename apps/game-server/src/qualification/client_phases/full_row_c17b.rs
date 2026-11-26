@@ -249,6 +249,7 @@ impl<'a> Staging<'a> {
     fn path(
         &self,
         client: &DevClientSession,
+        peer: Option<&DevClientSession>,
         goal: impl Fn(TilePos) -> bool,
     ) -> TestResult<Vec<StepDirection>> {
         let from = tile(client.world_spatial().actor_position)?;
@@ -258,6 +259,11 @@ impl<'a> Staging<'a> {
         let occupied = view
             .iter()
             .filter(|entry| &entry.entity.identity != view.own_identity())
+            .chain(
+                peer.and_then(DevClientSession::world_entities)
+                    .into_iter()
+                    .flat_map(|view| view.iter()),
+            )
             .filter_map(|entry| tile(entry.position).ok())
             .collect::<BTreeSet<_>>();
         route_avoiding(self.world, from, goal, |at| {
@@ -329,7 +335,7 @@ impl<'a> Staging<'a> {
         let adjacent = |at: TilePos, target: TilePos| {
             at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) == 1
         };
-        let path = self.path(caster, |at| {
+        let path = self.path(caster, None, |at| {
             adjacent(at, spawn)
                 && self
                     .world
@@ -363,7 +369,13 @@ impl<'a> Staging<'a> {
             })
             .ok_or("C17b no live Rat adjacent to the authored encounter landing")?;
         let rat_tile = tile(rat.position)?;
-        let path = self.path(observer, |at| adjacent(at, caster_tile) && at != rat_tile)?;
+        let path = self.path(observer, Some(caster), |at| {
+            adjacent(at, caster_tile) && at != rat_tile
+        })?;
+        evidence(&format!(
+            "C17B_STAGING caster={caster_tile:?} rat={rat_tile:?} observer_steps={}",
+            path.len()
+        ));
         provisioning::with_peer_liveness(caster, self.walk(observer, &path)).await?;
         let observer_tile = tile(observer.world_spatial().actor_position)?;
         if !adjacent(observer_tile, caster_tile) {
@@ -553,10 +565,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("step=fresh-admission-condition observed=caster-visible need=reloaded-invisibility-condition".into());
     }
     row.pass("fresh-admission-condition", cast.result_server_sequence)?;
-    let back = staging.path(&caster, |at| at == TOWN)?;
+    let back = staging.path(&caster, Some(&observer), |at| at == TOWN)?;
     provisioning::with_peer_liveness(&mut observer, staging.walk(&mut caster, &back)).await?;
     logout(&mut caster).await?;
-    let back = staging.path(&observer, |at| at == TOWN)?;
+    let back = staging.path(&observer, None, |at| at == TOWN)?;
     staging.walk(&mut observer, &back).await?;
     logout(&mut observer).await
 }
