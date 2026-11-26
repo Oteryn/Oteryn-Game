@@ -13,21 +13,16 @@ pub(super) fn selected() -> bool {
 }
 
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
-    if let Some(root) = std::env::var_os("NODE_BOOT_S01_CAPTURE_DIR") {
-        std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(Path::new(&root).join(name))?
-            .write_all(bytes)?;
-    }
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return Ok(());
+    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .or_else(|| std::env::var_os("NODE_BOOT_S01_CAPTURE_DIR"))
+    else {
+        return Err("S01 fresh capture directory absent".into());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!(
-            "S01_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
-        ));
-    }
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(Path::new(&root).join(name))?
+        .write_all(bytes)?;
     Ok(())
 }
 
@@ -41,57 +36,83 @@ fn own(client: &DevClientSession) -> TestResult<EntityRef> {
 }
 
 struct Sent {
-    status: runtime::CommandStatus,
-    command_id: u64,
-    sequence: u64,
-    operation: Vec<u8>,
-    view: Vec<u8>,
+    operation: String,
+    view: String,
     result: runtime::party::PartyResult,
 }
 
-async fn send(client: &mut DevClientSession, intent: Option<PartyIntent>) -> TestResult<Sent> {
-    let command = match intent {
-        Some(intent) => {
-            runtime::PartyCommand::intent(intent).map_err(|e| format!("party input: {e:?}"))?
-        }
-        None => runtime::PartyCommand::query(),
-    };
+async fn exchange(
+    client: &mut DevClientSession,
+    command: &runtime::PartyCommand,
+) -> TestResult<(String, runtime::party::PartyResult)> {
+    let session = client.join_snapshot().game_session_id;
+    let encoded = session
+        .as_bytes()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let session = format!(
+        "{}-{}-{}-{}-{}",
+        &encoded[..8],
+        &encoded[8..12],
+        &encoded[12..16],
+        &encoded[16..20],
+        &encoded[20..]
+    );
     let before = client.last_server_sequence();
-    let (command_id, reply) = runtime::send_with_receipt(client.session_mut(), &command).await?;
-    if reply.status != runtime::CommandStatus::Accepted || client.last_server_sequence() <= before {
+    let reply = client
+        .session_mut()
+        .gated_command(
+            runtime::party::CAPABILITY_PARTY_V1,
+            command.kind,
+            &command.payload,
+        )
+        .await?;
+    let name = format!("s01-{session}-{}.json", reply.command_id);
+    capture(
+        &name,
+        &serde_json::to_vec(&serde_json::json!({
+            "command_id": reply.command_id,
+            "game_session_id": session,
+            "payload": reply.payload,
+            "server_sequence": reply.server_sequence,
+            "status": reply.status as u32,
+        }))?,
+    )?;
+    if reply.status != runtime::CommandStatus::Accepted || reply.server_sequence <= before {
         return Err(format!(
-            "party command {command_id} did not succeed on first attempt: {:?}",
-            reply.status
+            "party command {} refused: {:?}",
+            reply.command_id, reply.status
         )
         .into());
     }
-    let operation = runtime::party::decode_party_result(&reply.operation)
-        .map_err(|e| format!("party operation: {e:?}"))?;
-    if operation.disposition != PartyDisposition::Ok {
-        return Err(format!("party refused: {:?}", operation.disposition).into());
+    let result = runtime::party::decode_party_result(&reply.payload)
+        .map_err(|error| format!("party reply: {error:?}"))?;
+    if result.disposition != PartyDisposition::Ok {
+        return Err(format!("party refused: {:?}", result.disposition).into());
     }
-    let view = reply.view.ok_or("party current view absent")?;
-    let result =
-        runtime::party::decode_party_result(&view).map_err(|e| format!("party view: {e:?}"))?;
+    Ok((name, result))
+}
+
+async fn send(client: &mut DevClientSession, intent: Option<PartyIntent>) -> TestResult<Sent> {
+    let query = runtime::PartyCommand::query();
+    let Some(intent) = intent else {
+        let (view, result) = exchange(client, &query).await?;
+        return Ok(Sent {
+            operation: view.clone(),
+            view,
+            result,
+        });
+    };
+    let command =
+        runtime::PartyCommand::intent(intent).map_err(|error| format!("party input: {error:?}"))?;
+    let (operation, _) = exchange(client, &command).await?;
+    let (view, result) = exchange(client, &query).await?;
     Ok(Sent {
-        status: reply.status,
-        command_id,
-        sequence: client.last_server_sequence(),
-        operation: reply.operation,
+        operation,
         view,
         result,
     })
-}
-
-fn capture_receipt(label: &str, client: &DevClientSession, sent: &Sent) -> TestResult {
-    let receipt = format!(
-        "{:?} {} {} {:?}",
-        sent.status,
-        sent.command_id,
-        sent.sequence,
-        client.join_snapshot().game_session_id
-    );
-    capture(&format!("s01-{label}-receipt.txt"), receipt.as_bytes())
 }
 
 fn check_state(sent: &Sent, members: &[(&str, bool)], inviter: Option<&str>) -> TestResult {
@@ -144,16 +165,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let invited = send(&mut peer, None).await?;
     check_state(&invited, &[], Some("Packet One"))?;
     let invitation = &invited.result.invitations[0];
-    capture_receipt("invitation", &peer, &invited)?;
-    capture("s01-invitations.bin", &invited.operation)?;
-    capture("s01-invitations-view.bin", &invited.view)?;
 
     let joined = send(&mut peer, Some(PartyIntent::Accept(invitation.handle))).await?;
     let before_pass = [("Packet One", true), ("Packet Two", false)];
     check_state(&joined, &before_pass, None)?;
-    capture_receipt("join", &peer, &joined)?;
-    capture("s01-joined-op.bin", &joined.operation)?;
-    capture("s01-joined-view.bin", &joined.view)?;
 
     let leader_view = send(&mut leader, None).await?;
     check_state(&leader_view, &before_pass, None)?;
@@ -172,9 +187,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     check_state(&passed, &after_pass, None)?;
     let peer_view = send(&mut peer, None).await?;
     check_state(&peer_view, &after_pass, None)?;
-    capture_receipt("leadership", &peer, &peer_view)?;
-    capture("s01-passed-op.bin", &peer_view.operation)?;
-    capture("s01-passed-view.bin", &peer_view.view)?;
 
     check_state(
         &send(&mut leader, Some(PartyIntent::Leave)).await?,
@@ -201,7 +213,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             return Err(format!("S01 relog cleanup refused: {logout:?}").into());
         }
     }
-    let expected = "inviter=Packet One\njoiner=Packet Two\nmembers=2\nshared_xp=false\nnew_leader=Packet Two\n";
+    let expected = format!(
+        "inviter=Packet One\njoiner=Packet Two\nmembers=2\nshared_xp=false\nnew_leader=Packet Two\ninvitation={}\njoin={}\njoin_view={}\nleadership={}\n",
+        invited.view, joined.operation, joined.view, peer_view.view,
+    );
     capture("s01-expected.txt", expected.as_bytes())?;
     Ok("invite-join-pass-leave-logout-relog".to_owned())
 }
@@ -236,11 +251,8 @@ mod tests {
             party_spell_remaining_ms: None,
         };
         let mut observation = Sent {
-            status: runtime::CommandStatus::Accepted,
-            command_id: 1,
-            sequence: 1,
-            operation: Vec::new(),
-            view: Vec::new(),
+            operation: String::new(),
+            view: String::new(),
             result: runtime::party::PartyResult {
                 disposition: PartyDisposition::Ok,
                 shared_xp_enabled: false,

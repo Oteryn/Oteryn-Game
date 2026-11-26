@@ -125,6 +125,10 @@ def replay_targets():
         "oteryn-client", "e2e_e09_real_mail_outcomes_replay_into_mail_panel",
         capture_names("e09", mail.read_text()),
     )]
+    targets["e2e_s01"] = [(
+        "oteryn-client-ui", "party_replay_invite_join_and_leadership_pass",
+        {"s01-expected.txt"},
+    )]
     return targets
 
 

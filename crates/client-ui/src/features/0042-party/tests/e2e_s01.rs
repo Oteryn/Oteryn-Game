@@ -48,40 +48,63 @@ fn encode(
     .map_err(|e| format!("{e:?}").into())
 }
 
+fn valid_uuid_v7(session: &str) -> bool {
+    let bytes = session.as_bytes();
+    bytes.len() == 36
+        && bytes[14] == b'7'
+        && matches!(bytes[19], b'8' | b'9' | b'a' | b'b')
+        && bytes.iter().enumerate().all(|(index, byte)| {
+            if matches!(index, 8 | 13 | 18 | 23) {
+                *byte == b'-'
+            } else {
+                byte.is_ascii_hexdigit()
+            }
+        })
+}
+
 fn load() -> Result<Replay, Error> {
     if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let root = std::path::Path::new(&root);
-        let mut previous = None;
-        let mut statuses = [CommandStatus::Rejected; 3];
-        for (index, label) in ["invitation", "join", "leadership"].iter().enumerate() {
-            let text = std::fs::read_to_string(root.join(format!("s01-{label}-receipt.txt")))?;
-            let mut fields = text.splitn(4, ' ');
-            statuses[index] = match fields.next() {
-                Some("Accepted") => CommandStatus::Accepted,
-                _ => return Err("live party reply was not accepted".into()),
-            };
-            let command: u64 = fields.next().ok_or("command absent")?.parse()?;
-            let sequence: u64 = fields.next().ok_or("sequence absent")?.parse()?;
-            let session = fields
-                .next()
-                .filter(|value| !value.is_empty())
-                .ok_or("session absent")?;
-            if let Some((last_command, last_sequence, last_session)) = &previous {
-                assert!(command > *last_command && sequence > *last_sequence);
-                assert_eq!(session, last_session);
+        let expected = std::fs::read_to_string(root.join("s01-expected.txt"))?;
+        let mut previous = (0, 0);
+        let mut replay_session = None;
+        let mut payloads = Vec::new();
+        for label in ["invitation", "join", "join_view", "leadership"] {
+            let name = value(&expected, label)?;
+            let json: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join(name))?)?;
+            let fields = json.as_object().ok_or("invalid S01 envelope")?;
+            let session = json["game_session_id"].as_str().ok_or("session absent")?;
+            let command = json["command_id"].as_u64().ok_or("command absent")?;
+            let sequence = json["server_sequence"].as_u64().ok_or("sequence absent")?;
+            if fields.len() != 5
+                || json["status"].as_u64() != Some(CommandStatus::Accepted as u64)
+                || !valid_uuid_v7(session)
+                || name != format!("s01-{session}-{command}.json")
+                || command <= previous.0
+                || sequence <= previous.1
+                || replay_session
+                    .as_deref()
+                    .is_some_and(|previous| session != previous)
+            {
+                return Err("invalid S01 envelope binding".into());
             }
-            previous = Some((command, sequence, session.to_owned()));
+            previous = (command, sequence);
+            replay_session = Some(session.to_owned());
+            payloads.push(serde_json::from_value::<Vec<u8>>(json["payload"].clone())?);
         }
+        let [invitations, joined_op, joined_view, passed_view]: [Vec<u8>; 4] = payloads
+            .try_into()
+            .map_err(|_| "incorrect S01 envelope count")?;
         return Ok(Replay {
-            statuses,
+            statuses: [CommandStatus::Accepted; 3],
             live: true,
-            invitations: std::fs::read(root.join("s01-invitations.bin"))?,
-            invitation_view: std::fs::read(root.join("s01-invitations-view.bin"))?,
-            joined_op: std::fs::read(root.join("s01-joined-op.bin"))?,
-            joined_view: std::fs::read(root.join("s01-joined-view.bin"))?,
-            passed_op: std::fs::read(root.join("s01-passed-op.bin"))?,
-            passed_view: std::fs::read(root.join("s01-passed-view.bin"))?,
-            expected: std::fs::read_to_string(root.join("s01-expected.txt"))?,
+            invitation_view: invitations.clone(),
+            invitations,
+            joined_op,
+            joined_view,
+            passed_op: passed_view.clone(),
+            passed_view,
+            expected,
         });
     }
     let joined = encode(
@@ -161,7 +184,12 @@ fn party_replay_invite_join_and_leadership_pass() -> Result<(), Error> {
     );
 
     panel.selected_invitation = Some(handle);
-    assert!(request(&mut panel, Intent::Join).is_some());
+    let join = request(&mut panel, Intent::Join).ok_or("UI did not emit Join")?;
+    assert_eq!(join.kind, party::COMMAND_TYPE_PARTY_INTENT);
+    assert_eq!(
+        party::decode_party_intent(&join.payload).map_err(|error| format!("{error:?}"))?,
+        party::PartyIntent::Accept(handle)
+    );
     assert!(apply_result(
         &mut panel,
         &response(
