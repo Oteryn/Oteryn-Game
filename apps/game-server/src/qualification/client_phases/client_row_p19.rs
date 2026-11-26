@@ -4,7 +4,7 @@ use oteryn_dev_client::native_session::AppearanceUpdate;
 use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, EntityRef, SessionEvent};
 use oteryn_protocol_oteryn::appearance::CAPABILITY_FORGE_CREATURE_V1;
 use oteryn_protocol_oteryn::{
-    attack::AttackIntentDisposition, item_forge, item_view as items, world_object::UseDisposition,
+    attack::AttackIntentDisposition, item_forge, item_view as items, quick_loot,
 };
 use std::num::NonZeroU32;
 
@@ -192,15 +192,28 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         if stopped.disposition != AttackIntentDisposition::Ok {
             return Err(format!("P19 first attack stop refused: {stopped:?}").into());
         }
-        let looted = loot_slivers(&mut client, corpse, sliver, stacks == 15).await?;
+        quick_loot_corpse(&mut client, corpse, stacks == 15).await?;
+        if stacks == 15 {
+            tokio::time::timeout(Duration::from_secs(5), async {
+                while sliver_count(&client, sliver)? <= before.slivers {
+                    client.service_liveness(Duration::from_millis(100)).await?;
+                }
+                TestResult::Ok(())
+            })
+            .await??;
+        }
         let after = rewards(&mut client, sliver).await?;
+        let looted = after
+            .slivers
+            .checked_sub(before.slivers)
+            .ok_or("P19 backpack slivers decreased after loot")?;
         // Global dust table: https://tibia.fandom.com/wiki/Fiendish_and_Influenced_Creatures#Dust_and_Slivers
         let minimum = (before.dust + u64::from(stacks)).min(before.limit);
         let maximum = (before.dust + 3 * u64::from(stacks)).min(before.limit);
         if before.dust == before.limit
             || !(minimum..=maximum).contains(&after.dust)
             || after.limit != before.limit
-            || before.slivers.checked_add(looted) != Some(after.slivers)
+            || (looted > 0) != (stacks == 15)
         {
             return Err(format!("P19 {classification} reward mismatch: {before:?} -> {after:?}, slivers looted={looted}").into());
         }
@@ -328,21 +341,25 @@ async fn rewards(client: &mut DevClientSession, sliver: NonZeroU32) -> TestResul
         .await?;
     require_mechanic_acceptance(reply.status, "P19 Forge dust balance")?;
     let mut result: Rewards = serde_json::from_slice(&reply.payload)?;
-    result.slivers = client
+    result.slivers = sliver_count(client, sliver)?;
+    Ok(result)
+}
+
+fn sliver_count(client: &DevClientSession, sliver: NonZeroU32) -> TestResult<u64> {
+    Ok(client
         .inventory()
         .ok_or("P19 inventory absent")?
         .entries
         .iter()
         .filter(|entry| entry.item_definition_ref == sliver)
         .map(|entry| u64::from(entry.count.get()))
-        .sum();
-    Ok(result)
+        .sum())
 }
 
 async fn kill_and_observe_clear(
     client: &mut DevClientSession,
     target: EntityRef,
-) -> TestResult<items::ItemHandle> {
+) -> TestResult<[u8; 16]> {
     let entities = client.world_entities().ok_or("P19 spatial view absent")?;
     let mut position = entities
         .get(&target)
@@ -402,15 +419,15 @@ async fn kill_and_observe_clear(
                                     && entity.position == position
                                     && !existing.contains(&entity.entity)
                                     && let (EntityDetail::Object {
-                                        item_handle: Some(handle),
+                                        item_handle: Some(_),
                                         ..
                                     }
                                     | EntityDetail::ObjectWithAppearance {
-                                        item_handle: Some(handle),
+                                        item_handle: Some(_),
                                         ..
                                     }) = entity.detail
                                 {
-                                    corpse = Some(handle);
+                                    corpse = Some(entity.entity.identity);
                                 }
                             }
                         }
@@ -427,56 +444,41 @@ async fn kill_and_observe_clear(
     .map_err(|_| format!("P19 exact kill, corpse or marker clear missing for {target:?}"))?
 }
 
-async fn loot_slivers(
+async fn quick_loot_corpse(
     client: &mut DevClientSession,
-    corpse: items::ItemHandle,
-    sliver: NonZeroU32,
+    corpse: [u8; 16],
     fiendish: bool,
-) -> TestResult<u64> {
-    let reply = client.use_item(corpse).await?;
-    require_mechanic_acceptance(reply.status, "P19 use corpse")?;
-    if reply.disposition != UseDisposition::Committed {
-        return Err(format!("P19 first corpse USE refused: {reply:?}").into());
-    }
-    let loot = tokio::time::timeout(Duration::from_secs(5), async {
-        loop {
-            if let Some(view) = client
-                .open_container()
-                .filter(|view| view.container_handle == Some(corpse))
-            {
-                return TestResult::Ok(
-                    view.entries
-                        .iter()
-                        .copied()
-                        .filter(|entry| entry.item_definition_ref == sliver)
-                        .collect::<Vec<_>>(),
-                );
-            }
-            client.service_liveness(Duration::from_millis(100)).await?;
-        }
+) -> TestResult {
+    let payload = quick_loot::encode_quick_loot_request(&quick_loot::QuickLootRequest {
+        action: quick_loot::QuickLootAction::Click,
+        corpse: Some(corpse),
+        category: None,
+        recipient: None,
+        recipient_id: None,
+        fallback_to_main: false,
+        filter_mode: None,
+        filter_definition_ref: None,
     })
-    .await??;
-    let count: u64 = loot.iter().map(|entry| u64::from(entry.count.get())).sum();
+    .map_err(|error| format!("P19 Quick Loot input: {error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            quick_loot::CAPABILITY_QUICK_LOOT_V1,
+            quick_loot::COMMAND_TYPE_QUICK_LOOT,
+            &payload,
+        )
+        .await?;
+    require_mechanic_acceptance(reply.status, "P19 Quick Loot")?;
+    let result = quick_loot::decode_quick_loot_result(&reply.payload)
+        .map_err(|error| format!("P19 Quick Loot result: {error:?}"))?;
     // Global grants slivers only to fiendish creatures, with quantity based on difficulty.
     // https://tibia.fandom.com/wiki/Fiendish_and_Influenced_Creatures#Dust_and_Slivers
-    if (count > 0) != fiendish {
+    if result.items.iter().any(|item| !item.accepted) || (fiendish && result.items.is_empty()) {
         return Err(
-            format!("P19 unexpected corpse sliver count {count}, fiendish={fiendish}").into(),
+            format!("P19 first Quick Loot did not collect the corpse items: {result:?}").into(),
         );
     }
-    for entry in loot {
-        let reply = client
-            .move_item(&items::ItemMoveIntent {
-                source: entry.handle,
-                destination: items::ItemMoveDestination::MainBackpack,
-            })
-            .await?;
-        require_mechanic_acceptance(reply.status, "P19 loot sliver")?;
-        if reply.outcome != items::ItemMoveOutcome::Moved {
-            return Err(format!("P19 first sliver move refused: {reply:?}").into());
-        }
-    }
-    Ok(count)
+    Ok(())
 }
 
 fn confirmed_step(
