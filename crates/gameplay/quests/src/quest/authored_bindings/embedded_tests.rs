@@ -674,7 +674,8 @@ mod main_native_contract {
         // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
         // Knightwatch adds the shared tower permit and the diamond lever claim.
         // Main contributes its 44 native tracks, including the two Vampire Hunter tracks.
-        assert_eq!(before.tracks.len(), 2_237 + 44);
+        // Hairycles' missing-moss reply owns one recovery counter.
+        assert_eq!(before.tracks.len(), 2_237 + 44 + 1);
         for (name, max) in [("rank", 6), ("door", 1)] {
             let key = format!("oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/{name}");
             assert_eq!(
