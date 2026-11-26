@@ -41,6 +41,8 @@ mod premium;
 mod progression;
 mod quest;
 mod release;
+#[cfg(test)]
+pub(super) use release::{CONDITION_RELEASE_PROBE, ConditionReleaseProbe};
 mod release_deferred;
 mod resume;
 mod spells;
