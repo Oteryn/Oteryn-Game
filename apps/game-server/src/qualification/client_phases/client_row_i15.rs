@@ -1,6 +1,8 @@
 //! Captures the real actor-vitals payload consumed by the native session reducer for I15.
 use super::*;
-use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_dev_client::{
+    DevClientSession, SessionEvent, native_session::item_movement::MoveRequest,
+};
 use oteryn_protocol_oteryn::{actor_spell, item_view as items, logout::LogoutResult};
 
 const FIELD: TilePos = TilePos {
@@ -114,11 +116,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("I15 expected one inactive Energy Ring 3051 and an empty Ring slot".into());
     }
     let moved = client
-        .move_item(&items::ItemMoveIntent {
+        .session_mut()
+        .move_item_counted(MoveRequest {
             source: ring.handle,
             destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::Ring),
+            count: None,
         })
-        .await?;
+        .await
+        .map_err(|error| format!("I15 equip command failed: {error}"))?;
     if moved.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("I15 equip refused: {moved:?}").into());
     }
