@@ -211,10 +211,9 @@ fn verify_start(before: &Reply, reply: &Reply, level: u32) -> TestResult {
     Ok(())
 }
 
-type Release = (i32, bool, bool, bool, bool, bool);
+type Release = (i32, bool, bool, Option<i64>, bool, bool);
 
-const ACTIVE: Release = (2, true, true, false, true, true);
-const ORDERLY_RELEASE: Release = (3, false, true, true, false, false);
+const ACTIVE: Release = (2, true, true, None, true, true);
 
 async fn release_snapshot(
     database: &mut sqlx::PgConnection,
@@ -224,7 +223,8 @@ async fn release_snapshot(
     Ok(sqlx::query_as::<_, Release>(
         "SELECT s.session_state::int, s.current_transport_ref IS NOT NULL,
              s.control_loss_epoch IS NULL AND s.original_grace_deadline IS NULL,
-             EXISTS(SELECT 1 FROM game_durability_admission_lifecycle_receipts WHERE operation_key=$2),
+             (SELECT (extract(epoch FROM pg_xact_commit_timestamp(r.xmin)) * 1000000)::bigint
+              FROM game_durability_admission_lifecycle_receipts r WHERE r.operation_key=$2),
              EXISTS(SELECT 1 FROM game_durability_admission_character_guards c
                  WHERE c.character_id=s.character_id AND c.holder_game_session_id=s.game_session_id),
              EXISTS(SELECT 1 FROM game_durability_admission_account_guards a
@@ -253,13 +253,17 @@ async fn logout_released(
     if client.session_mut().logout().await?.result != Some(LogoutResult::Accepted) {
         return Err("P04 first logout was refused".into());
     }
-    // Read once before dropping the transport or issuing a grant.
+    let acknowledged_at = i64::try_from(
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_micros()
+    )?;
+    // Read once before dropping the transport or issuing a grant. The committing
+    // transaction also cleared both guards. Its time must precede wire acceptance.
     let after = release_snapshot(database, session.as_bytes(), &receipt_key).await?;
-    verify_release(after)
+    verify_release(after, acknowledged_at)
 }
 
-fn verify_release(after: Release) -> TestResult {
-    if after != ORDERLY_RELEASE {
+fn verify_release(after: Release, acknowledged_at: i64) -> TestResult {
+    if !matches!(after, (3, false, true, Some(committed), false, false) if committed <= acknowledged_at) {
         return Err(format!("P04 accepted logout without committed orderly release on first observation: {after:?}").into());
     }
     Ok(())
@@ -381,16 +385,17 @@ mod tests {
 
     #[test]
     fn p04_logout_rejects_active_loss_and_uncleared_guards() -> TestResult {
-        verify_release(ORDERLY_RELEASE)?;
+        verify_release((3, false, true, Some(10), false, false), 11)?;
         for wrong in [
             ACTIVE,
-            (1, false, false, false, true, true),
-            (3, false, false, true, false, false),
-            (3, false, true, false, false, false),
-            (3, false, true, true, true, false),
-            (3, false, true, true, false, true),
+            (1, false, false, None, true, true),
+            (3, false, false, Some(10), false, false),
+            (3, false, true, None, false, false),
+            (3, false, true, Some(10), true, false),
+            (3, false, true, Some(10), false, true),
+            (3, false, true, Some(12), false, false),
         ] {
-            assert!(verify_release(wrong).is_err());
+            assert!(verify_release(wrong, 11).is_err());
         }
         Ok(())
     }
