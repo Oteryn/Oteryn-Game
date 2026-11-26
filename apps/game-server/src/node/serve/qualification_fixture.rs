@@ -991,6 +991,15 @@ fn p04_fixture_retry(
 }
 
 #[cfg(feature = "qualification-spawn")]
+fn p04_delivery_weight_revision(digest: [u8; 32]) -> String {
+    let hex = digest
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    format!("sha256:{hex}")
+}
+
+#[cfg(feature = "qualification-spawn")]
 async fn prepare_p04_delivery(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -1146,7 +1155,7 @@ async fn prepare_p04_delivery(
         root_fluid_subtype: None,
         root_charges_remaining: None,
         backpack,
-        content_revision: inventory.content_revision,
+        content_revision: p04_delivery_weight_revision(native.source_digest()),
         ruleset_revision: inventory.ruleset_revision,
         sim_revision: "qualification-v1".into(),
         achievement: None,
@@ -1452,6 +1461,19 @@ mod tests {
             .and_then(|(_, body)| body.split_once("async fn begin_spawn_transaction("))
             .map(|(body, _)| body)
             .ok_or("missing control spawn boundary")
+    }
+
+    #[cfg(feature = "qualification-spawn")]
+    #[test]
+    fn p04_delivery_weights_are_bound_to_the_native_generation() {
+        assert_eq!(
+            p04_delivery_weight_revision([0x0a; 32]),
+            "sha256:0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+        );
+        assert_ne!(
+            p04_delivery_weight_revision([0; 32]),
+            p04_delivery_weight_revision([1; 32])
+        );
     }
 
     #[cfg(feature = "qualification-spawn")]
