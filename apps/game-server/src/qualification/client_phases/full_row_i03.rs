@@ -5,7 +5,7 @@
 //!    accepted exact item text, including the server-computed look-distance description.
 //! 3. Send LOOK for a non-existent carried-item handle; expect an accepted reply containing the
 //!    fact-free `NotAvailable` refusal, proving the negative path does not disclose item facts.
-//! 4. After acquiring a readable sign, book/document, and spellbook by ordinary play, LOOK at
+//! 4. After walking to a readable sign and provisioning a spellbook, LOOK at
 //!    each real handle; expect exact authored sign/book text and the vocation-filtered spell list
 //!    grouped by level (words, name, and fixed or percentage mana cost).
 //! 5. Log out normally, obtain a genuinely fresh admission, LOOK at the same durable carried
@@ -40,7 +40,34 @@ async fn look(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xb3).await?;
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_I03_ACCOUNT").await?;
+    let clients = &identity.clients(clients);
+    let spellbook = provisioning::item_reference(&provisioning::item_index()?, 3059)?;
+    character_prep::declare_seeded(
+        "I03.full",
+        "one spellbook (3059)",
+        "precondition for spellbook LOOK",
+    );
+    let mut setup = connect_character(clients, 0xb3, 0).await?;
+    let setup_session = setup.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(setup_session.as_bytes()),
+        "--profile",
+        "item-3059-1".into(),
+    )
+    .await?;
+    if setup.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("step=spellbook-fixture observed=logout-refused".into());
+    }
+    drop(setup);
+    let mut client = connect_character(clients, 0xb3, 0).await?;
+    if client.join_snapshot().game_session_id == setup_session {
+        return Err("step=spellbook-fixture observed=session-reused".into());
+    }
+    let handle = carried_handle(&client, spellbook)?;
+    evidence("I03_CHECK spellbook-fixture durable-carried-item=3059");
     let entities = client
         .world_entities()
         .ok_or("step-1: own actor view missing")?;
@@ -151,10 +178,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if far.0 != CommandStatus::Accepted || !matches!(&far.1, wire::ItemLookResult::Text(value) if value.contains("\nYou are too far away to read it") && !value.contains("\nYou read: ")) {
         return Err(format!("step=far-map-reading position={at:?} observed={far:?}").into());
     }
-    let spellbook = provisioning::item_reference(&provisioning::item_index()?, 3059)?;
-    super::full_row_i14::acquire(&mut client, world, 3059, 1).await
-        .map_err(|error| verdict::context(format!("step=spellbook-purchase observed={error}"), error))?;
-    let handle = carried_handle(&client, spellbook)?;
     let expected = expected_spellbook(&mut client).await?;
     let book = look(&mut client, wire::ItemLookTarget::Item(handle)).await?;
     if book.0 != CommandStatus::Accepted || !matches!(&book.1, wire::ItemLookResult::Text(value) if spellbook_matches(value, &expected)) {
@@ -168,7 +191,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=relog-map-reading observed=logout-refused".into());
     }
     drop(client);
-    let mut fresh = connect_world(clients, 0xb4).await?;
+    let mut fresh = connect_character(clients, 0xb4, 0).await?;
     if fresh.join_snapshot().game_session_id == session || look(&mut fresh, target).await? != near {
         return Err("step=relog-map-reading observed=session-reused-or-reading-changed".into());
     }
