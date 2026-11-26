@@ -670,7 +670,15 @@ fn peer_logout_after_committed_party_spell_is_accepted_on_first_attempt() -> Tes
 }
 
 #[test]
-fn logout_fails_closed_when_peer_durability_outlasts_retry_window() -> TestResult {
+fn logout_after_dagger_grant_retries_conditions_in_place_and_releases() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::party_buffs_fixtures::run_dagger_grant_logout(admin)
+}
+
+#[test]
+fn logout_fails_closed_and_logs_phase_when_peer_durability_outlasts_retry_window() -> TestResult {
     logout_during_peer_durability(true)
 }
 
@@ -769,18 +777,35 @@ fn logout_during_peer_durability(hold_past_retry_window: bool) -> TestResult {
             Ok::<(), Box<dyn std::error::Error>>(())
         };
         let logout = async {
-            let reply = LOGOUT_RELEASE_PROBE
-                .scope(probe.clone(), owner.logout_session(admitted))
-                .await;
+            let command = LOGOUT_RELEASE_PROBE.scope(probe.clone(), owner.logout_session(admitted));
+            tokio::pin!(command);
+            let mut logs = Vec::new();
+            let reply = std::future::poll_fn(|cx| {
+                let mut result = std::task::Poll::Pending;
+                logs.extend(oteryn_error_codes::capture(|| {
+                    result = std::future::Future::poll(command.as_mut(), cx);
+                }));
+                result
+            })
+            .await;
             probe.logout_finished.notify_one();
-            reply
+            (reply, logs)
         };
-        let (reply, peer_result) = tokio::time::timeout(Duration::from_secs(10), async {
+        let ((reply, logs), peer_result) = tokio::time::timeout(Duration::from_secs(10), async {
             tokio::join!(logout, peer_lookup)
         })
         .await?;
         peer_result?;
         if hold_past_retry_window {
+            assert!(
+                logs.iter().any(|line| {
+                    let has = |field| line.split_whitespace().any(|word| word == field);
+                    has("event=logout_busy")
+                        && has("stage=release_retry_exhausted")
+                        && has("phase=condition_save")
+                }),
+                "exhaustion must name the actual release phase: {logs:?}"
+            );
             assert_eq!(reply, LogoutReply::Unknown);
             assert!(probe.retry_count.load(std::sync::atomic::Ordering::Relaxed) > 1);
             assert_eq!(
