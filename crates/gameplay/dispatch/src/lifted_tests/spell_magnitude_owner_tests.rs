@@ -35,7 +35,9 @@ fn fixture() -> Fixture {
     fixture_with_damage_healing(0)
 }
 
-pub(crate) fn native_weapon_damage_fixture(immune: Option<&str>) -> (
+pub(crate) fn native_weapon_damage_fixture(
+    immune: Option<&str>,
+) -> (
     ChannelRuntimeV1,
     Vec<LiveActorBinding>,
     MagnitudeOwnedAttributes,

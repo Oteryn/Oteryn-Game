@@ -12,8 +12,12 @@ from pathlib import Path
 import world_region_codec as codec
 
 ROOT = Path(__file__).resolve().parents[3]
-OUTPUT = ROOT / "tools/content-schema/world-authoring/samples/quest-key-door-bindings.json"
-CORPUS = ROOT / "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz"
+OUTPUT = (
+    ROOT / "tools/content-schema/world-authoring/samples/quest-key-door-bindings.json"
+)
+CORPUS = (
+    ROOT / "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz"
+)
 REVISION = "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
 # Crystal’s 3301/3302 coordinates retain ordinary two-form gates (12035).
 # Only 3303/3304 have retained locked key-door appearances.
@@ -50,7 +54,9 @@ def document():
             raw = archive.extractfile(row["cache_path"]).read()
             if (
                 hashlib.sha256(raw).hexdigest() != row["sha256"]
-                or hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
+                or hashlib.sha1(
+                    b"blob " + str(len(raw)).encode() + b"\0" + raw
+                ).hexdigest()
                 != row["git_blob_sha1"]
             ):
                 raise ValueError("key door source digest mismatch")
@@ -110,7 +116,9 @@ def document():
             found = set()
             for value in values:
                 positions = value["itemPos"]
-                for position in positions if isinstance(positions, list) else [positions]:
+                for position in (
+                    positions if isinstance(positions, list) else [positions]
+                ):
                     xyz = tuple(position[k] for k in "xyz")
                     if xyz in selected:
                         if value["itemId"] not in (False, selected[xyz]):
@@ -128,7 +136,9 @@ def document():
                         found.add(xyz)
             if found != set(selected):
                 raise ValueError("quest route source selector drift")
-        table = lua_tables.assignments(source(TABLE), {"KeyDoorAction"})["KeyDoorAction"]
+        table = lua_tables.assignments(source(TABLE), {"KeyDoorAction"})[
+            "KeyDoorAction"
+        ]
         storage = lua_tables.assignments(source(STORAGES), {"Storage"})["Storage"]
     for key in ("Quest", "Key"):
         storage = next(f["value"] for f in storage["fields"] if f["key"] == key)
@@ -139,7 +149,9 @@ def document():
     locked_ids = {int(a) for a, _, _ in re.findall(r"\((\d+), (\d+), (\d+)\)", triples)}
     bindings = []
     for field in table["fields"]:
-        expression = field["key"].get("expr") if isinstance(field["key"], dict) else None
+        expression = (
+            field["key"].get("expr") if isinstance(field["key"], dict) else None
+        )
         if expression not in SELECTED:
             continue
         number, storage_line = numbers[expression.rsplit(".", 1)[1]]
@@ -194,12 +206,16 @@ def document():
         if hashlib.sha256(raw).hexdigest() != region["sha256"]:
             raise ValueError("quest route map digest mismatch")
         (tile,) = [
-            tile for _, tiles in codec.decode_region(raw)[3] for tile in tiles if tile[:2] == (x, y)
+            tile
+            for _, tiles in codec.decode_region(raw)[3]
+            for tile in tiles
+            if tile[:2] == (x, y)
         ]
         matches = [
             attrs
             for palette, depth, attrs in tile[-1]
-            if depth == 0 and index["palette"][palette]["source_item_id"] == binding["item"]
+            if depth == 0
+            and index["palette"][palette]["source_item_id"] == binding["item"]
         ]
         if tile[3] != 0 or len(matches) != 1:
             raise ValueError("quest route native item or House drift")

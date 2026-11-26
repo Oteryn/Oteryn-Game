@@ -52,39 +52,6 @@ fn canonical(value: &serde_json::Value, output: &mut Vec<u8>) -> Result<(), Cont
     Ok(())
 }
 
-fn matches_profile_digest(
-    profile: &serde_json::Value,
-    expected: &str,
-) -> Result<bool, ContentError> {
-    let mut row = profile.clone();
-    let mut bytes = Vec::new();
-    // The two published constructor encodings differ only in these null defaults.
-    for full_attributes in [false, true] {
-        let attributes = row["attributes"]
-            .as_object_mut()
-            .ok_or_else(|| invalid("authored constructor raw attributes"))?;
-        attributes
-            .entry("field_replaceable")
-            .or_insert(serde_json::Value::Null);
-        for field in ["field_condition", "rune_consumption"] {
-            if full_attributes {
-                attributes.entry(field).or_insert(serde_json::Value::Null);
-            } else if attributes
-                .get(field)
-                .is_some_and(serde_json::Value::is_null)
-            {
-                attributes.remove(field);
-            }
-        }
-        bytes.clear();
-        canonical(&row, &mut bytes)?;
-        if hex(sha256(&bytes)) == expected {
-            return Ok(true);
-        }
-    }
-    Ok(false)
-}
-
 /// Admit only exact first-party rows. Imported source bindings are never overwritten.
 pub(super) fn admit(
     items: &ItemProfilesDocument,
@@ -151,7 +118,9 @@ pub(super) fn admit(
         {
             return Err(invalid("authored constructor binding or qualification"));
         }
-        if !matches_profile_digest(&rows[index], &matches[0].profile_sha256)? {
+        let mut bytes = Vec::new();
+        canonical(&rows[index], &mut bytes)?;
+        if hex(sha256(&bytes)) != matches[0].profile_sha256 {
             return Err(invalid("authored constructor profile closure"));
         }
         use super::super::ReferenceItemField as F;
@@ -221,17 +190,8 @@ mod tests {
         .expect("compose declared constructor profiles");
         compile_native_gameplay(baseline.compiled(), &supplied)
             .expect("composed constructor admissions match their exact rows");
-        let mut expanded = original.clone();
-        for &index in &indexes {
-            for field in ["field_condition", "field_replaceable", "rune_consumption"] {
-                expanded["records"][index]["attributes"][field] = serde_json::Value::Null;
-            }
-        }
-        supplied.item_profiles = Some(pinned(&serde_json::to_vec(&expanded).unwrap()));
-        compile_native_gameplay(baseline.compiled(), &supplied)
-            .expect("declared constructor profiles with explicit null defaults");
         for index in indexes {
-            for case in 0..6 {
+            for case in 0..5 {
                 let mut changed = original.clone();
                 let record = &mut changed["records"][index];
                 match case {
@@ -245,8 +205,7 @@ mod tests {
                     }
                     2 => record["production_binding_qualification"] = serde_json::Value::Null,
                     3 => record["admission"]["stack_class"] = serde_json::json!("StackCapable"),
-                    4 => record["attributes"]["speed_bonus"] = serde_json::json!(1),
-                    _ => record["attributes"]["field_replaceable"] = serde_json::json!(false),
+                    _ => record["attributes"]["speed_bonus"] = serde_json::json!(1),
                 }
                 supplied.item_profiles = Some(pinned(&serde_json::to_vec(&changed).unwrap()));
                 assert!(

@@ -45,15 +45,18 @@ class QuestChestBindings(unittest.TestCase):
             with self.subTest(position=(x, y, z), appearance=appearance):
                 name = codec.region_name(z, x // 256, y // 256)
                 if name not in regions:
-                    _, _, _, sectors = codec.decode_region(world.with_name(name).read_bytes())
-                    regions[name] = {tile[:2]: tile[-1] for _, tiles in sectors for tile in tiles}
+                    _, _, _, sectors = codec.decode_region(
+                        world.with_name(name).read_bytes()
+                    )
+                    regions[name] = {
+                        tile[:2]: tile[-1] for _, tiles in sectors for tile in tiles
+                    }
                 actual = [
                     (attrs or {}).get(attr)
                     for index, depth, attrs in regions[name][(x, y)]
                     if not depth and palette[index]["source_item_id"] == appearance
                 ]
                 self.assertEqual(actual, [value])
-
 
     def test_shipped_world_has_standalone_quest_reward_selectors(self):
         placements = chests.ROOT / "content/world/placements"
@@ -70,7 +73,10 @@ class QuestChestBindings(unittest.TestCase):
                 path = placements / codec.region_name(z, x // 256, y // 256)
                 _, _, _, sectors = codec.decode_region(path.read_bytes())
                 items = next(
-                    tile[5] for _, tiles in sectors for tile in tiles if tile[:2] == (x, y)
+                    tile[5]
+                    for _, tiles in sectors
+                    for tile in tiles
+                    if tile[:2] == (x, y)
                 )
                 self.assertEqual(
                     [
@@ -111,7 +117,10 @@ class QuestChestBindings(unittest.TestCase):
             (placements / "region-z14-x126-y125.b3").read_bytes()
         )
         items = next(
-            tile[5] for _, tiles in sectors for tile in tiles if tile[:2] == (32506, 32175)
+            tile[5]
+            for _, tiles in sectors
+            for tile in tiles
+            if tile[:2] == (32506, 32175)
         )
         self.assertEqual(
             [
@@ -121,6 +130,7 @@ class QuestChestBindings(unittest.TestCase):
             ],
             [3600],
         )
+
     def test_tyrsung_barrel_publishes_crystal_reward_uid(self):
         placements = chests.ROOT / chests.INDEX
         palette = json.loads(placements.read_bytes())["palette"]
@@ -251,7 +261,8 @@ class QuestChestBindings(unittest.TestCase):
             for suffix in ("bp1", "bp2", "dwarven_shield", "morning_star")
         }
         archive = (
-            chests.ROOT / "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz"
+            chests.ROOT
+            / "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz"
         )
         with (
             tempfile.TemporaryDirectory() as temporary,
@@ -267,7 +278,9 @@ class QuestChestBindings(unittest.TestCase):
                     and r["revision"] == revision
                     and r["path"] == path
                 )
-                raw = corpus.extractfile(row.get("blob_path", row.get("cache_path"))).read()
+                raw = corpus.extractfile(
+                    row.get("blob_path", row.get("cache_path"))
+                ).read()
                 self.assertEqual(hashlib.sha256(raw).hexdigest(), row["sha256"])
                 output = root / path
                 output.parent.mkdir(parents=True, exist_ok=True)
@@ -278,7 +291,9 @@ class QuestChestBindings(unittest.TestCase):
                 document["table_sha256"],
                 "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
             )
-            self.assertEqual({r["unique"] for r in document["bindings"]}, {6253, 6254, 6255, 6256})
+            self.assertEqual(
+                {r["unique"] for r in document["bindings"]}, {6253, 6254, 6255, 6256}
+            )
             self.assertEqual({r["claim"] for r in document["bindings"]}, keys)
             self.assertEqual(document["level_access"], [])
             startup = root / paths[2]
@@ -294,7 +309,8 @@ class QuestChestBindings(unittest.TestCase):
 
     def test_annihilator_level_gate_requalified_from_retained_source_bytes(self):
         archive = (
-            chests.ROOT / "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz"
+            chests.ROOT
+            / "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz"
         )
         with tarfile.open(archive) as corpus:
             manifest = json.load(corpus.extractfile("corpus-manifest.json"))
@@ -345,7 +361,9 @@ class QuestChestBindings(unittest.TestCase):
         selected, _, _ = chests.selections()
         gate = selected["action"][(33214, 31671, 13)]
         self.assertEqual((gate["appearance"], gate["action"]), (5111, 1100))
-        self.assertEqual(gate["claims"], ["oteryn:reward-claim.quest.u7_24.the_annihilator.reward"])
+        self.assertEqual(
+            gate["claims"], ["oteryn:reward-claim.quest.u7_24.the_annihilator.reward"]
+        )
 
     def test_restored_native_quest_chests_and_expertise_doors(self):
         selected, _, _ = chests.selections()
@@ -391,7 +409,9 @@ class QuestChestBindings(unittest.TestCase):
         chests.apply(check=True)
 
     def test_panpipe_key_uses_the_existing_complete_key_lowering(self):
-        definition = chests.claim_definitions(chests.ROOT)["oteryn:reward-claim.quest.key.id4055"]
+        definition = chests.claim_definitions(chests.ROOT)[
+            "oteryn:reward-claim.quest.key.id4055"
+        ]
         self.assertTrue(chests.supported_claim(definition))
         for field in (
             "data_holds",
@@ -407,7 +427,9 @@ class QuestChestBindings(unittest.TestCase):
             elif field == "source_data":
                 changed["source_variant"][field]["status"] = "INCOMPLETE"
             elif field == "native_lowering":
-                changed["source_variant"][field]["pending_implementation"].append("OTHER_OWNER")
+                changed["source_variant"][field]["pending_implementation"].append(
+                    "OTHER_OWNER"
+                )
             elif field == "key_binding":
                 changed["placements"][0]["reward"][field] = "canary:door-key/4056"
             else:
@@ -501,7 +523,9 @@ class QuestChestBindings(unittest.TestCase):
         expected = copy.deepcopy(self.tiles)
         expected[0][5][1][2]["unique"] = 6135
         self.assertEqual(decoded, expected)
-        self.assertEqual(chests.overlay_region(after, self.palette, self.binding), (after, 1, 0))
+        self.assertEqual(
+            chests.overlay_region(after, self.palette, self.binding), (after, 1, 0)
+        )
 
     def test_other_region_is_byte_identical(self):
         before = self.encode(self.tiles)
@@ -553,7 +577,9 @@ class QuestChestBindings(unittest.TestCase):
                 {
                     "palette": self.palette,
                     "source": {},
-                    "regions": [{"path": path, "sha256": hashlib.sha256(raw).hexdigest()}],
+                    "regions": [
+                        {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
+                    ],
                 }
             ),
             chests.SUMMARY: chests.canonical(
@@ -578,7 +604,9 @@ class QuestChestBindings(unittest.TestCase):
         self.assertEqual(summary["item_attributes"], {"text": 1, "unique": 1})
         self.assertEqual(summary["bytes_on_disk"], len(outputs[path]))
         index = json.loads(outputs[chests.INDEX])
-        self.assertEqual(index["regions"][0]["sha256"], hashlib.sha256(outputs[path]).hexdigest())
+        self.assertEqual(
+            index["regions"][0]["sha256"], hashlib.sha256(outputs[path]).hexdigest()
+        )
 
     def test_repository_check_requires_regions_while_unrelated_world_is_unchanged(self):
         outputs = {chests.INDEX: chests.canonical({"source": {}, "regions": []})}

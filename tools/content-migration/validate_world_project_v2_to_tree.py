@@ -375,7 +375,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
     ).read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
-        == "72ab77e4f793f1547599f9fd6ce2b5bc0563c20d9c24ee5a7faccd3c64fb1c3f",
+        == "660aae8184590009fd109c47daadd0e0c44b14a9c107f7ebe8706bbc001513be",
         "HIT_MAGIC_PACKET_DIGEST",
     )
     magic = {

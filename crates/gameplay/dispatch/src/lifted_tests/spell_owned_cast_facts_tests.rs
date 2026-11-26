@@ -232,7 +232,8 @@ fn crystal_equipment_ethereal_cast_uses_qualified_projectile_element() {
     let Some(ProjectV2RangedWeapon::Ammunition {
         attack: standard_attack,
         ..
-    }) = standard.record().authoring.ranged else {
+    }) = standard.record().authoring.ranged
+    else {
         unreachable!();
     };
     let mut low_level_equipment = equipment.clone();
@@ -246,14 +247,22 @@ fn crystal_equipment_ethereal_cast_uses_qualified_projectile_element() {
         15,
         low_level_equipment,
         AccessProjections::default(),
-    ).expect("fenced low-level owner reads")
-        .with_quiver_ammunition(vec![flaming, standard]);
-    let lesser = content.spell_book().spells.iter()
+    )
+    .expect("fenced low-level owner reads")
+    .with_quiver_ammunition(vec![flaming, standard]);
+    let lesser = content
+        .spell_book()
+        .spells
+        .iter()
         .find(|spell| spell.key == "candidate:spell/lesser_ethereal_spear")
         .expect("Lesser Ethereal Spear");
-    let damage = low_level.intrinsic_weapon_for_spell(lesser, &content)
+    let damage = low_level
+        .intrinsic_weapon_for_spell(lesser, &content)
         .expect("eligible standard arrow");
-    assert_eq!(damage.total_attack(), u32::from(bow) + u32::from(standard_attack));
+    assert_eq!(
+        damage.total_attack(),
+        u32::from(bow) + u32::from(standard_attack)
+    );
     assert_eq!(damage.element, ProjectV2RangedElement::Physical);
     assert_eq!(damage.elemental_attack, 0);
 

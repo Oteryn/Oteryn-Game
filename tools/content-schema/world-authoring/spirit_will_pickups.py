@@ -52,7 +52,7 @@ def overlay_outputs(outputs, root=world.ROOT):
         row = regions[path]
         count = sum(len(tile[-1]) for _, tiles in sectors for tile in tiles)
 
-        def encode():
+        def encode(z=z, rx=rx, ry=ry, sectors=sectors):
             return codec.encode_region(
                 z,
                 rx,

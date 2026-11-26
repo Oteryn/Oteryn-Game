@@ -11,8 +11,8 @@ import json
 import re
 import sys
 import tarfile
-from functools import cache
 from collections import Counter
+from functools import cache
 from pathlib import Path
 
 import world_region_codec as codec
@@ -79,7 +79,10 @@ LEVEL_ACCESS = {
     },
     "oteryn:reward-claim.kv.blackknight1": ((32874, 31974, 12), 5102, 1050),
     "oteryn:reward-claim.kv.blackknight2": ((32875, 31974, 12), 5102, 1050),
-    **{f"oteryn:reward-claim.kv.desert{i}": ((32673, 32100, 8), 5102, 1020) for i in (1, 2)},
+    **{
+        f"oteryn:reward-claim.kv.desert{i}": ((32673, 32100, 8), 5102, 1020)
+        for i in (1, 2)
+    },
     # Pinned door_level.lua:173-178; the raw B3 omits startup attributes.
     "oteryn:reward-claim.quest.u7_24.the_annihilator.reward": (
         (33214, 31671, 13),
@@ -125,14 +128,16 @@ def valid_capture_pin(document):
         and document.get("table_sha256") == TABLE_PINS[revision]
         and document.get("level_source_sha256") == LEVEL_SHA256
         and (
-            revision not in STARTUP_PINS or document.get("startup_sha256") == STARTUP_PINS[revision]
+            revision not in STARTUP_PINS
+            or document.get("startup_sha256") == STARTUP_PINS[revision]
         )
     )
 
 
 def canonical(value):
     return (
-        json.dumps(value, separators=(",", ":"), sort_keys=True, ensure_ascii=False) + "\n"
+        json.dumps(value, separators=(",", ":"), sort_keys=True, ensure_ascii=False)
+        + "\n"
     ).encode()
 
 
@@ -145,7 +150,9 @@ def captured_level_access(raw, selected, root=ROOT):
 
     if hashlib.sha256(raw).hexdigest() != LEVEL_SHA256:
         raise ValueError("QUEST_CHEST_LEVEL_SOURCE_PIN")
-    fields = lua_tables.assignments(raw.decode(), {"LevelDoorAction"})["LevelDoorAction"]["fields"]
+    fields = lua_tables.assignments(raw.decode(), {"LevelDoorAction"})[
+        "LevelDoorAction"
+    ]["fields"]
     doors = {}
     for key, (position, appearance, action) in (
         (claim, door) for claim in sorted(selected) for door in level_doors(claim)
@@ -158,7 +165,9 @@ def captured_level_access(raw, selected, root=ROOT):
             for group in groups
             if isinstance(group, dict)
             for p in (
-                group["itemPos"] if isinstance(group["itemPos"], list) else [group["itemPos"]]
+                group["itemPos"]
+                if isinstance(group["itemPos"], list)
+                else [group["itemPos"]]
             )
         ):
             raise ValueError("QUEST_CHEST_LEVEL_ACCESS_SOURCE_DRIFT")
@@ -178,7 +187,9 @@ def captured_level_access(raw, selected, root=ROOT):
 
 def claim_definitions(root):
     claims = {}
-    for path in sorted((root / "content/interactions/reward_claims").glob("reward-claim*.json")):
+    for path in sorted(
+        (root / "content/interactions/reward_claims").glob("reward-claim*.json")
+    ):
         for record in json.loads(path.read_bytes())["records"]:
             definition = record["definition"]
             claims[definition["identity"]["key"]] = definition
@@ -228,7 +239,9 @@ def supported_claim(definition):
             and definition.get("readiness") == "waiting_implementation"
             and definition.get("native_admission") == "WAITING_IMPLEMENTATION"
             and definition.get("data_holds") == []
-            and definition.get("source_variant", {}).get("source_data", {}).get("status")
+            and definition.get("source_variant", {})
+            .get("source_data", {})
+            .get("status")
             == "COMPLETE"
             and native.get("schema") == "OTERYN_NATIVE_CONTAINER_REWARD/v1"
             and native.get("revision") == REVISION
@@ -252,7 +265,9 @@ def source_key_claim(definition):
 
 
 def outlaw_key_claim(definition):
-    return any(key_claim(definition, number, item) for number, item in OUTLAW_KEYS.items())
+    return any(
+        key_claim(definition, number, item) for number, item in OUTLAW_KEYS.items()
+    )
 
 
 def panpipe_key_claim(definition):
@@ -267,10 +282,13 @@ def fibula_amulet_claim(definition):
         and definition.get("data_holds", []) == []
         and native.get("schema") == "OTERYN_NATIVE_CONTAINER_REWARD/v1"
         and native.get("revision") == REVISION
-        and native.get("source_difference") == "EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS"
+        and native.get("source_difference")
+        == "EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS"
         and native.get("source_sha256")
         == "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757"
-        and [(p["unique_id"], p["root_charges_remaining"]) for p in native["placements"]]
+        and [
+            (p["unique_id"], p["root_charges_remaining"]) for p in native["placements"]
+        ]
         == [(6011, 1)]
     )
 
@@ -369,18 +387,24 @@ def capture(source_root, selected, root=ROOT, *, marid_lamp=False, route_access=
 
     raw = (source_root / "data-global/startup/tables/chest.lua").read_bytes()
     table_sha256 = hashlib.sha256(raw).hexdigest()
-    revision = next((revision for revision, pin in TABLE_PINS.items() if pin == table_sha256), None)
+    revision = next(
+        (revision for revision, pin in TABLE_PINS.items() if pin == table_sha256), None
+    )
     if revision is None:
         raise ValueError("QUEST_CHEST_SOURCE_PIN")
     startup_sha256 = None
     if revision in STARTUP_PINS:
-        startup = (source_root / "data-global/startup/others/functions.lua").read_bytes()
+        startup = (
+            source_root / "data-global/startup/others/functions.lua"
+        ).read_bytes()
         startup_sha256 = hashlib.sha256(startup).hexdigest()
         if startup_sha256 != STARTUP_PINS[revision]:
             raise ValueError("QUEST_CHEST_STARTUP_SOURCE_PIN")
     entries = {
         f["key"]: (f["line"], lua_tables.as_python(f["value"]))
-        for f in lua_tables.assignments(raw.decode(), {"ChestUnique"})["ChestUnique"]["fields"]
+        for f in lua_tables.assignments(raw.decode(), {"ChestUnique"})["ChestUnique"][
+            "fields"
+        ]
     }
     claims, rows = claim_definitions(root), []
     charge_cases = (
@@ -514,10 +538,14 @@ def capture(source_root, selected, root=ROOT, *, marid_lamp=False, route_access=
         document["startup"] = "data-global/startup/others/functions.lua:97-120"
     pick_claims = set(selected) & PICK_ACCESS.keys()
     if pick_claims:
-        pick_raw = (source_root / "data-global/startup/tables/tile_pick.lua").read_bytes()
+        pick_raw = (
+            source_root / "data-global/startup/tables/tile_pick.lua"
+        ).read_bytes()
         if hashlib.sha256(pick_raw).hexdigest() != PICK_SHA256:
             raise ValueError("QUEST_PICK_SOURCE_PIN")
-        table = lua_tables.assignments(pick_raw.decode(), {"TilePickAction"})["TilePickAction"]
+        table = lua_tables.assignments(pick_raw.decode(), {"TilePickAction"})[
+            "TilePickAction"
+        ]
         field = next(row for row in table["fields"] if row["key"] == 101)
         entries = lua_tables.as_python(field["value"])
         ground = {
@@ -565,7 +593,9 @@ def capture(source_root, selected, root=ROOT, *, marid_lamp=False, route_access=
         if hashlib.sha256(item_raw).hexdigest() != ITEM_SHA256:
             raise ValueError("QUEST_CHEST_ITEM_SOURCE_PIN")
         unique = lua_tables.assignments(item_raw.decode(), {"ItemUnique"})["ItemUnique"]
-        field = next(row for row in unique["fields"] if row["key"] == MARID_LAMP["unique"])
+        field = next(
+            row for row in unique["fields"] if row["key"] == MARID_LAMP["unique"]
+        )
         lamp = lua_tables.as_python(field["value"])
         if lamp["itemId"] != MARID_LAMP["appearance"] or lamp["itemPos"] != dict(
             zip("xyz", MARID_LAMP["position"])
@@ -588,7 +618,8 @@ def capture(source_root, selected, root=ROOT, *, marid_lamp=False, route_access=
                 for f in table["fields"]
                 if f["key"] == action
                 and lua_tables.as_python(f["value"])["itemId"] == appearance
-                and dict(zip("xyz", position)) in lua_tables.as_python(f["value"])["itemPos"]
+                and dict(zip("xyz", position))
+                in lua_tables.as_python(f["value"])["itemPos"]
             ]
             if len(matches) != 1:
                 raise ValueError("QUEST_CHEST_ITEM_ACCESS_SOURCE_DRIFT")
@@ -631,7 +662,9 @@ def capture(source_root, selected, root=ROOT, *, marid_lamp=False, route_access=
             groups = lua_tables.as_python(field["value"])
             for group in groups:
                 positions = group["itemPos"]
-                for position in positions if isinstance(positions, list) else [positions]:
+                for position in (
+                    positions if isinstance(positions, list) else [positions]
+                ):
                     xyz = tuple(position[axis] for axis in "xyz")
                     if xyz not in ROUTE_DOORS:
                         continue
@@ -677,7 +710,8 @@ def selections(root=ROOT):
             matches = [
                 p
                 for p in definition["placements"]
-                if p["source_binding"]["project_position"] == dict(zip(("x", "y", "z"), position))
+                if p["source_binding"]["project_position"]
+                == dict(zip(("x", "y", "z"), position))
                 and p["appearance_tibia_id"] == row["appearance"]
                 and {"server": "crystalserver", "unique_id": row["unique"]}
                 in p["source_binding"]["legacy_unique_ids"]
@@ -687,7 +721,9 @@ def selections(root=ROOT):
             bindings[position] = row
         for row in document.get("wiki_items", []):
             position = tuple(row["position"])
-            if position in pickups or not row["source"].startswith("https://tibia.fandom.com/"):
+            if position in pickups or not row["source"].startswith(
+                "https://tibia.fandom.com/"
+            ):
                 raise ValueError("QUEST_WIKI_ITEM_SOURCE")
             pickups[position] = row
         captured_claims = {r["claim"] for r in document["bindings"]}
@@ -698,7 +734,10 @@ def selections(root=ROOT):
                 path.name != "outlaw-camp.json"
                 or journey["quest"] != "oteryn:quest.the_outlaw_camp_quest"
                 or captured_claims
-                != {f"oteryn:reward-claim.quest.key.id{number}" for number in OUTLAW_KEYS}
+                != {
+                    f"oteryn:reward-claim.quest.key.id{number}"
+                    for number in OUTLAW_KEYS
+                }
                 or terminal["position"] != [32620, 32198, 10]
                 or terminal["appearance"] != 2472
                 or terminal["unique"] != 14091
@@ -749,7 +788,9 @@ def selections(root=ROOT):
             }
             if props != KATANA_PROPS or props.keys() & bindings.keys():
                 raise ValueError("KATANA_SCENE_SELECTOR_DRIFT")
-            bindings.update((tuple(row["position"]), row) for row in document["katana_props"])
+            bindings.update(
+                (tuple(row["position"]), row) for row in document["katana_props"]
+            )
         for key in captured_claims:
             if any(position not in doors for position, _, _ in level_doors(key)):
                 raise ValueError("QUEST_CHEST_LEVEL_ACCESS_MISSING")
@@ -763,7 +804,10 @@ def selections(root=ROOT):
             doors[position] = row
         for row in document.get("returns", []):
             position = tuple(row["position"])
-            if document.get("teleport_source_sha256") != TELEPORT_SHA256 or position in returns:
+            if (
+                document.get("teleport_source_sha256") != TELEPORT_SHA256
+                or position in returns
+            ):
                 raise ValueError("QUEST_ROUTE_TELEPORT_DRIFT")
             returns[position] = {**row, "teleport": tuple(row["teleport"])}
         for row in document.get("item_access", []):
@@ -783,7 +827,9 @@ def selections(root=ROOT):
         for key in captured_claims & ITEM_ACCESS.keys():
             if ITEM_ACCESS[key][0] not in doors:
                 raise ValueError("QUEST_CHEST_ITEM_ACCESS_MISSING")
-        pick_claims = {claim for row in document.get("pick_access", []) for claim in row["claims"]}
+        pick_claims = {
+            claim for row in document.get("pick_access", []) for claim in row["claims"]
+        }
         if pick_claims:
             expected = {
                 (p, 355, 101, claim)
@@ -795,7 +841,10 @@ def selections(root=ROOT):
                 for row in document["pick_access"]
                 for claim in row["claims"]
             }
-            if document.get("pick_source_sha256") != PICK_SHA256 or authored != expected:
+            if (
+                document.get("pick_source_sha256") != PICK_SHA256
+                or authored != expected
+            ):
                 raise ValueError("QUEST_PICK_SOURCE_DRIFT")
         if well := document.get("well_access"):
             claim = "oteryn:reward-claim.kv.scalearmor"
@@ -803,7 +852,10 @@ def selections(root=ROOT):
                 document.get("well_source_sha256") != ITEM_SHA256
                 or claim not in captured_claims
                 or any(row["claims"] != [claim] for row in well)
-                or {tuple(row["position"]): (row["appearance"], row["action"]) for row in well}
+                or {
+                    tuple(row["position"]): (row["appearance"], row["action"])
+                    for row in well
+                }
                 != SCALE_ARMOR_WELL
             ):
                 raise ValueError("QUEST_WELL_SOURCE_DRIFT")
@@ -839,7 +891,11 @@ def selections(root=ROOT):
             raise ValueError("QUEST_CHEST_KEY_DOOR_SOURCE_PIN")
         gates = json.loads(raw)["gates"]
         for claim, position, appearance, number in key_doors:
-            gate = [r for r in gates if r["identity"]["key"] == f"canary:door-gate/key/{number}"]
+            gate = [
+                r
+                for r in gates
+                if r["identity"]["key"] == f"canary:door-gate/key/{number}"
+            ]
             if (
                 len(gate) != 1
                 or gate[0]["condition"]["key_binding"] != f"canary:door-key/{number}"
@@ -857,7 +913,10 @@ def selections(root=ROOT):
             }
         sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
     # Use the draw-well handler on this retained Ghoul Room placement.
-    if any(row.get("claim") == "oteryn:reward-claim.quest.key.id3600" for row in bindings.values()):
+    if any(
+        row.get("claim") == "oteryn:reward-claim.quest.key.id3600"
+        for row in bindings.values()
+    ):
         position = (32508, 32176, 13)
         if position in doors:
             raise ValueError("GHOUL_ROOM_WELL_ACTION_CONFLICT")
@@ -890,29 +949,41 @@ def selections(root=ROOT):
     alias_path = "content/quests/native-reward-placement-aliases.json"
     key = "oteryn:reward-claim.quest.key.id3899"
     if (root / alias_path).is_file() and any(
-        alias["claim"] == key for alias in json.loads((root / alias_path).read_bytes())["aliases"]
+        alias["claim"] == key
+        for alias in json.loads((root / alias_path).read_bytes())["aliases"]
     ):
         position = (32479, 31903, 4)
         gates_path = "tools/content-schema/quest-authoring/samples/doors/gates.json"
-        manifest_path = "tools/content-schema/quest-authoring/samples/doors/manifest.json"
+        manifest_path = (
+            "tools/content-schema/quest-authoring/samples/doors/manifest.json"
+        )
         gate_key = "canary:door-gate/key/3899"
         gates_raw = (root / gates_path).read_bytes()
         manifest_raw = (root / manifest_path).read_bytes()
         (gate,) = (
-            row for row in json.loads(gates_raw)["gates"] if row["identity"]["key"] == gate_key
+            row
+            for row in json.loads(gates_raw)["gates"]
+            if row["identity"]["key"] == gate_key
         )
         (entry,) = (
-            row for row in json.loads(manifest_raw)["entries"] if row.get("destination") == gate_key
+            row
+            for row in json.loads(manifest_raw)["entries"]
+            if row.get("destination") == gate_key
         )
         if (
             gate["condition"]["key_binding"] != "canary:door-key/3899"
             or [claim["key"] for claim in gate["condition"]["key_from_claims"]]
             != ["canary:reward-claim/quest/key/id3899"]
-            or gate["placements"] != [{"position": dict(zip("xyz", position)), "appearance": None}]
+            or gate["placements"]
+            != [{"position": dict(zip("xyz", position)), "appearance": None}]
             or tuple(entry["position"]) != position
             or entry["status"] != "mapped"
-            or {row["source"] for row in entry["sources"]} != {"canary", "crystalserver"}
-            or any(row["action_key"] != "Storage.Quest.Key.ID3899" for row in entry["sources"])
+            or {row["source"] for row in entry["sources"]}
+            != {"canary", "crystalserver"}
+            or any(
+                row["action_key"] != "Storage.Quest.Key.ID3899"
+                for row in entry["sources"]
+            )
             or position in doors
         ):
             raise ValueError("PARADOX_KEY_DOOR_SOURCE_DRIFT")
@@ -940,7 +1011,8 @@ def selections(root=ROOT):
         or (
             retained is not None
             and (
-                retained["claim"] != "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_oasis"
+                retained["claim"]
+                != "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_oasis"
                 or retained["appearance"] != selector["appearance"]
                 or retained["unique"] != 6271
             )
@@ -954,7 +1026,12 @@ def selections(root=ROOT):
     }
     world_use = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
     return (
-        {"unique": bindings, "action": doors, "wiki_items": pickups, "teleport": returns},
+        {
+            "unique": bindings,
+            "action": doors,
+            "wiki_items": pickups,
+            "teleport": returns,
+        },
         sources,
         (position, world_use),
     )
@@ -964,7 +1041,9 @@ def overlay_region(raw, palette, bindings, attribute="unique", wiki_attributes=N
     """Only a single top-level source appearance may receive its captured attribute."""
     z, rx, ry, table = codec.parse_region(raw)
     selected = {
-        p: r for p, r in bindings.items() if p[2] == z and p[0] // 256 == rx and p[1] // 256 == ry
+        p: r
+        for p, r in bindings.items()
+        if p[2] == z and p[0] // 256 == rx and p[1] // 256 == ry
     }
     if not selected:
         return raw, 0, 0
@@ -982,7 +1061,11 @@ def overlay_region(raw, palette, bindings, attribute="unique", wiki_attributes=N
             if row is None:
                 continue
             if attribute == "wiki_items":
-                if house or not items or palette[items[0][0]]["source_item_id"] != row["ground"]:
+                if (
+                    house
+                    or not items
+                    or palette[items[0][0]]["source_item_id"] != row["ground"]
+                ):
                     raise ValueError(f"QUEST_WIKI_ITEM_GROUND_DRIFT: {position}")
                 for item in row["items"]:
                     index = next(
@@ -1023,7 +1106,9 @@ def overlay_region(raw, palette, bindings, attribute="unique", wiki_attributes=N
                 added += 1
                 changed = True
             found.add(position)
-        sectors[local] = codec.encode_sector_tiles(sx, sy, tiles) if changed else payload
+        sectors[local] = (
+            codec.encode_sector_tiles(sx, sy, tiles) if changed else payload
+        )
     if found != set(selected):
         raise ValueError(f"QUEST_CHEST_TILE_MISSING: {sorted(set(selected) - found)}")
     return (
@@ -1038,7 +1123,9 @@ def overlay_outputs(outputs, root=ROOT, require_all=False):
     index = json.loads(outputs[INDEX])
     imported, byte_delta = 0, 0
     added = {attribute: 0 for attribute in selections_by_attribute}
-    bindings = {p: row for rows in selections_by_attribute.values() for p, row in rows.items()}
+    bindings = {
+        p: row for rows in selections_by_attribute.values() for p, row in rows.items()
+    }
     paths = {
         f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}"
         for x, y, z in bindings
@@ -1057,10 +1144,13 @@ def overlay_outputs(outputs, root=ROOT, require_all=False):
     wiki_items = [
         row
         for (x, y, z), row in selections_by_attribute.get("wiki_items", {}).items()
-        if f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}" in paths
+        if f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}"
+        in paths
     ]
     wiki_attributes = Counter()
-    for appearance in sorted({i["appearance"] for row in wiki_items for i in row["items"]}):
+    for appearance in sorted(
+        {i["appearance"] for row in wiki_items for i in row["items"]}
+    ):
         key = f"oteryn:item.tibia.i{appearance}"
         if appearance in mapped:
             row = mapped[appearance]
@@ -1068,12 +1158,16 @@ def overlay_outputs(outputs, root=ROOT, require_all=False):
                 raise ValueError(f"QUEST_WIKI_ITEM_NOT_ADMITTED: {appearance}")
             row.pop("retired", None)
         else:
-            palette.append({"key": key, "provisional": False, "source_item_id": appearance})
+            palette.append(
+                {"key": key, "provisional": False, "source_item_id": appearance}
+            )
     for path in sorted(paths):
         previous = outputs[path]
         raw = previous
         for attribute, rows in selections_by_attribute.items():
-            raw, count, delta = overlay_region(raw, palette, rows, attribute, wiki_attributes)
+            raw, count, delta = overlay_region(
+                raw, palette, rows, attribute, wiki_attributes
+            )
             if attribute == "wiki_items" and delta:
                 regions[path]["items"] += delta
             imported += count
@@ -1081,10 +1175,14 @@ def overlay_outputs(outputs, root=ROOT, require_all=False):
         byte_delta += len(raw) - len(previous)
         outputs[path] = raw
         regions[path]["sha256"] = hashlib.sha256(raw).hexdigest()
-    if require_all and imported != sum(len(rows) for rows in selections_by_attribute.values()):
+    if require_all and imported != sum(
+        len(rows) for rows in selections_by_attribute.values()
+    ):
         raise ValueError("QUEST_CHEST_INCOMPLETE_OVERLAY")
     x, y, z = world_use_cell
-    world_use_region = f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}"
+    world_use_region = (
+        f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}"
+    )
     world_use_imported = int(world_use_region in paths)
     index["source"]["quest_chests"] = {
         "captures": sources,
@@ -1205,7 +1303,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--apply", action="store_true")
-    mode.add_argument("--capture", type=Path, help="pinned Crystal checkout or reference root")
+    mode.add_argument(
+        "--capture", type=Path, help="pinned Crystal checkout or reference root"
+    )
     mode.add_argument(
         "--capture-level-access",
         type=Path,
@@ -1242,7 +1342,12 @@ if __name__ == "__main__":
             parser.error("--capture requires --claims and --output")
         raw = (
             json.dumps(
-                capture(args.capture, args.claims, marid_lamp=args.marid_lamp, route_access=args.route_access),
+                capture(
+                    args.capture,
+                    args.claims,
+                    marid_lamp=args.marid_lamp,
+                    route_access=args.route_access,
+                ),
                 indent=2,
             )
             + "\n"

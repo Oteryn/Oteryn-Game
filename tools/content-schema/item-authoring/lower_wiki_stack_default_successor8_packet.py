@@ -11,13 +11,13 @@ ROOT = Path(__file__).resolve().parents[3]
 
 base = context.base
 IDS = frozenset({23229, 23230, 23231, 23232, 23295, 23299, 23335, 23339})
-PROOF = (
-    "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-source-qualification-v4.json"
-)
+PROOF = "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-source-qualification-v4.json"
 PROOF_SHA = "f9465526c2c133f436a414bd9702df23aeb3739b0d9023f718407108bec163b7"
-RECEIPT = "docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v19.json"
-RECEIPT_SHA = "2f0a2def079ca2c6100c65b73b893706c0bb5c3fd505c21f448a78ed4c8e1d75"
-OUTPUT = "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json"
+RECEIPT = "docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v20.json"
+RECEIPT_SHA = "b8cacdb450b63b854f6f1e213cc8242bb6763b5e2558bcda9cd80293b2c074ed"
+OUTPUT = (
+    "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json"
+)
 LATER_TERRAIN = "content/world/terrain/terrain-08751-08757.json"
 LATER_TERRAIN_SHA = "b7b183cc46f685bb4e7c0a7ae2d6c683c1eba39d00dea18f65bdf9b5d1140664"
 
@@ -53,7 +53,9 @@ def own_id_frame(root, proof, frame):
         pin["path"]
         != "imports/tibiawiki/source-evidence/stack-default-successor8/global-own-itemid-index.json"
     ):
-        raise ValueError("own-ID index must use closed repository-relative replay route")
+        raise ValueError(
+            "own-ID index must use closed repository-relative replay route"
+        )
     if (
         pin["sha256"] != proof["complete_own_id_index"]["sha256"]
         or pin["original_capture_path"] != proof["complete_own_id_index"]["path"]
@@ -71,7 +73,9 @@ def own_id_frame(root, proof, frame):
             pin["path"]
             != "imports/tibiawiki/source-evidence/stack-default-successor8/global-infobox-object-source-part-098.json"
         ):
-            raise ValueError("own-ID part must use closed repository-relative replay route")
+            raise ValueError(
+                "own-ID part must use closed repository-relative replay route"
+            )
         original_path = pin["original_capture_path"]
         if original_path in parts:
             raise ValueError("duplicate captured part transport")
@@ -82,7 +86,9 @@ def own_id_frame(root, proof, frame):
     used = set()
     for row in proof["records"]:
         source = row["source"]
-        refs = index["by_own_itemid_integer_mention"].get(str(source["source_item_id"]), [])
+        refs = index["by_own_itemid_integer_mention"].get(
+            str(source["source_item_id"]), []
+        )
         if len(refs) != 1 or context.canonical(refs) != context.canonical(
             row["complete_selected_own_id_references"]
         ):
@@ -111,8 +117,10 @@ def own_id_frame(root, proof, frame):
             or not box["positive_exact_infobox_object_match"]
             or context.canonical(box) != context.canonical(row["selected_own_raw_box"])
             or base.sha(box["raw"].encode()) != row["selected_own_raw_box_sha256"]
-            or source["content"][box["offset"] : box["offset"] + len(box["raw"])] != box["raw"]
-            or context.canonical(base.raw_parameters(box["raw"])) != context.canonical(fields)
+            or source["content"][box["offset"] : box["offset"] + len(box["raw"])]
+            != box["raw"]
+            or context.canonical(base.raw_parameters(box["raw"]))
+            != context.canonical(fields)
             or context.canonical(fields) != context.canonical(box["parameter_values"])
             or fields.get("itemid") != [str(source["source_item_id"])]
             or "stackable" in fields
@@ -122,7 +130,9 @@ def own_id_frame(root, proof, frame):
         raise ValueError("closed8 source part scope drift")
 
 
-def qualify(row, definition, binding, obj, routed, observations, pages, cutoff, baseline=None):
+def qualify(
+    row, definition, binding, obj, routed, observations, pages, cutoff, baseline=None
+):
     source = row["source"]
     iid = source["source_item_id"]
     if (
@@ -145,7 +155,9 @@ def qualify(row, definition, binding, obj, routed, observations, pages, cutoff, 
         or name.get("state") != "KNOWN"
     ):
         raise ValueError("successor8 current name/admission/class header drift")
-    why = base.reasons(source, definition, binding, obj, routed, observations, pages, cutoff)
+    why = base.reasons(
+        source, definition, binding, obj, routed, observations, pages, cutoff
+    )
     if why:
         raise ValueError(f"successor8 {iid}: {why}")
     return {
@@ -182,7 +194,8 @@ def build(root=ROOT):
         or {r["source"]["source_item_id"] for r in rows} != IDS
         or receipt["closed_ids"] != sorted(IDS)
         or receipt["historical_source_proof_sha256"] != PROOF_SHA
-        or receipt["purpose"] != "CURRENT_PARENT_QUALIFICATION_NOT_HISTORICAL_NATIVE_AUTHORITY"
+        or receipt["purpose"]
+        != "CURRENT_PARENT_QUALIFICATION_NOT_HISTORICAL_NATIVE_AUTHORITY"
         or len(receipt["actual_published_parent"]) != 40
     ):
         raise ValueError("successor8 closed scope/actual parent receipt drift")
@@ -192,15 +205,21 @@ def build(root=ROOT):
         data = receipt_input(root, pin)
         if len(data) != pin["bytes"]:
             raise ValueError(f"successor8 receipt pin byte count drift: {pin['path']}")
-    original, objects, bound, wiki, pages, definitions, routed = context.current_inputs(root)
+    original, objects, bound, wiki, pages, definitions, routed = context.current_inputs(
+        root
+    )
     originals = {
         r["source_item_id"]
-        for r in json.loads((root / base.OUTPUT.relative_to(base.ROOT)).read_bytes())["promotions"]
+        for r in json.loads((root / base.OUTPUT.relative_to(base.ROOT)).read_bytes())[
+            "promotions"
+        ]
     }
     historical = json.loads(
         base.checked(root, context.historical.PROOF, context.historical.PROOF_SHA)
     )
-    if IDS & (originals | {f["current"]["source_item_id"] for f in historical["frames"]}):
+    if IDS & (
+        originals | {f["current"]["source_item_id"] for f in historical["frames"]}
+    ):
         raise ValueError("successor8 overlaps immutable original cohorts")
     baseline = {r["item_key"]: r for r in receipt["selected_native_definitions"]}
     if len(baseline) != 8 or set(baseline) != {r["source"]["item_key"] for r in rows}:
@@ -215,20 +234,31 @@ def build(root=ROOT):
             or definition["identity"] != row["binding"]["target"]
             or definition["semantics"]["stack"] != {"state": "UNKNOWN"}
         ):
-            raise ValueError("successor8 actual parent identity/unknown stack witness drift")
+            raise ValueError(
+                "successor8 actual parent identity/unknown stack witness drift"
+            )
     current_raw = {}
-    for tag, raw in base.protobuf_fields(base.checked(root, base.CLIENT, base.CLIENT_SHA)):
+    for tag, raw in base.protobuf_fields(
+        base.checked(root, base.CLIENT, base.CLIENT_SHA)
+    ):
         if tag == 1:
             obj = base.decode_appearance_object(raw)
             if obj.get("id") in IDS:
                 if obj["id"] in current_raw:
                     raise ValueError("duplicate successor8 official identity")
                 current_raw[obj["id"]] = base.sha(raw)
-    _, admitted = membership.load_admitted(root / "imports/official/appearance-membership")
+    _, admitted = membership.load_admitted(
+        root / "imports/official/appearance-membership"
+    )
     members = {
-        label: {entry[0]: entry for entry in table["entries"]} for label, table in admitted.items()
+        label: {entry[0]: entry for entry in table["entries"]}
+        for label, table in admitted.items()
     }
-    selected = {r["source_item_id"]: r for r in original["records"] if r["source_item_id"] in IDS}
+    selected = {
+        r["source_item_id"]: r
+        for r in original["records"]
+        if r["source_item_id"] in IDS
+    }
     promotions = []
     for row in rows:
         source = row["source"]

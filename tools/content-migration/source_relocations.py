@@ -156,14 +156,14 @@ RELOCATIONS = {
         "82cd7cc71421911cfb85f0fac5375bf9a225706793dd5debca91b147b91215ba",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "d6b68a8e07aa02a6282aaf1eeb6bd939a1ca53fbe4a834d3fc22058283cca7da",
+        "1ac9e905907e5a9a60f9de7d7bbf25486435473568e310bad465b20a9e21cef9",
     ),
     (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
         "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "d6b68a8e07aa02a6282aaf1eeb6bd939a1ca53fbe4a834d3fc22058283cca7da",
+        "1ac9e905907e5a9a60f9de7d7bbf25486435473568e310bad465b20a9e21cef9",
     ),
     # Numeric17 reuses the Mantra/Bond compiler's source readers. Their behavior
     # is unchanged by the exact Global overlay check on live Mantra/Bond rows.
