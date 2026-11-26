@@ -1,10 +1,10 @@
 //! P12b (Cyclopedia badges, Crystal `PlayerBadge::checkAndUpdateNewBadges`):
-//! 1. Admit the node-boot character, require capability 199 and send the empty badges request.
+//! 1. Admit the node-boot character, prove no badge is stored, and request badges over capability 199.
 //! 2. Decode the accepted reply (count, ascending known badge ids).
 //! 3. Compare it with the durable truth read through read-only SQL: the earned rows of the
-//!    account (`game_account_badges`) must equal the reply and must include every badge the
+//!    account (`game_account_badges`) must equal the reply and contain exactly the badges the
 //!    account facts (age, loyalty, level sum, vocation levels) qualify for.
-//! 4. Log out, freshly admit and require the same badges again.
+//! 4. Prove the original award rows survive logout, fresh admission, and a second request.
 //!
 //! An account that meets no global badge rule has nothing to show, so the row then reports the
 //! missing precondition instead of passing an empty list.
@@ -68,19 +68,16 @@ async fn reply_badges(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
     Ok(decode_badges(&reply.payload).map_err(|error| format!("step=decode;observed={error}"))?)
 }
 
-async fn stored_badges(clients: &SeamClients<'_>) -> TestResult<Vec<u8>> {
+async fn stored_badges(clients: &SeamClients<'_>) -> TestResult<Vec<(i16, i64)>> {
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
-    let rows: Vec<i16> = sqlx::query_scalar(
-        "SELECT badge FROM game_account_badges WHERE account_id=(SELECT account_id FROM game_character_roots \
+    Ok(sqlx::query_as(
+        "SELECT badge, earned_at_unix_ms FROM game_account_badges \
+         WHERE account_id=(SELECT account_id FROM game_character_roots \
          WHERE character_id=encode($1,'hex')::uuid) ORDER BY badge",
     )
     .bind(clients.characters[1].as_slice())
     .fetch_all(&mut connection)
-    .await?;
-    Ok(rows
-        .into_iter()
-        .filter_map(|id| u8::try_from(id).ok())
-        .collect())
+    .await?)
 }
 
 async fn expected_badges(clients: &SeamClients<'_>) -> TestResult<Vec<u8>> {
@@ -116,38 +113,36 @@ async fn expected_badges(clients: &SeamClients<'_>) -> TestResult<Vec<u8>> {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let expected = expected_badges(clients).await?;
+    expect(!expected.is_empty(), "qualifying-badge-inputs", &expected)?;
     let mut client = connect_world(clients, 0xc1).await?;
+    let before = stored_badges(clients).await?;
+    expect(before.is_empty(), "badge-pre-state", &before)?;
+
     let reply = reply_badges(&mut client).await?;
-    let stored = stored_badges(clients).await?;
-    expect(reply == stored, "reply-vs-durable", (&reply, &stored))?;
-    expect(
-        expected.iter().all(|id| reply.contains(id)),
-        "qualifying-badges-granted",
-        (&expected, &reply),
-    )?;
+    expect(reply == expected, "qualifying-badges-granted", (&expected, &reply))?;
+    let awarded = stored_badges(clients).await?;
+    let awarded_ids: Vec<_> = awarded.iter().map(|&(id, _)| id).collect();
+    let expected_ids: Vec<_> = expected.iter().copied().map(i16::from).collect();
+    expect(awarded_ids == expected_ids, "reply-vs-durable", &awarded)?;
     logout(&mut client).await?;
+    wait_character_released(clients, 1).await?;
+    let offline = stored_badges(clients).await?;
+    expect(offline == awarded, "durable-before-relog", (&awarded, &offline))?;
 
     let mut fresh = connect_world(clients, 0xc2).await?;
+    let admitted = stored_badges(clients).await?;
+    expect(admitted == awarded, "durable-after-admission", (&awarded, &admitted))?;
     let again = reply_badges(&mut fresh).await?;
-    expect(again == reply, "reply-after-relog", (&reply, &again))?;
-    expect(
-        stored_badges(clients).await? == reply,
-        "durable-after-relog",
-        "rows-changed",
-    )?;
+    expect(again == expected, "reply-after-relog", (&expected, &again))?;
+    let reread = stored_badges(clients).await?;
+    expect(reread == awarded, "durable-after-relog", (&awarded, &reread))?;
     logout(&mut fresh).await?;
-    if reply.is_empty() {
-        return Ok((
-            "FAIL",
-            format!(
-                "step=badges;observed=empty-accepted-list;needed=account-meeting-a-global-badge-rule;facts-qualify:{}",
-                expected.len()
-            ),
-        ));
-    }
+    wait_character_released(clients, 1).await?;
+    let released = stored_badges(clients).await?;
+    expect(released == awarded, "durable-after-final-logout", (&awarded, &released))?;
     Ok((
         "PASS",
-        format!("badges={reply:?};durable-and-relog-validated"),
+        format!("badges={reply:?};pre-state-empty;original-awards-survive-relog"),
     ))
 }
 
