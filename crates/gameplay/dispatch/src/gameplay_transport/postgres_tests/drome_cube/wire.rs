@@ -1,5 +1,6 @@
 //! The real connection owns sequencing, USE routing, refreshed inventory and status text.
 use super::*;
+use oteryn_protocol_oteryn::presentation::{self, ActorCooldowns};
 use oteryn_protocol_oteryn::tutorial_notices::{
     STATE_DOMAIN_TUTORIAL_NOTICES, TutorialNotice, decode_tutorial_notice,
 };
@@ -7,6 +8,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub(super) struct Exchange {
     pub results: Vec<UseDisposition>,
+    pub cooldowns: Vec<ActorCooldowns>,
     pub notices: Vec<TutorialNotice>,
     pub retained: AdmittedSession,
 }
@@ -49,6 +51,7 @@ pub(super) async fn exchange(
     client.read_to_end(&mut output).await?;
     let mut cursor = 0;
     let mut results = Vec::new();
+    let mut cooldowns = Vec::new();
     let mut notices = Vec::new();
     while cursor < output.len() {
         let prefix = output.get(cursor..cursor + 4).ok_or("short frame length")?;
@@ -70,6 +73,9 @@ pub(super) async fn exchange(
             }
             crate::foundation::MessageType::StateDelta => {
                 let delta = oteryn_protocol_oteryn::decode_state_delta(frame.payload())?;
+                if delta.domain_id == presentation::STATE_DOMAIN_ACTOR_COOLDOWNS {
+                    cooldowns.push(presentation::decode_actor_cooldowns(delta.payload).map_err(debug)?);
+                }
                 if delta.domain_id == STATE_DOMAIN_TUTORIAL_NOTICES {
                     notices.push(decode_tutorial_notice(delta.payload).map_err(debug)?);
                 }
@@ -80,6 +86,7 @@ pub(super) async fn exchange(
     }
     Ok(Exchange {
         results,
+        cooldowns,
         notices,
         retained,
     })

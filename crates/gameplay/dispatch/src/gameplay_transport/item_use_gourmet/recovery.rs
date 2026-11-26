@@ -134,7 +134,7 @@ pub(in crate::gameplay_transport) async fn restore_house(
     }
     crate::gameplay_transport::condition_persistence::restore(
         &mut prepared,
-        restored_conditions.as_ref(),
+        restored_conditions,
         gourmet,
         now.get(),
         saved.rest,

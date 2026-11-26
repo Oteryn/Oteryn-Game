@@ -26,7 +26,7 @@ fn native_finite_condition_postgres_relogin_preserves_remaining_ticks() -> TestR
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    on_thread(admin, false)
+    on_thread(admin, false, None)
 }
 
 #[test]
@@ -34,10 +34,26 @@ fn native_condition_postgres_terminal_save_excludes_environment_and_stale_lease(
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    on_thread(admin, true)
+    on_thread(admin, true, None)
 }
 
-fn on_thread(admin: String, with_environment: bool) -> TestResult {
+#[test]
+fn spell_cooldowns_postgres_relogin_keeps_active_deadlines_and_refuses_recast() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    on_thread(admin, false, Some(false))
+}
+
+#[test]
+fn spell_cooldowns_postgres_relogin_drops_expired_deadlines() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    on_thread(admin, false, Some(true))
+}
+
+fn on_thread(admin: String, with_environment: bool, expire_cooldowns: Option<bool>) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || {
@@ -50,7 +66,7 @@ fn on_thread(admin: String, with_environment: bool) -> TestResult {
                     false,
                 ))?;
                 let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    rt.block_on(scenario(&h, with_environment))
+                    rt.block_on(scenario(&h, with_environment, expire_cooldowns))
                 }));
                 let cleanup = rt.block_on(h.cleanup());
                 match result {
@@ -79,7 +95,14 @@ impl ConnectionIdentifiers for FreshIds {
     }
 }
 
-async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
+async fn scenario(
+    h: &Harness,
+    with_environment: bool,
+    expire_cooldowns: Option<bool>,
+) -> TestResult {
+    use oteryn_protocol_oteryn::actor_spell::SpellCastDisposition;
+    use oteryn_protocol_oteryn::presentation::{self, ActorCooldowns};
+    let cast = crate::gameplay_transport::actor_spell::tests::exura();
     let recovery = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -88,7 +111,17 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
-    let deps = Dependencies::new()?;
+    let mut deps = Dependencies::new()?;
+    if expire_cooldowns.is_some() {
+        // Use a fixture spell window long enough to cover durable release and fresh admission.
+        let spell = &mut deps.spells.spells[cast.spell.get() as usize - 1];
+        spell.learning_required = false;
+        spell.vocations.insert(crate::spell::Vocation::None);
+        spell.cooldown_micros = 60_000_000;
+        for group in &mut spell.groups {
+            group.cooldown_micros = spell.cooldown_micros;
+        }
+    }
     let mut owner = deps.owner(h, &authority);
     owner.evidence = &recovery.evidence;
     let mut admitted = deps.admitted;
@@ -129,6 +162,22 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
             )
             .ok_or("fixture spell state")?;
     }
+    let before: Option<ActorCooldowns> = if expire_cooldowns.is_some() {
+        assert_eq!(
+            owner.cast_spell(deps.actor, session, 1, cast).await.disposition,
+            SpellCastDisposition::Cast
+        );
+        let cooldowns = owner
+            .observe_actor_cooldowns(deps.actor, session)
+            .await
+            .ok_or("paid cooldowns")?;
+        for kind in [presentation::ActorCooldownKind::Spell, presentation::ActorCooldownKind::Group] {
+            assert!(cooldowns.entries.iter().any(|entry| entry.kind == kind));
+        }
+        Some(cooldowns)
+    } else {
+        None
+    };
     let applied_at = install_conditions(&owner, &deps, with_environment).await?;
     owner.clock_origin -= Duration::from_millis(750);
     let _clock = owner.freeze_owner_clock_for_test();
@@ -162,7 +211,30 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
     let ends_in = rows[0]["ends_at"].as_u64().ok_or("remaining duration")?;
     assert_eq!(ends_in, DURATION_US - elapsed_at_save);
 
-    let fresh_deps = Dependencies::new()?;
+    if expire_cooldowns == Some(true) {
+        let persisted: Option<serde_json::Value> = sqlx::query_scalar(
+            "SELECT snapshot->'spell_cooldowns_unix_us'
+             FROM game_character_condition_snapshots WHERE character_id = encode($1, 'hex')::uuid",
+        )
+        .bind(character.as_bytes().as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        let entries = persisted.as_ref().and_then(serde_json::Value::as_array)
+            .ok_or("logout must save active spell and group deadlines")?;
+        assert_eq!(entries.len(), before.as_ref().ok_or("paid entries")?.entries.len());
+        let expired = serde_json::Value::Array(
+            entries.iter().map(|row| serde_json::json!([row[0], 1])).collect(),
+        );
+        sqlx::query("UPDATE game_character_condition_snapshots
+            SET snapshot = jsonb_set(snapshot, '{spell_cooldowns_unix_us}', $1)
+            WHERE character_id = encode($2, 'hex')::uuid")
+            .bind(expired)
+            .bind(character.as_bytes().as_slice())
+            .execute(&h.pool)
+            .await?;
+    }
+    let mut fresh_deps = Dependencies::new()?;
+    fresh_deps.spells = deps.spells.clone();
     let mut fresh_owner = fresh_deps.owner(h, &authority);
     fresh_owner.evidence = &recovery.evidence;
     let token = RecoverySource::fresh_token(91)?;
@@ -178,7 +250,7 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
     )
     .map_err(debug)?;
     let (mut server, _client) = tokio::io::duplex(1 << 20);
-    let fresh = crate::gameplay_transport::connection::admit_frame(
+    let mut fresh = crate::gameplay_transport::connection::admit_frame(
         &mut server,
         &frame,
         &fresh_owner,
@@ -211,6 +283,45 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
             .clone()
     };
     verify_restored_phase(restored, ends_in)?;
+
+    if let (Some(expired), Some(before)) = (expire_cooldowns, before) {
+        // The legacy fixture has no activated map-presentation source to advertise.
+        // Supply the negotiated pair for the transport half of the relog probe.
+        use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+        use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
+        let spatial = CAPABILITY_WORLD_SPATIAL_ENTITIES;
+        let present = presentation::CAPABILITY_PRESENTATION_V1;
+        fresh.continuity.selected_capabilities = SelectedCapabilities::select(
+            &[
+                OfferedCapability { id: spatial, requires: &[] },
+                OfferedCapability {
+                    id: present,
+                    requires: &presentation::CAPABILITY_PRESENTATION_V1_REQUIRES,
+                },
+            ],
+            &[spatial, present],
+        ).ok_or("fixture presentation selection")?;
+        let cooldowns = login_cooldowns(&fresh_owner, fresh).await?;
+        if expired {
+            assert!(cooldowns.entries.is_empty());
+        } else {
+            assert_eq!(cooldowns.entries.len(), before.entries.len());
+            for entry in &cooldowns.entries {
+                let previous = before.entries.iter()
+                    .find(|old| old.kind == entry.kind && old.id == entry.id)
+                    .ok_or("restored cooldown key")?;
+                let remaining = entry.expires_at_ms.saturating_sub(cooldowns.server_now_ms);
+                assert!(remaining > 0);
+                assert!(remaining < previous.expires_at_ms - before.server_now_ms);
+            }
+            let recast = fresh_owner
+                .cast_spell(fresh.runtime_actor.ok_or("fresh actor")?, fresh.game_session_id, 1, cast)
+                .await;
+            assert_eq!(recast.disposition, SpellCastDisposition::CoolingDown);
+            assert!(recast.vitals.is_none());
+        }
+        eprintln!("SPELL_COOLDOWNS_RELOGIN POSTGRES_CASE_COMPLETED expired={expired}");
+    }
 
     if with_environment {
         let mut replacement = saved.clone();
@@ -359,4 +470,33 @@ fn verify_restored_phase(
         }
     );
     Ok(())
+}
+
+async fn login_cooldowns(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    fresh: AdmittedSession,
+) -> TestResult<oteryn_protocol_oteryn::presentation::ActorCooldowns> {
+    use oteryn_protocol_oteryn::{self as wire, presentation};
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    client.shutdown().await?;
+    crate::gameplay_transport::connection::serve_admitted(
+        &mut server, fresh, owner, crate::gameplay_transport::connection::IDLE_LIVENESS,
+    ).await;
+    drop(server);
+    let mut body = Vec::new();
+    while let Ok(length) = client.read_u32().await {
+        let mut bytes = vec![0; usize::try_from(length)?];
+        client.read_exact(&mut bytes).await?;
+        let frame = crate::foundation::decode_wire_envelope(&bytes)?;
+        if frame.message_type() == crate::foundation::MessageType::SnapshotChunk {
+            body.extend_from_slice(wire::decode_snapshot_chunk_framing(frame.payload())?.1);
+        }
+    }
+    let snapshot = wire::decode_snapshot_body(&body)?.into_iter()
+        .find(|row| row.domain_id == presentation::STATE_DOMAIN_ACTOR_COOLDOWNS)
+        .ok_or("login cooldown domain")?;
+    assert_eq!(snapshot.snapshot_type, presentation::SNAPSHOT_TYPE_ACTOR_COOLDOWNS_V1);
+    Ok(presentation::decode_actor_cooldowns(snapshot.payload).map_err(debug)?)
 }

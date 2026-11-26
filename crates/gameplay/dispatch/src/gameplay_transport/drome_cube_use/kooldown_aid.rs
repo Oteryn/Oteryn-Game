@@ -3,7 +3,7 @@
 //! exact PREPARE may apply the instant effect after a known commit, once, in the item lane.
 
 use super::super::*;
-use crate::durability::item_use::concoction::kooldown_aid::KOOLDOWN_AID_KEY;
+use crate::durability::item_use::concoction::kooldown_aid::{KOOLDOWN_AID_KEY, KooldownAidOutcome};
 
 const RESET_TEXT: &str = "Your spells are no longer on cooldown.";
 
@@ -245,14 +245,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         #[cfg(test)]
         if matches!(
             &written,
-            Ok(crate::durability::item_use::ItemUseOutcome::Written { .. })
+            Ok(KooldownAidOutcome::Used(
+                crate::durability::item_use::ItemUseOutcome::Written { .. }
+            ))
         ) && test_faults::take_lost_ack()
         {
             self.mark_cube_unknown(actor, command).await;
             return Err(());
         }
+        let mut remaining_ms = None;
         let disposition = match written {
-            Ok(_) => UseDisposition::Committed,
+            Ok(KooldownAidOutcome::Used(_)) => UseDisposition::Committed,
+            Ok(KooldownAidOutcome::Exhausted { remaining_ms: ms }) => {
+                remaining_ms = Some(ms);
+                UseDisposition::Exhausted
+            }
             Err(error) => {
                 match self
                     .root
@@ -275,6 +282,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         self.finish_kooldown_aid(actor, command, binding, disposition)
             .await?;
+        if let Some(ms) = remaining_ms {
+            let seconds = ms.div_ceil(1000);
+            let unit = if seconds == 1 { "second" } else { "seconds" };
+            self.states.tutorial_sessions.notice(
+                command.game_session_id,
+                oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(format!(
+                    "Kooldown Aid can be used again in {seconds} {unit}."
+                )),
+            );
+        }
         Ok(disposition)
     }
 
