@@ -185,21 +185,65 @@ fn outfit_grant_projection(
     expected
 }
 
+async fn expected_doll_choice(
+    clients: &SeamClients<'_>,
+    client: &DevClientSession,
+) -> TestResult<&'static item_cosmetics::Choice> {
+    use sqlx::Connection as _;
+
+    // Read only the input instance identity. The wire inventory and catalogue remain
+    // the sole source of observed consumption and grant evidence.
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let sources: Vec<Vec<u8>> = sqlx::query_scalar(
+        "SELECT uuid_send(i.item_instance_id) FROM game_item_container_entries e
+         JOIN game_item_instances i ON i.item_instance_id = e.item_instance_id
+         WHERE e.character_id = encode($1, 'hex')::uuid AND e.world_id = encode($2, 'hex')::uuid
+           AND i.world_id = e.world_id AND i.lifecycle = 1 AND i.quantity = 1
+           AND i.definition_family = 'Item' AND i.definition_production_key = 'oteryn:item.tibia.i6579'
+         LIMIT 2",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(clients.world.as_slice())
+    .fetch_all(&mut db)
+    .await?;
+    let [source] = sources.as_slice() else {
+        return Err("step=doll observed=missing-or-ambiguous-input-instance".into());
+    };
+    let source: [u8; 16] = source.as_slice().try_into()?;
+    let rule =
+        item_cosmetics::rule("oteryn:item.tibia.i6579").ok_or("step=doll observed=no-rule")?;
+    let session = *client.join_snapshot().game_session_id.as_bytes();
+    let command = client.next_command_id();
+    let draw = |domain, upper| {
+        oteryn_gameplay_items::reward_bag::reward_bag_bounded_draw(
+            session, command, source, domain, upper,
+        )
+        .ok_or("step=doll observed=invalid-draw-bound")
+    };
+    // Crystal draws an outfit and an addon once each, in two independent domains.
+    // Calculate the expected choice separately from the server's item selector.
+    let outfit = draw(224, u64::try_from(rule.choices.len() / 2)?)?;
+    let addon = draw(225, 2)?;
+    let choice = usize::try_from(outfit * 2 + addon)?;
+    rule.choices
+        .get(choice)
+        .ok_or_else(|| "step=doll observed=invalid-draw".into())
+}
+
 fn verify_doll(
     content: &NativeCosmeticsView,
+    choice: &item_cosmetics::Choice,
     before: &BTreeMap<String, (u32, u8)>,
     after: &BTreeMap<String, (u32, u8)>,
 ) -> TestResult {
-    let rule =
-        item_cosmetics::rule("oteryn:item.tibia.i6579").ok_or("step=doll observed=no-rule")?;
-    if before == after {
-        return Err("step=doll observed=no-outfit-change".into());
+    let expected = outfit_grant_projection(content, before, &choice.grants);
+    if &expected == before || &expected != after {
+        return Err(format!(
+            "step=doll observed=unexpected-outfit-change expected={}",
+            choice.owned
+        )
+        .into());
     }
-    let choice = rule
-        .choices
-        .iter()
-        .find(|choice| outfit_grant_projection(content, before, &choice.grants) == *after)
-        .ok_or("step=doll observed=outfits-do-not-match-a-single-authored-draw")?;
     evidence(&format!(
         "W19D_DOLL_ASSERT grant={} consumed=1",
         choice.owned
@@ -313,6 +357,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         );
     }
     evidence("W19D_AFFLICTED_ASSERT consumed=12551,12552,12553,12554,12555,12556 outfit=afflicted");
+    let doll_choice = expected_doll_choice(&clients, &client).await?;
     expect_item_use(
         &mut client,
         reference(ADDON_DOLL)?,
@@ -324,7 +369,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=doll observed=wrong-consumption".into());
     }
     let after_doll = outfits(&mut client)?;
-    verify_doll(&cosmetics, &afflicted, &after_doll)?;
+    verify_doll(&cosmetics, doll_choice, &afflicted, &after_doll)?;
     if appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts {
         return Err("step=outfit-use observed=unexpected-mount-grant".into());
     }
@@ -416,29 +461,39 @@ mod tests {
             (citizen.clone(), (136, 0)),
             (citizen_alias.clone(), (136, 0)),
         ]);
+        let rule = item_cosmetics::rule("oteryn:item.tibia.i6579").ok_or("doll rule")?;
+        let choice = |key| {
+            rule.choices
+                .iter()
+                .find(|choice| choice.owned == key)
+                .ok_or("authored choice")
+        };
+        let citizen_choice = choice("oteryn:item-grant.outfit.128-136.addon1")?;
+        let afflicted_choice = choice("oteryn:item-grant.outfit.430-431.addon2")?;
         let existing_base = BTreeMap::from([
             (citizen.clone(), (136, 1)),
-            (citizen_alias.clone(), (136, 0)),
+            (citizen_alias.clone(), (136, 1)),
         ]);
-        verify_doll(&cosmetics, &before, &existing_base)?;
-        let mut unearned_alias = existing_base.clone();
-        unearned_alias.insert(citizen_alias, (136, 1));
-        assert!(verify_doll(&cosmetics, &before, &unearned_alias).is_err());
+        verify_doll(&cosmetics, citizen_choice, &before, &existing_base)?;
+        let mut missing_alias = existing_base.clone();
+        missing_alias.insert(citizen_alias, (136, 0));
+        assert!(verify_doll(&cosmetics, citizen_choice, &before, &missing_alias).is_err());
         let mut new_base = before.clone();
         new_base.insert(afflicted.clone(), (431, 2));
-        assert!(verify_doll(&cosmetics, &before, &new_base).is_err());
+        assert!(verify_doll(&cosmetics, afflicted_choice, &before, &new_base).is_err());
         new_base.insert(afflicted_alias, (431, 2));
-        verify_doll(&cosmetics, &before, &new_base)?;
-        assert!(verify_doll(&cosmetics, &before, &before).is_err());
+        verify_doll(&cosmetics, afflicted_choice, &before, &new_base)?;
+        assert!(verify_doll(&cosmetics, citizen_choice, &before, &before).is_err());
         let mut removed_base = new_base.clone();
         removed_base.remove(&citizen);
-        assert!(verify_doll(&cosmetics, &before, &removed_base).is_err());
+        assert!(verify_doll(&cosmetics, afflicted_choice, &before, &removed_base).is_err());
         let mut wrong_look = existing_base.clone();
         wrong_look.insert(citizen.clone(), (128, 1));
-        assert!(verify_doll(&cosmetics, &before, &wrong_look).is_err());
+        assert!(verify_doll(&cosmetics, citizen_choice, &before, &wrong_look).is_err());
         let mut wrong_mask = existing_base;
         wrong_mask.insert(citizen, (136, 3));
-        assert!(verify_doll(&cosmetics, &before, &wrong_mask).is_err());
+        assert!(verify_doll(&cosmetics, citizen_choice, &before, &wrong_mask).is_err());
+        assert!(verify_doll(&cosmetics, citizen_choice, &before, &new_base).is_err());
         Ok(())
     }
 
