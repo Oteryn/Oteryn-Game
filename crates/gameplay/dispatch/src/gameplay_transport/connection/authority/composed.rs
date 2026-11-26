@@ -3,6 +3,7 @@
 use crate::gameplay_transport::connection::{
     AchievementNoticeObservation, SelectedCapabilities, UseCommand,
 };
+use crate::gameplay_transport::item_ref_admission::UseSourceHint;
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
@@ -1308,19 +1309,20 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         item: item_view::ItemKey,
     ) -> Option<UseOutcome> {
-        if let Some(outcome) = self.use_coin(actor, command, item).await {
+        let source = UseSourceHint::new(Some(item));
+        if let Some(outcome) = self.use_coin(actor, command, &source).await {
             return outcome;
         }
-        if let Some(outcome) = self.use_reward_bag(actor, command, item).await {
+        if let Some(outcome) = self.use_reward_bag(actor, command, &source).await {
             return outcome;
         }
-        if let Some(outcome) = self.use_lottery_ticket(actor, command, item).await {
+        if let Some(outcome) = self.use_lottery_ticket(actor, command, &source).await {
             return outcome;
         }
-        if let Some(outcome) = self.use_converter_item(actor, command, item).await {
+        if let Some(outcome) = self.use_converter_item(actor, command, &source).await {
             return outcome;
         }
-        if let Some(outcome) = self.use_timed_item(actor, command, item).await {
+        if let Some(outcome) = self.use_timed_item(actor, command, &source).await {
             return outcome;
         }
         Some(self.use_item(actor, command, item).await)
@@ -1354,7 +1356,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             && intent.use_with_position.is_none()
         {
             return self
-                .use_carried_item_disguise(actor, command, &intent, source)
+                .use_carried_item_disguise(actor, command, &intent, &UseSourceHint::new(source))
                 .await;
         }
         let corpse = match target {
@@ -1364,7 +1366,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             _ => None,
         };
         if let Some(outcome) = self
-            .use_carried_quest_item(actor, command, &intent, source, corpse)
+            .use_carried_quest_item(actor, command, &intent, &UseSourceHint::new(source), corpse)
             .await?
         {
             return Ok(Some(outcome));
@@ -1416,31 +1418,32 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome));
         }
+        let source = UseSourceHint::new(source);
         if let Some(outcome) = self
-            .use_reward_bag_intent(actor, command, &intent, source)
+            .use_reward_bag_intent(actor, command, &intent, &source)
             .await?
         {
             return Ok(Some(outcome));
         }
         if let Some(outcome) = self
-            .use_carried_item_disguise(actor, command, &intent, source)
+            .use_carried_item_disguise(actor, command, &intent, &source)
             .await?
         {
             return Ok(Some(outcome));
         }
         if let Some(outcome) = self
-            .use_carried_quest_item(actor, command, &intent, source, None)
+            .use_carried_quest_item(actor, command, &intent, &source, None)
             .await?
         {
             return Ok(Some(outcome));
         }
         if let Some(outcome) = self
-            .use_cosmetic_item_impl(actor, command, intent.clone(), source)
+            .use_cosmetic_item_impl(actor, command, intent.clone(), &source)
             .await?
         {
             return Ok(Some(outcome));
         }
-        self.use_event_item_impl(actor, command, intent, source, visible_target)
+        self.use_event_item_impl(actor, command, intent, &source, visible_target)
             .await
     }
 

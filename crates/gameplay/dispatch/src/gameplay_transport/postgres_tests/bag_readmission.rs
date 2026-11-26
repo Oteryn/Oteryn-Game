@@ -128,6 +128,16 @@ fn scenario(use_potion: bool) -> TestResult {
             );
             owner.admit_loop_training(&mut readmitted).await;
             assert_eq!(readmitted.first_entry, FirstEntryOutcome::Positioned);
+            if use_potion {
+                let runtime = owner.runtime.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
+                let player = states
+                    .get_mut(&runtime, next_actor, successor)
+                    .ok_or("readmitted potion caster")?;
+                player.facts.vocation = crate::spell::Vocation::Knight;
+                player.facts.level = 150;
+                player.health = player.health.saturating_sub(100).max(1);
+            }
             let item: Vec<u8> = if use_potion {
                 sqlx::query_scalar(
                     "SELECT uuid_send(i.item_instance_id)
@@ -148,6 +158,7 @@ fn scenario(use_potion: bool) -> TestResult {
                 .fetch_one(&h.pool)
                 .await?
             };
+            let item: [u8; 16] = item.try_into().map_err(|_| "invalid item identity")?;
             let (mut server, mut client) = tokio::io::duplex(1 << 20);
             let handle = tokio::time::timeout(
                 Duration::from_secs(20),
@@ -155,8 +166,7 @@ fn scenario(use_potion: bool) -> TestResult {
                     &owner,
                     readmitted,
                     &mut server,
-                    ItemKey::Instance(item.try_into().map_err(|_| "invalid item identity")?),
-                    !use_potion,
+                    ItemKey::Instance(item),
                 ),
             )
             .await??;
@@ -178,16 +188,8 @@ fn scenario(use_potion: bool) -> TestResult {
                         assert_eq!(reply.command_id, first);
                         let disposition =
                             world_object::decode_use_result(reply.payload).map_err(debug)?;
-                        if use_potion {
-                            assert!(matches!(
-                                reply.status,
-                                protocol::CommandStatus::Accepted
-                                    | protocol::CommandStatus::Rejected
-                            ));
-                        } else {
-                            assert_eq!(reply.status, protocol::CommandStatus::Accepted);
-                            assert_eq!(disposition, world_object::UseDisposition::Committed);
-                        }
+                        assert_eq!(reply.status, protocol::CommandStatus::Accepted);
+                        assert_eq!(disposition, world_object::UseDisposition::Committed);
                         replied = true;
                     }
                     protocol::MessageType::StateDelta => {
@@ -205,6 +207,26 @@ fn scenario(use_potion: bool) -> TestResult {
                     }
                     _ => {}
                 }
+            }
+            if use_potion {
+                let burns: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_item_use_records
+                      WHERE game_session_id=encode($1, 'hex')::uuid
+                        AND source_item_instance_id=encode($2, 'hex')::uuid",
+                )
+                .bind(successor.as_bytes().as_slice())
+                .bind(item.as_slice())
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(burns, 1, "one durable potion use");
+                let live: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM game_item_instances
+                                    WHERE item_instance_id=encode($1, 'hex')::uuid AND lifecycle=1)",
+                )
+                .bind(item.as_slice())
+                .fetch_one(&h.pool)
+                .await?;
+                assert!(!live, "the only potion was consumed");
             }
             drop(owner);
             drop(authority);

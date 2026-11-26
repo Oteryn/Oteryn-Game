@@ -109,29 +109,57 @@ pub(super) async fn talk(
     if (yes || fish_default_message)
         && let Some(fence) = command.item_fence
     {
-        match admission
-            .root
-            .read_npc_trade(
-                admission.character,
-                fence.character_id,
-                reference,
-                occurrence,
-            )
-            .await
+        let historical = match super::probe_npc_receipt(
+            admission,
+            command,
+            crate::durability::NpcTalkReceipt::Trade,
+            "npc_exchange_receipt",
+        )
+        .await
         {
-            Ok(Some(receipt))
-                if receipt.side == NpcTradeSide::Exchange
-                    && recipe(&receipt.npc_key).is_some()
-                    && (receipt.npc_key == sinatuki_exchange::NPC) == nupi =>
+            Ok(exists) => exists,
+            Err(disposition) => return Some(NpcTalkOutcome::only(disposition)),
+        };
+        if historical {
+            let budget =
+                crate::gameplay_transport::AdmissionRetryBudget::for_command(admission.root);
+            match budget
+                .retry_command_guard(async || {
+                    match admission
+                        .root
+                        .read_npc_trade(
+                            admission.character,
+                            fence.character_id,
+                            reference,
+                            occurrence,
+                        )
+                        .await
+                    {
+                        Err(NpcTradeError::Unavailable(error)) => Err(error),
+                        result => Ok(result),
+                    }
+                })
+                .await
             {
-                return Some(NpcTalkOutcome {
-                    inventory_changed: true,
-                    ..NpcTalkOutcome::only(NpcIntentDisposition::Ok)
-                });
+                Ok(Ok(Some(receipt)))
+                    if receipt.side == NpcTradeSide::Exchange
+                        && recipe(&receipt.npc_key).is_some()
+                        && (receipt.npc_key == sinatuki_exchange::NPC) == nupi =>
+                {
+                    return Some(NpcTalkOutcome {
+                        inventory_changed: true,
+                        ..NpcTalkOutcome::only(NpcIntentDisposition::Ok)
+                    });
+                }
+                Err(error) if super::npc_holder_busy(&error) => {
+                    return Some(NpcTalkOutcome::only(super::busy_disposition(
+                        command,
+                        "npc_exchange_replay",
+                    )));
+                }
+                Err(_) => return Some(unknown()),
+                _ => return Some(rejected()),
             }
-            Ok(None) => {}
-            Err(NpcTradeError::Unavailable(_)) => return Some(unknown()),
-            _ => return Some(rejected()),
         }
     }
     let runtime = admission.runtime.lock().await;

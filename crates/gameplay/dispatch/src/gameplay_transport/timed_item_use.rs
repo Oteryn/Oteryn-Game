@@ -5,14 +5,30 @@ use super::{ComposedFreshAdmission, connection::UseCommand, item_view::ItemKey};
 use crate::foundation::ExactActorRef;
 use oteryn_protocol_oteryn::timed_item::*;
 use sha2::{Digest, Sha256};
+fn charge_use_facts(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    definition: &crate::durability::item_mint::TypedDefinitionRef,
+) -> Option<()> {
+    let tibia_id = definition
+        .production_key
+        .strip_prefix("oteryn:item.tibia.i")?
+        .parse()
+        .ok()?;
+    if oteryn_gameplay_items::remaining_consumables::is_dispenser(tibia_id) {
+        return None;
+    }
+    facts(native, definition)?.0.full.charges()?;
+    Some(())
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn use_timed_item(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
-        item: ItemKey,
+        source: &super::item_ref_admission::UseSourceHint,
     ) -> Option<Option<super::connection::UseOutcome>> {
-        let ItemKey::Instance(id) = item else {
+        let Some(item @ ItemKey::Instance(id)) = source.key else {
             return None;
         };
         let native = self.active_generation?.native_gameplay()?;
@@ -32,8 +48,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             crate::foundation::CommandId::new(command.command_id).ok()?,
         );
         let historical = match self
-            .root
-            .plain_use_receipt_exists(
+            .probe_plain_use_receipt(
                 crate::durability::PlainUseReceipt::Timed(transaction),
                 reference,
             )
@@ -43,43 +58,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(_) => return Some(Some(super::use_receipt_refused(command, "timed_existence"))),
         };
         let replay = if historical {
-            match self
-                .root
-                .read_timed_command(
-                    self.character,
-                    command.game_session_id,
-                    transaction,
-                    binding,
-                )
+            let budget = super::AdmissionRetryBudget::for_command(self.root);
+            match budget
+                .retry_command_guard(async || {
+                    match self
+                        .root
+                        .read_timed_command(
+                            self.character,
+                            command.game_session_id,
+                            transaction,
+                            binding,
+                        )
+                        .await
+                    {
+                        Err(crate::durability::item_timed_state::TimedWriteError::Unavailable(
+                            error,
+                        )) => Err(error),
+                        result => Ok(result),
+                    }
+                })
                 .await
             {
-                Ok(Some(replay)) => Some(replay),
+                Ok(Ok(Some(replay))) => Some(replay),
                 _ => return Some(Some(super::use_receipt_refused(command, "timed_replay"))),
             }
         } else {
             None
         };
         if replay.is_none() {
-            let backpack = self
-                .root
-                .read_character_backpack(self.character, fence.character_id)
+            match source
+                .candidate(self, command, "timed_candidate", |definition| {
+                    charge_use_facts(native, definition).is_some()
+                })
                 .await
-                .ok()??;
+            {
+                Ok(true) => {}
+                Ok(false) => return None,
+                Err(refusal) => return Some(Some(refusal.into())),
+            }
+            let backpack = match self.read_use_backpack(fence).await {
+                Ok(backpack) => backpack?,
+                Err(_) => {
+                    return Some(Some(super::use_receipt_refused(command, "timed_inventory")));
+                }
+            };
             let definition = &backpack
                 .entries
                 .iter()
                 .find(|entry| entry.item.item_instance_id == id)?
                 .item
                 .definition;
-            let tibia_id = definition
-                .production_key
-                .strip_prefix("oteryn:item.tibia.i")?
-                .parse()
-                .ok()?;
-            if oteryn_gameplay_items::remaining_consumables::is_dispenser(tibia_id) {
-                return None;
-            }
-            facts(native, definition)?.0.full.charges()?;
+            charge_use_facts(native, definition)?;
         }
         let intent = TimedItemIntent {
             action: TimedAction::Use,

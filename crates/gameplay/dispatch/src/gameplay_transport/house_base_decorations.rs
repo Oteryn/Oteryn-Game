@@ -193,11 +193,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<Vec<HouseBaseMapEntry>> {
         let native = self.active_generation?.native_gameplay()?;
         let index = native.item_index()?;
-        let mut stored = self
-            .root
-            .read_house_base_decorations(self.holder, context, bundle)
-            .await
-            .ok()?;
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        let read = async || {
+            budget
+                .retry_command_guard(async || {
+                    self.root
+                        .read_house_base_decorations(self.holder, context, bundle)
+                        .await
+                })
+                .await
+        };
+        let mut stored = read().await.ok()?;
         if !stored.materialized {
             let map = self.bundle_map()?;
             if map.overlay.base().digest() != bundle {
@@ -244,11 +250,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return None;
             }
-            stored = self
-                .root
-                .read_house_base_decorations(self.holder, context, bundle)
-                .await
-                .ok()?;
+            stored = read().await.ok()?;
         }
         let mut result = Vec::with_capacity(stored.entries.len());
         for state in stored.entries {
@@ -288,6 +290,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    fn immutable_house_decoration_candidate(
+        &self,
+        map: &crate::map::boot::BundleMap,
+        target: &WorldObjectTarget,
+    ) -> bool {
+        let definition = (|| {
+            let key = u64::from_be_bytes(
+                target
+                    .placement
+                    .strip_prefix(map.overlay.base().digest().as_slice())?
+                    .try_into()
+                    .ok()?,
+            );
+            let (position, _) = view::placement_of(key)?;
+            let tile =
+                view::compose_tile(&map.overlay, &map.facts.base_only(), position).ok()??;
+            let entry = tile
+                .entries
+                .iter()
+                .find(|entry| entry.source.key() == view::MapEntryKey::Base(key))?;
+            let MapDefinition::Item(reference) = entry.facts.definition else {
+                return None;
+            };
+            let native = self.active_generation?.native_gameplay()?;
+            Some((
+                native,
+                super::item_look::typed_definition(native.item_index()?, reference)?,
+            ))
+        })();
+        definition.is_some_and(|(native, definition)| {
+            item_id(&definition.production_key).is_some_and(|id| source_rule(id, false).is_some())
+                || timed_keys(native).is_none_or(|keys| keys.contains(&definition.production_key))
+        })
+    }
+
     async fn house_base_decoration_action(
         &self,
         actor: ExactActorRef,
@@ -297,7 +334,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<UseOutcome> {
         let map = self.bundle_map()?;
         let fence = command.item_fence?;
-        let _lane = self.spell_lane_permit().await?;
+        if !matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            return None;
+        }
         let (context, generation) = {
             let runtime = self.runtime.lock().await;
             runtime
@@ -343,8 +385,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             let id = crate::foundation::CommandId::new(command.command_id).ok()?;
             match self
-                .root
-                .plain_use_receipt_exists(
+                .probe_plain_use_receipt(
                     crate::durability::PlainUseReceipt::HouseDecoration,
                     crate::foundation::CommandRef::new(command.game_session_id, id),
                 )
@@ -360,16 +401,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         };
+        if !historical && !self.immutable_house_decoration_candidate(map, target) {
+            return None;
+        }
+        let Some(_lane) = self.spell_lane_permit().await else {
+            return Some(super::use_receipt_refused(
+                command,
+                "house_decoration_permit",
+            ));
+        };
         if historical {
-            match self
-                .root
-                .replay_house_base_decoration(
-                    self.holder,
-                    &context,
-                    bundle,
-                    command.command_id,
-                    &intent,
-                )
+            match super::AdmissionRetryBudget::for_command(self.root)
+                .retry_command_guard(async || {
+                    self.root
+                        .replay_house_base_decoration(
+                            self.holder,
+                            &context,
+                            bundle,
+                            command.command_id,
+                            &intent,
+                        )
+                        .await
+                })
                 .await
             {
                 Ok(Some(disposition)) => return outcome(disposition),

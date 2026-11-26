@@ -10,6 +10,7 @@ use oteryn_gameplay_items::novelty_items::{self, GroundEffect};
 
 #[path = "consume_transform_house/decorations.rs"]
 mod decorations;
+pub use decorations::house_decoration_use_candidate;
 #[path = "consume_transform_house/timed_decorations.rs"]
 mod timed_decorations;
 

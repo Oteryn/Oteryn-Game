@@ -1,7 +1,7 @@
 //! Ordinary USE -> the shared consume/transform receipt -> existing condition and chat owners.
 use super::ComposedFreshAdmission;
 use super::connection::{UseCommand, UseOutcome};
-use super::item_ref_admission::NativeItemWeights;
+use super::item_ref_admission::{NativeItemWeights, UseSourceHint};
 use super::item_view::ItemKey;
 use crate::durability::consume_transform::{ConsumeTransformRequest, ConsumeTransformResult};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -26,6 +26,10 @@ pub(super) struct PendingItemEffect {
     pub death: Option<super::actor_spell::PlayerDeath>,
 }
 
+fn is_watch(key: &str) -> bool {
+    matches!(key, "oteryn:item.tibia.i2906" | "oteryn:item.tibia.i6091")
+}
+
 fn outcome(disposition: UseDisposition) -> UseOutcome {
     UseOutcome {
         disposition,
@@ -40,20 +44,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         intent: UseIntent,
-        source: Option<ItemKey>,
+        source: &UseSourceHint,
         visible_target: bool,
     ) -> Result<Option<UseOutcome>, ()> {
         if intent.use_with.is_none()
             && intent.use_with_map_item.is_none()
             && intent.use_with_position.is_none()
             && let Some(outcome) = self
-                .use_shared_callback_handle(actor, command, source, None)
+                .use_shared_callback_handle(actor, command, source.key, None)
                 .await
         {
             return Ok(Some(outcome));
         }
         if let Some(outcome) = self
-            .use_map_harvest_handle(actor, command, &intent, source)
+            .use_map_harvest_handle(actor, command, &intent, source.key)
             .await?
         {
             return Ok(Some(outcome));
@@ -85,8 +89,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
                 .map(|memo| memo.request.source)
         };
+        let retained = pending_source.map(|id| UseSourceHint::new(Some(ItemKey::Instance(id))));
+        let source = retained.as_ref().unwrap_or(source);
         let id = pending_source
-            .or(match source {
+            .or(match source.key {
                 Some(ItemKey::Instance(id)) => Some(id),
                 _ => None,
             })
@@ -98,8 +104,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent: encoded,
         };
         let historical = match self
-            .root
-            .plain_use_receipt_exists(
+            .probe_plain_use_receipt(
                 crate::durability::PlainUseReceipt::ConsumeTransform,
                 command_ref,
             )
@@ -113,9 +118,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )));
             }
         };
-        if !historical && pending_source.is_none() && !matches!(source, Some(ItemKey::Instance(_)))
-        {
-            return Ok(None);
+        if !historical && pending_source.is_none() {
+            match source
+                .candidate(self, command, "event_item_candidate", |definition| {
+                    let key = &definition.production_key;
+                    novelty_items::is_novelty(key)
+                        || novelty_items::is_ground_action(key)
+                        || is_watch(key)
+                })
+                .await
+            {
+                Ok(true) => {}
+                Ok(false) => return Ok(None),
+                Err(refusal) => return Ok(Some(refusal.into())),
+            }
         }
         let Some(permit) = self.spell_lane_permit().await else {
             return Ok(Some(super::use_receipt_refused(
@@ -172,17 +188,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return Ok(None);
         }
-        if let Some(outcome) = self
-            .use_ground_event_item(actor, command, &intent, &request, &permit)
-            .await?
-        {
-            return Ok(Some(outcome));
-        }
-        let inventory = match self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
+        match source
+            .candidate(self, command, "event_ground_candidate", |definition| {
+                novelty_items::is_ground_action(&definition.production_key)
+            })
             .await
         {
+            Ok(true) => {
+                if let Some(outcome) = self
+                    .use_ground_event_item(actor, command, &intent, &request, &permit)
+                    .await?
+                {
+                    return Ok(Some(outcome));
+                }
+            }
+            Ok(false) => {}
+            Err(refusal) => return Ok(Some(refusal.into())),
+        }
+        match source
+            .candidate(self, command, "event_carried_candidate", |definition| {
+                novelty_items::is_novelty(&definition.production_key)
+                    || is_watch(&definition.production_key)
+            })
+            .await
+        {
+            Ok(true) => {}
+            Ok(false) => return Ok(None),
+            Err(refusal) => return Ok(Some(refusal.into())),
+        }
+        let inventory = match self.read_use_inventory(fence).await {
             Ok(inventory) => inventory,
             Err(_) => {
                 return Ok(Some(super::use_receipt_refused(
@@ -204,10 +238,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Crystal 201189f8 data/scripts/actions/tools/watch.lua:3-8 and
         // data/libs/functions/functions.lua:42-50. Watches read the same World
         // clock as the connection's CLOCK-1 projection; they never consume an item.
-        if matches!(
-            item.definition.production_key.as_str(),
-            "oteryn:item.tibia.i2906" | "oteryn:item.tibia.i6091"
-        ) {
+        if is_watch(&item.definition.production_key) {
             if intent.use_with.is_some()
                 || intent.use_with_map_item.is_some()
                 || intent.use_with_position.is_some()

@@ -98,6 +98,28 @@ pub(super) fn is_bed_kit(key: &str) -> Result<bool, DurabilityError> {
     Ok(item_id(key).is_some_and(|id| rules.bed_kits.iter().any(|kit| kit.item_id == id)))
 }
 
+pub fn house_decoration_use_candidate(key: &str) -> bool {
+    let Some(id) = item_id(key) else { return false };
+    // If the catalogue is unavailable only the owner may issue the refusal.
+    let Ok(rules) = catalogue() else { return true };
+    rules.bed_kits.iter().any(|rule| rule.item_id == id)
+        || rules
+            .carpets
+            .iter()
+            .chain(&rules.windows)
+            .any(|rule| rule.item_id == id)
+        || rules.mirror.item_ids.contains(&id)
+        || id == rules.bathtub.item_id
+        || rules.magic_trees.iter().any(|rule| rule.item_id == id)
+        || rules.music.iter().any(|rule| rule.item_id == id)
+        || id == rules.birdcage.item_id
+        || id == rules.fish_tank.item_id
+        || rules
+            .native_transforms
+            .iter()
+            .any(|rule| rule.item_id == id && rule.kind == "USE")
+}
+
 async fn cooldown(
     tx: &mut crate::durability::item_mint_audit::Type2Transaction<'_>,
     context: &HouseActionContext,

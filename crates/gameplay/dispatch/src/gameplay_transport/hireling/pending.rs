@@ -59,7 +59,10 @@ pub(super) async fn replay(
     owner:&ComposedFreshAdmission<'_,'_,'_>,actor:ExactActorRef,command:UseCommand,input:HirelingLampInput,
 ) -> Result<Option<UseDisposition>,()> {
     let fence=command.item_fence.ok_or(())?;
-    let reply=owner.root.read_hireling_receipt_state(owner.character,fence,command.command_id,input.binding()).await;
+    let budget=crate::gameplay_transport::AdmissionRetryBudget::for_command(owner.root);
+    let reply=budget.retry_command_guard(async || {
+        owner.root.read_hireling_receipt_state(owner.character,fence,command.command_id,input.binding()).await
+    }).await;
     match reply {
         Ok(HirelingReceiptRead::Missing)|Err(_)=>Ok(Some(crate::gameplay_transport::use_receipt_refused(command,"hireling_replay").disposition)),
         Ok(HirelingReceiptRead::Found(Reply::Committed))=>{
