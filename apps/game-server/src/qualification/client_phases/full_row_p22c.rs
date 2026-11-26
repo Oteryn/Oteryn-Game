@@ -306,7 +306,9 @@ mod tests {
             boss: true,
             entries: Vec::new(),
         };
-        let frame = |list, bosses| tr::encode_domain_snapshot(list, bosses).unwrap();
+        let frame = |list: &tr::TrackerSnapshot, bosses: &tr::TrackerSnapshot| {
+            tr::encode_domain_snapshot(list, bosses).unwrap()
+        };
         let valid = frame(&tracked, &boss);
         assert!(expect_login_snapshot(Some((1, 1, &valid)), &tracked).is_ok());
         assert!(expect_login_snapshot(None, &tracked).is_err());
