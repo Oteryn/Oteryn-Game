@@ -86,11 +86,11 @@ pub(super) async fn talk(
     actor: ExactActorRef,
     command: super::super::connection::UseCommand,
     intent: &NpcTalkIntent,
-    context: (u64, u64, String),
+    context: &(u64, u64, String),
     permit: Option<&crate::durability::spell_owner_commit::SpellLanePermit>,
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
 ) -> Option<NpcTalkOutcome> {
-    let (_, generation, key) = &context;
+    let (_, generation, key) = context;
     let pending = take(admission, command.game_session_id);
     let fence = command.item_fence?;
     let conversation = Conversation {
@@ -192,7 +192,7 @@ pub(super) async fn talk(
             intent,
         )
         .as_ref()
-        != Some(&context)
+        != Some(context)
     {
         return Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected));
     }

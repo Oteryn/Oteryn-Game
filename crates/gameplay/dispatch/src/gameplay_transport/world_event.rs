@@ -132,6 +132,11 @@ pub(super) async fn use_board(
         drop(runtime);
         let Some(fence) = command.item_fence.filter(|fence| {
             fence.game_session_id == command.game_session_id
+                && fence.runtime_scope
+                    == crate::foundation::RuntimeScopeRefV1::channel(
+                        owner.world_id,
+                        owner.channel_id,
+                    )
                 && fence.runtime_scope == actor.runtime_scope()
                 && fence.scope_ownership_generation == actor.scope_generation()
         }) else {
