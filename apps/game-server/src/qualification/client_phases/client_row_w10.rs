@@ -80,12 +80,9 @@ async fn defeat_primal(
         client.take_events();
     }
     let identity = uuid_text(&target.identity).replace('-', "");
-    let damage = request_fixture_control(
-        session,
-        "--inspect-damage",
-        format!("{identity} {}", target.generation),
-    )
-    .await?;
+    let inspection = format!("{identity} {}", target.generation);
+    let damage =
+        request_fixture_control(session.clone(), "--inspect-damage", inspection.clone()).await?;
     let corpse = damage
         .split_ascii_whitespace()
         .nth(2)
@@ -100,6 +97,11 @@ async fn defeat_primal(
     if modes_reply.disposition != attack::AttackIntentDisposition::Ok {
         return Err(format!("Primal Menace chase mode refused: {modes_reply:?}").into());
     }
+    let mut last_position = client
+        .world_entities()
+        .and_then(|entities| entities.get(&target))
+        .ok_or("Primal target lost before attack")?
+        .position;
     let mut last_health = client
         .world_entities()
         .and_then(|entities| entities.get(&target))
@@ -111,18 +113,58 @@ async fn defeat_primal(
     evidence(&format!(
         "W10_COMBAT initial_target_hp_percent={last_health:?}"
     ));
+    let axe = provisioning::item_reference(&provisioning::item_index()?, 3276)?;
+    let equipped = client.inventory().is_some_and(|inventory| {
+        inventory
+            .equipment
+            .iter()
+            .any(|slot| slot.item.item_definition_ref == axe)
+    });
+    evidence(&format!(
+        "W10_FIXTURE level=100 weapon=axe_3276 equipped={equipped} damage_type=physical"
+    ));
     let reply = client.session_mut().attack_target(Some(&target)).await?;
-    if reply.disposition != attack::AttackIntentDisposition::Ok {
+    let player = client.world_spatial().actor_position;
+    let state = client.session_mut().combat_state();
+    evidence(&format!(
+        "W10_COMBAT attack_status={:?} disposition={:?} target_set={} chase={:?} player={player:?} target={last_position:?} range={}",
+        reply.status,
+        reply.disposition,
+        state.is_some_and(|state| state.target == Some(target)),
+        state.map(|state| state.modes.chase),
+        player
+            .x
+            .abs_diff(last_position.x)
+            .max(player.y.abs_diff(last_position.y))
+    ));
+
+    if reply.status != CommandStatus::Accepted
+        || reply.disposition != attack::AttackIntentDisposition::Ok
+    {
         return Err(format!("Primal Menace attack refused: {reply:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     verdict::Harness::global().bounded_wait(deadline, "W10-Primal-combat");
     let mut removed = false;
+    let mut inspected = false;
     loop {
         for event in client.take_events() {
             if let SessionEvent::WorldSpatialEntities(delta) = event {
-                removed |= delta.value.leave.contains(&target);
+                if delta.value.leave.contains(&target) {
+                    removed = true;
+                    evidence(&format!(
+                        "W10_COMBAT target_left_view=true target={last_position:?} player={:?} sequence={}",
+                        delta.value.actor_position, delta.server_sequence
+                    ));
+                }
                 for entity in delta.value.enter.iter().chain(&delta.value.update) {
+                    if entity.entity == target && entity.position != last_position {
+                        evidence(&format!(
+                            "W10_COMBAT target_moved from={last_position:?} to={:?} player={:?}",
+                            entity.position, delta.value.actor_position
+                        ));
+                        last_position = entity.position;
+                    }
                     if entity.entity == target
                         && let EntityDetail::Actor { health_percent, .. }
                         | EntityDetail::ActorWithIcons { health_percent, .. } = entity.detail
@@ -135,6 +177,13 @@ async fn defeat_primal(
                     }
                 }
             }
+        }
+        if !inspected && tokio::time::Instant::now() >= deadline - Duration::from_secs(85) {
+            inspected = true;
+            let damage =
+                request_fixture_control(session.clone(), "--inspect-damage", inspection.clone())
+                    .await;
+            evidence(&format!("W10_COMBAT live_damage={damage:?}"));
         }
         let corpse_seen = client.world_entities().is_some_and(|entities| {
             entities
