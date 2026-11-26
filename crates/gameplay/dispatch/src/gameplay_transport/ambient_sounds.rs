@@ -58,7 +58,7 @@ impl SoundPublisher {
             return;
         }
         if self.binding.as_ref() != Some(&binding) {
-            self.sounds.clear();
+            self.events.clear();
             self.ambient.clear();
             self.binding = Some(binding);
         }
