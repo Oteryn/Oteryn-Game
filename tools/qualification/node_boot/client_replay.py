@@ -9,19 +9,22 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[3]
 PHASES = ROOT / "apps/game-server/src/qualification/client_phases"
-ROW = re.compile(
-    r'e2e_row_selected\((\d+)\)\s*\{\s*(?:verdict::indexed\("([A-Za-z0-9]+\.(?:full|client))"'
-    r'|(\w+::\w+)\(clients\))'
+SCENARIO = r"[A-Za-z0-9_.-]+\.(?:full|client)"
+ROW_SELECTOR = re.compile(r"\be2e_row_selected\s*\(\s*(\d+)\s*\)")
+ROW_REPORTER = re.compile(
+    rf'\s*\{{\s*(?:verdict::indexed\s*\(\s*"({SCENARIO})"\s*,'
+    r'|(\w+::\w+)\s*\(\s*clients\s*[,\)])'
 )
 # These older indexed call sites invoke their reporters directly.
 LEGACY_REPORTERS = {
     "full_e2ef19::run_packet": "S04b.full",
     "full_e2ef18::run_packet": "C14.full",
     "full_e2ef20::run_packet": "E02.full",
+    "full_e2ef20::greet_ten": "NPC-GREET-10.full",
     "client_row_c07::run_client_packet": "C07.client",
 }
 SERVER_ROW = re.compile(
-    r"^SEAM_EVIDENCE (e2e_all|e2e_capture) scenario=([A-Za-z0-9]+\.(?:full|client)) "
+    rf"^SEAM_EVIDENCE (e2e_all|e2e_capture) scenario=({SCENARIO}) "
     r"status=(PASS|FAIL|SKIPPED|MISSING-SERVER|MISSING-CLIENT|CAPTURED)(?:\s|$)"
 )
 PACKAGES = (
@@ -48,12 +51,20 @@ def selected_rows(batch):
     else:
         raise ValueError("invalid OTERYN_E2E_ROW_BATCH")
     source = (PHASES / "world.rs").read_text()
-    rows = {
-        int(index): scenario or LEGACY_REPORTERS[reporter]
-        for index, scenario, reporter in ROW.findall(source)
-    }
-    if len(rows) != len(re.findall(r"e2e_row_selected\(\d+\)", source)):
-        raise RuntimeError("unmapped row selector")
+    rows = {}
+    for selector in ROW_SELECTOR.finditer(source):
+        index = int(selector[1])
+        match = ROW_REPORTER.match(source, selector.end())
+        if match is None:
+            raise RuntimeError(f"unmapped row selector {index}")
+        scenario, reporter = match.groups()
+        if reporter is not None:
+            scenario = LEGACY_REPORTERS.get(reporter)
+            if scenario is None:
+                raise RuntimeError(f"unmapped row selector {index}: {reporter}")
+        if index in rows:
+            raise RuntimeError(f"duplicate row selector {index}")
+        rows[index] = scenario
     return {scenario for index, scenario in rows.items() if index in selected}, set(rows.values())
 
 
