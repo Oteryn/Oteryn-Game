@@ -42,6 +42,8 @@ struct SessionIngress {
     activity_recovery: bool,
     pending_delivery: Option<PendingDelivery>,
     pending_use: Option<pending_use::PendingUseReceipt>,
+    // The terminal USE can precede restoration of the controller needed by its quest.
+    recovered_terrain_quest: Option<CommandId>,
     reconciled_sequence: Option<u64>,
 }
 

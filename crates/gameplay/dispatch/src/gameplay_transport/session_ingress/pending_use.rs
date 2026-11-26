@@ -17,6 +17,24 @@ pub(in crate::gameplay_transport) struct PendingUseReceipt {
 }
 
 impl SessionCommands {
+    pub(in crate::gameplay_transport) fn recovered_terrain_quest(
+        &self,
+        session: GameSessionId,
+    ) -> Option<CommandId> {
+        let commands = self.0.lock().ok()?;
+        commands.get(&session)?.lock().ok()?.recovered_terrain_quest
+    }
+
+    pub(in crate::gameplay_transport) fn clear_recovered_terrain_quest(&self, command: CommandRef) {
+        if let Ok(commands) = self.0.lock()
+            && let Some(entry) = commands.get(&command.game_session_id())
+            && let Ok(mut state) = entry.lock()
+            && state.recovered_terrain_quest == Some(command.command_id())
+        {
+            state.recovered_terrain_quest = None;
+        }
+    }
+
     pub(in crate::gameplay_transport) fn remember_use_wire(
         &self,
         command: CommandRef,
