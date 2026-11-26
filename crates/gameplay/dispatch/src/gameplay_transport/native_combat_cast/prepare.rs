@@ -389,7 +389,9 @@ async fn prepare_spatial(
         None => facing.map(direction).unwrap_or(Direction::North), // unused by symmetric/self recipes
     };
     let is_delayed = parameters.get("delay_ms").is_some();
-    let held = is_delayed
+    let is_divine_grenade = parameters["spell_name"] == "divine grenade";
+    // Crystal 201189f spells.cpp:1252-1257 uses the caster tile when no position is sent.
+    let held = (is_delayed && !is_divine_grenade)
         .then(|| delayed_strikes::held_target(runtime, attack_target))
         .flatten();
     let origin = if let Some(saved) = saved {
@@ -623,6 +625,7 @@ async fn prepare_spatial(
             &tiles,
             held.map(|(a, _)| u64::from(a.actor_local_id())),
             saved,
+            is_divine_grenade,
         )?)
     } else {
         None

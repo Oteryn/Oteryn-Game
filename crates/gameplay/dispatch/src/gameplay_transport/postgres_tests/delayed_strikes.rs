@@ -16,7 +16,7 @@ use crate::gameplay_transport::spell_character_facts::{CastFactsLoad, load_chara
 use crate::gameplay_transport::spell_premium_coordinator::{
     SpellPremiumCoordinator, purchase_fixture,
 };
-use oteryn_protocol_oteryn::actor_spell;
+use oteryn_protocol_oteryn::{actor_spell, attack, world_spatial_entities::EntityRef};
 use std::time::Duration;
 
 /// What one vocation's scenario casts: the durable vocation and experience that reach every
@@ -38,6 +38,8 @@ const RAT_HEALTH: i64 = 100_000;
 enum Case {
     Echo,
     Grenade,
+    GrenadeBlocked,
+    GrenadeHeld { position_cast: bool },
     Pz,
     StageZero,
     Outburst(u8),
@@ -70,6 +72,23 @@ fn delayed_strikes_postgres_grenade_pz_no_cost() -> TestResult {
 fn delayed_strikes_postgres_grenade_stage_zero_no_cost() -> TestResult {
     grenade(Case::StageZero, "delayed_stage_zero")
 }
+#[test]
+fn delayed_strikes_postgres_grenade_rejects_solid_endpoint_without_cost_marker_or_timer() -> TestResult {
+    grenade(Case::GrenadeBlocked, "delayed_grenade_solid")
+}
+
+#[test]
+fn delayed_strikes_postgres_grenade_hotkey_uses_caster_and_position_cast_uses_aim() -> TestResult {
+    grenade(
+        Case::GrenadeHeld { position_cast: true },
+        "delayed_grenade_aim",
+    )?;
+    grenade(
+        Case::GrenadeHeld { position_cast: false },
+        "delayed_grenade_hotkey",
+    )
+}
+
 fn grenade(case: Case, tag: &'static str) -> TestResult {
     scenario(Plan {
         tag,
@@ -201,6 +220,20 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
     // Reuse crosshair_spells' open combat tile; the imported entry is a PZ.
     let start = if plan.case == Case::Pz {
         room.entry_start()
+    } else if plan.case == Case::GrenadeBlocked {
+        // Thalom's solid rock five tiles east has ground and does not block projectiles.
+        crate::content::NativeEntryStart {
+            x: 1,
+            y: -10,
+            floor: -7,
+        }
+    } else if matches!(plan.case, Case::GrenadeHeld { .. }) {
+        // Thalom has clear ground six cells east.
+        crate::content::NativeEntryStart {
+            x: -10,
+            y: -9,
+            floor: -7,
+        }
     } else {
         crate::content::NativeEntryStart {
             x: 2,
@@ -290,7 +323,10 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         )
         .await
         .map_err(debug)?;
-    if matches!(plan.case, Case::Grenade | Case::Pz | Case::Outburst(_)) {
+    if matches!(
+        plan.case,
+        Case::Grenade | Case::GrenadeBlocked | Case::GrenadeHeld { .. } | Case::Pz | Case::Outburst(_)
+    ) {
         let purchase = super::atelier_fixtures::fixture::prepare(&h).await?;
         let fence = current_fence(&owner, session).await?;
         let promoted = owner
@@ -361,6 +397,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         assert!(i64::from(facts.max_mana) >= *mana, "{key} max mana");
     }
     let target;
+    let target_ref;
     let position;
     {
         let mut runtime = deps.runtime.lock().await;
@@ -383,7 +420,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .map_err(debug)?
             .position();
         position = crate::foundation::MovementLocalPosition {
-            x: p.x + 1,
+            x: p.x + if matches!(plan.case, Case::GrenadeHeld { .. }) { 6 } else { 1 },
             y: p.y,
             floor: p.floor,
         };
@@ -403,12 +440,13 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 u64::try_from(health)?,
             )])
             .map_err(|error| format!("realize crosshair target spawn: {error:?}"))?;
-        target = runtime
-            .visible_entities()
-            .creatures
-            .first()
-            .ok_or("rat")?
-            .actor;
+        let visible = runtime.visible_entities();
+        let rat = visible.creatures.first().ok_or("rat")?;
+        target = rat.actor;
+        target_ref = EntityRef {
+            identity: target.placement_identity(),
+            generation: rat.generation,
+        };
         let mut states = owner.states.spell_states.lock().await;
         assert!(
             states
@@ -485,6 +523,103 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .ok_or("before vitals")?
             .1
             .mana;
+        if matches!(plan.case, Case::GrenadeBlocked | Case::GrenadeHeld { .. }) {
+            let caster = crate::foundation::MovementLocalPosition {
+                x: start.x,
+                y: start.y,
+                floor: start.floor,
+            };
+            let mut commands = Vec::new();
+            if matches!(plan.case, Case::GrenadeHeld { .. }) {
+                commands.push((
+                    attack::COMMAND_TYPE_ATTACK_TARGET_INTENT,
+                    attack::encode_attack_target_intent(Some(&target_ref)).map_err(debug)?,
+                ));
+                admitted.continuity.selected_capabilities =
+                    SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7, 17])
+                        .ok_or("attack capabilities")?;
+            }
+            let blocked = crate::foundation::MovementLocalPosition {
+                x: caster.x + 5,
+                ..caster
+            };
+            let wire_position = |p: crate::foundation::MovementLocalPosition| {
+                actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
+                    x: p.x,
+                    y: p.y,
+                    floor: p.floor.abs(),
+                })
+            };
+            let (intent_target, expected_marker) = match plan.case {
+                Case::GrenadeBlocked => (wire_position(blocked), None),
+                Case::GrenadeHeld { position_cast: true } => {
+                    let aimed = crate::foundation::MovementLocalPosition {
+                        x: position.x - 1,
+                        ..position
+                    };
+                    (wire_position(aimed), Some(aimed))
+                }
+                _ => (actor_spell::SpellTarget::AttackTarget, Some(caster)),
+            };
+            commands.push((
+                actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+                actor_spell::encode_spell_cast_intent(&actor_spell::SpellCastIntent {
+                    spell,
+                    target: intent_target,
+                    aim_at_target: intent_target == actor_spell::SpellTarget::AttackTarget,
+                }),
+            ));
+            let (results, _) =
+                super::parameter_spell_fixtures::exchange(&owner, &mut admitted, &commands, false, false)
+                    .await?;
+            if results.len() == 2 {
+                assert_eq!(
+                    attack::decode_attack_intent_result(&results[0].1).map_err(debug)?,
+                    attack::AttackIntentDisposition::Ok,
+                    "the monster six tiles away is held"
+                );
+            }
+            let disposition = actor_spell::decode_spell_cast_result(
+                &results.last().ok_or("spell result")?.1,
+            )
+            .map_err(debug)?;
+            assert_eq!(
+                disposition == actor_spell::SpellCastDisposition::Cast,
+                expected_marker.is_some(),
+                "cast disposition: {disposition:?}"
+            );
+            let after = owner
+                .observe_actor_vitals(actor, session)
+                .await
+                .ok_or("after vitals")?
+                .1
+                .mana;
+            assert_eq!(
+                i64::from(before) - i64::from(after),
+                if expected_marker.is_some() { *mana } else { 0 }
+            );
+            let runtime = deps.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let markers = states
+                .presentations
+                .as_mut()
+                .ok_or("presentation owner")?
+                .take_for_current_publisher(&runtime)
+                .map_err(debug)?;
+            assert_eq!(markers.len(), usize::from(expected_marker.is_some()));
+            if let Some(expected) = expected_marker {
+                assert_eq!(
+                    markers[0].event.source_binding,
+                    "canary.appearance:effect/divine_grenade"
+                );
+                assert_eq!(markers[0].event.position, expected);
+            }
+            assert_eq!(
+                states.spell_timers.as_ref().map_or(0, |t| t.payloads.len()),
+                usize::from(expected_marker.is_some())
+            );
+            continue;
+        }
         if let Case::Outburst(charges) = plan.case {
             let runtime = deps.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
