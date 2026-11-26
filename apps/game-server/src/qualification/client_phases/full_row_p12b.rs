@@ -11,6 +11,7 @@ use sqlx::Connection;
 
 // Native Cyclopedia contract: a total level over 500 earns Global Player grade 1.
 // Keep the expected wire ID independent of the production eligibility evaluator.
+pub(super) const ROW_INDEX: usize = 278;
 const EXPECTED_BADGES: [u8; 1] = [9];
 const SEEDED_LEVEL: i64 = 501;
 const SEEDED_EXPERIENCE: i64 = 2_070_900_000;
