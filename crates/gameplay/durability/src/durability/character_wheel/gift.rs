@@ -1,5 +1,6 @@
 //! Fenced snapshots of the existing Wheel's Gift of Life cooldown.
 //! No CharacterRevision is minted: this is a runtime timer snapshot, like item-owner state.
+use crate::durability::db::commit_semantic_read;
 use super::super::item_transfer::CurrentCharacterItemFence;
 use super::*;
 
@@ -23,7 +24,7 @@ impl DurabilityRoot {
                     .bind(character.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
                 let remaining = u64::try_from(remaining.unwrap_or(0)).map_err(|_| DurabilityError::InvalidStoredState)?;
                 if remaining > MAX_REMAINING_MICROS { return Err(DurabilityError::InvalidStoredState); }
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 Ok(remaining)
             })
         }).await?)

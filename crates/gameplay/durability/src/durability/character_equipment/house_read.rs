@@ -150,7 +150,7 @@ impl DurabilityRoot {
                         ).await?;
                         read_equipment_in_transaction(&mut tx, &authority).await
                     }.await.map_err(|_: EquipmentError| DurabilityError::Unavailable)?;
-                    super::super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(MovementEquipmentSnapshot { fence, equipment })
                 })
             })

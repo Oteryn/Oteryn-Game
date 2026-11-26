@@ -28,6 +28,7 @@
 //! the pass's work, so the budget is shared by every holder of the cause and
 //! survives restarts; the fourth unit is rejected before the pass's work.
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
 };
@@ -1691,7 +1692,7 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_cause(&mut tx, &cause).await?;
                     let Some(row) = load_receipt(&mut tx, &cause).await? else {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
                     let stored: Vec<u8> = row.try_get("intent_binding")?;
@@ -1699,7 +1700,7 @@ impl DurabilityRoot {
                         return Ok(Err(ItemMintError::ConflictingCause));
                     }
                     let committed = decode_receipt(&row)?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(Some(committed)))
                 })
             })
@@ -1737,7 +1738,7 @@ impl DurabilityRoot {
                     .fetch_optional(&mut *tx)
                     .await?;
                     let item = row.as_ref().map(decode_instance).transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(item))
                 })
             })

@@ -1,4 +1,5 @@
 //! Current terminal identity for physical cleanup; never a session/placement grant.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 
 #[derive(Debug, Clone, Copy)]
@@ -64,7 +65,7 @@ impl DurabilityRoot {
                     scope,generation,
                 })
             } else { None };
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(result))
         })).await?
     }

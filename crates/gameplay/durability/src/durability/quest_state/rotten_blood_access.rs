@@ -1,4 +1,5 @@
 //! Fixed Rotten Blood access payment composed with the existing fee and Quest owners.
+use crate::durability::db::commit_semantic_read;
 use super::super::item_fee_burn::{
     FeeBurnCause, FeeBurnError, FeeBurnRequest, FeeChangeFacts, burn_fee_in_transaction,
 };
@@ -59,14 +60,14 @@ impl DurabilityRoot {
                     lock_receipt_key(&mut tx, fence.character_id, &request).await?;
                     let Some(row) = load_receipt(&mut tx, fence.character_id, &request).await?
                     else {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
                     if row.try_get::<Vec<u8>, _>("request_binding")?.as_slice() != binding {
                         return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
                     }
                     let receipt = decode_receipt(&row)?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(Some(QuestTransitionOutcome::AlreadyCommitted(receipt))))
                 })
             })
