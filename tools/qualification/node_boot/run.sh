@@ -1545,7 +1545,7 @@ SQL
 e02_client_replay() {
   local seam_log="$WORK/stage-seam_stages.log"
   local captured replay_output
-  captured="$(grep -cE '^SEAM_EVIDENCE e2e_all scenario=E02\.client status=CAPTURED( |$)' "$seam_log" || true)"
+  captured="$(grep -cE '^SEAM_EVIDENCE e2e_capture scenario=E02\.client status=CAPTURED( |$)' "$seam_log" || true)"
   if [[ "$captured" != 1 ]]; then
     echo "SEAM_EVIDENCE e2e_all scenario=E02.client status=FAIL evidence=expected-one-live-capture"
     return 1

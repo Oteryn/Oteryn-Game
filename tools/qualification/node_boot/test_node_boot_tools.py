@@ -761,11 +761,12 @@ class E02ClientReplayTests(unittest.TestCase):
 
     def test_pass_requires_one_live_capture_and_executed_replay(self):
         helper = section('e02_client_replay() {', 'seam_stages() {')
-        capture = 'SEAM_EVIDENCE e2e_all scenario=E02.client status=CAPTURED evidence=live\n'
+        capture = 'SEAM_EVIDENCE e2e_capture scenario=E02.client status=CAPTURED evidence=live\n'
         passing_test = 'test tests::e2e_e02::e02_coin_inventory_replay ... ok'
         with tempfile.TemporaryDirectory() as work:
             for live_log, test_output, test_exit, expected in (
                 ('', passing_test, 0, 'expected-one-live-capture'),
+                (capture.replace('e2e_capture', 'e2e_all'), passing_test, 0, 'expected-one-live-capture'),
                 (capture * 2, passing_test, 0, 'expected-one-live-capture'),
                 (capture, 'running 0 tests', 0, 'replay-did-not-run'),
                 (capture, '', 101, 'replay-failed'),
