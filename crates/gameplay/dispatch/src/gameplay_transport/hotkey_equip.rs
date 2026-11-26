@@ -291,12 +291,16 @@ pub(super) async fn execute(
     // lookup: the selected item has already left its original location after a commit.
     match equipment_move::committed_equipment_move(owner, command).await? {
         EquipmentMoveReplay::Moved => return Some(ItemMoveOutcome::Moved),
-        EquipmentMoveReplay::Conflicting => return Some(RejectionStage::EquipmentReplayConflict.outcome(command)),
+        EquipmentMoveReplay::Conflicting => {
+            return Some(RejectionStage::EquipmentReplayConflict.outcome(command));
+        }
         EquipmentMoveReplay::Absent => {}
     }
-    match super::loop_move::committed_loop_move(owner, command).await? {
+    match super::loop_move::committed_loop_move(owner, actor, command).await? {
         LoopMoveReplay::Moved => return Some(ItemMoveOutcome::Moved),
-        LoopMoveReplay::Conflicting => return Some(RejectionStage::ContainerReplayConflict.outcome(command)),
+        LoopMoveReplay::Conflicting => {
+            return Some(RejectionStage::ContainerReplayConflict.outcome(command));
+        }
         LoopMoveReplay::Absent => {}
     }
     let Some(fence) = command.item_fence else {

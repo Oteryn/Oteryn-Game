@@ -1132,7 +1132,7 @@
       ]
     },
     {
-      "key": "oteryn:quest-reward/inquisition-vampire-hunt-dust",
+      "key": "oteryn:quest-reward/inquisition-vampire-hunt-dust/collect",
       "quest": "oteryn:quest.the_inquisition_quest",
       "npc": "oteryn:npc.storkus",
       "keywords": [
@@ -1192,7 +1192,7 @@
       "keywords": [
         "yes"
       ],
-      "topic": 9,
+      "topic": 10,
       "next_topic": 0,
       "storage": [
         {

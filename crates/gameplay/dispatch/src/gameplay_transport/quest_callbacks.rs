@@ -1594,10 +1594,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(at) = native(expected.position()) else {
                 return UseDisposition::Rejected;
             };
-            if !callback.reaches(Position { x: at.x, y: at.y, floor: at.floor }, Position { x: resolved.pos.x, y: resolved.pos.y, floor: resolved.pos.floor }) {
+            // The physical owners checked reach before recording the gesture.
+            // In particular the pour reaches the water while this target is the mountain.
+            if ritual.is_none() && !callback.reaches(
+                Position { x: at.x, y: at.y, floor: at.floor },
+                Position { x: resolved.pos.x, y: resolved.pos.y, floor: resolved.pos.floor },
+            ) {
                 return UseDisposition::TooFar;
             }
-            if !callback.is_read_only() && !self
+            if ritual.is_none() && !callback.is_read_only() && !self
                 .states
                 .world_gate
                 .lock()
@@ -2192,7 +2197,7 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
     }
 }
 
-fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
+pub(super) fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
     callback.world_requirements.iter().all(|requirement| {
         // Closed Ground-only slots have no static anchor; the refreshed Ground
         // owner and fenced SQL read-set prove their portable roots separately.

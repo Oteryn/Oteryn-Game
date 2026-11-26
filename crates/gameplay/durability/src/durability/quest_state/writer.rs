@@ -679,8 +679,8 @@ impl DurabilityRoot {
         reward_callbacks: Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>,
         world_callbacks: Vec<oteryn_gameplay_quests::quest::world_callbacks::Callback>,
     ) -> Result<QuestTransitionOutcome> {
-        use oteryn_gameplay_quests::quest::source_deaths::{HARD_INCREMENT, HARD_UNLOCK};
         use super::native_observation::NativeQuestObservation::Death;
+        use oteryn_gameplay_quests::quest::source_deaths::{HARD_INCREMENT, HARD_UNLOCK};
         let arbaziloth_counter = matches!(&native, Some(Death(death))
             if matches!(&death.source, super::native_kills::NativeDeathSource::ArbazilothHard { .. })
                 && matches!(request.transition_key.as_str(), HARD_INCREMENT | HARD_UNLOCK));
@@ -731,7 +731,9 @@ impl DurabilityRoot {
         // A generic command or a caller-supplied death id is not native proof.
         if oteryn_gameplay_quests::quest::kill_objectives::binding(&request.transition_key)
             .is_some()
-            || oteryn_gameplay_quests::quest::death_objectives::is_grave_boss(&request.transition_key)
+            || oteryn_gameplay_quests::quest::death_objectives::is_grave_boss(
+                &request.transition_key,
+            )
             || request
                 .transition_key
                 .starts_with("oteryn:quest-transition/native-kill/")
@@ -1184,7 +1186,11 @@ impl DurabilityRoot {
             && !soul_step
         {
             // A legacy World claim keeps main's cold-replay identity.
-            let bytes = if legacy_world_claim.is_some() {
+            let bytes = if legacy_world_claim.is_some()
+                || matches!(request.transition_key.as_str(),
+                    oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual::PLACE_SCIMITAR
+                    | oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual::OPEN_ENTRANCE)
+            {
                 serde_json::to_vec(&(context.without_actor_movement(), &callback))
             } else {
                 serde_json::to_vec(&(context, &callback))

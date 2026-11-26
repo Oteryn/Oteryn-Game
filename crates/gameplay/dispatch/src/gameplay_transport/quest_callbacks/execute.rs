@@ -278,12 +278,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if callback.key == super::amphoras::GATE {
             map.facts.expire_movement_items(self.owner_now().get());
         }
+        // The Nomads pour receipt proves the crack was primed when the flask
+        // emptied. A cold replay may have rebuilt the map since that gesture.
+        let world_requirements_met = callback.key == world_callbacks::nomads_ritual::OPEN_ENTRANCE
+            || world_requirements_match(map, callback);
         if !close
-            && (!world_requirements_match(map, callback)
+            && (!world_requirements_met
                 || !self.ground_requirements_match(runtime, map, callback)
                 || !super::clear_area::area_is_clear(runtime, callback))
         {
-            if !world_requirements_match(map, callback)
+            if !world_requirements_met
                 && self.ground_requirements_match(runtime, map, callback)
                 && super::clear_area::area_is_clear(runtime, callback)
                 && super::timed_passages::lion_is_busy(map, callback)
@@ -1453,6 +1457,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // The original transition stays stage-8 only. A separate
                     // fenced delivery may still find its undelivered encounter.
                     recover_ordinary_coffin = true;
+                }
+                Ok(QuestTransitionOutcome::Refused(_))
+                    if matches!(callback.key.as_str(),
+                        world_callbacks::nomads_ritual::PLACE_SCIMITAR
+                        | world_callbacks::nomads_ritual::OPEN_ENTRANCE) =>
+                {
+                    if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
+                        pending.remove(&session);
+                    }
+                    return UseDisposition::NothingToUse;
                 }
                 refusal => {
                     if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|

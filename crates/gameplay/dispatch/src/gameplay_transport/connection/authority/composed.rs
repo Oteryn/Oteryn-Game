@@ -881,10 +881,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn committed_loop_move(
         &self,
-        _actor: ExactActorRef,
+        actor: ExactActorRef,
         command: connection::UseCommand,
     ) -> Option<item_move::LoopMoveReplay> {
-        loop_move::committed_loop_move(self, command).await
+        loop_move::committed_loop_move(self, actor, command).await
     }
 
     async fn move_loop_item(
@@ -1482,13 +1482,38 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.pour_fluid(actor, command, source, target).await
     }
 
+    async fn replay_nomads_pour(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Result<Option<UseOutcome>, ()> {
+        use crate::durability::nomads_ritual::{NomadsRitualGesture, is_water_placement};
+        if command.item_fence.is_none()
+            || !is_water_placement(&target.placement)
+            || !self
+                .bundle_map()
+                .is_some_and(|map| target.placement[..32] == map.overlay.base().digest())
+        {
+            return Ok(None);
+        }
+        self.resume_nomads_ritual(actor, command, NomadsRitualGesture::Pour)
+            .await
+            .map(|found| {
+                found.then_some(UseOutcome {
+                    disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
+                    ..UseOutcome::rejected()
+                })
+            })
+    }
+
     async fn use_fluid_on_map(
         &self,
         actor: ExactActorRef,
         command: connection::UseCommand,
         source: item_view::ItemKey,
         target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
-    ) -> Option<UseOutcome> {
+    ) -> Option<Result<UseOutcome, ()>> {
         self.use_fluid_map(actor, command, source, target).await
     }
 

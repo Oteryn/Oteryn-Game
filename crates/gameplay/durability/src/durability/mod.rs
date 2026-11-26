@@ -48,6 +48,7 @@ pub mod mail_text_policy;
 pub mod native_world_items;
 #[allow(dead_code)]
 pub mod native_world_read;
+pub mod nomads_ritual;
 pub mod party_kill_xp;
 pub mod platform_streams;
 pub mod player_death_items;

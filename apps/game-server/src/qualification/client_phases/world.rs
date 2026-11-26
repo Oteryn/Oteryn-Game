@@ -486,17 +486,14 @@ fn route_with_landings(
 ) -> Option<Vec<StepDirection>> {
     find_route(from, goal, |at, direction| {
         let next = landing(at, direction)?;
-        (next.x.abs_diff(from.x) <= 160
-            && next.y.abs_diff(from.y) <= 160
-            && next.floor.abs_diff(from.floor) <= 2
-            && available(next))
-        .then_some(next)
+        (map_journey::in_town(next, from) && available(next)).then_some(next)
     })
     .ok()
 }
 
 fn route_around_occupant(
     from: TilePos,
+    center: TilePos,
     occupied: TilePos,
     remaining: &VecDeque<StepDirection>,
     available: impl Fn(TilePos) -> bool,
@@ -505,12 +502,16 @@ fn route_around_occupant(
     let goal = remaining
         .iter()
         .try_fold(occupied, |at, &direction| landing(at, direction))?;
-    route_with_landings(
+    find_route(
         from,
         |at| at == goal,
-        |at| at != occupied && available(at),
-        landing,
+        |at, direction| {
+            let next = landing(at, direction)?;
+            (map_journey::in_town(next, center) && next != occupied && available(next))
+                .then_some(next)
+        },
     )
+    .ok()
 }
 
 fn find_route(
@@ -817,7 +818,7 @@ async fn walk_with_landings(
     path: &[StepDirection],
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
 ) -> TestResult {
-    walk_with_landing_budget(client, path, landing, None).await
+    walk_with_landing_budget(client, path, landing, None, None).await
 }
 
 async fn walk_with_landing_budget(
@@ -825,6 +826,7 @@ async fn walk_with_landing_budget(
     path: &[StepDirection],
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
     step_budget: Option<Duration>,
+    detour_center: Option<TilePos>,
 ) -> TestResult {
     let mut path = VecDeque::from(path.to_vec());
     let mut blocked = std::collections::BTreeSet::new();
@@ -885,6 +887,7 @@ async fn walk_with_landing_budget(
                 && blocked.insert(occupied)
                 && let Some(detour) = route_around_occupant(
                     from,
+                    detour_center.unwrap_or(from),
                     occupied,
                     &path,
                     |at| !blocked.contains(&at) && !visible_blockers.contains(&at),
@@ -3789,9 +3792,10 @@ fn qualification_town_route_detours_around_live_wolf() -> TestResult {
         route_with_landings(from, |at| at == goal, |_| true, landing),
         Some(vec![East, East])
     );
-    let detour = route_around_occupant(from, wolf, &VecDeque::from([East]), |_| true, landing)
-        .ok_or("missing wolf detour")?;
+    let detour =
+        route_around_occupant(from, from, wolf, &VecDeque::from([East]), |_| true, landing)
+            .ok_or("missing wolf detour")?;
     assert_eq!(detour, [North, East, East, South]);
-    assert!(route_around_occupant(from, wolf, &VecDeque::new(), |_| true, landing).is_none());
+    assert!(route_around_occupant(from, from, wolf, &VecDeque::new(), |_| true, landing).is_none());
     Ok(())
 }

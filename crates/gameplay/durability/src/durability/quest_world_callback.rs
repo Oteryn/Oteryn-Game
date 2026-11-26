@@ -509,30 +509,39 @@ pub(super) async fn consume(
         return Ok(false);
     }
     use oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual;
-    if callback.key == nomads_ritual::OPEN_ENTRANCE {
-        let water = nomads_ritual::WATER;
-        let key = oteryn_world_bundle::bundle::placement_key(water.floor, water.x, water.y, 0)
-            .ok_or(DurabilityError::InvalidStoredState)?;
-        let digest = context
-            .map_revision
-            .strip_prefix("sha256:")
-            .ok_or(DurabilityError::InvalidStoredState)?;
-        let active: bool = sqlx::query_scalar(
-            "SELECT EXISTS (
-                SELECT 1 FROM game_item_fluid_splashes
-                WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid
-                  AND placement=decode($3,'hex')||$4 AND splash_item_id=2886
-                  AND fluid_subtype=$5 AND expires_at>clock_timestamp())",
+    let mut moved_scimitar = None;
+    if matches!(
+        callback.key.as_str(),
+        nomads_ritual::PLACE_SCIMITAR | nomads_ritual::OPEN_ENTRANCE
+    ) {
+        let drop = callback.key == nomads_ritual::PLACE_SCIMITAR;
+        let gesture = sqlx::query(
+            "SELECT uuid_send(item_instance_id) AS item,uuid_send(move_transaction_id) AS move_id
+               FROM game_nomads_ritual_gestures
+              WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric
+                AND character_id=encode($3,'hex')::uuid AND world_id=encode($4,'hex')::uuid
+                AND channel_id=encode($5,'hex')::uuid AND NOT settled
+                AND 'sha256:'||encode(map_digest,'hex')=$6 AND reset_epoch=$7::text::numeric
+                AND (move_transaction_id IS NOT NULL)=$8",
         )
+        .bind(command.game_session_id().as_bytes().as_slice())
+        .bind(command.command_id().get().to_string())
+        .bind(fence.character_id.as_bytes().as_slice())
         .bind(world_id.as_bytes().as_slice())
         .bind(channel_id.as_bytes().as_slice())
-        .bind(digest)
-        .bind(key.to_be_bytes().as_slice())
-        .bind(nomads_ritual::WATER_SUBTYPE)
-        .fetch_one(&mut **tx)
+        .bind(&context.map_revision)
+        .bind(context.reset_epoch.to_string())
+        .bind(drop)
+        .fetch_optional(&mut **tx)
         .await?;
-        if !active {
+        let Some(gesture) = gesture else {
             return Ok(false);
+        };
+        if drop {
+            moved_scimitar = Some((
+                gesture.try_get::<Vec<u8>, _>("item")?,
+                gesture.try_get::<Vec<u8>, _>("move_id")?,
+            ));
         }
     }
     if !completed_quests::require(tx, fence, &callback.required_completed_quests).await? {
@@ -702,7 +711,19 @@ pub(super) async fn consume(
         return Ok(true);
     }
     let consumed = consume_inputs(
-        tx, permit, fence, request, callback, changes, context, command, world_id, channel_id,
+        tx,
+        permit,
+        fence,
+        request,
+        callback,
+        changes,
+        context,
+        command,
+        world_id,
+        channel_id,
+        moved_scimitar
+            .as_ref()
+            .map(|(item, movement)| (item.as_slice(), movement.as_slice())),
     )
     .await?;
     if consumed && coffin == Some(VampireCoffinKind::Weakened) {
@@ -780,6 +801,7 @@ async fn consume_inputs(
     command: crate::foundation::CommandRef,
     world_id: crate::foundation::WorldId,
     channel_id: crate::foundation::ChannelId,
+    moved_scimitar: Option<(&[u8], &[u8])>,
 ) -> Result<bool, DurabilityError> {
     // Resolve and lock every input before any write, including replacement preconditions.
     let mut inputs = Vec::new();
@@ -954,14 +976,16 @@ async fn consume_inputs(
         let row = sqlx::query(
             "SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item, \
              to_jsonb(g) AS before_ground,i.quantity FROM game_item_ground_locations g \
-             JOIN game_item_instances i USING(item_instance_id) \
+             JOIN game_item_instances i USING(item_instance_id,world_id) \
              WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid \
              AND g.spatial_position=$3 AND g.map_revision=$4 AND g.content_revision=$5 \
              AND g.native_room_placement_context=$6 \
              AND g.runtime_scope_ownership_generation=$7::text::numeric \
              AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$8 \
              AND i.quantity >= $9 AND game_item_loop_drop_ref(g.corpse_ref) \
-             ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i,g",
+             AND ($10::bytea IS NULL OR i.item_instance_id=encode($10,'hex')::uuid \
+                  AND i.last_transaction_id=encode($11,'hex')::uuid) \
+             ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
         )
         .bind(world_id.as_bytes().as_slice())
         .bind(channel_id.as_bytes().as_slice())
@@ -972,6 +996,8 @@ async fn consume_inputs(
         .bind(fence.scope_ownership_generation.get().to_string())
         .bind(&offering.item)
         .bind(i64::from(offering.count))
+        .bind(moved_scimitar.map(|(item, _)| item))
+        .bind(moved_scimitar.map(|(_, movement)| movement))
         .fetch_optional(&mut **tx)
         .await?;
         let Some(row) = row else { return Ok(false) };
@@ -979,10 +1005,22 @@ async fn consume_inputs(
         if inputs.iter().any(|input| input.item == item) {
             return Ok(false);
         }
+        // Ground's runtime grant permits deleting custody. The item lock
+        // serializes moves, and this fresh read checks the selected snapshot.
+        let location: serde_json::Value = row.try_get("before_ground")?;
+        let current: Option<serde_json::Value> = sqlx::query_scalar(
+            "SELECT to_jsonb(g) FROM game_item_ground_locations g WHERE item_instance_id=$1::uuid",
+        )
+        .bind(&item)
+        .fetch_optional(&mut **tx)
+        .await?;
+        if current.as_ref() != Some(&location) {
+            return Ok(false);
+        }
         inputs.push(Input {
             item,
             before: row.try_get("before_item")?,
-            location: row.try_get("before_ground")?,
+            location,
             kind: "ground".into(),
             quantity: row.try_get("quantity")?,
             count: if callback.effects.party_transfer.is_some() {

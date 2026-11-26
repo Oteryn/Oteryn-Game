@@ -277,3 +277,33 @@ $arm$;
     IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing Ground pickup provenance'; END IF;
     EXECUTE replace(body,anchor,arm);
 END $migration$;
+
+-- The scimitar drop and water pour each save their pending callback in the
+-- physical transaction. Keep the receipt identity after publication for replay.
+CREATE TABLE game_nomads_ritual_gestures (
+    game_session_id UUID NOT NULL,
+    command_id NUMERIC(20,0) NOT NULL CHECK (command_id BETWEEN 1 AND 18446744073709551615),
+    character_id UUID NOT NULL,
+    world_id UUID NOT NULL,
+    channel_id UUID NOT NULL,
+    item_instance_id UUID NOT NULL,
+    move_transaction_id UUID,
+    fluid_transaction_id UUID,
+    map_digest BYTEA NOT NULL CHECK (octet_length(map_digest) = 32),
+    reset_epoch NUMERIC(20,0) NOT NULL CHECK (reset_epoch >= 0),
+    object_revision NUMERIC(20,0) NOT NULL CHECK (object_revision >= 0),
+    settled BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (game_session_id, command_id),
+    CHECK ((move_transaction_id IS NULL) <> (fluid_transaction_id IS NULL)),
+    FOREIGN KEY (move_transaction_id, item_instance_id)
+        REFERENCES game_item_loop_move_lines (transaction_id, item_instance_id),
+    FOREIGN KEY (fluid_transaction_id, item_instance_id)
+        REFERENCES game_item_fluid_transitions (transaction_id, item_instance_id)
+);
+CREATE UNIQUE INDEX game_nomads_ritual_move ON game_nomads_ritual_gestures(move_transaction_id)
+    WHERE move_transaction_id IS NOT NULL;
+CREATE UNIQUE INDEX game_nomads_ritual_fluid ON game_nomads_ritual_gestures(fluid_transaction_id)
+    WHERE fluid_transaction_id IS NOT NULL;
+REVOKE ALL ON game_nomads_ritual_gestures FROM PUBLIC;
+GRANT SELECT, INSERT, UPDATE (settled) ON game_nomads_ritual_gestures TO oteryn_game_runtime;
+GRANT SELECT ON game_nomads_ritual_gestures TO oteryn_game_control;

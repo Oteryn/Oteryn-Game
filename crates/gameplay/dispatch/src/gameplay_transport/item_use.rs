@@ -868,11 +868,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         source: ItemKey,
         target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
-    ) -> Option<UseOutcome> {
+    ) -> Option<Result<UseOutcome, ()>> {
         let ItemKey::Instance(source) = source else {
             return None;
         };
         let fence = command.item_fence?;
+        use crate::durability::nomads_ritual::{NomadsRitualGesture, is_water_placement};
+        use oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual;
+        let gesture = NomadsRitualGesture::Pour;
+        let water_target = is_water_placement(&target.placement)
+            && self
+                .bundle_map()
+                .is_some_and(|map| target.placement[..32] == map.overlay.base().digest());
+        if water_target {
+            match self.resume_nomads_ritual(actor, command, gesture).await {
+                Ok(true) => {
+                    return Some(Ok(UseOutcome {
+                        disposition: UseDisposition::Committed,
+                        ..UseOutcome::rejected()
+                    }));
+                }
+                Ok(false) => {}
+                Err(()) => return Some(Err(())),
+            }
+        }
         let native = self.active_generation?.native_gameplay()?;
         let inventory = self
             .root
@@ -884,7 +903,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             channel_id,
         } = fence.runtime_scope
         else {
-            return Some(UseOutcome::rejected());
+            return Some(Ok(UseOutcome::rejected()));
         };
         let backpack = inventory.backpack.as_ref()?;
         let entry = backpack
@@ -918,10 +937,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 i32::from(resolved.pos.y),
                 i16::from(resolved.pos.floor),
             ) {
-                return Some(UseOutcome {
+                return Some(Ok(UseOutcome {
                     disposition: UseDisposition::TooFar,
                     ..UseOutcome::rejected()
-                });
+                }));
             }
             let tile =
                 crate::map::view::compose_tile(&at.map.overlay, &facts, resolved.pos).ok()??;
@@ -965,10 +984,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (fluid_source_subtype(target_item)?, None)
         } else {
             if fluid_source_subtype(target_item).is_some() {
-                return Some(UseOutcome {
+                return Some(Ok(UseOutcome {
                     disposition: UseDisposition::NothingToUse,
                     ..UseOutcome::rejected()
-                });
+                }));
             }
             // Crystal 201189f8 data/scripts/actions/items/fluids.lua:66-81.
             (
@@ -993,28 +1012,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             other: None,
         };
-        use oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual;
-        let ritual_water = splash.as_ref().is_some_and(|splash| {
-            i16::from(splash.fluid_subtype) == nomads_ritual::WATER_SUBTYPE
-                && super::nomads_ritual::is_water_placement(&splash.placement)
-        });
+        let ritual = if water_target && i16::from(before) == nomads_ritual::WATER_SUBTYPE {
+            self.bundle_map()
+                .and_then(|map| self.prepare_nomads_ritual(map, gesture))
+        } else {
+            None
+        };
         let disposition = self
-            .commit_fluid_at(actor, &command, fence, request, splash, None)
+            .commit_fluid_at(actor, &command, fence, request, splash, None, ritual)
             .await
             .unwrap_or_else(|d| d);
-        if ritual_water && disposition == UseDisposition::Committed {
-            self.advance_nomads_ritual(
-                actor,
-                command,
-                nomads_ritual::ENTRANCE,
-                nomads_ritual::OPEN_ENTRANCE,
-            )
-            .await;
+        #[cfg(test)]
+        if ritual.is_some()
+            && disposition == UseDisposition::Committed
+            && super::nomads_ritual::interrupted_after_commit(command)
+        {
+            return Some(Err(()));
         }
-        Some(UseOutcome {
+        if ritual.is_some() && disposition == UseDisposition::Rejected {
+            // Without a terminal item acknowledgement the connection can
+            // replay after either outcome of the physical transaction.
+            return Some(Err(()));
+        }
+        if ritual.is_some()
+            && disposition == UseDisposition::Committed
+            && self.resume_nomads_ritual(actor, command, gesture).await != Ok(true)
+        {
+            return Some(Err(()));
+        }
+        Some(Ok(UseOutcome {
             disposition,
             ..UseOutcome::rejected()
-        })
+        }))
     }
 
     async fn pour_fluid_between(
@@ -1109,10 +1138,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         request: ItemFluidRequest,
         restore: Option<ReferencePotionRestore>,
     ) -> Result<UseDisposition, UseDisposition> {
-        self.commit_fluid_at(actor, command, fence, request, None, restore)
+        self.commit_fluid_at(actor, command, fence, request, None, restore, None)
             .await
     }
 
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "a map pour can queue its exact native callback"
+    )]
     async fn commit_fluid_at(
         &self,
         actor: ExactActorRef,
@@ -1121,6 +1154,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         request: ItemFluidRequest,
         splash: Option<ItemFluidSplash>,
         restore: Option<ReferencePotionRestore>,
+        ritual: Option<crate::durability::nomads_ritual::NomadsRitualTarget>,
     ) -> Result<UseDisposition, UseDisposition> {
         let session = command.game_session_id;
         let reserved: Vec<[u8; 16]> = std::iter::once(request.change.item_instance_id)
@@ -1137,9 +1171,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             gate.start_drink(self.owner_ms())?;
         }
         let analyser_supply = restore.as_ref().map(|_| request.change.definition.clone());
-        let commit =
-            self.root
-                .commit_item_fluid_at(self.character, self.holder, fence, request, splash);
+        let commit = self.root.commit_item_fluid_at_with_ritual(
+            self.character,
+            self.holder,
+            fence,
+            request,
+            splash,
+            ritual,
+        );
         let bound = Duration::from_millis(ITEMUSE0_RL_04_AMBIGUOUS_MS);
         let (disposition, known_commit, ambiguous) = match tokio::time::timeout(bound, commit).await
         {

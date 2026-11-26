@@ -44,9 +44,9 @@ mod seed_drop;
 mod source_scene;
 mod subtree;
 pub use seed_drop::{SeedDropProbe, SeedDropTarget};
-pub use source_scene::{SourceSceneItemMove, SourceSceneReceipt};
 #[cfg(feature = "test-support")]
 pub use source_scene::with_lost_source_scene_commit_ack;
+pub use source_scene::{SourceSceneItemMove, SourceSceneReceipt};
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_equipment::{EquipmentError, assert_current_equipment_in_transaction};
@@ -1367,7 +1367,10 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
              )
              SELECT EXISTS(SELECT 1 FROM tree t JOIN game_item_bindings b
                            ON b.item_instance_id=t.item WHERE b.cause='STORE_PURCHASE')",
-        ).bind(request.item.as_slice()).fetch_one(&mut **tx).await?;
+        )
+        .bind(request.item.as_slice())
+        .fetch_one(&mut **tx)
+        .await?;
         if store_bound {
             return refuse(LoopMoveRefusal::Rejected);
         }
@@ -1900,7 +1903,7 @@ impl DurabilityRoot {
     ) -> std::result::Result<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError>
     {
         self.commit_loop_with_depot(
-            permit, recovery, node, fence, command, content, request, None, None, None,
+            permit, recovery, node, fence, command, content, request, None, None, None, None,
         )
         .await
     }
@@ -1933,6 +1936,40 @@ impl DurabilityRoot {
             None,
             None,
             Some(slot),
+            None,
+        )
+        .await
+    }
+
+    /// A qualified Nomads crack drop queues its callback with the move receipt.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the native destination uses the complete item fence"
+    )]
+    pub async fn commit_item_loop_nomads_drop<C: ItemLoopContent>(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        request: LoopMoveRequest,
+        slot: Option<u32>,
+        ritual: super::nomads_ritual::NomadsRitualTarget,
+    ) -> Result<Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError> {
+        self.commit_loop_with_depot(
+            permit,
+            recovery,
+            node,
+            fence,
+            command,
+            content,
+            request,
+            None,
+            None,
+            slot,
+            Some(ritual),
         )
         .await
     }
@@ -1950,6 +1987,7 @@ impl DurabilityRoot {
         depot: Option<DepotMove>,
         house: Option<house::HouseLoopContext>,
         slot: Option<u32>,
+        ritual: Option<super::nomads_ritual::NomadsRitualTarget>,
     ) -> std::result::Result<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError>
     {
         if house.is_none() {
@@ -2035,6 +2073,9 @@ impl DurabilityRoot {
                                     )
                                     .await?;
                                 }
+                            }
+                            if let Some(target) = ritual {
+                                super::nomads_ritual::record_drop(&mut tx, receipt.transaction_id, request.item, target).await?;
                             }
                             Ok(Ok(receipt))
                         }
@@ -2390,7 +2431,8 @@ impl DurabilityRoot {
         &self,
         scope: RuntimeScopeRefV1,
     ) -> std::result::Result<Vec<LoopGroundItem>, DurabilityError> {
-        self.read_item_loop_ground_for_scope_inner(scope, false).await
+        self.read_item_loop_ground_for_scope_inner(scope, false)
+            .await
     }
 
     /// Read receipt-backed custody after a sculpture transaction has resolved.
@@ -2398,7 +2440,8 @@ impl DurabilityRoot {
         &self,
         scope: RuntimeScopeRefV1,
     ) -> std::result::Result<Vec<LoopGroundItem>, DurabilityError> {
-        self.read_item_loop_ground_for_scope_inner(scope, true).await
+        self.read_item_loop_ground_for_scope_inner(scope, true)
+            .await
     }
 
     async fn read_item_loop_ground_for_scope_inner(

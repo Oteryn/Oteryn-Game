@@ -978,13 +978,14 @@ pub async fn loop_ground(
 /// The loop item receipt of command 9's CommandRef. A session without an item fence has none.
 pub(super) async fn committed_loop_move(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
-    command: UseCommand,
+    actor: ExactActorRef,
+    use_command: UseCommand,
 ) -> Option<LoopMoveReplay> {
-    let Some(fence) = command.item_fence else {
+    let Some(fence) = use_command.item_fence else {
         return Some(LoopMoveReplay::Absent);
     };
-    let command_id = CommandId::new(command.command_id).ok()?;
-    let command = CommandRef::new(command.game_session_id, command_id);
+    let command_id = CommandId::new(use_command.command_id).ok()?;
+    let command = CommandRef::new(use_command.game_session_id, command_id);
     let replay = super::AdmissionRetryBudget::for_command(admission.root)
         .retry_command_guard(async || {
             admission
@@ -997,6 +998,19 @@ pub(super) async fn committed_loop_move(
     // A committed Dreamer offering whose acknowledgement was lost publishes before the replay.
     if replay == LoopMoveReplay::Moved
         && !dreamer_ring::reconcile(admission, fence.character_id, command).await
+    {
+        return None;
+    }
+    if replay == LoopMoveReplay::Moved
+        && admission.bundle_map().is_some()
+        && admission
+            .resume_nomads_ritual(
+                actor,
+                use_command,
+                crate::durability::nomads_ritual::NomadsRitualGesture::Drop,
+            )
+            .await
+            .is_err()
     {
         return None;
     }
@@ -1301,6 +1315,23 @@ pub(super) async fn move_loop_item_with_house_capacity(
             },
         },
     };
+    use crate::durability::nomads_ritual::NomadsRitualGesture;
+    let crack = oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual::CRACK;
+    let ritual = match request.target {
+        LoopTarget::Ground(to)
+            if (to.x, to.y, to.floor)
+                == (
+                    i32::from(crack.x),
+                    i32::from(crack.y),
+                    i16::from(crack.floor),
+                ) =>
+        {
+            admission
+                .bundle_map()
+                .and_then(|map| admission.prepare_nomads_ritual(map, NomadsRitualGesture::Drop))
+        }
+        _ => None,
+    };
     let committed = match seed_result {
         Ok(Some(result)) => Ok(result),
         Ok(None) if assembly_target.is_some() => {
@@ -1318,6 +1349,22 @@ pub(super) async fn move_loop_item_with_house_capacity(
                     &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
                     native,
                     loop_request,
+                    target,
+                )
+                .await
+        }
+        Ok(None) if let Some(target) = ritual => {
+            admission
+                .root
+                .commit_item_loop_nomads_drop(
+                    &permit,
+                    admission.character,
+                    admission.holder,
+                    &fence,
+                    command_ref,
+                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                    loop_request,
+                    request.slot,
                     target,
                 )
                 .await
@@ -1370,6 +1417,12 @@ pub(super) async fn move_loop_item_with_house_capacity(
     {
         return LoopMoveResult::Unknown;
     }
+    #[cfg(test)]
+    if matches!(&committed, Ok(Ok(receipt)) if !receipt.replayed)
+        && super::nomads_ritual::interrupted_after_commit(command)
+    {
+        return LoopMoveResult::Unknown;
+    }
     // Consequence metadata is returned only after the physical transaction commits.
     // Replay and ordinary drops carry none, so neither can repeat source presentation.
     if let Ok(Ok(receipt)) = &committed
@@ -1405,23 +1458,14 @@ pub(super) async fn move_loop_item_with_house_capacity(
     if touches_ground && matches!(committed, Ok(Ok(_))) {
         admission.refresh_terrain_tools().await;
     }
-    use oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual;
-    let crack = nomads_ritual::CRACK;
-    if matches!(request.target, LoopTarget::Ground(to)
-        if (to.x,to.y,to.floor) == (i32::from(crack.x),i32::from(crack.y), i16::from(crack.floor)))
-        && matches!(&committed, Ok(Ok(receipt)) if !receipt.replayed)
+    if ritual.is_some()
+        && matches!(committed, Ok(Ok(_)))
         && admission
-            .root
-            .read_ground_action_source(admission.character, fence, item)
+            .resume_nomads_ritual(actor, command, NomadsRitualGesture::Drop)
             .await
-            .is_ok_and(|source| {
-                source
-                    .is_some_and(|item| item.definition().production_key == nomads_ritual::SCIMITAR)
-            })
+            .is_err()
     {
-        admission
-            .advance_nomads_ritual(actor, command, crack, nomads_ritual::PLACE_SCIMITAR)
-            .await;
+        return LoopMoveResult::Unknown;
     }
     // ATTACK-2: a moved item may have been the swing weapon's container; the next swing reads
     // the equipment again.
