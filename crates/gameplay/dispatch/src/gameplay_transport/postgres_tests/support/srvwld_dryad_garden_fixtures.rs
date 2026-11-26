@@ -8,7 +8,7 @@ use crate::foundation::ExactActorRef;
 
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
-    connection::{AdmittedSession, FreshAdmissionAuthority},
+    connection::{AdmittedSession, FreshAdmissionAuthority, UseCommand},
 };
 
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
@@ -25,6 +25,7 @@ pub(super) async fn exercise(
     actor: ExactActorRef,
     callback: &Callback,
     trigger: Position,
+    busy_holder: bool,
 ) -> TestResult {
     let key = oteryn_world_bundle::bundle::placement_key(trigger.floor, trigger.x, trigger.y, 1)
         .ok_or("key")?;
@@ -44,18 +45,33 @@ pub(super) async fn exercise(
         .observe_sounds(actor, admitted.game_session_id, u64::MAX)
         .await
         .ok_or("presentation cursor")?;
-    let reply = wire(
-        owner,
-        admitted,
-        1,
-        2,
-        encode_use_intent(&target).map_err(debug)?,
-    )
-    .await?;
-    assert_eq!(
-        decode_use_result(&reply).map_err(debug)?,
-        UseDisposition::Committed
-    );
+    let disposition = if busy_holder {
+        // Keep the primary holder checked out across both probes. This callback
+        // has no durable quest mutation, so it can complete before the holder returns.
+        owner.root.await_ready().await?;
+        let held = owner.root.try_issue_semantic_pass()?;
+        let command = UseCommand {
+            game_session_id: admitted.game_session_id,
+            command_id: 1,
+            item_fence: admitted.item_fence,
+        };
+        let harvest = owner.use_event_world_object(actor, command, target.clone()).await;
+        let result = owner.use_object(actor, command, target).await;
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        assert!(matches!(harvest, Ok(None)), "harvest probe intercepted a quest portal: {harvest:?}");
+        result.disposition
+    } else {
+        let reply = wire(
+            owner,
+            admitted,
+            1,
+            2,
+            encode_use_intent(&target).map_err(debug)?,
+        )
+        .await?;
+        decode_use_result(&reply).map_err(debug)?
+    };
+    assert_eq!(disposition, UseDisposition::Committed);
     let destination = local(callback.teleport.ok_or("destination")?);
     assert_eq!(
         owner
