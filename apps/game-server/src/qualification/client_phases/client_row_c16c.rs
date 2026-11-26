@@ -73,6 +73,13 @@ async fn buy_rune(
             offer.side == wire::NpcTradeSide::Buy && offer.item_definition_ref == rune.get()
         })
         .ok_or("C16c Alexander did not offer rune 3203")?;
+    if offer.unit_price != 375 {
+        return Err(format!(
+            "C16c rune 3203 expected price 375, got {}",
+            offer.unit_price
+        )
+        .into());
+    }
     let balances = runtime::balances(client.session_mut()).await?;
     let reply = runtime::buy(
         client.session_mut(),
@@ -110,7 +117,9 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
         .rune(3203)
         .ok_or("Animate Dead rune absent")?;
     let client = connect_world(clients, 0xd5).await?;
-    let mut client = provisioning::provision_fixture(client, clients, 1, 100).await?;
+    let mut client =
+        provisioning::provision_profile(client, clients, 1, 100, "c16c-sorcerer").await?;
+    evidence("FIXTURE_INPUT row=C16c magic_level=4 platinum_coins=4");
     let bundle = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bundle, |_, _| Ok(()))?;
     let seller = metadata
@@ -208,6 +217,22 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
     .await
     .map_err(|_| "C16c Rat produced no visible corpse")??;
     full_e2ef5::approach_melee(&mut client, world, corpse.position).await?;
+    let index = provisioning::item_index()?;
+    let movable = provisioning::item_reference(&index, 3994)?;
+    let corpse = verdict::indexed_timeout(Duration::from_secs(25), async {
+        loop {
+            if let Some(current) = client.world_entities().and_then(|world| world.get(&corpse.entity))
+                && matches!(current.detail, oteryn_dev_client::EntityDetail::Object { item_definition_ref, .. } if item_definition_ref == movable.get())
+            {
+                return Ok::<_, Box<dyn std::error::Error>>(*current);
+            }
+            client.service_liveness(Duration::from_millis(100)).await?;
+        }
+    }).await.map_err(|_| "C16c Rat corpse did not reach movable item 3994")??;
+    evidence(&format!(
+        "C16C_CORPSE_STAGE entity={:?} item=3994",
+        corpse.entity
+    ));
     // A fresh observer starts its retained replay window at the cast site.
     let mut observer = connect_character(clients, 0xd7, 0).await?;
     full_e2ef5::cast_rune(&mut client, spell, rune, None, Some(corpse.position)).await?;

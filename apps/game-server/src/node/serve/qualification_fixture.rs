@@ -16,7 +16,14 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let session = parse_operation_id(session.as_bytes())?;
     matches!(
         profile,
-        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
+        "explorer"
+            | "knight"
+            | "paladin"
+            | "sorcerer"
+            | "druid"
+            | "monk"
+            | "knight-underlevel"
+            | "c16c-sorcerer"
     )
     .then_some((session, profile))
 }
@@ -791,6 +798,7 @@ async fn prepare_build(
     let (vocation, level) = match profile {
         "knight-underlevel" => ("knight", 66),
         "explorer" => ("knight", 100),
+        "c16c-sorcerer" => ("sorcerer", 100),
         _ => (profile, 100),
     };
     let occurrence_profile = if level == 100 { vocation } else { profile };
@@ -802,6 +810,12 @@ async fn prepare_build(
         qualification_build::QualificationBuildSpec {
             vocation,
             level,
+            magic_seed: (profile == "c16c-sorcerer").then(|| {
+                (
+                    4,
+                    fixture_occurrence(character.as_bytes(), profile, b"magic"),
+                )
+            }),
             context,
             xp_occurrence: fixture_occurrence(character.as_bytes(), occurrence_profile, b"xp"),
             build_occurrence: fixture_occurrence(
@@ -814,7 +828,16 @@ async fn prepare_build(
         deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    prepare_items(
+        root,
+        authority,
+        proof,
+        &current,
+        native,
+        deadline,
+        profile == "c16c-sorcerer",
+    )
+    .await
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
@@ -845,6 +868,7 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
+    fund_animate_dead: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -919,7 +943,10 @@ async fn prepare_items(
         .ok_or("qualification Item index missing")?;
     // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
     // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+    let items = [(3276, 1), (3003, 1), (3457, 1)]
+        .into_iter()
+        .chain(fund_animate_dead.then_some((3035, 4)));
+    for (ordinal, (id, quantity)) in items.enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),
@@ -933,7 +960,7 @@ async fn prepare_items(
             .equipment
             .iter()
             .chain(bag.entries.iter().map(|entry| &entry.item))
-            .any(|existing| existing.definition == definition && existing.quantity == 1)
+            .any(|existing| existing.definition == definition && existing.quantity >= quantity)
         {
             continue;
         }
@@ -957,7 +984,7 @@ async fn prepare_items(
             },
             source_placement: "oteryn:qualification.node-boot".into(),
             item,
-            quantity: 1,
+            quantity,
             contents: Vec::new(),
             root_text: None,
             root_fluid_subtype: None,
