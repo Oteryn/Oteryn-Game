@@ -169,13 +169,15 @@ fn same_spell_refusals_match(
     after_spoken: Option<&ActorVitals>,
     after_indexed: Option<&ActorVitals>,
 ) -> bool {
+    // Periodic vitals updates can change health while the probes are in flight.
     spoken_retry.status == CommandStatus::Rejected
         && spoken_retry.disposition == ChatDisposition::Rejected
         && retry.status == CommandStatus::Accepted
         && retry.disposition == SpellCastDisposition::CoolingDown
         && retry.actor_vitals_delta.is_none()
-        && after_spoken == Some(paid)
-        && after_indexed == Some(paid)
+        && [after_spoken, after_indexed].into_iter().all(|vitals| {
+            vitals.is_some_and(|after| after.mana == paid.mana && after.soul == paid.soul)
+        })
 }
 
 pub(super) fn spell_index(
@@ -286,6 +288,25 @@ mod tests {
             Some(&paid),
             Some(&paid)
         ));
+
+        let after_spoken_damage = ActorVitals {
+            health: 110,
+            ..paid
+        };
+        let after_indexed_damage = ActorVitals {
+            health: 100,
+            ..paid
+        };
+        assert!(
+            same_spell_refusals_match(
+                &spoken,
+                &indexed,
+                &paid,
+                Some(&after_spoken_damage),
+                Some(&after_indexed_damage)
+            ),
+            "independent health updates must not invalidate the cooldown refusals"
+        );
 
         let mana_debit = ActorVitals { mana: 60, ..paid };
         let soul_debit = ActorVitals { soul: 99, ..paid };

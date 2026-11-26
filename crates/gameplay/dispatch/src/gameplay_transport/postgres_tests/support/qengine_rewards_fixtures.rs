@@ -919,7 +919,10 @@ pub(super) async fn exercise(
         return Box::pin(super::vampire_hunter_journey::direct_dust(owner, admitted, h)).await;
     }
     if name == "qengine-rewards-storkus-empty-dust" {
-        return Box::pin(super::vampire_hunter_journey::empty_dust(owner, admitted, h)).await;
+        return Box::pin(super::vampire_hunter_journey::empty_dust(owner, admitted, h, 0)).await;
+    }
+    if name == "qengine-rewards-storkus-empty-collection" {
+        return Box::pin(super::vampire_hunter_journey::empty_dust(owner, admitted, h, 6)).await;
     }
     if name == "qengine-rewards-vampire-hunter" {
         return Box::pin(super::vampire_hunter_journey::exercise(owner, admitted, h)).await;

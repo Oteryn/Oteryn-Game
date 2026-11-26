@@ -215,22 +215,22 @@ pub(super) fn prepare(
                     });
                 }
                 // Crystal storkus.lua:121-141 reports a zero deposit and resets the topic.
-                // The largest eligible hand-in gives the amount still due at this stage.
                 if context.2 == "oteryn:npc.storkus"
-                    && topic == 9
+                    && matches!(topic, 1 | 9)
                     && let Some(facts) = inventory
                     && let Some(payment) = matching_stage
                         .clone()
-                        .filter_map(|callback| callback.take.first())
-                        .max_by_key(|payment| payment.count)
+                        .find_map(|callback| callback.take.first())
                     && facts.quantities.get(&payment.item).copied().unwrap_or(0) == 0
                 {
+                    const DUST_TRACK: &str = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust";
+                    let saved = tracks.get(DUST_TRACK).copied().unwrap_or(0);
+                    let remaining = 20 - saved;
                     return Some(Choice {
                         transition: None,
                         next_topic: Some(Topic::from(0)),
                         reply: vec![format!(
-                            "Ye've brought me 0 vampire dusts. Ye' need to bring {} more.",
-                            payment.count
+                            "Ye've brought me 0 vampire dusts. Ye' need to bring {remaining} more."
                         )],
                     });
                 }

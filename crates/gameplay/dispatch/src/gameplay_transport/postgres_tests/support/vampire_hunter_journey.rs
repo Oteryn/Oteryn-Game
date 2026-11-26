@@ -232,42 +232,74 @@ pub(super) async fn empty_dust(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    saved: i64,
 ) -> TestResult {
     use super::classic_quests_fixtures;
     use super::qengine_outfit_stories_fixtures::seed_quest_prerequisites;
 
     let [npc] = classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.storkus"]).await?;
-    seed_quest_prerequisites(
-        h,
-        owner,
-        admitted,
-        &[(INQUISITION.into(), 6), (VAMPIRE_HUNT.into(), 1)],
-        112,
-    )
-    .await?;
+    let mut progress = vec![(INQUISITION.into(), 6), (VAMPIRE_HUNT.into(), 1)];
+    if saved > 0 {
+        progress.push((DUST.into(), saved));
+    }
+    seed_quest_prerequisites(h, owner, admitted, &progress, 112).await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     let first = admitted.continuity.next_command_id;
     let _ = talk(owner, admitted, npc, first, "hi").await?;
-    let offer = talk_outcome(owner, admitted, npc, first + 1, "vampire dust").await?;
+    let (prompt, offered, remaining, reset_offer) = if saved == 0 {
+        (
+            "vampire dust",
+            "Shall I take the vampire dust you've brought?",
+            20,
+            "Are you ready to help me hunt vampires?",
+        )
+    } else {
+        (
+            "mission",
+            "Have you brought any vampire dust?",
+            14,
+            "Have you brought any vampire dust?",
+        )
+    };
+    let offer = talk_outcome(owner, admitted, npc, first + 1, prompt).await?;
     assert_eq!(
-        offer.conversation.ok_or("direct dust offer")?.lines,
-        ["Shall I take the vampire dust you've brought?"]
+        offer.conversation.ok_or("dust offer")?.lines,
+        [offered]
     );
     let answer = talk_outcome(owner, admitted, npc, first + 2, "yes").await?;
     assert_eq!(
         answer.conversation.map(|conversation| conversation.lines),
-        Some(vec![
-            "Ye've brought me 0 vampire dusts. Ye' need to bring 20 more.".into()
-        ])
+        Some(vec![format!(
+            "Ye've brought me 0 vampire dusts. Ye' need to bring {remaining} more."
+        )])
     );
     assert_eq!(answer.disposition, NpcIntentDisposition::Ok);
     assert!(!answer.inventory_changed);
+    assert_eq!(
+        owner
+            .states
+            .npc_conversations
+            .fixture_quest_topic(admitted.game_session_id)?,
+        0
+    );
     let follow_up = talk_outcome(owner, admitted, npc, first + 3, "mission").await?;
     assert_eq!(
         follow_up.conversation.ok_or("mission after empty hand-in")?.lines,
-        ["Are you ready to help me hunt vampires?"]
+        [reset_offer]
+    );
+    let state: (i64, bool) = sqlx::query_as(
+        "SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE track_key=$1), 0), \
+                EXISTS (SELECT 1 FROM game_quest_callback_consumptions)",
+    )
+    .bind(DUST)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        state,
+        (saved, false),
+        "empty hand-in changed the dust counter or recorded a debit"
     );
     Ok(())
 }
