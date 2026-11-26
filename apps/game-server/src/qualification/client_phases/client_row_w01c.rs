@@ -7,17 +7,19 @@ use super::*;
 use oteryn_dev_client::SessionEvent;
 use oteryn_protocol_oteryn::actor_spell;
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+use std::io::Write;
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W01C_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    let result =
+        std::fs::File::create_new(root.join(name)).and_then(|mut file| file.write_all(bytes));
+    result.map_err(|error| format!("W01c client capture: {name}: {error}"))?;
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let capture_root = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .ok_or("W01c client capture: E2E_ALL_CAPTURE_DIR missing")?;
+    let capture_root = Path::new(&capture_root);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -59,23 +61,28 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         }
     };
     capture(
+        capture_root,
         "w01c-vitals.bin",
         &actor_spell::encode_actor_vitals(&damaged)
             .map_err(|error| format!("encode vitals: {error:?}"))?,
-    );
+    )?;
     let expected = format!(
         "health_before={}\nhealth={}\nmax_health={}\nmana={}\nmax_mana={}\nsoul={}\n",
-        before.health, damaged.health, damaged.max_health, damaged.mana, damaged.max_mana, damaged.soul
+        before.health,
+        damaged.health,
+        damaged.max_health,
+        damaged.mana,
+        damaged.max_mana,
+        damaged.soul
     );
-    capture("w01c-expected.txt", expected.as_bytes());
+    capture(capture_root, "w01c-expected.txt", expected.as_bytes())?;
     Ok(expected)
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
-        return;
-    }
-    match verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=W01c.client status=CAPTURED evidence={:?}",
             expected.replace('\n', ";")

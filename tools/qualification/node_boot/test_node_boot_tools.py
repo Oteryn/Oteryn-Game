@@ -720,6 +720,20 @@ class ClientReplayTests(unittest.TestCase):
                 else:
                     self.assertEqual(result.stdout, '')
 
+    def test_w01c_replay_is_selected_by_its_registered_batch(self):
+        for batch, expected in (
+            ('186:1', ''),
+            ('187:1', 'W01c.client oteryn-session e2e_w01c_creature_attack_vitals_replay\n'),
+            ('188:1', ''),
+        ):
+            with self.subTest(batch=batch):
+                result = bash(
+                    'source "$REPLAY_HELPER"; selected_client_replays',
+                    {'REPLAY_HELPER': str(HERE / 'client_replay.sh'), 'OTERYN_E2E_ROW_BATCH': batch},
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, expected)
+
 
 class CloudRunSummaryTests(unittest.TestCase):
     def test_cloud_uses_first_eligible_work_parent(self):
