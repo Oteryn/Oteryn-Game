@@ -125,6 +125,10 @@ def replay_targets():
         "oteryn-client", "e2e_e09_real_mail_outcomes_replay_into_mail_panel",
         capture_names("e09", mail.read_text()),
     )]
+    targets["e2e_n03"] = [(
+        "oteryn-client", "e2e_n03_depot_list_retrieve_one_and_refusals",
+        {"n03-expected.txt", "n03-retrieve.json"},
+    )]
     return targets
 
 

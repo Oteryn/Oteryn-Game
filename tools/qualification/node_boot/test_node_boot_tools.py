@@ -414,42 +414,13 @@ class ReuseTests(unittest.TestCase):
 
 
 class N03ReplayTests(unittest.TestCase):
-    def test_selects_only_world_rows_whose_batch_includes_n03(self):
-        script = function('n03_replay_selected') + '\nNODE_BOOT_WORLD=1; n03_replay_selected'
-        for groups, batch, expected in (
-            ('rows', '142:1', 0), ('core, rows', '140:3', 0), ('', 'all', 0),
-            ('rows', '141:1', 1), ('rows', '142:0', 1), ('core', 'all', 1),
-        ):
-            with self.subTest(groups=groups, batch=batch):
-                result = bash(script, {'NODE_BOOT_E2E_ONLY': groups, 'OTERYN_E2E_ROW_BATCH': batch})
-                self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
-
-    def test_requires_current_capture_and_an_executed_native_test(self):
-        script = textwrap.dedent("""
-            set -Eeuo pipefail
-            WORK=$PWD; GAME_SOURCE=$PWD; NODE_BOOT_N03_CAPTURE_DIR=$PWD
-            cargo() { printf '%s\\n' "$TEST_RESULT"; }
-            """) + function('n03_replay') + '\nn03_replay'
-        with tempfile.TemporaryDirectory() as temp:
-            log = Path(temp, 'stage-seam_stages.log')
-            session = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
-            Path(temp, 'n03-expected.txt').write_text(f'session={session}\n')
-            replay = ('test play::feature_0153_depot_search::view::native::e2e_n03::'
-                      'e2e_n03_depot_list_retrieve_one_and_refusals ... ok')
-            verified = f'{replay}\nN03_NATIVE_REPLAY session={session}'
-            current = f'SEAM_EVIDENCE e2e_capture scenario=N03.client status=CAPTURED session={session} evidence=item=1'
-            stale = current.replace(session, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb')
-            for marker, outcome, expected in (
-                ('', replay, 1),
-                (current, '', 1),
-                (current, replay, 1),
-                (stale, verified, 1),
-                (current, verified, 0),
-            ):
-                log.write_text(marker + '\n')
-                result = bash(script, {'TEST_RESULT': outcome}, temp)
-                self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
-                self.assertEqual('scenario=N03.client status=PASS' in result.stdout, expected == 0)
+    def test_n03_has_one_shared_replay_target(self):
+        self.assertEqual(load('client_replay').replay_targets()['e2e_n03'], [(
+            'oteryn-client', 'e2e_n03_depot_list_retrieve_one_and_refusals',
+            {'n03-expected.txt', 'n03-retrieve.json'},
+        )])
+        self.assertNotIn('stage n03_replay', RUN_TEXT)
+        self.assertNotIn('NODE_BOOT_N03_CAPTURE_DIR', RUN_TEXT)
 
 
 class SeamPassThroughTests(unittest.TestCase):

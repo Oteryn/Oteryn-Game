@@ -104,7 +104,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let capture_root = required("NODE_BOOT_N03_CAPTURE_DIR")?;
+    let capture_root = required("E2E_ALL_CAPTURE_DIR")?;
     let capture_root = Path::new(&capture_root);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
