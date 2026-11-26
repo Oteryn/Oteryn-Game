@@ -8,7 +8,9 @@ use super::item_ref_admission::pinned_index;
 use super::item_view::{ItemKey, SessionItemView, ViewItem};
 use super::world_spatial::ActorPosition;
 use crate::content::item_ref::{ITEM_FAMILY, ItemDefinitionIndex};
-use crate::content::{ActiveGeneration, native_gameplay::QualifiedItemPolicy};
+use crate::content::{
+    ActiveGeneration, ReferenceItemField::Known, native_gameplay::QualifiedItemPolicy,
+};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, VisibleRuntimeCorpse};
@@ -111,6 +113,23 @@ fn examine_qualified_item(
     )
     .map(|text| ItemLookOutcome::Text(bounded_text(text)))
     .unwrap_or(ItemLookOutcome::Unavailable)
+}
+
+fn is_readable_document(
+    generation: Option<&ActiveGeneration>,
+    definition: &TypedDefinitionRef,
+) -> bool {
+    // Stamping keeps the letter's inscription even when the stamped profile omits a read limit.
+    definition.production_key == oteryn_gameplay_items::mail::STAMPED_LETTER_KEY
+        || generation
+            .and_then(ActiveGeneration::native_gameplay)
+            .and_then(|native| native.item_policy(&definition.production_key, &definition.revision_ref))
+            .is_some_and(|policy| {
+                matches!(
+                    &policy.record().semantics.readable_writeable,
+                    Known(profile) if profile.readable == Known(true) || profile.distance_read == Known(true)
+                )
+            })
 }
 
 #[cfg(test)]
@@ -447,7 +466,7 @@ async fn observe_look_item(
         definition: &definition,
         look_distance: distance,
     };
-    let ordinary = match examine_observed_item(
+    let mut ordinary = match examine_observed_item(
         &runtime,
         admission.active_generation,
         views,
@@ -456,6 +475,17 @@ async fn observe_look_item(
     ) {
         ItemLookOutcome::Text(text) => ItemLookResult::Text(text),
         ItemLookOutcome::Unavailable => return Err(unavailable),
+    };
+    // Prove the same scope owner and actor before a durable text read and before replying.
+    let owner_is_current = |runtime: &ChannelRuntimeV1, fence: CurrentCharacterItemFence| {
+        let binding = runtime.binding();
+        fence.game_session_id == session
+            && fence.runtime_scope == binding.runtime_scope()
+            && fence.scope_ownership_generation == binding.scope_generation()
+            && runtime.owner_fence().is_ok()
+            && runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
     };
     // Crystal svargrond_arena.lua:175-190 and item.cpp:3265-3269.
     if let ItemKey::Instance(instance) = key
@@ -467,21 +497,8 @@ async fn observe_look_item(
         }
     {
         let item_fence = fence
-            .filter(|fence| fence.game_session_id == session)
+            .filter(|fence| owner_is_current(&runtime, *fence))
             .ok_or(unavailable)?;
-        // Prove the same scope owner and actor before the durable read and before replying.
-        let owner_is_current = |runtime: &ChannelRuntimeV1| {
-            let binding = runtime.binding();
-            item_fence.runtime_scope == binding.runtime_scope()
-                && item_fence.scope_ownership_generation == binding.scope_generation()
-                && runtime.owner_fence().is_ok()
-                && runtime
-                    .player_control_facts(actor, session)
-                    .is_ok_and(|facts| facts.control_loss.is_none())
-        };
-        if !owner_is_current(&runtime) {
-            return Err(unavailable);
-        }
         let pin = content_generation(&runtime);
         drop(runtime);
         let inscription = admission
@@ -499,7 +516,7 @@ async fn observe_look_item(
         let runtime = admission.runtime.lock().await;
         if current != (definition, count, distance)
             || content_generation(&runtime) != pin
-            || !owner_is_current(&runtime)
+            || !owner_is_current(&runtime, item_fence)
         {
             return Err(unavailable);
         }
@@ -558,6 +575,44 @@ async fn observe_look_item(
         return spellbook_text(admission.spells, state.character_facts().vocation)
             .map(ItemLookResult::Text)
             .ok_or(unavailable);
+    }
+    // Only equipped items and the carried tree get a negative LOOK distance.
+    if distance < 0
+        && let ItemKey::Instance(instance) = key
+        && is_readable_document(admission.active_generation, &definition)
+        && let ItemLookResult::Text(text) = &mut ordinary
+    {
+        let item_fence = fence
+            .filter(|fence| owner_is_current(&runtime, *fence))
+            .ok_or(unavailable)?;
+        let pin = content_generation(&runtime);
+        drop(runtime);
+        let (current_definition, inscription) = admission
+            .root
+            .read_carried_item_text(
+                admission.character,
+                admission.holder,
+                item_fence,
+                None,
+                instance,
+            )
+            .await
+            .map_err(|_| unavailable)?
+            .ok_or(unavailable)?;
+        let runtime = admission.runtime.lock().await;
+        if current_definition != definition
+            || content_generation(&runtime) != pin
+            || !owner_is_current(&runtime, item_fence)
+        {
+            return Err(unavailable);
+        }
+        let prefix = "\nYou read: ";
+        if !inscription.text.is_empty()
+            && text.len() + prefix.len() + inscription.text.len() <= MAX_ITEM_LOOK_TEXT_BYTES
+        {
+            text.push_str(prefix);
+            text.push_str(&inscription.text);
+        }
     }
     Ok(ordinary)
 }
