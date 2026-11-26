@@ -60,6 +60,9 @@ mod journey {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
+        evidence(
+            "SEAM_EVIDENCE e2e_all scenario=C20b.client status=FAIL seconds=0.000 evidence=capture-directory-required",
+        );
         return;
     }
     let started = std::time::Instant::now();
