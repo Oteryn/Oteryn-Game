@@ -730,10 +730,14 @@ async fn equip_right(client: &mut DevClientSession, definition: NonZeroU32) -> T
         .map(|e| e.handle)
         .ok_or("augment item not carried")?;
     let moved = client
-        .move_item(&items::ItemMoveIntent {
-            source: handle,
-            destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::RightHand),
-        })
+        .session_mut()
+        .move_item_counted(
+            oteryn_dev_client::native_session::item_movement::MoveRequest {
+                source: handle,
+                destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::RightHand),
+                count: None,
+            },
+        )
         .await?;
     if moved.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("right-hand ITEM_MOVE reply={moved:?}").into());
