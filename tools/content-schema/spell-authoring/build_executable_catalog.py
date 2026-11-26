@@ -34,9 +34,25 @@ C18B_SPELL_HEADERS = {
 }
 
 
-def apply_c18b_spell_header(spell):
-    for section, field, value in C18B_SPELL_HEADERS.get(spell["identity"]["key"], ()):
+def apply_crystal_grenade_parameters(parameters):
+    # Crystal 201189f8: divine_grenade.lua:6-24,26-42,110 and
+    # player_wheel.cpp:1408-1411,2315-2323.
+    if parameters["value_timing"] != "at_expiry":
+        parameters["expiry_inputs"][:0] = ["level", "magic_level", "wheel_stage"]
+    parameters.pop("snapshot_inputs", None)
+    parameters.update(
+        value_timing="at_expiry",
+        cooldown_ms_by_stage=[26000, 20000, 16000],
+        base_damage_bonus_percent_by_stage=[30, 60, 100],
+    )
+
+
+def apply_c18b_spell_parity(spell):
+    key = spell["identity"]["key"]
+    for section, field, value in C18B_SPELL_HEADERS.get(key, ()):
         spell[section][field] = value
+    if key == "candidate:spell/divine_grenade":
+        apply_crystal_grenade_parameters(spell["execution"]["native_behavior"]["parameters"])
 
 
 def build_selection(catalog, catalog_digest, sources):
@@ -106,7 +122,7 @@ def apply_owner_decisions(catalog):
         entry["manifest"]["entries"].append(resolution)
 
     for entry in catalog["bundles"]:
-        apply_c18b_spell_header(entry["bundle"]["spell"])
+        apply_c18b_spell_parity(entry["bundle"]["spell"])
     return catalog
 
 

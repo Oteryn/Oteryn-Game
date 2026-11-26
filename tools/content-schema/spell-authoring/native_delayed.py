@@ -9,6 +9,8 @@ from copy import deepcopy
 import hashlib
 from pathlib import Path
 
+from build_executable_catalog import apply_crystal_grenade_parameters
+
 REVISIONS = {
     'canary': '99902524e052f37574194466c2949c576e4ab269',
     'crystal': 'ff7ede593c69d4c658b382c97443e8155926924a',
@@ -299,6 +301,19 @@ def _closed_snapshot_schema(value):
 
 def schemas():
     """Strict parameter snapshots, keyed by their two candidate discriminants."""
-    return {key: {'oneOf': [_closed_snapshot_schema(_snapshot(name)['parameters']) for name in FILES
-                           if _snapshot(name)['key'] == key]}
-            for key in ('delayed_strike', 'owned_field_buff')}
+    result = {
+        key: {
+            "oneOf": [
+                _closed_snapshot_schema(snapshot["parameters"])
+                for name in FILES
+                if (snapshot := _snapshot(name))["key"] == key
+            ]
+        }
+        for key in ("delayed_strike", "owned_field_buff")
+    }
+    # Pinned source bundles still use their exact historical parameters.
+    # The registered spell has its own closed snapshot.
+    registered = _snapshot("divine grenade")["parameters"]
+    apply_crystal_grenade_parameters(registered)
+    result["delayed_strike"]["oneOf"].append(_closed_snapshot_schema(registered))
+    return result

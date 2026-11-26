@@ -2694,7 +2694,7 @@
                 "selection_rule": "S5/S21"
               },
               "immediate_strike": false,
-              "value_timing": "raw_at_cast_modifiers_at_expiry",
+              "value_timing": "at_expiry",
               "suppress_charms": false,
               "ignore_caster_floor": false,
               "identity_gate": "player_id_source_baseline",
@@ -2704,18 +2704,17 @@
               "cooldown_ms_by_stage": [
                 26000,
                 20000,
-                14000
+                16000
               ],
               "base_damage_bonus_percent_by_stage": [
-                0,
-                16,
-                32
-              ],
-              "snapshot_inputs": [
-                "magic_level",
-                "flat_damage"
+                30,
+                60,
+                100
               ],
               "expiry_inputs": [
+                "level",
+                "magic_level",
+                "wheel_stage",
                 "critical_chance",
                 "extra_critical_damage",
                 "divine_empowerment",
@@ -2839,7 +2838,7 @@
               "selection_rule": "S5/S21"
             },
             "immediate_strike": false,
-            "value_timing": "raw_at_cast_modifiers_at_expiry",
+            "value_timing": "at_expiry",
             "suppress_charms": false,
             "ignore_caster_floor": false,
             "identity_gate": "player_id_source_baseline",
@@ -2849,18 +2848,17 @@
             "cooldown_ms_by_stage": [
               26000,
               20000,
-              14000
+              16000
             ],
             "base_damage_bonus_percent_by_stage": [
-              0,
-              16,
-              32
-            ],
-            "snapshot_inputs": [
-              "magic_level",
-              "flat_damage"
+              30,
+              60,
+              100
             ],
             "expiry_inputs": [
+              "level",
+              "magic_level",
+              "wheel_stage",
               "critical_chance",
               "extra_critical_damage",
               "divine_empowerment",

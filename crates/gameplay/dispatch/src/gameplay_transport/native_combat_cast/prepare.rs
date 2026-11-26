@@ -1342,7 +1342,9 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
         &mut magnitude,
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
-    if saved.scheduled.captured_raw_bounds.is_some() {
+    if strike.modifier_timing
+        == crate::spell::native_delayed::ModifierTiming::CastBuffsAndOccurrenceModifiers
+    {
         magnitude
             .select_planted_strike(&saved.cast_modifiers)
             .map_err(|_| SpellCastDisposition::Rejected)?;

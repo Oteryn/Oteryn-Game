@@ -821,6 +821,69 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             *mana,
             "{key} exact one-time cast payment before the delayed hit"
         );
+        if plan.case == Case::Grenade {
+            use crate::spell::delayed_execution::TimerPayload;
+            use oteryn_gameplay_domain::domain::condition::ConditionValues;
+            use oteryn_gameplay_foundation::foundation::condition::{
+                ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+            };
+            use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+            let runtime = deps.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let timer = states
+                .spell_timers
+                .as_ref()
+                .and_then(|timers| timers.payloads.first())
+                .ok_or("grenade timer")?;
+            let TimerPayload::Strike(saved) = &timer.payload else {
+                return Err("grenade strike payload".into());
+            };
+            let cast_at = saved.binding.cast_at.get();
+            let snapshot = saved.binding.cast_snapshot.as_ref().ok_or("cast snapshot")?;
+            assert_eq!(snapshot.stage, 3);
+            let state = states.get_mut(&runtime, actor, session).ok_or("caster")?;
+            assert_eq!(
+                state.cooldowns.spells.get(*key).map(|ready| ready.get() - cast_at),
+                Some(16_000_000),
+                "paid grade-three cooldown"
+            );
+            // Make the live range clearly distinguishable from the planted range,
+            // regardless of the damage and critical rolls.
+            let magic_boost = ConditionDefinition::new(
+                "fixture:grenade_magic_level",
+                1,
+                ConditionValues::SpellSkills {
+                    duration_ms: 60_000,
+                    sub_id: 0,
+                    magic_level: 1000,
+                    fist: 0,
+                    melee: 0,
+                    distance: 0,
+                    shielding: 0,
+                },
+            )
+            .ok_or("magic boost definition")?;
+            let root = GameplayDecisionRoot::from_bytes(native.source_digest());
+            state
+                .conditions
+                .apply(
+                    &magic_boost,
+                    None,
+                    ConditionSourceKind::SelfUse,
+                    &[],
+                    &ApplicationFacts {
+                        now: owner.owner_now().get(),
+                        base_speed: 100,
+                        mana_shield_capacity: 0,
+                        target_reentry_protected: false,
+                        source_reentry_protected: false,
+                        target_is_player: true,
+                        decision_root: &root,
+                        occurrence: DecisionOccurrenceId::from_bytes(id(98)),
+                    },
+                )
+                .map_err(debug)?;
+        }
         let expected_echo = if plan.case == Case::Echo {
             let runtime = deps.runtime.lock().await;
             let creature = runtime.companion_snapshot(target).map_err(debug)?;
@@ -926,6 +989,13 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             assert_eq!(echo, hit);
         } else {
             assert!(echo < hit, "delayed strike damages live area");
+        }
+        if plan.case == Case::Grenade {
+            assert!(
+                hit - echo >= 4000,
+                "fresh 1000 magic levels contribute 8000 minimum raw damage before mitigation, got {} HP loss",
+                hit - echo
+            );
         }
         if let Some(expected) = expected_echo {
             assert_eq!(

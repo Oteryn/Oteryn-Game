@@ -936,10 +936,10 @@
             "dependencies": "tools/content-schema/spell-authoring/spell-dependencies.schema.json",
             "manifest": "tools/content-schema/monster-authoring/monster-import-readiness.schema.json"
           },
-          "sha256": "6e57e05705f3fcd5497dc9f895e9e0c2b991a6d65cf66c5c8645a7a463611513",
+          "sha256": "d5af219e0786a7ab5cace4f0ba3760cdb1c9a65f27de1027236762ad81abab83",
           "source_selection": {
             "path": "content/abilities/definitions/player-spell-selection.json",
-            "sha256": "68bd64f34b62197378335cf14aa4ef8e3f19b4611b6d8b26c2b9f4401f11b655"
+            "sha256": "cf58afb3d8e33acda59a0f81ddc446bba434d23e43d1b87f8c93bc4bd655ff4a"
           }
         },
         {

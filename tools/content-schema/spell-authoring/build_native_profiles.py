@@ -13,7 +13,7 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 
 import native_catalog
-from build_executable_catalog import apply_c18b_spell_header
+from build_executable_catalog import apply_c18b_spell_parity
 from validate_spell import validate, walk
 
 REVISION = 'spell-p2-r20'
@@ -212,7 +212,6 @@ def assemble(profiles):
             raise ValueError('native profile name/carrier/execution disagrees with spell')
         check_revisions(profile['spell'], profile_id(profile) + '/spell')
         check_revisions(profile['dependencies'], profile_id(profile) + '/dependencies')
-        apply_c18b_spell_header(profile['spell'])
         identity = profile_id(profile)
         if identity == 'rune-destroy_field_rune':
             # PKG1R2, owner 2026-10-30; Global revs 1189762 / 1182654.
@@ -237,6 +236,8 @@ def assemble(profiles):
             barrier_count += 1
         else:
             raise ValueError(identity + ': profile lacks a native or barrier operation')
+        apply_c18b_spell_parity(profile['spell'])
+        profile['execution'] = copy.deepcopy(profile['spell']['execution'])
         if identity in seen:
             raise ValueError('duplicate native profile: ' + identity)
         seen.add(identity)
