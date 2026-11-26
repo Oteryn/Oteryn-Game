@@ -6,6 +6,7 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
@@ -21,7 +22,7 @@ use crate::foundation::RuntimeScopeRefV1;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
-use std::time::Instant;
+use tokio::time::Instant;
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 const BINDING_VERSION: u8 = 1;
 
@@ -490,7 +491,7 @@ impl DurabilityRoot {
                     if seconds < 0 {
                         return Err(DurabilityError::InvalidStoredState);
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(FamiliarUnixTime(seconds)))
                 })
             })
@@ -662,7 +663,7 @@ impl DurabilityRoot {
                         .as_ref()
                         .map(decode_receipt)
                         .transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(receipt))
                 })
             })
@@ -718,7 +719,7 @@ impl DurabilityRoot {
                         }
                         FamiliarCleanEndResolution::Absent
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(resolution))
                 })
             })
@@ -737,7 +738,7 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
             let projection = read_familiar_projection(&mut tx, character_id).await?;
-            commit_semantic_transaction(tx,deadline).await?;
+            commit_semantic_read(tx,deadline).await?;
             Ok(Ok(projection))
         })).await?
     }

@@ -96,7 +96,7 @@ impl DurabilityRoot {
                     migration_required:!stowable(native,&definition), definition_key:definition.production_key,definition_revision:definition.revision_ref,
                     quantity:u32::try_from(row.try_get::<i64,_>("quantity")?).map_err(|_|DurabilityError::InvalidStoredState)?})
             }).collect::<Result<Vec<_>,DurabilityError>>()?;
-            super::db::commit_semantic_transaction(tx,deadline).await?;
+            super::db::commit_semantic_read(tx,deadline).await?;
             Ok((rows,more))
         })).await
     }

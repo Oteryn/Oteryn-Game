@@ -72,7 +72,7 @@ impl FreshAdmissionStore {
                     let budget = store
                         .recovery_budget_locked(&mut tx, session, epoch)
                         .await?;
-                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    super::admission_journal::commit_pass_read(tx, deadline).await?;
                     Ok(budget)
                 })
             })

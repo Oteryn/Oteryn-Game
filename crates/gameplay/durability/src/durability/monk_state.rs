@@ -15,6 +15,7 @@
 //! stale fence writes nothing. At death, `commit_character_death` empties both values in the
 //! DEATH-1 transaction, and the 0026 guard rejects a death transition that does not.
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
@@ -340,7 +341,7 @@ impl DurabilityRoot {
                         .as_ref()
                         .map(decode_receipt)
                         .transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(record))
                 })
             })
@@ -379,7 +380,7 @@ impl DurabilityRoot {
                         )?,
                         None => DurableMonkState::default(),
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(state))
                 })
             })

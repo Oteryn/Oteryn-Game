@@ -3,6 +3,7 @@
 //! Every read runs under the reconciled Character authority, so a restored or
 //! unreconciled store never publishes.
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
@@ -76,7 +77,7 @@ impl DurabilityRoot {
                         .bind(limit)
                         .fetch_all(&mut *tx)
                         .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     let Some(first) = rows.first() else {
                         return Ok(Ok(None));
                     };
@@ -152,7 +153,7 @@ impl DurabilityRoot {
             assert_recovery_fence(&mut tx, &recovery).await?;
             let row = sqlx::query("SELECT e.projection_epoch, (SELECT min(created_at) FROM game_character_account_projection_outbox) AS oldest, floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms FROM game_character_account_projection_epoch e WHERE e.epoch_scope = 1")
                 .fetch_one(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             let projection_epoch = match positive(row.try_get("projection_epoch")?) {
                 Ok(v) => v,
                 Err(e) => return Ok(Err(e)),
