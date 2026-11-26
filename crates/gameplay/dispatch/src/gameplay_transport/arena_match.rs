@@ -406,6 +406,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(replay) = read.replay {
             return Some(replay);
         }
+        // A current Leave can cancel a pending destination without adopting the old run.
+        let may_leave_pending = read.relocation_pending && !read.dead && matches!(action, A::Leave);
         if !read.dead
             && read.pit_owned
             && (read.state.rank == 0
@@ -419,11 +421,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if matches!(cause, durable::MatchCause::Step { .. }) {
                 return None;
             }
-            return wire::encode_match_result(&wire::ArenaResult {
-                disposition: D::Busy,
-                state: read.state.wire(read.now_ms, read.masks),
-            })
-            .ok();
+            if !may_leave_pending {
+                return wire::encode_match_result(&wire::ArenaResult {
+                    disposition: D::Busy,
+                    state: read.state.wire(read.now_ms, read.masks),
+                })
+                .ok();
+            }
         }
         let before = read.state;
         let mut victory = None;
@@ -437,8 +441,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()?
             .get(&session)
             .cloned();
-        // A current Leave can cancel a pending destination without adopting the old run.
-        let may_leave_pending = read.relocation_pending && !read.dead && matches!(action, A::Leave);
         let stale = after.rank > 0
             && !may_leave_pending
             && (after.session != *session.as_bytes()

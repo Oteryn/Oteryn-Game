@@ -79,6 +79,7 @@ enum ResetCase {
     NativeFloor,
     ProjectionRetry,
     FreshStatus,
+    FreshLeave,
 }
 
 #[test]
@@ -86,6 +87,14 @@ fn arena_fresh_status_while_reset_refused_returns_busy() -> TestResult {
     run_reset_case(
         ResetCase::FreshStatus,
         "arena_fresh_status_while_reset_refused_returns_busy",
+    )
+}
+
+#[test]
+fn arena_leave_while_reset_refused_cancels_pending_entry() -> TestResult {
+    run_reset_case(
+        ResetCase::FreshLeave,
+        "arena_leave_while_reset_refused_cancels_pending_entry",
     )
 }
 
@@ -348,8 +357,13 @@ fn scenario(case: ResetCase, test: &'static str) -> TestResult {
         );
         assert_eq!(ground_roots(&h).await?, 4, "no pit lease yet");
 
-        if case == ResetCase::FreshStatus {
-            return fresh_status_while_reset_refused(&h, &owner, admitted).await;
+        if matches!(case, ResetCase::FreshStatus | ResetCase::FreshLeave) {
+            fresh_command_while_reset_refused(&h, &owner, admitted, case).await?;
+            drop(owner);
+            drop(deps);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
         }
 
         let payload = wire::encode_match_request(ArenaAction::Enter).map_err(debug)?;
@@ -510,10 +524,11 @@ fn scenario(case: ResetCase, test: &'static str) -> TestResult {
     })
 }
 
-async fn fresh_status_while_reset_refused(
+async fn fresh_command_while_reset_refused(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: crate::gameplay_transport::connection::AdmittedSession,
+    case: ResetCase,
 ) -> TestResult {
     use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
     use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
@@ -542,7 +557,7 @@ async fn fresh_status_while_reset_refused(
                 break;
             }
         }
-        let mut send = async |offset, action, expected| -> TestResult {
+        let mut send = async |offset, action, expected| -> TestResult<wire::ArenaResult> {
             let command_id = admitted.continuity.next_command_id + offset;
             let payload = wire::encode_match_request(action).map_err(debug)?;
             let frame = encode_client_command(
@@ -566,19 +581,33 @@ async fn fresh_status_while_reset_refused(
                     assert_eq!(reply.status, CommandStatus::Accepted);
                     let arena = wire::decode_match_result(reply.payload).map_err(debug)?;
                     assert_eq!(arena.disposition, expected);
-                    assert_eq!(arena.state.pit, 1);
-                    return Ok(());
+                    return Ok(arena);
                 }
             }
         };
         let roots = ground_roots(h).await?;
-        send(0, ArenaAction::Enter, ArenaDisposition::Applied).await?;
+        let entered = send(0, ArenaAction::Enter, ArenaDisposition::Applied).await?;
+        assert_eq!(entered.state.pit, 1);
         assert_eq!(ground_roots(h).await?, roots, "Ground is still locked");
-        send(1, ArenaAction::Status, ArenaDisposition::Busy).await?;
-        assert_eq!(ground_roots(h).await?, roots, "Busy leaves the reset pending");
-        ground_lock.rollback().await?;
-        send(2, ArenaAction::Status, ArenaDisposition::Applied).await?;
-        assert_eq!(ground_roots(h).await?, roots - 1, "the pending reset succeeded");
+        if case == ResetCase::FreshLeave {
+            let leases = "SELECT count(*) FROM game_svargrond_pit_leases";
+            assert_eq!(sqlx::query_scalar::<_, i64>(leases).fetch_one(&h.pool).await?, 1);
+            let left = send(1, ArenaAction::Leave, ArenaDisposition::Applied).await?;
+            assert_eq!((left.state.active_rank, left.state.pit), (0, 0));
+            assert_eq!(sqlx::query_scalar::<_, i64>(leases).fetch_one(&h.pool).await?, 0);
+            ground_lock.rollback().await?;
+            let status = send(2, ArenaAction::Status, ArenaDisposition::Applied).await?;
+            assert_eq!((status.state.active_rank, status.state.pit), (0, 0));
+            assert_eq!(ground_roots(h).await?, roots, "Leave cancelled the pending reset");
+        } else {
+            let busy = send(1, ArenaAction::Status, ArenaDisposition::Busy).await?;
+            assert_eq!(busy.state.pit, 1);
+            assert_eq!(ground_roots(h).await?, roots, "Busy leaves the reset pending");
+            ground_lock.rollback().await?;
+            let status = send(2, ArenaAction::Status, ArenaDisposition::Applied).await?;
+            assert_eq!(status.state.pit, 1);
+            assert_eq!(ground_roots(h).await?, roots - 1, "the pending reset succeeded");
+        }
         Ok::<_, Box<dyn std::error::Error>>(())
     };
     let (_, result) = tokio::time::timeout(std::time::Duration::from_secs(30), async {
