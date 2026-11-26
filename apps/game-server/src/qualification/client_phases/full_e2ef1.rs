@@ -948,7 +948,7 @@ mod e2ef1 {
         })
         .await?;
         let saved = peer.world_spatial().actor_position;
-        let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(peer).await?;
+        let (result, logout, attempts, busy_timed_out) = super::logout_once(peer).await?;
         if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err(format!("pushed peer logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
         }

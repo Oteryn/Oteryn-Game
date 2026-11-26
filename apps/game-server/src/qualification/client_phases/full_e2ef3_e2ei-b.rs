@@ -591,7 +591,7 @@ async fn documents(
     let admission = async {
         approach(client, world, TOWN, |at| at == TOWN).await?;
         let session = client.join_snapshot().game_session_id;
-        let (outcome, detail, attempts, busy) = super::logout_retrying_busy(client).await?;
+        let (outcome, detail, attempts, busy) = super::logout_once(client).await?;
         if outcome != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err(format!(
                 "logout observed {outcome:?} {detail}; attempts={attempts}, busy={busy}"
