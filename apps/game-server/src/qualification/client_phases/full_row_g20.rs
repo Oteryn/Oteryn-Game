@@ -61,20 +61,14 @@ async fn accepted(
     payload: &[u8],
 ) -> TestResult<Vec<u8>> {
     let (status, payload) = send(client, capability, command, payload).await?;
-    if status != CommandStatus::Accepted {
-        return Err(format!(
-            "step=command-{command} observed=status:{status:?} needed=accepted-reply"
-        )
-        .into());
-    }
+    require_mechanic_acceptance(status, &format!("G20 command {command}"))?;
     Ok(payload)
 }
 
 async fn finish(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=logout observed=refused".into());
+    let (result, detail, attempts, _) = logout_once(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) || attempts != 1 {
+        return Err(format!("step=logout first attempt refused: {detail}").into());
     }
     Ok(())
 }
@@ -108,6 +102,7 @@ struct ForgeCustody {
     backpack: String,
     items: serde_json::Value,
     dust: Option<serde_json::Value>,
+    other_custody: serde_json::Value,
     gold: i64,
     slivers: i64,
     swords: i64,
@@ -119,7 +114,10 @@ async fn forge_custody(
     character: &[u8; 16],
 ) -> TestResult<ForgeCustody> {
     let custody: ForgeCustody = sqlx::query_as(
-        "WITH backpack AS (
+        "WITH RECURSIVE owner AS (
+            SELECT character_id, account_id, world_id FROM game_character_roots
+            WHERE character_id = encode($1, 'hex')::uuid
+        ), backpack AS (
             SELECT item_instance_id FROM game_item_container_slots
             WHERE character_id = encode($1, 'hex')::uuid
         ), entries AS (
@@ -132,12 +130,47 @@ async fn forge_custody(
             WHERE e.character_id = encode($1, 'hex')::uuid
             ORDER BY e.placement_ordinal
             LIMIT 101
+        ), roots AS (
+            SELECT b.item_instance_id, to_jsonb(b) AS placement FROM game_item_container_slots b JOIN owner o USING (character_id)
+            UNION ALL
+            SELECT e.item_instance_id, to_jsonb(e) FROM game_item_container_entries e JOIN owner o USING (character_id)
+            UNION ALL
+            SELECT e.item_instance_id, to_jsonb(e) FROM game_character_equipment_slots e JOIN owner o USING (character_id)
+            UNION ALL
+            SELECT d.item_instance_id, to_jsonb(d) FROM game_item_character_depot_locations d JOIN owner o USING (character_id)
+            UNION ALL
+            SELECT i.item_instance_id, to_jsonb(i) FROM game_item_character_inbox_locations i JOIN owner o USING (character_id)
+        ), tree(item_instance_id, placement, path) AS (
+            SELECT item_instance_id, placement, ARRAY[item_instance_id] FROM roots
+            UNION ALL
+            SELECT n.item_instance_id, to_jsonb(n), t.path || n.item_instance_id
+            FROM tree t JOIN game_item_nested_entries n ON n.parent_item_instance_id = t.item_instance_id
+            WHERE NOT n.item_instance_id = ANY(t.path)
+        ), observed_items AS (
+            SELECT t.item_instance_id, t.placement, to_jsonb(i) AS instance,
+                   to_jsonb(tier_state) AS tier
+            FROM tree t JOIN game_item_instances i USING (item_instance_id)
+            LEFT JOIN game_item_tiers tier_state USING (item_instance_id)
+            LIMIT 101
         )
         SELECT b.item_instance_id::text AS backpack,
                COALESCE(jsonb_agg(to_jsonb(e) ORDER BY e.placement_ordinal)
                    FILTER (WHERE e.item_instance_id IS NOT NULL), '[]'::jsonb) AS items,
                (SELECT to_jsonb(d) FROM game_character_forge_dust d
                    WHERE d.character_id = encode($1, 'hex')::uuid) AS dust,
+               jsonb_build_object(
+                   'items', (SELECT jsonb_agg(to_jsonb(i) ORDER BY item_instance_id) FROM observed_items i),
+                   'dust_ledger', (SELECT jsonb_agg(to_jsonb(d) ORDER BY entry_id)
+                       FROM game_character_forge_dust_entries d JOIN owner o USING (character_id)),
+                   'stash', (SELECT jsonb_agg(to_jsonb(s) ORDER BY to_jsonb(s))
+                       FROM game_character_stash_balances s JOIN owner o USING (character_id)),
+                   'bank', (SELECT to_jsonb(b) FROM game_account_bank_balances b JOIN owner o USING (account_id, world_id)),
+                   'forge_cooldown', (SELECT to_jsonb(c) FROM game_forge_cooldowns c JOIN owner o USING (character_id)),
+                   'forge_operations', (SELECT jsonb_agg(to_jsonb(p) ORDER BY to_jsonb(p))
+                       FROM game_forge_operations p JOIN owner o USING (character_id)),
+                   'forge_reservations', (SELECT jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r))
+                       FROM game_forge_reservations r JOIN owner o USING (character_id))
+               ) AS other_custody,
                COALESCE(sum(e.quantity * CASE e.definition
                    WHEN 'oteryn:item.tibia.i3031' THEN 1
                    WHEN 'oteryn:item.tibia.i3035' THEN 100
@@ -147,7 +180,7 @@ async fn forge_custody(
                    AND e.definition = 'oteryn:item.tibia.i37109'), 0)::bigint AS slivers,
                count(*) FILTER (WHERE e.lifecycle = 1 AND e.quantity = 1 AND e.tier = 0
                    AND e.definition = 'oteryn:item.tibia.i3264') AS swords,
-               count(e.item_instance_id) AS entry_count
+               (SELECT count(*) FROM observed_items) AS entry_count
         FROM backpack b LEFT JOIN entries e ON TRUE
         GROUP BY b.item_instance_id",
     )
@@ -155,7 +188,7 @@ async fn forge_custody(
     .fetch_one(connection)
     .await?;
     if custody.entry_count > 100 {
-        return Err("step=custody backpack exceeds snapshot bound".into());
+        return Err("step=custody character custody exceeds snapshot bound".into());
     }
     Ok(custody)
 }
@@ -196,6 +229,37 @@ fn check_first_page(page: &wire::Page) -> TestResult {
         .into());
     }
     Ok(())
+}
+
+fn check_candidates(page: &wire::Page, expected: [u64; 3]) -> TestResult {
+    let mut expected = expected;
+    expected.sort_unstable();
+    let actual: Vec<_> = page.items.iter().map(|item| item.handle.get()).collect();
+    if actual != expected {
+        return Err(format!(
+            "step=browse candidate handles observed={actual:?} expected={expected:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
+fn inventory_without_handles(inventory: &CharacterInventory) -> CharacterInventory {
+    let mut inventory = inventory.clone();
+    for entry in inventory
+        .main_backpack
+        .iter_mut()
+        .chain(&mut inventory.entries)
+        .chain(
+            inventory
+                .equipment
+                .iter_mut()
+                .map(|equipped| &mut equipped.item),
+        )
+    {
+        entry.handle = std::num::NonZeroU64::MIN;
+    }
+    inventory
 }
 
 const FUNDED_DUST: u32 = 30;
@@ -281,6 +345,10 @@ fn browse(
     let [one, two] = swords.as_slice() else {
         return Err("step=browse expected two fixture swords in inventory".into());
     };
+    check_candidates(
+        &page,
+        [backpack.handle.get(), one.handle.get(), two.handle.get()],
+    )?;
     let find = |entry: &oteryn_protocol_oteryn::item_view::ItemEntry| {
         page.items.iter().find(|item| {
             item.handle == entry.handle
@@ -393,7 +461,7 @@ async fn body(
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     character_prep::declare_seeded(
         "G20.full",
-        "two-tier-zero-swords,50-slivers,funded-case-30-dust",
+        "two-tier-zero-swords,50-slivers",
         "Forge preview",
     );
     let owner = character_prep::dedicated_character(clients, "NODE_BOOT_Q_G20_ACCOUNT").await?;
@@ -426,31 +494,38 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             custody.swords, custody.slivers, custody.gold
         ).into());
     }
+    let original_inventory = inventory_without_handles(
+        client
+            .inventory()
+            .ok_or("step=pre-state missing inventory")?,
+    );
     let outcome = verdict::observe(body(&mut client, &mut connection, character, &custody)).await;
     let closed = verdict::observe(finish(&mut client)).await;
     let resources = outcome?;
     closed?;
     drop(client);
 
-    verify_relog(&clients, &mut connection, active, &custody, resources).await?;
-    let credited = seed_funded_dust(&mut connection, &clients).await?;
+    verify_relog(
+        &clients,
+        &mut connection,
+        active,
+        &custody,
+        resources,
+        &original_inventory,
+    )
+    .await?;
     let funded = forge_custody(&mut connection, character).await?;
-    let mut custody_with_dust = custody;
-    custody_with_dust.dust.clone_from(&funded.dust);
-    check_custody(&custody_with_dust, &funded)?;
-    if credited != i64::from(FUNDED_DUST)
-        || funded
-            .dust
-            .as_ref()
-            .and_then(|dust| dust["balance"].as_u64())
-            != Some(u64::from(FUNDED_DUST))
-        || funded
-            .dust
-            .as_ref()
-            .and_then(|dust| dust["dust_limit"].as_u64())
-            != Some(u64::from(INITIAL_DUST_LIMIT))
-    {
-        return Err("step=funded-pre-state missing exact dust credit and initial limit".into());
+    let balances = funded.dust.as_ref();
+    let dust = balances
+        .and_then(|row| row["balance"].as_u64())
+        .unwrap_or(0);
+    let limit = balances
+        .and_then(|row| row["dust_limit"].as_u64())
+        .unwrap_or(u64::from(INITIAL_DUST_LIMIT));
+    if dust != u64::from(FUNDED_DUST) || limit != u64::from(INITIAL_DUST_LIMIT) {
+        return Err(format!(
+            "step=funded-pre-state observed=dust-{dust}-limit-{limit} required=dust-{FUNDED_DUST}-limit-{INITIAL_DUST_LIMIT} prerequisite=live-eligible-creature-dust-credit"
+        ).into());
     }
 
     let mut client = connect_character(&clients, 0x82, 0).await?;
@@ -483,25 +558,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             dust: FUNDED_DUST,
             ..resources
         },
+        &original_inventory,
     )
     .await
-}
-
-async fn seed_funded_dust(
-    connection: &mut sqlx::PgConnection,
-    clients: &SeamClients<'_>,
-) -> TestResult<i64> {
-    let mut tx = connection.begin().await?;
-    let credited = sqlx::query_scalar(include_str!(
-        "../../../../../tools/qualification/node_boot/g20_forge_dust.sql"
-    ))
-    .bind(clients.characters[0].as_slice())
-    .bind(clients.world.as_slice())
-    .bind(i64::from(FUNDED_DUST))
-    .fetch_one(&mut *tx)
-    .await?;
-    tx.commit().await?;
-    Ok(credited)
 }
 
 async fn verify_relog(
@@ -510,6 +569,7 @@ async fn verify_relog(
     previous: oteryn_protocol_oteryn::GameSessionId,
     custody: &ForgeCustody,
     resources: wire::Resources,
+    original_inventory: &CharacterInventory,
 ) -> TestResult {
     let mut fresh = connect_character(clients, 0x82, 0).await?;
     if fresh.join_snapshot().game_session_id == previous {
@@ -519,6 +579,9 @@ async fn verify_relog(
         .inventory()
         .ok_or("step=relog missing inventory")?
         .clone();
+    if &inventory_without_handles(&inventory) != original_inventory {
+        return Err("step=relog inventory differs from original admission".into());
+    }
     let durable = verdict::observe(preview_unchanged(
         &mut fresh,
         1,
@@ -559,6 +622,64 @@ mod tests {
     }
 
     #[test]
+    fn browse_rejects_extra_missing_and_out_of_order_candidates() -> TestResult {
+        let item = |handle| -> TestResult<wire::Item> {
+            Ok(wire::Item {
+                handle: std::num::NonZeroU64::new(handle).ok_or("test handle is zero")?,
+                definition_ref: SWORD.into(),
+                appearance: SWORD.into(),
+                name: "Sword".into(),
+                classification: 1,
+                tier: 0,
+                maximum_tier: 1,
+                container: false,
+            })
+        };
+        let mut page = wire::Page {
+            after: 0,
+            next: None,
+            items: vec![item(1)?, item(2)?, item(3)?],
+            resources: wire::Resources::default(),
+        };
+        let expected = [3, 1, 2];
+        check_candidates(&page, expected)?;
+        page.items.swap(1, 2);
+        assert!(check_candidates(&page, expected).is_err());
+        page.items.swap(1, 2);
+        page.items.push(item(4)?);
+        assert!(check_candidates(&page, expected).is_err());
+        page.items.truncate(2);
+        assert!(check_candidates(&page, expected).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn relog_inventory_ignores_session_handles_but_rejects_changed_quantities() -> TestResult {
+        let first = CharacterInventory {
+            entries: vec![oteryn_protocol_oteryn::item_view::ItemEntry {
+                handle: std::num::NonZeroU64::MIN,
+                item_definition_ref: std::num::NonZeroU32::MIN,
+                appearance_id: SWORD,
+                count: std::num::NonZeroU32::MIN,
+                sub_type: 0,
+            }],
+            ..Default::default()
+        };
+        let mut fresh = first.clone();
+        fresh.entries[0].handle = std::num::NonZeroU64::new(2).ok_or("test handle")?;
+        assert_eq!(
+            inventory_without_handles(&first),
+            inventory_without_handles(&fresh)
+        );
+        fresh.entries[0].count = std::num::NonZeroU32::new(2).ok_or("test count")?;
+        assert_ne!(
+            inventory_without_handles(&first),
+            inventory_without_handles(&fresh)
+        );
+        Ok(())
+    }
+
+    #[test]
     fn funded_dust_limit_requires_the_exact_positive_quote() -> TestResult {
         assert!(check_funded_dust_limit(wire::Payload::Refused).is_err());
         let mut quote = wire::ResourceQuote {
@@ -593,6 +714,7 @@ mod tests {
                 {"item_instance_id":"slivers-a","placement_ordinal":3,"quantity":50,"tier":0},
             ]),
             dust: None,
+            other_custody: serde_json::json!({"dust_ledger":[],"items":[{"slot":"equipment","quantity":1}]}),
             gold: 50,
             slivers: 50,
             swords: 2,
@@ -610,6 +732,12 @@ mod tests {
         let mut moved = snapshot();
         moved.items[0]["placement_ordinal"] = 4.into();
         assert!(check_custody(&expected, &moved).is_err());
+        let mut edited_equipment = snapshot();
+        edited_equipment.other_custody["items"][0]["quantity"] = 2.into();
+        assert!(check_custody(&expected, &edited_equipment).is_err());
+        let mut appended_dust = snapshot();
+        appended_dust.other_custody["dust_ledger"] = serde_json::json!([{"amount":1}]);
+        assert!(check_custody(&expected, &appended_dust).is_err());
         Ok(())
     }
 
