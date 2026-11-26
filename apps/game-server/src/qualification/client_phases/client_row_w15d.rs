@@ -146,7 +146,9 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
-    match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients, world))).await {
+    // The authored approach took 245 planned STEP commands. The full-row
+    // baseline reached command 181 in 180 seconds, before the shrine interaction.
+    match verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(clients, world))).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W15d.client status=CAPTURED evidence={observed}"
         )),
