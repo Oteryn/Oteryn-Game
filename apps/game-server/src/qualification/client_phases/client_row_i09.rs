@@ -328,11 +328,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 return Err("I09 public observer reused the rotating character's session".into());
             }
             require_release_state(&mut database, &observer_id, clients.characters[0], false).await?;
-            let observer_at = TilePos { x: 32357, ..approach };
-            let path = route(world, tile(observer.world_spatial().actor_position)?, |cell| cell == observer_at)
-                .ok_or("I09 no route to fixed public observation tile")?;
+            let observer_start = tile(observer.world_spatial().actor_position)?;
+            let path = route(world, observer_start, |cell| cell == approach)
+                .ok_or_else(|| format!("I09 no route from {observer_start:?} to fixed public approach {approach:?}"))?;
             walk_once(&mut observer, world, &path).await?;
-            require_actor_tile(tile(observer.world_spatial().actor_position)?, observer_at)?;
+            require_actor_tile(tile(observer.world_spatial().actor_position)?, approach)?;
             assert_chair(&mut observer, target, item)?;
             let transcript = oteryn_dev_client::take_qualification_transcript()
                 .ok_or("I09 original public observer frames unavailable")?;
