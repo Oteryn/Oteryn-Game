@@ -413,17 +413,42 @@ fn party_notice_refusal_retries_after_delay_and_acceptance_clears_refresh() -> R
     let now = Instant::now();
     link.party_notice_refresh(now);
     assert_eq!(commands.try_recv()?, PlayCommand::Party(PartyCommand::query()));
+    let before_refusal = Instant::now();
     outbox.party_result(&party_response(PartyDisposition::Unavailable)?);
+    let after_refusal = Instant::now();
 
-    link.party_notice_refresh(now + Duration::from_millis(999));
+    link.party_notice_refresh(before_refusal + Duration::from_millis(999));
     assert!(commands.try_recv().is_err());
-    link.party_notice_refresh(now + Duration::from_secs(1));
+    link.party_notice_refresh(after_refusal + Duration::from_secs(1));
     assert_eq!(commands.try_recv()?, PlayCommand::Party(PartyCommand::query()));
     outbox.party_result(&party_response(PartyDisposition::Ok)?);
     assert!(link.party_panel().state.is_some());
 
     link.party_notice_refresh(now + Duration::from_secs(2));
     assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn party_notice_retry_delay_starts_at_refusal() -> Result<(), Error> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::party::{PartyCommand, party::PartyDisposition};
+    use std::time::{Duration, Instant};
+
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    outbox.party_initialize(true, false);
+    push_party_leave(&outbox, 1);
+    link.party_notice_refresh(Instant::now() - Duration::from_secs(2));
+    assert_eq!(commands.try_recv()?, PlayCommand::Party(PartyCommand::query()));
+
+    let refused = party_response(PartyDisposition::Unavailable)?;
+    let before_refusal = Instant::now();
+    outbox.party_result(&refused);
+    let after_refusal = Instant::now();
+    link.party_notice_refresh(before_refusal + Duration::from_millis(999));
+    assert!(commands.try_recv().is_err(), "retry was due before one second from refusal");
+    link.party_notice_refresh(after_refusal + Duration::from_secs(1));
+    assert_eq!(commands.try_recv()?, PlayCommand::Party(PartyCommand::query()));
     Ok(())
 }
 
@@ -440,12 +465,13 @@ fn party_notice_retry_budget_ends_and_a_new_notice_renews_it() -> Result<(), Err
     let mut failed = party_response(PartyDisposition::Ok)?;
     failed.view = None;
 
-    for second in 0..3 {
-        link.party_notice_refresh(now + Duration::from_secs(second));
+    let mut later = now;
+    for _ in 0..3 {
+        link.party_notice_refresh(later);
         assert_eq!(commands.try_recv()?, PlayCommand::Party(PartyCommand::query()));
         outbox.party_result(&failed);
+        later = Instant::now() + Duration::from_secs(1);
     }
-    let later = now + Duration::from_secs(3);
     link.party_notice_refresh(later);
     assert!(commands.try_recv().is_err());
     push_party_leave(&outbox, 2);
