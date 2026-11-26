@@ -110,21 +110,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
-        let now = self.owner_now();
         if let Some(mut view) =
             house_hireling_view::entities(&runtime, actor, self.owner_now().get() / 1_000).ok()?
         {
-            view.entities.retain(|entry| {
-                !states.player_ref_hidden_from(
-                    &runtime,
-                    actor,
-                    world_spatial::EntityRef {
-                        identity: entry.identity,
-                        generation: entry.generation,
-                    },
-                    now,
-                )
-            });
             self.states.staff_world.filter(actor, &mut view);
             return Some(view);
         }
@@ -166,7 +154,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )
         .chain(visible.npcs.iter().map(|entry| (VisibleKind::Npc, entry)))
         .filter(|(_, entry)| in_view(entry.position))
-        .filter(|(_, entry)| !states.player_hidden_from(&runtime, actor, entry.actor, now))
         .map(|(kind, entry)| world_spatial::ChannelEntity {
             source_icons: source_icons(
                 &runtime,
