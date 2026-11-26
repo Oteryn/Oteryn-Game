@@ -29,11 +29,6 @@ use crate::gameplay_transport::kill_reward::DrainOutcome;
 use crate::gameplay_transport::{ComposedFreshAdmission, character_gameplay_fence};
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 
-#[path = "task_board/elite_case.rs"]
-mod elite_case;
-#[path = "task_board/scenarios.rs"]
-mod scenarios;
-use scenarios::*;
 #[path = "task_board/capacity_case.rs"]
 mod capacity_case;
 #[path = "task_board/cosmetic_cases.rs"]
@@ -42,13 +37,20 @@ mod cosmetic_cases;
 mod currency_case;
 #[path = "task_board/depot_case.rs"]
 mod depot_case;
+#[path = "task_board/elite_case.rs"]
+mod elite_case;
+#[path = "task_board/outfit_catalogues.rs"]
+mod outfit_catalogues;
 #[path = "task_board/progression_case.rs"]
 mod progression_case;
 #[path = "task_board/rollback_cases.rs"]
 mod rollback_cases;
+#[path = "task_board/scenarios.rs"]
+mod scenarios;
 #[path = "task_board/token_case.rs"]
 mod token_case;
 use rollback_cases::{RollbackFault, assert_unavailable};
+use scenarios::*;
 
 const OPEN_PLAYER: MovementLocalPosition = MovementLocalPosition {
     x: 2,
@@ -211,13 +213,33 @@ fn task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust() -> TestRes
 }
 
 fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) -> TestResult {
-    scenario_with_bootstrap(fault, elite_case_enabled, false, None)
+    scenario_with_bootstrap(fault, elite_case_enabled, Bootstrap::Default, None)
 }
 
 #[test]
 fn task_board_control_epoch_initializer_allows_live_query_postgres() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-control-epoch", || {
-        scenario_with_bootstrap(None, false, true, None)
+        scenario_with_bootstrap(None, false, Bootstrap::ControlEpoch, None)
+    })
+}
+
+#[test]
+fn coutfit_task_board_production_cosmetics_purchase_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-production-cosmetics", || {
+        scenario_with_bootstrap(None, false, Bootstrap::ProductionCosmetics, None)
+    })
+}
+
+#[test]
+fn task_board_production_mount_offers_purchase_and_unlock() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-mounts", || {
+        scenario_with_bootstrap(None, false, Bootstrap::ProductionMounts, None)
     })
 }
 
@@ -231,7 +253,7 @@ enum BoardUpdateCase {
 fn task_board_canonical_delivery_uses_active_catalogue_in_dispatch() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-canonical-delivery", || {
-        scenario_with_bootstrap(None, false, false, Some(BoardUpdateCase::CanonicalDelivery))
+        scenario_with_bootstrap(None, false, Bootstrap::Default, Some(BoardUpdateCase::CanonicalDelivery))
     })
 }
 
@@ -239,15 +261,23 @@ fn task_board_canonical_delivery_uses_active_catalogue_in_dispatch() -> TestResu
 fn task_board_daily_bounty_claim_is_fenced_replayable_and_once_per_reset_in_dispatch() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-daily-bounty", || {
-        scenario_with_bootstrap(None, false, false, Some(BoardUpdateCase::DailyBounty))
+        scenario_with_bootstrap(None, false, Bootstrap::Default, Some(BoardUpdateCase::DailyBounty))
     })
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Bootstrap {
+    ControlEpoch,
+    Default,
+    ProductionCosmetics,
+    ProductionMounts,
 }
 
 #[allow(clippy::too_many_lines)]
 fn scenario_with_bootstrap(
     fault: Option<RollbackFault>,
     elite_case_enabled: bool,
-    control_epoch_case: bool,
+    bootstrap: Bootstrap,
     update_case: Option<BoardUpdateCase>,
 ) -> TestResult {
     run(async move |admin| {
@@ -267,14 +297,18 @@ fn scenario_with_bootstrap(
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let session = GameSessionId::decode(&id(50)).map_err(debug)?;
-        let cosmetics = cosmetic_cases::cosmetics_packet()?;
+        let cosmetics = if matches!(bootstrap, Bootstrap::ProductionCosmetics | Bootstrap::ProductionMounts) {
+            None
+        } else {
+            Some(cosmetic_cases::cosmetics_packet()?)
+        };
         let (controller, pin) =
             crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(
                 world,
                 Some(include_bytes!(
                     "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
                 )),
-                Some(&cosmetics),
+                cosmetics.as_deref(),
             );
         let active = controller.active().expect("activated generation");
         let native = active.native_gameplay().expect("native gameplay state");
@@ -495,7 +529,7 @@ fn scenario_with_bootstrap(
         admitted.item_fence = Some(current.item_fence());
         admitted.first_entry = FirstEntryOutcome::Positioned;
 
-        if control_epoch_case {
+        if bootstrap == Bootstrap::ControlEpoch {
             // Execute the same Control initializer as login_local, against its
             // recorded activation. Runtime queries still cannot invent a calendar.
             let sql =
@@ -607,6 +641,25 @@ fn scenario_with_bootstrap(
             drop(seal);
             harness.cleanup().await?;
             return Ok(());
+        }
+
+        if bootstrap == Bootstrap::ProductionCosmetics {
+            let result = cosmetic_cases::production_case(&owner, &harness, &mut admitted).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return result;
+        }
+
+        if bootstrap == Bootstrap::ProductionMounts {
+            progression_case::fixture_admitted_level(&owner, &harness, 8).await?;
+            assert_eq!(full_board(&owner, &mut admitted, 5, 0, "").await?.refusal, 0);
+            cosmetic_cases::production_mounts(&owner, &harness, &mut admitted).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
         }
 
         let command_id = admitted.continuity.next_command_id;

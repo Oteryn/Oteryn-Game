@@ -80,7 +80,7 @@ impl Seeded {
                 ));
             }
         }
-        let (result, detail, _, _) = logout_retrying_busy(&mut client).await?;
+        let (result, detail, _, _) = fixture_logout_retrying_busy(&mut client).await?;
         if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err(format!("character preparation logout refused: {detail}").into());
         }
@@ -243,7 +243,7 @@ pub(super) async fn reload(
     clients: &SeamClients<'_>,
 ) -> TestResult {
     let session = client.join_snapshot().game_session_id;
-    let (result, detail, _, _) = logout_retrying_busy(client).await?;
+    let (result, detail, _, _) = fixture_logout_retrying_busy(client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("inventory preparation logout refused: {detail}").into());
     }

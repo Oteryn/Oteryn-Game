@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "npcs": [
+    {
+      "npc": "oteryn:npc.black_bert",
+      "greet": "Are you looking to trade?",
+      "farewell": "Until next time.",
+      "walkaway": "Until next time."
+    },
+    {
+      "npc": "oteryn:npc.carina",
+      "greet": "Welcome. Are you interested in jewellery?",
+      "farewell": "Goodbye.",
+      "walkaway": "Goodbye."
+    },
+    {
+      "npc": "oteryn:npc.chantalle",
+      "greet": "Welcome to my shop.",
+      "farewell": "Goodbye.",
+      "walkaway": "Goodbye."
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "greet": "Greetings. What business brings you here?",
+      "farewell": "Goodbye.",
+      "walkaway": "Goodbye."
+    },
+    {
+      "npc": "oteryn:npc.herbert",
+      "greet": "What can I do for you?",
+      "farewell": "Goodbye.",
+      "walkaway": "Goodbye."
+    },
+    {
+      "npc": "oteryn:npc.oswald",
+      "greet": "Hello. What brings you to see me?",
+      "farewell": "Goodbye.",
+      "walkaway": "Goodbye."
+    },
+    {
+      "npc": "oteryn:npc.servant_sentry",
+      "greet": "The slime has entered. Our master has left. We need help.",
+      "farewell": "Goodbye, human.",
+      "walkaway": "Goodbye, human."
+    }
+  ]
+}

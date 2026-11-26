@@ -24,8 +24,8 @@ def importer(root):
 
 def selected(root=ROOT, creatures=None):
     if creatures is None:
-        goals = json.loads((root / 'tools/content-schema/quest-authoring/samples/native-kill-goals.json').read_bytes())
-        creatures = {o['creature'] for g in goals['goals'] for o in g['origins']}
+        from native_goal_corpse_items import covered_creatures
+        creatures = covered_creatures(root)
     document = json.loads((root / 'tools/content-schema/native-gameplay/loot-tables.json').read_bytes())
     tables = {r['identity']['key']: r for r in document['tables']}
     keys, found = set(), set()

@@ -1,0 +1,38 @@
+[
+  {
+    "source_key": "oteryn:source.tibiawiki",
+    "source_revision": "fandom-r1194166",
+    "identity_namespace": "tibiawiki/item_id",
+    "external_id": "40522",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i40522",
+      "revision": "definition-r1"
+    },
+    "disposition": "EXACT"
+  },
+  {
+    "source_key": "oteryn:source.tibiawiki",
+    "source_revision": "fandom-r1047535",
+    "identity_namespace": "tibiawiki/item_id",
+    "external_id": "44432",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i44432",
+      "revision": "definition-r1"
+    },
+    "disposition": "EXACT"
+  },
+  {
+    "source_key": "oteryn:source.tibiawiki",
+    "source_revision": "fandom-r1047606",
+    "identity_namespace": "tibiawiki/item_id",
+    "external_id": "44433",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i44433",
+      "revision": "definition-r1"
+    },
+    "disposition": "EXACT"
+  }
+]

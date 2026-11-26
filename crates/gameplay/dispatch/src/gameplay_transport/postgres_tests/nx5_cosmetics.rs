@@ -50,7 +50,7 @@ fn nx5_every_global_item_rule_qualifies_against_source_bound_production_cosmetic
                 count += 1;
             }
             // The merged native producer retains all 46 global rules and adds
-            // the source-qualified Glooth Glider construction recipe.
+            // the Glooth Glider, Pegasus Feather and five Wiki-qualified outfit item actions.
             let global: serde_json::Value = serde_json::from_str(include_str!(
                 "../../../../../../tools/content-schema/native-gameplay/item-cosmetic-actions.json"
             )).map_err(|error| error.to_string())?;
@@ -60,7 +60,9 @@ fn nx5_every_global_item_rule_qualifies_against_source_bound_production_cosmetic
                 .map(|rule| rule["item_id"].as_u64().ok_or("global item identity"))
                 .collect::<Result<std::collections::BTreeSet<_>, _>>()?;
             assert_eq!(expected.len(), 46);
-            assert!(expected.insert(21897), "construction has its own source cohort");
+            for item in [21897, 40578, 44753, 44754, 48424, 48514, 48515] {
+                assert!(expected.insert(item), "separate source cohort for {item}");
+            }
             let actual = catalogue.rules.iter()
                 .filter(|rule| !matches!(rule.mode,
                     oteryn_gameplay_items::item_cosmetics::Mode::RandomOutfit

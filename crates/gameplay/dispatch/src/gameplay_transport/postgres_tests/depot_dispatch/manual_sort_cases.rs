@@ -224,7 +224,7 @@ pub(super) async fn stale_withdrawal(
         text(stacks[1].1),
         text(added),
     ];
-    let search_session = admitted;
+    let generation = admitted.continuity.connection_generation;
     tokio::time::timeout(
         std::time::Duration::from_secs(30),
         exchange(owner, &mut admitted, async |client| {
@@ -273,22 +273,21 @@ pub(super) async fn stale_withdrawal(
             .await?;
             assert_eq!(read_reply(client, 4).await?.outcome, DepotOutcome::Moved);
             assert_eq!(order(pool, 17).await?, reordered[..3]);
-            stale_withdrawal_after_search(owner, actor, search_session, client, pool).await
+            stale_withdrawal_after_search(client, generation, pool).await
         }),
     )
     .await?
 }
 
 async fn stale_withdrawal_after_search(
-    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    actor: crate::foundation::ExactActorRef,
-    admitted: crate::gameplay_transport::connection::AdmittedSession,
     client: &mut tokio::io::DuplexStream,
+    generation: u64,
     pool: &sqlx::PgPool,
 ) -> TestResult {
+    use super::super::item_forge_fixtures::support::send_command;
     use super::write_text_depot_session::{read_reply, send};
     use oteryn_gameplay_items::depot::DEPOT_PAGE_ENTRIES;
-    use oteryn_protocol_oteryn::depot_search::{Outcome, Request};
+    use oteryn_protocol_oteryn::{CommandStatus, depot_search};
 
     let browse = DepotIntent {
         town: Some(0),
@@ -306,24 +305,31 @@ async fn stale_withdrawal_after_search(
     assert_eq!(page.entries.len(), 1);
     let ordinal = page.entries[0].ordinal;
 
-    // Search retrieval changes custody without refreshing the connection's command-36 view.
-    let search = owner
-        .depot_search_command(actor, admitted, 2_000, Request::Retrieve {
-            client_id: 3031,
-            all: false,
-        })
-        .await;
-    assert_eq!((search.outcome, search.retrieved), (Outcome::Retrieved, 100));
+    // Route the search on the live connection so its periodic work and commands stay serialized.
+    // Retrieval changes custody without refreshing the command-36 depot view.
+    let payload = depot_search::encode_request(depot_search::Request::Retrieve {
+        client_id: 3031,
+        all: false,
+    })
+    .map_err(debug)?;
+    let (status, reply) =
+        send_command(client, generation, 6, depot_search::COMMAND_TYPE_DEPOT_SEARCH, &payload).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    let search = depot_search::decode_reply(&reply).map_err(debug)?;
+    assert_eq!(
+        (search.outcome, search.retrieved),
+        (depot_search::Outcome::Retrieved, 100)
+    );
     let shifted = order(pool, PAGE_FIXTURE_BOX).await?;
     assert_eq!(shifted.len(), page_size);
     assert_eq!(shifted.last(), Some(target));
 
-    send(client, 6, DepotIntent {
+    send(client, 7, DepotIntent {
         action: DepotAction::Withdraw(ordinal),
         ..browse
     })
     .await?;
-    assert_eq!(read_reply(client, 6).await?.outcome, DepotOutcome::Stale);
+    assert_eq!(read_reply(client, 7).await?.outcome, DepotOutcome::Stale);
     assert_eq!(order(pool, PAGE_FIXTURE_BOX).await?, shifted);
     Ok(())
 }

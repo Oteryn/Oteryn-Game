@@ -163,6 +163,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let result = client.use_object(&placement, 0).await?;
+    require_mechanic_acceptance(result.status, "M02 far use")?;
     if result.disposition != UseDisposition::Committed {
         return Err(format!("M02 far use did not commit: {result:?}").into());
     }
@@ -209,9 +210,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let logout = client.session_mut().logout().await?;
-    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("M02 first logout refused: {logout:?}").into());
+    let (logout, detail, _, _) = logout_once(&mut client).await?;
+    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("M02 first logout refused: {detail}").into());
     }
     drop(client);
     let relog = connect_world(clients, 0xa3).await?;

@@ -16,8 +16,12 @@ name: codex-review-gate
 # with the workflow token.
 # Reviews arrive after CI, so review and comment events re-evaluate it; resolving a
 # thread fires no workflow event, so a schedule re-evaluates every open PR.
-# Owner decision 2026-11-18: a PR carrying the `heavy-tests` label skips this gate
-# (success without a receipt); its review runs as Codex Cloud tasks before the label.
+# Owner decision 2026-11-18, narrowed 2026-11-25: a PR carrying the `heavy-tests`
+# label skips this gate (success without a receipt) only when it is data-only (every
+# changed file under `content/` with an allowlisted data extension) or the staging -> main
+# promotion PR (head branch
+# `staging`). A content train (head branch `*-ctrain-*`) and every PR with code
+# needs a receipt even with the label (AGENTS.md "Request review once per head").
 # Pull requests into the `staging` integration branch are gated too, under the context
 # `codex-review-gate (staging)` and without the heavy-tests exemption: the staging -> main
 # promotion PR carries `heavy-tests`, so each lane PR is reviewed here.
@@ -121,14 +125,55 @@ jobs:
               base = pr['base']['ref']
               context = 'codex-review-gate' if base == 'main' else f'codex-review-gate ({base})'
               if base == 'main' and any(label['name'] == 'heavy-tests' for label in pr.get('labels') or []):
-                  print(f'PR #{number} head={head} state=success (heavy-tests label: gate skipped)')
-                  call(f'https://api.github.com/repos/{repo}/statuses/{head}', {
-                      'state': 'success',
-                      'context': context,
-                      'description': 'Skipped: heavy-tests label (owner decision 2026-11-18)',
-                      'target_url': os.environ['RUN_URL'],
-                  }, method='POST')
-                  return
+                  head_ref = pr['head']['ref']
+                  same_repo = (pr['head'].get('repo') or {}).get('full_name') == repo
+                  if head_ref == 'staging' and same_repo:
+                      reason = 'staging promotion'
+                  elif '-ctrain-' in head_ref:
+                      reason = None
+                  elif not 0 < pr.get('changed_files', 0) < 3000:
+                      # GitHub lists at most 3000 files; a PR at that limit is not
+                      # treated as data-only.
+                      reason = None
+                  else:
+                      files = pages(f'pulls/{number}/files')
+                      # Allowlist: only these exact (lower-case) data extensions count as
+                      # data; anything else, an extensionless file included, needs a receipt.
+                      data_suffixes = ('.json', '.jsonl', '.lzma', '.b3', '.md', '.txt', '.toml',
+                                       '.yml', '.yaml', '.csv', '.dat', '.png', '.jpg')
+
+                      def is_data(path):
+                          return path.startswith('content/') and path.endswith(data_suffixes)
+
+                      data_only = len(files) == pr['changed_files'] and all(
+                          is_data(f['filename'])
+                          and (f.get('status') != 'renamed' or is_data(f.get('previous_filename') or ''))
+                          for f in files
+                      )
+                      reason = 'data-only' if data_only else None
+                  if reason:
+                      # The head may move while the files are listed; publish only for
+                      # the head that was classified (a synchronize event re-evaluates).
+                      fresh = call(f'https://api.github.com/repos/{repo}/pulls/{number}')
+                      if fresh['head']['sha'] != head:
+                          print(f'PR #{number}: head moved during evaluation; nothing published')
+                          return
+                      # The label, base or state may change while the files are listed;
+                      # the unlabeled/edited/closed event re-evaluates, so publish nothing.
+                      if fresh['state'] != 'open' or fresh['base']['ref'] != 'main' or not any(
+                          label['name'] == 'heavy-tests' for label in fresh.get('labels') or []
+                      ):
+                          print(f'PR #{number}: label, base or state changed during evaluation; nothing published')
+                          return
+                      print(f'PR #{number} head={head} state=success (heavy-tests label, {reason}: gate skipped)')
+                      call(f'https://api.github.com/repos/{repo}/statuses/{head}', {
+                          'state': 'success',
+                          'context': context,
+                          'description': f'Skipped: heavy-tests label, {reason} (owner decision 2026-11-25)',
+                          'target_url': os.environ['RUN_URL'],
+                      }, method='POST')
+                      return
+                  print(f'PR #{number}: heavy-tests label on a train or code PR; a review receipt is required')
 
               commits = {c['sha'] for c in pages(f'pulls/{number}/commits')}
               reviews = pages(f'pulls/{number}/reviews')

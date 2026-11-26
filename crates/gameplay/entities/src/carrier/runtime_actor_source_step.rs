@@ -284,6 +284,19 @@ impl ChannelRuntimeV1 {
         P: SourceSceneRelocationProof,
         F: FnOnce() -> bool,
     {
+        let staged = self.stage_source_scene_relocations(proof)?;
+        if !project() {
+            return Err(CarrierError::PlanConflict);
+        }
+        let (_, (positions, ())) = staged.publish();
+        Ok(positions)
+    }
+
+    /// Prepare the same actor batch while holding the exclusive runtime owner.
+    pub fn stage_source_scene_relocations<P: SourceSceneRelocationProof>(
+        &mut self,
+        proof: P,
+    ) -> Result<super::encounter_access::StagedQuestEncounter<'_, ()>, CarrierError> {
         self.carrier.validate_current_continuity(&self.continuity)?;
         self.owner_fence()?;
         proof.validate_current(self)?;
@@ -297,94 +310,68 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::PlanConflict);
         }
-        // Same stores as compare_commit_position's summon-removal rollback.
-        // No second position authority is published or retained.
-        let before = (
-            self.carrier.slots.clone(),
-            self.carrier.free_head,
-            self.carrier.occupied.clone(),
-            self.carrier.native_summons.clone(),
-            self.carrier.native_summon_deaths,
-            self.carrier.native_summon_death_cursor,
-            self.carrier.attackers.clone(),
-        );
-        let outcome = (|| {
-            let mut result = Vec::with_capacity(moves.len());
-            for change in moves {
-                if change.actor.0 != change.expected.0.actor_ref {
-                    return Err(CarrierError::PositionSnapshotMismatch);
-                }
-                let index = self
-                    .carrier
-                    .validate_ref(&self.continuity, change.actor.0)?;
-                if self
-                    .carrier
-                    .read_movement_position(&self.continuity, change.actor.0)?
-                    != change.expected
-                {
-                    return Err(CarrierError::PositionSnapshotMismatch);
-                }
-                if let Slot::NpcOccupied {
-                    position,
-                    hireling: None,
-                    ..
-                } = &mut self.carrier.slots[index]
-                {
-                    let revision = position
-                        .revision
-                        .checked_add(1)
-                        .ok_or(CarrierError::PositionRevisionExhausted)?;
-                    *position = VersionedPosition {
-                        position: LocalPosition {
-                            x: change.destination.x,
-                            y: change.destination.y,
-                            floor: change.destination.floor,
-                        },
-                        revision,
-                        last_translation_revision: revision,
-                        ..*position
-                    };
-                    result.push(MovementPositionSnapshot(PositionSnapshot {
-                        actor_ref: change.actor.0,
-                        version: *position,
-                    }));
-                    continue;
-                }
-                let mut committed = self.carrier.compare_commit_position(
-                    &self.continuity,
-                    change.expected.0,
-                    change.expected.0.version.context,
-                    LocalPosition {
+        let mut carrier = self.carrier.clone();
+        let mut result = Vec::with_capacity(moves.len());
+        for change in moves {
+            if change.actor.0 != change.expected.0.actor_ref {
+                return Err(CarrierError::PositionSnapshotMismatch);
+            }
+            let index = carrier.validate_ref(&self.continuity, change.actor.0)?;
+            if carrier.read_movement_position(&self.continuity, change.actor.0)? != change.expected
+            {
+                return Err(CarrierError::PositionSnapshotMismatch);
+            }
+            if let Slot::NpcOccupied {
+                position,
+                hireling: None,
+                ..
+            } = &mut carrier.slots[index]
+            {
+                let revision = position
+                    .revision
+                    .checked_add(1)
+                    .ok_or(CarrierError::PositionRevisionExhausted)?;
+                *position = VersionedPosition {
+                    position: LocalPosition {
                         x: change.destination.x,
                         y: change.destination.y,
                         floor: change.destination.floor,
                     },
-                )?;
-                // Forced source transport preserves the actual facing.
-                committed.version.facing = change.expected.facing();
-                match &mut self.carrier.slots[index] {
-                    Slot::Occupied { position, .. } | Slot::CreatureOccupied { position, .. } => {
-                        *position = Some(committed.version);
-                    }
-                    _ => return Err(CarrierError::PositionSnapshotMismatch),
+                    revision,
+                    last_translation_revision: revision,
+                    ..*position
+                };
+                result.push(MovementPositionSnapshot(PositionSnapshot {
+                    actor_ref: change.actor.0,
+                    version: *position,
+                }));
+                continue;
+            }
+            let mut committed = carrier.compare_commit_position(
+                &self.continuity,
+                change.expected.0,
+                change.expected.0.version.context,
+                LocalPosition {
+                    x: change.destination.x,
+                    y: change.destination.y,
+                    floor: change.destination.floor,
+                },
+            )?;
+            // Forced source transport preserves the actual facing.
+            committed.version.facing = change.expected.facing();
+            match &mut carrier.slots[index] {
+                Slot::Occupied { position, .. } | Slot::CreatureOccupied { position, .. } => {
+                    *position = Some(committed.version);
                 }
-                result.push(MovementPositionSnapshot(committed));
+                _ => return Err(CarrierError::PositionSnapshotMismatch),
             }
-            if !project() {
-                return Err(CarrierError::PlanConflict);
-            }
-            Ok(result)
-        })();
-        if outcome.is_err() {
-            let (slots, free, occupied, summons, deaths, cursor, attackers) = before;
-            self.carrier.slots = slots;
-            self.carrier.free_head = free;
-            self.carrier.occupied = occupied;
-            self.carrier.native_summons = summons;
-            self.carrier.native_summon_deaths = deaths;
-            self.carrier.native_summon_death_cursor = cursor;
-            self.carrier.attackers = attackers;
+            result.push(MovementPositionSnapshot(committed));
         }
-        outcome
+
+        Ok(super::encounter_access::StagedQuestEncounter::new(
+            self,
+            carrier,
+            (result, ()),
+        ))
     }
 }
