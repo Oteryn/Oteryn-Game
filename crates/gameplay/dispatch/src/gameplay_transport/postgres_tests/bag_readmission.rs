@@ -156,6 +156,7 @@ fn scenario(use_potion: bool) -> TestResult {
                     readmitted,
                     &mut server,
                     ItemKey::Instance(item.try_into().map_err(|_| "invalid item identity")?),
+                    !use_potion,
                 ),
             )
             .await??;

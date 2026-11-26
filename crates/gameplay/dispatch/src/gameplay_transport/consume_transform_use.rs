@@ -140,32 +140,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }))
         };
         let command_id = CommandId::new(command.command_id).ok()?;
-        let permit = self.spell_lane_permit().await?;
+        let reference = CommandRef::new(command.game_session_id, command_id);
+        let historical = match self
+            .root
+            .plain_use_receipt_exists(
+                crate::durability::PlainUseReceipt::ConsumeTransform,
+                reference,
+            )
+            .await
+        {
+            Ok(present) => present,
+            Err(_) => {
+                return Some(Some(super::use_receipt_refused(
+                    command,
+                    "lottery_existence",
+                )));
+            }
+        };
+        if !historical && carried.is_none() {
+            return None;
+        }
+        let Some(permit) = self.spell_lane_permit().await else {
+            return Some(Some(super::use_receipt_refused(command, "lottery_permit")));
+        };
         let request = ConsumeTransformRequest {
-            command: CommandRef::new(command.game_session_id, command_id),
+            command: reference,
             source: id,
             target: None,
             intent: [b"oteryn:lottery-ticket-use:v1".as_slice(), id.as_slice()].concat(),
         };
         let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
-        match self
-            .root
-            .consume_transform(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &content,
-                true,
-            )
-            .await
-        {
-            Ok(Some(result)) => return outcome(result),
-            Ok(None) if carried.is_none() => return None,
-            Ok(None) => {}
-            Err(_) => return Some(None),
+        if historical {
+            match self
+                .root
+                .consume_transform(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request.clone(),
+                    native,
+                    &content,
+                    true,
+                )
+                .await
+            {
+                Ok(Some(result)) => return outcome(result),
+                Ok(None) | Err(_) => {
+                    return Some(Some(super::use_receipt_refused(command, "lottery_replay")));
+                }
+            }
         }
         {
             let runtime = self.runtime.lock().await;

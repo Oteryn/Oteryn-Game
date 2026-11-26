@@ -1218,6 +1218,22 @@ pub trait FreshAdmissionAuthority {
         self.observe_container(actor, fence, target)
     }
 
+    /// Foreground USE keeps an unavailable carried observation distinct from proven absence.
+    fn observe_container_for_use(
+        &self,
+        actor: ExactActorRef,
+        fence: Option<CurrentCharacterItemFence>,
+        target: ItemKey,
+        house_capacity_v2: bool,
+    ) -> impl Future<Output = Result<Option<ContainerObservation>, crate::durability::DurabilityError>>
+    {
+        async move {
+            Ok(self
+                .observe_container_with_house_capacity(actor, fence, target, house_capacity_v2)
+                .await)
+        }
+    }
+
     /// Current observer-relative icons. Unavailable facts produce no update.
     fn observe_party_icons(
         &self,

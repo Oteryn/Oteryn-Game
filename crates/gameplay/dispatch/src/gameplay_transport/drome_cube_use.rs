@@ -117,16 +117,80 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        use crate::durability::PlainUseReceipt;
         let deadline = tokio::time::Instant::now() + PROBE_TIMEOUT;
+        let (kooldown, cube) = if let Some(key) = key {
+            (key == KOOLDOWN_AID_KEY, key == DROME_CUBE_KEY)
+        } else if matches!(source, Some(ItemKey::Instance(_))) {
+            // A live instance without a published definition may be a current candidate.
+            (true, true)
+        } else {
+            let Some(fence) = command.item_fence else {
+                return Ok(None);
+            };
+            if fence.game_session_id != command.game_session_id {
+                log_probe_failure(command, "item_session_fence");
+                return Err(());
+            }
+            let Ok(id) = CommandId::new(command.command_id) else {
+                return Ok(Some(crate::gameplay_transport::use_receipt_refused(
+                    command,
+                    "drome_command_id",
+                )));
+            };
+            let reference = CommandRef::new(command.game_session_id, id);
+            let retained = {
+                let runtime = self.runtime.lock().await;
+                self.states
+                    .spell_states
+                    .lock()
+                    .await
+                    .item_uses
+                    .gate(&runtime, actor, command.game_session_id)
+                    .and_then(|gate| gate.cube_pending.as_ref())
+                    .filter(|pending| pending.request.command_id == command.command_id)
+                    .map(|pending| pending.request.kind)
+            };
+            if let Some(kind) = retained {
+                (
+                    kind == ItemUseKind::Concoction,
+                    matches!(kind, ItemUseKind::DromeCube { .. }),
+                )
+            } else {
+                let kooldown = self
+                    .root
+                    .plain_use_receipt_exists(PlainUseReceipt::KooldownAid, reference)
+                    .await;
+                let cube = self
+                    .root
+                    .plain_use_receipt_exists(PlainUseReceipt::DromeCube, reference)
+                    .await;
+                match (kooldown, cube) {
+                    (Ok(kooldown), Ok(cube)) => (kooldown, cube),
+                    (Err(_), _) => {
+                        return Ok(Some(crate::gameplay_transport::use_receipt_refused(
+                            command,
+                            "kooldown_existence",
+                        )));
+                    }
+                    (_, Err(_)) => {
+                        return Ok(Some(crate::gameplay_transport::use_receipt_refused(
+                            command,
+                            "cube_existence",
+                        )));
+                    }
+                }
+            }
+        };
         let result = async {
-            if key.is_none_or(|key| key == KOOLDOWN_AID_KEY)
+            if kooldown
                 && let Some(outcome) = self
                     .use_kooldown_aid_impl(actor, command, &intent, source, deadline)
                     .await?
             {
                 return Ok(Some(outcome));
             }
-            if key.is_none_or(|key| key == DROME_CUBE_KEY) {
+            if cube {
                 return self
                     .use_drome_cube_impl(actor, command, intent, source, deadline)
                     .await;

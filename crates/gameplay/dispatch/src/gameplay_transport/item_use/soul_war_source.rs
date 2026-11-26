@@ -371,7 +371,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             held.source_pending.as_deref().cloned()
         };
-        let permit = self.spell_lane_permit().await.ok_or(())?;
+        let Some(permit) = self.spell_lane_permit().await else {
+            return if pending.is_some() {
+                Err(())
+            } else {
+                Ok(Some(crate::gameplay_transport::use_receipt_refused(
+                    command,
+                    "soul_war_source_permit",
+                )))
+            };
+        };
         let pending = if let Some(pending) = pending {
             if pending.actor != actor || pending.command != command || pending.wire != wire {
                 return Err(());

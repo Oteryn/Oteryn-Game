@@ -46,7 +46,7 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
                 let unrelated=WorldObjectTarget{placement:world.base().digest().into_iter().chain(ground_key.to_be_bytes()).collect(),expected_revision:0};
                 let unrelated_command=UseCommand{game_session_id:deps.admitted.game_session_id,command_id:900,item_fence:Some(fence)};
                 assert!(owner.use_cake_world_object(deps.actor,unrelated_command,&unrelated).await.is_none(),"unrelated base source never enters Cake's equipment owner");
-                assert_eq!(owner.use_world_object(deps.actor,unrelated_command,unrelated).await.disposition,UseDisposition::NothingToUse);
+                assert_eq!(owner.use_world_object(deps.actor,unrelated_command,unrelated.clone()).await.disposition,UseDisposition::NothingToUse);
                 // Separate the ordinary200ms action clock from Cake's90s bite rule.
                 tokio::time::sleep(std::time::Duration::from_millis(210)).await;
 
@@ -75,6 +75,7 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
                 assert!(!world.enterable(crate::map::overlay::TilePos{x:33303,y:32070,floor:-7}));
                 assert_eq!(owner.use_world_object(deps.actor,command,one.clone()).await.disposition,UseDisposition::Committed);
                 assert_eq!(owner.use_world_object(deps.actor,command,one).await.disposition,UseDisposition::Committed,"same command replays before resolving the now-hidden source");
+                assert_eq!(owner.use_cake_world_object(deps.actor, command, &unrelated).await.ok_or("historical Cake command")?.disposition, UseDisposition::StaleState, "the exact receipt still checks the original placement and revision");
                 tokio::time::sleep(std::time::Duration::from_millis(210)).await;
                 assert_eq!(owner.use_world_object(deps.actor,UseCommand{command_id:2,..command},two).await.disposition,UseDisposition::NotPossible,"90-second cooldown is world-owner time");
                 let progress:i16=sqlx::query_scalar("SELECT layer_progress FROM game_cake_phases WHERE world_id=encode($1,'hex')::uuid AND event_year=2026").bind(id(42).as_slice()).fetch_one(&h.pool).await?;

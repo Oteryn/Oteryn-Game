@@ -463,7 +463,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let native = self.active_generation?.native_gameplay()?;
         let candidate = self.immutable_cake_candidate(target);
-        let permit = self.spell_lane_permit().await?;
+        let intent = oteryn_protocol_oteryn::world_object::encode_use_intent(target).ok()?;
+        let reference = CommandRef::new(
+            command.game_session_id,
+            CommandId::new(command.command_id).ok()?,
+        );
+        if !candidate {
+            match self
+                .root
+                .plain_use_receipt_exists(crate::durability::PlainUseReceipt::Cake, reference)
+                .await
+            {
+                Ok(false) => return None,
+                Ok(true) => {}
+                Err(_) => return Some(super::use_receipt_refused(command, "cake_existence")),
+            }
+        }
+        let Some(permit) = self.spell_lane_permit().await else {
+            return Some(super::use_receipt_refused(command, "cake_permit"));
+        };
         let (at, generation) = {
             let runtime = self.runtime.lock().await;
             if !runtime
@@ -479,27 +497,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 runtime.content_pin().client_artifact_digest(),
             )
         };
-        let intent = oteryn_protocol_oteryn::world_object::encode_use_intent(target).ok()?;
-        let reference = CommandRef::new(
-            command.game_session_id,
-            CommandId::new(command.command_id).ok()?,
-        );
-        match self
-            .root
-            .replay_world_cake(
-                self.character,
-                self.holder,
-                fence,
-                reference,
-                intent.clone(),
-                native.source_digest(),
-                candidate,
-            )
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        match budget
+            .retry_command_guard(async || {
+                self.root
+                    .replay_world_cake(
+                        self.character,
+                        self.holder,
+                        fence,
+                        reference,
+                        intent.clone(),
+                        native.source_digest(),
+                    )
+                    .await
+            })
             .await
         {
             Ok(Some(disposition)) => return Some(outcome(disposition)),
             Ok(None) => {}
-            Err(_) => return Some(outcome(UseDisposition::NotPossible)),
+            Err(_) => return Some(super::use_receipt_refused(command, "cake_replay")),
         }
         if !candidate {
             return None;
