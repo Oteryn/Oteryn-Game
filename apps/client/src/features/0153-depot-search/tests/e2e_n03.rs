@@ -179,6 +179,9 @@ fn captured_from(root: &std::path::Path) -> Result<Captured, Error> {
         if captured.session != session {
             return Err(format!("envelope session {} is not {session}", captured.session).into());
         }
+        if captured.response.status != CommandStatus::Accepted {
+            return Err(format!("envelope status {:?} is not Accepted", captured.response.status).into());
+        }
         let current = (captured.response.command_id, captured.response.server_sequence);
         if current.0 <= previous.0 || current.1 <= previous.1 {
             return Err(format!(
@@ -228,7 +231,8 @@ fn replay(captured: &Captured) -> Result<(), Error> {
         outbox.depot_search_result(&page.response);
         let panel = link.depot_search_panel();
         assert!(!panel.pending);
-        previous = panel.reply.as_ref().and_then(|reply| reply.results.last()).map(|r| r.client_id);
+        let reply = panel.reply.as_ref().ok_or("a captured page left no reply")?;
+        previous = reply.results.last().map(|r| r.client_id);
     }
 
     let panel = link.depot_search_panel();
@@ -269,7 +273,7 @@ fn replay(captured: &Captured) -> Result<(), Error> {
 }
 
 #[test]
-fn e2e_n03_depot_list_and_retrieve_one() -> Result<(), Error> {
+fn e2e_n03_depot_list_retrieve_one_and_refusals() -> Result<(), Error> {
     match std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         Some(root) => {
             let captured = captured_from(std::path::Path::new(&root))?;
@@ -293,11 +297,26 @@ fn depot_search_malformed_payload_and_refusal_keep_the_last_reply() -> Result<()
         results: vec![row(2854, 1, vec![TierCount { tier: 0, count: 1 }])],
     };
     outbox.depot_search_result(&response(1, CommandStatus::Accepted, encode(&listed)?));
+    assert_eq!(link.depot_search_panel().reply.as_ref(), Some(&listed));
+    // The errors follow a Retrieved reply, as in the live journey.
+    let mut inputs = Inputs::default();
+    inputs.0[2] = "0".into();
+    activate(&link, &inputs, 7);
+    assert_eq!(
+        sent(&mut receiver)?,
+        Request::Retrieve { client_id: 2854, all: false }
+    );
+    let retrieved = Reply {
+        outcome: Outcome::Retrieved,
+        retrieved: 1,
+        results: vec![],
+    };
+    outbox.depot_search_result(&response(2, CommandStatus::Accepted, encode(&retrieved)?));
     let panel = link.depot_search_panel();
-    assert_eq!(panel.reply.as_ref(), Some(&listed));
+    assert_eq!(panel.reply.as_ref(), Some(&retrieved));
     for (command_id, payload, status, feedback) in [
-        (2, vec![0xff, 0xff], CommandStatus::Accepted, "The server returned invalid depot results"),
-        (3, Vec::new(), CommandStatus::Rejected, "Server refused depot search: Rejected"),
+        (3, vec![0xff, 0xff], CommandStatus::Accepted, "The server returned invalid depot results"),
+        (4, Vec::new(), CommandStatus::Rejected, "Server refused depot search: Rejected"),
     ] {
         activate(&link, &Inputs::default(), 5);
         assert_eq!(sent(&mut receiver)?, Request::Open { after: 0 });
@@ -351,7 +370,8 @@ fn e2e_n03_replays_captured_envelopes() -> Result<(), Error> {
 #[test]
 fn e2e_n03_rejects_inconsistent_capture_identity() -> Result<(), Error> {
     type Mutation = fn(&mut Captured);
-    let cases: [(&str, Mutation); 4] = [
+    let cases: [(&str, Mutation); 5] = [
+        ("refused page", |c| c.pages[0].response.status = CommandStatus::Rejected),
         ("foreign session", |c| c.retrieve.session = "00000000-0000-4000-8000-000000000002".into()),
         ("non-UUID session", |c| c.pages[0].session = "session-1".into()),
         ("repeated command_id", |c| {
