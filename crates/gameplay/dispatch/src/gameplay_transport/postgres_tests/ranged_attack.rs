@@ -113,6 +113,56 @@ fn scenario_with_quiver(
     reconcile: bool,
     quiver_slot: Option<i16>,
 ) -> TestResult {
+    ranged_scenario(
+        weapon,
+        distance,
+        ammo,
+        mana,
+        blocked,
+        reconcile,
+        quiver_slot,
+        (3447, false),
+    )
+}
+
+#[test]
+fn scripted_arrow_postgres_poison_applies_delayed_condition() -> TestResult {
+    scripted_arrow(3448, false)
+}
+
+#[test]
+fn scripted_arrow_postgres_burst_hits_neighbour() -> TestResult {
+    scripted_arrow(3449, false)
+}
+
+#[test]
+fn scripted_arrow_postgres_diamond_hits_second_ring() -> TestResult {
+    scripted_arrow(35901, false)
+}
+
+#[test]
+fn scripted_arrow_postgres_black_skull_burst_spends_without_damage() -> TestResult {
+    scripted_arrow(3449, true)
+}
+
+fn scripted_arrow(projectile: u32, black: bool) -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("scripted-arrow", move || {
+        ranged_scenario(3350, 3, true, 100, false, false, None, (projectile, black))
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+fn ranged_scenario(
+    weapon: u32,
+    distance: i32,
+    ammo: bool,
+    mana: u32,
+    blocked: bool,
+    reconcile: bool,
+    quiver_slot: Option<i16>,
+    (projectile, black): (u32, bool),
+) -> TestResult {
+    let scripted = projectile != 3447;
     let starter_element = match weapon {
         21348 => Some(("fire", ProjectV2RangedElement::Fire)),
         21350 => Some(("ice", ProjectV2RangedElement::Ice)),
@@ -216,7 +266,7 @@ fn scenario_with_quiver(
                         6
                     },
                 ),
-                (71, 3447, initial_ammo, 10),
+                (71, projectile, initial_ammo, 10),
                 (74, 21400, 1, 6),
             ] {
                 if (slot == 10 && !ammo) || (item == 21400 && !starter) {
@@ -277,6 +327,16 @@ fn scenario_with_quiver(
             .execute(&harness.pool)
             .await?;
 
+        if projectile == 3449 {
+            sqlx::query("INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'policy-1')")
+                .bind(id(42).as_slice()).execute(&harness.pool).await?;
+            sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'burst-arrow-fixture')")
+                .bind(id(42).as_slice()).execute(&harness.pool).await?;
+        }
+        if black {
+            sqlx::query("INSERT INTO game_character_pvp_state(character_id,world_id,skull,skull_until) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,clock_timestamp()+interval '1 hour')")
+                .bind(id(41).as_slice()).bind(id(42).as_slice()).execute(&harness.pool).await?;
+        }
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
             channel,
@@ -285,11 +345,11 @@ fn scenario_with_quiver(
             1,
             1,
             "runtime-scope-assignment:1",
-            2,
+            if scripted { 3 } else { 2 },
             channel_pin.clone(),
         )
         .map_err(debug)?;
-        if starter || matches!(weapon, 25760 | 3287) {
+        if scripted || starter || matches!(weapon, 25760 | 3287) {
             let mut rat = native
                 .policies()
                 .policies()
@@ -298,7 +358,11 @@ fn scenario_with_quiver(
                 .ok_or("rat policy")?
                 .as_ref()
                 .clone();
-            rat.damage_immunities.push("physical".into());
+            if scripted {
+                rat.maximum_health = 1000;
+            } else {
+                rat.damage_immunities.push("physical".into());
+            }
             if let Some((element, _)) = starter_element {
                 // The kill must come from the starter's own element.
                 rat.damage_immunities.extend(
@@ -341,20 +405,50 @@ fn scenario_with_quiver(
         runtime
             .initialize_first_entry_position(actor)
             .map_err(debug)?;
-        runtime
-            .realize_native_qualification_spawn(channel_pin, "oteryn:creature.rat", OPEN_RAT)
-            .map_err(debug)?;
-        let rat = {
+        let (rat, splash) = if scripted {
+            let mut spawn = |position| -> Result<_, Box<dyn std::error::Error>> {
+                let key = "oteryn:creature.rat";
+                let rat = runtime
+                    .admit_source_pinned_lab_creature(position, key, 1000)
+                    .map_err(debug)?;
+                runtime.install_creature_policy(rat, key).map_err(debug)?;
+                Ok(rat)
+            };
+            let primary = spawn(OPEN_RAT)?;
+            let other = spawn(MovementLocalPosition {
+                x: OPEN_RAT.x + if projectile == 35901 { 2 } else { 1 },
+                ..OPEN_RAT
+            })?;
+            (
+                EntityRef {
+                    identity: primary.placement_identity(),
+                    generation: runtime
+                        .visible_entities()
+                        .creatures
+                        .iter()
+                        .find(|row| row.actor == primary)
+                        .ok_or("primary visible")?
+                        .generation,
+                },
+                Some((primary, other)),
+            )
+        } else {
+            runtime
+                .realize_native_qualification_spawn(channel_pin, "oteryn:creature.rat", OPEN_RAT)
+                .map_err(debug)?;
             let creature = runtime
                 .visible_entities()
                 .creatures
                 .first()
                 .copied()
                 .expect("the rat is visible");
-            EntityRef {
-                identity: creature.actor.placement_identity(),
-                generation: creature.generation,
-            }
+            (
+                EntityRef {
+                    identity: creature.actor.placement_identity(),
+                    generation: creature.generation,
+                },
+                None,
+            )
         };
 
         let door_content =
@@ -443,6 +537,11 @@ fn scenario_with_quiver(
                         session,
                         crate::spell::cast::CharacterCastFacts {
                             vocation: cast_vocation,
+                            level: if scripted {
+                                150
+                            } else {
+                                crate::gameplay_transport::actor_spell::tests::FACTS.level
+                            },
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
                         },
                         (0, 0),
@@ -586,6 +685,109 @@ fn scenario_with_quiver(
                 },
                 "direct quiver entries"
             );
+        }
+        if let Some((primary, other)) = splash {
+            use crate::foundation::DotElement;
+            use oteryn_gameplay_domain::domain::condition::ConflictKey;
+            use oteryn_gameplay_foundation::foundation::condition::TickKind;
+            let initial = runtime
+                .lock()
+                .await
+                .companion_snapshot(primary)
+                .map_err(debug)?
+                .health;
+            for _ in 0..8 {
+                owner.refresh_attack_weapon(actor, session).await;
+                owner.drain_auto_attacks().await;
+                if black
+                    || runtime
+                        .lock()
+                        .await
+                        .companion_snapshot(primary)
+                        .map_err(debug)?
+                        .health
+                        < initial
+                {
+                    break;
+                }
+                owner.clock_origin = owner.clock_origin.checked_sub(PASS).ok_or("clock")?;
+            }
+            let mut runtime = runtime.lock().await;
+            if black {
+                let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
+                assert_eq!(
+                    quantity,
+                    i64::from(initial_ammo - 1),
+                    "the refused callback still spends one arrow"
+                );
+                assert_eq!(
+                    runtime.companion_snapshot(primary).map_err(debug)?.health,
+                    initial,
+                    "black-skull burst refused the callback"
+                );
+                assert_eq!(
+                    runtime.companion_snapshot(other).map_err(debug)?.health,
+                    initial
+                );
+            } else {
+                assert!(
+                    runtime.companion_snapshot(primary).map_err(debug)?.health < initial,
+                    "scripted arrow dealt direct damage through the paid attack"
+                );
+                if projectile == 3448 {
+                    let snapshot = runtime.companion_snapshot(primary).map_err(debug)?;
+                    let poison = snapshot
+                        .state
+                        .conditions
+                        .get(ConflictKey::Element(DotElement::Poison))
+                        .expect("poison arrow installed its delayed condition");
+                    assert_eq!(poison.remaining_total(), 4 * 3 + 9 * 2 + 20);
+                    let applied = poison.started_at();
+                    let expected_damage =
+                        oteryn_gameplay_combat_rules::resolution::creature_damage_response_with_reduction(
+                            &snapshot.state.policy, 3, "earth", 0,
+                        ).ok_or("rat poison damage response")?;
+                    assert!(expected_damage > 0);
+                    let states = owner.states.spell_states.lock().await;
+                    for (time, expected, pulse) in [
+                        (applied + 3_999_999, 0, None),
+                        (
+                            applied + 4_000_000,
+                            expected_damage,
+                            Some(TickKind::Damage {
+                                element: DotElement::Poison,
+                                amount: 3,
+                                refused: false,
+                            }),
+                        ),
+                    ] {
+                        let result = states
+                            .tick_source_creature_conditions(
+                                &mut runtime,
+                                primary,
+                                Default::default(),
+                                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+                                    time,
+                                ),
+                            )
+                            .map_err(debug)?;
+                        assert_eq!(result.ticks.len(), usize::from(pulse.is_some()));
+                        assert_eq!(result.ticks.first().map(|tick| &tick.kind), pulse.as_ref());
+                        assert_eq!(result.health_before - result.health_after, expected);
+                    }
+                } else {
+                    assert!(
+                        runtime.companion_snapshot(other).map_err(debug)?.health < initial,
+                        "scripted arrow {projectile} damaged its splash target"
+                    );
+                }
+            }
+            drop(runtime);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
         }
         if reconcile {
             owner.refresh_attack_weapon(actor, session).await;
