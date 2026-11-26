@@ -132,7 +132,74 @@ async fn kill(
     s: &oteryn_world_bundle::spawn::Table,
     key: &str,
 ) -> TestResult {
-    let target = full_row_p05::wait_for_spawn(c, w, s, key).await?;
+    let points: Vec<_> = s
+        .sources
+        .iter()
+        .flat_map(|source| {
+            source.points.iter().filter_map(move |point| {
+                s.creatures
+                    .get(point.creature as usize)
+                    .filter(|creature| creature.key == key)
+                    .map(|_| TilePos {
+                        x: point.x,
+                        y: point.y,
+                        floor: source.floor,
+                    })
+            })
+        })
+        .collect();
+    let adjacent = |at: TilePos, point: TilePos| {
+        at != point
+            && at.floor == point.floor
+            && at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) == 1
+    };
+    let from = tile(c.world_spatial().actor_position)?;
+    let path = route(w, from, |at| {
+        w.base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|cell| !cell.protection_zone())
+            && points.iter().any(|&point| adjacent(at, point))
+    })
+    .ok_or_else(|| format!("step boss-route {key}: no reachable authored spawn"))?;
+    for direction in path {
+        let before = tile(c.world_spatial().actor_position)?;
+        let expected = destination(w, before, direction).ok_or("boss route landing missing")?;
+        let outcome = c.step(direction).await?;
+        let actual = tile(c.world_spatial().actor_position)?;
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || actual == before
+            || actual != expected
+        {
+            return Err(format!("step boss-route {key}: before={before:?} expected={expected:?} observed={actual:?} outcome={outcome:?}").into());
+        }
+        verdict::Harness::global().progress("p02-boss-route");
+    }
+    let at = tile(c.world_spatial().actor_position)?;
+    let point = points
+        .into_iter()
+        .find(|&point| adjacent(at, point))
+        .ok_or("boss spawn missing at planned approach")?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(95);
+    verdict::Harness::global().bounded_wait(deadline, "p02-authored-boss-spawn");
+    let target = loop {
+        if let Some(target) = c.world_entities().and_then(|entities| {
+            entities
+                .iter()
+                .find(|entity| {
+                    entity.kind == oteryn_dev_client::EntityKind::Creature
+                        && tile(entity.position).is_ok_and(|position| position == point)
+                })
+                .copied()
+        }) {
+            break target;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step boss-spawn {key}: no creature at {point:?}").into());
+        }
+        c.service_liveness(Duration::from_millis(50)).await?;
+        c.take_events();
+    };
     let r = c.session_mut().attack_target(Some(&target.entity)).await?;
     if r.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
         return Err(format!("step boss-kill {key}: ATTACK reply={r:?}").into());
@@ -190,12 +257,31 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut c = connect_world(clients, 0xb2).await?;
     let mut before = snapshot(&mut c).await?;
-    let initial_slot = slot(&mut c, BossSlotRequest::Query).await?;
+    let initial_slot = slot(
+        &mut c,
+        BossSlotRequest::Detailed(Box::new(BossSlotRequest::Query)),
+    )
+    .await?;
+    let daily_boss = initial_slot
+        .details
+        .as_ref()
+        .ok_or("initial boss slot details missing")?
+        .boosted
+        .clone();
+    if initial_slot.status != 0 {
+        return Err(format!("initial boss slot query: {initial_slot:?}").into());
+    }
     row.pass(
         "initial-query",
         (&before.progress, before.points, &initial_slot),
     );
     let catalog = bosses()?;
+    if !catalog
+        .iter()
+        .any(|boss| boss.key == daily_boss && boss.category.eq_ignore_ascii_case("archfoe"))
+    {
+        return Err(format!("daily boosted boss is not an Archfoe: {daily_boss}").into());
+    }
     let from = tile(c.world_spatial().actor_position)?;
     let spawned = catalog
         .iter()
@@ -210,8 +296,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             .copied()
             .unwrap_or(0)
             .saturating_sub(counts(&before).get(&b.key).copied().unwrap_or(0));
-        match d {
-            1 => {
+        match (b.key == daily_boss, d) {
+            (false, 1) => {
                 let prowess = crate::domain::bosstiary::kill_thresholds(&b.category)
                     .ok_or_else(|| format!("step=prowess unknown boss category={}", b.category))?
                     [0];
@@ -222,7 +308,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                     ordinary = Some((b.key.clone(), b.category.clone(), after.clone(), prowess));
                 }
             }
-            3 => boosted = Some((b.key.clone(), after.clone())),
+            (true, 3) => boosted = Some((b.key.clone(), after.clone())),
             _ => {
                 return Err(format!(
                     "step boss-kill {}: progress delta={d}, reply={after:?}",
@@ -290,7 +376,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         },
     )
     .await?;
-    if br.status != 1 || br.bosses != ready.bosses {
+    let plain_ready = BossSlotReply {
+        details: None,
+        ..ready.clone()
+    };
+    if br
+        != (BossSlotReply {
+            status: 1,
+            ..plain_ready.clone()
+        })
+    {
         return Err(
             format!("step=boosted-exclusion refusal or custody mismatch reply={br:?}").into(),
         );
@@ -304,7 +399,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .details
         .as_ref()
         .is_none_or(|details| details.boosted != boosted_key)
-        || after_exclusion.bosses != ready.bosses
+        || (BossSlotReply {
+            details: None,
+            ..after_exclusion.clone()
+        }) != plain_ready
     {
         return Err(format!(
             "step=boosted-exclusion daily boss or slot custody changed reply={after_exclusion:?}"
@@ -312,6 +410,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     row.pass("boosted-kill", (&boosted_key, &boosted_state.progress, &br));
+    if !plain_ready.bosses[0].is_empty() || plain_ready.bosses.iter().any(|key| key == &boss) {
+        return Err(format!(
+            "step slot-equip: expected empty slot 1 and unassigned boss: {plain_ready:?}"
+        )
+        .into());
+    }
+    let expected_bosses = [boss.clone(), plain_ready.bosses[1].clone()];
     let equipped = slot(
         &mut c,
         BossSlotRequest::Equip {
@@ -320,7 +425,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         },
     )
     .await?;
-    if equipped.status != 0 || equipped.unlocked & 1 == 0 || equipped.bosses[0] != boss {
+    if equipped.status != 0 || equipped.unlocked & 1 == 0 || equipped.bosses != expected_bosses {
         return Err(format!("step slot-equip: reply={equipped:?}").into());
     }
     row.pass("slot-equip", &equipped);
@@ -332,18 +437,28 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         },
     )
     .await?;
-    if refused.status == 0 || refused.bosses != equipped.bosses {
+    if refused
+        != (BossSlotReply {
+            status: 2,
+            ..equipped.clone()
+        })
+    {
         return Err(format!("step slot-refusal: reply={refused:?}").into());
     }
     row.pass("slot-refusal", &refused);
-    full_row_p05::logout_after_combat(&mut c).await?;
+    let session = c.join_snapshot().game_session_id;
+    let logout = c.session_mut().logout().await?.result;
+    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step logout: {logout:?}").into());
+    }
     drop(c);
     let mut c = connect_world(clients, 0xb3).await?;
     let durable = snapshot(&mut c).await?;
     let ds = slot(&mut c, BossSlotRequest::Query).await?;
-    if durable.progress != before.progress
+    if c.join_snapshot().game_session_id == session
+        || durable.progress != before.progress
         || durable.points != before.points
-        || ds.bosses != equipped.bosses
+        || ds != equipped
     {
         return Err(format!("step fresh-admission: progress={durable:?}, slot={ds:?}").into());
     }
