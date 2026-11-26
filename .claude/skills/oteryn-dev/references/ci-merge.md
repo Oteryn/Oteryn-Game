@@ -452,5 +452,26 @@ Owner decision 2026-11-25.
 - A forward fix is allowed only when a revert is impossible (later merges
   depend on the culprit, a migration is already applied) or the fix is
   already green on its own head. Search the open PRs for an existing fix
-  first (*Reading a red check*, step 3).
+  first (*Reading a red check*, step 3). A forward fix that meets the
+  hotfix conditions below is also allowed.
 - A main-red fix never travels in a content train.
+- **Hotfix merge without waiting for CI** (owner 2026-11-26). A main-red fix
+  merges as soon as all of the following hold. It is not held for
+  `game-gate` or `heavy-gate`.
+  - The PR targets `main` and changes at most 20 lines.
+  - It touches no `.github/`, `tools/repository/`, migration or policy path.
+  - `cargo fmt`, Clippy (`-D warnings`, all targets) and the lib tests of
+    each changed crate pass locally on the head.
+  - A clean Codex review receipt exists for the head.
+  - No check has already completed as a failure. A `heavy-gate` mirror from
+    before the label was added does not count.
+
+  The coordinator merges it with `C:\Users\Public\fm-hotfix.ps1 -Num <pr>
+  -Sha <head>`, which checks these conditions, bypasses ruleset 20991995 for
+  the squash and restores the ruleset in `finally`. The post-merge run on
+  `main` is the verification: if it is red, revert the hotfix.
+- **Semantic conflicts between green PRs.** Before squashing a PR whose CI
+  base is older than `main`, check whether `main` has since changed a crate
+  the PR touches. If it has, run `cargo check` on the merge result, or merge
+  `main` into the PR and wait for CI. Two heads that were each green can
+  still fail to compile together (#3516 and #3518 broke `main` this way).
