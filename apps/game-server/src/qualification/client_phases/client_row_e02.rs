@@ -234,8 +234,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let refs = coin_refs()?;
-    let (_characters, mut client) =
+    let (characters, mut client) =
         coin_profile(clients, "E02.client", "Coin Exchange Capture", 0x33, refs).await?;
+    let dedicated = SeamClients { characters: &characters, ..*clients };
     let talk_book = full_e2ef20::qualification_npc_talk_book(&mut client).await?;
     let initial = backpack_coins(&client, refs)?;
     let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs, &talk_book).await?;
@@ -254,8 +255,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "e02-expected.txt",
         format!("before={before_pairs}\nafter={after_pairs}\n").as_bytes(),
     );
-    let _ = client.session_mut().logout().await;
-    Ok(format!("npc={npc_key} before={initial:?} after={platinum:?}"))
+    let old_session = client.join_snapshot().game_session_id;
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("step=client-capture-logout observed=refused".into());
+    }
+    drop(client);
+
+    let mut fresh = connect_world(&dedicated, 0x33).await?;
+    let persisted = backpack_coins(&fresh, refs)?;
+    let reused = fresh.join_snapshot().game_session_id == old_session;
+    if reused || persisted != platinum {
+        return Err(format!(
+            "step=client-capture-relogin observed=session-reused:{reused},coins:{persisted:?}"
+        )
+        .into());
+    }
+    if fresh.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("step=client-capture-final-logout observed=refused".into());
+    }
+    Ok(format!("npc={npc_key} before={initial:?} after={platinum:?} relog={persisted:?}"))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
