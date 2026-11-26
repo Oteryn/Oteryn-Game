@@ -6,6 +6,7 @@
 //! through `crates/session/src/session_access.rs::Session::inventory` (and thus
 //! `tools/dev-client/src/lib.rs::DevClientSession::inventory`).
 use super::*;
+use oteryn_dev_client::client_runtime::inventory::MoveRequest;
 use oteryn_protocol_oteryn::item_view as items;
 
 const ENERGY_RING: u32 = 3051;
@@ -121,19 +122,22 @@ async fn move_ring(
 ) -> TestResult<oteryn_dev_client::AppliedDelta<items::CharacterInventory>> {
     client.take_events();
     let moved = client
-        .move_item(&items::ItemMoveIntent {
+        .session_mut()
+        .move_item_counted(MoveRequest {
             source,
             destination,
+            count: None,
         })
         .await?;
-    if moved.status != CommandStatus::Accepted || moved.outcome != items::ItemMoveOutcome::Moved {
+    if moved.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("i05-ring-move-refused:{moved:?}").into());
     }
+    let result_sequence = client.last_server_sequence();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
         for event in client.take_events() {
             if let oteryn_dev_client::SessionEvent::Inventory(delta) = event {
-                if delta.server_sequence <= moved.result_server_sequence {
+                if delta.server_sequence <= result_sequence {
                     return Err("i05-inventory-delta-precedes-move-result".into());
                 }
                 return Ok(delta);
