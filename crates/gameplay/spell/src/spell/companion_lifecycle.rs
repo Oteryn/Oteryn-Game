@@ -1976,7 +1976,11 @@ pub fn prepare_animate_dead(
     let name = p["created_creature"]
         .as_str()
         .ok_or(CompanionExecutionError::UnqualifiedProfile)?;
-    let policy = runtime.companion_policy(name)?;
+    // The qualified profile carries the display name shared by both Skeleton variants.
+    let policy = runtime.companion_policy("oteryn:creature.skeleton")?;
+    if policy.definition_revision != "definition-r1" || policy.display_name != name {
+        return Err(CompanionExecutionError::UnqualifiedProfile);
+    }
     let position = placement(
         runtime,
         cells,
