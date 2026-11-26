@@ -375,6 +375,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step=mount-fund observed=unexpected-input-or-appearance".into());
     }
+    character_prep::grant_premium(&client).await?;
     expect_item_use(
         &mut client,
         mount_reference,
