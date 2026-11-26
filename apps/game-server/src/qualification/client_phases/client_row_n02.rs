@@ -312,13 +312,10 @@ async fn cross_castle_door(
     walk_route(client, world, |at| at == TilePos { y: from, ..DOOR }).await?;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    let revision = client
-        .world_object_overlay()
-        .iter()
-        .find(|entry| entry.placement == placement)
-        .map_or(0, |entry| entry.revision);
-    if revision % 2 == 0 {
-        let result = client.use_object(&placement, revision).await?;
+    // The ordinary door stays open after the committed northbound USE.
+    // The return STEP proves that state directly through the modern map session.
+    if direction == StepDirection::North {
+        let result = client.use_object(&placement, 0).await?;
         if result.status != CommandStatus::Accepted
             || result.disposition != UseDisposition::Committed
         {
