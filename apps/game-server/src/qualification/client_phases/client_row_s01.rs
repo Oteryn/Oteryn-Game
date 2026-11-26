@@ -106,7 +106,10 @@ async fn send(client: &mut DevClientSession, intent: Option<PartyIntent>) -> Tes
     };
     let command =
         runtime::PartyCommand::intent(intent).map_err(|error| format!("party input: {error:?}"))?;
-    let (operation, _) = exchange(client, &command).await?;
+    let (operation, receipt) = exchange(client, &command).await?;
+    if receipt.shared_xp_enabled || !receipt.members.is_empty() || !receipt.invitations.is_empty() {
+        return Err(format!("S01 party mutation returned an invalid receipt: {receipt:?}").into());
+    }
     let (view, result) = exchange(client, &query).await?;
     Ok(Sent {
         operation,
@@ -247,8 +250,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         }
     }
     let expected = format!(
-        "inviter=Packet One\njoiner=Packet Two\nmembers=2\nshared_xp=false\nnew_leader=Packet Two\ninvitation={}\njoin={}\njoin_view={}\nleadership={}\n",
+        "inviter=Packet One\njoiner=Packet Two\nmembers=2\nshared_xp=false\nnew_leader=Packet Two\ninvitation={}\njoin={}\njoin_view={}\nleadership={}\nleader_before={}\nleader_operation={}\nleader_after={}\n",
         invited.view, joined.operation, joined.view, peer_view.view,
+        leader_view.view, passed.operation, passed.view,
     );
     capture("s01-expected.txt", expected.as_bytes())?;
     Ok("invite-join-pass-leave-logout-relog".to_owned())

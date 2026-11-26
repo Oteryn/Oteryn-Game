@@ -10,7 +10,7 @@ struct Replay {
     invitation_view: Vec<u8>,
     joined_op: Vec<u8>,
     joined_view: Vec<u8>,
-    passed_op: Vec<u8>,
+    leader_transfer: Option<[Vec<u8>; 3]>,
     passed_view: Vec<u8>,
     expected: String,
     statuses: [CommandStatus; 3],
@@ -62,39 +62,62 @@ fn valid_uuid_v7(session: &str) -> bool {
         })
 }
 
+fn load_group<const N: usize>(
+    root: &std::path::Path,
+    expected: &str,
+    labels: [&str; N],
+) -> Result<(String, [Vec<u8>; N]), Error> {
+    let mut previous = (0, 0);
+    let mut replay_session = None;
+    let mut payloads = Vec::new();
+    for label in labels {
+        let name = value(expected, label)?;
+        let json: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join(name))?)?;
+        let fields = json.as_object().ok_or("invalid S01 envelope")?;
+        let session = json["game_session_id"].as_str().ok_or("session absent")?;
+        let command = json["command_id"].as_u64().ok_or("command absent")?;
+        let sequence = json["server_sequence"].as_u64().ok_or("sequence absent")?;
+        if fields.len() != 5
+            || json["status"].as_u64() != Some(CommandStatus::Accepted as u64)
+            || !valid_uuid_v7(session)
+            || name != format!("s01-{session}-{command}.json")
+            || command <= previous.0
+            || sequence <= previous.1
+            || replay_session
+                .as_deref()
+                .is_some_and(|previous| session != previous)
+        {
+            return Err("invalid S01 envelope binding".into());
+        }
+        previous = (command, sequence);
+        replay_session = Some(session.to_owned());
+        payloads.push(serde_json::from_value::<Vec<u8>>(json["payload"].clone())?);
+    }
+    Ok((
+        replay_session.ok_or("empty S01 envelope group")?,
+        payloads
+            .try_into()
+            .map_err(|_| "incorrect S01 envelope count")?,
+    ))
+}
+
 fn load() -> Result<Replay, Error> {
     if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let root = std::path::Path::new(&root);
         let expected = std::fs::read_to_string(root.join("s01-expected.txt"))?;
-        let mut previous = (0, 0);
-        let mut replay_session = None;
-        let mut payloads = Vec::new();
-        for label in ["invitation", "join", "join_view", "leadership"] {
-            let name = value(&expected, label)?;
-            let json: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join(name))?)?;
-            let fields = json.as_object().ok_or("invalid S01 envelope")?;
-            let session = json["game_session_id"].as_str().ok_or("session absent")?;
-            let command = json["command_id"].as_u64().ok_or("command absent")?;
-            let sequence = json["server_sequence"].as_u64().ok_or("sequence absent")?;
-            if fields.len() != 5
-                || json["status"].as_u64() != Some(CommandStatus::Accepted as u64)
-                || !valid_uuid_v7(session)
-                || name != format!("s01-{session}-{command}.json")
-                || command <= previous.0
-                || sequence <= previous.1
-                || replay_session
-                    .as_deref()
-                    .is_some_and(|previous| session != previous)
-            {
-                return Err("invalid S01 envelope binding".into());
-            }
-            previous = (command, sequence);
-            replay_session = Some(session.to_owned());
-            payloads.push(serde_json::from_value::<Vec<u8>>(json["payload"].clone())?);
+        let (peer, [invitations, joined_op, joined_view, passed_view]) = load_group(
+            root,
+            &expected,
+            ["invitation", "join", "join_view", "leadership"],
+        )?;
+        let (leader, leader_transfer) = load_group(
+            root,
+            &expected,
+            ["leader_before", "leader_operation", "leader_after"],
+        )?;
+        if peer == leader {
+            return Err("S01 leader and peer must have distinct sessions".into());
         }
-        let [invitations, joined_op, joined_view, passed_view]: [Vec<u8>; 4] = payloads
-            .try_into()
-            .map_err(|_| "incorrect S01 envelope count")?;
         return Ok(Replay {
             statuses: [CommandStatus::Accepted; 3],
             live: true,
@@ -102,7 +125,7 @@ fn load() -> Result<Replay, Error> {
             invitations,
             joined_op,
             joined_view,
-            passed_op: passed_view.clone(),
+            leader_transfer: Some(leader_transfer),
             passed_view,
             expected,
         });
@@ -123,7 +146,7 @@ fn load() -> Result<Replay, Error> {
         invitations,
         joined_op: joined.clone(),
         joined_view: joined,
-        passed_op: passed.clone(),
+        leader_transfer: None,
         passed_view: passed,
         expected:
             "inviter=Aurelia\njoiner=Berenike\nmembers=2\nshared_xp=false\nnew_leader=Berenike\n"
@@ -240,12 +263,52 @@ fn party_replay_invite_join_and_leadership_pass() -> Result<(), Error> {
         assert_eq!(panel.state, before);
         assert_eq!(panel.feedback, Some("The server refused the party command"));
     }
+    if let Some([before, operation, after]) = replay.leader_transfer {
+        let mut leader_panel = PartyPanel {
+            selected: true,
+            own_character_name: inviter.into(),
+            ..PartyPanel::default()
+        };
+        request(&mut leader_panel, Intent::Refresh).ok_or("leader refresh unavailable")?;
+        assert!(apply_result(
+            &mut leader_panel,
+            &response(CommandStatus::Accepted, &before, Some(&before)),
+        ));
+        assert!(leader_panel.is_leader());
+        let handle = leader_panel
+            .state
+            .as_ref()
+            .ok_or("leader view missing")?
+            .members
+            .iter()
+            .find(|member| member.name == joiner && !member.leader)
+            .ok_or("transfer target missing")?
+            .handle;
+        leader_panel.selected_member = Some(handle);
+        let command = request(&mut leader_panel, Intent::PassLeadership)
+            .ok_or("UI did not emit PassLeadership")?;
+        assert_eq!(command.kind, party::COMMAND_TYPE_PARTY_INTENT);
+        assert_eq!(
+            party::decode_party_intent(&command.payload).map_err(|error| format!("{error:?}"))?,
+            party::PartyIntent::PassLeadership(handle),
+        );
+        assert_eq!(operation, encode(vec![], vec![])?);
+        assert!(apply_result(
+            &mut leader_panel,
+            &response(CommandStatus::Accepted, &operation, Some(&after)),
+        ));
+        assert_eq!(
+            leader_panel.feedback,
+            Some("The server confirmed the party request")
+        );
+        assert!(!leader_panel.is_leader());
+    }
     assert!(request(&mut panel, Intent::Refresh).is_some());
     assert!(apply_result(
         &mut panel,
         &response(
             replay.statuses[2],
-            &replay.passed_op,
+            &replay.passed_view,
             Some(&replay.passed_view)
         )
     ));
