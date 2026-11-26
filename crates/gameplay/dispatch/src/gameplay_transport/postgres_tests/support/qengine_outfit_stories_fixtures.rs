@@ -2007,21 +2007,19 @@ pub(super) async fn exercise(
     } else {
         vec![]
     };
-    let historical_prerequisites = if family == "norseman" {
-        initial.clone()
-    } else {
-        vec![]
-    };
+    // Ice Islands and Ape City own these prerequisite tracks. Arrange their
+    // prior progress as saved state before exercising the outfit hand-ins.
+    let import_prerequisites = matches!(family, "norseman" | "knight");
     let mut setup = BTreeMap::<String, Vec<QuestEffect>>::new();
-    for (key, value) in initial.into_iter().filter(|_| family != "norseman") {
-        let track = tracks.get(&key).ok_or("setup track")?;
+    for (key, value) in initial.iter().filter(|_| !import_prerequisites) {
+        let track = tracks.get(key).ok_or("setup track")?;
         setup
             .entry(track.quest.clone())
             .or_default()
             .push(QuestEffect {
-                track: key,
+                track: key.clone(),
                 from: QuestComparison::Any,
-                effect: QuestEffectKind::Set(value),
+                effect: QuestEffectKind::Set(*value),
             });
     }
     let mut setup_keys = Vec::new();
@@ -2038,7 +2036,7 @@ pub(super) async fn exercise(
         });
     }
     if let Some(required) = &readonly
-        && family != "norseman"
+        && !import_prerequisites
     {
         let track = tracks.get(&required.track).ok_or("read track")?;
         assert!(required.minimum > track.min);
@@ -2100,9 +2098,9 @@ pub(super) async fn exercise(
     for (index, key) in setup_keys.iter().enumerate() {
         commit_fixture(owner, admitted, key, 9000 + u64::try_from(index)?).await?;
     }
-    if family == "norseman" {
+    if import_prerequisites {
         assert!(setup_keys.is_empty());
-        seed_quest_prerequisites(h, owner, admitted, &historical_prerequisites, 106).await?;
+        seed_quest_prerequisites(h, owner, admitted, &initial, 106).await?;
     }
     owner
         .refresh_quest_session(admitted.game_session_id, false)
@@ -2582,7 +2580,7 @@ pub(super) async fn exercise(
             owner
                 .refresh_quest_session(admitted.game_session_id, false)
                 .await;
-            if family == "norseman" {
+            if import_prerequisites {
                 let required = readonly.as_ref().ok_or("readonly prerequisite")?;
                 seed_quest_prerequisites(
                     h,
@@ -2654,7 +2652,7 @@ pub(super) async fn exercise(
                 before,
                 "no consumption or value on failed parent prerequisite"
             );
-            if family == "norseman" {
+            if import_prerequisites {
                 let required = readonly.as_ref().ok_or("readonly prerequisite")?;
                 seed_quest_prerequisites(
                     h,
