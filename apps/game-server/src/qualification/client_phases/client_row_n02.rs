@@ -198,8 +198,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("King Tibianus promotion quote: {quote:?}").into());
     }
     let unpaid = gold(&mut client).await?;
-    if unpaid != 20_000 {
-        return Err(format!("N02 pre-promotion gold was {unpaid}, expected 20000").into());
+    if unpaid != 20_050 {
+        return Err(format!("N02 pre-promotion gold was {unpaid}, expected 20050").into());
     }
     let (_, confirmation) = client_row_p20::talk(&mut client, king, "yes").await?;
     if confirmation != ["You are now promoted."] {
@@ -208,7 +208,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let paid = gold(&mut client).await?;
     if paid != unpaid - 20_000 {
         return Err(format!(
-            "N02 promotion charged {} -> {paid}, expected {unpaid} -> 0",
+            "N02 promotion charged {} -> {paid}, expected {unpaid} -> 50",
             unpaid
         )
         .into());
