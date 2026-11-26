@@ -100,12 +100,10 @@ fn own(client: &DevClientSession) -> TestResult<EntityRef> {
         .ok_or_else(|| "step=admit observed=own-entity-absent".into())
 }
 
-fn seen(client: &DevClientSession, identity: [u8; 16]) -> Option<EntityRef> {
+fn seen(client: &DevClientSession, target: EntityRef) -> bool {
     client
-        .world_entities()?
-        .iter()
-        .find(|entry| entry.entity.identity == identity)
-        .map(|entry| entry.entity)
+        .world_entities()
+        .is_some_and(|entities| entities.iter().any(|entry| entry.entity == target))
 }
 
 async fn pump(a: &mut DevClientSession, b: &mut DevClientSession) -> TestResult {
@@ -116,16 +114,14 @@ async fn pump(a: &mut DevClientSession, b: &mut DevClientSession) -> TestResult 
     Ok(())
 }
 
-/// Waits until `a` sees `b`; returns `b` as `a` sees it.
+/// Stages the peers once and requires both live entity views to contain the other player.
 async fn see_each_other(
     a: &mut DevClientSession,
     b: &mut DevClientSession,
     clients: &SeamClients<'_>,
 ) -> TestResult<EntityRef> {
-    let target = own(b)?.identity;
-    if let Some(found) = seen(a, target) {
-        return Ok(found);
-    }
+    let leader = own(a)?;
+    let target = own(b)?;
     let from = tile(a.world_spatial().actor_position)?;
     let peer = tile(b.world_spatial().actor_position)?;
     let world = full_e2ef7::qualification_world(clients)?;
@@ -135,13 +131,28 @@ async fn see_each_other(
             && at.x.abs_diff(peer.x).max(at.y.abs_diff(peer.y)) <= 1
     })
     .ok_or("step=admit observed=no-route-to-peer")?;
-    let (done, mut walking) = tokio::sync::oneshot::channel();
+    let (done, mut walking) = tokio::sync::oneshot::channel::<()>();
     // Finish any peer frame in flight before giving the session back to the party journey.
     let (walked, serviced) = tokio::join!(
         async {
-            let result = walk(a, world, &path).await;
-            let _ = done.send(());
-            result
+            // Dropping the sender also signals completion on the first failed step.
+            let _done = done;
+            for direction in path {
+                let before = tile(a.world_spatial().actor_position)?;
+                let expected = destination(world, before, direction)
+                    .ok_or("step=peer-approach observed=no-planned-landing")?;
+                let outcome = a.step(direction).await?;
+                let actual = tile(a.world_spatial().actor_position)?;
+                if outcome.disposition != StepDisposition::Moved || actual != expected {
+                    return Err(format!(
+                        "step=peer-approach direction={direction:?} from={before:?} expected={expected:?} actual={actual:?} observed={outcome:?}"
+                    )
+                    .into());
+                }
+                verdict::Harness::global().progress("walk");
+                a.take_events();
+            }
+            TestResult::Ok(())
         },
         async {
             while matches!(
@@ -157,8 +168,8 @@ async fn see_each_other(
     serviced?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
     loop {
-        if let Some(found) = seen(a, target) {
-            return Ok(found);
+        if seen(a, target) && seen(b, leader) {
+            return Ok(target);
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(
