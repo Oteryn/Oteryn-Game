@@ -257,6 +257,7 @@ async fn require_routes(
     pouch: &[u8],
     fallback: bool,
     accept_only: bool,
+    full: bool,
 ) -> TestResult {
     let settings: (bool, bool, bool, Option<Vec<u8>>) = sqlx::query_as(
         "SELECT accept_only, fallback_to_main, unassigned_gold_pouch, uuid_send(unassigned_container_id)
@@ -266,9 +267,14 @@ async fn require_routes(
         "SELECT category, gold_pouch, uuid_send(container_id)
          FROM game_character_quick_loot_categories WHERE character_id=encode($1,'hex')::uuid ORDER BY category",
     ).bind(character).fetch_all(database).await?;
-    if settings != (accept_only, fallback, false, None)
-        || routes != [(0, false, None), (2, true, Some(pouch.to_vec()))]
-    {
+    let mut expected = vec![
+        (0, false, None),
+        (if full { 5 } else { 2 }, true, Some(pouch.to_vec())),
+    ];
+    if full && !accept_only {
+        expected.push((10, false, None));
+    }
+    if settings != (accept_only, fallback, false, None) || routes != expected {
         return Err(format!(
             "I07 durable routing differs: settings={settings:?} routes={routes:?}"
         )
@@ -386,6 +392,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         (false, "oteryn:item.tibia.i3577"),
         (true, "oteryn:item.tibia.i3357"),
     ];
+    let full = capture_dir.is_none();
     let index = provisioning::item_index()?;
     let skip_reference = provisioning::item_reference(&index, 3577)?.get();
     let gold_reference = provisioning::item_reference(&index, 3031)?.get();
@@ -439,15 +446,30 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     accept.filter_mode = Some(QuickLootFilterMode::Accept);
     accept.filter_definition_ref = Some(accept_reference);
     let (pouch, backpack) = owned_containers(&mut database, character, &clients.world).await?;
-    let corpses: Vec<Vec<u8>> = sqlx::query_scalar(
-        "SELECT uuid_send(r.item_instance_id) FROM game_item_mint_receipts r
+    let cell = |x: i32| {
+        [
+            x.to_be_bytes().as_slice(),
+            admitted_position.y.to_be_bytes().as_slice(),
+            admitted_position.floor.to_be_bytes().as_slice(),
+        ]
+        .concat()
+    };
+    let on_tile = cell(admitted_position.x);
+    let adjacent = cell(
+        admitted_position
+            .x
+            .checked_add(1)
+            .ok_or("I07 adjacent tile overflow")?,
+    );
+    let corpses: Vec<(Vec<u8>, Vec<u8>)> = sqlx::query_as(
+        "SELECT uuid_send(r.item_instance_id), g.spatial_position FROM game_item_mint_receipts r
          JOIN game_item_ground_locations g USING (item_instance_id)
          WHERE death_world_id=encode($1,'hex')::uuid AND death_channel_id=encode($2,'hex')::uuid
            AND death_scope_ownership_generation=$3::text::numeric
            AND corpse_top_damage_character_id=encode($4,'hex')::uuid
            AND loot_table_production_key='oteryn:qualification.i07.loot'
            AND loot_purpose_key='CORPSE_MATERIALIZATION' AND draw_ordinal=0
-           AND g.spatial_position=$5
+           AND g.spatial_position=ANY($5)
          ORDER BY (SELECT count(*) FROM game_item_corpse_container_entries e
                    WHERE e.parent_item_instance_id=r.item_instance_id) DESC, r.item_instance_id
          LIMIT 3",
@@ -456,21 +478,17 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     .bind(clients.channel.as_slice())
     .bind(clients.scope_generation.to_string())
     .bind(character.as_slice())
-    .bind(
-        [
-            admitted_position.x.to_be_bytes().as_slice(),
-            admitted_position.y.to_be_bytes().as_slice(),
-            admitted_position.floor.to_be_bytes().as_slice(),
-        ]
-        .concat(),
-    )
+    .bind(vec![on_tile.clone(), adjacent.clone()])
     .fetch_all(&mut database)
     .await?;
-    let [corpse, stacked] = corpses.as_slice() else {
-        return Err("I07 requires both fixture corpses on the admitted floor and tile".into());
+    let [(corpse, primary_cell), (stacked, adjacent_cell)] = corpses.as_slice() else {
+        return Err("I07 requires exactly two nearby fixture corpses".into());
     };
+    if primary_cell != &on_tile || adjacent_cell != &adjacent {
+        return Err("I07 requires one corpse on the actor tile and one east of it".into());
+    }
     if capture_dir.is_none() {
-        evidence("I07_FULL_INPUT corpses=2 source=qualification_fixture");
+        evidence("I07_FULL_INPUT corpses=2 adjacent=1 source=qualification_fixture");
     }
     let before = placements(&mut database, Storage::Corpse, character, corpse).await?;
     let stacked_before = placements(&mut database, Storage::Corpse, character, stacked).await?;
@@ -518,7 +536,11 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     };
     let armor_route = |fallback| {
         route(
-            Some(QuickLootCategory::Equipment),
+            Some(if full {
+                QuickLootCategory::Armor
+            } else {
+                QuickLootCategory::Equipment
+            }),
             QuickLootRecipient::GoldPouch,
             Some(pouch),
             fallback,
@@ -548,6 +570,17 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     require_filters(&mut database, character, true, &expected_filters[..2]).await?;
     let unassigned_pouch = route(None, QuickLootRecipient::GoldPouch, Some(pouch), false);
     capture.probe(&mut client, 3, unassigned_pouch, &[]).await?;
+    let (fallback, assigned, recipient): (bool, bool, Option<Vec<u8>>) = sqlx::query_as(
+        "SELECT fallback_to_main, unassigned_gold_pouch, uuid_send(unassigned_container_id)
+         FROM game_character_quick_loot_settings WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(character.as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    if (fallback, assigned, recipient.as_deref()) != (false, true, Some(pouch.as_slice())) {
+        return Err("I07 Initial Unassigned assignment did not persist the exact pouch".into());
+    }
+    evidence("I07_UNASSIGNED_ASSIGNMENT initial=true recipient=exact_inbox_pouch fallback=false");
     capture.probe(&mut client, 4, gold_route, &[]).await?;
     // Restore a distinct Unassigned route before testing Gold transfer.
     capture.probe(&mut client, 5, unassigned, &[]).await?;
@@ -589,7 +622,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         .await?;
     capture.probe(&mut client, 9, accept, &[]).await?;
     require_filters(&mut database, character, true, &expected_filters).await?;
-    require_routes(&mut database, character, &pouch, false, true).await?;
+    require_routes(&mut database, character, &pouch, false, true, full).await?;
     capture
         .probe(
             &mut client,
@@ -644,7 +677,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     capture
         .probe(&mut client, 11, armor_route(true), &[])
         .await?;
-    require_routes(&mut database, character, &pouch, true, true).await?;
+    require_routes(&mut database, character, &pouch, true, true, full).await?;
     require_logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0x07).await?;
@@ -655,7 +688,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         return Err("I07 relog changed the original Inbox pouch or equipped backpack custody, or reused a session".into());
     }
     require_filters(&mut database, character, true, &expected_filters).await?;
-    require_routes(&mut database, character, &pouch, true, true).await?;
+    require_routes(&mut database, character, &pouch, true, true, full).await?;
     require_placements(
         &mut database,
         Storage::Corpse,
@@ -805,7 +838,17 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         )
         .await?;
     require_filters(&mut database, character, false, &expected_filters).await?;
-    capture.probe(&mut fresh, 15, unassigned_pouch, &[]).await?;
+    let late_pouch = if full {
+        route(
+            Some(QuickLootCategory::Food),
+            QuickLootRecipient::GoldPouch,
+            Some(pouch),
+            false,
+        )
+    } else {
+        unassigned_pouch
+    };
+    capture.probe(&mut fresh, 15, late_pouch, &[]).await?;
     capture
         .probe(
             &mut fresh,
@@ -830,7 +873,17 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         &expected_backpack,
     )
     .await?;
-    capture.probe(&mut fresh, 17, unassigned, &[]).await?;
+    let late_main = if full {
+        route(
+            Some(QuickLootCategory::Food),
+            QuickLootRecipient::MainContainer,
+            None,
+            false,
+        )
+    } else {
+        unassigned
+    };
+    capture.probe(&mut fresh, 17, late_main, &[]).await?;
     capture
         .probe(
             &mut fresh,
@@ -950,7 +1003,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     )
     .await?;
     require_filters(&mut database, character, false, &expected_filters).await?;
-    require_routes(&mut database, character, &pouch, false, false).await?;
+    require_routes(&mut database, character, &pouch, false, false, full).await?;
     require_retired_donor(&mut database, &other.item).await?;
     evidence("I07_MERGE_DONOR lifecycle=retired quantity=0 after_relog=true");
     let inventory = readback
@@ -991,12 +1044,12 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         require_quiver(&mut database, character, &quiver, &ammunition).await?;
         let index = provisioning::item_index()?;
         let definition = provisioning::item_reference(&index, 35562)?;
-        if !inventory
-            .equipment
-            .iter()
-            .any(|entry| entry.item.item_definition_ref == definition)
-        {
-            return Err("I07 full relog inventory omitted the equipped quiver".into());
+        if !inventory.equipment.iter().any(|entry| {
+            entry.item.item_definition_ref == definition
+                && Some(entry.slot) == oteryn_protocol_oteryn::item_view::wire_slot(6)
+                && entry.item.count.get() == 1
+        }) {
+            return Err("I07 full relog did not expose the quiver in the shield-hand slot".into());
         }
         evidence("I07_FULL_QUIVER bolts=7 backpack_debit=7 after_relog=true");
     }
@@ -1065,7 +1118,10 @@ async fn exercise_quiver(
     character: &[u8],
     backpack: &[u8],
 ) -> TestResult<(Vec<u8>, Vec<Placement>)> {
-    use oteryn_dev_client::{ItemMoveOutcome, client_runtime::hotkey_equip::equip_definition};
+    use oteryn_dev_client::{
+        ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome,
+        client_runtime::hotkey_equip::equip_definition,
+    };
 
     let quiver = worn_quiver(database, character)
         .await?
@@ -1101,6 +1157,62 @@ async fn exercise_quiver(
 
     let index = provisioning::item_index()?;
     let definition = provisioning::item_reference(&index, 3446)?;
+    let quiver_definition = provisioning::item_reference(&index, 35562)?;
+    let shield_slot = oteryn_protocol_oteryn::item_view::wire_slot(6)
+        .ok_or("I07 shield-hand slot is not defined")?;
+    let source = client
+        .inventory()
+        .and_then(|inventory| {
+            inventory
+                .equipment
+                .iter()
+                .find(|entry| {
+                    entry.slot == shield_slot && entry.item.item_definition_ref == quiver_definition
+                })
+                .map(|entry| entry.item.handle)
+        })
+        .ok_or("I07 missing shield-hand quiver handle")?;
+    let unequip = client
+        .move_item(&ItemMoveIntent {
+            source,
+            destination: ItemMoveDestination::MainBackpack,
+        })
+        .await?;
+    if unequip.outcome != ItemMoveOutcome::Moved
+        || worn_quiver(database, character).await?.is_some()
+    {
+        return Err(
+            format!("I07 quiver unequip did not clear the shield hand: {unequip:?}").into(),
+        );
+    }
+    let mut unworn = seeded.clone();
+    unworn.push(Placement {
+        key: "oteryn:item.tibia.i35562".into(),
+        item: quiver.clone(),
+        quantity: 1,
+        slot: seeded.last().map_or(1, |entry| entry.slot + 1),
+    });
+    require_placements(database, Storage::Backpack, character, backpack, &unworn).await?;
+    let refused = equip_definition(client.session_mut(), definition).await?;
+    if refused != ItemMoveOutcome::SlotMismatch || worn_quiver(database, character).await?.is_some()
+    {
+        return Err(format!(
+            "I07 bolts without a worn quiver should receive SlotMismatch: {refused:?}"
+        )
+        .into());
+    }
+    require_placements(database, Storage::Backpack, character, backpack, &unworn).await?;
+    require_placements(database, Storage::Quiver, character, &quiver, &expected).await?;
+    let equipped = equip_definition(client.session_mut(), quiver_definition).await?;
+    if equipped != ItemMoveOutcome::Moved {
+        return Err(format!("I07 first quiver re-equip refused: {equipped:?}").into());
+    }
+    require_quiver(database, character, &quiver, &expected).await?;
+    require_placements(database, Storage::Backpack, character, backpack, &seeded).await?;
+    evidence(
+        "I07_FULL_QUIVER unequip=moved unarmed_ammo=slot_mismatch re_equip=moved slot=shield_hand",
+    );
+
     let reply = equip_definition(client.session_mut(), definition).await?;
     if reply != ItemMoveOutcome::Moved {
         return Err(format!("I07 equip bolts into the worn quiver: {reply:?}").into());
