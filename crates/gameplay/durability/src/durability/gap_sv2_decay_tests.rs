@@ -250,7 +250,7 @@ fn scenario(custody: ChainCustody) -> TestResult {
             item = xdecay_chain(native, 2921, false)?;
             assert_eq!(item.decay_chain.len(), 4);
             item.content_generation_digest = [7; 32];
-            for stage in item.decay_chain.iter_mut().take(2) {
+            for stage in &mut item.decay_chain {
                 stage.duration_millis = 1;
             }
         }
@@ -278,11 +278,12 @@ fn scenario(custody: ChainCustody) -> TestResult {
             h.count("game_spell_field_temporal_schedules").await?,
             if custody == ChainCustody::Ground { 4 } else { 2 }
         );
-        // Wait for the original second deadline. Each drain opens one due stage.
+        // Wait for the original terminal deadline. Each drain opens one due stage.
+        let final_stage = if custody == ChainCustody::Ground { 4_i32 } else { 2_i32 };
         tokio::time::timeout(std::time::Duration::from_secs(5), async {
             loop {
-                let due: bool = sqlx::query_scalar("SELECT max(expires_at_unix_ms)<=floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_spell_field_temporal_schedules WHERE source_stage=2")
-                    .fetch_one(&h.pool).await?;
+                let due: bool = sqlx::query_scalar("SELECT expires_at_unix_ms<=floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_spell_field_temporal_schedules WHERE source_stage=$1")
+                    .bind(final_stage).fetch_one(&h.pool).await?;
                 if due { break Ok::<(), sqlx::Error>(()); }
                 tokio::task::yield_now().await;
             }
@@ -374,7 +375,6 @@ fn scenario(custody: ChainCustody) -> TestResult {
             }
         }
         assert_eq!(drain(h).await?, 1);
-        assert_eq!(drain(h).await?, 0);
         let stored: (String, String, i64) = sqlx::query_as("SELECT definition_production_key,state_revision::text,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(id(180).as_slice()).fetch_one(&h.pool).await?;
         let successor = if custody == ChainCustody::Ground {
@@ -393,6 +393,17 @@ fn scenario(custody: ChainCustody) -> TestResult {
         assert_eq!(h.count("game_spell_field_temporal_receipts").await?, 2);
         assert_eq!(h.count("game_spell_field_temporal_audit").await?, 2);
         assert_eq!(h.count("game_item_decay_handoffs").await?, if depot {4} else {2});
+        if custody == ChainCustody::Ground {
+            assert_eq!(drain(h).await?, 1, "the third stage leaves a burnt-down torch");
+            assert_eq!(drain(h).await?, 1, "the fourth stage retires the nested torch");
+            let retired: (i16, i64, bool) = sqlx::query_as(
+                "SELECT i.lifecycle,i.quantity,NOT EXISTS(
+                    SELECT 1 FROM game_item_nested_entries n WHERE n.item_instance_id=i.item_instance_id)
+                 FROM game_item_instances i WHERE i.item_instance_id=encode($1,'hex')::uuid",
+            ).bind(id(180).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(retired, (2, 0, true));
+        }
+        assert_eq!(drain(h).await?, 0);
         let mut denied = h.pool.begin().await?;
         sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
             .execute(&mut *denied)
