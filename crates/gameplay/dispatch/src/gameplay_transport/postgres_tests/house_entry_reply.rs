@@ -1,10 +1,10 @@
 //! I10.client: framed entry and refusal through the real House handoff owner.
+use super::TestResult;
 use super::fixture::{Harness, debug, id};
 use super::house_transfer_fixtures::{
     RecoverySource, TRANSFER_TEST_HOUSE as HOUSE, initialize_transfer_source_for_owner,
     prepare_owned_session, prepare_transfer_scene,
 };
-use super::TestResult;
 use crate::foundation::{GameSessionId, MessageType, decode_wire_envelope};
 use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
 use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
@@ -108,6 +108,13 @@ async fn exercise(h: &Harness, is_owner: bool) -> TestResult {
     let commands = async {
         read_message(&mut client, MessageType::SnapshotCommit).await?;
         let held = if is_owner {
+            // Complete the input gate's cold quest recovery before holding the
+            // publication store. The transfer itself still runs through ingress.
+            assert!(
+                owner
+                    .reconcile_quest_callbacks(admitted.game_session_id)
+                    .await
+            );
             // Hold the real publication store unavailable through the first entry attempt.
             Some(h.root.try_issue_semantic_pass()?)
         } else {
