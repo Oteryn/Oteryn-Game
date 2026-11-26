@@ -2,13 +2,13 @@
 //! `item_spell_augments` owner. Every step is driven over the real client connection and every
 //! effect is measured, never inferred from a mana debit or a slot.
 //!
-//! 1. `baseline-cast`: reach a reachable creature spawn whose content health is high enough that a
+//! 1. `acquire-50271`: purchase the Fists of Enlightenment (50271) from Enpa-Deia Pema.
+//! 2. `baseline-cast`: reach a reachable creature spawn whose content health is high enough that a
 //!    spell hit is never health-capped, attack it, and CAST Greater Tiger Clash repeatedly without
 //!    the item; require `Cast` and a mana debit each time and record the spell damage the server
 //!    attributes to the cast (the presentation events sharing the cast's decision ordinal).
-//! 2. `acquire-50271`: purchase the Fists of Enlightenment (50271) from Enpa-Deia Pema.
-//! 3. `augmented-cast`: ITEM_MOVE the item to the right hand, CAST again and require the measured
-//!    the cast to publish attributed damage. The weapon swap changes the attack inputs.
+//! 3. `augmented-cast`: ITEM_MOVE the item to the right hand, CAST again and require attributed
+//!    damage on the original damage roll. The weapon swap changes the attack inputs.
 //! 4. `unequip`: ITEM_MOVE it back to the backpack; require the inventory delta.
 //! 5. `unequipped-cast`: restore the baseline weapon and CAST with item 50271 only carried.
 //! 6. `fresh-admission`: re-equip, LOGOUT, admit afresh, require the right-hand item to persist and
@@ -16,7 +16,7 @@
 
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
-use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
+use oteryn_protocol_oteryn::actor_spell::{ActorVitals, SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::item_view as items;
 use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
 use std::num::NonZeroU32;
@@ -26,7 +26,9 @@ const PREPARATION: character_prep::Seeded = character_prep::Seeded {
     reason: "C12 tests spell augment behavior after obtaining the weapon and qualifying for the spell.",
 };
 const ITEM_ID: u32 = 50_271;
-const PREREQUISITES: &str = "level-20-monk,premium,mana-potions";
+const AUGMENT_BPS: u64 = 800;
+const PEMA_PRICE: u64 = 20_000;
+const PREREQUISITES: &str = "level-20-monk,premium,purchase-gold,mana-potions";
 const CRYSTAL_COIN: u32 = 3043;
 const CRYSTAL_COIN_VALUE: u64 = 10_000;
 const MANA_POTION: u32 = 268;
@@ -36,9 +38,11 @@ const SPELL_NAME: &str = "greater tiger clash";
 const SAMPLES: usize = 3;
 const COMMAND_BUDGET: Duration = Duration::from_secs(8);
 const BASELINE_BUDGET: Duration = Duration::from_secs(75);
+// The authored Blue Valley round trip adds paced steps before the four cast phases.
+const JOURNEY_BUDGET: Duration = Duration::from_secs(720);
 const STEPS: [&str; 7] = [
-    "baseline-cast",
     "acquire-50271",
+    "baseline-cast",
     "augmented-cast",
     "unequip",
     "unequipped-cast",
@@ -140,13 +144,13 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     character_prep::declare_seeded("C12", PREREQUISITES, "exori nia augment attribution");
     let mut row = Row::new();
     let result = match verdict::indexed_timeout(
-        Duration::from_secs(720),
+        JOURNEY_BUDGET,
         verdict::observe(journey(&mut row, clients)),
     )
     .await
     {
         Ok(result) => result,
-        Err(_) => Err("journey-timeout-480s-without-server-reply".into()),
+        Err(_) => Err(format!("journey-timeout-{}s", JOURNEY_BUDGET.as_secs()).into()),
     };
     row.finish(result);
 }
@@ -180,10 +184,10 @@ fn spell(client: &mut DevClientSession) -> TestResult<NonZeroU32> {
 }
 
 /// The base-damage augment (hundredths of a percent) that content binds to this spell on the item.
-fn content_augment() -> TestResult<u64> {
+pub(super) fn content_augment() -> TestResult<u64> {
     let profiles = read_json("content/items/definitions/spell-native-profiles.json")?;
     let key = format!("oteryn:item.tibia.i{ITEM_ID}");
-    profiles["records"]
+    let authored = profiles["records"]
         .as_array()
         .ok_or("item profile records absent")?
         .iter()
@@ -195,9 +199,11 @@ fn content_augment() -> TestResult<u64> {
                 .find(|a| a["kind"] == "base_damage" && a["spell"] == SPELL_NAME)
         })
         .and_then(|augment| augment["value"].as_u64())
-        .ok_or_else(|| {
-            format!("content binds no base_damage augment of {SPELL_NAME} to {key}").into()
-        })
+        .ok_or_else(|| format!("content binds no base_damage augment of {SPELL_NAME} to {key}"))?;
+    if authored != AUGMENT_BPS {
+        return Err(format!("C12 expected {AUGMENT_BPS} basis points, authored {authored}").into());
+    }
+    Ok(authored)
 }
 
 struct CreatureProfile {
@@ -246,6 +252,7 @@ fn equipped_right(client: &DevClientSession, definition: NonZeroU32) -> bool {
         inventory.equipment.iter().any(|entry| {
             entry.slot == items::EquipmentSlot::RightHand
                 && entry.item.item_definition_ref == definition
+                && entry.item.count.get() == 1
         })
     })
 }
@@ -312,8 +319,7 @@ fn adjacent_creature(
         .map(|entry| entry.entity)
 }
 
-/// The spawn creature whose content health is the lowest one that a spell hit cannot cap, else the
-/// healthiest reachable one; the measurement gate below still refuses any possibly capped sample.
+/// Select the reachable creature with the lowest content health of at least 3,000.
 fn pick_creature(
     spawns: &oteryn_world_bundle::spawn::Table,
     health: impl Fn(&str) -> Option<u64>,
@@ -334,15 +340,10 @@ fn pick_creature(
             else {
                 continue;
             };
-            // Prefer the lowest health >= 3,000, else the highest fallback.
-            // Preserve creature-table order for equal preferred health and
-            // reverse it for equal fallback health, as in the old stable sort.
-            let rank = if hp >= 3_000 {
-                (false, hp, index)
-            } else {
-                (true, u64::MAX - hp, usize::MAX - index)
-            };
-            let candidate = (rank, index, hp);
+            if hp < 3_000 {
+                continue;
+            }
+            let candidate = (hp, index);
             for x in point.x.saturating_sub(1)..=point.x.saturating_add(1) {
                 for y in point.y.saturating_sub(1)..=point.y.saturating_add(1) {
                     let at = TilePos {
@@ -376,7 +377,7 @@ fn pick_creature(
         }
         best_reached.get() == Some(best_possible)
     });
-    let (_, index, hp) = best_reached
+    let (hp, index) = best_reached
         .into_inner()
         .ok_or("no reachable creature spawn has content health")?;
     Ok((spawns.creatures[index].key.clone(), hp))
@@ -451,125 +452,158 @@ struct Hunt<'a> {
 }
 
 impl Hunt<'_> {
+    async fn approach(&self, client: &mut DevClientSession) -> TestResult {
+        let from = tile(client.world_spatial().actor_position)?;
+        let path = route(self.world, from, |at| {
+            self.world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+                && self.spawns.sources.iter().any(|source| {
+                    at.floor == source.floor
+                        && source.points.iter().any(|point| {
+                            at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) == 1
+                                && self
+                                    .spawns
+                                    .creatures
+                                    .get(point.creature as usize)
+                                    .is_some_and(|entry| entry.key == self.creature)
+                        })
+                })
+        })
+        .ok_or("no route to the selected C12 creature spawn")?;
+        walk_exact_route(client, self.world, &path).await
+    }
+
+    async fn wait_visible_target(
+        &self,
+        client: &mut DevClientSession,
+    ) -> TestResult<oteryn_dev_client::EntityRef> {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+        loop {
+            if let Some(entity) = adjacent_creature(client, &self.profile.display_name) {
+                return Ok(entity);
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(
+                    format!("no live {} adjacent at the selected spawn", self.creature).into(),
+                );
+            }
+            client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
+        }
+    }
+
     async fn target(
         &self,
         client: &mut DevClientSession,
     ) -> TestResult<oteryn_dev_client::EntityRef> {
-        for _ in 0..4 {
-            if adjacent_creature(client, &self.profile.display_name).is_none() {
-                travel_to_spawn(client, self.world, self.spawns, &self.creature).await?;
-            }
-            let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
-            while adjacent_creature(client, &self.profile.display_name).is_none()
-                && tokio::time::Instant::now() < deadline
-            {
-                client.service_liveness(Duration::from_millis(100)).await?;
-                client.take_events();
-            }
-            if let Some(entity) = adjacent_creature(client, &self.profile.display_name) {
-                let sequence = client.last_server_sequence();
-                let reply = verdict::indexed_timeout(
-                    COMMAND_BUDGET,
-                    client.session_mut().attack_target(Some(&entity)),
-                )
-                .await
-                .map_err(|_| format!("ATTACK deadline=8s last-frame={sequence}"))??;
-                if reply.disposition == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
-                {
-                    return Ok(entity);
-                }
+        let entity = self.wait_visible_target(client).await?;
+        if combat_target(client)? != Some(entity) {
+            let sequence = client.last_server_sequence();
+            let reply = verdict::indexed_timeout(
+                COMMAND_BUDGET,
+                client.session_mut().attack_target(Some(&entity)),
+            )
+            .await
+            .map_err(|_| format!("ATTACK deadline=8s last-frame={sequence}"))??;
+            require_mechanic_acceptance(reply.status, "C12 ATTACK")?;
+            if reply.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
                 return Err(format!("ATTACK reply={reply:?}").into());
             }
+            wait_combat_target(client, Some(entity)).await?;
         }
-        Err(format!("no live {} adjacent after four spawn visits", self.creature).into())
+        Ok(entity)
     }
 
-    /// One cast, retried only while the server reports `CoolingDown`; returns the damage the server
-    /// attributes to that cast (events sharing the decision ordinal of the caster's SpellWords).
+    /// Verify damage attributed to the cast and the vitals applied by the client.
     async fn cast_damage(
         &self,
         client: &mut DevClientSession,
         spell: NonZeroU32,
         bps: u64,
-    ) -> TestResult<u64> {
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-        loop {
-            let victim = self.target(client).await?;
-            let own = own_entity(client)?;
-            let before = *client.actor_vitals().ok_or("pre-cast vitals absent")?;
-            client.take_events();
-            let sequence = client.last_server_sequence();
-            let evidence_start = std::fs::metadata(&self.cast_evidence_log)?.len();
-            let outcome = verdict::indexed_timeout(
-                COMMAND_BUDGET,
-                client.cast_spell(spell, SpellTarget::AttackTarget, true),
-            )
-            .await
-            .map_err(|_| format!("CAST deadline=8s last-frame={sequence}"))??;
-            if outcome.disposition == SpellCastDisposition::CoolingDown
-                && tokio::time::Instant::now() < deadline
-            {
-                client.service_liveness(Duration::from_millis(250)).await?;
-                continue;
-            }
-            if outcome.status != CommandStatus::Accepted
-                || outcome.disposition != SpellCastDisposition::Cast
-                || outcome.actor_vitals_delta.is_none()
-            {
-                return Err(format!("CAST reply={outcome:?}").into());
-            }
-            let mut damage = 0_u64;
-            let window = tokio::time::Instant::now() + Duration::from_secs(3);
-            while damage == 0 && tokio::time::Instant::now() < window {
-                client.service_liveness(Duration::from_millis(50)).await?;
-                damage = client
-                    .take_events()
-                    .iter()
-                    .map(|event| cast_damage_in(event, own, victim))
-                    .sum();
-            }
-            let after = *client.actor_vitals().ok_or("post-cast vitals absent")?;
-            if damage == 0 {
-                return Err(format!(
-                    "CAST reply={outcome:?} produced no attributed spell damage frame; mana={}->{}",
-                    before.mana, after.mana
-                )
-                .into());
-            }
-            if damage.saturating_mul(2) >= self.profile.health
-                || client
-                    .world_entities()
-                    .is_none_or(|entities| entities.get(&victim).is_none())
-            {
-                return Err(format!("damage={damage} may be capped by {} health={}; needed=creature-with-spell-proof-health", self.creature, self.profile.health).into());
-            }
-            let session = client.join_snapshot().game_session_id;
-            let marker = format!(
-                "SEAM_EVIDENCE c12_base_damage session={} command={} target={} generation={} ",
-                hex_bytes(session.as_bytes()),
-                outcome.command_id,
-                hex_bytes(&victim.identity),
-                victim.generation,
-            );
-            let paired =
-                committed_base_damage(&self.cast_evidence_log, evidence_start, &marker, bps)?;
-            if paired.1 != damage {
-                return Err(format!("C12 owner pair does not reconcile with served damage: base_pair={paired:?} served={damage}").into());
-            }
-            evidence(&format!(
-                "C12 committed_cast command={} damage={damage} base_pair={paired:?} expected_bps={bps}",
-                outcome.command_id
-            ));
-            return Ok(damage);
+    ) -> TestResult<(u64, ActorVitals)> {
+        let victim = self.target(client).await?;
+        let own = own_entity(client)?;
+        let before = *client.actor_vitals().ok_or("pre-cast vitals absent")?;
+        client.take_events();
+        let sequence = client.last_server_sequence();
+        let evidence_start = std::fs::metadata(&self.cast_evidence_log)?.len();
+        let outcome = verdict::indexed_timeout(
+            COMMAND_BUDGET,
+            client.cast_spell(spell, SpellTarget::AttackTarget, true),
+        )
+        .await
+        .map_err(|_| format!("CAST deadline=8s last-frame={sequence}"))??;
+        require_mechanic_acceptance(outcome.status, "C12 CAST")?;
+        if outcome.disposition != SpellCastDisposition::Cast {
+            return Err(format!("CAST reply={outcome:?}").into());
         }
+        let vitals = outcome
+            .actor_vitals_delta
+            .as_ref()
+            .ok_or("C12 accepted cast omitted actor-vitals")?
+            .value;
+        if before.mana.checked_sub(CAST_MANA) != Some(vitals.mana) {
+            return Err(format!(
+                "C12 expected {CAST_MANA} mana spent, observed {} -> {}",
+                before.mana, vitals.mana
+            )
+            .into());
+        }
+        if client.actor_vitals() != Some(&vitals) {
+            return Err("C12 cast vitals were not applied to the client view".into());
+        }
+        let mut damage = 0_u64;
+        let window = tokio::time::Instant::now() + Duration::from_secs(3);
+        while damage == 0 && tokio::time::Instant::now() < window {
+            client.service_liveness(Duration::from_millis(50)).await?;
+            damage = client
+                .take_events()
+                .iter()
+                .map(|event| cast_damage_in(event, own, victim))
+                .sum();
+        }
+        let after = *client.actor_vitals().ok_or("post-cast vitals absent")?;
+        if damage == 0 {
+            return Err(format!(
+                "CAST reply={outcome:?} produced no attributed spell damage frame; mana={}->{}",
+                before.mana, after.mana
+            )
+            .into());
+        }
+        if damage.saturating_mul(2) >= self.profile.health
+            || client
+                .world_entities()
+                .is_none_or(|entities| entities.get(&victim).is_none())
+        {
+            return Err(format!("damage={damage} may be capped by {} health={}; needed=creature-with-spell-proof-health", self.creature, self.profile.health).into());
+        }
+        let session = client.join_snapshot().game_session_id;
+        let marker = format!(
+            "SEAM_EVIDENCE c12_base_damage session={} command={} target={} generation={} ",
+            hex_bytes(session.as_bytes()),
+            outcome.command_id,
+            hex_bytes(&victim.identity),
+            victim.generation,
+        );
+        let paired = committed_base_damage(&self.cast_evidence_log, evidence_start, &marker, bps)?;
+        if paired.1 != damage {
+            return Err(format!("C12 owner pair does not reconcile with served damage: base_pair={paired:?} served={damage}").into());
+        }
+        evidence(&format!(
+            "C12 committed_cast command={} damage={damage} base_pair={paired:?} expected_bps={bps}",
+            outcome.command_id
+        ));
+        Ok((damage, vitals))
     }
 }
 
-fn hex_bytes(bytes: &[u8]) -> String {
+pub(super) fn hex_bytes(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-fn committed_base_damage(
+pub(super) fn committed_base_damage(
     path: &Path,
     start: u64,
     marker: &str,
@@ -619,7 +653,7 @@ fn read_base_damage(
 }
 
 /// Damage to `victim` in presentation batches that also carry `own`'s SpellWords in the same decision.
-fn cast_damage_in(
+pub(super) fn cast_damage_in(
     event: &SessionEvent,
     own: oteryn_dev_client::EntityRef,
     victim: oteryn_dev_client::EntityRef,
@@ -664,7 +698,7 @@ async fn samples(
             .actor_vitals()
             .ok_or("pre-sample vitals absent")?
             .mana;
-        out.push(hunt.cast_damage(client, spell, bps).await?);
+        out.push(hunt.cast_damage(client, spell, bps).await?.0);
         if client
             .actor_vitals()
             .ok_or("post-sample vitals absent")?
@@ -677,6 +711,9 @@ async fn samples(
             )
             .into());
         }
+        // Greater Tiger Clash has an authored 8 s spell cooldown. Let the successful
+        // cast finish cooling down before the next sample or equipment phase.
+        client.service_liveness(Duration::from_secs(8)).await?;
     }
     Ok(out)
 }
@@ -691,6 +728,7 @@ async fn restore_cast_mana(client: &mut DevClientSession) -> TestResult {
         return Ok(());
     }
     let potion = provisioning::item_reference(&provisioning::item_index()?, MANA_POTION)?;
+    let before = carried_count(client, potion);
     let handle = client
         .inventory()
         .and_then(|inventory| {
@@ -702,7 +740,8 @@ async fn restore_cast_mana(client: &mut DevClientSession) -> TestResult {
         .map(|entry| entry.handle)
         .ok_or("C12 has insufficient mana and no carried Mana Potion")?;
     let result = client.use_item(handle).await?;
-    if result.status != CommandStatus::Accepted || result.disposition != UseDisposition::Committed {
+    require_mechanic_acceptance(result.status, "C12 Mana Potion USE")?;
+    if result.disposition != UseDisposition::Committed {
         return Err(format!("Mana Potion USE refused: {result:?}").into());
     }
     let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
@@ -715,10 +754,20 @@ async fn restore_cast_mana(client: &mut DevClientSession) -> TestResult {
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
-    Ok(())
+    let expected = before
+        .checked_sub(1)
+        .ok_or("C12 Mana Potion pre-state was empty")?;
+    wait_inventory(client, "Mana Potion consumption", |client| {
+        carried_count(client, potion) == expected
+    })
+    .await
 }
 
 async fn equip_right(client: &mut DevClientSession, definition: NonZeroU32) -> TestResult {
+    let carried = carried_count(client, definition);
+    if equipped_right(client, definition) || carried == 0 {
+        return Err("right-hand equip requires a carried item and a different pre-state".into());
+    }
     let handle = client
         .inventory()
         .and_then(|inventory| {
@@ -743,7 +792,7 @@ async fn equip_right(client: &mut DevClientSession, definition: NonZeroU32) -> T
         return Err(format!("right-hand ITEM_MOVE reply={moved:?}").into());
     }
     wait_inventory(client, "right-hand equipment", |c| {
-        equipped_right(c, definition)
+        equipped_right(c, definition) && carried_count(c, definition) == carried - 1
     })
     .await
 }
@@ -780,6 +829,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
         .ok_or("C12 combat state absent before logout")?;
     if state.target.is_some() {
         let reply = client.session_mut().attack_target(None).await?;
+        require_mechanic_acceptance(reply.status, "C12 clear attack")?;
         if reply.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
             return Err(format!("C12 clear attack before logout refused: {reply:?}").into());
         }
@@ -795,9 +845,9 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
         }
         client.service_liveness(Duration::from_millis(250)).await?;
     }
-    let reply = client.session_mut().logout().await?;
-    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("logout reply={:?}", reply.result).into());
+    let (result, detail, _, _) = logout_once(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C12 logout refused on first attempt: {detail}").into());
     }
     Ok(())
 }
@@ -815,7 +865,7 @@ fn weapon(client: &DevClientSession) -> TestResult<Option<NonZeroU32>> {
 fn pema_planned_price() -> TestResult<u64> {
     let trades = read_json("content/services/trade/trade-00000-00323.json")?;
     let key = format!("oteryn:item.tibia.i{ITEM_ID}");
-    trades["records"]
+    let authored = trades["records"]
         .as_array()
         .ok_or("trade records absent")?
         .iter()
@@ -826,7 +876,11 @@ fn pema_planned_price() -> TestResult<u64> {
         .flat_map(|declaration| declaration["offers"].as_array().into_iter().flatten())
         .find(|offer| offer["direction"] == "SellToPlayer" && offer["item"]["key"] == key)
         .and_then(|offer| offer["unit_price"].as_u64())
-        .ok_or_else(|| "authored Enpa-Deia Pema price for item 50271 absent".into())
+        .ok_or("authored Enpa-Deia Pema price for item 50271 absent")?;
+    if authored != PEMA_PRICE {
+        return Err(format!("C12 expected Pema price {PEMA_PRICE}, authored {authored}").into());
+    }
+    Ok(authored)
 }
 
 async fn walk_exact_route(
@@ -842,6 +896,7 @@ async fn walk_exact_route(
             return Err("C12 planned STEP does not change position".into());
         }
         let step = client.step(direction).await?;
+        require_mechanic_acceptance(step.status, "C12 STEP")?;
         let actual = tile(client.world_spatial().actor_position)?;
         if step.disposition != StepDisposition::Moved
             || step.world_spatial_delta.is_none()
@@ -882,7 +937,8 @@ async fn use_blue_valley_portal(
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let reply = client.use_object(&placement, 0).await?;
-    if reply.status != CommandStatus::Accepted || reply.disposition != UseDisposition::Committed {
+    require_mechanic_acceptance(reply.status, "C12 Blue Valley portal USE")?;
+    if reply.disposition != UseDisposition::Committed {
         return Err(format!("C12 Blue Valley portal {source:?} USE reply={reply:?}").into());
     }
     let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
@@ -905,7 +961,7 @@ async fn acquire_pema(
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
     definition: NonZeroU32,
-) -> TestResult {
+) -> TestResult<u64> {
     use oteryn_dev_client::client_runtime::npc_shop;
     use oteryn_protocol_oteryn::npc_service as npc;
 
@@ -1121,7 +1177,40 @@ async fn acquire_pema(
             floor: -7,
         },
     )
-    .await
+    .await?;
+    Ok(gold_after)
+}
+
+fn select_hunt<'a>(
+    client: &DevClientSession,
+    world: &'a BundleWorld,
+    spawns: &'a oteryn_world_bundle::spawn::Table,
+    profiles: &'a std::collections::BTreeMap<String, CreatureProfile>,
+) -> TestResult<Hunt<'a>> {
+    let from = tile(client.world_spatial().actor_position)?;
+    let (creature, _) = pick_creature(
+        spawns,
+        |key| profiles.get(key).map(|profile| profile.health),
+        |goal| {
+            let _ = route(world, from, goal);
+        },
+        |at| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+        },
+    )?;
+    let profile = profiles
+        .get(&creature)
+        .ok_or("selected creature profile absent")?;
+    Ok(Hunt {
+        world,
+        spawns,
+        creature,
+        profile,
+        cast_evidence_log: required("NODE_BOOT_CAST_EVIDENCE_LOG")?.into(),
+    })
 }
 
 async fn fresh_c12_admission(
@@ -1168,6 +1257,96 @@ async fn verify_seeded_monk(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+pub(super) async fn require_current_premium<S: oteryn_dev_client::native_session::SessionStream>(
+    session: &mut oteryn_dev_client::native_session::Session<S>,
+) -> TestResult {
+    use oteryn_protocol_oteryn::{character_info, premium_overview};
+    let reply = session
+        .gated_command(
+            character_info::CAPABILITY_CHARACTER_INFO_V1,
+            character_info::COMMAND_TYPE_CHARACTER_INFO,
+            &[premium_overview::OPERATION],
+        )
+        .await?;
+    require_mechanic_acceptance(reply.status, "C12 Premium overview")?;
+    verdict::Harness::global().progress("premium");
+    let overview = premium_overview::Overview::decode(&reply.payload)
+        .ok_or("C12 Premium overview decode failed")?;
+    evidence(&format!(
+        "C12_PREMIUM state={:?} authority_revision={} remaining_us={}",
+        overview.state, overview.authority_revision, overview.valid_for_us,
+    ));
+    if overview.state != premium_overview::State::Active || overview.valid_for_us == 0 {
+        return Err("C12 durable Premium has no usable lease after fresh admission".into());
+    }
+    Ok(())
+}
+
+pub(super) struct ClientCaptureSetup {
+    pub accounts: Vec<String>,
+    pub characters: Vec<[u8; 16]>,
+    pub definition: NonZeroU32,
+    pub target: oteryn_dev_client::EntityRef,
+    pub previous: oteryn_protocol_oteryn::GameSessionId,
+    pub position: TilePos,
+}
+
+// The capture starts on the fresh admission whose equipped state the client row proves.
+pub(super) async fn prepare_client_capture(
+    clients: &SeamClients<'_>,
+) -> TestResult<ClientCaptureSetup> {
+    character_prep::declare_seeded(
+        "C12.client",
+        "level-20-monk,premium,item-50271",
+        "capture Greater Tiger Clash with the augment equipped",
+    );
+    let dedicated =
+        character_prep::dedicated_character(clients, "NODE_BOOT_C12_MONK_ACCOUNT").await?;
+    let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
+    let dedicated_clients = &SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
+    if !requires_platform_grant(&dedicated_clients.accounts[1]) {
+        return Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into());
+    }
+    let mut client = prepare_c12_monk(dedicated_clients).await?;
+    character_prep::grant_premium(&client).await?;
+    character_prep::grant_item(&client, ITEM_ID, 1).await?;
+    client = fresh_c12_admission(client, dedicated_clients).await?;
+    verify_seeded_monk(&mut client).await?;
+    let definition = item_ref()?;
+    if carried_count(&client, definition) != 1 {
+        return Err("C12.client expected one carried weapon before equip".into());
+    }
+    equip_right(&mut client, definition).await?;
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
+    let profiles = creature_profiles()?;
+    let hunt = select_hunt(&client, world, &metadata.spawns, &profiles)?;
+    hunt.approach(&mut client).await?;
+    let target = hunt.wait_visible_target(&mut client).await?;
+    let previous = client.join_snapshot().game_session_id;
+    let position = tile(client.world_spatial().actor_position)?;
+    logout(&mut client).await?;
+    Ok(ClientCaptureSetup {
+        accounts,
+        characters,
+        definition,
+        target,
+        previous,
+        position,
+    })
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let definition = item_ref()?;
     let dedicated =
@@ -1202,34 +1381,23 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let coins = pema_planned_price()?.div_ceil(CRYSTAL_COIN_VALUE);
     character_prep::grant_item(&client, CRYSTAL_COIN, u32::try_from(coins)?).await?;
     client = fresh_c12_admission(client, clients).await?;
-    acquire_pema(&mut client, world, &metadata.npcs, definition).await?;
+    verify_seeded_monk(&mut client).await?;
+    let purchase_balance = acquire_pema(&mut client, world, &metadata.npcs, definition).await?;
+    let acquired = carried_count(&client, definition);
+    if acquired != 1 {
+        return Err(format!(
+            "expected one purchased item {ITEM_ID} in backpack; observed={acquired}"
+        )
+        .into());
+    }
+    row.pass("acquire-50271", (acquired, purchase_balance));
+
+    require_current_premium(client.session_mut()).await?;
     let spell_index = spell(&mut client)?;
     let augment = content_augment()?;
-    let from = tile(client.world_spatial().actor_position)?;
     let profiles = creature_profiles()?;
-    let (creature, _) = pick_creature(
-        &metadata.spawns,
-        |key| profiles.get(key).map(|profile| profile.health),
-        |goal| {
-            let _ = route(world, from, goal);
-        },
-        |at| {
-            world
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|tile| !tile.protection_zone())
-        },
-    )?;
-    let profile = profiles
-        .get(&creature)
-        .ok_or("selected creature profile absent")?;
-    let hunt = Hunt {
-        world,
-        spawns: &metadata.spawns,
-        creature,
-        profile,
-        cast_evidence_log: required("NODE_BOOT_CAST_EVIDENCE_LOG")?.into(),
-    };
+    let hunt = select_hunt(&client, world, &metadata.spawns, &profiles)?;
+    hunt.approach(&mut client).await?;
 
     let baseline_weapon = weapon(&client)?;
     if baseline_weapon == Some(definition) {
@@ -1245,15 +1413,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 )
             })??;
     row.record_cast("baseline-cast", &baseline, baseline_weapon);
-
-    let acquired = carried_count(&client, definition);
-    if acquired != 1 {
-        return Err(format!(
-            "expected one purchased item {ITEM_ID} in backpack; observed={acquired}"
-        )
-        .into());
-    }
-    row.pass("acquire-50271", acquired);
 
     equip_right(&mut client, definition).await?;
     let augmented = samples(&hunt, &mut client, spell_index, augment).await?;
@@ -1279,7 +1438,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("unequip ITEM_MOVE reply={moved:?}").into());
     }
     wait_inventory(&mut client, "unequip", |c| {
-        !equipped_right(c, definition) && carried_count(c, definition) > 0
+        !equipped_right(c, definition) && carried_count(c, definition) == 1
     })
     .await?;
     row.pass("unequip", client.last_server_sequence());
@@ -1295,9 +1454,20 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_character(clients, 0xc3, 1).await?;
-    if fresh.join_snapshot().game_session_id == old_session || !equipped_right(&fresh, definition) {
+    if fresh.join_snapshot().game_session_id == old_session
+        || !equipped_right(&fresh, definition)
+        || carried_count(&fresh, definition) != 0
+        || full_e2ef7::units(&fresh, definition) != 1
+    {
         return Err("fresh admission lost the right-hand item".into());
     }
+    let fresh_balance = full_e2ef7::player_gold(&mut fresh).await?;
+    if fresh_balance != purchase_balance {
+        return Err(format!(
+            "Pema purchase balance changed after relog: expected {purchase_balance}, observed {fresh_balance}"
+        ).into());
+    }
+    require_current_premium(fresh.session_mut()).await?;
     let fresh_spell_index = spell(&mut fresh)?;
     let replay = samples(&hunt, &mut fresh, fresh_spell_index, augment).await?;
     row.record_cast("fresh-admission", &replay, weapon(&fresh)?);
@@ -1342,15 +1512,17 @@ mod tests {
 
     #[test]
     fn c12_gap_names_the_stalled_command_and_unrun_steps() {
-        let line = gap("baseline-cast", "CAST deadline", &STEPS[1..]);
+        let line = gap("baseline-cast", "CAST deadline", &STEPS[2..]);
         assert!(line.starts_with("C12_GAP step=baseline-cast observed=CAST deadline"));
-        assert!(line.contains("not-run=acquire-50271,augmented-cast,unequip,unequipped-cast,fresh-admission,augment-attribution"));
+        assert!(line.contains(
+            "not-run=augmented-cast,unequip,unequipped-cast,fresh-admission,augment-attribution"
+        ));
     }
 
     #[test]
     fn pass_requires_every_step_in_order() {
         let mut row = Row::new();
-        row.pass("acquire-50271", "out of order");
+        row.pass("baseline-cast", "out of order");
         assert!(row.passed.is_empty());
         for step in STEPS {
             row.pass(step, "ok");
@@ -1360,14 +1532,14 @@ mod tests {
 
     #[test]
     fn content_binds_the_augment_to_the_item() -> TestResult {
-        assert!(content_augment()? > 0);
+        assert_eq!(content_augment()?, AUGMENT_BPS);
         assert_ne!(item_ref()?.get(), 0);
         Ok(())
     }
 
     #[test]
     fn the_declared_trade_sells_the_item() -> TestResult {
-        assert!(pema_planned_price()? > 0);
+        assert_eq!(pema_planned_price()?, PEMA_PRICE);
         Ok(())
     }
 }
