@@ -127,16 +127,30 @@ fn visible(client: &DevClientSession, target: oteryn_dev_client::EntityRef) -> b
         .world_entities()
         .is_some_and(|entities| entities.iter().any(|e| e.entity == target))
 }
-fn damage_sequence(
-    client: &mut DevClientSession,
-    attacker: oteryn_dev_client::EntityRef,
-    target: oteryn_dev_client::EntityRef,
-) -> u64 {
-    use oteryn_protocol_oteryn::presentation::PresentationEventKind;
-    client.take_events().into_iter().filter_map(|event| match event {
-        SessionEvent::Presentation(delta) if delta.value.iter().any(|event| matches!(event.kind, PresentationEventKind::ValueText { attacker: Some(a), target: t, primary, .. } if a == attacker && t == target && primary.value > 0)) => Some(delta.server_sequence),
-        _ => None,
-    }).max().unwrap_or(0)
+fn damage_sequence(client: &mut DevClientSession, rat: oteryn_dev_client::EntityRef) -> u64 {
+    use oteryn_protocol_oteryn::analyser::{AnalyserDamageSource, AnalyserFact};
+    client
+        .take_events()
+        .into_iter()
+        .filter_map(|event| match event {
+            SessionEvent::AnalyserAttributedFacts(delta)
+                if delta.value.iter().any(|event| {
+                    event.attacker == Some(rat)
+                        && matches!(
+                            event.fact,
+                            AnalyserFact::DamageInput {
+                                source: AnalyserDamageSource::Creature(_),
+                                ..
+                            }
+                        )
+                }) =>
+            {
+                Some(delta.server_sequence)
+            }
+            _ => None,
+        })
+        .max()
+        .unwrap_or(0)
 }
 async fn logout(client: &mut DevClientSession) -> TestResult {
     let (result, detail, _, _) = logout_once(client).await?;
@@ -439,6 +453,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .await?
         .entity;
     let caster_ref = own(&caster)?;
+    if !caster
+        .session_mut()
+        .is_selected(oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1)
+    {
+        return Err("FIXTURE C17b requires analyser hit attribution capability 486".into());
+    }
     let caster_tile = tile(caster.world_spatial().actor_position)?;
     let rat_tile = caster
         .world_entities()
@@ -470,7 +490,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         let mut damage = 0;
         loop {
             caster.service_liveness(Duration::from_millis(100)).await?;
-            damage = damage.max(damage_sequence(&mut caster, rat, caster_ref));
+            damage = damage.max(damage_sequence(&mut caster, rat));
             let health = caster.actor_vitals().ok_or("C17b visible caster vitals absent")?.health;
             if damage != 0 && health < visible_health {
                 evidence(&format!("FIXTURE C17b attributed_rat_damage sequence={damage} health_before={visible_health} health_after={health}"));
@@ -565,7 +585,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let no_damage_until = tokio::time::Instant::now() + Duration::from_secs(3);
     while tokio::time::Instant::now() < no_damage_until {
         caster.service_liveness(Duration::from_millis(100)).await?;
-        if damage_sequence(&mut caster, rat, caster_ref) != 0
+        if damage_sequence(&mut caster, rat) != 0
             || caster
                 .actor_vitals()
                 .is_none_or(|vitals| vitals.health < hidden_health)
