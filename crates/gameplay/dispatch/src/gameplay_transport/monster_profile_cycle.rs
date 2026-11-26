@@ -16,6 +16,16 @@ pub(super) mod rotten_waves;
 pub(super) mod source_heals;
 mod source_items;
 
+// Match the existing visible-actor admission chunk. The much larger AI window
+// is a scheduling budget, not a budget for one checked-out durability holder.
+pub(super) const PROFILES_PER_PASS: usize = 32;
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static PROFILE_CHECKOUT_BARRIER:
+        Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
 pub(super) fn publish_native_facing(
     runtime: &mut ChannelRuntimeV1,
     table: &crate::ai_think::CreatureAiTable,
@@ -297,10 +307,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 #[cfg(test)]
                 native_owner_turn(room, "profile_checkout", "refused");
             })
-            .map_err(|_| {
+            .map_err(|error| {
                 // An older source action owns its place even when the holder
                 // refuses. Only a fresh, unordered profile attempt may yield to melee.
-                if has_due_source
+                if !matches!(error, crate::durability::DurabilityError::RootUnavailable)
+                    || has_due_source
                     || native_pending.is_some()
                     || primal_pending.is_some()
                     || runtime.has_pending_source_creature_deaths()
@@ -315,6 +326,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })?;
         #[cfg(test)]
         native_owner_turn(room, "profile_checkout", "acquired");
+        #[cfg(test)]
+        if let Ok(barrier) = PROFILE_CHECKOUT_BARRIER.try_with(Arc::clone) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
+        }
         let (next_due, proposals, native_actors, ran_profile) = {
             let mut context = (
                 self,
@@ -534,7 +550,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             None => {
                                 #[cfg(test)]
                                 native_owner_turn(room, "native_reservation", "begin");
-                                Arc::new(table.reserve_current_thinks(runtime,now)
+                                Arc::new(table.reserve_current_thinks_up_to(runtime, now, PROFILES_PER_PASS)
                                     .inspect(|_batch| {
                                         #[cfg(test)]
                                         native_owner_turn(room, "native_reservation", if _batch.occurrences().is_empty() { "empty" } else { "nonempty" });

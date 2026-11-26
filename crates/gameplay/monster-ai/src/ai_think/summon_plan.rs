@@ -454,19 +454,31 @@ impl CreatureAiTable {
         runtime: &mut ChannelRuntimeV1,
         now_us: u64,
     ) -> Option<ReservedNativeThinkBatch> {
-        self.reserve_current_thinks_where(runtime, now_us, |_, _, _| true)
+        self.reserve_current_thinks_up_to(runtime, now_us, CREATUREAI0_THINKS_PER_WINDOW)
+    }
+
+    /// Reserve a smaller cohort for a holder-backed pass. Actors beyond the
+    /// cap retain their due times and priority in the next reservation.
+    pub fn reserve_current_thinks_up_to(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        now_us: u64,
+        limit: usize,
+    ) -> Option<ReservedNativeThinkBatch> {
+        self.reserve_current_thinks_where(runtime, now_us, limit, |_, _, _| true)
     }
 
     fn reserve_current_thinks_where(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         now_us: u64,
+        limit: usize,
         accepts: impl Fn(&ChannelRuntimeV1, ExactActorRef, &CreatureAiState) -> bool,
     ) -> Option<ReservedNativeThinkBatch> {
         let stamp = runtime.issue_owner_work().ok()?;
         let pin = native_think_pin(runtime);
-        let (taken, _) =
-            self.take_due_bounded_where(now_us, |actor, state| accepts(runtime, actor, state));
+        let (taken, _) = self
+            .take_due_bounded_where(now_us, limit, |actor, state| accepts(runtime, actor, state));
         let mut entries = Vec::with_capacity(taken.len());
         for actor in taken {
             if runtime.live_creature_health(actor).is_none() {
@@ -556,9 +568,7 @@ impl CreatureAiTable {
         self.run_reserved_thinks(
             runtime,
             batch,
-            root,
-            revisions,
-            players,
+            (root, revisions, players),
             Some(reader),
             consume,
         )
@@ -578,8 +588,11 @@ impl CreatureAiTable {
     ) -> Vec<(ExactActorRef, ThinkReport)> {
         use crate::content::{ProjectV2AbilityKind, ProjectV2BehaviorEvent};
 
-        let Some(batch) =
-            self.reserve_current_thinks_where(runtime, now_us, |runtime, actor, state| {
+        let Some(batch) = self.reserve_current_thinks_where(
+            runtime,
+            now_us,
+            CREATUREAI0_THINKS_PER_WINDOW,
+            |runtime, actor, state| {
                 let profile = state.profile();
                 let behavior = profile.behavior();
                 profile.is_native()
@@ -607,33 +620,25 @@ impl CreatureAiTable {
                             && state.creature_revision.as_deref()
                                 == Some(policy.definition_revision.as_str())
                     })
-            })
-        else {
+            },
+        ) else {
             return Vec::new();
         };
         self.run_reserved_thinks(
             runtime,
             &batch,
-            root,
-            revisions,
-            players,
+            (root, revisions, players),
             None::<&mut summon_path::NativeMonsterThinkRead<'_, '_, '_>>,
             |_, _, _, _, _| {},
         )
         .await
     }
 
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "shared fenced native think with optional Map-backed consumers"
-    )]
     async fn run_reserved_thinks<R: MonsterThinkReader>(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         batch: &ReservedNativeThinkBatch,
-        root: &GameplayDecisionRoot,
-        revisions: &RevisionSet,
-        players: &[TargetCandidate],
+        (root, revisions, players): (&GameplayDecisionRoot, &RevisionSet, &[TargetCandidate]),
         mut reader: Option<&mut R>,
         mut consume: impl FnMut(&mut ChannelRuntimeV1, &mut Self, ExactActorRef, &ThinkReport, &mut R),
     ) -> Vec<(ExactActorRef, ThinkReport)> {

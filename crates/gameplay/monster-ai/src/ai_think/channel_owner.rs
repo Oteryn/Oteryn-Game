@@ -178,12 +178,13 @@ impl CreatureAiTable {
     /// collects nor sorts every due think, so a backlog of n due thinks costs a window
     /// `O(n log 1,024)` reads and `O(1,024)` memory instead of an `O(n log n)` sort of n.
     pub fn take_due_bounded(&mut self, now_us: u64) -> (Vec<ExactActorRef>, Option<u64>) {
-        self.take_due_bounded_where(now_us, |_, _| true)
+        self.take_due_bounded_where(now_us, CREATUREAI0_THINKS_PER_WINDOW, |_, _| true)
     }
 
     pub(super) fn take_due_bounded_where(
         &mut self,
         now_us: u64,
+        limit: usize,
         accepts: impl Fn(ExactActorRef, &CreatureAiState) -> bool,
     ) -> (Vec<ExactActorRef>, Option<u64>) {
         let window = now_us / CREATUREAI0_THINK_WINDOW_MICROS;
@@ -191,7 +192,7 @@ impl CreatureAiTable {
             self.window = Some(window);
             self.window_started = 0;
         }
-        let budget = CREATUREAI0_THINKS_PER_WINDOW.saturating_sub(self.window_started);
+        let budget = limit.min(CREATUREAI0_THINKS_PER_WINDOW.saturating_sub(self.window_started));
         let mut taken = BinaryHeap::with_capacity(budget.min(self.entries.len()));
         let mut rest: Option<u64> = None;
         let mut leave = |due: u64| rest = Some(rest.map_or(due, |rest| rest.min(due)));
