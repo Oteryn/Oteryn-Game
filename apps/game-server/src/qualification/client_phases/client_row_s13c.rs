@@ -80,7 +80,7 @@ async fn party(
     Ok(state)
 }
 
-async fn effects(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
+async fn effects(client: &mut DevClientSession) -> TestResult<(Vec<u8>, u64)> {
     let reply = client
         .session_mut()
         .gated_command(
@@ -94,7 +94,7 @@ async fn effects(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
     {
         return Err(format!("step=effects status={:?} malformed", reply.status).into());
     }
-    Ok(reply.payload)
+    Ok((reply.payload, reply.server_sequence))
 }
 
 fn own_ref(
@@ -167,9 +167,14 @@ async fn flow(clients: &SeamClients<'_>, strict: bool) -> TestResult<Observed> {
     } else {
         connect_character(clients, 0x65, 1).await?
     };
+    use full_row_s13c as full;
     let mut peer = connect_character(clients, 0x66, 0).await?;
     for client in [&mut caster, &mut peer] {
-        if !party(client, None).await?.members.is_empty() {
+        let state = party(client, None).await?;
+        if strict && !full::clean_party(&state) {
+            return Err("party state already present".into());
+        }
+        if !state.members.is_empty() {
             party(client, Some(parties::PartyIntent::Leave)).await?;
         }
     }
@@ -218,6 +223,10 @@ async fn flow(clients: &SeamClients<'_>, strict: bool) -> TestResult<Observed> {
         .actor_vitals()
         .copied()
         .ok_or("caster vitals absent")?;
+    if strict {
+        full::require_clear_effects(&mut caster).await?;
+        full::require_clear_effects(&mut peer).await?;
+    }
     let solo = if strict {
         caster
             .cast_spell(index, casts::SpellTarget::None, false)
@@ -225,7 +234,10 @@ async fn flow(clients: &SeamClients<'_>, strict: bool) -> TestResult<Observed> {
     } else {
         cast_through_cooldown(&mut caster, index).await?
     };
-    if (strict && solo.disposition != casts::SpellCastDisposition::Rejected)
+    if (strict
+        && (solo.disposition != casts::SpellCastDisposition::Rejected
+            || solo.status != CommandStatus::Rejected
+            || solo.actor_vitals_delta.is_some()))
         || solo.disposition == casts::SpellCastDisposition::Cast
         || caster.actor_vitals().copied() != Some(vitals)
     {
@@ -243,9 +255,18 @@ async fn flow(clients: &SeamClients<'_>, strict: bool) -> TestResult<Observed> {
             && at.x.abs_diff(peer_start.x).max(at.y.abs_diff(peer_start.y)) <= 1
     })
     .ok_or("step=walk no route beside the member")?;
+    if strict && path.is_empty() {
+        return Err("party staging route does not move the caster".into());
+    }
     for direction in path {
         let (moved, serviced) = join(
-            walk(&mut caster, world, &[direction]),
+            async {
+                if strict {
+                    full::walk_once(&mut caster, world, direction).await
+                } else {
+                    walk(&mut caster, world, &[direction]).await
+                }
+            },
             peer.service_liveness(Duration::from_millis(10)),
         )
         .await;
@@ -261,14 +282,26 @@ async fn flow(clients: &SeamClients<'_>, strict: bool) -> TestResult<Observed> {
         Some(parties::PartyIntent::Invite(own_ref(&peer)?)),
     )
     .await?;
-    let invitation = party(&mut peer, None)
-        .await?
-        .invitations
-        .first()
-        .ok_or("step=invite no invitation")?
-        .handle;
+    let invitations = party(&mut peer, None).await?;
+    let invitation = if strict {
+        full::caster_invitation(&invitations)?
+    } else {
+        invitations
+            .invitations
+            .first()
+            .ok_or("step=invite no invitation")?
+            .handle
+    };
     party(&mut peer, Some(parties::PartyIntent::Accept(invitation))).await?;
 
+    if strict
+        && !full::same_roster(
+            &party(&mut caster, None).await?,
+            &party(&mut peer, None).await?,
+        )
+    {
+        return Err("party accept did not produce matching two-member rosters".into());
+    }
     let before = caster
         .actor_vitals()
         .copied()
@@ -281,7 +314,13 @@ async fn flow(clients: &SeamClients<'_>, strict: bool) -> TestResult<Observed> {
         cast_through_cooldown(&mut caster, index).await?
     };
     let after = caster.actor_vitals().copied().ok_or("caster vitals lost")?;
-    if cast.disposition != casts::SpellCastDisposition::Cast || after.mana >= before.mana {
+    if cast.disposition != casts::SpellCastDisposition::Cast
+        || after.mana >= before.mana
+        || (strict
+            && (cast.status != CommandStatus::Accepted
+                || cast.actor_vitals_delta.as_ref().map(|delta| delta.value) != Some(after)
+                || before.mana.checked_sub(216) != Some(after.mana)))
+    {
         return Err(
             format!("step=cast observed {cast:?} before={before:?} after={after:?}").into(),
         );
@@ -289,24 +328,101 @@ async fn flow(clients: &SeamClients<'_>, strict: bool) -> TestResult<Observed> {
     let shared_effects = if strict {
         None
     } else {
-        Some((effects(&mut caster).await?, effects(&mut peer).await?))
+        Some((effects(&mut caster).await?.0, effects(&mut peer).await?.0))
     };
     let refused_vitals = caster.actor_vitals().copied();
     let refused = caster
         .cast_spell(index, casts::SpellTarget::None, false)
         .await?;
     if refused.disposition != casts::SpellCastDisposition::CoolingDown
+        || (strict
+            && (refused.status != CommandStatus::Accepted || refused.actor_vitals_delta.is_some()))
         || caster.actor_vitals().copied() != refused_vitals
     {
         return Err(format!("step=cooldown observed {refused:?}").into());
     }
     let (caster_effects, member_effects) = match shared_effects {
         Some(pair) => pair,
-        None => (effects(&mut caster).await?, effects(&mut peer).await?),
+        None => {
+            let (caster_effects, caster_sequence) = effects(&mut caster).await?;
+            let caster_binding = (caster.join_snapshot().game_session_id, caster_sequence);
+            let (member_effects, member_sequence) = effects(&mut peer).await?;
+            let member_binding = (peer.join_snapshot().game_session_id, member_sequence);
+            if caster_binding.0 == member_binding.0
+                || caster_binding.1 == 0
+                || member_binding.1 == 0
+            {
+                return Err("invalid party effects capture binding".into());
+            }
+            let remaining = |payload: &[u8]| {
+                full::enchant_effect(
+                    party_effects::PartyEffects::decode(payload)
+                        .ok_or("malformed party effects capture")?,
+                )
+            };
+            let caster_remaining = remaining(&caster_effects)?;
+            let member_remaining = remaining(&member_effects)?;
+            let root = std::env::temp_dir()
+                .join(format!("s13c-{}", uuid_text(caster_binding.0.as_bytes())));
+            std::fs::create_dir(&root)?;
+            let capture = |role,
+                           (session, sequence): (oteryn_protocol_oteryn::GameSessionId, u64),
+                           payload: &[u8]|
+             -> TestResult<_> {
+                use std::io::Write;
+                let path = root.join(format!(
+                    "{role}-{}-{sequence}.bin",
+                    uuid_text(session.as_bytes())
+                ));
+                std::fs::OpenOptions::new()
+                    .create_new(true)
+                    .write(true)
+                    .open(&path)?
+                    .write_all(payload)?;
+                Ok(path)
+            };
+            let caster_file = capture("caster", caster_binding, &caster_effects)?;
+            let member_file = capture("member", member_binding, &member_effects)?;
+            full::logout(&mut peer).await?;
+            full::logout(&mut caster).await?;
+            drop((caster, peer));
+            let [saved_peer, saved_caster] = full::saved_enchant_timers(clients).await?;
+            caster = connect_character(clients, 0x67, 1).await?;
+            peer = connect_character(clients, 0x68, 0).await?;
+            full::require_reloaded_effect(
+                &mut caster,
+                caster_binding.0,
+                caster_remaining,
+                saved_caster,
+            )
+            .await?;
+            full::require_reloaded_effect(
+                &mut peer,
+                member_binding.0,
+                member_remaining,
+                saved_peer,
+            )
+            .await?;
+            let caster_replay = std::fs::read(caster_file)?;
+            let member_replay = std::fs::read(member_file)?;
+            if caster_replay != caster_effects || member_replay != member_effects {
+                return Err("session-bound capture differs from live response".into());
+            }
+            (caster_replay, member_replay)
+        }
     };
     for client in [&mut peer, &mut caster] {
-        party(client, Some(parties::PartyIntent::Leave)).await?;
-        let _ = client.session_mut().logout().await;
+        if !strict || !party(client, None).await?.members.is_empty() {
+            party(client, Some(parties::PartyIntent::Leave)).await?;
+        }
+        if strict {
+            if !full::clean_party(&party(client, None).await?) {
+                return Err("party state remained after leave".into());
+            }
+            full::logout(client).await?;
+        } else {
+            let _ = client.session_mut().logout().await;
+        }
     }
     Ok(Observed {
         words,

@@ -119,7 +119,9 @@ async fn party(
     Ok(state)
 }
 
-async fn effects(client: &mut DevClientSession) -> TestResult<party_effects::PartyEffects> {
+pub(super) async fn effects(
+    client: &mut DevClientSession,
+) -> TestResult<party_effects::PartyEffects> {
     let reply = client
         .session_mut()
         .gated_command(
@@ -140,7 +142,7 @@ async fn effects(client: &mut DevClientSession) -> TestResult<party_effects::Par
     })
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
@@ -190,14 +192,41 @@ pub(super) fn spell_index(
         .ok_or_else(|| format!("compiled spell has no index: {words}").into())
 }
 
-fn same_roster(a: &parties::PartyResult, b: &parties::PartyResult) -> bool {
-    let names = |v: &parties::PartyResult| {
-        v.members
-            .iter()
-            .map(|m| (m.name.clone(), m.leader))
-            .collect::<BTreeSet<_>>()
-    };
-    a.members.len() == 2 && b.members.len() == 2 && names(a) == names(b)
+const CASTER_NAME: &str = "S Thirteen C Caster";
+
+pub(super) fn clean_party(state: &parties::PartyResult) -> bool {
+    state.members.is_empty() && state.invitations.is_empty()
+}
+
+pub(super) fn caster_invitation(state: &parties::PartyResult) -> TestResult<u64> {
+    match state.invitations.as_slice() {
+        [entry]
+            if state.members.is_empty() && entry.name == CASTER_NAME && entry.expires_at > 0 =>
+        {
+            Ok(entry.handle)
+        }
+        _ => Err(format!(
+            "step=invite expected one invitation from {CASTER_NAME}, observed {state:?}"
+        )
+        .into()),
+    }
+}
+
+pub(super) fn same_roster(a: &parties::PartyResult, b: &parties::PartyResult) -> bool {
+    let expected = BTreeSet::from([
+        (CASTER_NAME.to_owned(), true),
+        ("Packet One".to_owned(), false),
+    ]);
+    [a, b].into_iter().all(|state| {
+        state.members.len() == 2
+            && state.invitations.is_empty()
+            && state
+                .members
+                .iter()
+                .map(|m| (m.name.clone(), m.leader))
+                .collect::<BTreeSet<_>>()
+                == expected
+    })
 }
 
 fn cast_requirement(disposition: casts::SpellCastDisposition) -> &'static str {
@@ -220,12 +249,20 @@ pub(super) async fn prepare_caster(
         "sorcerer-level-32,premium",
         "Ordinary leveling to the party spell prerequisite exceeds the row budget",
     );
-    let caster = character_prep::Seeded {
-        profile: "s13-party",
-        reason: "Enchant Party requires level 32",
-    }
-    .connect(clients, tag, 1)
+    let mut initial = connect_character(clients, tag, 1).await?;
+    let session = initial.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(session.as_bytes()),
+        "--profile",
+        "s13-party".into(),
+    )
     .await?;
+    logout(&mut initial).await?;
+    drop(initial);
+    let caster = connect_character(clients, tag, 1).await?;
+    if caster.join_snapshot().game_session_id == session {
+        return Err("seeded caster reused its previous session".into());
+    }
     character_prep::grant_premium(&caster).await?;
     Ok(caster)
 }
@@ -241,6 +278,110 @@ pub(super) async fn require_seeded_caster(
             "step=seeded-caster expected level 32 and 216 mana, observed level={level} mana={mana}"
         )
         .into());
+    }
+    Ok(())
+}
+
+pub(super) async fn walk_once(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    direction: StepDirection,
+) -> TestResult {
+    let before = tile(client.world_spatial().actor_position)?;
+    let expected = destination(world, before, direction).ok_or("planned step has no landing")?;
+    let outcome = client.step(direction).await?;
+    let actual = tile(client.world_spatial().actor_position)?;
+    if outcome.disposition != StepDisposition::Moved || before == expected || actual != expected {
+        return Err(format!(
+            "step=walk from={before:?} expected={expected:?} actual={actual:?} disposition={:?}",
+            outcome.disposition
+        )
+        .into());
+    }
+    Ok(())
+}
+
+pub(super) async fn require_clear_effects(client: &mut DevClientSession) -> TestResult {
+    if effects(client).await?.party_spell_remaining_ms != [0; 5] {
+        return Err("party spell condition already present before cast".into());
+    }
+    Ok(())
+}
+
+pub(super) fn enchant_effect(snapshot: party_effects::PartyEffects) -> TestResult<u32> {
+    let [0, 0, remaining @ 1..=120_000, 0, 0] = snapshot.party_spell_remaining_ms else {
+        return Err(format!(
+            "unexpected Enchant Party timers: {:?}",
+            snapshot.party_spell_remaining_ms
+        )
+        .into());
+    };
+    Ok(remaining)
+}
+
+pub(super) async fn saved_enchant_timers(clients: &SeamClients<'_>) -> TestResult<[u32; 2]> {
+    use oteryn_gameplay_domain::domain::condition::ConditionValues;
+    use oteryn_gameplay_foundation::foundation::condition::ConditionStore;
+
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let mut saved = [0; 2];
+    let characters = clients
+        .characters
+        .first_chunk::<2>()
+        .ok_or("missing party character identities")?;
+    for (timer, character) in saved.iter_mut().zip(characters) {
+        let snapshot: serde_json::Value = sqlx::query_scalar(
+            "SELECT snapshot FROM game_character_condition_snapshots WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(character.as_slice())
+        .fetch_one(&mut database)
+        .await?;
+        let store = ConditionStore::from_persistent_snapshot(&snapshot, 0)
+            .map_err(|error| format!("invalid saved condition snapshot: {error:?}"))?;
+        let mut enchant = store.instances().iter().filter(|instance| {
+            instance.definition().key() == "candidate:spell/enchant_party/effect-attributes"
+        });
+        let effect = enchant
+            .next()
+            .ok_or("logout did not persist Enchant Party")?;
+        if enchant.next().is_some()
+            || !matches!(
+                effect.definition().values(),
+                ConditionValues::SpellSkills {
+                    duration_ms: 120_000,
+                    magic_level: 1,
+                    ..
+                }
+            )
+        {
+            return Err("logout did not persist the exact Enchant Party skill effect".into());
+        }
+        *timer = u32::try_from(
+            effect
+                .remaining_duration_ms(0)
+                .ok_or("saved timer absent")?,
+        )?;
+    }
+    database.close().await?;
+    evidence(&format!(
+        "S13C_PG_SNAPSHOT peer_ms={} caster_ms={} duration_ms=120000 magic_level=1",
+        saved[0], saved[1]
+    ));
+    Ok(saved)
+}
+
+pub(super) async fn require_reloaded_effect(
+    client: &mut DevClientSession,
+    old_session: oteryn_protocol_oteryn::GameSessionId,
+    remaining_before: u32,
+    saved_remaining: u32,
+) -> TestResult {
+    let remaining = enchant_effect(effects(client).await?)?;
+    if client.join_snapshot().game_session_id == old_session
+        || remaining >= remaining_before
+        || remaining > saved_remaining
+    {
+        return Err(format!("step=fresh-admission expected continued countdown below {remaining_before}, observed {remaining}").into());
     }
     Ok(())
 }
@@ -266,8 +407,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut caster = prepare_caster(clients, 0xc3).await?;
     let mut peer = connect_character(clients, 0xc4, 0).await?;
     if caster.join_snapshot().game_session_id == peer.join_snapshot().game_session_id
-        || !party(&mut caster, None).await?.members.is_empty()
-        || !party(&mut peer, None).await?.members.is_empty()
+        || !clean_party(&party(&mut caster, None).await?)
+        || !clean_party(&party(&mut peer, None).await?)
     {
         return Err("step=two-admissions observed=duplicate-session-or-nonempty-party need=two-clean-characters".into());
     }
@@ -281,9 +422,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             && at.x.abs_diff(peer_start.x).max(at.y.abs_diff(peer_start.y)) <= 1
     })
     .ok_or("step=walk observed=no-route need=walkable-adjacent-tile")?;
+    if path.is_empty() {
+        return Err("party staging route does not move the caster".into());
+    }
     for direction in path {
         let (moved, serviced) = join(
-            walk(&mut caster, world, &[direction]),
+            walk_once(&mut caster, world, direction),
             peer.service_liveness(Duration::from_millis(10)),
         )
         .await;
@@ -299,12 +443,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         Some(parties::PartyIntent::Invite(own_ref(&peer)?)),
     )
     .await?;
-    let invitations = party(&mut peer, None).await?;
-    let invitation = invitations
-        .invitations
-        .first()
-        .ok_or("step=invite observed=no-invitation need=peer-party-delta")?
-        .handle;
+    let invitation = caster_invitation(&party(&mut peer, None).await?)?;
     party(&mut peer, Some(parties::PartyIntent::Accept(invitation))).await?;
     if !same_roster(
         &party(&mut caster, None).await?,
@@ -315,11 +454,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("walk-invite-accept");
 
     let words = "utori mas sio";
-    let slot = 2;
     let book = spell_book()?;
     let index = spell_index(&book, words)?;
     let spell = book.indexed(index).ok_or("indexed party spell absent")?;
     require_seeded_caster(&mut caster, spell).await?;
+    require_clear_effects(&mut caster).await?;
+    require_clear_effects(&mut peer).await?;
     let before = caster
         .actor_vitals()
         .copied()
@@ -331,7 +471,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if cast.status != CommandStatus::Accepted
         || cast.disposition != casts::SpellCastDisposition::Cast
         || cast.actor_vitals_delta.as_ref().map(|d| d.value) != Some(after)
-        || after.mana >= before.mana
+        || before.mana.checked_sub(216) != Some(after.mana)
     {
         return Err(format!(
             "step=cast spell={words:?} required_level={} mana={:?} premium={} learned_required={} observed={cast:?} before={before:?} after={after:?} need={}",
@@ -358,13 +498,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     row.pass("cooldown-refusal");
-    let caster_effects = effects(&mut caster).await?;
-    let peer_effects = effects(&mut peer).await?;
-    if caster_effects.party_spell_remaining_ms[slot] == 0
-        || peer_effects.party_spell_remaining_ms[slot] == 0
-    {
-        return Err(format!("step=member-condition observed=caster-{caster_effects:?}-peer-{peer_effects:?} need=nonzero-slot-{slot}").into());
-    }
+    let caster_remaining = enchant_effect(effects(&mut caster).await?)?;
+    let peer_remaining = enchant_effect(effects(&mut peer).await?)?;
     row.pass("member-condition-deltas");
 
     let sessions = [
@@ -374,24 +509,21 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     logout(&mut peer).await?;
     logout(&mut caster).await?;
     drop((caster, peer));
+    let [saved_peer, saved_caster] = saved_enchant_timers(clients).await?;
     let mut caster = connect_character(clients, 0xc5, 1).await?;
     let mut peer = connect_character(clients, 0xc6, 0).await?;
-    if caster.join_snapshot().game_session_id == sessions[0]
-        || peer.join_snapshot().game_session_id == sessions[1]
-        || effects(&mut caster).await?.party_spell_remaining_ms[slot] == 0
-        || effects(&mut peer).await?.party_spell_remaining_ms[slot] == 0
-    {
-        return Err(format!("step=fresh-admission observed=missing-slot-{slot}-or-reused-session need=durable-condition-reload").into());
-    }
+    require_reloaded_effect(&mut caster, sessions[0], caster_remaining, saved_caster).await?;
+    require_reloaded_effect(&mut peer, sessions[1], peer_remaining, saved_peer).await?;
     row.pass("fresh-admission-condition");
-    if !party(&mut peer, None).await?.members.is_empty() {
-        party(&mut peer, Some(parties::PartyIntent::Leave)).await?;
+    for client in [&mut peer, &mut caster] {
+        if !party(client, None).await?.members.is_empty() {
+            party(client, Some(parties::PartyIntent::Leave)).await?;
+        }
+        if !clean_party(&party(client, None).await?) {
+            return Err("party state remained after leave".into());
+        }
+        logout(client).await?;
     }
-    if !party(&mut caster, None).await?.members.is_empty() {
-        party(&mut caster, Some(parties::PartyIntent::Leave)).await?;
-    }
-    logout(&mut peer).await?;
-    logout(&mut caster).await?;
     row.pass("final-logout");
     Ok(())
 }
