@@ -17,7 +17,7 @@ fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
 async fn search_command(
     client: &mut DevClientSession,
     request: wire::Request,
-) -> TestResult<(wire::Reply, serde_json::Value)> {
+) -> TestResult<(wire::Reply, Vec<u8>)> {
     let payload = wire::encode_request(request).map_err(|error| format!("encode {error:?}"))?;
     let response = client
         .session_mut()
@@ -31,13 +31,13 @@ async fn search_command(
         return Err(format!("depot search status {:?}", response.status).into());
     }
     let reply = wire::decode_reply(&response.payload).map_err(|error| format!("decode {error:?}"))?;
-    let envelope = serde_json::json!({
-        "game_session_id": uuid_text(client.join_snapshot().game_session_id.as_bytes()),
-        "command_id": response.command_id,
-        "server_sequence": response.server_sequence,
-        "status": response.status as u64,
-        "payload": response.payload,
-    });
+    let envelope = capture_envelope::encode(
+        client.join_snapshot().game_session_id.as_bytes(),
+        response.command_id,
+        response.server_sequence,
+        response.status as u64,
+        &response.payload,
+    )?;
     Ok((reply, envelope))
 }
 
@@ -243,13 +243,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         capture(
             capture_root,
             &format!("n03-list-{index}.json"),
-            &serde_json::to_vec(envelope)?,
+            envelope,
         )?;
     }
     capture(
         capture_root,
         "n03-retrieve.json",
-        &serde_json::to_vec(&retrieved_envelope)?,
+        &retrieved_envelope,
     )?;
     capture(capture_root, "n03-expected.txt", expected.as_bytes())?;
     Ok(format!(

@@ -26,6 +26,8 @@ include!("floor_journey.rs");
 include!("full_e2ef7_mount.rs");
 include!("full_row_c03_mount.rs");
 include!("full_row_c12_mount.rs");
+#[path = "capture_envelope.rs"]
+mod capture_envelope;
 include!("client_row_c01_mount.rs");
 include!("client_row_c02_mount.rs");
 include!("client_row_c03_mount.rs");

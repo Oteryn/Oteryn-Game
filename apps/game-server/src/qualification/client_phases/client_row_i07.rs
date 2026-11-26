@@ -45,6 +45,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     pouch.fallback_to_main = true;
     let requests = [skip, accept, pouch, request(QuickLootAction::LootAll)];
     let mut payloads = Vec::new();
+    let capture_dir = std::env::var_os("E2E_ALL_CAPTURE_DIR");
     let mut item_count = 0;
     for (index, request) in requests.into_iter().enumerate() {
         let payload = encode_quick_loot_request(&request).map_err(|error| format!("{error:?}"))?;
@@ -61,9 +62,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             item_count = decode_quick_loot_result(&reply.payload)
                 .map_err(|error| format!("quick-loot reply: {error:?}"))?.items.len();
         }
+        if let Some(root) = &capture_dir {
+            let root = Path::new(root);
+            let key = index + 1;
+            let envelope = capture_envelope::encode(
+                client.join_snapshot().game_session_id.as_bytes(),
+                reply.command_id,
+                reply.server_sequence,
+                reply.status as u64,
+                &reply.payload,
+            )?;
+            std::fs::write(root.join(format!("i07-{key}.json")), envelope)?;
+            std::fs::write(root.join(format!("i07-{key}-request.bin")), payload)?;
+        }
         payloads.push(reply.payload);
     }
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+    if let Some(path) = capture_dir {
         let path = Path::new(&path);
         let writes = payloads.iter().enumerate().map(|(index, payload)| {
             std::fs::write(path.join(format!("i07-{}.bin", index + 1)), payload)
