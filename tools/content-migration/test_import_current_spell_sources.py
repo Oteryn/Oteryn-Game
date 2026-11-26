@@ -1,6 +1,7 @@
 """Exercise current-source import fences against the actual catalogue."""
 import copy
 import hashlib
+import importlib.util
 import json
 import tempfile
 import unittest
@@ -60,6 +61,10 @@ class CurrentSourceImportTests(unittest.TestCase):
         self.assertEqual(changed, expected_changed)
         native_profiles = json.loads((current.ROOT /
             'tools/content-schema/spell-authoring/samples/native-spell-profiles.json').read_bytes())['profiles']
+        catalog_builder = current.ROOT / 'tools/content-schema/spell-authoring/build_executable_catalog.py'
+        spec = importlib.util.spec_from_file_location('build_executable_catalog', catalog_builder)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
         by_name = {(row['bundle']['spell']['name'], row['bundle']['spell']['carrier']): row
                    for row in new['bundles']}
         self.assertEqual(len(native_profiles), 67)
@@ -71,7 +76,9 @@ class CurrentSourceImportTests(unittest.TestCase):
                 # Global profile removes that cap at final registration only.
                 self.assertNotIn('range_tiles', expected_spell['targeting'])
                 expected_spell['targeting']['range_tiles'] = 5
-            self.assertEqual(qualified['bundle']['spell'], expected_spell)
+            registered_spell = copy.deepcopy(qualified['bundle']['spell'])
+            module.apply_c18b_spell_header(registered_spell)
+            self.assertEqual(registered_spell, expected_spell)
             self.assertEqual(qualified['dependencies'], profile['dependencies'])
         a = json.loads(self.generated[current.SELECTION]); b = json.loads(actual[current.SELECTION])
         a.pop('catalog_sha256'); b.pop('catalog_sha256'); self.assertEqual(a, b)

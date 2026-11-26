@@ -22,6 +22,21 @@ SOURCE_PINS = {
     "canary": ("opentibiabr/canary", "99902524e052f37574194466c2949c576e4ab269"),
     "crystal": ("zimbadev/crystalserver", "ff7ede593c69d4c658b382c97443e8155926924a"),
 }
+# Crystal 201189f871d23597b82caf88fd611454a2ddefb8.
+C18B_SPELL_HEADERS = {
+    "candidate:spell/death_echo": (("costs", "mana", 155),),
+    "candidate:spell/divine_grenade": (
+        ("requirements", "level", 300),
+        ("targeting", "range_tiles", 7),
+    ),
+    "candidate:spell/divine_barrage": (("targeting", "needs_target", True),),
+    "candidate:spell/ethereal_barrage": (("targeting", "needs_target", True),),
+}
+
+
+def apply_c18b_spell_header(spell):
+    for section, field, value in C18B_SPELL_HEADERS.get(spell["identity"]["key"], ()):
+        spell[section][field] = value
 
 
 def build_selection(catalog, catalog_digest, sources):
@@ -89,6 +104,9 @@ def apply_owner_decisions(catalog):
     }
     if resolution not in entry["manifest"]["entries"]:
         entry["manifest"]["entries"].append(resolution)
+
+    for entry in catalog["bundles"]:
+        apply_c18b_spell_header(entry["bundle"]["spell"])
     return catalog
 
 

@@ -127,6 +127,25 @@ def private_disintegrate(target):
 
 
 class NativeProjectionTests(unittest.TestCase):
+    def test_c18b_spell_headers_match_crystal_201189f8(self):
+        # Crystal data/scripts/spells/attack at 201189f8.
+        cases = (
+            ("Death Echo", "costs", "mana", 155),  # death_echo.lua:107
+            ("Divine Grenade", "requirements", "level", 300),  # divine_grenade.lua:102
+            ("Divine Grenade", "targeting", "range_tiles", 7),  # divine_grenade.lua:106
+            ("Divine Barrage", "targeting", "needs_target", True),  # divine_barrage.lua:32
+            ("Ethereal Barrage", "targeting", "needs_target", True),  # ethereal_barrage.lua:34
+        )
+        snapshot = Path(__file__).with_name("samples") / "native-spell-profiles.json"
+        native_spells = {profile["name"]: profile["spell"]
+                         for profile in json.loads(snapshot.read_text())["profiles"]}
+        for name, section, field, expected in cases:
+            with self.subTest(spell=name, field=field):
+                spell = entry(name)["bundle"]["spell"]
+                self.assertEqual(spell[section][field], expected)
+                if "native_behavior" in spell["execution"]:
+                    self.assertEqual(native_spells[name][section][field], expected)
+
     def test_existing_s16_and_s22_policies_need_exact_evidence_and_typed_source_fields(self):
         target = entry("Avatar of Light")
         bundle, deps, catalog = source(target)
