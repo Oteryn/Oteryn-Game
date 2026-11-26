@@ -201,7 +201,7 @@ async fn verify(
         Ok(view.with_join_scene(session)?)
     };
     let mut view = open(&session)?;
-    assert_projected_ground(&view, &walkable);
+    assert_projected_ground(&view, &map, &walkable);
     {
         let minimap = super::lock(&view.minimap);
         assert_eq!(
@@ -302,7 +302,7 @@ async fn verify(
     // Production join restores cells outside the new viewport. Applying the new
     // snapshot alone cannot create them, so they discriminate restoration from rebuild.
     let reopened = open(&relogged)?;
-    assert_projected_ground(&reopened, &moved_ground);
+    assert_projected_ground(&reopened, &relogged_map, &moved_ground);
     let mut minimap = super::lock(&reopened.minimap);
     assert_eq!(minimap.cells, remembered);
     check_markers(&mut minimap, origin.x, origin.y, origin.floor)?;
@@ -322,17 +322,28 @@ fn map_ground(map: &WorldMapViewSnapshot) -> BTreeSet<CellPosition> {
         .collect()
 }
 
-fn assert_projected_ground(view: &crate::play::PlayView, expected: &BTreeSet<CellPosition>) {
+fn assert_projected_ground(
+    view: &crate::play::PlayView,
+    map: &WorldMapViewSnapshot,
+    expected: &BTreeSet<CellPosition>,
+) {
     let memory = &view.scene.minimap_memory;
     assert!(memory.binding.is_some());
     assert_eq!(memory, &view.local.preferences.minimap);
-    let ground: BTreeSet<_> = memory
+    let projected: BTreeSet<_> = memory.tiles.iter().copied().collect();
+    let snapshot: BTreeSet<_> = map
         .tiles
         .iter()
-        .filter(|tile| tile.3 > 0)
-        .map(|&(x, y, floor, _)| (floor, x, y))
+        .map(|tile| {
+            (
+                tile.position.x,
+                tile.position.y,
+                tile.position.floor,
+                tile.ground_speed,
+            )
+        })
         .collect();
-    assert_eq!(&ground, expected);
+    assert_eq!(projected, snapshot);
     let world = view.local.world();
     let minimap = super::lock(&view.minimap);
     for key in expected {
