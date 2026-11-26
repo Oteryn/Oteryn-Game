@@ -659,6 +659,42 @@ class PgObserveTests(unittest.TestCase):
 
 
 class CloudRunSummaryTests(unittest.TestCase):
+    def test_client_replay_requires_selected_row_and_executed_test(self):
+        cloud = (HERE / "cloud_run.sh").read_text()
+        helper = cloud[cloud.index("w24_client_selected()"):cloud.index('if [[ ${1:-} == --summarize')]
+        command = helper + textwrap.dedent("""
+            set -e
+            OTERYN_E2E_ROW_BATCH=19:1
+            if w24_client_selected rows; then exit 1; fi
+            OTERYN_E2E_ROW_BATCH=222:0
+            if w24_client_selected rows; then exit 1; fi
+            OTERYN_E2E_ROW_BATCH=221:2
+            w24_client_selected rows
+            if w24_client_selected core; then exit 1; fi
+            OTERYN_E2E_ROW_BATCH=all
+            w24_client_selected rows
+
+            capture_dir="$1/capture"
+            log="$1/node.log"
+            mkdir "$capture_dir"
+            touch "$log"
+            cargo() { return 1; }
+            if w24_client_replay "$capture_dir" "$log"; then exit 1; fi
+            [[ ! -e "$capture_dir.replay.log" ]]
+            echo 'SEAM_EVIDENCE e2e_capture scenario=W24.client status=CAPTURED evidence=outside=0 city=28' > "$log"
+            cargo() { echo 'test result: ok. 0 passed; 0 failed; 0 ignored;'; }
+            if w24_client_replay "$capture_dir" "$log"; then exit 1; fi
+            cargo() {
+                [[ $E2E_ALL_CAPTURE_DIR == "$capture_dir" ]] || return 1
+                [[ $* == '+1.100.0 test --locked -p oteryn-session --lib tests::e2e_w24::e2e_w24_ambient_zone_sound_replay -- --exact --nocapture' ]] || return 1
+                echo 'test tests::e2e_w24::e2e_w24_ambient_zone_sound_replay ... ok'
+                echo 'test result: ok. 1 passed; 0 failed; 0 ignored;'
+            }
+            w24_client_replay "$capture_dir" "$log"
+            """)
+        with tempfile.TemporaryDirectory() as temp:
+            subprocess.run(["bash", "-c", command, "test", temp], check=True)
+
     def test_cloud_uses_first_eligible_work_parent(self):
         cloud = (HERE / "cloud_run.sh").read_text()
         helper = cloud[cloud.index("select_work_parent()"):cloud.index("summarize()")]

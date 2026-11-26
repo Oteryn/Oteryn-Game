@@ -68,7 +68,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     });
 }
 
-fn clock_snapshot(client: &mut DevClientSession) -> TestResult<u16> {
+pub(super) fn clock_snapshot(client: &mut DevClientSession) -> TestResult<u16> {
     use oteryn_protocol_oteryn::world_clock::{decode_world_clock, STATE_DOMAIN_WORLD_CLOCK, SNAPSHOT_TYPE_WORLD_CLOCK_V1};
     let snapshot = client.session_mut().gated_snapshot(STATE_DOMAIN_WORLD_CLOCK)
         .ok_or("step=world-clock-admission observed=missing-snapshot need=tibian-minute")?;
@@ -97,7 +97,7 @@ fn ambient(client: &mut DevClientSession, minute: &mut u16) -> Vec<TimedCue> {
     cues
 }
 
-fn zone(world: &BundleWorld, at: TilePos) -> Option<&str> {
+pub(super) fn zone(world: &BundleWorld, at: TilePos) -> Option<&str> {
     let table = &world.base().subareas;
     let (_, id) = table.resolve(at.x, at.y, at.floor)?;
     let key = table.areas.iter().find(|area| area.id == id)?.key.as_str();
@@ -112,7 +112,7 @@ fn zone(world: &BundleWorld, at: TilePos) -> Option<&str> {
     .then_some(city)
 }
 
-fn city_replacement(city: &str, cues: &[TimedCue]) -> bool {
+pub(super) fn city_replacement(city: &str, cues: &[TimedCue]) -> bool {
     let (day, night) = match city {
         "venore" => (23, 28),
         "thais" | "carlin" => (25, 28),

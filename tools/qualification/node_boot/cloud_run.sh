@@ -41,7 +41,8 @@ summarize() {
 
   rows=$(awk '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ && $4 ~ /^status=(PASS|FAIL)$/ {
+      ($3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ || $3 == "scenario=W24.client") &&
+      $4 ~ /^status=(PASS|FAIL)$/ {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)
@@ -66,6 +67,36 @@ summarize() {
     grep -aFw -- "$row" "$log" | grep -Ei 'GAP|Error|refus|DIAG' \
       | grep -vEi 'password|postgres://|postgresql://|secret|token|key=' | head -n 6
   done < <(awk -F '|' '$2 == "FAIL" && !seen[$1]++ { print $1 }' <<< "$rows")
+}
+
+w24_client_selected() {
+  [[ $1 == rows ]] || return 1
+  python3 - "${OTERYN_E2E_ROW_BATCH:-}" <<'PY'
+import re
+import sys
+
+batch = sys.argv[1]
+if batch == "all":
+    sys.exit(0)
+parsed = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+if not parsed:
+    sys.exit(1)
+values = [digits.lstrip("0") or "0" for digits in parsed.groups()]
+if any(len(value) > 20 for value in values):
+    sys.exit(1)
+start, length = map(int, values)
+sys.exit(not (start <= 222 and 222 - start < length <= 2**64 - 1))
+PY
+}
+
+w24_client_replay() {
+  local capture_dir=$1 log=$2 replay_log=$1.replay.log
+  local test=tests::e2e_w24::e2e_w24_ambient_zone_sound_replay
+  [[ $(grep -c '^SEAM_EVIDENCE e2e_capture scenario=W24.client status=CAPTURED ' "$log") == 1 ]] || return 1
+  E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-session --lib \
+    "$test" -- --exact --nocapture > "$replay_log" 2>&1 || return 1
+  grep -Fx "test $test ... ok" "$replay_log" >/dev/null &&
+    grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$replay_log"
 }
 
 if [[ ${1:-} == --summarize ]]; then
@@ -117,11 +148,28 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
-  NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
-    bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
+  capture_dir=
+  if w24_client_selected "$group"; then
+    capture_dir="$work_dir/$index-w24-captures"
+    mkdir -- "$capture_dir" || blocked work_dir_unavailable
+  fi
+  (
+    [[ -z $capture_dir ]] || export E2E_ALL_W24_CAPTURE_DIR="$capture_dir"
+    NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
+      exec bash tools/qualification/node_boot/run.sh
+  ) > "$log" 2>&1 &
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
+  if [[ -n $capture_dir && $status == 0 ]]; then
+    if w24_client_replay "$capture_dir" "$log"; then
+      printf '%s\n' 'SEAM_EVIDENCE e2e_all scenario=W24.client status=PASS evidence=live-capture-replayed' >> "$log"
+    else
+      status=1
+      printf '%s\n' 'SEAM_EVIDENCE e2e_all scenario=W24.client status=FAIL evidence=live-capture-replay-failed' \
+        'NODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged' >> "$log"
+    fi
+  fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1
 done

@@ -9,78 +9,84 @@ use oteryn_protocol_oteryn::presentation::{
     PresentationEvent, PresentationEventKind, encode_presentation_batch,
 };
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W24_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+use super::full_row_w24::{city_replacement, clock_snapshot, zone};
+
+fn ambient_batch(
+    client: &mut DevClientSession,
+    minute: &mut u16,
+) -> TestResult<Option<(PresentationEvent, u16)>> {
+    let mut batch = None;
+    for event in client.take_events() {
+        match event {
+            SessionEvent::WorldClock(delta) => *minute = delta.value.tibian_minute,
+            SessionEvent::Presentation(delta) => {
+                for event in delta.value {
+                    if matches!(event.kind, PresentationEventKind::AmbientSound { .. })
+                        && batch.replace((event, *minute)).is_some()
+                    {
+                        return Err("step=ambient unexpected multiple cues".into());
+                    }
+                }
+            }
+            _ => {}
+        }
     }
-}
-
-fn batches(client: &mut DevClientSession) -> Vec<Vec<PresentationEvent>> {
-    client
-        .take_events()
-        .into_iter()
-        .filter_map(|event| match event {
-            SessionEvent::Presentation(delta) => Some(delta.value),
-            _ => None,
-        })
-        .map(|events| {
-            events
-                .into_iter()
-                .filter(|event| matches!(event.kind, PresentationEventKind::AmbientSound { .. }))
-                .collect::<Vec<_>>()
-        })
-        .filter(|events| !events.is_empty())
-        .collect()
-}
-
-fn cue(events: &[PresentationEvent]) -> Option<u32> {
-    events.iter().find_map(|event| match event.kind {
-        PresentationEventKind::AmbientSound { cue_id } => Some(cue_id),
-        _ => None,
-    })
-}
-
-fn city(world: &BundleWorld, at: TilePos) -> bool {
-    let table = &world.base().subareas;
-    let Some((_, id)) = table.resolve(at.x, at.y, at.floor) else {
-        return false;
-    };
-    let Some(area) = table.areas.iter().find(|area| area.id == id) else {
-        return false;
-    };
-    let Some(key) = area.key.strip_prefix("oteryn:content.area.") else {
-        return false;
-    };
-    let name = key
-        .strip_prefix("city.")
-        .or_else(|| key.strip_prefix("subregion.").and_then(|rest| rest.strip_suffix("_city")));
-    matches!(
-        name,
-        Some("venore" | "thais" | "carlin" | "edron" | "kazordoon" | "port_hope")
-    )
+    Ok(batch)
 }
 
 async fn wait_for_ambient(
     client: &mut DevClientSession,
-    matches: impl Fn(u32) -> bool,
-) -> TestResult<Option<Vec<PresentationEvent>>> {
+    minute: &mut u16,
+) -> TestResult<Option<(PresentationEvent, u16)>> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(4);
     loop {
-        if let Some(batch) = batches(client)
-            .into_iter()
-            .find(|events| cue(events).is_some_and(&matches))
-        {
+        if let Some(batch) = ambient_batch(client, minute)? {
             return Ok(Some(batch));
         }
         let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
         if remaining.is_zero() {
             return Ok(None);
         }
-        client.service_liveness(remaining.min(Duration::from_millis(25))).await?;
+        client
+            .service_liveness(remaining.min(Duration::from_millis(25)))
+            .await?;
     }
+}
+
+async fn step(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    direction: StepDirection,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let expected =
+        destination(world, from, direction).ok_or("step=walk missing planned destination")?;
+    let reply = client.step(direction).await?;
+    let actual = tile(client.world_spatial().actor_position)?;
+    if reply.disposition != StepDisposition::Moved
+        || reply.world_spatial_delta.is_none()
+        || actual != expected
+    {
+        return Err(format!(
+            "step=walk disposition={:?} from={from:?} expected={expected:?} actual={actual:?}",
+            reply.disposition
+        )
+        .into());
+    }
+    Ok(())
+}
+
+fn city_cue(city: &str, event: PresentationEvent, minute: u16) -> TestResult<u32> {
+    if let PresentationEventKind::AmbientSound { cue_id } = event.kind
+        && city_replacement(city, &[(cue_id, minute)])
+    {
+        return Ok(cue_id);
+    }
+    Err(format!(
+        "step=city-cue city={city} minute={minute} observed={:?}",
+        event.kind
+    )
+    .into())
 }
 
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
@@ -91,16 +97,20 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     {
         return Err("step=admission ambient capability 288 not selected".into());
     }
+    let mut minute = clock_snapshot(&mut client)?;
     let from = tile(client.world_spatial().actor_position)?;
-    if city(world, from) {
-        wait_for_ambient(&mut client, |cue| cue != 0)
+    if let Some(city) = zone(world, from) {
+        let (event, observed_minute) = wait_for_ambient(&mut client, &mut minute)
             .await?
             .ok_or("step=starting-city no active ambient cue at admission")?;
-        let path = route(world, from, |at| !city(world, at))
+        city_cue(city, event, observed_minute)?;
+        let path = route(world, from, |at| zone(world, at).is_none())
             .ok_or("step=outside no compiled player route out of the starting city")?;
-        walk(&mut client, world, &path).await?;
+        for direction in path {
+            step(&mut client, world, direction).await?;
+        }
         let outside = client.world_spatial().actor_position;
-        if city(world, tile(outside)?) {
+        if zone(world, tile(outside)?).is_some() {
             return Err("step=outside route ended inside the city".into());
         }
         if client.session_mut().logout().await?.result
@@ -110,46 +120,69 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         }
         drop(client);
         client = connect_character(clients, 0x9d, 1).await?;
+        minute = clock_snapshot(&mut client)?;
         if client.world_spatial().actor_position != outside {
             return Err("step=outside fresh admission changed the saved position".into());
         }
     }
-    let outside = wait_for_ambient(&mut client, |cue| cue == 0)
+    let (outside, _) = wait_for_ambient(&mut client, &mut minute)
         .await?
         .ok_or("step=outside no zero ambient cue at admission")?;
+    if !matches!(
+        outside.kind,
+        PresentationEventKind::AmbientSound { cue_id: 0 }
+    ) {
+        return Err(format!("step=outside incorrect admission cue {:?}", outside.kind).into());
+    }
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| city(world, at))
+    let path = route(world, from, |at| zone(world, at).is_some())
         .ok_or("step=city-entry no compiled player route into a supported city")?;
-    let mut entry = None;
     for direction in path {
-        let reply = client.step_retrying(direction).await?;
-        if reply.disposition != StepDisposition::Moved {
-            return Err(format!("step=walk disposition={:?}", reply.disposition).into());
-        }
-        for events in batches(&mut client) {
-            if cue(&events).is_some_and(|cue| cue != 0) && entry.is_none() {
-                entry = Some(events);
-            }
+        step(&mut client, world, direction).await?;
+        if zone(world, tile(client.world_spatial().actor_position)?).is_none()
+            && ambient_batch(&mut client, &mut minute)?.is_some()
+        {
+            return Err("step=city-entry unexpected ambient cue before crossing into city".into());
         }
     }
-    let entry = match entry {
-        Some(events) => Some(events),
-        None => wait_for_ambient(&mut client, |cue| cue != 0).await?,
-    };
-    let entry = entry.ok_or("step=city-entry no non-zero ambient replacement after walking into the city")?;
-    let city_cue = cue(&entry).ok_or("step=city-entry cue absent")?;
-    let outside_payload = encode_presentation_batch(&outside).map_err(|error| format!("encode {error:?}"))?;
-    let entry_payload = encode_presentation_batch(&entry).map_err(|error| format!("encode {error:?}"))?;
-    capture("w24-outside.bin", &outside_payload);
-    capture("w24-city.bin", &entry_payload);
-    capture("w24-expected.txt", format!("outside=0\ncity={city_cue}\n").as_bytes());
-    let _ = client.session_mut().logout().await;
+    let city = zone(world, tile(client.world_spatial().actor_position)?)
+        .ok_or("step=city-entry route ended outside the city")?;
+    let (entry, observed_minute) = wait_for_ambient(&mut client, &mut minute)
+        .await?
+        .ok_or("step=city-entry no ambient replacement after walking into the city")?;
+    let city_cue = city_cue(city, entry, observed_minute)?;
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("step=city-entry logout refused".into());
+    }
+    let root = std::env::var_os("E2E_ALL_W24_CAPTURE_DIR")
+        .or_else(|| std::env::var_os("E2E_ALL_CAPTURE_DIR"))
+        .ok_or("step=replay capture directory missing")?;
+    let root = Path::new(&root);
+    let outside_payload =
+        encode_presentation_batch(&[outside]).map_err(|error| format!("encode {error:?}"))?;
+    let entry_payload =
+        encode_presentation_batch(&[entry]).map_err(|error| format!("encode {error:?}"))?;
+    std::fs::write(root.join("w24-outside.bin"), outside_payload)?;
+    std::fs::write(root.join("w24-city.bin"), entry_payload)?;
+    std::fs::write(
+        root.join("w24-expected.txt"),
+        format!("outside=0\ncity={city_cue}\n"),
+    )?;
     Ok(format!("outside=0 city={city_cue}"))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
-    match verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients, world))).await {
-        Ok(Ok(observed)) => evidence(&format!("e2e_all scenario=W24.client status=CAPTURED evidence={observed}")),
+    match verdict::indexed_timeout(
+        Duration::from_secs(240),
+        verdict::observe(journey(clients, world)),
+    )
+    .await
+    {
+        Ok(Ok(observed)) => evidence(&format!(
+            "e2e_all scenario=W24.client status=CAPTURED evidence={observed}"
+        )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W24.client status=FAIL evidence={}",
             error.to_string().replace(' ', "_")
