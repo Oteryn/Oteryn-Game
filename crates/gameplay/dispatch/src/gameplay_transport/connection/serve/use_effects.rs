@@ -76,6 +76,9 @@ where
             .map_err(|error| command::disconnect(command, "use_vitals_write", error.kind()))?;
         session.admitted.continuity.vitals_revision = to;
     }
+    if outcome.disposition == UseDisposition::Committed {
+        native_cues::refresh_cooldowns(stream, authority, session).await?;
+    }
     // WORLD_OBJECT_OVERLAY (domain 2, delta type 1) is Channel-global, not
     // per-connection: its "from" revision is always the committed entry's own
     // revision minus one, since `LocalObjectRuntime::attempt_use` only ever commits
