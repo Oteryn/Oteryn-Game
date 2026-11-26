@@ -472,8 +472,8 @@ async fn append_dust(
            CASE $5 WHEN 'LIMIT_RAISE' THEN 'forge_dust_limit'
                    WHEN 'SPEND' THEN 'proficiency' ELSE 'creature_kill' END,
            game_character_uuid_v7(),game_character_uuid_v7(),$4,0,$2,
-           CASE WHEN $5='GAIN' THEN $2+$4 ELSE $2-$4 END,$3,
-           CASE WHEN $5='LIMIT_RAISE' THEN $3+20 ELSE $3 END
+           CASE WHEN $5='GAIN' THEN $2+$4 ELSE $2-$4 END,$3::smallint,
+           CASE WHEN $5='LIMIT_RAISE' THEN $3::smallint+20 ELSE $3::smallint END
         FROM game_character_forge_dust WHERE character_id=$1::uuid
         RETURNING entry_id,balance_after,dust_limit_after)
         UPDATE game_character_forge_dust SET balance=e.balance_after,dust_limit=e.dust_limit_after,
@@ -529,8 +529,9 @@ async fn fixture_bank(
           FROM game_item_container_slots WHERE character_id=$1::uuid RETURNING transaction_id),
           entry AS (
           INSERT INTO game_account_bank_entries(entry_id,transaction_id,account_id,world_id,kind,
-            amount,balance_before,balance_after,acting_character_id)
-          SELECT game_character_uuid_v7(),transaction_id,$2::uuid,$3::uuid,1,$6,$7,$7+$6,$1::uuid
+            amount,balance_before,balance_after,acting_character_id,previous_entry_id)
+          SELECT game_character_uuid_v7(),transaction_id,$2::uuid,$3::uuid,1,$6,$7,$7+$6,$1::uuid,
+            (SELECT last_entry_id FROM game_account_bank_balances WHERE account_id=$2::uuid AND world_id=$3::uuid)
           FROM op RETURNING entry_id,balance_after)
           INSERT INTO game_account_bank_balances(account_id,world_id,balance,last_entry_id)
           SELECT $2::uuid,$3::uuid,balance_after,entry_id FROM entry
