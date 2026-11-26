@@ -118,6 +118,7 @@ pub(super) async fn recipient<C: ItemLoopContent>(
 /// The receipt keeps the original wire binding for handle-bearing commands.
 pub enum QuickLootInput<'a> {
     Legacy(QuickLootRequest),
+    Selected { request: QuickLootRequest, entry: Option<[u8; 16]> },
     Managed { command_type: u32, payload: &'a [u8], request: Option<QuickLootRequest> },
 }
 
@@ -148,8 +149,12 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
+        let (selected, selected_entry) = match &input {
+            QuickLootInput::Selected { entry, .. } => (true, *entry),
+            _ => (false, None),
+        };
         let (encoded, request, legacy) = match input {
-            QuickLootInput::Legacy(request) => (
+            QuickLootInput::Legacy(request) | QuickLootInput::Selected { request, .. } => (
                 wire::encode_quick_loot_request(&request).map_err(|_| DurabilityError::InvalidStoredState)?,
                 Some(request),
                 true,
@@ -164,7 +169,9 @@ impl DurabilityRoot {
             matches!(request.action, QuickLootAction::Click | QuickLootAction::LootAll)
                 && request.corpse.is_some()
         });
-        if selected_corpse.is_some() != has_corpse {
+        if request.is_some_and(|request| request.selected_item.is_some()) != selected
+            || (!selected && selected_corpse.is_some() != has_corpse)
+        {
             return Err(DurabilityError::InvalidStoredState);
         }
         let mut context = (permit, content);
@@ -173,7 +180,7 @@ impl DurabilityRoot {
             let mut tx = super::super::db::begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &record).await?;
             lock_loop_command(&mut tx, command).await?;
-            if !legacy && let Err(error) = assert_current_equipment_in_transaction(
+            if (!legacy || selected) && let Err(error) = assert_current_equipment_in_transaction(
                 &mut tx, &record, &node, &fence, Some(command), content.loop_content_digest(),
             ).await {
                 tx.rollback().await?;
@@ -191,7 +198,10 @@ impl DurabilityRoot {
                 return Ok(Err(LoopMoveRefusal::Stale));
             };
             let attempt: LoopResult<Vec<u8>> = async {
-                if legacy {
+                if selected && (selected_entry.is_none() || selected_corpse.is_none()) {
+                    return refuse(LoopMoveRefusal::Stale);
+                }
+                if legacy && !selected {
                     assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), content.loop_content_digest()).await?;
                 }
                 let (world, channel) = scope_of(&fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
@@ -331,7 +341,7 @@ impl DurabilityRoot {
                     let corpse_cell: [u8;10]=corpse.try_get::<Vec<u8>,_>("spatial_position")?.try_into().map_err(|_| DurabilityError::InvalidStoredState)?;
                     let entries=sqlx::query("SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref FROM game_item_corpse_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 AND ($3::bytea IS NULL OR e.item_instance_id=encode($3,'hex')::uuid) ORDER BY e.placement_ordinal LIMIT $2 FOR UPDATE OF i")
                         .bind(corpse_id.as_slice()).bind((MAX_TRANSFERS_PER_COMMAND-result.items.len()) as i64)
-                        .bind(request.selected_item.as_ref().map(<[u8;16]>::as_slice)).fetch_all(&mut *tx).await?;
+                        .bind(selected_entry.as_ref().map(<[u8;16]>::as_slice)).fetch_all(&mut *tx).await?;
                     let entries: Vec<_> = entries.into_iter().map(|entry| Ok((uuid_text(entry.try_get("item_instance_id")?)?, definition_of(&entry)?))).collect::<LoopResult<_>>()?;
                     let policy_settings = LootSettings { category_targets: settings.category_targets.clone(), unassigned_target: settings.unassigned_target, fallback_to_main: settings.fallback_to_main };
                     let corpse = Corpse { key: corpse_id, distance: 0, age_millis: 0, top_damage_or_party: corpse.try_get("loot_allowed")?, items: entries.iter().map(|(item,definition)| LootItem { key: *item, category: preferred_category(content, definition, |category| settings.category_targets.contains_key(&category)), is_coin: is_loot_coin(definition), allowed_by_filter: if settings.accept_only {settings.accepted_items.contains(&definition.production_key)} else {!settings.skipped_items.contains(&definition.production_key)} }).collect() };
@@ -351,10 +361,12 @@ impl DurabilityRoot {
                     }
                     if result.items.len()==MAX_TRANSFERS_PER_COMMAND { break; }
                 }
-                if let Some(item) = request.selected_item
-                    && !result.items.first().is_some_and(|row| row.item == item && row.accepted)
-                {
-                    return refuse(LoopMoveRefusal::Rejected);
+                if selected {
+                    return match result.items.as_slice() {
+                        [row] if row.accepted => Ok(wire::QuickLootClickOutcome::Moved.encode().to_vec()),
+                        [] => refuse(LoopMoveRefusal::Stale),
+                        _ => refuse(LoopMoveRefusal::Rejected),
+                    };
                 }
                 wire::encode_quick_loot_result(&result)
                     .map_err(|_| DurabilityError::InvalidStoredState.into())

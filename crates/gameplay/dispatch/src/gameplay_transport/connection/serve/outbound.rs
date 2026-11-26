@@ -379,6 +379,29 @@ where
                 return Err(ServeEnd::Disconnected);
             }
         }
+        Dispatch::Reply(CommandStatus::Accepted, payload)
+            if routing::quick_loot::selected_moved(command.command_type, &payload) =>
+        {
+            if let Some(view) = session.item_view.as_mut() {
+                let item_move::ItemMoveStep::Result(_, deltas) = item_move::moved(
+                    authority,
+                    session.actor,
+                    UseCommand {
+                        game_session_id: session.admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: session.admitted.item_fence,
+                    },
+                    view,
+                )
+                .await
+                else {
+                    return Err(ServeEnd::Disconnected);
+                };
+                session.admitted.continuity.item_view = view.continuity();
+                effects::item_move(stream, authority, session, ItemMoveOutcome::Moved, deltas)
+                    .await?;
+            }
+        }
         Dispatch::Reply(CommandStatus::Accepted, _)
             if forge::changes_inventory(command)
                 || command.command_type
