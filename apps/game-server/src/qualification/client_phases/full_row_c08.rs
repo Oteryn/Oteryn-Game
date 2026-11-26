@@ -121,7 +121,7 @@ async fn poison(client: &mut DevClientSession) -> TestResult<(u64, u64)> {
         client.take_events();
         client.service_liveness(Duration::from_millis(50)).await?;
     }
-    wait_poison_tick(client, "poison", None).await
+    wait_poison_tick(client, "poison").await
 }
 
 fn require_poison_attribution(client: &DevClientSession) -> TestResult {
@@ -141,18 +141,39 @@ fn poison_tick_sequence(events: Vec<SessionEvent>, after: u64) -> Option<u64> {
     })
 }
 
-async fn wait_poison_tick(client: &mut DevClientSession, stage: &str, isolated_site: Option<ActorPosition>) -> TestResult<(u64, u64)> {
+async fn wait_poison_tick(client: &mut DevClientSession, stage: &str) -> TestResult<(u64, u64)> {
+    use oteryn_protocol_oteryn::analyser::AnalyserFact;
+
     let after = client.last_server_sequence();
+    let before_hp = client.actor_vitals().map(|vitals| vitals.health);
     let until = tokio::time::Instant::now() + Duration::from_secs(15);
+    let mut observed = Vec::new();
     loop {
-        if let Some(site) = isolated_site {
-            require_isolated_poison_site(client, site, stage)?;
+        let events = client.take_events();
+        for event in &events {
+            if let SessionEvent::AnalyserAttributedFacts(delta) = event
+                && delta.server_sequence > after
+            {
+                observed.extend(
+                    delta
+                        .value
+                        .iter()
+                        .filter(|fact| matches!(fact.fact, AnalyserFact::DamageInput { .. }))
+                        .take(8usize.saturating_sub(observed.len()))
+                        .cloned(),
+                );
+            }
         }
-        if let Some(sequence) = poison_tick_sequence(client.take_events(), after) {
+        if let Some(sequence) = poison_tick_sequence(events, after) {
             return Ok((after, sequence));
         }
         if tokio::time::Instant::now() >= until {
-            return Err(format!("step={stage} observed=active-icon-without-attributed-tick need=creature-sourced-periodic-earth-damage").into());
+            let after_hp = client.actor_vitals().map(|vitals| vitals.health);
+            let position = client.world_spatial().actor_position;
+            let remaining = poison_remaining(client).await?;
+            return Err(format!(
+                "step={stage} observed=active-icon-without-attributed-tick position={position:?} hp={before_hp:?}->{after_hp:?} remaining_ms={remaining:?} damage_facts={observed:?} need=creature-sourced-periodic-earth-damage"
+            ).into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
