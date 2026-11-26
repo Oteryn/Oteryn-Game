@@ -118,7 +118,7 @@ fn replay(binding: &Capture, frames: &[Envelope]) -> TestResult {
     let mut spatial_revision = None;
     let mut map_revision = None;
     let fields = world_spatial_entities::EntityFields::selected(&binding.capabilities);
-    let map_binding = world_map::MapViewBinding {
+    let mut map_binding = world_map::MapViewBinding {
         content_generation: binding.content_generation,
         bundle_digest: binding.bundle_digest,
         reset_epoch: binding.reset_epoch,
@@ -188,6 +188,7 @@ fn replay(binding: &Capture, frames: &[Envelope]) -> TestResult {
                 map_revision = Some(delta.new_revision);
                 let change = world_map::decode_world_map_delta(&map_binding, delta.payload)
                     .map_err(|error| format!("M02 replay map delta: {error:?}"))?;
+                map_binding = change.header;
                 if change.cleared.contains(&GATE_POSITION) {
                     gate = None;
                 }
