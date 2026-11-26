@@ -266,8 +266,9 @@ async fn plan_owned_doll_use(
     client: &mut DevClientSession,
     source: [u8; 16],
     known: &item_cosmetics::Choice,
-    absent_reference: NonZeroU32,
 ) -> TestResult {
+    use oteryn_protocol_oteryn::server_info;
+
     let first = client.next_command_id();
     let mut scheduled = None;
     for command in first..first + 1024 {
@@ -277,19 +278,28 @@ async fn plan_owned_doll_use(
         }
     }
     let scheduled = scheduled.ok_or("step=doll-duplicate observed=no-owned-draw-in-window")?;
-    if quantities(client)?.contains_key(&absent_reference.get()) {
-        return Err("step=doll-duplicate observed=sequence-probe-item-carried".into());
-    }
-    // Schedule the command before sending any USE for this doll. Every preceding command
-    // addresses an item proved absent, and any refusal or outcome other than NothingToUse fails.
+    // Schedule the command before sending any USE for this doll. Read-only catalogue
+    // queries advance command IDs without consuming the inventory USE allowance.
+    let query = server_info::Query::Quests;
+    let payload = query.encode().ok_or("step=doll-duplicate-sequence observed=bad-query")?;
+    let mut baseline = None;
     for command in first..scheduled {
-        let (status, disposition) = use_by_definition(client, absent_reference).await?;
-        require_mechanic_acceptance(status, "W19d absent-item sequence preparation")?;
-        if disposition != use_wire::UseDisposition::NothingToUse
+        let response = client.session_mut().gated_command(
+            server_info::CAPABILITY_SERVER_INFO_V1,
+            server_info::COMMAND_TYPE_SERVER_INFO_QUERY,
+            &payload,
+        ).await?;
+        require_mechanic_acceptance(response.status, "W19d read-only sequence preparation")?;
+        let reply = server_info::Reply::decode(&response.payload)
+            .ok_or("step=doll-duplicate-sequence observed=bad-query-response")?;
+        if !reply.matches(&query)
+            || baseline.as_ref().is_some_and(|prior| prior != &reply)
+            || response.command_id != command
             || client.next_command_id() != command + 1
         {
-            return Err("step=doll-duplicate observed=unexpected-sequence-probe-result".into());
+            return Err(format!("step=doll-duplicate-sequence command={command} observed=unexpected-query-result").into());
         }
+        baseline.get_or_insert(reply);
     }
     Ok(())
 }
@@ -516,7 +526,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step=doll-duplicate-fund observed=unexpected-state".into());
     }
-    plan_owned_doll_use(&mut client, doll_source(&clients).await?, doll_choice, reference(SPARKION_TOKEN)?).await?;
+    plan_owned_doll_use(&mut client, doll_source(&clients).await?, doll_choice).await?;
     if quantities(&client)? != with_duplicate_doll
         || outfits(&mut client)? != after_doll
         || appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts
