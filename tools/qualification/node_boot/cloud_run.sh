@@ -41,7 +41,7 @@ summarize() {
 
   rows=$(awk '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=([[:alnum:]_.-]+\.full|P13\.client)$/ && $4 ~ /^status=(PASS|FAIL)$/ {
+      $3 ~ /^scenario=([[:alnum:]_.-]+\.full|P(13|20)\.client)$/ && $4 ~ /^status=(PASS|FAIL)$/ {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)
@@ -92,6 +92,40 @@ replay_loyalty_capture() {
     return 0
   fi
   printf 'SEAM_EVIDENCE e2e_all scenario=P13.client status=FAIL seconds=%s evidence=client-replay-failed\n' "$((SECONDS - started))" >>"$log"
+  return 1
+}
+
+selected_promotion_replay() {
+  [[ "$1" == rows ]] || return 1
+  local batch=${OTERYN_E2E_ROW_BATCH:-} first length
+  [[ "$batch" != all ]] || return 0
+  [[ "$batch" =~ ^\+?([0-9]+):\+?([0-9]+)$ ]] || return 1
+  first=${BASH_REMATCH[1]}
+  length=${BASH_REMATCH[2]}
+  first=${first#"${first%%[!0]*}"}
+  length=${length#"${length%%[!0]*}"}
+  [[ ${#first} -le 3 && -n "$length" ]] || return 1
+  local promotion_row=176 # client_phases/world.rs, P20.client
+  (( first <= promotion_row )) || return 1
+  [[ ${#length} -gt 3 ]] || (( promotion_row - first < length ))
+}
+
+replay_promotion_capture() {
+  local log=$1 capture_dir=$2 replay_log=$3
+  local test=npc_dialogue::e2e_p20::p20_dialogue_replay
+  local started=$SECONDS
+  if grep -q '^SEAM_EVIDENCE e2e_all scenario=P20\.client status=FAIL ' "$log"; then
+    return 1
+  fi
+  if grep -q '^SEAM_EVIDENCE e2e_capture scenario=P20\.client status=CAPTURED ' "$log" &&
+    [[ -s "$capture_dir/p20-greeting.bin" && -s "$capture_dir/p20-quote.bin" &&
+      -s "$capture_dir/p20-confirm.bin" && -s "$capture_dir/p20-expected.txt" ]] &&
+    E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact >"$replay_log" 2>&1 &&
+    grep -Fqx "test $test ... ok" "$replay_log"; then
+    printf 'SEAM_EVIDENCE e2e_all scenario=P20.client status=PASS seconds=%s evidence=live-capture-replayed\n' "$((SECONDS - started))" >>"$log"
+    return 0
+  fi
+  printf 'SEAM_EVIDENCE e2e_all scenario=P20.client status=FAIL seconds=%s evidence=client-replay-failed\n' "$((SECONDS - started))" >>"$log"
   return 1
 }
 
@@ -148,6 +182,13 @@ for group in "$@"; do
   if selected_loyalty_replay "$group"; then
     capture_dir=$(mktemp -d "$work_dir/$index-loyalty.XXXXXX") || blocked work_dir_unavailable
   fi
+  promotion_replay=0
+  if selected_promotion_replay "$group"; then
+    promotion_replay=1
+    if [[ -z "$capture_dir" ]]; then
+      capture_dir=$(mktemp -d "$work_dir/$index-promotion.XXXXXX") || blocked work_dir_unavailable
+    fi
+  fi
   (
     [[ -z "$capture_dir" ]] || export E2E_ALL_CAPTURE_DIR="$capture_dir"
     export NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group"
@@ -156,7 +197,10 @@ for group in "$@"; do
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
-  if [[ -n "$capture_dir" ]] && ! replay_loyalty_capture "$log" "$capture_dir" "$work_dir/$index-loyalty.log"; then
+  if selected_loyalty_replay "$group" && ! replay_loyalty_capture "$log" "$capture_dir" "$work_dir/$index-loyalty.log"; then
+    status=1
+  fi
+  if [[ "$promotion_replay" == 1 ]] && ! replay_promotion_capture "$log" "$capture_dir" "$work_dir/$index-promotion.log"; then
     status=1
   fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1

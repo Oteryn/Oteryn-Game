@@ -4,13 +4,16 @@
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef};
 use oteryn_protocol_oteryn::npc_service as wire;
+use std::io::Write;
 
 pub(super) fn capture(row: &str, name: &str, bytes: &[u8]) {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("{row}_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "{row}_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -87,7 +90,11 @@ pub(super) async fn talk(
         if conversation.open.map(|(actor, _)| actor) != Some(npc) {
             return Err(format!("{text} delta belonged to another NPC").into());
         }
-        if conversation.lines.iter().any(|line| line.contains(['|', '\n'])) {
+        if conversation
+            .lines
+            .iter()
+            .any(|line| line.contains(['|', '\n']))
+        {
             return Err("conversation line contains a reserved separator".into());
         }
         return Ok((delta.payload, conversation.lines));
@@ -98,7 +105,118 @@ pub(super) fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
+async fn step_to(
+    client: &mut DevClientSession,
+    direction: StepDirection,
+    expected: TilePos,
+) -> TestResult {
+    let outcome = client.step(direction).await?;
+    if outcome.status != CommandStatus::Accepted
+        || outcome.disposition != StepDisposition::Moved
+        || outcome.world_spatial_delta.is_none()
+        || tile(client.world_spatial().actor_position)? != expected
+    {
+        return Err(format!(
+            "P20 castle step {direction:?} expected {expected:?}, observed {outcome:?}"
+        )
+        .into());
+    }
+    verdict::Harness::global().progress("walk");
+    client
+        .session_mut()
+        .service_liveness_discarding_events(Duration::from_millis(u64::from(outcome.step_wait_ms)))
+        .await?;
+    Ok(())
+}
+
+async fn walk_castle(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected =
+            destination(world, from, direction).ok_or("P20 castle route lost its landing")?;
+        step_to(client, direction, expected).await?;
+    }
+    Ok(())
+}
+
+async fn approach_king(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult<EntityRef> {
+    use crate::map::{door::AuthoredClosedDoor, view::placement_key};
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+    // Enter the authored public castle door from its south side and take the stairs.
+    const DOOR: TilePos = TilePos {
+        x: 32313,
+        y: 32180,
+        floor: -7,
+    };
+    const APPROACH: TilePos = TilePos { y: 32181, ..DOOR };
+    let key = placement_key(DOOR, 1).ok_or("P20 castle door placement key")?;
+    let doors = world.facts().doors();
+    if doors.authored_closed(key) != Some(AuthoredClosedDoor::KeyUnlocked) {
+        return Err("P20 authored castle door is absent or no longer unlocked".into());
+    }
+    let king = npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == "oteryn:npc.king_tibianus")
+        .ok_or("King Tibianus absent from the compiled world")?;
+    let approach = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at == APPROACH
+    })
+    .ok_or("P20 castle door unreachable from the admitted player position")?;
+    let stairs = route(world, DOOR, |at| {
+        king.placements.iter().any(|place| {
+            place.floor == at.floor && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
+        })
+    })
+    .ok_or("King Tibianus unreachable from the authored castle entrance")?;
+    walk_castle(client, world, &approach).await?;
+
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let revision = doors.revision(key);
+    let used = client.use_object(&placement, revision).await?;
+    if used.status != CommandStatus::Accepted
+        || used.disposition != UseDisposition::Committed
+        || !used.world_object_overlay_delta.is_some_and(|delta| {
+            delta.value.placement == placement && delta.value.revision == revision + 1
+        })
+    {
+        return Err(format!(
+            "P20 castle door did not open on its first use: {:?}",
+            used.disposition
+        )
+        .into());
+    }
+    step_to(client, StepDirection::North, DOOR).await?;
+    walk_castle(client, world, &stairs).await?;
+    client
+        .world_entities()
+        .and_then(|view| {
+            view.iter().find(|entity| {
+                entity.kind == EntityKind::Npc
+                    && king.placements.iter().any(|place| {
+                        entity.position.x == i32::from(place.x)
+                            && entity.position.y == i32::from(place.y)
+                            && entity.position.floor == -i16::from(place.floor)
+                    })
+            })
+        })
+        .map(|entity| entity.entity)
+        .ok_or_else(|| "King Tibianus not visible after walking up the castle stairs".into())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let capture_dir = required("E2E_ALL_CAPTURE_DIR")?;
+    let capture_dir = Path::new(&capture_dir);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -109,19 +227,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x52, 0).await?;
-    let npc = approach_npc(&mut client, world, &metadata.npcs, "oteryn:npc.king_tibianus").await?;
+    let npc = approach_king(&mut client, world, &metadata.npcs).await?;
     let (greeting_bytes, greeting) = talk(&mut client, npc, "hi").await?;
     if greeting.is_empty() {
         return Err("hi produced an empty conversation".into());
     }
-    capture("P20", "p20-greeting.bin", &greeting_bytes);
     let (quote_bytes, quote) = talk(&mut client, npc, "promotion").await?;
     if quote != ["Do you want to be promoted for 20000 gold coins?"] {
         return Err(format!("promotion quote observed={quote:?}").into());
     }
-    capture("P20", "p20-quote.bin", &quote_bytes);
     let (confirm_bytes, confirm) = talk(&mut client, npc, "yes").await?;
-    capture("P20", "p20-confirm.bin", &confirm_bytes);
+    if confirm != ["You need current Premium for this service."] {
+        return Err(format!("promotion confirmation observed={confirm:?}").into());
+    }
     let expected = format!(
         "npc_identity={}\nnpc_generation={}\ngreeting={}\nquote={}\nconfirm={}\n",
         hex(&npc.identity),
@@ -130,13 +248,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         quote.join("|"),
         confirm.join("|")
     );
-    capture("P20", "p20-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await?;
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("P20 client logout refused: {logout:?}").into());
+    }
+    for (name, bytes) in [
+        ("p20-greeting.bin", greeting_bytes.as_slice()),
+        ("p20-quote.bin", quote_bytes.as_slice()),
+        ("p20-confirm.bin", confirm_bytes.as_slice()),
+        ("p20-expected.txt", expected.as_bytes()),
+    ] {
+        std::fs::File::create_new(capture_dir.join(name))?.write_all(bytes)?;
+    }
     Ok(expected.replace('\n', ";").replace(' ', "_"))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P20.client status=CAPTURED evidence={expected}"
         )),
