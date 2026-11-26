@@ -395,7 +395,11 @@ async fn quoted_pair(
                 preview::Payload::Quote(quote) if quote.selection == selection => {
                     return Ok(Some((first.handle, second.handle)));
                 }
-                preview::Payload::Refused => {}
+                preview::Payload::Refused => {
+                    return Err(
+                        format!("step=forge-preview refused eligible {operation:?} pair").into(),
+                    );
+                }
                 _ => return Err("step=forge-preview mismatched pair quote".into()),
             }
         }
