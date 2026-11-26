@@ -63,6 +63,26 @@ fn city(world: &BundleWorld, at: TilePos) -> bool {
     )
 }
 
+async fn wait_for_ambient(
+    client: &mut DevClientSession,
+    matches: impl Fn(u32) -> bool,
+) -> TestResult<Option<Vec<PresentationEvent>>> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(4);
+    loop {
+        if let Some(batch) = batches(client)
+            .into_iter()
+            .find(|events| cue(events).is_some_and(&matches))
+        {
+            return Ok(Some(batch));
+        }
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Ok(None);
+        }
+        client.service_liveness(remaining.min(Duration::from_millis(25))).await?;
+    }
+}
+
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
     let mut client = connect_character(clients, 0x9d, 1).await?;
     if !client
@@ -71,12 +91,32 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     {
         return Err("step=admission ambient capability 288 not selected".into());
     }
-    let initial = batches(&mut client);
-    let outside = initial
-        .iter()
-        .find(|events| cue(events) == Some(0))
-        .ok_or_else(|| format!("step=outside observed={:?}", initial.iter().map(|e| cue(e)).collect::<Vec<_>>()))?
-        .clone();
+    let from = tile(client.world_spatial().actor_position)?;
+    if city(world, from) {
+        wait_for_ambient(&mut client, |cue| cue != 0)
+            .await?
+            .ok_or("step=starting-city no active ambient cue at admission")?;
+        let path = route(world, from, |at| !city(world, at))
+            .ok_or("step=outside no compiled player route out of the starting city")?;
+        walk(&mut client, world, &path).await?;
+        let outside = client.world_spatial().actor_position;
+        if city(world, tile(outside)?) {
+            return Err("step=outside route ended inside the city".into());
+        }
+        if client.session_mut().logout().await?.result
+            != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+        {
+            return Err("step=outside logout refused".into());
+        }
+        drop(client);
+        client = connect_character(clients, 0x9d, 1).await?;
+        if client.world_spatial().actor_position != outside {
+            return Err("step=outside fresh admission changed the saved position".into());
+        }
+    }
+    let outside = wait_for_ambient(&mut client, |cue| cue == 0)
+        .await?
+        .ok_or("step=outside no zero ambient cue at admission")?;
     let from = tile(client.world_spatial().actor_position)?;
     let path = route(world, from, |at| city(world, at))
         .ok_or("step=city-entry no compiled player route into a supported city")?;
@@ -92,6 +132,10 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
             }
         }
     }
+    let entry = match entry {
+        Some(events) => Some(events),
+        None => wait_for_ambient(&mut client, |cue| cue != 0).await?,
+    };
     let entry = entry.ok_or("step=city-entry no non-zero ambient replacement after walking into the city")?;
     let city_cue = cue(&entry).ok_or("step=city-entry cue absent")?;
     let outside_payload = encode_presentation_batch(&outside).map_err(|error| format!("encode {error:?}"))?;
