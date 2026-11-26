@@ -162,16 +162,17 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
             hash(b"8a188b5b0b564e34830783f89b5b1a24cc00eb29a1639495bdfb8a7124b584af"),
         ],
     ),
-    // Eclipse and the Vampire Hunt extend the live quest from main at 888210d08.
+    // Keep the Eclipse and Vampire Hunt saves, including the pre-hand-in dust counter.
     (
         "oteryn:quest.the_inquisition_quest",
-        hash(b"dae45f70cd8e05af9249684351d22d26a6458f29ec3be4f70f3d8645e90dbe52"),
+        hash(b"8f43a82febdcd9b7fd7c9cd453b53a9b0a6b6de05273abd1d46c2414d562f48d"),
         &[
             hash(b"07b54f2106bcabfc742abf29a2cc09c4b271108a143d46685efae0ee52b151bd"),
             hash(b"50e57d828ac8398e9ba0f966bc1be0777a5640e49efc495b39af1ab16c4db8d4"),
             hash(b"655d26dbf3afa93c5dfc0e195d05b0150e0af298cf74935fa8494b0be895e3d5"),
             hash(b"e34698ec47856e1bf587a56de6c0ac3cdec9119108a4abad91c7a075c4ea73ca"),
             hash(b"895ecb3a0d429bd18ca8be0fc1da84d5c6439cfb6922ae9ecacafb151895ebfe"),
+            hash(b"dae45f70cd8e05af9249684351d22d26a6458f29ec3be4f70f3d8645e90dbe52"),
         ],
     ),
     // The Nomad task and the Mina Losa exchange extend the live quest from main at 888210d08.
