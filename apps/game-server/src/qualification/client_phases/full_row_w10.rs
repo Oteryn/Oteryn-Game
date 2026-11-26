@@ -214,7 +214,10 @@ pub(super) async fn defeat_primal(
     client: &mut DevClientSession,
     world: &BundleWorld,
     first_chair_only: bool,
-) -> StepResult<ActorPosition> {
+) -> StepResult<(
+    ActorPosition,
+    oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+)> {
     enter_primal(client, world, first_chair_only)
         .await
         .map_err(|error| {
@@ -297,7 +300,7 @@ pub(super) async fn defeat_primal(
         .await
         .map_err(|error| failed_error(3, error, "an attack-stop reply"))?;
 
-    Ok(at)
+    Ok((at, target.entity))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> StepResult {
@@ -371,7 +374,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
             .map_err(|error| failed_error(2, error, "a locked-level refusal"))?,
     )?;
 
-    let at = defeat_primal(&mut client, world, false).await?;
+    let (at, defeated) = defeat_primal(&mut client, world, false).await?;
 
     accepted(
         4,
@@ -405,7 +408,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
                 .iter()
                 .find(|entity| {
                     entity.kind == oteryn_dev_client::EntityKind::Creature
-                        && entity.entity != target.entity
+                        && entity.entity != defeated
                         && entity.position.floor == at.floor
                         && entity.position.x.abs_diff(at.x).max(entity.position.y.abs_diff(at.y))
                             <= 7
