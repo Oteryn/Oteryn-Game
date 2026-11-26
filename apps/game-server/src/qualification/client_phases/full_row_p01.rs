@@ -171,12 +171,23 @@ fn mastery_plan(
     Ok(plan)
 }
 
-async fn hunt_once(
+pub(super) fn rat_corpse_stage() -> TestResult<client_hunt::CorpseStage> {
+    let items = provisioning::item_index()?;
+    Ok(client_hunt::CorpseStage {
+        fresh_ref: provisioning::item_reference(&items, 5964)?.get(),
+        mature_ref: provisioning::item_reference(&items, 3994)?.get(),
+    })
+}
+
+async fn hunt_race(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
+    key: &str,
+    rat_stage: client_hunt::CorpseStage,
 ) -> TestResult<full_row_p05::KillSample> {
-    full_row_p05::hunt_for_race(client, world, spawns, "oteryn:creature.rat").await
+    let stage = (key == "oteryn:creature.rat").then_some(rat_stage);
+    full_row_p05::hunt_for_race_with_corpse_stage(client, world, spawns, key, stage).await
 }
 
 pub(super) async fn prepare_hunter(
@@ -283,7 +294,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     evidence("P01_CHECK admission-query PASS accepted-native-views");
 
     row.at("player-earned-kill-count");
-    let first_kill = hunt_once(&mut client, world, &metadata.spawns).await?;
+    let rat_stage = rat_corpse_stage()?;
+    let first_kill = hunt_race(
+        &mut client,
+        world,
+        &metadata.spawns,
+        "oteryn:creature.rat",
+        rat_stage,
+    )
+    .await?;
     let mut current = query(&mut client).await?;
     let race = current
         .bestiary
@@ -353,8 +372,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut mastered = None;
     for (candidate, key, remaining, _) in plan {
         for _ in 0..remaining {
-            let kill =
-                full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, key).await?;
+            let kill = hunt_race(&mut client, world, &metadata.spawns, key, rat_stage).await?;
             let next = query(&mut client).await?;
             if kill.race != candidate
                 || count(&current, candidate).checked_add(1) != Some(count(&next, candidate))
@@ -396,6 +414,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     evidence("P01_CHECK unlock-stage PASS stage-and-balance-delta");
 
     row.at("assign-unlocked");
+    if unlocked_state.assigned_race.is_some() || unlocked_state.effect_active {
+        return Err(format!("UNLOCK unexpectedly assigned the charm: {unlocked_state:?}").into());
+    }
     let assigned = command(&mut client, CharmProgressionAction::Assign { charm, race }).await?;
     let assigned_state = &assigned.charms.charms[usize::try_from(charm.get() - 1)?];
     if assigned.outcome != CharmProgressionOutcome::Assign(CharmAssignDisposition::Assigned)
@@ -421,8 +442,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let mut observed_proc = false;
     for _ in 0..12 {
-        let kill =
-            full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, assigned_key).await?;
+        let kill = hunt_race(
+            &mut client,
+            world,
+            &metadata.spawns,
+            assigned_key,
+            rat_stage,
+        )
+        .await?;
         if kill.race != race {
             return Err(format!(
                 "step=assigned-combat expected-race={race} credited-race={}",

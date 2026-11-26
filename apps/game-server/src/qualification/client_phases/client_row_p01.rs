@@ -89,6 +89,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .position(|(definition, _)| definition.key() == "oteryn:creature.rat")
         .ok_or("Rat is absent from the canonical Bestiary")?;
     let race = NonZeroU32::new(u32::try_from(rat_index)? + 1).ok_or("Rat race index")?;
+    let corpse_stage = full_row_p01::rat_corpse_stage()?;
     let mut frames = String::new();
     let initial = send(
         &mut client,
@@ -105,7 +106,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         tokio::time::Instant::now() + Duration::from_secs(125),
         "baseline-rat-combat",
     );
-    client_hunt::hunt(&mut client).await?;
+    client_hunt::hunt_with_corpse_stage(&mut client, Some(corpse_stage)).await?;
     let before = send(
         &mut client,
         CharmProgressionAction::Query,
@@ -145,7 +146,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         tokio::time::Instant::now() + Duration::from_secs(125),
         "captured-rat-combat",
     );
-    client_hunt::hunt(&mut client).await?;
+    client_hunt::hunt_with_corpse_stage(&mut client, Some(corpse_stage)).await?;
     let after = send(
         &mut client,
         CharmProgressionAction::Query,

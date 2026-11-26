@@ -409,6 +409,16 @@ pub(super) async fn hunt_for_race(
     spawns: &oteryn_world_bundle::spawn::Table,
     key: &str,
 ) -> TestResult<KillSample> {
+    hunt_for_race_with_corpse_stage(client, world, spawns, key, None).await
+}
+
+pub(super) async fn hunt_for_race_with_corpse_stage(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    key: &str,
+    stage: Option<client_hunt::CorpseStage>,
+) -> TestResult<KillSample> {
     use oteryn_dev_client::{EntityKind, SessionEvent};
     use oteryn_protocol_oteryn::analyser::AnalyserFact;
     let race = race_reference(key)?;
@@ -500,9 +510,17 @@ pub(super) async fn hunt_for_race(
         }
     };
     client.session_mut().attack_target(None).await?;
+    let corpse = match stage {
+        Some(stage) => client_hunt::wait_for_corpse_stage(client, corpse, stage).await?,
+        None => corpse,
+    };
     let handle =
         corpse_handle(corpse.detail).ok_or("hunt corpse has no server-issued item handle")?;
-    let used = client.use_item(handle).await?;
+    let used = if stage.is_some() {
+        client_hunt::use_rat_corpse(client, handle).await?
+    } else {
+        client.use_item(handle).await?
+    };
     if used.status != CommandStatus::Accepted
         || used.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
     {
