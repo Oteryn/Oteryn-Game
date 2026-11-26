@@ -122,41 +122,6 @@
       ]
     },
     {
-      "key": "oteryn:quest-reward/marid-melchior-greeting",
-      "quest": "oteryn:quest.factions",
-      "npc": "oteryn:npc.melchior",
-      "keywords": [
-        "word of greeting"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/factions",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "The djinns' code of hospitality protects anyone who knows the word of greeting. The word is {DJANNI'HAH}.",
-        "Choose a side carefully. Once you have chosen the Efreet or the Marid, there is no way back."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/melchior.lua:68-82:sha256:1ec7aa8fc1a9b1f972239df7299911f72976aadeacae6c011fd49bc5033383df"
-      ]
-    },
-    {
       "key": "oteryn:quest-reward/marid-umar-passage",
       "quest": "oteryn:quest.factions",
       "npc": "oteryn:npc.umar",

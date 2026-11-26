@@ -793,6 +793,12 @@ const CONTENT_TRAIN_SUCCESSORS: &[(&str, DefinitionHash, DefinitionHash)] = &[
         hash(b"852db8606f6acf8a6d12e55c775a2f62a2eeac0594c6457af10ebb0f6b2e2325"),
         hash(b"fca492eb36c2318f4633a8aae3d68b6e32e5943b2717ddfee7933fe6857dfd4f"),
     ),
+    // Umar's passage extends the published Factions definition.
+    (
+        "oteryn:quest.factions",
+        hash(b"16a0ebe1810d54cdaa467424e4e3f0ab02fa4a4b8a728d7aea33706c9957d738"),
+        hash(b"e0fd8a81ef902c0c37a31b2ad4e1cf4cd011d2e95bd45c1f4f0844c154b341b6"),
+    ),
     (
         "oteryn:quest.ferumbras_ascension_quest",
         hash(b"69a1b3cfaa0d7f3b921da0ea7bb3bafd1de62a22e484e4c333541ba29c9b2a79"),
