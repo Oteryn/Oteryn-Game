@@ -4012,13 +4012,14 @@ async fn player_corpse(
     owned: &[oteryn_dev_client::EntityRef],
 ) -> TestResult<(oteryn_dev_client::WorldSpatialEntity, u64)> {
     let target = wild_rat(client, world, owned).await?;
-    kill_rat_for_corpse(client, world, target).await
+    kill_rat_for_corpse(client, world, target, None).await
 }
 
 async fn kill_rat_for_corpse(
     client: &mut DevClientSession,
     world: &BundleWorld,
     target: oteryn_dev_client::WorldSpatialEntity,
+    opening_spell: Option<std::num::NonZeroU32>,
 ) -> TestResult<(oteryn_dev_client::WorldSpatialEntity, u64)> {
     let index = provisioning::item_index()?;
     let corpse_ref = provisioning::item_reference(&index, 5964)?;
@@ -4027,6 +4028,13 @@ async fn kill_rat_for_corpse(
     approach_melee(client, world, target.position).await?;
     client.take_events();
     select_monster(client, Some(target.entity)).await?;
+    if let Some(spell) = opening_spell {
+        use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
+        let outcome = client.cast_spell(spell, SpellTarget::AttackTarget, false).await?;
+        if outcome.disposition != SpellCastDisposition::Cast {
+            return Err(format!("C16c Rat Energy Strike refused: {outcome:?}").into());
+        }
+    }
     let until = tokio::time::Instant::now() + Duration::from_secs(75);
     let mut damage = false;
     let mut removed = false;
@@ -4166,7 +4174,8 @@ pub(super) async fn capture_animate_dead(
         }
         caster.service_liveness(Duration::from_millis(50)).await?;
     };
-    let (corpse, _) = kill_rat_for_corpse(&mut caster, world, rat).await?;
+    let strike = client_spell_journey::spell_index(book, "exori vis")?;
+    let (corpse, _) = kill_rat_for_corpse(&mut caster, world, rat, Some(strike)).await?;
     let mut observer = with_observer_liveness(&mut caster, connect_character(clients, 0xd7, 0)).await?;
     if observer.world_entities().and_then(|view| view.get(&corpse.entity)).is_none() {
         return Err("C16c fresh observer did not see the exact corpse".into());
