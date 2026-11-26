@@ -185,7 +185,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             FenceStep::Wait => return Err(ReleaseRetryStage::Fence),
             FenceStep::Refused(_) => return Ok(ReleaseAttempt::Done(GraceExpiryResult::Unknown)),
         }
-        // A logout's fence is its own minted transition id: one per attempt.
+        // A logout's fence is its own minted transition id: one per release command.
         let logout = match (release, hold.token) {
             (TerminalRelease::Logout(transport), TransitionFence::Transition(attempt)) => {
                 Some((transport, attempt))
@@ -216,6 +216,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if !super::super::item_use::gourmet::checkpoint_at_actor_end(self, actor, session).await {
             return Err(ReleaseRetryStage::Gourmet);
+        }
+        #[cfg(test)]
+        if let Ok(Some(probe)) = super::super::logout::LOGOUT_RELEASE_PROBE
+            .try_with(|probe| probe.first_retry.get().is_none().then(|| probe.clone()))
+        {
+            probe.before_conditions.notify_one();
+            probe.resume_conditions.notified().await;
         }
         if !self.save_conditions_at_actor_end(actor, session).await {
             return Err(ReleaseRetryStage::Conditions);
