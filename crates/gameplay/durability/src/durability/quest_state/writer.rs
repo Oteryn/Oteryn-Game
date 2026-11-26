@@ -1342,7 +1342,11 @@ impl DurabilityRoot {
                     let carrot = callback.as_ref().is_some_and(oteryn_gameplay_quests::quest::dreamer_carrot::shared_input);
                     let mut entrance_premium_denied = false;
                     if callback.as_ref().is_some_and(|c| c.requires_live_premium()) || arena.is_some_and(|rule| rule.requires_premium)
-                        || super::authored_admission::requires_premium(&catalogue, &transition.quest) {
+                        || super::authored_admission::requires_premium(
+                            &catalogue,
+                            transition,
+                            reward_callback.is_some() && matches!(request.cause, QuestCause::Command(_)),
+                        ) {
                         let account: String = sqlx::query_scalar(
                             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
                         ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;

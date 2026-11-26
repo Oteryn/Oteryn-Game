@@ -682,6 +682,8 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, 
 /// available to immutable receipt reconciliation and catalogue validation.
 pub fn offered_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
     let mut callbacks = load_for(catalogue)?;
+    // A replacement can retire a source offer only in a catalogue that admits it.
+    callbacks.retain(|callback| catalogue.transition(&callback.key).is_some());
     retain_offered_callbacks(&mut callbacks);
     Ok(callbacks)
 }

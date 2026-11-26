@@ -1004,17 +1004,38 @@ pub(super) async fn npc_bank_talk(
     }
     // Eligible reward callbacks own their exact keyword before dedicated NPC
     // dialogue; ineligible stages remain with that dialogue's native owner.
-    let inventory = if reward_callbacks::needs_facts(admission, actor, command, &intent, &runtime) {
-        let context = admission.states.npc_conversations.current_npc(
-            &admission.states.chat,
-            &runtime,
-            actor,
-            session,
-            &intent,
-        );
+    let needs_inventory =
+        reward_callbacks::needs_facts(admission, actor, command, &intent, &runtime);
+    let context =
+        conversations.current_npc(&admission.states.chat, &runtime, actor, session, &intent);
+    let alternate_opening = context
+        .as_ref()
+        .zip(admission.quest_catalogue.as_deref())
+        .and_then(|(context, catalogue)| {
+            reward_callbacks::alternate_opening(
+                catalogue,
+                &context.2,
+                &intent.text.trim().to_ascii_lowercase(),
+            )
+        });
+    let (inventory, skip_opening) = if needs_inventory || alternate_opening.is_some() {
         drop(runtime);
-        let Some(facts) = reward_facts::read(admission, command).await else {
-            return rejected();
+        let inventory = if needs_inventory {
+            let Some(facts) = reward_facts::read(admission, command).await else {
+                return rejected();
+            };
+            Some(facts)
+        } else {
+            None
+        };
+        // The Premium shortcuts and Crystal's confirmation sequences share
+        // their opening keywords. The chosen callback still proves its gate in the writer.
+        let skip_opening = if alternate_opening.is_some()
+            && reward_callbacks::prefer_source_start(admission, session).await
+        {
+            alternate_opening
+        } else {
+            None
         };
         runtime = admission.runtime.lock().await;
         if !runtime
@@ -1038,9 +1059,9 @@ pub(super) async fn npc_bank_talk(
         {
             return rejected();
         }
-        Some(facts)
+        (inventory, skip_opening)
     } else {
-        None
+        (None, None)
     };
     if let Some(step) = reward_callbacks::prepare(
         admission,
@@ -1049,7 +1070,7 @@ pub(super) async fn npc_bank_talk(
         &intent,
         &runtime,
         inventory.as_ref(),
-        reward_callbacks::Phase::Rewards,
+        reward_callbacks::Phase::Rewards { skip_opening },
     ) {
         drop(runtime);
         drop(_trade_permit);
