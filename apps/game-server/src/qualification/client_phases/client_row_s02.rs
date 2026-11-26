@@ -67,6 +67,38 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
+fn sees(client: &DevClientSession, target: EntityRef) -> bool {
+    client
+        .world_entities()
+        .is_some_and(|view| view.iter().any(|entry| entry.entity == target))
+}
+
+async fn wait_for_pair_visibility(
+    leader: &mut DevClientSession,
+    peer: &mut DevClientSession,
+    leader_ref: EntityRef,
+    peer_ref: EntityRef,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while !sees(leader, peer_ref) || !sees(peer, leader_ref) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "party peers missing from served visibility at {:?} and {:?}",
+                leader.world_spatial().actor_position,
+                peer.world_spatial().actor_position,
+            )
+            .into());
+        }
+        let (leader_live, peer_live) = tokio::join!(
+            leader.service_liveness(Duration::from_millis(50)),
+            peer.service_liveness(Duration::from_millis(50)),
+        );
+        leader_live?;
+        peer_live?;
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -82,11 +114,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let path = route(world, tile(leader.world_spatial().actor_position)?, |at| {
         at != other
             && at.floor == other.floor
-            && at.x.abs_diff(other.x).max(at.y.abs_diff(other.y)) <= 1
+            && u32::from(at.x.abs_diff(other.x)) + u32::from(at.y.abs_diff(other.y)) == 1
     })
     .ok_or("peer approach route unavailable")?;
     walk(&mut leader, world, &path).await?;
     let (leader_ref, peer_ref) = (own(&leader)?, own(&peer)?);
+    wait_for_pair_visibility(&mut leader, &mut peer, leader_ref, peer_ref).await?;
 
     party(&mut leader, Some(PartyIntent::Invite(peer_ref))).await?;
     let (invited_bytes, invited_shield, invited_skull) = icon(&mut leader, peer_ref).await?;
