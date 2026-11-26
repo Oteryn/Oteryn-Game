@@ -8,6 +8,7 @@ use oteryn_session::{
     CommandStatus, LogoutResult, SessionError, SessionEvent, StepDirection, StepOutcome,
 };
 use std::sync::{Arc, Mutex};
+type Exchanges = std::collections::VecDeque<(Exchange, Vec<SessionEvent>)>;
 #[derive(Clone)]
 pub(in crate::play::tests) struct Exchange {
     pub command: ServerMechanicCommand,
@@ -15,7 +16,9 @@ pub(in crate::play::tests) struct Exchange {
     pub status: CommandStatus,
 }
 struct Peer {
-    exchanges: Arc<Mutex<std::collections::VecDeque<Exchange>>>,
+    exchanges: Arc<Mutex<Exchanges>>,
+    events: Vec<SessionEvent>,
+    entities: Vec<oteryn_session::WorldSpatialEntity>,
 }
 impl Stepper for Peer {
     fn server_mechanic_selected(&self, _: u32) -> bool {
@@ -29,8 +32,9 @@ impl Stepper for Peer {
             .exchanges
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let exchange = queue.pop_front().ok_or(SessionError::SessionUnusable)?;
+        let (exchange, events) = queue.pop_front().ok_or(SessionError::SessionUnusable)?;
         assert_eq!(command, &exchange.command);
+        self.events.extend(events);
         Ok(ServerMechanicResponse {
             command_id: 1,
             status: exchange.status,
@@ -46,7 +50,13 @@ impl Stepper for Peer {
         Ok(())
     }
     fn drain(&mut self) -> Vec<SessionEvent> {
-        Vec::new()
+        std::mem::take(&mut self.events)
+    }
+    fn entities_changed(
+        &self,
+        held: &[oteryn_session::WorldSpatialEntity],
+    ) -> Option<Vec<oteryn_session::WorldSpatialEntity>> {
+        (self.entities != held).then(|| self.entities.clone())
     }
     async fn combat(&mut self, _: CombatCommand) -> Result<CombatReport, SessionError> {
         Err(SessionError::SessionUnusable)
@@ -59,6 +69,22 @@ pub(in crate::play::tests) fn scenario(
     run: impl FnOnce(
         &crate::play::PlayLink,
         &mut dyn FnMut(Exchange),
+        &mut dyn FnMut(&dyn Fn() -> bool),
+    ) -> Result<(), String>
+    + Send
+    + 'static,
+) -> Result<(), Box<dyn std::error::Error>> {
+    scenario_with_events(vec![], vec![], |link, push, wait| {
+        run(link, &mut |exchange| push(exchange, vec![]), wait)
+    })
+}
+
+pub(in crate::play::tests) fn scenario_with_events(
+    events: Vec<SessionEvent>,
+    entities: Vec<oteryn_session::WorldSpatialEntity>,
+    run: impl FnOnce(
+        &crate::play::PlayLink,
+        &mut dyn FnMut(Exchange, Vec<SessionEvent>),
         &mut dyn FnMut(&dyn Fn() -> bool),
     ) -> Result<(), String>
     + Send
@@ -85,29 +111,32 @@ pub(in crate::play::tests) fn scenario(
                 skipped: vec![4],
                 accepted: vec![7],
             }),
-        }).map_err(|error| format!("{error:?}"))?,
+        })
+        .map_err(|error| format!("{error:?}"))?,
         status: CommandStatus::Accepted,
     };
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || -> Result<(), String> {
             let runtime = ClientRuntime::new().map_err(|e| e.to_string())?;
-            let queue = Arc::new(Mutex::new(std::collections::VecDeque::from([startup])));
+            let queue = Arc::new(Mutex::new(Exchanges::from([(startup, vec![])])));
             let (link, rx, outbox) = play_channel();
             let task = runtime
                 .spawn(run_session(
                     Peer {
                         exchanges: queue.clone(),
+                        events,
+                        entities,
                     },
                     rx,
                     outbox,
                 ))
                 .map_err(|e| e.to_string())?;
-            let mut push = |exchange| {
+            let mut push = |exchange, events| {
                 queue
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner)
-                    .push_back(exchange)
+                    .push_back((exchange, events))
             };
             let mut wait = |condition: &dyn Fn() -> bool| {
                 let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);

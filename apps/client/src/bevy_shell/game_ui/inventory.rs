@@ -30,6 +30,10 @@ enum Location {
         view: u8,
         handle: oteryn_session::ItemHandle,
     },
+    Corpse {
+        handle: oteryn_session::ItemHandle,
+        identity: Option<[u8; 16]>,
+    },
 }
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 struct Slot {
@@ -86,6 +90,18 @@ impl Slot {
                         .map(Some),
                     None => Some(None),
                 }
+            }
+            Location::Corpse { handle, .. } => {
+                let corpse = play.link.corpse_loot_view().contents;
+                if corpse.container_handle != Some(handle) {
+                    return None;
+                }
+                let item = self.item?;
+                corpse
+                    .entries
+                    .into_iter()
+                    .find(|entry| entry.handle == item.handle)
+                    .map(Some)
             }
         }
     }
@@ -159,6 +175,7 @@ enum Control {
     OpenSeparate(Slot),
     MoveUp(Slot, oteryn_session::ItemHandle),
     Context(Slot, oteryn_client_ui::world_interaction::menu::Action),
+    Loot(Slot),
     /// Edit the text of a writable item (letter, book, label) in the writing window.
     Write(Slot),
     /// Inspect a timed item, then use or repair it in the timed item window.

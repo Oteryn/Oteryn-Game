@@ -32,6 +32,131 @@ fn inventory(outbox: &crate::play::Outbox, items: Vec<ItemEntry>) {
         },
     })]);
 }
+
+#[test]
+fn corpse_item_context_loot_sends_selected_item_click() -> TestResult {
+    use bevy::{
+        asset::AssetPlugin,
+        picking::{backend::HitData, pointer::PointerButton},
+    };
+    use oteryn_session::{
+        ActorPosition, EntityDetail, EntityKind, EntityRef, ItemHandle, OpenContainer,
+        WorldSpatialEntity,
+    };
+
+    let (link, mut commands, outbox) = play_channel();
+    let corpse = [7; 16];
+    let handle = ItemHandle::new(90).ok_or("corpse handle")?;
+    let first = entry(91, 1)?;
+    let selected = entry(92, 3)?;
+    outbox.bevy_quick_loot_selected(true);
+    outbox.bevy_quick_loot_corpse(WorldSpatialEntity {
+        motion: None,
+        display_name: None,
+        kind: EntityKind::Corpse,
+        entity: EntityRef {
+            identity: corpse,
+            generation: 0,
+        },
+        position: ActorPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        },
+        detail: EntityDetail::Object {
+            item_definition_ref: 43,
+            quantity: 1,
+            item_handle: Some(handle),
+        },
+    });
+    outbox.push(vec![SessionEvent::OpenContainer(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value: OpenContainer {
+            container_handle: Some(handle),
+            entries: vec![first, selected],
+        },
+    })]);
+
+    let mut app = App::new();
+    let root = app.world_mut().spawn_empty().id();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .insert_non_send(host(link)?)
+        .init_resource::<InventoryUi>()
+        .init_resource::<UiScale>()
+        .insert_resource(super::super::GameRegions {
+            vitals: root,
+            minimap: root,
+            equipment: root,
+            containers: root,
+            battle: root,
+            skills: root,
+            vip: root,
+            analyzers: root,
+            chat: root,
+            bars: root,
+            world: root,
+        })
+        .add_systems(Startup, crate::bevy_shell::ui::setup)
+        .add_systems(Update, view::project);
+    app.update();
+    let slots: Vec<_> = app
+        .world_mut()
+        .query::<(Entity, &Slot)>()
+        .iter(app.world())
+        .filter(|(_, slot)| matches!(slot.location, Location::Corpse { .. }))
+        .collect();
+    assert_eq!(slots.len(), 2);
+    assert!(slots.iter().any(|(_, slot)| slot.item == Some(first)));
+    let entity = slots
+        .iter()
+        .find_map(|(entity, slot)| (slot.item == Some(selected)).then_some(*entity))
+        .ok_or("selected corpse row")?;
+    app.world_mut().trigger(PointerClick {
+        entity,
+        button: PointerButton::Secondary,
+        pointer: pointer(),
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    app.update();
+    let loot = app
+        .world_mut()
+        .query::<(Entity, &Control, &Children)>()
+        .iter(app.world())
+        .find_map(|(entity, control, children)| {
+            (matches!(control, Control::Loot(_))
+                && children.iter().any(|child| {
+                    app.world()
+                        .get::<Text>(child)
+                        .is_some_and(|text| text.0 == "Loot")
+                }))
+            .then_some(entity)
+        })
+        .ok_or("Loot menu entry")?;
+    app.world_mut().trigger(Activate { entity: loot });
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("wrong command".into());
+    };
+    assert_eq!((command.capability, command.command_type), (98, 114));
+    assert_eq!(
+        command.payload,
+        [
+            &[0x08, 1, 0x12, 16][..],
+            &corpse,
+            &[0x4a, 8],
+            &selected.handle.get().to_le_bytes()
+        ]
+        .concat(),
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
 #[test]
 fn native_activate_opens_current_inventory_handle_once_and_rejects_removed_item() -> TestResult {
     let (link, mut commands, outbox) = play_channel();

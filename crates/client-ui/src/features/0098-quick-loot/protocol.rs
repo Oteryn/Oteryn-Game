@@ -6,6 +6,10 @@ use oteryn_client_runtime::server_mechanic::{
 pub enum Action {
     LootAll,
     Corpse([u8; 16]),
+    CorpseItem {
+        corpse: [u8; 16],
+        item: oteryn_client_runtime::inventory::ItemHandle,
+    },
     CorpseItem(std::num::NonZeroU64),
     Add {
         mode: QuickLootFilterMode,
@@ -45,6 +49,11 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
         Action::Corpse(id) => {
             wire.action = QuickLootAction::Click;
             wire.corpse = Some(*id);
+        }
+        Action::CorpseItem { corpse, item } => {
+            wire.action = QuickLootAction::Click;
+            wire.corpse = Some(*corpse);
+            wire.selected_item = Some(*item);
         }
         Action::CorpseItem(handle) => {
             wire.action = QuickLootAction::Click;
@@ -89,6 +98,7 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
     };
     panel.pending = Some(action);
     panel.feedback = tr!("Waiting for the server").into();
+    panel.item_feedback = None;
     Some(ServerMechanicCommand {
         capability: 98,
         command_type: 114,
@@ -101,6 +111,24 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) -> boo
     let Some(action) = panel.pending.take() else {
         return false;
     };
+    if let Action::CorpseItem { corpse, .. } = action {
+        use CommandStatus::{Accepted, DuplicateReplay};
+        use QuickLootClickOutcome::{Moved, Rejected, Stale};
+        let message = match (
+            response.status,
+            QuickLootClickOutcome::decode(&response.payload),
+        ) {
+            (Accepted | DuplicateReplay, Ok(Moved)) => tr!("Item moved"),
+            (CommandStatus::Rejected | DuplicateReplay, Ok(Stale)) => {
+                tr!("Item is no longer available")
+            }
+            (CommandStatus::Rejected | DuplicateReplay, Ok(Rejected)) => tr!("Item move refused"),
+            _ => tr!("Loot request refused or invalid reply; try again"),
+        };
+        panel.feedback = message.into();
+        panel.item_feedback = Some((corpse, message));
+        return false;
+    }
     if matches!(action, Action::CorpseItem(_)) {
         panel.feedback = if matches!(
             response.status,

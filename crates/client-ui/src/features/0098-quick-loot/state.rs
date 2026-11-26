@@ -13,6 +13,7 @@ pub struct Panel {
     pub open: bool,
     pub pending: Option<Action>,
     pub feedback: String,
+    pub item_feedback: Option<([u8; 16], &'static str)>,
     /// Confirmed edits made during this session.
     pub confirmed: Vec<Action>,
     /// Saved destinations, at most one per category.
