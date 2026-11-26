@@ -23,6 +23,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
+        // A definition-selected tool can be classified before the fenced read.
+        // A non-rope must reach its own handler even when the item fence is stale.
+        if let UseTarget::ItemByDefinition(wanted) = intent.target
+            && !native
+                .item_index()
+                .and_then(|index| index.definition_at(wanted))
+                .is_some_and(|(key, _)| rope_definition(key))
+        {
+            return Ok(None);
+        }
+        let Some(map) = self.bundle_map() else {
+            return Ok(None);
+        };
         let Some(permit) = self.spell_lane_permit().await else {
             return Err(());
         };
@@ -47,9 +60,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(None);
         }
-        let Some(map) = self.bundle_map() else {
-            return Ok(None);
-        };
         if !self
             .states
             .player_trades
@@ -132,6 +142,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+fn rope_definition(key: &str) -> bool {
+    matches!(key, "oteryn:item.tibia.i3003" | "oteryn:item.tibia.i646") || secret_agent_rope(key)
+}
+
 /// Crystal 201189f8 Secret Agent tools try rope before shovel, pick and machete.
 pub(super) fn secret_agent_rope(key: &str) -> bool {
     oteryn_gameplay_items::secret_agent::jammed_successor(key).is_some()
@@ -185,10 +199,7 @@ fn carried_rope<'a>(
         .find(|entry| entry.item.item_instance_id == tool && entry.item.quantity > 0)
         .map(|entry| (&entry.item.definition, entry.item.item_instance_id))
         .filter(|(definition, _)| {
-            (matches!(
-                definition.production_key.as_str(),
-                "oteryn:item.tibia.i3003" | "oteryn:item.tibia.i646"
-            ) || secret_agent_rope(&definition.production_key))
+            rope_definition(&definition.production_key)
                 && index
                     .definition_ref(
                         &definition.family,
