@@ -1,7 +1,7 @@
 //! W10 client capture: native Hazard state before and after a Primal Menace kill, selection,
 //! locked-level refusal, and state restored by a fresh admission.
 use super::*;
-use oteryn_dev_client::DevClientSession;
+use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::{attack, hazard, logout::LogoutResult};
 
 const PRIMAL: &str = "oteryn:creature.the_primal_menace";
@@ -66,7 +66,7 @@ async fn defeat_primal(
     .ok_or("no reachable combat tile for the Primal Menace")?;
     walk(client, world, &path).await?;
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let answer = request_spawn(session, PRIMAL.into()).await?;
+    let answer = request_spawn(session.clone(), PRIMAL.into()).await?;
     let target = parse_spawned_entity(&answer)?;
     let visible = tokio::time::Instant::now() + Duration::from_secs(10);
     while !client
@@ -79,6 +79,19 @@ async fn defeat_primal(
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
     }
+    let identity = uuid_text(&target.identity).replace('-', "");
+    let damage = request_fixture_control(
+        session,
+        "--inspect-damage",
+        format!("{identity} {}", target.generation),
+    )
+    .await?;
+    let corpse = damage
+        .split_ascii_whitespace()
+        .nth(2)
+        .ok_or("missing Primal corpse identity")?;
+    let corpse = crate::node::operator_files::hex_bytes::<16>(corpse)
+        .map_err(|_| "invalid Primal corpse identity")?;
     let modes = attack::FightModes {
         chase: attack::ChaseMode::Chase,
         ..attack::FightModes::DEFAULT
@@ -87,12 +100,60 @@ async fn defeat_primal(
     if modes_reply.disposition != attack::AttackIntentDisposition::Ok {
         return Err(format!("Primal Menace chase mode refused: {modes_reply:?}").into());
     }
+    let mut last_health = client
+        .world_entities()
+        .and_then(|entities| entities.get(&target))
+        .and_then(|entity| match entity.detail {
+            EntityDetail::Actor { health_percent, .. }
+            | EntityDetail::ActorWithIcons { health_percent, .. } => Some(health_percent),
+            _ => None,
+        });
+    evidence(&format!(
+        "W10_COMBAT initial_target_hp_percent={last_health:?}"
+    ));
     let reply = client.session_mut().attack_target(Some(&target)).await?;
     if reply.disposition != attack::AttackIntentDisposition::Ok {
         return Err(format!("Primal Menace attack refused: {reply:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
-    verdict::Harness::global().bounded_wait(deadline, "W10-Primal-death");
+    verdict::Harness::global().bounded_wait(deadline, "W10-Primal-combat");
+    let mut removed = false;
+    loop {
+        for event in client.take_events() {
+            if let SessionEvent::WorldSpatialEntities(delta) = event {
+                removed |= delta.value.leave.contains(&target);
+                for entity in delta.value.enter.iter().chain(&delta.value.update) {
+                    if entity.entity == target
+                        && let EntityDetail::Actor { health_percent, .. }
+                        | EntityDetail::ActorWithIcons { health_percent, .. } = entity.detail
+                        && last_health != Some(health_percent)
+                    {
+                        evidence(&format!(
+                            "W10_COMBAT target_hp_percent={health_percent} previous={last_health:?}"
+                        ));
+                        last_health = Some(health_percent);
+                    }
+                }
+            }
+        }
+        let corpse_seen = client.world_entities().is_some_and(|entities| {
+            entities
+                .iter()
+                .any(|entity| entity.kind == EntityKind::Corpse && entity.entity.identity == corpse)
+        });
+        if corpse_seen {
+            evidence(&format!(
+                "W10_COMBAT exact_corpse=true target_removed={removed} last_hp_percent={last_health:?}"
+            ));
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("Primal death unconfirmed: target_removed={removed} exact_corpse=false last_hp_percent={last_health:?} actor_vitals={:?}", client.actor_vitals()).into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+    verdict::Harness::global().bounded_wait(deadline, "W10-Primal-death-receipt");
     committed_hunt_death(
         client,
         clients,
@@ -101,7 +162,8 @@ async fn defeat_primal(
         target,
         deadline,
     )
-    .await?;
+    .await
+    .map_err(|error| format!("BLOCKED-SERVER: exact Primal corpse observed: {error}"))?;
     client.session_mut().attack_target(None).await?;
     Ok(())
 }
