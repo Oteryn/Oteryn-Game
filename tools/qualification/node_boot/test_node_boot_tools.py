@@ -888,7 +888,7 @@ class CloudRunSummaryTests(unittest.TestCase):
                 "SEAM_EVIDENCE e2e_all scenario=I07.client status=PASS\n"
             )
             envelopes = {}
-            for key in range(1, 19):
+            for key in range(1, 20):
                 envelopes[key] = json.dumps({
                     "command_id": key, "server_sequence": key,
                     "game_session_id": first if key < 11 else relog, "payload": [], "status": 1,

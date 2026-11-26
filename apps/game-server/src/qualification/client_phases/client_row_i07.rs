@@ -278,7 +278,7 @@ impl Capture<'_> {
             .session_mut()
             .gated_command(98, 114, &payload)
             .await?;
-        let expected_status = if key == 18 {
+        let expected_status = if matches!(key, 18 | 19) {
             CommandStatus::Rejected
         } else {
             CommandStatus::Accepted
@@ -289,7 +289,7 @@ impl Capture<'_> {
             || reply.server_sequence <= self.previous.1
         {
             return Err(format!(
-                "I07 first probe {key} {request:?} refused or misbound: {reply:?}"
+                "I07 first probe {key} {request:?} refused or misbound: request_frame={payload:02x?} {reply:?}"
             )
             .into());
         }
@@ -420,7 +420,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let corpse_id = corpse.as_slice().try_into()?;
     let before = placements(&mut database, Storage::Corpse, character, corpse).await?;
     let stacked_before = placements(&mut database, Storage::Corpse, character, stacked).await?;
-    let ([coin, armor, filtered], [other, listed]) = (before.as_slice(), stacked_before.as_slice())
+    let ([coin, armor, filtered, spare], [other, listed]) =
+        (before.as_slice(), stacked_before.as_slice())
     else {
         return Err("I07 fixture corpse count differs".into());
     };
@@ -432,6 +433,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             ("oteryn:item.tibia.i3031", 7, 1),
             ("oteryn:item.tibia.i3357", 1, 2),
             ("oteryn:item.tibia.i3577", 1, 3),
+            ("oteryn:item.tibia.i3577", 1, 4),
             ("oteryn:item.tibia.i3578", 1, 1),
             ("oteryn:item.tibia.i3577", 1, 2),
         ])
@@ -501,6 +503,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 (coin, true),
                 (armor, false),
                 (filtered, false),
+                (spare, false),
                 (other, false),
                 (listed, false),
             ],
@@ -538,12 +541,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             &[
                 (armor, false),
                 (filtered, false),
+                (spare, false),
                 (other, false),
                 (listed, false),
             ],
         )
         .await?;
-    let remaining = [armor.clone(), filtered.clone()];
+    let remaining = [armor.clone(), filtered.clone(), spare.clone()];
     require_placements(
         &mut database,
         Storage::Corpse,
@@ -630,6 +634,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     capture.previous = (0, 0);
     let click = QuickLootRequest {
         corpse: Some(corpse_id),
+        selected_item: Some(filtered.item.as_slice().try_into()?),
         ..request(QuickLootAction::Click)
     };
     capture
@@ -640,6 +645,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             &[
                 (armor, true),
                 (filtered, false),
+                (spare, false),
                 (other, false),
                 (listed, false),
             ],
@@ -651,7 +657,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         Storage::Corpse,
         character,
         corpse,
-        std::slice::from_ref(filtered),
+        &[filtered.clone(), spare.clone()],
     )
     .await?;
     require_placements(
@@ -693,7 +699,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .slot
         + 1;
     expected_backpack.push(bag_filtered);
-    require_placements(&mut database, Storage::Corpse, character, corpse, &[]).await?;
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        corpse,
+        std::slice::from_ref(spare),
+    )
+    .await?;
     require_placements(
         &mut database,
         Storage::Corpse,
@@ -739,7 +752,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             &mut fresh,
             15,
             request(QuickLootAction::LootAll),
-            &[(other, false), (listed, false)],
+            &[(other, false), (listed, false), (spare, false)],
         )
         .await?;
     require_placements(
@@ -764,7 +777,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             &mut fresh,
             17,
             request(QuickLootAction::LootAll),
-            &[(other, true), (listed, false)],
+            &[(other, true), (listed, false), (spare, false)],
         )
         .await?;
     // The starter backpack already contains one of this food. The transfer merges
@@ -811,6 +824,34 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .await?;
     evidence("I07_INVALID_POUCH status=rejected");
+    capture
+        .probe(
+            &mut fresh,
+            19,
+            QuickLootRequest {
+                selected_item: Some(listed.item.as_slice().try_into()?),
+                ..click
+            },
+            &[],
+        )
+        .await?;
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        corpse,
+        std::slice::from_ref(spare),
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        stacked,
+        std::slice::from_ref(listed),
+    )
+    .await?;
+    evidence("I07_SELECTED_CLICK sibling=retained foreign_item=rejected");
     require_logout(&mut fresh).await?;
     drop(fresh);
     let mut readback = connect_world(clients, 0x07).await?;
@@ -837,7 +878,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &expected_backpack,
     )
     .await?;
-    require_placements(&mut database, Storage::Corpse, character, corpse, &[]).await?;
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        corpse,
+        std::slice::from_ref(spare),
+    )
+    .await?;
     require_placements(
         &mut database,
         Storage::Corpse,
@@ -884,14 +932,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     evidence("I07_CLIENT_INVENTORY final_relog=exact_definitions_and_quantities");
     require_logout(&mut readback).await?;
     evidence(
-        "I07_LOOT_CUSTODY final_relog=true exact_ids_counts_slots=true pouch=inbox backpack=equipped target_corpse=empty skip_listed=retained",
+        "I07_LOOT_CUSTODY final_relog=true exact_ids_counts_slots=true pouch=inbox backpack=equipped click_sibling=retained skip_listed=retained",
     );
     let fresh_session = uuid_text(fresh_session.as_bytes());
     write_capture(
         &capture_dir.join("i07-expected.txt"),
         &serde_json::to_vec(&serde_json::json!({
             "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "corpse": corpse_id,
-            "coin": coin.item, "armor": armor.item, "filtered": filtered.item, "other": other.item,
+            "coin": coin.item, "armor": armor.item, "filtered": filtered.item, "spare": spare.item, "other": other.item,
         }))?,
     )?;
     evidence(&format!(

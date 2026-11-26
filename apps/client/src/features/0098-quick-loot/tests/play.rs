@@ -332,6 +332,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         coin: [u8; 16],
         armor: [u8; 16],
         filtered: [u8; 16],
+        spare: [u8; 16],
         other: [u8; 16],
     }
 
@@ -371,7 +372,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         )
     };
     let main = route(None, QuickLootRecipient::MainContainer, None, false);
-    let click = Action::Corpse(expected.corpse);
+    let click = Action::CorpseItem { corpse: expected.corpse, item: expected.filtered };
     let skip = QuickLootFilterMode::Skip;
     let accept = QuickLootFilterMode::Accept;
     let gold_main = route(
@@ -380,7 +381,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         None,
         false,
     );
-    let steps: [(Action, &[([u8; 16], bool)], Option<&str>); 18] = [
+    let steps: [(Action, &[([u8; 16], bool)], Option<&str>); 19] = [
         (
             Action::Add {
                 mode: skip,
@@ -405,10 +406,11 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 (expected.coin, true),
                 (expected.armor, false),
                 (expected.filtered, false),
+                (expected.spare, false),
                 (expected.other, false),
                 (expected.listed, false),
             ],
-            Some("Looted 1 of 5 items"),
+            Some("Looted 1 of 6 items"),
         ),
         (gold_main.clone(), &[], None),
         (armor(false), &[], None),
@@ -425,10 +427,11 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             &[
                 (expected.armor, false),
                 (expected.filtered, false),
+                (expected.spare, false),
                 (expected.other, false),
                 (expected.listed, false),
             ],
-            Some("Looted 0 of 4 items"),
+            Some("Looted 0 of 5 items"),
         ),
         (armor(true), &[], None),
         (
@@ -436,10 +439,11 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             &[
                 (expected.armor, true),
                 (expected.filtered, false),
+                (expected.spare, false),
                 (expected.other, false),
                 (expected.listed, false),
             ],
-            Some("Looted 1 of 4 items"),
+            Some("Looted 1 of 5 items"),
         ),
         (
             click,
@@ -459,14 +463,14 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         ),
         (
             Action::LootAll,
-            &[(expected.other, false), (expected.listed, false)],
-            Some("Looted 0 of 2 items"),
+            &[(expected.other, false), (expected.listed, false), (expected.spare, false)],
+            Some("Looted 0 of 3 items"),
         ),
         (main.clone(), &[], None),
         (
             Action::LootAll,
-            &[(expected.other, true), (expected.listed, false)],
-            Some("Looted 1 of 2 items"),
+            &[(expected.other, true), (expected.listed, false), (expected.spare, false)],
+            Some("Looted 1 of 3 items"),
         ),
         (
             route(
@@ -478,6 +482,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             &[],
             None,
         ),
+        (Action::CorpseItem { corpse: expected.corpse, item: expected.listed }, &[], None),
     ];
     let (link, mut commands, outbox) = crate::play::play_channel();
     crate::play::mailbox::lock(&link.mailbox)
@@ -498,7 +503,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         }
         let reply: Reply =
             serde_json::from_slice(&std::fs::read(directory.join(format!("i07-{key}.json")))?)?;
-        let status = if key == 18 {
+        let status = if matches!(key, 18 | 19) {
             CommandStatus::Rejected
         } else {
             CommandStatus::Accepted
@@ -553,7 +558,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                     0,
                 )
             }
-            Action::Corpse(_) => link.quick_loot_action(action),
+            Action::CorpseItem { .. } => link.quick_loot_action(action),
             _ => return Err("unexpected I07 replay action".into()),
         };
         assert!(dispatched, "I07 probe {key}");
@@ -586,7 +591,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         );
         let panel = link.discovery_panel().loot;
         assert_eq!(panel.pending, None);
-        if key == 18 {
+        if matches!(key, 18 | 19) {
             assert_eq!(panel.destinations, before_panel.destinations);
             assert_eq!(panel.result, before_panel.result);
             assert_eq!(notices(), before);

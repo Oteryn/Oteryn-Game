@@ -6,6 +6,10 @@ use oteryn_client_runtime::server_mechanic::{
 pub enum Action {
     LootAll,
     Corpse([u8; 16]),
+    CorpseItem {
+        corpse: [u8; 16],
+        item: [u8; 16],
+    },
     Add {
         mode: QuickLootFilterMode,
         definition: u32,
@@ -43,6 +47,11 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
         Action::Corpse(id) => {
             wire.action = QuickLootAction::Click;
             wire.corpse = Some(*id);
+        }
+        Action::CorpseItem { corpse, item } => {
+            wire.action = QuickLootAction::Click;
+            wire.corpse = Some(*corpse);
+            wire.selected_item = Some(*item);
         }
         Action::Add { mode, definition } | Action::Remove { mode, definition } => {
             wire.action = if matches!(action, Action::Add { .. }) {
@@ -100,8 +109,14 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) -> boo
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) && let Ok(result) = decode_quick_loot_result(&response.payload)
     {
-        let looted = matches!(action, Action::LootAll | Action::Corpse(_));
-        if !matches!(action, Action::LootAll | Action::Corpse(_)) {
+        let looted = matches!(
+            action,
+            Action::LootAll | Action::Corpse(_) | Action::CorpseItem { .. }
+        );
+        if !matches!(
+            action,
+            Action::LootAll | Action::Corpse(_) | Action::CorpseItem { .. }
+        ) {
             if panel.confirmed.len() == 100 {
                 panel.confirmed.remove(0);
             }
