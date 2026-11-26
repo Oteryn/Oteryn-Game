@@ -131,6 +131,73 @@ async fn settle_death_when_ready(
     .await?)
 }
 
+async fn paid_splash(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    (actor, session): (crate::foundation::ExactActorRef, GameSessionId),
+    (victim, victim_session): (crate::foundation::ExactActorRef, GameSessionId),
+    content: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult {
+    use oteryn_protocol_oteryn::pvp_expert::{ExpertFightModes, ExpertMode};
+
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("UPDATE game_durability_fresh_admission_receipts SET authorization_decided_at=authorization_decided_at-11")
+        .execute(&mut *tx).await?;
+    for (character, weapon, projectile, ammo) in [(41, 70, 71, 3449), (101, 72, 73, 3447)] {
+        for (seed, item, count, slot) in [(weapon, 3350, 1, 6_i16), (projectile, ammo, 10, 10)] {
+            sqlx::raw_sql(sqlx::AssertSqlSafe(
+                crate::durability::item_fee_burn::test_support::item(
+                    seed, &format!("oteryn:item.tibia.i{item}"), "definition-r1", count,
+                ),
+            )).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($4,'hex')::uuid)")
+                .bind(id(character).as_slice()).bind(id(42).as_slice()).bind(slot).bind(id(seed).as_slice()).execute(&mut *tx).await?;
+        }
+    }
+    tx.commit().await?;
+    assert_eq!(owner.expert_fight_modes(actor, session, 1, ExpertFightModes {
+        modes: attack::FightModes { secure: false, ..attack::FightModes::DEFAULT },
+        expert: ExpertMode::RedFist,
+    }).await, attack::AttackIntentDisposition::Ok);
+    let rat = {
+        let mut runtime = owner.runtime.lock().await;
+        runtime.install_companion_policies(content.policies().clone()).map_err(debug)?;
+        let state = runtime.companion_policy("oteryn:creature.rat").map_err(debug)?;
+        let health = u64::try_from(state.maximum_health)?;
+        runtime.realize_activation_spawns(vec![(
+            vec![(2, 12, -7)], 60_000, 0, "oteryn:creature.rat".into(), health,
+        )]).map_err(debug)?;
+        let visible = runtime.visible_entities();
+        let rat = visible.creatures.first().ok_or("rat")?;
+        runtime.set_test_creature_health(rat.actor, 10_000).map_err(debug)?;
+        EntityRef { identity: rat.actor.placement_identity(), generation: rat.generation }
+    };
+    for (source, source_session) in [(actor, session), (victim, victim_session)] {
+        assert_eq!(owner.select_attack_target(source, source_session, 2, Some(rat)).await,
+            attack::AttackIntentDisposition::Ok);
+        owner.refresh_attack_weapon(source, source_session).await;
+    }
+    let count = |seed| async move {
+        sqlx::query_scalar::<_, i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(id(seed).as_slice()).fetch_one(&h.pool).await
+    };
+    let before = health(owner, victim).await?;
+    let now = owner.owner_now();
+    crate::gameplay_transport::attack::ranged::lose_shot_ack_for(victim_session);
+    owner.drain_auto_attacks_at(now).await;
+    assert_eq!((count(71).await?, count(73).await?), (9, 9), "both shots committed");
+    assert_eq!(health(owner, victim).await?, before, "the later payment fenced the pending splash");
+    assert!(owner.spell_lane.acquire().await.is_err(), "later shot is parked");
+    owner.drain_auto_attacks_at(now).await;
+    let after = health(owner, victim).await?;
+    assert!(after < before, "the earlier paid splash reached its player target");
+    owner.drain_auto_attacks_at(now).await;
+    assert_eq!(health(owner, victim).await?, after, "the splash was installed exactly once");
+    assert_eq!((count(71).await?, count(73).await?), (9, 9));
+    Ok(())
+}
+
 async fn melee_fault(
     client: &mut DuplexStream,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -418,6 +485,14 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 generation: p.generation,
             }
         };
+        if mode == 16 {
+            paid_splash(&h, &owner, (actor, session), (target, target_session), native).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return Ok(());
+        }
         let original_health = health(&owner, target).await?;
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         let serving = async { serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS).await };
@@ -749,7 +824,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
         let receipt_count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pvp_harm")
             .fetch_one(&h.pool)
             .await?;
-        if mode == 7 || mode == 11 || mode == 13 || mode == 14 {
+        if matches!(mode, 7 | 11 | 13..=15) {
             assert!(receipt_count > 0);
             assert!(health(&owner, target).await? < original_health);
         } else if mode != 2 && mode != 6 {

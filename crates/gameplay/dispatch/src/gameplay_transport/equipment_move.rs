@@ -724,26 +724,34 @@ async fn move_equipment_inner(
     match committed {
         Ok(Ok(receipt)) => {
             // Keep the lane permit across the checkpoint, fresh read and publication.
-            if !retry
+            let checkpointed = retry
                 .retry_until(async || {
                     admission
                         .checkpoint_timed_equipment(actor, session, true)
                         .await
                 })
-                .await
-                || !retry
+                .await;
+            #[cfg(test)]
+            let checkpointed =
+                checkpointed && !FAIL_POST_EQUIP_REFRESH.with(|fail| fail.replace(false));
+            let refreshed = checkpointed
+                && retry
                     .retry_until(async || {
                         admission
                             .refresh_clock_equipment_effects(actor, session, fence, house)
                             .await
                             .is_ok()
                     })
-                    .await
-            {
-                return EquipmentMoveResult::Unknown;
-            }
+                    .await;
+
+            // The equip already committed. Publish its one-shot effect even if
+            // the follow-up read cannot produce a client acknowledgement.
             apply_noxious_claw_equip(admission, actor, session, &receipt).await;
-            EquipmentMoveResult::Committed
+            if refreshed {
+                EquipmentMoveResult::Committed
+            } else {
+                EquipmentMoveResult::Unknown
+            }
         }
         Ok(Err(EquipmentMoveRefusal::Rejected)) => refused(RejectionStage::EquipmentCommit),
         Ok(Err(refusal)) => EquipmentMoveResult::Refused(refusal),
@@ -836,6 +844,16 @@ async fn apply_noxious_claw_equip(
         .states
         .server_messages
         .send_current(session, ServerMessage::Advance(message.into()));
+}
+
+#[cfg(test)]
+thread_local! {
+    static FAIL_POST_EQUIP_REFRESH: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+#[cfg(test)]
+pub(in crate::gameplay_transport) fn fail_post_equip_refresh_once() {
+    FAIL_POST_EQUIP_REFRESH.with(|fail| fail.set(true));
 }
 
 #[cfg(test)]

@@ -45,6 +45,7 @@ pub(super) struct SelectedSwing {
 
 /// A PvP swing the attacker's pass drew, halved, for a player target; its defence is met after
 /// the pass (PVP-DEFENCE-1).
+#[derive(Debug)]
 pub(super) struct PvpSwing {
     pub(super) actor: ExactActorRef,
     pub(super) session: GameSessionId,
@@ -248,6 +249,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let objects = self.door.lock().await;
         let mut attack = self.states.attack.lock().await;
         attack.prune(&runtime);
+        let root = GameplayDecisionRoot::from_bytes(digest);
+        let mut trained = TrainingDue::new();
+        if !attack.pending_pvp.is_empty() {
+            self.drain_pvp_impacts(
+                &mut pvp_permit,
+                &mut runtime,
+                &mut states,
+                &mut attack,
+                room,
+                &objects,
+                content,
+                (&root, &digest, constants, now),
+                &mut trained,
+            )
+            .await;
+            drop(attack);
+            drop(objects);
+            drop(states);
+            drop(runtime);
+            drop(pvp_permit);
+            self.save_trained_levels(trained).await;
+            return;
+        }
         // Only lineages already held by the real attack owner are read. The
         // snapshot grants neither a swing nor payment; those are selected below.
         let source_players: Vec<_> = attack
@@ -322,6 +346,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let ChannelAttackStates {
             entries,
+            pending_pvp,
             blocks,
             kills,
             ..
@@ -331,8 +356,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .filter_map(|e| e.shared_experience_activity)
             .collect();
-        let root = GameplayDecisionRoot::from_bytes(digest);
-        let mut trained = TrainingDue::new();
         for (target, lethal, at) in std::mem::take(&mut states.equipment_reflection_kills) {
             crate::gameplay_transport::kill_reward::record_creature_kill(
                 &mut runtime,
@@ -349,7 +372,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(SemanticTimeMicros::from_micros(at)),
             );
         }
-        let mut pvp_hits = Vec::new();
         for entry in entries.iter_mut() {
             if runtime
                 .actor_staff_visibility(entry.actor)
@@ -467,7 +489,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                 else {
                     if pvp_permit.has_unresolved() {
-                        return;
+                        break;
                     }
                     entry.state = state_before;
                     entry.next_ordinal = ordinal_before;
@@ -794,7 +816,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // `Combat::CombatHealthFunc` halves a PvP hit before the target's block meets it;
                     // PVP-DEFENCE-1 resolves the defence after this pass, where the target's block
                     // budget is reachable.
-                    pvp_hits.push(PvpSwing {
+                    pending_pvp.push_back(PvpSwing {
                         actor: entry.actor,
                         session: entry.session,
                         modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes {
@@ -1575,21 +1597,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 break;
             }
         }
-        for hit in pvp_hits {
-            self.land_pvp_swing(
-                &mut pvp_permit,
-                &mut runtime,
-                &mut states,
-                &mut attack,
-                room,
-                &objects,
-                content,
-                (&root, &digest, constants, now),
-                hit,
-                &mut trained,
-            )
-            .await;
-        }
+        self.drain_pvp_impacts(
+            &mut pvp_permit,
+            &mut runtime,
+            &mut states,
+            &mut attack,
+            room,
+            &objects,
+            content,
+            (&root, &digest, constants, now),
+            &mut trained,
+        )
+        .await;
         drop(attack);
         drop(objects);
         drop(states);
@@ -1650,6 +1669,38 @@ fn battle_instinct_for_actor(
 
 /// SKILL-TRAIN-1: the swing at a creature trains the swing's skill by how its block met it.
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[allow(clippy::too_many_arguments)]
+    async fn drain_pvp_impacts(
+        &self,
+        permit: &mut SpellLanePermit,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        attack: &mut ChannelAttackStates,
+        room: &QualifiedNativeEntryRoom,
+        objects: &LocalObjectRuntime,
+        content: &NativeGameplayState,
+        facts: (
+            &GameplayDecisionRoot,
+            &[u8; 32],
+            &AttackConstants,
+            SemanticTimeMicros,
+        ),
+        trained: &mut TrainingDue,
+    ) {
+        while !permit.has_unresolved() {
+            let Some(hit) = attack.pending_pvp.pop_front() else {
+                break;
+            };
+            self.land_pvp_swing(
+                permit, runtime, states, attack, room, objects, content, facts, hit, trained,
+            )
+            .await;
+        }
+        if !attack.pending_pvp.is_empty() {
+            states.owner_wake.notify_one();
+        }
+    }
+
     /// PVP-DEFENCE-1 (`Creature::blockHit`, `Player::getDefense`): a PvP swing spends one of the
     /// target's blocks and meets the defence of what the target's hands hold, then the target's
     /// worn armor. A block trains the target's shielding (SKILL-TRAIN-1), and the attacker trains
@@ -1673,6 +1724,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         hit: PvpSwing,
         trained: &mut TrainingDue,
     ) {
+        if hit.weapon.content_digest != *digest {
+            return;
+        }
         let Some(target_session) = states
             .actors
             .iter()
@@ -1901,6 +1955,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return;
         };
+        let poison = hit
+            .weapon
+            .ranged
+            .as_ref()
+            .and_then(|r| r.scripted_arrow())
+            .filter(|arrow| *arrow == ranged::ScriptedArrow::Poison)
+            .and_then(|_| ranged::poison_definition())
+            .map(|definition| {
+                (
+                    definition,
+                    swing_occurrence(hit.actor, hit.lineage, hit.ordinal, b"poison-arrow"),
+                )
+            });
         let batch = crate::spell::combat_batch::OwnerCombatBatch {
             caster: hit.actor,
             attacker: hit.attacker,
@@ -1933,6 +2000,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 hit.modes,
                 hit.black,
                 damage,
+                poison,
             )
             .await
         {

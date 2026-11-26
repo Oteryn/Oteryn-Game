@@ -45,6 +45,7 @@ enum Targeting {
     MissingHeldTarget,
     ClickHeldTarget,
     ClickOtherCreature,
+    HeldPlayer,
 }
 
 /// Each rat's health before every cast: far above any one hit.
@@ -91,6 +92,14 @@ fn crosshair_spells_postgres_paladin_barrages_prefer_held_target() -> TestResult
 }
 
 #[test]
+fn crosshair_spells_postgres_paladin_barrages_accept_held_player_in_both_encodings() -> TestResult {
+    scenario(
+        Plan { tag: "crosshair_pvp_paladin", ..PALADIN },
+        Targeting::HeldPlayer,
+    )
+}
+
+#[test]
 fn crosshair_spells_postgres_monk_thousand_fist_blows_hits_position_target() -> TestResult {
     scenario(
         Plan {
@@ -132,8 +141,16 @@ async fn scenario_inner(
     targeting: Targeting,
     native_frame: bool,
 ) -> TestResult {
+    use super::appearance_change_postgres_fixtures::observer_visibility_tests as observer;
+    use oteryn_protocol_oteryn::pvp_expert::{ExpertFightModes, ExpertMode};
+
+    let pvp = matches!(targeting, Targeting::HeldPlayer);
     let h = Harness::create_with_admission_seed(admin, plan.tag, false, false).await?;
     prepare_current_session(&h).await?;
+    if pvp {
+        h.seed_pvp_target().await?;
+        observer::admit(&h).await?;
+    }
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -373,6 +390,39 @@ async fn scenario_inner(
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
+    let player = if pvp {
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
+            .bind(id(101).as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'policy-1')")
+            .bind(id(42).as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'crosshair-pvp-fixture')")
+            .bind(id(42).as_slice()).execute(&h.pool).await?;
+        let victim = observer::initialize(&deps, &owner).await?;
+        let target_session = crate::foundation::GameSessionId::decode(&id(110)).map_err(debug)?;
+        let target_ref = {
+            let mut runtime = deps.runtime.lock().await;
+            let before = runtime.read_actor_position(victim).map_err(debug)?;
+            runtime.borrow_movement_position().commit_cardinal(before, crate::foundation::MovementLocalPosition {
+                x: target_position.x - 2, ..target_position
+            }).map_err(debug)?;
+            let visible = runtime.visible_entities();
+            let row = visible.players.iter().find(|entry| entry.actor == victim).ok_or("visible player")?;
+            EntityRef { identity: victim.placement_identity(), generation: row.generation }
+        };
+        // Age the fixture admission past the protected login interval.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_durability_fresh_admission_receipts SET authorization_decided_at=authorization_decided_at-11 WHERE game_session_id=encode($1,'hex')::uuid")
+            .bind(session.as_bytes().as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7, 17, 21, 87]).ok_or("PvP capabilities")?;
+        assert_eq!(owner.expert_fight_modes(actor, session, admitted.continuity.next_command_id,
+            ExpertFightModes { modes: attack::FightModes { secure: false, ..attack::FightModes::DEFAULT }, expert: ExpertMode::RedFist }).await,
+            attack::AttackIntentDisposition::Ok);
+        Some((victim, target_session, target_ref))
+    } else {
+        None
+    };
     let position = if matches!(targeting, Targeting::ClickOtherCreature) {
         other_position
     } else {
@@ -380,7 +430,10 @@ async fn scenario_inner(
     };
     let mut observed = Vec::new();
     let mut expected = Vec::new();
-    for (index, (key, _, mana)) in plan.spells.iter().enumerate() {
+    let casts = plan.spells.iter().flat_map(|spell| {
+        [false, true].into_iter().take(if pvp { 2 } else { 1 }).map(move |hotkey| (spell, hotkey))
+    });
+    for (index, ((key, _, mana), hotkey)) in casts.enumerate() {
         let spell = (1..=deps.spells.source_len())
             .find_map(|i| {
                 std::num::NonZeroU32::new(u32::try_from(i).ok()?).filter(|i| {
@@ -407,7 +460,7 @@ async fn scenario_inner(
         }
         if matches!(
             targeting,
-            Targeting::ClickHeldTarget | Targeting::ClickOtherCreature
+            Targeting::ClickHeldTarget | Targeting::ClickOtherCreature | Targeting::HeldPlayer
         ) {
             assert_eq!(
                 owner
@@ -415,7 +468,7 @@ async fn scenario_inner(
                         actor,
                         session,
                         admitted.continuity.next_command_id,
-                        Some(target_ref)
+                        Some(player.map_or(target_ref, |player| player.2))
                     )
                     .await,
                 attack::AttackIntentDisposition::Ok,
@@ -428,13 +481,24 @@ async fn scenario_inner(
             .ok_or("before vitals")?
             .1
             .mana;
+        let victim_health = if let Some((victim, target_session, _)) = player {
+            let runtime = deps.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let state = states.get_mut(&runtime, victim, target_session).ok_or("victim")?;
+            state.restore_saved_vitals(state.character_facts().max_health, 0);
+            Some(state.vitals().health)
+        } else {
+            None
+        };
         let payload = actor_spell::encode_spell_cast_intent(&actor_spell::SpellCastIntent {
             spell,
-            target: actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
-                x: position.x,
-                y: position.y,
-                floor: position.floor.abs(),
-            }),
+            target: if hotkey {
+                actor_spell::SpellTarget::AttackTarget
+            } else {
+                actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
+                    x: position.x, y: position.y, floor: position.floor.abs(),
+                })
+            },
             aim_at_target: false,
         });
         let results = exchange(
@@ -456,7 +520,13 @@ async fn scenario_inner(
                 assert!(remaining <= health, "{key} unexpectedly healed a rat");
                 *hit = remaining < health;
             }
-            damaged
+            if let (Some((victim, target_session, _)), Some(health)) = (player, victim_health) {
+                let states = owner.states.spell_states.lock().await;
+                let after = states.get(&runtime, victim, target_session).ok_or("victim after cast")?.vitals().health;
+                vec![after < health]
+            } else {
+                damaged.to_vec()
+            }
         };
         let after = owner
             .observe_vitals(actor, session)
@@ -473,13 +543,13 @@ async fn scenario_inner(
         let outcome = if matches!(targeting, Targeting::MissingHeldTarget) {
             (
                 actor_spell::SpellCastDisposition::TargetRequired,
-                [false, false],
+                vec![false, false],
                 0,
             )
         } else {
             (
                 actor_spell::SpellCastDisposition::Cast,
-                [true, false],
+                if pvp { vec![true] } else { vec![true, false] },
                 *mana,
             )
         };
@@ -491,7 +561,7 @@ async fn scenario_inner(
     h.cleanup().await?;
     assert_eq!(
         observed, expected,
-        "disposition, damage to each rat, and mana spent (native frame: {native_frame})"
+        "disposition, target damage, and mana spent (native frame: {native_frame})"
     );
     Ok(())
 }

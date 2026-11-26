@@ -24,6 +24,23 @@ pub(super) enum ShotImpact {
     Area(Vec<ExactActorRef>),
 }
 
+// Crystal weapons.cpp selects among the center and its eight neighbours.
+const MISS_OFFSETS: [(i32, i32); 9] = [
+    (-1, -1),
+    (0, -1),
+    (1, -1),
+    (-1, 0),
+    (0, 0),
+    (1, 0),
+    (-1, 1),
+    (0, 1),
+    (1, 1),
+];
+
+fn missile_can_land(tile: Option<(native_combat_cast::TileFlags, bool)>) -> bool {
+    tile.is_some_and(|(flags, immovable)| flags.present && !immovable)
+}
+
 impl ScriptedArrow {
     fn radius(self) -> u32 {
         match self {
@@ -156,13 +173,13 @@ pub(super) fn possible_area_targets(
     .collect()
 }
 
-fn poison_definition() -> Option<crate::foundation::ConditionDefinition> {
+pub(super) fn poison_definition() -> Option<crate::foundation::ConditionDefinition> {
     use crate::foundation::{ConditionDefinition, DotElement};
     use oteryn_gameplay_foundation::foundation::condition::{DamageSchedule, DamageSegment};
 
     // Crystal poison_arrow.lua:7–12. The first tick is delayed by the full interval.
     ConditionDefinition::new_damage_schedule(
-        "oteryn:weapon.poison_arrow",
+        crate::gameplay_transport::pvp_live::POISON_ARROW_CONDITION,
         1,
         DotElement::Poison,
         DamageSchedule::Fixed {
@@ -647,6 +664,16 @@ pub(in crate::gameplay_transport) struct PendingShot {
     impact: ShotImpact,
 }
 
+#[cfg(test)]
+thread_local! {
+    static LOSE_SHOT_ACK: std::cell::Cell<Option<GameSessionId>> = const { std::cell::Cell::new(None) };
+}
+
+#[cfg(test)]
+pub(in crate::gameplay_transport) fn lose_shot_ack_for(session: GameSessionId) {
+    LOSE_SHOT_ACK.with(|fault| fault.set(Some(session)));
+}
+
 fn park(attempt: PendingShot) -> Box<dyn std::any::Any + Send> {
     Box::new(native_combat_cast::UnresolvedSpellCommit::Ranged(Box::new(
         attempt,
@@ -692,6 +719,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(_) => {
+                #[cfg(test)]
+                if LOSE_SHOT_ACK.with(|fault| {
+                    if fault.get() != Some(a.session) {
+                        return false;
+                    }
+                    fault.set(None);
+                    true
+                }) {
+                    window.park();
+                    return None;
+                }
                 let attempt = window.install();
                 states.analyser.supplies(
                     attempt.actor,
@@ -873,23 +911,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     to
                                 } else {
                                     let mut landings = Vec::new();
-                                    for (dx, dy) in [
-                                        (-1, -1),
-                                        (0, -1),
-                                        (1, -1),
-                                        (-1, 0),
-                                        (1, 0),
-                                        (-1, 1),
-                                        (0, 1),
-                                        (1, 1),
-                                    ] {
+                                    for (dx, dy) in MISS_OFFSETS {
                                         let (Some(x), Some(y)) =
                                             (to.x.checked_add(dx), to.y.checked_add(dy))
                                         else {
                                             continue;
                                         };
                                         let candidate = MovementLocalPosition { x, y, ..to };
-                                        let tile = native_combat_cast::read_tile(
+                                        let tile = native_combat_cast::read_projectile_tile(
                                             &mut tx,
                                             &authority,
                                             room,
@@ -899,7 +928,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                         )
                                         .await
                                         .map_err(|_| DurabilityError::Unavailable)?;
-                                        if tile.present && !tile.solid {
+                                        if missile_can_land(tile) {
                                             landings.push(candidate);
                                         }
                                     }
@@ -936,7 +965,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 if !arrow.affects(center, at) {
                                     continue;
                                 }
-                                let tile = native_combat_cast::read_tile(
+                                let Some((tile, _)) = native_combat_cast::read_projectile_tile(
                                     &mut tx,
                                     &authority,
                                     room,
@@ -945,7 +974,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     pos(at),
                                 )
                                 .await
-                                .map_err(|_| DurabilityError::Unavailable)?;
+                                .map_err(|_| DurabilityError::Unavailable)?
+                                else {
+                                    continue;
+                                };
                                 if !tile.present
                                     || tile.projectile
                                     || tile.protection
@@ -958,12 +990,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                         .map_err(|_| DurabilityError::Unavailable)?
                                 {
                                     if !exempt
-                                        && native_combat_cast::read_tile(
+                                        && native_combat_cast::read_projectile_tile(
                                             &mut tx, &authority, room, runtime, objects, step,
                                         )
                                         .await
                                         .map_err(|_| DurabilityError::Unavailable)?
-                                        .projectile
+                                        .is_none_or(|(tile, _)| tile.projectile)
                                     {
                                         continue 'targets;
                                     }
@@ -1414,6 +1446,37 @@ pub(super) fn analyser_element(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn area_arrow_miss_can_land_at_center_and_on_movable_blockers() {
+        let open_ground = native_combat_cast::TileFlags {
+            projectile: false,
+            solid: false,
+            floor_change: false,
+            protection: false,
+            present: true,
+        };
+        let wall = native_combat_cast::TileFlags {
+            solid: true,
+            ..open_ground
+        };
+        let missing_ground = native_combat_cast::TileFlags {
+            present: false,
+            ..open_ground
+        };
+        assert_eq!(
+            MISS_OFFSETS
+                .into_iter()
+                .collect::<std::collections::BTreeSet<_>>(),
+            (-1..=1)
+                .flat_map(|x| (-1..=1).map(move |y| (x, y)))
+                .collect()
+        );
+        assert!(missile_can_land(Some((wall, false))));
+        assert!(!missile_can_land(Some((wall, true))));
+        assert!(!missile_can_land(Some((missing_ground, false))));
+        assert!(!missile_can_land(None));
+    }
+
     #[test]
     fn crystal_scripted_arrow_masks_and_damage_bounds() {
         let origin = MovementLocalPosition {

@@ -276,8 +276,10 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 continue;
             }
+            let poison_arrow =
+                crate::gameplay_transport::pvp_live::is_poison_arrow(&tick.provenance);
             if agony
-                || tick.provenance.source_kind
+                || !poison_arrow && tick.provenance.source_kind
                     != oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::Field
             {
                 return Err(DurabilityError::Unavailable);
@@ -291,11 +293,12 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 || historical.source_catalog_digest
                     != runtime.content_pin().server_artifact_digest()
                 || historical.source_scope_generation != runtime.binding().scope_generation().get()
-                || !tick
-                    .provenance
-                    .source
-                    .as_deref()
-                    .is_some_and(|source| source.starts_with("player:field:"))
+                || !poison_arrow
+                    && !tick
+                        .provenance
+                        .source
+                        .as_deref()
+                        .is_some_and(|source| source.starts_with("player:field:"))
             {
                 return Err(DurabilityError::Unavailable);
             }
@@ -336,6 +339,9 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 None
             };
             let Some((source, source_session, fence)) = current_source else {
+                if poison_arrow {
+                    continue;
+                }
                 // A departed caster cannot grant PvP authority or attribution. The
                 // retained field is environmental damage under the current victim's
                 // own fence, current World policy and qualified tile instead.
@@ -387,6 +393,12 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 continue;
             };
+            if poison_arrow
+                && tick.provenance.source.as_deref()
+                    != Some(crate::spell::combat_execution::actor_atom(source).as_str())
+            {
+                return Err(DurabilityError::Unavailable);
+            }
             let command = crate::foundation::CommandRef::new(
                 source_session,
                 crate::foundation::CommandId::new(historical.source_creation_command)
@@ -484,11 +496,16 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 continue;
             }
-            let magnitude =
-                oteryn_gameplay_combat_rules::pvp::pvp_damage(amount, facts.target_black);
-            let magnitude = self
-                .equipped_field_damage(tx, read, element, magnitude, initial, cycle)
-                .await?;
+            // Crystal ConditionDamage::doDamage applies the PvP split and field
+            // modifiers only to conditions created by a field.
+            let magnitude = if poison_arrow {
+                amount
+            } else {
+                let magnitude =
+                    oteryn_gameplay_combat_rules::pvp::pvp_damage(amount, facts.target_black);
+                self.equipped_field_damage(tx, read, element, magnitude, initial, cycle)
+                    .await?
+            };
             if initial && magnitude == 0 {
                 next.conditions = before.conditions.clone();
             }

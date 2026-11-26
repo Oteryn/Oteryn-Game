@@ -28,12 +28,22 @@ fn noxious_spawn_claw_postgres_dispatch_level_gate_and_equip_damage() -> TestRes
         return Ok(());
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run("noxious-spawn-claw", || {
-        scenario(false)?;
-        scenario(true)
+        scenario(false, false)?;
+        scenario(true, false)
     })
 }
 
-fn scenario(protected: bool) -> TestResult {
+#[test]
+fn noxious_spawn_claw_postgres_committed_equip_hits_before_failed_refresh() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("noxious-spawn-claw-refresh", || {
+        scenario(false, true)
+    })
+}
+
+fn scenario(protected: bool, fail_refresh: bool) -> TestResult {
     run(async |admin| {
         let h =
             Harness::create_with_admission_seed(admin, "noxious_spawn_claw", true, false).await?;
@@ -155,6 +165,9 @@ fn scenario(protected: bool) -> TestResult {
 
         set_level(&h, REQUIRED_LEVEL).await?;
         eprintln!("POSTGRES_STARTED NOXIOUS-SPAWN-CLAW");
+        if fail_refresh {
+            crate::gameplay_transport::equipment_move::fail_post_equip_refresh_once();
+        }
         let moved = item_move(
             &owner,
             deps.actor,
@@ -165,10 +178,14 @@ fn scenario(protected: bool) -> TestResult {
             &mut view,
         )
         .await;
-        assert!(
-            matches!(moved, ItemMoveStep::Result(ItemMoveOutcome::Moved, _)),
-            "level 100 equip: {moved:?}"
-        );
+        if fail_refresh {
+            assert!(matches!(moved, ItemMoveStep::Disconnect), "{moved:?}");
+        } else {
+            assert!(
+                matches!(moved, ItemMoveStep::Result(ItemMoveOutcome::Moved, _)),
+                "level 100 equip: {moved:?}"
+            );
+        }
         let worn = observe_inventory(&owner, deps.actor, session, &view)
             .await
             .ok_or("worn inventory")?;

@@ -420,12 +420,13 @@ async fn prepare_spatial(
     // Crystal spells.cpp:1158–1206 resolves the held creature before placing the
     // area of a target-required instant spell.
     let targeting = &profile.header.targeting;
-    let position_needs_held_target = aim.is_none()
-        && matches!(intent.target, SpellTarget::Position(_))
-        && matches!(spell.carrier, crate::spell::Carrier::Instant { .. })
+    let needs_held_target = matches!(spell.carrier, crate::spell::Carrier::Instant { .. })
         && targeting.cast_at_position == Some(true)
         && targeting.needs_target;
-    let target = if position_needs_held_target {
+    let target = if needs_held_target
+        && aim.is_none()
+        && matches!(intent.target, SpellTarget::Position(_))
+    {
         SpellTarget::AttackTarget
     } else {
         intent.target
@@ -444,7 +445,7 @@ async fn prepare_spatial(
                 })
                 .map(|c| c.actor)
                 .or_else(|| {
-                    (position_needs_held_target
+                    (needs_held_target
                         || matches!(
                             spell.carrier,
                             crate::spell::Carrier::Rune { item: 3165, .. }
