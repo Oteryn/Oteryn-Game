@@ -41,7 +41,7 @@ summarize() {
 
   rows=$(awk '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=([[:alnum:]_.-]+\.full|P13\.client)$/ && $4 ~ /^status=(PASS|FAIL)$/ {
+      $3 ~ /^scenario=([[:alnum:]_.-]+\.full|P13\.client|P18\.client)$/ && $4 ~ /^status=(PASS|FAIL)$/ {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)
@@ -95,6 +95,47 @@ replay_loyalty_capture() {
   return 1
 }
 
+selected_forge_replay() {
+  [[ "$1" == rows ]] || return 1
+  # Match the Rust row selector, including "all" and usize bounds.
+  python3 - "${OTERYN_E2E_ROW_BATCH:-}" <<'PY_FORGE_BATCH'
+import re
+import sys
+
+batch = sys.argv[1]
+if batch == "all":
+    sys.exit(0)
+match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+if match is None:
+    sys.exit(1)
+values = [value.lstrip("0") or "0" for value in match.groups()]
+limit = str(2 * sys.maxsize + 1)
+if any((len(value), value) > (len(limit), limit) for value in values):
+    sys.exit(1)
+first, length = map(int, values)
+forge_row = 174  # client_phases/world.rs, P18.client
+sys.exit(0 if 0 <= forge_row - first < length else 1)
+PY_FORGE_BATCH
+}
+
+replay_forge_capture() {
+  local log=$1 capture_dir=$2 replay_log=$3 status=$4
+  local test=item_forge::protocol::e2e_p18::e2e_p18_replays_forge_history_and_operation_receipts
+  local started=$SECONDS
+  if grep -q '^SEAM_EVIDENCE e2e_all scenario=P18\.client status=FAIL ' "$log"; then
+    return 1
+  fi
+  if [[ "$status" == 0 ]] &&
+    grep -q '^SEAM_EVIDENCE e2e_capture scenario=P18\.client status=CAPTURED ' "$log" &&
+    E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact >"$replay_log" 2>&1 &&
+    grep -Fqx "test $test ... ok" "$replay_log"; then
+    printf 'SEAM_EVIDENCE e2e_all scenario=P18.client status=PASS seconds=%s evidence=live-capture-replayed\n' "$((SECONDS - started))" >>"$log"
+    return 0
+  fi
+  printf 'SEAM_EVIDENCE e2e_all scenario=P18.client status=FAIL seconds=%s evidence=client-replay-failed\n' "$((SECONDS - started))" >>"$log"
+  return 1
+}
+
 if [[ ${1:-} == --summarize ]]; then
   [[ $# == 3 && -r "$2" && "$3" =~ ^[a-z0-9_]+$ ]] || blocked invalid_summary_arguments
   summarize "$2" "$3"
@@ -145,8 +186,15 @@ for group in "$@"; do
   started=$SECONDS
   status=0
   capture_dir=
+  forge_replay=0
   if selected_loyalty_replay "$group"; then
     capture_dir=$(mktemp -d "$work_dir/$index-loyalty.XXXXXX") || blocked work_dir_unavailable
+  fi
+  if selected_forge_replay "$group"; then
+    forge_replay=1
+    if [[ -z "$capture_dir" ]]; then
+      capture_dir=$(mktemp -d "$work_dir/$index-forge.XXXXXX") || blocked work_dir_unavailable
+    fi
   fi
   (
     [[ -z "$capture_dir" ]] || export E2E_ALL_CAPTURE_DIR="$capture_dir"
@@ -156,7 +204,10 @@ for group in "$@"; do
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
-  if [[ -n "$capture_dir" ]] && ! replay_loyalty_capture "$log" "$capture_dir" "$work_dir/$index-loyalty.log"; then
+  if [[ "$forge_replay" == 1 ]] && ! replay_forge_capture "$log" "$capture_dir" "$work_dir/$index-forge.log" "$status"; then
+    status=1
+  fi
+  if selected_loyalty_replay "$group" && ! replay_loyalty_capture "$log" "$capture_dir" "$work_dir/$index-loyalty.log"; then
     status=1
   fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1

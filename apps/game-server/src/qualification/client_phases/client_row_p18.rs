@@ -8,13 +8,9 @@ use oteryn_protocol_oteryn::item_forge::{
 };
 use std::num::NonZeroU64;
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P18_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    std::fs::write(root.join(name), bytes)?;
+    Ok(())
 }
 
 fn occurrence(session: oteryn_protocol_oteryn::GameSessionId, ordinal: u8) -> [u8; 16] {
@@ -31,17 +27,17 @@ fn occurrence(session: oteryn_protocol_oteryn::GameSessionId, ordinal: u8) -> [u
     value
 }
 
-fn carried_pair(client: &DevClientSession) -> TestResult<(NonZeroU64, NonZeroU64)> {
+fn same_item_pair(client: &DevClientSession) -> TestResult<(NonZeroU64, NonZeroU64)> {
     let inventory = client.inventory().ok_or("inventory frame missing")?;
-    let mut values = inventory
+    let first = inventory
         .entries
         .iter()
         .chain(inventory.main_backpack.iter())
         .chain(inventory.equipment.iter().map(|entry| &entry.item))
-        .map(|entry| entry.handle);
-    let first = values.next().ok_or("no carried item handle")?;
-    let second = values.next().unwrap_or(first);
-    Ok((first, second))
+        .next()
+        .ok_or("no carried item handle")?
+        .handle;
+    Ok((first, first))
 }
 
 async fn forge(
@@ -74,22 +70,36 @@ async fn forge(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("Forge capture directory missing")?;
+    let root = Path::new(&root);
     let mut client = connect_world(clients, 0x44).await?;
     let session = client.join_snapshot().game_session_id;
-    let pair = carried_pair(&client)?;
+    let pair = same_item_pair(&client)?;
     let mut expected = String::new();
-    let (history_bytes, history) = forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
-    let rows = history.as_array().ok_or("HISTORY payload was not an array")?;
-    capture("p18-history.bin", &history_bytes);
+    let (history_bytes, history) =
+        forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
+    let rows = history
+        .as_array()
+        .ok_or("HISTORY payload was not an array")?;
+    if !rows.is_empty() {
+        return Err("fresh Forge history was not empty".into());
+    }
+    capture(root, "p18-history.bin", &history_bytes)?;
     expected.push_str(&format!("history_rows={}\n", rows.len()));
-    for (ordinal, (name, operation)) in [
-        ("fusion", Operation::Fusion),
-        ("dust_to_slivers", Operation::DustToSlivers),
-        ("dust_limit", Operation::DustLimit),
+    for (ordinal, (name, operation, expected_reason)) in [
+        ("fusion", Operation::Fusion, "WRONG_ITEMS"),
+        (
+            "dust_to_slivers",
+            Operation::DustToSlivers,
+            "INSUFFICIENT_DUST",
+        ),
+        ("dust_limit", Operation::DustLimit, "INSUFFICIENT_DUST"),
     ]
     .into_iter()
     .enumerate()
     {
+        // The item-forge-v1 contract gives new attempts and history a shared 490 ms cooldown.
+        client.service_liveness(Duration::from_millis(490)).await?;
         let pair = operation.requires_pair().then_some(pair);
         let (bytes, body) = forge(
             &mut client,
@@ -100,25 +110,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         )
         .await?;
         let succeeded = body["succeeded"].as_bool().ok_or("reply lacks succeeded")?;
-        let applied = body["applied"].as_bool().unwrap_or(succeeded);
+        let applied = body["applied"].as_bool().ok_or("reply lacks applied")?;
         let reason = body["reason"].as_str().unwrap_or("");
-        if !applied && reason.is_empty() && operation != Operation::DustLimit {
-            return Err(format!("{name} refusal lacked a reason: {body}").into());
+        if succeeded || applied || reason != expected_reason {
+            return Err(format!("{name} expected refusal {expected_reason}, got {body}").into());
         }
-        capture(&format!("p18-{}.bin", name.replace('_', "-")), &bytes);
+        capture(root, &format!("p18-{}.bin", name.replace('_', "-")), &bytes)?;
         expected.push_str(&format!(
             "{name}.succeeded={succeeded}\n{name}.applied={applied}\n{name}.reason={reason}\n"
         ));
     }
-    capture("p18-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await?;
+    capture(root, "p18-expected.txt", expected.as_bytes())?;
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("Forge capture logout refused".into());
+    }
     Ok(expected.replace('\n', ";"))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
-            "e2e_all scenario=P18.client status=CAPTURED evidence={expected}"
+            "e2e_capture scenario=P18.client status=CAPTURED evidence={expected}"
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=P18.client status=FAIL evidence={error}"
