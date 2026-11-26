@@ -1706,6 +1706,8 @@ pub const SPELL_RL_01_CAST_INPUTS_PER_WORK_CYCLE: usize = 1;
 /// `ACTOR_VITALS` revision and value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SpellCastOutcome {
+    /// Reread the caster's item view after a committed inventory grant.
+    pub refresh_inventory: bool,
     pub disposition: SpellCastDisposition,
     pub vitals: Option<(u64, ActorVitals)>,
 }
@@ -1713,6 +1715,7 @@ pub struct SpellCastOutcome {
 impl SpellCastOutcome {
     pub const fn rejected() -> Self {
         Self {
+            refresh_inventory: false,
             disposition: SpellCastDisposition::Rejected,
             vitals: None,
         }
@@ -1831,6 +1834,7 @@ pub fn cast_in_channel(
             let vitals = (next.revision(), next.vitals());
             if states.commit(runtime, actor, game_session_id, next) {
                 SpellCastOutcome {
+                    refresh_inventory: false,
                     disposition: SpellCastDisposition::Cast,
                     vitals: Some(vitals),
                 }
@@ -1839,6 +1843,7 @@ pub fn cast_in_channel(
             }
         }
         Err(disposition) => SpellCastOutcome {
+            refresh_inventory: false,
             disposition,
             vitals: None,
         },

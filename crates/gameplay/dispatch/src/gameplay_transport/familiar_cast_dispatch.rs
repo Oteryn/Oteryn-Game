@@ -462,6 +462,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let runtime = self.runtime.lock().await;
                 let states = self.states.spell_states.lock().await;
                 Some(NativeCastDispatch::Outcome(SpellCastOutcome {
+                    refresh_inventory: false,
                     disposition: SpellCastDisposition::Cast,
                     vitals: super::super::observe_vitals(&runtime, &states, actor, session),
                 }))
@@ -652,6 +653,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 super::super::commit_owner_batch(&mut runtime, &mut states, staged, None).ok()?;
                 return Some(SpellCastOutcome {
+                    refresh_inventory: false,
                     disposition: SpellCastDisposition::Cast,
                     vitals: super::super::observe_vitals(&runtime, &states, actor, session),
                 });

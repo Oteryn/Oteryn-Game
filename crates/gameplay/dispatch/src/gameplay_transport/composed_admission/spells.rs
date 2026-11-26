@@ -172,6 +172,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
             {
                 return Some(actor_spell::SpellCastOutcome {
+                    refresh_inventory: false,
                     disposition:
                         oteryn_protocol_oteryn::actor_spell::SpellCastDisposition::CoolingDown,
                     vitals: None,
@@ -203,6 +204,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 actor_spell::NativeCastDispatch::Outcome(outcome) => outcome,
                 actor_spell::NativeCastDispatch::Pending => return None,
                 actor_spell::NativeCastDispatch::NotApplicable => actor_spell::SpellCastOutcome {
+                    refresh_inventory: false,
                     disposition: actor_spell::SpellCastDisposition::NotAvailable,
                     vitals: None,
                 },

@@ -85,6 +85,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.record_spell_combat(&mut runtime, &mut states, std::iter::once(&receipt))
                     .await;
                 NativeCastDispatch::Outcome(super::super::actor_spell::SpellCastOutcome {
+                    refresh_inventory: false,
                     disposition: SpellCastDisposition::Cast,
                     vitals: super::super::actor_spell::observe_vitals(
                         &runtime,

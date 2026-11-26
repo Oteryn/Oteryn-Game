@@ -262,6 +262,7 @@ mod tests {
             SpellCastDisposition::TargetIllegal,
         ] {
             gate.observe(&Dispatch::Spell(SpellCastOutcome {
+                refresh_inventory: false,
                 disposition,
                 vitals: None,
             }));
@@ -274,6 +275,7 @@ mod tests {
         gate.observe(&Dispatch::UseItem(OpenDecision::TooFar, None));
         gate.observe(&Dispatch::Attack(AttackIntentDisposition::TargetNotVisible));
         gate.observe(&Dispatch::Spell(SpellCastOutcome {
+            refresh_inventory: false,
             disposition: SpellCastDisposition::Cast,
             vitals: None,
         }));
@@ -302,6 +304,7 @@ mod tests {
         assert_eq!(gate.take(now).ok_or("first event")?.flood, 1);
         gate.counts.exhaust = u64::MAX;
         gate.observe(&Dispatch::Spell(SpellCastOutcome {
+            refresh_inventory: false,
             disposition: SpellCastDisposition::CoolingDown,
             vitals: None,
         }));
