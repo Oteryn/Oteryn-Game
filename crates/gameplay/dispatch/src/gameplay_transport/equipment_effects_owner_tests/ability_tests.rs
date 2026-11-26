@@ -1147,11 +1147,13 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
     }
     // BEGIN GENERATED SOURCE-QUALIFIED ZERO SPEED
-    // Pinned Canary XML/client: parchment and the two arena trophy promotions.
+    // Pinned source qualifies zero speed for these overlapping custody profiles.
     for key in [
+        "oteryn:item.tibia.i173",
         "oteryn:item.tibia.i2833",
         "oteryn:item.tibia.i5805",
         "oteryn:item.tibia.i5806",
+        "oteryn:item.tibia.i646",
     ] {
         let record = profiles
             .records
@@ -1274,14 +1276,6 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         )
         // MAIL-E09: the parcels and the stamped letter carry no speed attribute.
         .chain([3503, 3504, 3506].map(|id| format!("oteryn:item.tibia.i{id}")))
-        // BEGIN GENERATED KNOWN SPEED EXCLUSIONS
-        .filter(|key| ![
-            "oteryn:item.tibia.i2833",
-            "oteryn:item.tibia.i5805",
-            "oteryn:item.tibia.i5806"
-        ]
-        .contains(&key.as_str()))
-        // END GENERATED KNOWN SPEED EXCLUSIONS
         // The ordinary Crystal Item packet admits these 133 new non-equipment
         // identities with physical and use policies and no qualified speed.
         .chain(
@@ -1303,6 +1297,16 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         )
         // The three jammed Secret Agent forms have a timer but no equipment speed.
         .chain([9595, 9597, 9599].map(|id| format!("oteryn:item.tibia.i{id}")))
+        // BEGIN GENERATED KNOWN SPEED EXCLUSIONS
+        .filter(|key| ![
+            "oteryn:item.tibia.i173",
+            "oteryn:item.tibia.i2833",
+            "oteryn:item.tibia.i5805",
+            "oteryn:item.tibia.i5806",
+            "oteryn:item.tibia.i646"
+        ]
+        .contains(&key.as_str()))
+        // END GENERATED KNOWN SPEED EXCLUSIONS
         .collect()
     );
     Ok(())

@@ -13,7 +13,10 @@ class SourceKnownSpeedTests(unittest.TestCase):
     SOURCE = '''    let content = native(&input)?;
     let mut unknown_speed = std::collections::BTreeSet::new();
         .chain([3503, 3504, 3506].map(|id| format!("oteryn:item.tibia.i{id}")))
+        .chain([646].map(|id| format!("oteryn:item.tibia.i{id}")))
         .collect()
+    );
+    Ok(())
 '''
 
     @classmethod
@@ -61,7 +64,8 @@ class SourceKnownSpeedTests(unittest.TestCase):
         self.assertIn('assert_eq!(record.attributes.speed_bonus, Some(0)', result)
         self.assertIn('.filter(|key|', result)
         self.assertIn('.collect()', result)
-        for item_id in pin.IDS:
+        self.assertLess(result.index('        .chain([646]'), result.index(pin.FILTER_BEGIN))
+        for item_id in pin.IDS | pin.OVERLAP_IDS:
             self.assertEqual(result.count(f'"oteryn:item.tibia.i{item_id}"'), 2)
 
     def test_unknown_nonzero_duplicate_or_unpinned_source_cannot_remove_a_hold(self):
@@ -102,7 +106,7 @@ class SourceKnownSpeedTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'KNOWN_SPEED_ANCHOR'):
                     pin.refresh(source, self.packet)
 
-    def test_existing_rust_changes_only_the_closed_three_item_qualification(self):
+    def test_existing_rust_changes_only_the_generated_speed_qualification(self):
         path = pin.producer.ROOT / ('crates/gameplay/dispatch/src/gameplay_transport/'
                                    'equipment_effects_owner_tests/ability_tests.rs')
         source = path.read_text()

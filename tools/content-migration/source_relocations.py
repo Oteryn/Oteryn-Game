@@ -24,6 +24,14 @@ from pathlib import Path
 FROZEN_COMPRESSED_SOURCES = {
     (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "1ac9e905907e5a9a60f9de7d7bbf25486435473568e310bad465b20a9e21cef9",
+    ): "tools/content-migration/historical-item-stats-promotion-v2-successor8-v20.json.gz",
+    (
+        "tools/content-schema/item-authoring/lower_wiki_stats_packet.py",
+        "d5b5bb64f372710ea74b49282816b8ea8ed1e151599b7c36ee52f65fe8cb2148",
+    ): "tools/content-migration/historical-lower-wiki-stats-packet.py.gz",
+    (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
         "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684",
     ): "tools/content-migration/historical-item-stats-promotion-v2.json.gz",
     (
@@ -428,7 +436,13 @@ def historical_wiki_snapshot(data: bytes) -> bytes | None:
 
 def read_pinned(root: Path, path: str, expected: str) -> bytes | None:
     """The current bytes of a pinned source, or None when its pin does not hold."""
+    relocated = RELOCATIONS.get((path, expected))
+    current, current_digest = relocated if relocated else (current_path(path), expected)
+    frozen_digest = expected
     frozen = FROZEN_COMPRESSED_SOURCES.get((path, expected))
+    if frozen is None and relocated:
+        frozen = FROZEN_COMPRESSED_SOURCES.get(relocated)
+        frozen_digest = current_digest
     if frozen is not None:
         archive = Path(root) / frozen
         if archive.is_file():
@@ -436,9 +450,7 @@ def read_pinned(root: Path, path: str, expected: str) -> bytes | None:
                 data = gzip.decompress(archive.read_bytes())
             except (OSError, EOFError):
                 return None
-            return data if digest(data) == expected else None
-    relocated = RELOCATIONS.get((path, expected))
-    current, current_digest = relocated if relocated else (current_path(path), expected)
+            return data if digest(data) == frozen_digest else None
     target = Path(root) / current
     if not target.is_file():
         return None

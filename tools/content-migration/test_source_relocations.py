@@ -22,12 +22,16 @@ class SourceRelocationTests(unittest.TestCase):
             current_digest,
         ) in ledger.RELOCATIONS.items():
             self.assertNotEqual(pinned_digest, current_digest, pinned)
-            expected = (ROOT / current).read_bytes()
             archive = ledger.FROZEN_COMPRESSED_SOURCES.get((pinned, pinned_digest))
-            if archive is not None:
-                self.assertEqual(ledger.digest(expected), current_digest)
+            expected_digest = pinned_digest
+            if archive is None:
+                archive = ledger.FROZEN_COMPRESSED_SOURCES.get((current, current_digest))
+                expected_digest = current_digest
+            if archive is None:
+                expected = (ROOT / current).read_bytes()
+            else:
                 expected = gzip.decompress((ROOT / archive).read_bytes())
-                self.assertEqual(ledger.digest(expected), pinned_digest)
+                self.assertEqual(ledger.digest(expected), expected_digest)
             self.assertEqual(
                 ledger.read_pinned(ROOT, pinned, pinned_digest),
                 expected,

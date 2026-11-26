@@ -114,6 +114,14 @@ def test_committed_packet_rebuilds():
     assert lower.record_bytes(rebuilt) == lower.RECORD.read_bytes(), "record drifted"
     packet = json.loads(committed)
     assert packet["source"]["snapshot_sha256"] == snap["snapshot_sha256"]
+    crystal_rows, crystal_source = lower.crystal_modifier_source()
+    assert packet["source"]["crystal_modifier_qualification"] == crystal_source
+    promoted = {
+        (row["item_key"], row["field_path"]): row for row in packet["promotions"]
+    }
+    for row in crystal_rows.values():
+        assert promoted[row["item_key"], row["field_path"]] == row
+    assert ("oteryn:item.tibia.i50147", "temporal.duration") not in promoted
     # ITEM-ADD-1 (owner 2a): appearance-only Items (no source binding) take no stats.
     for item_id in (40522, 53197):
         assert item_id not in lower.content_item_ids()
