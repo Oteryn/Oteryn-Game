@@ -522,20 +522,38 @@ mod tests {
 
     #[test]
     fn delivery_resolves_the_negotiated_id_even_when_both_id_spaces_overlap() -> TestResult {
-        let index = crate::content::item_ref::ItemDefinitionIndex::decode(
-            br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[
-                ["oteryn:item.tibia.i1000","definition-r1"],
-                ["oteryn:item.tibia.i1400","definition-r1"],
-                ["oteryn:item.tibia.i2","definition-r1"]
-            ]}"#,
-        )?;
+        let shard: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../content/items/definitions/items-00000-00499.json"
+        ))?;
+        let mut records: Vec<(&str, &str)> = shard["records"]
+            .as_array()
+            .ok_or("item shard records")?
+            .iter()
+            .map(|record| {
+                let identity = &record["definition"]["identity"];
+                let key = identity["key"].as_str().ok_or("item key")?;
+                let revision = identity["revision"].as_str().ok_or("item revision")?;
+                Ok::<_, &'static str>((key, revision))
+            })
+            .collect::<Result<_, _>>()?;
+        records.sort_unstable();
+        let index = crate::content::item_ref::ItemDefinitionIndex::decode(&serde_json::to_vec(
+            &serde_json::json!({"schema": "OTERYN_NATIVE_ITEM_KEYS/v1", "records": records}),
+        )?)?;
         let canonical = &[CAPABILITY_TASK_BOARD_DAILY_BOUNTY_V1];
-        let legacy_item = delivery_reference(&index, 2, &[])?;
-        let canonical_item = delivery_reference(&index, 2, canonical)?;
-        assert_eq!(legacy_item.get(), 3);
-        assert_eq!(canonical_item.get(), 2);
-        assert!(delivery_reference(&index, 3, &[]).is_err());
-        assert!(delivery_reference(&index, 4, canonical).is_err());
+        let legacy_item = delivery_reference(&index, 100, &[])?;
+        let canonical_item = delivery_reference(&index, 100, canonical)?;
+        assert_eq!(
+            index
+                .definition_at(legacy_item)
+                .ok_or("legacy definition")?
+                .0,
+            "oteryn:item.tibia.i100"
+        );
+        assert_eq!(canonical_item.get(), 100);
+        assert_ne!(legacy_item, canonical_item);
+        assert!(delivery_reference(&index, 0, &[]).is_err());
+        assert!(delivery_reference(&index, u32::MAX, canonical).is_err());
         assert!(delivery_reference(&index, 0, canonical).is_err());
         Ok(())
     }

@@ -42,7 +42,11 @@ p04_seam_with_replay() {
   shift 2
   mkdir -- "$captures" || return
   local status=0
-  E2E_P04_CAPTURE_DIR="$captures" "$@" 2>&1 | tee "$log" || status=$?
+  # Keep P04's capture result in the replay transcript. The shared stage
+  # validator sees only the terminal verdict emitted by this function.
+  E2E_P04_CAPTURE_DIR="$captures" "$@" 2>&1 |
+    tee "$log" |
+    sed -E '/^SEAM_EVIDENCE (e2e_all|e2e_capture) scenario=P04[.]client status=/d' || status=$?
   if [[ "$status" != 0 ]]; then
     printf 'SEAM_EVIDENCE e2e_all scenario=P04.client status=FAIL evidence=seam_exit\n'
     return "$status"

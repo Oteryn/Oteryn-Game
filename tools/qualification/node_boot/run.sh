@@ -720,13 +720,9 @@ PY_REGION_PIN
   install_owned root:root -d -m 0755 "$BASE/world"
   install_owned root:root -m 0644 "$WORK/world.otwb" "$BASE/world/world.otbundle"
   install_owned root:root -m 0644 "$PIN" "$BASE/world/world.json"
-  python3 "$GAME_SOURCE/deploy/synology-game/stage_npc_data.py" \
-    "$GAME_SOURCE/deploy/synology-game/npc-data.pin.json" "$GAME_SOURCE" "$WORK/npc-data"
-  "${as_operator[@]}" cp -R "$WORK/npc-data" "$BASE/npc-data"
-  "${as_operator[@]}" chmod -R a+rX "$BASE/npc-data"
-  NODE_NPC_ARGS=(--npc-data-project "$BASE/npc-data/content/world"
-    --npc-data-sha256 "$(<"$WORK/npc-data/PROJECT_SHA256")")
   MAP_REVISION="$WORLD_DIGEST"
+  source "$GAME_SOURCE/tools/qualification/node_boot/npc_data.sh"
+  node_boot_stage_npc_data
 fi
 install_owned "$SERVICE_UID" -d -m 0700 "$BASE/fence-parent/fence" "$BASE/run"
 install_owned "$SERVICE_UID" -d -m 0755 "$BASE/node/secrets"
@@ -1181,6 +1177,14 @@ stage() { # name prerequisite... -- function
   echo "::endgroup::"
   if [[ $rc == 0 ]]; then
     STATUS[$name]=PASS
+    # Row batches must report every selected row even when Rust exits 0.
+    local groups=",${NODE_BOOT_E2E_ONLY:-},"
+    groups=${groups//[[:space:]]/}
+    if [[ "$name" == seam_stages && "$NODE_BOOT_WORLD" == 1 ]] &&
+      [[ "$groups" == *,rows,* || "$groups" == ,, ]] &&
+      ! python3 "$GAME_SOURCE/tools/qualification/node_boot/client_replay.py" --validate "$WORK/stage-$name.log"; then
+      STATUS[$name]="FAIL(row batch)"
+    fi
     # A FAIL row fails its stage even when the stage process exits 0, unless the row is
     # listed in known_fail_rows.txt (debt that every run prints).
     local known_fail="$GAME_SOURCE/tools/qualification/node_boot/known_fail_rows.txt" new_rows known_hit stale_rows
