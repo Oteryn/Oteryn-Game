@@ -13,6 +13,10 @@ package oteryn.party_skull.v1;
 // reconstructs the bundle from current owners. No CharacterId/PartyId is sent.
 // Empty: icons, unchanged. Canonical bytes 08 01: own PvP observation.
 // Other selectors, duplicate/unknown fields and alternate encodings are rejected.
+// For a selected empty query with CommandStatus REJECTED, the payload is the
+// literal ASCII bytes "busy" (transient guard or holder contention) or
+// "unavailable" (the server could not produce a valid fenced observation).
+// An ACCEPTED result is unchanged and uses PartyIconsV1.
 message PartySkullQueryV1 { uint32 view = 1; }
 message PartyIconsV1 {
   PvpStatusV1 own_pvp = 2; // only for view=1; mutually exclusive with icons

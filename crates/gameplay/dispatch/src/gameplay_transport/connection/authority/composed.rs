@@ -300,6 +300,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_party_skull(admitted).await
     }
 
+    async fn query_party_icons(
+        &self,
+        admitted: connection::AdmittedSession,
+    ) -> Result<
+        Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
+        crate::durability::DurabilityError,
+    > {
+        self.query_party_skull(admitted).await
+    }
+
     async fn observe_guild_emblems(
         &self,
         admitted: connection::AdmittedSession,

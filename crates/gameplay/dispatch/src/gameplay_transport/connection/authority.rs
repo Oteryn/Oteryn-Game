@@ -1227,6 +1227,23 @@ pub trait FreshAdmissionAuthority {
         std::future::ready(None)
     }
 
+    /// Explicit Party icon query. Production can retry transient acquisition failures.
+    fn query_party_icons(
+        &self,
+        admitted: AdmittedSession,
+    ) -> impl Future<
+        Output = Result<
+            Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
+            crate::durability::DurabilityError,
+        >,
+    > {
+        async move {
+            self.observe_party_icons(admitted)
+                .await
+                .ok_or(crate::durability::DurabilityError::Unavailable)
+        }
+    }
+
     /// GUILD-EMBLEM-1: every positioned player's guild emblem relative to this session's
     /// character under capability 509. Unavailable reads produce no update.
     fn observe_guild_emblems(

@@ -401,6 +401,7 @@ where
         return Err(ServeEnd::Disconnected);
     }
     dispatch = bank_inventory(authority, session, dispatch).await?;
+    let input_permit_unavailable = input_permit.is_none();
     drop(input_permit);
     if matches!(dispatch, Dispatch::Appearance(None) | Dispatch::House(None)) {
         return Err(ServeEnd::Disconnected);
@@ -416,7 +417,10 @@ where
     outcome.training_logged_out =
         matches!(&dispatch, Dispatch::Training(result) if result.disposition == 3);
     // Encode a typed refusal without running STEP or CHAT post-dispatch effects.
-    let result = if guard_deferred
+    let party_icon_query = command.command_type
+        == oteryn_protocol_oteryn::party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY
+        && command.payload.is_empty();
+    let result = if (guard_deferred || (party_icon_query && input_permit_unavailable))
         && matches!(dispatch, Dispatch::Unregistered)
         && session
             .selected_capabilities
@@ -431,6 +435,14 @@ where
                 },
                 None,
             ),
+            oteryn_protocol_oteryn::party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY
+                if party_icon_query =>
+            {
+                Dispatch::Reply(
+                    crate::foundation::CommandStatus::Rejected,
+                    oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL.to_vec(),
+                )
+            }
             _ => Dispatch::Unregistered,
         };
         result::encode(session, command, &mut refusal)?
