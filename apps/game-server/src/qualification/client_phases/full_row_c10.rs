@@ -476,7 +476,7 @@ async fn fresh_admission(row: &mut Row, clients: &SeamClients<'_>, prior: crate:
     {
         return Err(format!("step=saved-rest elapsed={elapsed:?} need=exactly-one-food-credit before={before:?} after={after:?}").into());
     }
-    let (logout, detail, _, _) = logout_retrying_busy(&mut client).await?;
+    let (logout, detail, _, _) = logout_once(&mut client).await?;
     if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
         || client.take_events().into_iter().any(|event| matches!(event, SessionEvent::ActorVitals(delta) if delta.value != after))
     {

@@ -1022,6 +1022,14 @@ fn scenario_case(
                     }
                     continue;
                 }
+                let outfox = claim == super::source_quest_rewards_fixtures::OUTFOX_CLAIM;
+                if !cold_replay && outfox {
+                    super::source_quest_rewards_fixtures::accept_outfox_mission(
+                        &mut owner,
+                        &mut admitted,
+                    )
+                    .await?;
+                }
                 if cold_replay {
                     assert_eq!(
                         wire_use_targets(&owner, admitted, &[(1, &target)]).await?,
@@ -1041,7 +1049,7 @@ fn scenario_case(
                             // A World-owned legacy chest refuses a repeated use
                             // with its "it is empty" answer; a RewardClaim chest
                             // reports NothingToUse.
-                            if super::source_quest_rewards_fixtures::legacy_world_owned(claim)? {
+                            if !outfox && super::source_quest_rewards_fixtures::legacy_world_owned(claim)? {
                                 (CommandStatus::Rejected, UseDisposition::Rejected)
                             } else {
                                 (CommandStatus::Accepted, UseDisposition::NothingToUse)

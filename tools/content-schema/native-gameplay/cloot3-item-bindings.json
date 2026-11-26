@@ -1,0 +1,134 @@
+[
+  {
+    "source_key": "oteryn:source.crystalserver",
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "identity_namespace": "ots/item_server_id",
+    "external_id": "51276",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i51276",
+      "revision": "definition-r1"
+    },
+    "disposition": "EXACT"
+  },
+  {
+    "source_key": "oteryn:source.crystalserver",
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "identity_namespace": "ots/item_server_id",
+    "external_id": "53197",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i53197",
+      "revision": "definition-r1"
+    },
+    "disposition": "EXACT"
+  },
+  {
+    "source_key": "oteryn:source.crystalserver",
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "identity_namespace": "ots/item_server_id",
+    "external_id": "53199",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i53199",
+      "revision": "definition-r1"
+    },
+    "disposition": "EXACT"
+  },
+  {
+    "source_key": "oteryn:source.crystalserver",
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "identity_namespace": "ots/item_server_id",
+    "external_id": "53201",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i53201",
+      "revision": "definition-r1"
+    },
+    "disposition": "EXACT"
+  },
+  {
+    "source_key": "oteryn:source.crystalserver",
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "identity_namespace": "ots/item_server_id",
+    "external_id": "53203",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i53203",
+      "revision": "definition-r1"
+    },
+    "disposition": "EXACT"
+  },
+  {
+    "source_key": "oteryn:source.crystalserver",
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "identity_namespace": "ots/item_server_id",
+    "external_id": "53205",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i53205",
+      "revision": "definition-r1"
+    },
+    "disposition": "EXACT"
+  },
+  {
+    "source_key": "oteryn:source.crystalserver",
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "identity_namespace": "ots/item_server_id",
+    "external_id": "54510",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i54510",
+      "revision": "definition-r1"
+    },
+    "disposition": "EXACT"
+  },
+  {
+    "source_key": "oteryn:source.crystalserver",
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "identity_namespace": "ots/item_server_id",
+    "external_id": "54511",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i54511",
+      "revision": "definition-r1"
+    },
+    "disposition": "EXACT"
+  },
+  {
+    "source_key": "oteryn:source.crystalserver",
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "identity_namespace": "ots/item_server_id",
+    "external_id": "54512",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i54512",
+      "revision": "definition-r1"
+    },
+    "disposition": "EXACT"
+  },
+  {
+    "source_key": "oteryn:source.crystalserver",
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "identity_namespace": "ots/item_server_id",
+    "external_id": "54513",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i54513",
+      "revision": "definition-r1"
+    },
+    "disposition": "EXACT"
+  },
+  {
+    "source_key": "oteryn:source.crystalserver",
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "identity_namespace": "ots/item_server_id",
+    "external_id": "54514",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i54514",
+      "revision": "definition-r1"
+    },
+    "disposition": "EXACT"
+  }
+]

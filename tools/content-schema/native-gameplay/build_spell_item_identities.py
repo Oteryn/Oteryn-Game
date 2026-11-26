@@ -128,7 +128,13 @@ def source_xml(root: Path, server: str) -> tuple[set[int], dict]:
 
 def independent_crystal_membership(proof: tuple[str, bytes]) -> set[int]:
     revision, raw = proof
-    if revision != INDEPENDENT_CRYSTAL_PIN or hashlib.sha256(raw).hexdigest() != INDEPENDENT_CRYSTAL_XML_SHA:
+    qualified = {
+        INDEPENDENT_CRYSTAL_PIN: INDEPENDENT_CRYSTAL_XML_SHA,
+        # The retained Summer Item source already owns exact bindings for the new looks.
+        "00ce02a57ca5a12e48f32a3476e37471167e4c3f":
+            "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+    }
+    if hashlib.sha256(raw).hexdigest() != qualified.get(revision):
         raise ValueError("Unqualified independent Crystal XML pin")
     ids = set()
     for node in ET.fromstring(raw):
