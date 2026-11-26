@@ -417,25 +417,49 @@ fn creature_can_interfere(client: &DevClientSession, at: ActorPosition) -> bool 
     }))
 }
 
-fn require_isolated_poison_site(client: &mut DevClientSession, site: ActorPosition, stage: &str) -> TestResult {
+fn require_isolated_poison_site(
+    client: &mut DevClientSession,
+    site: ActorPosition,
+    stage: &str,
+) -> TestResult {
     let unsafe_actors = creature_can_interfere(client, site);
-    let has_ground_only = client.session_mut().world_map_snapshot().is_some_and(|map| {
-        map.tiles.iter().any(|tile| tile.position == site && !tile.more && tile.items.len() == 1)
-    });
-    if unsafe_actors || client.world_spatial().actor_position != site || !has_ground_only {
-        return Err(format!("step={stage} observed=unisolated-site need=stationary-bare-ground-without-nearby-actors").into());
+    let actual = client.world_spatial().actor_position;
+    let map = client.session_mut().world_map_snapshot();
+    let stack = map
+        .as_ref()
+        .and_then(|map| map.tiles.iter().find(|tile| tile.position == site))
+        .map(|tile| (tile.items.len(), tile.more));
+    if unsafe_actors || actual != site || stack != Some((1, false)) {
+        return Err(format!(
+            "step={stage} observed=unisolated-site site={site:?} actual={actual:?} unsafe_actors={unsafe_actors} stack={stack:?} need=stationary-bare-ground-without-nearby-actors"
+        ).into());
     }
     Ok(())
 }
 
-async fn walk_to_poison_site(client: &mut DevClientSession, world: &BundleWorld, stage: &str) -> TestResult<ActorPosition> {
+async fn walk_to_poison_site(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    stage: &str,
+) -> TestResult<ActorPosition> {
     let basis = spatial_basis::current(client)?;
-    let safe_site = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone())
-            && !creature_can_interfere(client, basis.position(at))
-    }).ok_or_else(|| format!("step={stage} observed=no-safe-tick-site-outside-pz"))?;
-    walk_c08(client, world, &safe_site).await?;
-    let site = client.world_spatial().actor_position;
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| {
+        world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| {
+            !tile.protection_zone() && tile.ground().is_some() && tile.ids().len() == 1
+        }) && !creature_can_interfere(client, basis.position(at))
+    })
+    .ok_or_else(|| format!("step={stage} observed=no-safe-tick-site-outside-pz"))?;
+    let planned = path
+        .iter()
+        .try_fold(from, |at, &direction| destination(world, at, direction))
+        .ok_or("C08 planned poison site missing")?;
+    let site = basis.position(planned);
+    evidence(&format!(
+        "C08_SITE stage={stage} site={site:?} steps={}",
+        path.len()
+    ));
+    walk_c08(client, world, &path).await?;
     require_isolated_poison_site(client, site, stage)?;
     Ok(site)
 }
