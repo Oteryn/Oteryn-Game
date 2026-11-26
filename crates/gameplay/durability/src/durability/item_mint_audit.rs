@@ -697,8 +697,13 @@ pub fn check_mint(value: &OneItemMintV1) -> Result<(), AuditError> {
         && source.loot_purpose_key == super::item_mint::CORPSE_MATERIALIZATION_PURPOSE_KEY
         && source.draw_ordinal == 0 && after.quantity == 1
         && value.destination.as_ref().is_some_and(|ground| {
-            check_uuid_v7(&ground.corpse_ref).is_ok()
-                && ground.corpse_ref == ground.native_room_placement_context
+            ground.corpse_ref == ground.native_room_placement_context
+                && check_uuid_v7(&ground.corpse_ref).is_ok()
+                && sqlx::types::Uuid::from_slice(&ground.corpse_ref).is_ok_and(|occurrence| {
+                    source.loot_table.as_ref().is_some_and(|definition| {
+                        definition.production_key == format!("oteryn:death.{}", occurrence.simple())
+                    })
+                })
         });
     // One live item with explicit semantic absence before it; a key is minted only by a
     // RewardClaim (WORLD-INTERACTION-0 §4.4).

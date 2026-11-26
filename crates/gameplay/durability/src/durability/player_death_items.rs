@@ -357,7 +357,7 @@ async fn write(
         }
     };
     permit.check_scope(fence.runtime_scope)?;
-    let death = sqlx::query("SELECT death_spatial_position, death_map_revision, content_revision, \
+    let death = sqlx::query("SELECT death_spatial_position, death_map_revision, content_revision, item_selection_root IS NOT NULL AS has_selection, \
         split.retained_item IS NOT NULL AS custody_protected, split.next_item \
         FROM game_character_death_receipts d \
         LEFT JOIN LATERAL game_player_death_custody_split(encode($8,'hex')::uuid,d.character_id,d.death_world_id) split \
@@ -464,9 +464,10 @@ async fn write(
         lifecycle,
         key_number,
     };
-    let destination = if burn {
-        None
-    } else {
+    // The pre-selection primitive is retained for historical death receipts.
+    // Every selected live death takes the corpse branch.
+    let has_selection: bool = death.try_get("has_selection")?;
+    let destination = if !burn && has_selection {
         let ground = super::item_mint::GroundPlacement {
             spatial_position: death.try_get("death_spatial_position")?,
             corpse_ref: cause.death_occurrence.to_vec(),
@@ -485,9 +486,30 @@ async fn write(
         )
         .await?;
         Some(corpse)
+    } else {
+        None
+    };
+    let legacy_ground = if !burn && !has_selection {
+        Some(mint::OneItemGroundV1 {
+            world_id: world_id.as_bytes().to_vec(),
+            channel_id: channel_id.clone().unwrap_or_default(),
+            instance_id: instance_id.clone(),
+            spatial_position: death.try_get("death_spatial_position")?,
+            corpse_ref: [
+                super::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX,
+                request.transaction_id.as_slice(),
+            ]
+            .concat(),
+            map_revision: death.try_get("death_map_revision")?,
+            content_revision: request.content_revision.clone(),
+            native_room_placement_context: cause.death_occurrence.to_vec(),
+            runtime_scope_ownership_generation: fence.scope_ownership_generation.get(),
+        })
+    } else {
+        None
     };
     let connection: &mut PgConnection = tx;
-    let replacement = (!burn && slot == BACKPACK_SLOT).then(|| {
+    let replacement = (destination.is_some() && slot == BACKPACK_SLOT).then(|| {
         let bag = selected_operation_id(
             &cause.death_occurrence,
             cause.item_instance,
@@ -519,14 +541,14 @@ async fn write(
                 placement_ordinal: o,
             }
         }),
-        ground: None,
+        ground: legacy_ground.clone(),
         corpse: destination.map(|(parent, placement_ordinal)| {
             super::item_transfer_audit::OneItemContainerEntryV1 {
                 parent_item_instance_id: parent.to_vec(),
                 placement_ordinal,
             }
         }),
-        drop_channel_id: if burn { None } else { channel_id.clone() },
+        drop_channel_id: destination.and(channel_id.clone()),
         replacement_bag: replacement.clone(),
         typed_sink: if burn {
             audit::AMULET_SINK.into()
@@ -582,6 +604,14 @@ async fn write(
             .bind(cause.item_instance.as_slice()).bind(world_id.as_bytes().as_slice())
             .bind(corpse.as_slice()).bind(ordinal.to_string()).bind(request.transaction_id.as_slice())
             .execute(&mut *connection).await?;
+    }
+    if let Some(ground) = legacy_ground {
+        sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,scope_kind,instance_id)
+            VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,$7,$8,$9,$10,encode($11,'hex')::uuid)")
+            .bind(cause.item_instance.as_slice()).bind(world_id.as_bytes().as_slice()).bind(channel_id.as_deref())
+            .bind(ground.runtime_scope_ownership_generation.to_string()).bind(ground.spatial_position).bind(ground.corpse_ref)
+            .bind(ground.map_revision).bind(ground.content_revision).bind(ground.native_room_placement_context)
+            .bind(scope_kind).bind(instance_id.as_deref()).execute(&mut *connection).await?;
     }
     if let Some(bag) = replacement {
         let definition = bag.definition.ok_or(PlayerDeathItemError::InvalidInput)?;

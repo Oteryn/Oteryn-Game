@@ -589,6 +589,7 @@ mod arrival_frame_tests {
                 pin,
                 vec![LoopGroundItem {
                     native_corpse: true,
+                    player_corpse: false,
                     source_native_ground: false,
                     source_plain_corpse: false,
                     field_collision: None,
