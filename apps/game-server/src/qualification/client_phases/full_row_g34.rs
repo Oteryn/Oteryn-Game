@@ -191,40 +191,43 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         verdict::Harness::global().progress("walk");
         client.take_events();
     }
-    let player = client.world_spatial().actor_position;
-    let mut visible_hanna = client
-        .world_entities()
-        .ok_or("step=walk;observed=missing-entity-view")?
-        .iter()
-        .filter(|entity| {
-            entity.kind == oteryn_dev_client::EntityKind::Npc
-                && entity
-                    .display_name
-                    .is_some_and(|name| name.as_str() == Ok("Hanna"))
-                && entity.position.floor == player.floor
-                && entity
-                    .position
-                    .x
-                    .abs_diff(player.x)
-                    .max(entity.position.y.abs_diff(player.y))
-                    <= wire::TALK_RANGE_TILES
-                && npc.placements.iter().any(|p| {
-                    entity.position.floor == -i16::from(p.floor)
-                        && entity
-                            .position
-                            .x
-                            .abs_diff(i32::from(p.x))
-                            .max(entity.position.y.abs_diff(i32::from(p.y)))
-                            <= HANNA_WANDER_RADIUS
-                })
-        });
-    let actor = visible_hanna
-        .next()
-        .ok_or("step=walk;observed=npc-not-visible")?
-        .entity;
-    if visible_hanna.next().is_some() {
-        return Err("step=walk;observed=ambiguous-hanna".into());
-    }
+    let actor = {
+        let player = client.world_spatial().actor_position;
+        let mut visible_hanna = client
+            .world_entities()
+            .ok_or("step=walk;observed=missing-entity-view")?
+            .iter()
+            .filter(|entity| {
+                entity.kind == oteryn_dev_client::EntityKind::Npc
+                    && entity
+                        .display_name
+                        .is_some_and(|name| name.as_str() == Ok("Hanna"))
+                    && entity.position.floor == player.floor
+                    && entity
+                        .position
+                        .x
+                        .abs_diff(player.x)
+                        .max(entity.position.y.abs_diff(player.y))
+                        <= wire::TALK_RANGE_TILES
+                    && npc.placements.iter().any(|p| {
+                        entity.position.floor == -i16::from(p.floor)
+                            && entity
+                                .position
+                                .x
+                                .abs_diff(i32::from(p.x))
+                                .max(entity.position.y.abs_diff(i32::from(p.y)))
+                                <= HANNA_WANDER_RADIUS
+                    })
+            });
+        let actor = visible_hanna
+            .next()
+            .ok_or("step=walk;observed=npc-not-visible")?
+            .entity;
+        if visible_hanna.next().is_some() {
+            return Err("step=walk;observed=ambiguous-hanna".into());
+        }
+        actor
+    };
     let mut confirmation_sequence = 0;
     for text in ["hi", "addon", offer.keyword.as_str()] {
         let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
