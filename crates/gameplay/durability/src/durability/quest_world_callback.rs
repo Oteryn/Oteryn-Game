@@ -34,6 +34,7 @@ use super::{
     DurabilityError, character_progression::CurrentCharacterGameplayFence,
     spell_owner_commit::SpellLanePermit,
 };
+use crate::durability::db::commit_semantic_read;
 use oteryn_gameplay_quests::quest::npc_rules::legacy_defaults;
 use oteryn_gameplay_quests::quest::{
     carried_step::recipe,
@@ -99,9 +100,7 @@ impl super::DurabilityRoot {
     ) -> Result<bool, super::character_progression::CharacterProgressionError> {
         use super::character_authority::assert_recovery_fence;
         use super::character_progression::{CharacterProgressionError, assert_item_only_fence};
-        use super::db::{
-            begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
-        };
+        use super::db::{begin_semantic_transaction, lock_admission_relations};
         let callback = oteryn_gameplay_quests::quest::world_callbacks::load_for(&catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .into_iter()
@@ -188,7 +187,7 @@ impl super::DurabilityRoot {
                         return Ok(Ok(false));
                     }
                 }
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 Ok(Ok(true))
             })
         }).await?

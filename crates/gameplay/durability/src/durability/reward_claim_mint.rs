@@ -75,6 +75,7 @@
 //! [`GrantNotice::Unknown`], never truncated. `AlreadyHeld`, `Retired` and a
 //! replayed CommandRef return [`GrantNotice::None`].
 
+use crate::durability::db::commit_semantic_read;
 use super::account_achievement::{
     AchievementCatalogueLookup, AchievementGrantError, AchievementGrantOutcome,
     AchievementGrantRequest, AchievementSourceEvent, FencedGrantingCharacter,
@@ -1071,7 +1072,7 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_cause(&mut tx, command).await?;
                     let Some(row) = load_receipt(&mut tx, command).await? else {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
                     let stored: Vec<u8> = row.try_get("intent_binding")?;
@@ -1079,7 +1080,7 @@ impl DurabilityRoot {
                         return Ok(Err(RewardClaimMintError::ConflictingCause));
                     }
                     let committed = decode_receipt(&row)?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(Some(committed)))
                 })
             })

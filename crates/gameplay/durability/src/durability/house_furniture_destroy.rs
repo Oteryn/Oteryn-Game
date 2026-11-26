@@ -1,4 +1,5 @@
 //! Fenced House destruction owner; SQL owns custody, receipts and timed arming.
+use crate::durability::db::commit_semantic_read;
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
@@ -78,7 +79,7 @@ impl DurabilityRoot {
                 .bind(house.world_id().as_bytes().as_slice()).bind(house.house_key())
                 .bind(source.as_slice()).bind(target.as_slice()).bind(session.as_bytes().as_slice())
                 .bind(command.to_string()).fetch_optional(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             row.map(|(sf,sk,sr,tf,tk,tr,revision,acl)| Ok(HouseDestroyObservation {
                 source: TypedDefinitionRef { family:sf, production_key:sk, revision_ref:sr },
                 target: TypedDefinitionRef { family:tf, production_key:tk, revision_ref:tr },
@@ -178,7 +179,7 @@ impl DurabilityRoot {
                     .bind(house_key)
                     .fetch_one(&mut *tx)
                     .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(due)
                 })
             })

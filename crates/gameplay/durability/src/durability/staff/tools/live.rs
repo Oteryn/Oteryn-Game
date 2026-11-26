@@ -1,6 +1,7 @@
 //! Current staff enforcement and authority reads.
 use super::*;
 use crate::domain::AccountId;
+use crate::durability::db::commit_semantic_read;
 
 impl DurabilityRoot {
     /// A rule exemption inside an already fenced gameplay transaction. The caller
@@ -138,7 +139,7 @@ impl DurabilityRoot {
             lock_admission_relations(&mut tx).await?;
             let banned = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_staff_bans WHERE account_id=encode($1,'hex')::uuid AND ($2::text IS NULL OR environment=$2) AND lifted_at_ms IS NULL AND starts_at_ms<=floor(extract(epoch FROM clock_timestamp())*1000)::bigint AND ends_at_ms>floor(extract(epoch FROM clock_timestamp())*1000)::bigint)")
                 .bind(account.as_bytes().as_slice()).bind(environment).fetch_one(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(banned)
         })).await
     }

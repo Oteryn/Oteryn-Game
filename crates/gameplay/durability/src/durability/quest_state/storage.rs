@@ -1,3 +1,4 @@
+use super::super::db::commit_semantic_read;
 use super::*;
 
 impl DurabilityRoot {
@@ -30,7 +31,7 @@ impl DurabilityRoot {
                 },
                 _=>return Err(DurabilityError::InvalidStoredState),
             };
-            commit_semantic_transaction(tx,deadline).await?;
+            commit_semantic_read(tx,deadline).await?;
             Ok(Ok(answer))
         })).await?
     }
@@ -85,14 +86,14 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_receipt_key(&mut tx, character, &request).await?;
                     let Some(row) = load_receipt(&mut tx, character, &request).await? else {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
                     if row.try_get::<Vec<u8>, _>("request_binding")? != binding {
                         return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
                     }
                     let committed = decode_receipt(&row)?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(Some(committed)))
                 })
             })
@@ -252,7 +253,7 @@ impl DurabilityRoot {
                     .bind(id)
                     .fetch_one(&mut *tx)
                     .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     if over(&tracks, QUESTSTATE0_RL_01.min(QUESTSTATE0_RL_08_TRACKS))
                         || over(&states, QUESTSTATE0_RL_05.min(QUESTSTATE0_RL_08_STATES))
                         || over(&counter_progress, counter_progress_limit)

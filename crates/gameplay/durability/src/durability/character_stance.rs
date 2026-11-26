@@ -6,6 +6,7 @@
 //! Actor admission loads the projection; death/logout do not rewrite it. Unknown content keys
 //! remain durable and inactive until a qualified replacement toggle uses that stored `before`.
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
@@ -259,7 +260,7 @@ impl DurabilityRoot {
                         .as_ref()
                         .map(decode_receipt)
                         .transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(receipt))
                 })
             })
@@ -280,7 +281,7 @@ impl DurabilityRoot {
             let row = sqlx::query("SELECT stance_key,committed_character_revision::text FROM game_character_stance WHERE character_id=encode($1,'hex')::uuid")
                 .bind(character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let projection = row.as_ref().map(decode_projection).transpose()?.unwrap_or_default();
-            commit_semantic_transaction(tx,deadline).await?;
+            commit_semantic_read(tx,deadline).await?;
             Ok(Ok(projection))
         })).await?
     }

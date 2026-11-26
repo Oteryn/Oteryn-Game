@@ -753,7 +753,7 @@ pub async fn commit_snowbunny_progress(
     mut tx: sqlx::Transaction<'_, sqlx::Postgres>,
     character_id: CharacterId,
     event_id: &[u8],
-    deadline: std::time::Instant,
+    deadline: tokio::time::Instant,
 ) -> std::result::Result<(), DurabilityError> {
     add_snowbunny_progress(&mut tx, character_id, event_id).await?;
     commit_semantic_transaction(tx, deadline).await

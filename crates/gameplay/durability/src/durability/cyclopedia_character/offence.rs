@@ -1,4 +1,5 @@
 //! Paged named modifiers read under the existing Character privacy and current viewer fence.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use oteryn_protocol_oteryn::cyclopedia_character::{
     combat::CombatStats,
@@ -32,7 +33,7 @@ impl DurabilityRoot {
         let bytes:Option<Vec<u8>>=if modifier_revision==Some(revision) {row.try_get("offence_augments")?}else{None};
         let facts=match bytes {None=>None,Some(bytes)=>match Snapshot::decode(&bytes) {Ok(value)=>Some(value),Err(_)=>return Ok(Err(CharacterAuthorityError::Rejected))}};
         let Ok(page)=Page::from_snapshot(*target.as_bytes(),query,stats,facts) else {return Ok(Err(CharacterAuthorityError::Rejected));};
-        commit_semantic_transaction(tx,deadline).await?;Ok(Ok(page))
+        commit_semantic_read(tx,deadline).await?;Ok(Ok(page))
     })).await?
     }
 }

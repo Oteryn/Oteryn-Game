@@ -126,7 +126,7 @@ impl DurabilityRoot {
             if actual != expected { return Err(DurabilityError::Unavailable); }
             let world = *fence.runtime_scope.world_id().as_bytes();
             let entries = read_quiver_entries(&mut tx, &world, &actual, content).await?;
-            super::db::commit_semantic_transaction(tx,deadline).await?;Ok(entries)
+            super::db::commit_semantic_read(tx,deadline).await?;Ok(entries)
         })).await.map_err(EquipmentError::from)
     }
 }
@@ -1227,7 +1227,7 @@ impl DurabilityRoot {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(facts)
                 })
             })
@@ -1349,7 +1349,7 @@ impl DurabilityRoot {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(MovementEquipmentSnapshot { fence, equipment })
                 })
             })
@@ -1403,7 +1403,7 @@ impl DurabilityRoot {
                     let facts = read_lifecycle_facts_in_transaction(&mut tx, &authority)
                         .await
                         .map_err(|_| DurabilityError::Unavailable)?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(facts)
                 })
             })
@@ -1996,7 +1996,7 @@ impl DurabilityRoot {
                             }
                         }
                     };
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(replay)
                 })
             })

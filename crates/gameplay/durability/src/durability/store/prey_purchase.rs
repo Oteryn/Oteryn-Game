@@ -1,4 +1,5 @@
 //! Prevent a permanent Prey entitlement from opening two concurrent Store debits.
+use crate::durability::db::commit_semantic_read;
 use super::super::{
     DurabilityRoot,
     character_authority::{ReconciledCharacterAuthority, assert_recovery_fence},
@@ -43,7 +44,7 @@ impl DurabilityRoot {
                     "SELECT uuid_send(p.account_id) AS account_id,uuid_send(p.character_id) AS character_id,uuid_send(c.account_id) AS root_account,uuid_send(c.world_id) AS world_id,p.binding_digest,p.state,p.answer,EXISTS(SELECT 1 FROM game_prey_expansion_purchases r WHERE r.purchase_id=p.purchase_request_id AND r.character_id=p.character_id AND r.world_id=c.world_id) AS reserved FROM store_purchase_requests p JOIN game_character_roots c USING(character_id) WHERE p.purchase_request_id=encode($1,'hex')::uuid"
                 ).bind(request.purchase_request_id.as_slice()).fetch_optional(&mut *tx).await?;
                 let Some(row) = row else {
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     return Ok(Ok(None));
                 };
                 if row.try_get::<Vec<u8>,_>("account_id")? != request.account_id
@@ -66,7 +67,7 @@ impl DurabilityRoot {
                     }
                     _ => return Ok(Err(StoreDurabilityError::ConflictingBinding)),
                 };
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 Ok(Ok(state))
             })
         }).await?

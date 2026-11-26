@@ -10,7 +10,7 @@
 //! use oteryn_gameplay_durability::durability::recovery_evidence_composition::RecoveryEvidenceComposition;
 //! ```
 
-use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::db::{begin_semantic_transaction, commit_semantic_read};
 use super::native_admission_source::{NativeSourceOperation, NativeSourceSubject, fence_custody};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
@@ -157,7 +157,7 @@ impl DurabilityRoot {
                         }
                     };
                     drop(source);
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })

@@ -17,6 +17,7 @@
 //! This component does not prove that Combat legitimately produced the
 //! occurrence or that the kill was credited; `combat::death_reward` does.
 
+use crate::durability::db::commit_semantic_read;
 use super::account_achievement::grant_missing;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
@@ -221,7 +222,7 @@ impl DurabilityRoot {
                         super::task_board::read_talisman_in_transaction(&mut tx, fence).await?;
                     let increment =
                         talisman_bestiary_increment(occurrence, projection.bonuses(&race)[3]);
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(CapturedBountyTalismanKill {
                         fence,
                         occurrence,
@@ -533,7 +534,7 @@ impl DurabilityRoot {
                         .as_ref()
                         .map(decode_receipt)
                         .transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(record))
                 })
             })
@@ -582,7 +583,7 @@ impl DurabilityRoot {
                         }),
                         None => None,
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(progress))
                 })
             })
