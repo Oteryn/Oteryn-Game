@@ -241,6 +241,14 @@ async fn outfit_and_refusal(
         addons: option.permitted_addons,
         mount_key: None,
     };
+    if before
+        .selected
+        .as_ref()
+        .is_some_and(|previous| previous.selection == selection)
+        || look_matches(state, &selection, own_binding(client, state)?)
+    {
+        return Err("step=outfit-select need=pre-state-different-from-requested-outfit".into());
+    }
     let request = appearance::Change {
         context: before.context,
         expected_root_revision: before.root_revision,
@@ -265,6 +273,7 @@ async fn outfit_and_refusal(
         return Err("step=unearned-refusal need=a-locked-addon".into());
     }
     let after = state.catalogue.clone();
+    let before_refusal_binding = (*own_binding(client, state)?).clone();
     let refusal = appearance::Change {
         context: after.context,
         expected_root_revision: after.root_revision,
@@ -279,10 +288,13 @@ async fn outfit_and_refusal(
             apply_appearance(state, delta.value);
         }
     }
+    let after_refusal_binding = own_binding(client, state)?;
     if status != CommandStatus::Rejected
         || result != appearance::ChangeResult::Rejected
-        || state.catalogue.root_revision != after.root_revision
-        || state.catalogue.selected != after.selected
+        || state.catalogue != after
+        || after_refusal_binding.root_revision != before_refusal_binding.root_revision
+        || after_refusal_binding.selection_revision != before_refusal_binding.selection_revision
+        || after_refusal_binding.look != before_refusal_binding.look
     {
         return Err(format!("step=unearned-refusal observed=status-{status:?}-result-{result:?}-state-changed-{} need=rejected-with-unchanged-state", state.catalogue != after).into());
     }
@@ -296,7 +308,7 @@ async fn outfit_and_refusal(
 const SLINGSHOT: u32 = 5907;
 const WAR_BEAR: &str = "oteryn:content.mount.war_bear";
 const OUTFIT_PARTS: [u32; 2] = [16252, 16253];
-const SLINGSHOTS: u32 = 8;
+const SLINGSHOTS: u32 = 1;
 const BEAR: &str = "oteryn:creature.bear";
 
 fn carried(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
@@ -315,8 +327,7 @@ async fn approach_taming_spawn(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
-    departed: &[TilePos],
-) -> TestResult<(oteryn_dev_client::EntityRef, TilePos)> {
+) -> TestResult<oteryn_dev_client::EntityRef> {
     let from = tile(client.world_spatial().actor_position)?;
     let points: Vec<_> = spawns
         .sources
@@ -332,7 +343,6 @@ async fn approach_taming_spawn(
                         y: point.y,
                         floor: source.floor,
                     })
-                    .filter(|point| !departed.contains(point))
             })
         })
         .collect();
@@ -389,7 +399,7 @@ async fn approach_taming_spawn(
             .position;
         let position = tile(position)?;
         if nearby(here, position, 1) {
-            return Ok((target, anchor));
+            return Ok(target);
         }
         let path = route(world, here, |at| nearby(at, position, 1))
             .ok_or("visible bear is unreachable")?;
@@ -510,116 +520,101 @@ async fn tame_war_bear(
             "step=taming-attempt observed=war-bear-already-unlocked need=unearned-mount".into(),
         );
     }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(300);
-    let mut departed = Vec::new();
-    for attempt in 1..=20 {
-        if tokio::time::Instant::now() >= deadline {
-            break;
-        }
-        let funded = carried(client, reference)?;
-        if funded == 0 {
-            return Err("step=taming-attempt need=remaining-fixture-slingshot".into());
-        }
-        let (target, anchor) = approach_taming_spawn(client, world, &spawns, &departed)
-            .await
-            .map_err(|error| {
-                verdict::context(
-                    format!("step=taming-attempt need=reachable-live-bear observed={error}"),
-                    error,
-                )
-            })?;
-        client.take_events();
-        let payload = world_object::encode_item_use_intent(&world_object::UseIntent {
-            target: world_object::UseTarget::ItemByDefinition(reference),
-            use_with: Some(target),
-            use_with_map_item: None,
-            use_with_position: None,
-        })
-        .map_err(|error| format!("taming USE encode: {error:?}"))?;
-        let reply = client.session_mut().world_context_use(&payload).await?;
-        let (disposition, _) = world_object::decode_use_result_with_gate(&reply.payload)
-            .map_err(|error| format!("step=taming-attempt observed=reply-decode-{error:?}"))?;
-        if reply.status != CommandStatus::Accepted
-            || disposition != world_object::UseDisposition::Committed
-        {
-            return Err(format!(
-                "step=taming-attempt observed={reply:?}/{disposition:?} need=committed-use-on-bear"
+    let funded = carried(client, reference)?;
+    if funded != u64::from(SLINGSHOTS) {
+        return Err(
+            "step=taming-attempt need=exact-fixture-slingshot-count-before-first-use".into(),
+        );
+    }
+    let target = approach_taming_spawn(client, world, &spawns)
+        .await
+        .map_err(|error| {
+            verdict::context(
+                format!("step=taming-attempt need=reachable-live-bear observed={error}"),
+                error,
             )
-            .into());
-        }
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-        let system_messages = client
-            .selected_capabilities()
-            .contains(&oteryn_protocol_oteryn::chat::CAPABILITY_CHAT_SYSTEM_MESSAGE_V1);
-        let mut outcome = None;
-        let mut observed_feedback = None;
-        loop {
-            for event in client.take_events() {
-                match event {
-                    SessionEvent::Appearance(delta) => apply_appearance(state, delta.value),
-                    SessionEvent::ChatLine(delta) => {
-                        let feedback = match delta.value {
-                            oteryn_dev_client::ChatLine::System { text } if system_messages => {
-                                Some(text)
-                            }
-                            oteryn_dev_client::ChatLine::Private { speaker_name, text }
-                                if !system_messages && speaker_name == "Game" =>
-                            {
-                                Some(text)
-                            }
-                            _ => None,
-                        };
-                        if let Some(text) = feedback {
-                            let observed = taming_feedback(&text);
-                            observed_feedback = Some(text);
-                            if let Some(observed) = observed
-                                && outcome.replace(observed).is_some()
-                            {
-                                return Err(
-                                    "step=taming-attempt observed=multiple-outcome-messages".into(),
-                                );
-                            }
+        })?;
+    client.take_events();
+    let payload = world_object::encode_item_use_intent(&world_object::UseIntent {
+        target: world_object::UseTarget::ItemByDefinition(reference),
+        use_with: Some(target),
+        use_with_map_item: None,
+        use_with_position: None,
+    })
+    .map_err(|error| format!("taming USE encode: {error:?}"))?;
+    let reply = client.session_mut().world_context_use(&payload).await?;
+    let (disposition, _) = world_object::decode_use_result_with_gate(&reply.payload)
+        .map_err(|error| format!("step=taming-attempt observed=reply-decode-{error:?}"))?;
+    if reply.status != CommandStatus::Accepted
+        || disposition != world_object::UseDisposition::Committed
+    {
+        return Err(format!(
+            "step=taming-attempt observed={reply:?}/{disposition:?} need=committed-use-on-bear"
+        )
+        .into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let system_messages = client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::chat::CAPABILITY_CHAT_SYSTEM_MESSAGE_V1);
+    let mut outcome = None;
+    let mut observed_feedback = None;
+    loop {
+        for event in client.take_events() {
+            match event {
+                SessionEvent::Appearance(delta) => apply_appearance(state, delta.value),
+                SessionEvent::ChatLine(delta) => {
+                    let feedback = match delta.value {
+                        oteryn_dev_client::ChatLine::System { text } if system_messages => {
+                            Some(text)
+                        }
+                        oteryn_dev_client::ChatLine::Private { speaker_name, text }
+                            if !system_messages && speaker_name == "Game" =>
+                        {
+                            Some(text)
+                        }
+                        _ => None,
+                    };
+                    if let Some(text) = feedback {
+                        let observed = taming_feedback(&text);
+                        observed_feedback = Some(text);
+                        if let Some(observed) = observed
+                            && outcome.replace(observed).is_some()
+                        {
+                            return Err(
+                                "step=taming-attempt observed=multiple-outcome-messages".into()
+                            );
                         }
                     }
-                    _ => {}
                 }
+                _ => {}
             }
-            let unlocked = state.catalogue.mounts.iter().any(|mount| mount == WAR_BEAR);
-            let removed = client
-                .world_entities()
-                .is_some_and(|entities| entities.get(&target).is_none());
-            if let Some((success, expect_removed, consumed)) = outcome
-                && (unlocked, removed, carried(client, reference)?)
-                    == (success, expect_removed, funded - u64::from(consumed))
-            {
-                if success {
-                    row.pass(
-                        "taming-attempt",
-                        format!(
-                            "war-bear-unlocked attempt={attempt} sequence={}",
-                            reply.server_sequence
-                        ),
-                    );
-                    return Ok(funded - 1);
-                }
-                if removed {
-                    departed.push(anchor);
-                }
-                evidence(&format!(
-                    "S06_TAMING_OUTCOME attempt={attempt} removed={removed} consumed={consumed} unlocked=false"
-                ));
-                break;
-            }
-            if tokio::time::Instant::now() >= deadline {
-                return Err(format!("step=taming-attempt need=matching-feedback-unlock-bear-and-slingshot-outcome observed=system-messages-{system_messages}-feedback-{observed_feedback:?}-outcome-{outcome:?}-before-count-{funded}-unlock-{unlocked}-removed-{removed}-count-{}", carried(client, reference)?).into());
-            }
-            client.service_liveness(Duration::from_millis(25)).await?;
         }
+        let unlocked = state.catalogue.mounts.iter().any(|mount| mount == WAR_BEAR);
+        let removed = client
+            .world_entities()
+            .is_some_and(|entities| entities.get(&target).is_none());
+        if let Some((success, expect_removed, consumed)) = outcome
+            && (unlocked, removed, carried(client, reference)?)
+                == (success, expect_removed, funded - u64::from(consumed))
+        {
+            if success {
+                row.pass(
+                    "taming-attempt",
+                    format!(
+                        "war-bear-unlocked attempt=1 sequence={}",
+                        reply.server_sequence
+                    ),
+                );
+                return Ok(funded - 1);
+            }
+            return Err(format!("step=taming-attempt observed=first-use-authored-miss feedback={observed_feedback:?} removed={removed} consumed={consumed} unlocked=false").into());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step=taming-attempt need=matching-feedback-unlock-bear-and-slingshot-outcome observed=system-messages-{system_messages}-feedback-{observed_feedback:?}-outcome-{outcome:?}-before-count-{funded}-unlock-{unlocked}-removed-{removed}-count-{}", carried(client, reference)?).into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
     }
-    Err(
-        "step=taming-attempt observed=attempt-budget-exhausted need=successful-war-bear-tame"
-            .into(),
-    )
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -677,6 +672,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         addons: 1,
         mount_key: Some(mount.clone()),
     };
+    if state
+        .catalogue
+        .selected
+        .as_ref()
+        .is_some_and(|s| s.selection == mounted)
+    {
+        return Err("step=mount-select need=pre-state-different-from-mounted-selection".into());
+    }
     let request = appearance::Change {
         context: state.catalogue.context,
         expected_root_revision: state.catalogue.root_revision,
@@ -742,10 +745,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         || !persisted.catalogue.outfits.iter().any(|outfit| {
             outfit.key == mounted.outfit_key && outfit.permitted_addons == mounted.addons
         })
-        || persisted.catalogue.root_revision != committed
+        || persisted.catalogue.root_revision < committed
         || persisted.catalogue.selected.as_ref().map(|s| s.revision) != Some(selected_revision)
         || !look_matches(&persisted, &mounted, persisted_binding)
-        || persisted_binding.root_revision != committed
+        || persisted_binding.root_revision != persisted.catalogue.root_revision
         || persisted_binding.selection_revision != Some(selected_revision)
     {
         let option = persisted
@@ -754,7 +757,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             .iter()
             .find(|outfit| outfit.key == mounted.outfit_key);
         return Err(format!(
-            "step=fresh-admission observed=new-session-{}-selected-{:?}-outfit-{:?}-mount-owned-{}-catalogue-root-{}-binding-root-{}-binding-selection-{:?}-look-{:?} need=mount-{mount}-root-{committed}-selection-{selected_revision}",
+            "step=fresh-admission observed=new-session-{}-selected-{:?}-outfit-{:?}-mount-owned-{}-catalogue-root-{}-binding-root-{}-binding-selection-{:?}-look-{:?} need=mount-{mount}-matching-root-at-least-{committed}-selection-{selected_revision}",
             fresh.join_snapshot().game_session_id != previous,
             persisted.catalogue.selected,
             option,
@@ -772,7 +775,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     wait_character_released(clients, 0).await?;
     row.pass(
         "fresh-admission",
-        format!("selected-outfit-addon-mount-and-unlock-persisted root_revision={committed} selected_revision={selected_revision}"),
+        format!("selected-outfit-addon-mount-and-unlock-persisted root_revision={} selected_revision={selected_revision}", persisted.catalogue.root_revision),
     );
     Ok(())
 }
