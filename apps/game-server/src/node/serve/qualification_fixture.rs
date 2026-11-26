@@ -221,7 +221,7 @@ pub(super) async fn spawn(
     .await
 }
 
-/// Observe live native spawns without advancing the population owner.
+/// Observe live Forge actors without advancing the population owner.
 #[cfg(any(test, feature = "qualification-spawn"))]
 pub(super) async fn inspect_forge(
     config: &NodeConfig,
@@ -236,10 +236,13 @@ pub(super) async fn inspect_forge(
     let runtime = owners?.runtime.lock().await;
     runtime.positioned_player_for_session(session).ok()??;
     let marked: Vec<_> = runtime
-        .spawn_point_creatures()
+        .positioned_actor_census()
+        .ok()?
         .into_iter()
-        .filter_map(|(_, _, actor)| {
-            let actor = actor?;
+        .filter_map(|(actor, _, attached_session)| {
+            if attached_session.is_some() {
+                return None;
+            }
             let snapshot = runtime.companion_snapshot(actor).ok()?;
             let stacks = snapshot.forge?.reward_stacks();
             Some(serde_json::json!({

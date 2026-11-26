@@ -1,6 +1,8 @@
-//! Capture the real appearance binding and spatial history of a visible forge creature.
+//! Verify the first visible Forge binding for each exact fixture creature.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityKind};
+use oteryn_dev_client::native_session::AppearanceUpdate;
+use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
+use oteryn_protocol_oteryn::appearance::CAPABILITY_FORGE_CREATURE_V1;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -74,167 +76,191 @@ fn log_census(client: &DevClientSession, marked: &[MarkedCreature]) {
     }
 }
 
-async fn wait_tick(client: &mut DevClientSession) -> TestResult {
-    let tick = Duration::from_secs(1);
-    verdict::Harness::global()
-        .bounded_wait(tokio::time::Instant::now() + tick, "forge-population-tick");
-    client.service_liveness(tick).await?;
-    client.take_events();
-    Ok(())
-}
-
-use oteryn_protocol_oteryn::appearance::CAPABILITY_FORGE_CREATURE_V1;
-
-async fn place_observer(clients: &SeamClients<'_>, at: TilePos, spawn: TilePos) -> TestResult {
-    wait_character_released(clients, 0).await?;
-    let mut db = sqlx::PgConnection::connect(clients.url).await?;
-    let updated = sqlx::query(
-        "UPDATE game_character_last_positions
-         SET tile_x=$1, tile_y=$2, tile_floor=$3, write_sequence=write_sequence+1
-         WHERE character_id=encode($4,'hex')::uuid AND world_id=encode($5,'hex')::uuid",
+pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(330),
+        verdict::observe(prove(clients, world)),
     )
-    .bind(i32::from(at.x))
-    .bind(i32::from(at.y))
-    .bind(-i16::from(at.floor))
-    .bind(clients.characters[0].as_slice())
-    .bind(clients.world.as_slice())
-    .execute(&mut db)
-    .await?;
-    if updated.rows_affected() != 1 {
-        return Err("P19 fixture needs a saved position for the released observer".into());
+    .await;
+    match result {
+        Ok(Ok(())) => evidence(
+            "e2e_all scenario=P19.client status=PASS evidence=first-appearance-influenced-3-and-fiendish-15",
+        ),
+        Ok(Err(error)) => evidence(&format!(
+            "e2e_all scenario=P19.client status=FAIL evidence={error}"
+        )),
+        Err(_) => evidence("e2e_all scenario=P19.client status=FAIL evidence=timeout"),
     }
-    evidence(&format!(
-        "FIXTURE_PLACEMENT row=P19 tile={at:?} spawn={spawn:?}"
-    ));
-    Ok(())
 }
 
-fn observer_tile(
-    world: &BundleWorld,
-    spawn: TilePos,
-    occupied: &std::collections::BTreeSet<TilePos>,
-) -> Option<TilePos> {
-    // Keep the creature's home well inside the interest window and leave room
-    // for it to move as the live monster owner starts processing the observer.
-    (3..=5).find_map(|distance| {
-        (-distance..=distance).find_map(|dy: i16| {
-            (-distance..=distance).find_map(|dx: i16| {
-                let at = TilePos {
-                    x: spawn.x.checked_add_signed(dx)?,
-                    y: spawn.y.checked_add_signed(dy)?,
-                    floor: spawn.floor,
-                };
-                (dx.abs().max(dy.abs()) == distance
-                    && !occupied.contains(&at)
-                    && world.enterable(at))
-                .then_some(at)
-            })
-        })
-    })
-}
-
-async fn journey(clients: &SeamClients<'_>, directory: &Path) -> TestResult {
-    let world = full_e2ef7::qualification_world(clients)?;
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let occupied = metadata
-        .spawns
-        .sources
-        .iter()
-        .flat_map(|source| {
-            source.points.iter().map(move |point| TilePos {
-                x: point.x,
-                y: point.y,
-                floor: source.floor,
-            })
-        })
-        .collect();
-
-    let client = connect_character(clients, 0x53, 0).await?;
-    let mut client = provisioning::provision_fixture(client, clients, 0, 100).await?;
-    let mut marked = census(&client).await?;
-    log_census(&client, &marked);
-    while marked.is_empty() {
-        wait_tick(&mut client).await?;
-        marked = census(&client).await?;
-    }
-    if !marked.iter().any(|mark| mark.in_view(&client)) {
-        let (target, at) = marked
-            .iter()
-            .find_map(|mark| observer_tile(world, mark.tile(), &occupied).map(|at| (mark, at)))
-            .ok_or("P19 compiled world lacks an enterable tile near any marked creature")?;
-        full_e2ef5::player_logout(&mut client).await?;
-        drop(client);
-        place_observer(clients, at, target.tile()).await?;
-        client = connect_character(clients, 0x54, 0).await?;
-        if tile(client.world_spatial().actor_position)? != at {
-            return Err("P19 observer was admitted away from its fixture tile".into());
-        }
-        marked = census(&client).await?;
-        log_census(&client, &marked);
-    }
+async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
+    let capture = required("E2E_ALL_CAPTURE_DIR")?;
+    let mut client = connect_character(clients, 0x19, 0).await?;
+    log_census(&client, &census(&client).await?);
     if !client
         .selected_capabilities()
         .contains(&CAPABILITY_FORGE_CREATURE_V1)
     {
-        return Err("P19 forge creature capability was not selected".into());
+        return Err("P19 Forge appearance capability absent".into());
     }
-
-    let mut previously_visible = Vec::new();
-    let files = loop {
-        let marker = client
-            .session_mut()
-            .visible_appearances()
-            .into_iter()
-            .find(|entry| {
-                entry.entity.kind == EntityKind::Creature && entry.forge_stacks.is_some()
-            });
-        let visible: Vec<_> = marked
-            .iter()
-            .filter(|mark| mark.in_view(&client))
-            .map(MarkedCreature::entity)
-            .collect();
-        if visible != previously_visible {
-            log_census(&client, &marked);
-            previously_visible = visible;
-        }
-        if let Some(marker) = marker {
-            evidence(&format!(
-                "DIAGNOSTIC row=P19 mapping_entity={:?} stacks={:?}",
-                marker.entity.entity, marker.forge_stacks
-            ));
-            break client
-                .session_mut()
-                .p19_capture_files(marker.entity.entity)
-                .ok_or("P19 received Forge mapping but could not retain a complete replay")?;
-        }
-        wait_tick(&mut client).await?;
-        marked = census(&client).await?;
+    use crate::qualification_wild_spawn::adjacent_cells;
+    let cells = |at: TilePos| {
+        adjacent_cells(crate::foundation::MovementLocalPosition {
+            x: i32::from(at.x),
+            y: i32::from(at.y),
+            floor: -i16::from(at.floor),
+        })
+        .into_iter()
+        .filter(|candidate| {
+            let (Ok(x), Ok(y)) = (u16::try_from(candidate.x), u16::try_from(candidate.y)) else {
+                return false;
+            };
+            let target = TilePos {
+                x,
+                y,
+                floor: at.floor,
+            };
+            world
+                .base()
+                .tile(x, y, at.floor)
+                .is_some_and(|tile| tile.walkable() && !tile.protection_zone())
+                && world.enterable(target)
+                && !world.floors().contains(target)
+                && world.floors().teleport(target).is_none()
+        })
+        .take(2)
+        .collect::<Vec<_>>()
     };
-    for (name, bytes) in files {
-        std::fs::write(directory.join(name), bytes)?;
+    let start = tile(client.world_spatial().actor_position)?;
+    let path = route(world, start, |at| cells(at).len() == 2)
+        .ok_or("P19 no approach with two open spawn tiles")?;
+    walk(&mut client, world, &path).await?;
+    let at = client.world_spatial().actor_position;
+    let positions = cells(tile(at)?);
+    if positions.len() != 2 {
+        return Err("P19 reached an approach without two open spawn tiles".into());
     }
-    full_e2ef5::player_logout(&mut client).await
-}
-
-pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    match verdict::indexed_timeout(
-        Duration::from_secs(330),
-        verdict::observe(journey(clients, Path::new(&directory))),
-    )
-    .await
-    {
-        Ok(Ok(())) => evidence(
-            "SEAM_EVIDENCE e2e_all scenario=P19.client status=PASS evidence=forge-marker-replay-captured",
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let refused = request_fixture_control(
+        session.clone(),
+        "--spawn-forge",
+        format!(
+            "oteryn:creature.druid_familiar {} {} {} fiendish",
+            positions[0].x, positions[0].y, positions[0].floor
         ),
-        Ok(Err(error)) => evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=P19.client status=FAIL evidence={error}"
-        )),
-        Err(_) => {
-            evidence("SEAM_EVIDENCE e2e_all scenario=P19.client status=FAIL evidence=timeout")
+    )
+    .await;
+    if refused.as_ref().err().map(String::as_str) != Some("ineligible_forge_creature") {
+        return Err(format!("P19 expected ineligible_forge_creature, got {refused:?}").into());
+    }
+    let mut observed = Vec::new();
+    for ((classification, stacks, folder), position) in
+        [("influenced 3", 3, ""), ("fiendish", 15, "fiendish")]
+            .into_iter()
+            .zip(positions)
+    {
+        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+        client.take_events();
+        let reply = request_fixture_control(
+            session.clone(),
+            "--spawn-forge",
+            format!(
+                "oteryn:creature.rat {} {} {} {classification}",
+                position.x, position.y, position.floor
+            ),
+        )
+        .await?;
+        let exact = parse_spawned_entity(&reply)?;
+        evidence(&format!(
+            "FIXTURE_PLACEMENT row=P19 entity={exact:?} position={position:?} classification={classification}"
+        ));
+        let mut reported_missing = false;
+        let first = 'mapping: loop {
+            for event in client.take_events() {
+                if let SessionEvent::Appearance(delta) = event
+                    && let AppearanceUpdate::Mappings(mappings) = delta.value
+                    && let Some(binding) = mappings
+                        .upserts
+                        .iter()
+                        .find(|binding| binding.entity == exact)
+                {
+                    break 'mapping (binding.forge_stacks, delta.server_sequence);
+                }
+            }
+            if !reported_missing {
+                let marked = census(&client).await?;
+                if marked
+                    .iter()
+                    .any(|mark| mark.entity() == exact && mark.in_view(&client))
+                {
+                    log_census(&client, &marked);
+                    evidence(&format!(
+                        "DIAGNOSTIC row=P19 marked_entity={exact:?} in_view=true mapping_received=false"
+                    ));
+                    reported_missing = true;
+                }
+            }
+            let tick = Duration::from_secs(1);
+            verdict::Harness::global().bounded_wait(
+                tokio::time::Instant::now() + tick,
+                "forge-appearance-mapping",
+            );
+            client.service_liveness(tick).await?;
+        };
+        log_census(&client, &census(&client).await?);
+        if first.0 != Some(stacks) {
+            return Err(
+                format!("P19 {classification} first wire binding was {:?}", first.0).into(),
+            );
+        }
+        let files = tokio::time::timeout(Duration::from_secs(5), async {
+            loop {
+                if let Some(files) = client.session_mut().p19_capture_files(exact) {
+                    return TestResult::Ok(files);
+                }
+                client.service_liveness(Duration::from_millis(50)).await?;
+            }
+        })
+        .await
+        .map_err(|_| format!("P19 {classification} exact creature replay capture missing"))??;
+        let directory = Path::new(&capture).join(folder);
+        std::fs::create_dir_all(&directory)?;
+        for (name, bytes) in files {
+            std::fs::write(directory.join(name), bytes)?;
+        }
+        observed.push((exact, stacks));
+        evidence(&format!(
+            "P19_FORGE entity={exact:?} forge_stacks={stacks} sequence={}",
+            first.1
+        ));
+        let previous = client.join_snapshot().game_session_id;
+        let reply = client.session_mut().logout().await?;
+        if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("P19 logout refused: {reply:?}").into());
+        }
+        drop(client);
+        client = connect_character(clients, 0x19, 0).await?;
+        if client.join_snapshot().game_session_id == previous
+            || client.world_spatial().actor_position != at
+        {
+            return Err("P19 fresh admission did not resume the saved observation position".into());
+        }
+        log_census(&client, &census(&client).await?);
+        let appearances = client.session_mut().visible_appearances();
+        for &(entity, stacks) in &observed {
+            if !appearances
+                .iter()
+                .any(|entry| entry.entity.entity == entity && entry.forge_stacks == Some(stacks))
+            {
+                return Err(
+                    format!("P19 fresh admission lacks {entity:?} with stacks={stacks}").into(),
+                );
+            }
         }
     }
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("P19 final logout refused: {reply:?}").into());
+    }
+    Ok(())
 }
