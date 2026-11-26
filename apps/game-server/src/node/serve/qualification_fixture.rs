@@ -989,6 +989,72 @@ fn fixture_item_committed(
     Ok(())
 }
 
+#[cfg(feature = "qualification-spawn")]
+async fn grant_premium(
+    root: &DurabilityRoot,
+    coordinator: Option<
+        &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+    >,
+    account: [u8; 16],
+    deadline: tokio::time::Instant,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::premium::{
+        IngestOutcome, PRODUCER_PROFILE, PRODUCT_ID, PRODUCT_VERSION, SNAPSHOT_SCHEMA,
+    };
+    let account_text = uuid_text(&account);
+    let coordinator = coordinator.ok_or("qualification Premium coordinator absent")?;
+    let now = unix_now();
+    let timestamp = |seconds| -> Result<String, time::error::ComponentRange> {
+        let utc = time::OffsetDateTime::from_unix_timestamp(seconds)?;
+        Ok(format!(
+            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+            utc.year(),
+            u8::from(utc.month()),
+            utc.day(),
+            utc.hour(),
+            utc.minute(),
+            utc.second()
+        ))
+    };
+    let nonce =
+        crate::premium::client::fresh_nonce().ok_or("qualification Premium nonce unavailable")?;
+    let body = serde_json::to_vec(&serde_json::json!({
+        "schema": SNAPSHOT_SCHEMA,
+        "producer_revision": "0000000000000000000000000000000000000001",
+        "producer_profile": PRODUCER_PROFILE,
+        "nonce": nonce,
+        "account_id": account_text,
+        "product_id": PRODUCT_ID,
+        "product_version": PRODUCT_VERSION,
+        "entitlement_id": account_text,
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 1,
+        "authority_revision": now,
+        "effective_from": "2026-01-01T00:00:00Z",
+        "effective_until": "2030-01-01T00:00:00Z",
+        "authority_issued_at": timestamp(now)?,
+        "authority_valid_until": timestamp(now + 3600)?,
+        "refresh_after": timestamp(now + 2400)?,
+    }))?;
+    let consumer = coordinator.consumer();
+    loop {
+        let outcome = consumer.ingest(root, account, &nonce, &body).await;
+        if matches!(outcome, IngestOutcome::Accepted | IngestOutcome::Replayed) {
+            break;
+        }
+        if outcome != IngestOutcome::FenceUnavailable || tokio::time::Instant::now() >= deadline {
+            return Err(format!("qualification Premium delivery refused: {outcome:?}").into());
+        }
+        root.request_ready();
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    coordinator
+        .premium_gate(account)
+        .await
+        .require()
+        .map_err(|_| "qualification Premium gate remained closed".into())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1737,70 +1803,4 @@ mod tests {
             assert!(request(text.as_bytes()).is_none());
         }
     }
-}
-
-#[cfg(feature = "qualification-spawn")]
-async fn grant_premium(
-    root: &DurabilityRoot,
-    coordinator: Option<
-        &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
-    >,
-    account: [u8; 16],
-    deadline: tokio::time::Instant,
-) -> Result<(), Box<dyn std::error::Error>> {
-    use crate::premium::{
-        IngestOutcome, PRODUCER_PROFILE, PRODUCT_ID, PRODUCT_VERSION, SNAPSHOT_SCHEMA,
-    };
-    let account_text = uuid_text(&account);
-    let coordinator = coordinator.ok_or("qualification Premium coordinator absent")?;
-    let now = unix_now();
-    let timestamp = |seconds| -> Result<String, time::error::ComponentRange> {
-        let utc = time::OffsetDateTime::from_unix_timestamp(seconds)?;
-        Ok(format!(
-            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
-            utc.year(),
-            u8::from(utc.month()),
-            utc.day(),
-            utc.hour(),
-            utc.minute(),
-            utc.second()
-        ))
-    };
-    let nonce =
-        crate::premium::client::fresh_nonce().ok_or("qualification Premium nonce unavailable")?;
-    let body = serde_json::to_vec(&serde_json::json!({
-        "schema": SNAPSHOT_SCHEMA,
-        "producer_revision": "0000000000000000000000000000000000000001",
-        "producer_profile": PRODUCER_PROFILE,
-        "nonce": nonce,
-        "account_id": account_text,
-        "product_id": PRODUCT_ID,
-        "product_version": PRODUCT_VERSION,
-        "entitlement_id": account_text,
-        "entitlement_state": "ACTIVE",
-        "lifecycle_revision": 1,
-        "authority_revision": now,
-        "effective_from": "2026-01-01T00:00:00Z",
-        "effective_until": "2030-01-01T00:00:00Z",
-        "authority_issued_at": timestamp(now)?,
-        "authority_valid_until": timestamp(now + 3600)?,
-        "refresh_after": timestamp(now + 2400)?,
-    }))?;
-    let consumer = coordinator.consumer();
-    loop {
-        let outcome = consumer.ingest(root, account, &nonce, &body).await;
-        if matches!(outcome, IngestOutcome::Accepted | IngestOutcome::Replayed) {
-            break;
-        }
-        if outcome != IngestOutcome::FenceUnavailable || tokio::time::Instant::now() >= deadline {
-            return Err(format!("qualification Premium delivery refused: {outcome:?}").into());
-        }
-        root.request_ready();
-        tokio::time::sleep(Duration::from_millis(50)).await;
-    }
-    coordinator
-        .premium_gate(account)
-        .await
-        .require()
-        .map_err(|_| "qualification Premium gate remained closed".into())
 }
