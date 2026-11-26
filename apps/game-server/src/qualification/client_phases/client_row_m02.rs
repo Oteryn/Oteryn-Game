@@ -2,7 +2,17 @@
 
 use super::*;
 use crate::map::door::AuthoredClosedDoor;
+use oteryn_dev_client::SessionEvent;
+use oteryn_protocol_oteryn::world_map::{MapOrigin, MapTile};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+const GATE_POSITION: ActorPosition = ActorPosition {
+    x: 32402,
+    y: 32235,
+    floor: 7,
+};
+const CLOSED_GATE: u16 = 2177;
+const OPEN_GATE: u16 = 2178;
 
 const GATE: TilePos = TilePos {
     x: 32402,
@@ -42,28 +52,19 @@ fn plain_gate(world: &BundleWorld) -> TestResult<u64> {
     Ok(key)
 }
 
-fn capture(payload: &[u8], expected: ActorPosition) -> TestResult {
-    use std::io::Write;
-
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return Ok(());
-    };
-    let root = Path::new(&root);
-    std::fs::File::create_new(root.join("m02-world-spatial.bin"))?.write_all(payload)?;
-    writeln!(
-        std::fs::File::create_new(root.join("m02-expected.txt"))?,
-        "{} {} {}",
-        expected.x,
-        expected.y,
-        expected.floor,
-    )?;
-    Ok(())
-}
-
 async fn walk_to_approach(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
-) -> TestResult {
+) -> TestResult<Option<MapTile>> {
+    let snapshot = client
+        .session_mut()
+        .gated_snapshot(oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
+        .ok_or("M02 initial map snapshot is missing")?;
+    let mut gate = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload)
+        .map_err(|error| format!("M02 map snapshot: {error:?}"))?
+        .tiles
+        .into_iter()
+        .find(|tile| tile.position == GATE_POSITION);
     let from = tile(client.world_spatial().actor_position)?;
     let path = route_live(client, world, |at| at == APPROACH)
         .await?
@@ -82,10 +83,51 @@ async fn walk_to_approach(
                 "M02 approach step {direction:?} from={before:?} expected={expected:?} actual={after:?}: {outcome:?}"
             ).into());
         }
-        client.take_events();
+        update_gate(&mut gate, &client.take_events());
         verdict::Harness::global().progress("walk-to-gate");
     }
-    Ok(())
+    Ok(gate)
+}
+
+fn is_expected_walk(steps: &[ActorPosition]) -> bool {
+    steps
+        == [
+            ActorPosition {
+                x: 32400,
+                ..EXPECTED_ARRIVAL
+            },
+            EXPECTED_ARRIVAL,
+        ]
+}
+
+fn gate_matches(tile: &MapTile, ordinal: u8, appearance: u16, revision: u64) -> bool {
+    tile.position == GATE_POSITION
+        && tile.items.iter().any(|item| {
+            item.appearance_id == appearance
+                && item.origin
+                    == (MapOrigin::BaseOrdinal {
+                        ordinal,
+                        object_revision: revision,
+                    })
+        })
+}
+
+fn update_gate(gate: &mut Option<MapTile>, events: &[SessionEvent]) {
+    for event in events {
+        if let SessionEvent::WorldMap(delta) = event {
+            if delta.value.cleared.contains(&GATE_POSITION) {
+                *gate = None;
+            }
+            if let Some(tile) = delta
+                .value
+                .tiles
+                .iter()
+                .find(|tile| tile.position == GATE_POSITION)
+            {
+                *gate = Some(tile.clone());
+            }
+        }
+    }
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -99,7 +141,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let key = plain_gate(world)?;
     let mut client = connect_world(clients, 0xa2).await?;
-    walk_to_approach(&mut client, world).await?;
+    if client.world_spatial().actor_position == EXPECTED_ARRIVAL {
+        return Err("M02 first admission already starts at the expected relog position".into());
+    }
+    let (_, ordinal) = crate::map::view::placement_of(key).ok_or("M02 invalid gate placement")?;
+    let mut gate = walk_to_approach(&mut client, world).await?;
+    if !gate
+        .as_ref()
+        .is_some_and(|tile| gate_matches(tile, ordinal, CLOSED_GATE, 0))
+    {
+        return Err(
+            "M02 approach did not observe the authored closed gate at revision zero".into(),
+        );
+    }
     let stand = tile(client.world_spatial().actor_position)?;
     if stand != APPROACH || distance(stand, GATE) != 3 {
         return Err("M02 route missed its planned approach".into());
@@ -112,6 +166,42 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if result.disposition != UseDisposition::Committed {
         return Err(format!("M02 far use did not commit: {result:?}").into());
     }
+    let events = client.take_events();
+    let mut previous = ActorPosition {
+        x: i32::from(stand.x),
+        y: i32::from(stand.y),
+        floor: 7,
+    };
+    let mut steps = Vec::new();
+    for event in &events {
+        if let SessionEvent::WorldSpatialEntities(delta) = event
+            && delta.server_sequence < result.result_server_sequence
+            && delta.value.actor_position != previous
+        {
+            previous = delta.value.actor_position;
+            steps.push(previous);
+        }
+    }
+    if !is_expected_walk(&steps) {
+        return Err(
+            format!("M02 expected two consecutive eastward autowalk steps, got {steps:?}").into(),
+        );
+    }
+    update_gate(&mut gate, &events);
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while !gate
+        .as_ref()
+        .is_some_and(|tile| gate_matches(tile, ordinal, OPEN_GATE, 1))
+    {
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err("M02 far use did not publish the open gate at revision one".into());
+        }
+        client
+            .service_liveness(remaining.min(Duration::from_millis(100)))
+            .await?;
+        update_gate(&mut gate, &client.take_events());
+    }
     let arrived = client.world_spatial().actor_position;
     if arrived != EXPECTED_ARRIVAL || distance(tile(arrived)?, GATE) > 1 {
         return Err(format!(
@@ -119,13 +209,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let payload =
-        oteryn_protocol_oteryn::world_spatial::encode_world_spatial(client.world_spatial());
-    capture(&payload, EXPECTED_ARRIVAL)?;
-    evidence(&format!(
-        "SEAM_EVIDENCE e2e_all scenario=M02.client status=PASS position={arrived:?}"
-    ));
-    Ok(())
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("M02 first logout refused: {logout:?}").into());
+    }
+    drop(client);
+    let relog = connect_world(clients, 0xa3).await?;
+    if relog.world_spatial().actor_position != EXPECTED_ARRIVAL {
+        return Err(format!(
+            "M02 relog did not restore the landing: {:?}",
+            relog.world_spatial()
+        )
+        .into());
+    }
+    evidence("M02_GAMEPLAY_VERIFIED steps=2 gate=open revision=1 relog_position=32401,32235,7");
+    Err("BLOCKED-CLIENT: original server frame capture and same-run replay are required".into())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -134,4 +232,45 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "SEAM_EVIDENCE e2e_all scenario=M02.client status=FAIL evidence={error}"
         ));
     }
+}
+
+#[test]
+fn m02_requires_intermediate_step_in_order() {
+    let intermediate = ActorPosition {
+        x: 32400,
+        ..EXPECTED_ARRIVAL
+    };
+    assert!(is_expected_walk(&[intermediate, EXPECTED_ARRIVAL]));
+    assert!(!is_expected_walk(&[EXPECTED_ARRIVAL]));
+    assert!(!is_expected_walk(&[EXPECTED_ARRIVAL, intermediate]));
+}
+
+#[test]
+fn m02_requires_open_appearance_at_next_revision() -> TestResult {
+    use oteryn_protocol_oteryn::world_map::{MapDefinition, MapItem};
+    let mut gate = MapTile {
+        position: GATE_POSITION,
+        items: vec![MapItem {
+            definition: MapDefinition::Item(std::num::NonZeroU32::new(1).ok_or("item id")?),
+            count: 1,
+            sub_type: 0,
+            origin: MapOrigin::BaseOrdinal {
+                ordinal: 1,
+                object_revision: 0,
+            },
+            appearance_id: CLOSED_GATE,
+        }],
+        more: false,
+        ground_speed: 150,
+    };
+    assert!(gate_matches(&gate, 1, CLOSED_GATE, 0));
+    assert!(!gate_matches(&gate, 1, OPEN_GATE, 1));
+    gate.items[0].appearance_id = OPEN_GATE;
+    assert!(!gate_matches(&gate, 1, OPEN_GATE, 1));
+    gate.items[0].origin = MapOrigin::BaseOrdinal {
+        ordinal: 1,
+        object_revision: 1,
+    };
+    assert!(gate_matches(&gate, 1, OPEN_GATE, 1));
+    Ok(())
 }
