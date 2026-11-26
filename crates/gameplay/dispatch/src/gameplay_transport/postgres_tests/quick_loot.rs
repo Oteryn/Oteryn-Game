@@ -1,14 +1,24 @@
 //! QUICKLOOT: production router, item owner, replay and real PostgreSQL custody.
-use super::fixture::{Harness, debug, id};
+use super::fixture::{Harness, debug, id, join_two};
+use super::autowalk_fixtures::{read, send};
 use super::kill_reward_e2e_fixtures::scenario_thread;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::item_mint::*;
 use crate::foundation::{CommandStatus, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    FirstEntryOutcome, FreshAdmissionAuthority, UseCommand,
+    AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
+    UseCommand, serve_admitted,
 };
+use oteryn_protocol_oteryn::item_view::{self, ItemHandle, OpenContainer};
 use oteryn_protocol_oteryn::quick_loot::*;
+use oteryn_protocol_oteryn::world_spatial_entities::{
+    EntityDetail, decode_world_spatial_entities_snapshot_with_item_handles,
+};
+use oteryn_protocol_oteryn::{
+    MessageType, decode_command_result, decode_snapshot_chunk, decode_state_delta, decode_wire_envelope,
+};
+use tokio::io::{AsyncWriteExt, DuplexStream};
 
 #[test]
 fn quick_loot_postgres_dispatch_assignment_transfer_replay_and_fences() -> TestResult {
@@ -44,6 +54,14 @@ fn quick_loot_selected_item_accepts_and_refuses_postgres() -> TestResult {
 }
 
 #[test]
+fn quick_loot_stale_or_foreign_handle_refuses_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_routed_case(admin, Case::StaleHandle)
+}
+
+#[test]
 fn quick_loot_admission_restores_filter_and_lists_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -73,6 +91,7 @@ enum Case {
     Bulk,
     GoldPouch,
     SelectedItem,
+    StaleHandle,
     FilterReview,
     PouchFulfilment,
 }
@@ -365,14 +384,15 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                 .map_err(|_| "far cell")?;
         if !matches!(case, Case::Bulk | Case::GoldPouch) {
             match case {
-                Case::SelectedItem => {
+                Case::SelectedItem | Case::StaleHandle => {
                     selected_item_cases(
                         &owner,
-                        &mut admitted,
+                        admitted,
                         &harness.pool,
                         corpse_id,
                         &items,
                         [near, far],
+                        case,
                     )
                     .await?
                 }
@@ -687,44 +707,84 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
 
 async fn selected_item_cases(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    admitted: AdmittedSession,
     pool: &sqlx::PgPool,
     corpse: [u8; 16],
     items: &[[u8; 16]],
     [near, far]: [[u8; 10]; 2],
+    case: Case,
 ) -> TestResult {
     let [untouched, selected] = items else {
         return Err("selected-item fixture expected two loot entries".into());
     };
-    let click = |item| QuickLootRequest {
-        corpse: Some(corpse),
-        selected_item: Some(item),
-        ..request(QuickLootAction::Click)
-    };
-
-    for (cell, top, item, reason) in [
-        (near, id(41), id(71), "item outside this corpse"),
-        (far, id(41), *selected, "corpse out of range"),
-        (near, id(99), *selected, "corpse loot rights"),
-    ] {
-        fixture_corpse(pool, corpse, cell, top, 0).await?;
-        let command_id = admitted.continuity.next_command_id;
-        assert_eq!(
-            wire_requests(owner, admitted, &[(command_id, click(item))]).await?,
-            vec![(CommandStatus::Rejected, QuickLootResult { items: Vec::new() })],
-            "{reason}"
-        );
-        assert_eq!(corpse_items(pool, corpse).await?, items, "{reason}");
-    }
-
     fixture_corpse(pool, corpse, near, id(41), 0).await?;
-    let command_id = admitted.continuity.next_command_id;
-    assert_eq!(
-        wire_requests(owner, admitted, &[(command_id, click(*selected))]).await?,
-        vec![(CommandStatus::Accepted, QuickLootResult {
-            items: vec![QuickLootItemResult { item: *selected, accepted: true }]
-        })]
-    );
+    let corpse_identity = {
+        let mut runtime = owner.runtime.lock().await;
+        let creature = runtime
+            .admit_pinned_test_creature(MovementLocalPosition { x: 7, y: 0, floor: 7 })
+            .map_err(debug)?;
+        runtime.commit_monster_lab_damage(creature, b"quick-loot-corpse", 20).map_err(debug)?;
+        let mut death = runtime.borrow_combat_death();
+        let receipt = death.committed_lethal_receipt(creature).map_err(debug)?;
+        death.project_committed_lethal(receipt).map_err(debug)?;
+        runtime.bind_corpse_item(creature, corpse, "Item", "oteryn:item.tibia.i5973", "definition-r1").map_err(debug)?;
+        creature.corpse_identity()
+    };
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let drive = async {
+        let corpse_handle = snapshot_corpse_handle(&mut client, corpse_identity).await?;
+        let mut command_id = admitted.continuity.next_command_id;
+        use oteryn_protocol_oteryn::world_object::{COMMAND_TYPE_USE_INTENT, encode_use_item_intent};
+        send(&mut client, command_id, COMMAND_TYPE_USE_INTENT, &encode_use_item_intent(corpse_handle)).await?;
+        let (status, _) = command_reply(&mut client, command_id).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        let opened = corpse_delta(&mut client).await?;
+        assert_eq!(opened.container_handle, Some(corpse_handle));
+        let [keep, take] = opened.entries.as_slice() else {
+            return Err("open corpse should show both entries".into());
+        };
+        if case == Case::StaleHandle {
+            for handle in [corpse_handle, ItemHandle::MAX] {
+                command_id += 1;
+                send_click(&mut client, command_id, corpse_identity, handle).await?;
+                assert_eq!(command_reply(&mut client, command_id).await?, (CommandStatus::Rejected, vec![16, 2]));
+            }
+            assert_eq!(corpse_items(pool, corpse).await?, items);
+        } else {
+            for (cell, top, reason) in [
+                (far, id(41), "corpse out of range"),
+                (near, id(99), "corpse loot rights"),
+            ] {
+                fixture_corpse(pool, corpse, cell, top, 0).await?;
+                command_id += 1;
+                send_click(&mut client, command_id, corpse_identity, take.handle).await?;
+                assert_eq!(command_reply(&mut client, command_id).await?.0, CommandStatus::Rejected, "{reason}");
+                assert_eq!(corpse_items(pool, corpse).await?, items, "{reason}");
+            }
+            fixture_corpse(pool, corpse, near, id(41), 0).await?;
+            command_id += 1;
+            send_click(&mut client, command_id, corpse_identity, take.handle).await?;
+            assert_eq!(command_reply(&mut client, command_id).await?, (CommandStatus::Accepted, vec![16, 1]));
+            assert_eq!(corpse_delta(&mut client).await?, OpenContainer {
+                container_handle: Some(corpse_handle),
+                entries: vec![*keep],
+            });
+            command_id += 1;
+            send_click(&mut client, command_id, corpse_identity, take.handle).await?;
+            assert_eq!(command_reply(&mut client, command_id).await?, (CommandStatus::Rejected, vec![16, 2]));
+        }
+        Ok(())
+    };
+    let (end, result) = join_two(serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS), async {
+        let result: TestResult = drive.await;
+        client.shutdown().await?;
+        result
+    }).await;
+    result?;
+    assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+    if case == Case::StaleHandle {
+        return Ok(());
+    }
     assert_eq!(corpse_items(pool, corpse).await?, [*untouched]);
     let backpack: Vec<u8> = sqlx::query_scalar(
         "SELECT uuid_send(parent_item_instance_id) FROM game_item_container_entries
@@ -735,6 +795,68 @@ async fn selected_item_cases(
     .await?;
     assert_eq!(backpack, id(70));
     Ok(())
+}
+
+// Pin the new wire shape independently of the codec so the same scenario runs on the base.
+async fn send_click(
+    client: &mut DuplexStream,
+    command_id: u64,
+    corpse: [u8; 16],
+    handle: ItemHandle,
+) -> TestResult {
+    let payload = [&[8, 1, 18, 16][..], &corpse, &[74, 8], &handle.get().to_le_bytes()].concat();
+    send(client, command_id, COMMAND_TYPE_QUICK_LOOT, &payload).await
+}
+
+async fn snapshot_corpse_handle(client: &mut DuplexStream, corpse: [u8; 16]) -> TestResult<ItemHandle> {
+    let mut handle = None;
+    loop {
+        let frame = read(client).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        match envelope.message_type() {
+            MessageType::SnapshotChunk => {
+                for domain in decode_snapshot_chunk(envelope.payload())?.1 {
+                    if domain.domain_id == 1 {
+                        let snapshot = decode_world_spatial_entities_snapshot_with_item_handles(domain.payload)
+                            .map_err(debug)?;
+                        handle = snapshot.entities.iter().find_map(|entry| match entry.detail {
+                            EntityDetail::Object { item_handle, .. }
+                            | EntityDetail::ObjectWithAppearance { item_handle, .. }
+                                if entry.entity.identity == corpse => item_handle,
+                            _ => None,
+                        });
+                    }
+                }
+            }
+            MessageType::SnapshotCommit => return handle.ok_or_else(|| "missing corpse handle".into()),
+            _ => {}
+        }
+    }
+}
+
+async fn command_reply(client: &mut DuplexStream, id: u64) -> TestResult<(CommandStatus, Vec<u8>)> {
+    loop {
+        let frame = read(client).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::CommandResult {
+            let result = decode_command_result(envelope.payload())?;
+            assert_eq!(result.command_id, id);
+            return Ok((result.status, result.payload.to_vec()));
+        }
+    }
+}
+
+async fn corpse_delta(client: &mut DuplexStream) -> TestResult<OpenContainer> {
+    loop {
+        let frame = read(client).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::StateDelta {
+            let delta = decode_state_delta(envelope.payload())?;
+            if delta.domain_id == item_view::STATE_DOMAIN_OPEN_CONTAINER {
+                return item_view::decode_open_container(delta.payload).map_err(debug);
+            }
+        }
+    }
 }
 
 async fn corpse_items(pool: &sqlx::PgPool, corpse: [u8; 16]) -> TestResult<Vec<[u8; 16]>> {

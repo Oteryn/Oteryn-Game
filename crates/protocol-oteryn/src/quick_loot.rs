@@ -811,22 +811,26 @@ mod tests {
     }
     #[test]
     fn selected_item_click_round_trips_and_rejects_invalid_shapes() -> WireResult<()> {
-        let fields = [&[0x08, 1, 0x12, 16][..], &[7; 16], &[0x4a, 16], &[8; 16]];
+        let fields = [&[0x08, 1, 0x12, 16][..], &[7; 16], &[0x4a, 8], &8_u64.to_le_bytes()];
         let bytes = fields.concat();
         let request = decode_quick_loot_request(&bytes)?;
         assert_eq!(request.action, QuickLootAction::Click);
         assert_eq!(request.corpse, Some([7; 16]));
-        assert_eq!(request.selected_item, Some([8; 16]));
+        assert!(request.selected_item.is_some());
         assert_eq!(encode_quick_loot_request(&request)?, bytes);
 
         let mut duplicated = bytes.clone();
         duplicated.extend_from_slice(&fields[2..].concat());
         let no_corpse = [&[0x08, 1][..], fields[2], fields[3]].concat();
         let loot_all = [&[0x08, 2][..], fields[2], fields[3]].concat();
+        let legacy_uuid = [fields[0], fields[1], &[0x4a, 16], &[8; 16]].concat();
+        let zero_handle = [fields[0], fields[1], fields[2], &[0; 8]].concat();
         for malformed in [
             duplicated.as_slice(),
             &no_corpse,
             &loot_all,
+            &legacy_uuid,
+            &zero_handle,
             &bytes[..bytes.len() - 1],
         ] {
             assert_eq!(
