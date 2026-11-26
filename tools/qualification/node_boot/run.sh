@@ -172,14 +172,14 @@ case "$NODE_BOOT_WORLD_PROFILE" in
     case ",${selected_groups//[[:space:]]/}," in
       ,,|*,rows,*) WORLD_REGIONS+=";131,122" ;;
     esac
-    # Grave Danger's authored lever and room occupy region 130,122.
+    # Grave Danger's room is in 130,122 and its authored approach teleport is in 130,126.
     case ",${selected_groups//[[:space:]]/}," in
       ,,|*,rows,*)
         w13_batch="${OTERYN_E2E_ROW_BATCH:-0:15}"
         if [[ "$w13_batch" == all ]] ||
           { [[ "$w13_batch" =~ ^\+?0*([0-9]{1,9}):\+?0*([0-9]{1,9})$ ]] &&
             (( 10#${BASH_REMATCH[1]} <= 35 && 35 - 10#${BASH_REMATCH[1]} < 10#${BASH_REMATCH[2]} )); }; then
-          WORLD_REGIONS+=";130,122"
+          WORLD_REGIONS+=";130,122;130,126"
         fi
         ;;
     esac

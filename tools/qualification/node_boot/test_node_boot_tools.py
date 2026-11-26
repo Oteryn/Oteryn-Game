@@ -310,7 +310,8 @@ WORK=.
                 })
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 regions = result.stdout.strip().split(';')
-                self.assertEqual(regions.count('130,122'), int(authored))
+                for region in ('130,122', '130,126'):
+                    self.assertEqual(regions.count(region), int(authored))
 
     def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
         fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
