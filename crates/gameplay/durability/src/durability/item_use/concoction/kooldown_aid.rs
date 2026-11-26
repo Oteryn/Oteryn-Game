@@ -9,6 +9,11 @@ use crate::foundation::CommandRef;
 
 pub const KOOLDOWN_AID_KEY: &str = "oteryn:item.tibia.i36723";
 
+pub enum KooldownAidOutcome {
+    Used(ItemUseOutcome),
+    Exhausted { remaining_ms: u64 },
+}
+
 impl DurabilityRoot {
     /// Read the exact original intent before resolving a possibly consumed source handle.
     pub async fn read_kooldown_aid_receipt(
@@ -83,7 +88,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: ItemUseRequest,
         binding: [u8; 32],
-    ) -> Result<ItemUseOutcome> {
+    ) -> Result<KooldownAidOutcome> {
         request.validate()?;
         if request.kind != ItemUseKind::Concoction
             || request.source_definition.family != "Item"
@@ -117,7 +122,7 @@ impl DurabilityRoot {
                                 return Ok(Err(ItemUseError::ConflictingCommand));
                             }
                             tx.commit(deadline).await?;
-                            return Ok(Ok(outcome));
+                            return Ok(Ok(KooldownAidOutcome::Used(outcome)));
                         }
                         Ok(None) => {}
                         Err(ItemUseError::Unavailable(error)) => return Err(error),
@@ -133,16 +138,20 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(ItemUseError::StaleState));
                     }
-                    let cooling: bool = sqlx::query_scalar(
-                        "SELECT EXISTS(SELECT 1 FROM game_character_concoction_effects \
+                    let remaining_ms: Option<i64> = sqlx::query_scalar(
+                        "SELECT ceil(extract(epoch FROM (started_at + interval '24 hours' \
+                           - public.game_daily_effect_now())) * 1000)::bigint \
+                           FROM game_character_concoction_effects \
                           WHERE character_id=encode($1,'hex')::uuid AND concoction='kooldown_aid' \
-                            AND started_at+interval '24 hours'>public.game_daily_effect_now())",
+                          ORDER BY started_at DESC LIMIT 1",
                     )
                     .bind(fence.character_id.as_bytes().as_slice())
-                    .fetch_one(&mut **tx)
+                    .fetch_optional(&mut **tx)
                     .await?;
-                    if cooling {
-                        return Ok(Err(ItemUseError::Cooldown));
+                    if let Some(remaining_ms) =
+                        remaining_ms.and_then(|ms| u64::try_from(ms).ok()).filter(|ms| *ms > 0)
+                    {
+                        return Ok(Ok(KooldownAidOutcome::Exhausted { remaining_ms }));
                     }
                     let tuple = tx.tuple();
                     let outcome = match write(&mut tx, &fence, &request, tuple).await {
@@ -163,7 +172,7 @@ impl DurabilityRoot {
                     .execute(&mut **tx)
                     .await?;
                     tx.commit(deadline).await?;
-                    Ok(Ok(outcome))
+                    Ok(Ok(KooldownAidOutcome::Used(outcome)))
                 })
             })
             .await?

@@ -13,6 +13,12 @@ fn has_world_cake_regeneration(conditions: &ConditionStore<String>) -> bool {
         })
 }
 
+#[derive(Default)]
+pub(super) struct PreparedConditions {
+    conditions: Option<ConditionStore<String>>,
+    cooldowns: crate::spell::Cooldowns,
+}
+
 /// Validate durable data before creating any actor state: a refused retry cannot
 /// bypass restore merely because a prior attempt allocated an empty state entry.
 pub(super) fn prepare(
@@ -20,9 +26,9 @@ pub(super) fn prepare(
     lease_generation: u64,
     content_digest: [u8; 32],
     now: u64,
-) -> Option<Option<ConditionStore<String>>> {
+) -> Option<PreparedConditions> {
     let Some(saved) = saved else {
-        return Some(None);
+        return Some(PreparedConditions::default());
     };
     if saved.lease_generation >= lease_generation {
         return None;
@@ -41,19 +47,21 @@ pub(super) fn prepare(
     {
         return None;
     }
-    Some(Some(next))
+    Some(PreparedConditions {
+        conditions: Some(next),
+        cooldowns: prepare_cooldowns(&saved.spell_cooldowns, now)?,
+    })
 }
 
 pub(super) fn restore(
     state: &mut crate::spell::cast::PlayerSpellState,
-    prepared: Option<&ConditionStore<String>>,
+    prepared: PreparedConditions,
     gourmet: oteryn_gameplay_domain::domain::hireling::food::GourmetConditions,
     now_us: u64,
     bed_rest: Option<[u32; 4]>,
 ) -> Option<()> {
     use oteryn_gameplay_domain::domain::condition::ConditionType;
-    if let Some(prepared) = prepared {
-        let mut next = prepared.clone();
+    if let Some(mut next) = prepared.conditions {
         // These two families already have a durable native USE/checkpoint owner.
         // A prior logout snapshot cannot resurrect or refresh their source rows.
         for key in [ConflictKey::Attributes, ConflictKey::Speed] {
@@ -80,7 +88,56 @@ pub(super) fn restore(
             state.restore_bed_rest(rest, now_us)?;
         }
     }
-    crate::spell::actor_conditions::restore_gourmet_food(state, gourmet, now_us / 1000).ok()
+    crate::spell::actor_conditions::restore_gourmet_food(state, gourmet, now_us / 1000).ok()?;
+    state.cooldowns = prepared.cooldowns;
+    Some(())
+}
+
+fn unix_micros() -> Option<u64> {
+    let elapsed = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?;
+    u64::try_from(elapsed.as_micros()).ok()
+}
+
+fn checkpoint_cooldowns(
+    cooldowns: &crate::spell::Cooldowns,
+    owner_now: u64,
+) -> Option<Vec<(String, u64)>> {
+    let wall_now = unix_micros()?;
+    let mut deadlines = cooldowns.canonical_deadlines();
+    deadlines.retain(|(key, deadline)| {
+        *deadline > owner_now
+            && key.strip_prefix("group:") != Some(crate::spell::STAIRHOP_COOLDOWN_KEY)
+    });
+    for (_, deadline) in &mut deadlines {
+        *deadline = wall_now.checked_add(*deadline - owner_now)?;
+    }
+    Some(deadlines)
+}
+
+/// Rebase wall-clock expiries onto the admitting runtime's monotonic clock.
+fn prepare_cooldowns(saved: &[(String, u64)], owner_now: u64) -> Option<crate::spell::Cooldowns> {
+    use oteryn_simulation_determinism::SemanticTimeMicros;
+    let mut cooldowns = crate::spell::Cooldowns::default();
+    if saved.is_empty() {
+        return Some(cooldowns);
+    }
+    let wall_now = unix_micros()?;
+    for (key, expiry) in saved {
+        if *expiry <= wall_now {
+            continue;
+        }
+        let deadline = SemanticTimeMicros::from_micros(owner_now.checked_add(expiry - wall_now)?);
+        match key.split_once(':')? {
+            ("spell", key) => cooldowns.spells.insert(key.into(), deadline),
+            ("group", key) if key != crate::spell::STAIRHOP_COOLDOWN_KEY => {
+                cooldowns.groups.insert(key.into(), deadline)
+            }
+            _ => return None,
+        };
+    }
+    Some(cooldowns)
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -163,7 +220,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return false;
             };
+            let Some(spell_cooldowns) = checkpoint_cooldowns(&state.cooldowns, now) else {
+                return false;
+            };
             CharacterConditionSnapshot {
+                spell_cooldowns,
                 lease_generation: fence.character_lease_generation,
                 content_digest: runtime.content_pin().server_artifact_digest(),
                 conditions,
@@ -196,6 +257,7 @@ mod tests {
     -> Result<(), &'static str> {
         let mut saved = CharacterConditionSnapshot {
             lease_generation: 2,
+            spell_cooldowns: Vec::new(),
             content_digest: [7; 32],
             conditions: ConditionStore::<String>::new()
                 .persistent_snapshot(0)
@@ -268,6 +330,7 @@ mod tests {
             .map_err(|_| "old haste")?;
         let saved = CharacterConditionSnapshot {
             lease_generation: 2,
+            spell_cooldowns: Vec::new(),
             content_digest: [7; 32],
             conditions: old
                 .owned_conditions()
@@ -289,7 +352,7 @@ mod tests {
         ] {
             let mut fresh = actor()?;
             let prepared = prepare(Some(&saved), 3, [7; 32], 123).ok_or("prepared")?;
-            restore(&mut fresh, prepared.as_ref(), current, 123, None).ok_or("restored")?;
+            restore(&mut fresh, prepared, current, 123, None).ok_or("restored")?;
             assert_eq!(
                 crate::spell::actor_conditions::gourmet_conditions(&fresh, 0),
                 current,
@@ -310,6 +373,7 @@ mod tests {
         crate::spell::actor_conditions::eat_food(&mut old, 60, 0).map_err(|_| "old food")?;
         let saved = CharacterConditionSnapshot {
             lease_generation: 2,
+            spell_cooldowns: Vec::new(),
             content_digest: [7; 32],
             conditions: old
                 .owned_conditions()
@@ -321,14 +385,8 @@ mod tests {
             let mut fresh = actor()?;
             fresh.restore_bed_rest(rest, 123).ok_or("bed admission")?;
             let prepared = prepare(Some(&saved), 3, [7; 32], 123).ok_or("prepared food")?;
-            restore(
-                &mut fresh,
-                prepared.as_ref(),
-                Default::default(),
-                123,
-                Some(rest),
-            )
-            .ok_or("restored bed")?;
+            restore(&mut fresh, prepared, Default::default(), 123, Some(rest))
+                .ok_or("restored bed")?;
             assert_eq!(
                 fresh.bed_rest_snapshot(0),
                 rest,
