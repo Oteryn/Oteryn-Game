@@ -1,6 +1,6 @@
 //! P12b (Cyclopedia badges, Crystal `PlayerBadge::checkAndUpdateNewBadges`):
-//! 1. Admit the node-boot character, prove no badge is stored, and request badges over capability 199.
-//! 2. Decode the accepted reply (count, ascending known badge ids).
+//! 1. Prove the account has no stored badges, then admit the node-boot character.
+//! 2. Check the exact awards from admission and request the list over capability 199.
 //! 3. Compare it with the durable truth read through read-only SQL: the earned rows of the
 //!    account (`game_account_badges`) must equal the reply and contain exactly the badges the
 //!    account facts (age, loyalty, level sum, vocation levels) qualify for.
@@ -114,16 +114,18 @@ async fn expected_badges(clients: &SeamClients<'_>) -> TestResult<Vec<u8>> {
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let expected = expected_badges(clients).await?;
     expect(!expected.is_empty(), "qualifying-badge-inputs", &expected)?;
-    let mut client = connect_world(clients, 0xc1).await?;
     let before = stored_badges(clients).await?;
     expect(before.is_empty(), "badge-pre-state", &before)?;
 
-    let reply = reply_badges(&mut client).await?;
-    expect(reply == expected, "qualifying-badges-granted", (&expected, &reply))?;
+    let mut client = connect_world(clients, 0xc1).await?;
     let awarded = stored_badges(clients).await?;
     let awarded_ids: Vec<_> = awarded.iter().map(|&(id, _)| id).collect();
     let expected_ids: Vec<_> = expected.iter().copied().map(i16::from).collect();
-    expect(awarded_ids == expected_ids, "reply-vs-durable", &awarded)?;
+    expect(awarded_ids == expected_ids, "qualifying-badges-granted", &awarded)?;
+    let reply = reply_badges(&mut client).await?;
+    expect(reply == expected, "reply-vs-durable", (&expected, &reply))?;
+    let listed = stored_badges(clients).await?;
+    expect(listed == awarded, "durable-after-listing", (&awarded, &listed))?;
     logout(&mut client).await?;
     wait_character_released(clients, 1).await?;
     let offline = stored_badges(clients).await?;
