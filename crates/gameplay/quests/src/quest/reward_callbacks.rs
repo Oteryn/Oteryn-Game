@@ -689,15 +689,13 @@ fn parse_documents(sources: &[&str]) -> Result<Document, String> {
     validate_document_with_capacity(combined, maximum)
 }
 
-// Storkus follows Crystal's counter convention: stored 1 means the collection
-// has started, and stored 21 means twenty dust were paid. Keep the published
-// full deposit and lower the remaining cases to the existing fenced exchanges.
+// Stored 1 means collection has started and 21 means twenty dust were paid.
+// "Mission" keeps the acceptance and report steps. "Vampire dust" can start
+// collection and deposit in one exchange, and advances the mission when paid.
 fn append_storkus_dust_deposits(callbacks: &mut Vec<RewardCallback>) -> Result<(), String> {
-    let Some(full) = callbacks
-        .iter()
-        .find(|row| row.key == "oteryn:quest-reward/inquisition-vampire-hunt-dust")
-        .cloned()
-    else {
+    const HAND_IN: &str = "oteryn:quest-reward/inquisition-vampire-hunt-dust";
+    const COLLECT: &str = "oteryn:quest-reward/inquisition-vampire-hunt-dust/collect";
+    let Some(full) = callbacks.iter().find(|row| row.key == COLLECT).cloned() else {
         return Ok(());
     };
     let [questline, mission, dust] = full.storage.as_slice() else {
@@ -715,6 +713,23 @@ fn append_storkus_dust_deposits(callbacks: &mut Vec<RewardCallback>) -> Result<(
     {
         return Err("Storkus dust counter bounds".into());
     }
+    let advance_mission = |callback: &mut RewardCallback| -> Result<(), String> {
+        for stage in &mut callback.storage[..2] {
+            stage.preserve = false;
+            stage.set = stage
+                .set
+                .checked_add(1)
+                .ok_or("Storkus dust stage bounds")?;
+        }
+        Ok(())
+    };
+    let mut full_hand_in = full.clone();
+    full_hand_in.key = HAND_IN.into();
+    full_hand_in.topic = 9;
+    full_hand_in.storage[2].minimum = 0;
+    advance_mission(&mut full_hand_in)?;
+    callbacks.push(full_hand_in);
+
     for saved in dust.minimum..dust.set {
         let remaining = payment
             .count
@@ -724,7 +739,7 @@ fn append_storkus_dust_deposits(callbacks: &mut Vec<RewardCallback>) -> Result<(
                 continue;
             }
             let mut deposit = full.clone();
-            deposit.key = format!("{}/deposit-{saved}-{count}", full.key);
+            deposit.key = format!("{HAND_IN}/deposit-{saved}-{count}");
             deposit.take[0].count = count;
             let finished = count == remaining;
             deposit.inventory = vec![InventoryRequirement {
@@ -738,7 +753,17 @@ fn append_storkus_dust_deposits(callbacks: &mut Vec<RewardCallback>) -> Result<(
             if !finished {
                 deposit.reply = vec!["Bring me more vampire dust when you have it.".into()];
             }
+            let mut hand_in = deposit.clone();
+            hand_in.key = format!("{HAND_IN}/hand-in-{saved}-{count}");
+            hand_in.topic = 9;
+            if saved == dust.minimum {
+                hand_in.storage[2].minimum = 0;
+            }
+            if finished {
+                advance_mission(&mut hand_in)?;
+            }
             callbacks.push(deposit);
+            callbacks.push(hand_in);
         }
     }
     Ok(())
@@ -2542,11 +2567,11 @@ mod tests {
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // The shards, Colours peer and Kingsday journal contribute 516 callbacks.
-        // Storkus's authored acceptance, full deposit and paid confirmation
-        // are joined by 209 additional quantities and partial-deposit states.
+        // Storkus's authored acceptance, collection and paid confirmation
+        // are joined by 209 partial-collection and 210 direct hand-in callbacks.
         let callbacks = load()?;
         // Wayland contributes three outfit exchanges.
-        assert_eq!(callbacks.len(), 516 + 209 + 3);
+        assert_eq!(callbacks.len(), 516 + 209 + 210 + 3);
         assert_eq!(
             callbacks
                 .iter()
@@ -2556,7 +2581,7 @@ mod tests {
                         .starts_with("oteryn:quest-reward/inquisition-vampire-hunt-dust/")
                 })
                 .count(),
-            211
+            421
         );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
