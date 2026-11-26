@@ -344,12 +344,18 @@ async fn promote(client: &mut DevClientSession, world: &BundleWorld) -> TestResu
         })
         .map(|actor| actor.entity)
         .ok_or("step=promotion King Tibianus absent")?;
-    if promotion_line(client, king, "hi").await?.is_empty()
-        || promotion_line(client, king, "promotion").await?
-            != ["Do you want to be promoted for 20000 gold coins?"]
-        || promotion_line(client, king, "yes").await? != ["You are now promoted."]
-    {
-        return Err("step=promotion observed=dialogue-refused".into());
+    let greeting = promotion_line(client, king, "hi").await?;
+    if greeting.is_empty() {
+        return Err("step=promotion-greeting observed=empty-conversation".into());
+    }
+    let quote = promotion_line(client, king, "promotion").await?;
+    if quote != ["Do you want to be promoted for 20000 gold coins?"] {
+        return Err(format!("step=promotion-quote observed={quote:?}").into());
+    }
+    let confirmation = promotion_line(client, king, "yes").await?;
+    evidence(&format!("G23_PROMOTION confirmation={confirmation:?}"));
+    if confirmation != ["You are now promoted."] {
+        return Err(format!("step=promotion-confirmation observed={confirmation:?}").into());
     }
     Ok(())
 }
