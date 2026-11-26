@@ -36,6 +36,7 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
+mod bank_robbery;
 #[path = "benevola.rs"]
 mod benevola;
 mod cake;
@@ -98,6 +99,9 @@ struct SessionNpc {
     // D1103: confirmation and retained receipt intent use this existing session owner.
     vocation: Option<super::vocation_choice::NpcVocationConversation>,
     bank: Option<PendingBank>,
+    robbery: Option<crate::durability::world_event::bank_robbery::RecognizedBag>,
+    #[cfg(test)]
+    interrupt_robbery_after_commit: Option<u64>,
     exchange: Option<coin_exchange::Pending>,
     benevola: Option<benevola::Pending>,
     yeo: Option<yeo::Pending>,
@@ -784,7 +788,7 @@ impl NpcConversations {
     }
 }
 /// Command 7 Bank integration: native retained command first, then the current NPC owner's
-/// conversation, and finally the native Bank writer. No talk text is persisted.
+/// conversation, and finally the native settlement owner.
 pub(super) async fn npc_bank_talk(
     admission: &super::ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -810,6 +814,9 @@ pub(super) async fn npc_bank_talk(
     if let Some(outcome) = hireling_services::resume(admission, command, &intent).await {
         return outcome;
     }
+    if let Some(outcome) = bank_robbery::replay(admission, actor, command, Some(&intent)).await {
+        return outcome;
+    }
     let session = command.game_session_id;
     let conversations = &admission.states.npc_conversations;
     // Reconciliation has precedence. Fresh talk spends its allowance at receipt time,
@@ -817,6 +824,7 @@ pub(super) async fn npc_bank_talk(
     if let Some(refusal) = conversations.rate_refusal(&admission.states.chat, session, received_at)
     {
         conversations.cancel_bank(session);
+        bank_robbery::clear(admission, session);
         return refusal;
     }
     let yes = intent.text.trim_matches(' ').eq_ignore_ascii_case("yes");
@@ -904,6 +912,32 @@ pub(super) async fn npc_bank_talk(
         && let Some(state) = sessions.get_mut(&session)
     {
         state.quest_dialogue.restart_topic();
+    }
+    if let Some(context) = conversations
+        .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
+        .filter(|context| bank_robbery::interested(&context.2))
+    {
+        drop(runtime);
+        if let Some(outcome) = bank_robbery::talk(
+            admission,
+            command,
+            &intent,
+            context.clone(),
+            _trade_permit.as_ref(),
+            native,
+        )
+        .await
+        {
+            return outcome;
+        }
+        runtime = admission.runtime.lock().await;
+        if conversations.current_npc(&admission.states.chat, &runtime, actor, session, &intent)
+            != Some(context)
+        {
+            return rejected();
+        }
+    } else {
+        bank_robbery::clear(admission, session);
     }
     // A live route quote owns its confirmation before any quest adapter runs.
     // The paid owner repeats this exact scope/expiry check before departure.
@@ -1239,6 +1273,7 @@ pub(super) async fn npc_bank_talk(
         {
             Ok(()) => {}
             Err(BankError::Unavailable(_)) => return unknown(),
+            Err(BankError::Suspended) => return reply(bank_robbery::clue(&npc_key).into()),
             Err(_) => return rejected(),
         }
         drop(runtime);
@@ -1258,6 +1293,9 @@ pub(super) async fn npc_bank_talk(
                     completion.recipient_name,
                 )
                 .await
+            }
+            Err(BankError::SuspendedConfirmation { npc_key, .. }) => {
+                reply(bank_robbery::clue(&npc_key).into())
             }
             _ => unknown(),
         };
@@ -1326,18 +1364,20 @@ pub(super) async fn npc_bank_talk(
     } else {
         admission
             .root
-            .preview_npc_bank(
+            .preview_named_npc_bank(
                 admission.character,
                 admission.holder,
                 fence,
                 coins.clone(),
                 recipient,
+                npc_key.clone(),
             )
             .await
     };
     let preview = match preview_result {
         Ok(preview) => preview,
         Err(BankError::Unavailable(_)) => return unknown(),
+        Err(BankError::Suspended) => return reply(bank_robbery::clue(&npc_key).into()),
         Err(_) => return rejected(),
     };
     runtime = admission.runtime.lock().await;
@@ -1449,6 +1489,20 @@ pub(super) async fn resume_bank_talk(
         }
         // An accepted original pending command cannot be abandoned or sequenced as a new
         // command because current ownership is temporarily unavailable or storage is unknown.
+        Err(crate::durability::bank::BankError::SuspendedConfirmation {
+            npc_key,
+            npc_identity,
+            npc_generation,
+        }) => Some(NpcConversations::bank_reply(
+            &NpcTalkIntent {
+                npc_actor: EntityRef {
+                    identity: npc_identity,
+                    generation: npc_generation,
+                },
+                text: String::new(),
+            },
+            bank_robbery::clue(&npc_key).into(),
+        )),
         Err(_) => Some(held_bank_outcome()),
     }
 }

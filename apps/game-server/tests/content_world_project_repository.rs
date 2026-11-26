@@ -18,12 +18,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         418,
-        "2443071da21ba05b9bdbd4bdcdab35887be9c4e660ad68613bb6a2574b300a8a",
+        "c5951bf58fe14c8aa677daac87b0329abb3dfbcb720b98df8dfba51bfd8ab0b1",
     ),
     (
         "definitions/declarations.json",
-        27_931_615,
-        "02d32ef5b6637c8de8230bf8dc80aa19d4cc876057fb791a72aafb98d1cc959a",
+        27_931_783,
+        "788a182d9a3a2dda4d9d57a3e5fc45f17e0191512e57fca76f1f482afcdbe1c2",
     ),
     (
         "definitions/reference.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1957,
-        "cb8c8d54447440789f607c4cbabf444a138163fb15e5a2c54e98eea704dd263c",
+        "1da1653f7a76233b4fb30eb49cd9bbda7d5c095029dfffdee892785008397112",
     ),
     (
         "presentations/bindings.json",
@@ -48,7 +48,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         408,
-        "886f25e74d3433e20a230fd3868a5963a75657a43448b1b3fee5531d56c1175c",
+        "05043666df0efe4eaa921c33d1e1cddc514197659d368805b6490dd8e0dfb935",
     ),
     (
         "provenance/imports.json",
@@ -143,7 +143,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "576a84737bcde92d05338fcb531b6c2087e0d94c3b8059800e3a96822009b576";
+const TREE_SHA256: &str = "e41da31fb88d3079816755a3d4822d8a534a80b8cec56f0d990c7ac3e9949c4b";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -854,7 +854,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         .iter()
         .map(|row| row["key"].as_str().expect("source NPC key"))
         .collect::<BTreeSet<_>>();
-    assert_eq!(expected_bankers.len(), 25);
+    assert_eq!(expected_bankers.len(), 27);
     assert!(!expected_bankers.contains("oteryn:npc.plunderpurse"));
     let actual_bankers = v2
         .declarations

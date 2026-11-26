@@ -4,7 +4,7 @@ import hashlib
 import json
 
 PATH = 'content/items/definitions/srx1-item-updates.json'
-OMIT_IF_UNKNOWN = ('field_condition', 'rune_consumption')
+OMIT_IF_UNKNOWN = ('field_condition', 'rune_consumption', 'field_replaceable')
 
 
 def omit_unknown_attributes(row):

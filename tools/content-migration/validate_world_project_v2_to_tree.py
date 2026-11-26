@@ -1118,6 +1118,7 @@ def validate_native_bank_admission(declarations: Any) -> None:
     expected_keys = {
         "oteryn:npc." + key
         for key in [
+            "adrian",
             "atur",
             "ebenizer",
             "eighty",
@@ -1125,6 +1126,7 @@ def validate_native_bank_admission(declarations: Any) -> None:
             "eva",
             "ferks",
             "finarfin",
+            "flavius",
             "gnomillion",
             "jefrey",
             "jessica",
