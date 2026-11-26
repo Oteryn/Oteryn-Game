@@ -380,15 +380,12 @@ pub(super) async fn exercise(
     let king_approach = CONTACTS[7].2;
     travel_to(owner, a, king_approach).await?;
     assert_eq!(carried(h, 10009).await?, 0);
-    let persuasion: &[&str] = if name == POLISHER_RETRY {
-        say(owner, a, king, &["hi", "farmine", "reason"], Spoken).await?;
+    if name == POLISHER_RETRY {
+        say(owner, a, king, &["hi", "farmine", "plea"], Spoken).await?;
         state(h, 14, ("mission05/king_tibianus", 2), 0).await?;
         say(owner, a, king, &["hi", "farmine", "yes"], Spoken).await?;
         state(h, 14, ("mission05/king_tibianus", 2), 0).await?;
-        &["hi", "farmine", "yes", "plea"]
-    } else {
-        &["hi", "farmine", "reason"]
-    };
+    }
     let fence = owner
         .current_quest_fence(a.game_session_id)
         .await
@@ -409,9 +406,17 @@ pub(super) async fn exercise(
         .await?;
     }
     assert_eq!(carried(h, 10009).await?, 2);
-    say(owner, a, king, persuasion, Spoken).await?;
+    if name == POLISHER_RETRY {
+        say(owner, a, king, &["hi", "farmine", "yes"], Spoken).await?;
+        state(h, 14, ("mission05/king_tibianus_prepaid", 1), 0).await?;
+        assert_eq!(carried(h, 10009).await?, 1);
+        say(owner, a, king, &["hi", "farmine", "plea"], Spoken).await?;
+        assert_eq!(carried(h, 10009).await?, 1);
+    } else {
+        say(owner, a, king, &["hi", "farmine", "reason"], Spoken).await?;
+        assert_eq!(carried(h, 10009).await?, 2);
+    }
     state(h, 14, ("mission05/king_tibianus", 3), 0).await?;
-    assert_eq!(carried(h, 10009).await?, 1);
     travel_to(owner, a, CONTACTS[0].2).await?;
     travel_to(owner, a, CITY).await?;
     use_object(owner, a, pos(33062, 31527, 12), 2, UseRejected).await?;

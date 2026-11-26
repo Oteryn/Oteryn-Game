@@ -69,10 +69,10 @@ C18B_HEADERS = {
         ),
         (
             ("targeting", "cast_at_position"),
-            False,
-            "InstantSpell::playerCastInstant",
-            1158,
-            "requires a creature; the needTarget branch precedes needPosition at line 1254",
+            True,
+            "needPosition",
+            31,
+            "retains position input with held-target precedence",
         ),
     ),
     "ethereal_barrage": (
@@ -85,10 +85,10 @@ C18B_HEADERS = {
         ),
         (
             ("targeting", "cast_at_position"),
-            False,
-            "InstantSpell::playerCastInstant",
-            1158,
-            "requires a creature; the needTarget branch precedes needPosition at line 1254",
+            True,
+            "needPosition",
+            33,
+            "retains position input with held-target precedence",
         ),
     ),
 }
@@ -200,11 +200,7 @@ def _apply_c18b_entry(entry):
                 "destination": destination,
                 "kind": "field",
                 "source_field": field,
-                "source_file": (
-                    "src/creatures/combat/spells.cpp"
-                    if field == "InstantSpell::playerCastInstant"
-                    else path
-                ),
+                "source_file": path,
                 "source_index": source_index,
                 "source_line": line,
                 "status": "mapped",

@@ -141,8 +141,19 @@ fn cut_shipped_bar((start_x, start_y): (u16, u16), (x, y): (u16, u16), appearanc
                 .base_entry(target, 1, id)
                 .map(|entry| entry.appearance_id)
         };
+        let spell_blocked = || {
+            cells.spell_tiles().lookup(
+                cells.scope(),
+                crate::content::LogicalCell {
+                    x: i32::from(x),
+                    y: i32::from(y),
+                    z: -i32::from(target.floor),
+                },
+            ).map(|tile| tile.flags().block_solid).map_err(debug)
+        };
         assert_eq!(current(), Some(appearance));
         assert!(!map.enterable(target));
+        assert!(spell_blocked()?);
         let mut placement = map.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
         let payload = encode_item_use_intent(&UseIntent {
@@ -189,6 +200,7 @@ fn cut_shipped_bar((start_x, start_y): (u16, u16), (x, y): (u16, u16), appearanc
         assert_eq!(current(), Some(debris));
         assert_eq!(map.facts().object_revision(key), 1);
         assert!(map.enterable(target));
+        assert!(!spell_blocked()?, "spell endpoint should open with the bar");
         let due = map
             .facts()
             .next_movement_decay_time()
@@ -217,6 +229,7 @@ fn cut_shipped_bar((start_x, start_y): (u16, u16), (x, y): (u16, u16), appearanc
         assert_eq!(current(), Some(appearance));
         assert_eq!(map.facts().object_revision(key), 2);
         assert!(!map.enterable(target));
+        assert!(spell_blocked()?);
         drop(owner);
         drop(authority);
         drop(seal);
