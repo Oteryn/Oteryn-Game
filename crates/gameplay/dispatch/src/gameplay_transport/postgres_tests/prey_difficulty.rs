@@ -154,6 +154,13 @@ fn scenario(case: Case) -> TestResult {
                 assert_eq!(refused.slots[0].state, 1);
                 assert_eq!(refused.slots[0].creatures, valid);
                 assert_eq!(refused.slots[0].free_reroll_at, u64::try_from(cooldown)?);
+
+                // Expire the seeded cooldown so the ordinary free reroll is available.
+                sqlx::query("UPDATE game_character_prey_slots SET free_reroll_at=0 WHERE slot=1")
+                    .execute(&h.pool).await?;
+                let redrawn = send(&owner, &mut admitted, &wire::Request::ListReroll { slot: 1 }).await?;
+                assert!(!redrawn.slots[0].creatures.is_empty());
+                assert!(!redrawn.slots[0].creatures.iter().any(|key| key == stale));
             }
             Case::Tier => {
                 let tier = initial.slots[0].allowed_tier;
