@@ -332,15 +332,22 @@ pub(super) async fn travel_to_poison_spider(
             })
         })
         .collect();
-    let path = route(world, from, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
-            && points.iter().any(|&(floor, x, y)| {
-                at.floor == floor && at.x.abs_diff(x) <= 1 && at.y.abs_diff(y) <= 1
-            })
-    })
+    // Reach the spawn's visible approach before planning a route around live occupants.
+    let occupied = c08_visible_occupants(client);
+    let path = route_avoiding(
+        world,
+        from,
+        |at| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+                && points.iter().any(|&(floor, x, y)| {
+                    at.floor == floor && at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 4
+                })
+        },
+        |at| !occupied.contains(&at),
+    )
     .ok_or("no reachable oteryn:creature.poison_spider spawn within town route budget")?;
     walk_c08(client, world, &path).await?;
 
@@ -374,9 +381,16 @@ pub(super) async fn travel_to_poison_spider(
             .ok_or("C08 lost the selected Poison Spider")?
             .position;
         let target = tile(target)?;
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
-        })
+        let occupied = c08_visible_occupants(client);
+        let path = route_avoiding(
+            world,
+            tile(client.world_spatial().actor_position)?,
+            |at| {
+                at.floor == target.floor
+                    && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) == 1
+            },
+            |at| !occupied.contains(&at),
+        )
         .ok_or("C08 selected Poison Spider unreachable")?;
         let Some(direction) = path.first() else {
             return Ok(spider);
@@ -384,6 +398,23 @@ pub(super) async fn travel_to_poison_spider(
         walk_c08(client, world, &[*direction]).await?;
     }
     Err("C08 could not approach the selected Poison Spider within the route budget".into())
+}
+
+fn c08_visible_occupants(client: &DevClientSession) -> std::collections::BTreeSet<TilePos> {
+    client
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.others())
+        .filter(|actor| {
+            matches!(
+                actor.kind,
+                oteryn_dev_client::EntityKind::Creature
+                    | oteryn_dev_client::EntityKind::Npc
+                    | oteryn_dev_client::EntityKind::Player
+            )
+        })
+        .filter_map(|actor| tile(actor.position).ok())
+        .collect()
 }
 
 pub(super) async fn walk_c08(
@@ -400,7 +431,7 @@ pub(super) async fn walk_c08(
             || outcome.world_spatial_delta.is_none()
             || actual != expected
         {
-            return Err(format!("C08 step refused or mismatched: from={from:?} direction={direction:?} expected={expected:?} actual={actual:?} outcome={outcome:?}").into());
+            return Err(format!("C08 step refused or mismatched: from={from:?} direction={direction:?} expected={expected:?} actual={actual:?} occupied={} outcome={outcome:?}", c08_visible_occupants(client).contains(&expected)).into());
         }
         verdict::Harness::global().progress("walk");
         client.take_events();
