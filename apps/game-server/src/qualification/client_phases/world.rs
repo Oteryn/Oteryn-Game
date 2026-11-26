@@ -1212,12 +1212,8 @@ pub(super) async fn journeys(
         .into());
     }
     let (result, logout, attempts, busy_timed_out) =
-        if groups.runs("rows") && e2e_row_selected(full_row_p12b::ROW_INDEX) {
-            logout_once(&mut client).await?
-        } else {
-            fixture_logout_retrying_busy(&mut client).await?
-        };
-    if result != Some(LogoutResult::Accepted) {
+        fixture_logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     drop(client);
