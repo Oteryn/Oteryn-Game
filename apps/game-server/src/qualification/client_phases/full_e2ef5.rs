@@ -4280,6 +4280,9 @@ pub(super) async fn capture_animate_dead(
     let current_stats = with_observer_liveness(&mut observer, general_stats_payload(&mut caster)).await?;
     let magic_level = u16::from_le_bytes(current_stats[13..15].try_into()?);
     if let crate::spell::Carrier::Rune { magic_level: required, .. } = spell.carrier {
+        if (magic_level, required) != (4, 4) {
+            return Err(format!("C16c expected magic level 4 before first rune use, got {magic_level}; rune requires {required}").into());
+        }
         evidence(&format!("C16C_ANIMATE_ELIGIBILITY magic_level={magic_level} required_magic_level={required}"));
     }
     let (summon, _) = with_observer_liveness(&mut observer, animate_corpse(&mut caster, spell, reference, corpse)).await?;
@@ -4299,6 +4302,8 @@ pub(super) async fn capture_animate_dead(
         observer.service_liveness(Duration::from_millis(50)).await?;
     };
     write_capture(files)?;
+    let expected_runes = before;
+    with_observer_liveness(&mut observer, rune_rejoin(&mut caster, clients, 0xd5, &[(reference, expected_runes)])).await?;
     let (logout, detail, _, _) = with_observer_liveness(&mut caster, logout_retrying_busy(&mut observer)).await?;
     if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("C16c observer logout refused: {detail}").into());

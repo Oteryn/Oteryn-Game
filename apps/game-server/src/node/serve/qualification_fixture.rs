@@ -933,6 +933,9 @@ async fn prepare_build(
         qualification_build::QualificationBuildSpec {
             vocation,
             level,
+            magic_seed: (profile == "c16c-sorcerer").then(|| {
+                (4, fixture_occurrence(character.as_bytes(), profile, b"magic"))
+            }),
             context,
             xp_occurrence: fixture_occurrence(character.as_bytes(), occurrence_profile, b"xp"),
             build_occurrence: fixture_occurrence(

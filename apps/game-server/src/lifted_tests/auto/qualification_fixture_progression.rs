@@ -350,6 +350,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             context: served.context.clone(),
             xp_occurrence: id(83),
             build_occurrence: id(84),
+            magic_seed: None,
         },
         served.clone(),
     )
