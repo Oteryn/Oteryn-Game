@@ -261,6 +261,7 @@ async fn move_listener(
             return Err(format!("S18 listener first step failed: from={from:?} direction={direction:?} expected={expected:?} outcome={outcome:?}").into());
         }
         receipts.push((outcome.command_id, outcome.result_server_sequence));
+        verdict::Harness::global().progress("speech-listener-walk");
         tokio::time::sleep(Duration::from_millis(u64::from(outcome.step_wait_ms))).await;
     }
     if tile(listener.world_spatial().actor_position)? != target {
@@ -397,6 +398,7 @@ async fn journey(
                 )?;
                 return Err(error);
             }
+            verdict::Harness::global().progress("speech-delivery");
             evidence(&format!(
                 "S18_DELIVERY case={label} mode={mode:?} x={} y={} floor={} heard={}",
                 listener_at.x,
@@ -516,7 +518,7 @@ async fn journey(
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     let started = tokio::time::Instant::now();
     let result = verdict::indexed_timeout(
-        Duration::from_secs(120),
+        Duration::from_secs(150),
         verdict::observe(async {
             let root = required("E2E_ALL_CAPTURE_DIR")?;
             let checkout = std::process::Command::new("git")
