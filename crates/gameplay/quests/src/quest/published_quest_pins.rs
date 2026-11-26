@@ -215,6 +215,16 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
 ];
 
+// Canonical loader output for the New Frontier bindings before and after the
+// crown polisher hand-in. The previous definition shipped on main in #3452.
+const AUTHORED_GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[(
+    "oteryn:quest.the_new_frontier_quest",
+    hash(b"af6dcf481c46b3e06577bd6ba47cb37fa06aca9e37b48b21c36b6159b3b4d462"),
+    &[hash(
+        b"cb5d7d7008e10821fc65677dec2475d278235b7f5c82ac1f99a2e615873b9e1c",
+    )],
+)];
+
 pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> DefinitionHash {
     CITATION_REFRESHES
         .iter()
@@ -223,7 +233,15 @@ pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> Definition
 }
 
 pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
-    for &(quest, current, previous) in GAMEPLAY_PREDECESSORS {
+    retain(catalogue, GAMEPLAY_PREDECESSORS);
+}
+
+pub(super) fn retain_authored_predecessors(catalogue: &mut QuestStateCatalogue) {
+    retain(catalogue, AUTHORED_GAMEPLAY_PREDECESSORS);
+}
+
+fn retain(catalogue: &mut QuestStateCatalogue, pins: &[(&str, DefinitionHash, &[DefinitionHash])]) {
+    for &(quest, current, previous) in pins {
         if catalogue.definition_hash(quest) == Some(current) {
             catalogue
                 .predecessors
@@ -285,7 +303,10 @@ mod tests {
                 unrelated_revision
             );
         }
-        for &(quest, current, previous) in GAMEPLAY_PREDECESSORS {
+        for &(quest, current, previous) in GAMEPLAY_PREDECESSORS
+            .iter()
+            .chain(AUTHORED_GAMEPLAY_PREDECESSORS)
+        {
             assert_eq!(catalogue.definition_hash(quest), Some(current), "{quest}");
             for &pin in previous {
                 assert_eq!(
