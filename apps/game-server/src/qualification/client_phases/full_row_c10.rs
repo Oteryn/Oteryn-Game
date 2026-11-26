@@ -111,7 +111,8 @@ pub(super) async fn prepare_caster(
     let mut initial = connect_character(clients, tag, 0).await?;
     let prior = initial.join_snapshot().game_session_id;
     request_fixture_control(uuid_text(prior.as_bytes()), "--profile", "c10-sorcerer".into()).await?;
-    character_prep::grant_item(&initial, 3147, if row == "C10.full" { 2 } else { 1 }).await?;
+    // Keep a reagent available when repeating the command so the check isolates cooldown.
+    character_prep::grant_item(&initial, 3147, 2).await?;
     let logout = initial.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("C10 preparation logout refused: {logout:?}").into());
