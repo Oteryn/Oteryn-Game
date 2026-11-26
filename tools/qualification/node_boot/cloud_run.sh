@@ -128,8 +128,8 @@ for group in "$@"; do
   status=0
   capture_env=()
   if [[ "$group" == rows ]]; then
-    captures=$(mktemp -d "$work_dir/captures.XXXXXX") || blocked work_dir_unavailable
-    capture_env=("E2E_ALL_CAPTURE_DIR=$captures")
+    capture_dir=$(mktemp -d "$work_dir/captures.XXXXXX") || blocked capture_dir_unavailable
+    capture_env=(E2E_ALL_CAPTURE_DIR="$capture_dir")
   fi
   env "${capture_env[@]}" NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
@@ -137,13 +137,12 @@ for group in "$@"; do
   wait "$child_pid" || status=$?
   child_pid=
   if [[ "$group" == rows ]]; then
-    replay_output="$work_dir/$index-$group.replay-output"
-    env "${capture_env[@]}" python3 tools/qualification/node_boot/client_replay.py "$log" \
-      > "$replay_output" &
-    child_pid=$!
-    wait "$child_pid" || status=1
-    child_pid=
-    tee -a "$log" < "$replay_output" || status=1
+    E2E_ALL_CAPTURE_DIR="$capture_dir" python3 tools/qualification/node_boot/client_replay.py "$log" \
+      | tee -a "$log"
+    replay_pipeline=("${PIPESTATUS[@]}")
+    if (( replay_pipeline[0] != 0 || replay_pipeline[1] != 0 )); then
+      status=1
+    fi
   fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1
