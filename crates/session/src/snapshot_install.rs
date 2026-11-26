@@ -22,6 +22,7 @@ impl SnapshotState {
             open_container: session.open_container.clone(),
             inventory_revision: session.inventory_revision,
             container_revision: session.container_revision,
+            admission_snapshots: session.admission_snapshots.clone(),
             gated_snapshots: session.gated_snapshots.clone(),
             gated_revisions: session.gated_revisions.clone(),
             appearance: session.appearance.clone(),
@@ -51,6 +52,7 @@ impl SnapshotState {
         session.open_container = self.open_container;
         session.inventory_revision = self.inventory_revision;
         session.container_revision = self.container_revision;
+        session.admission_snapshots = self.admission_snapshots;
         session.gated_snapshots = self.gated_snapshots;
         session.gated_revisions = self.gated_revisions;
         session.appearance = self.appearance;

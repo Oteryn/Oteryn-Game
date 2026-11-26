@@ -284,6 +284,7 @@ use std::fmt;
 use std::future::Future;
 use std::io;
 use std::num::NonZeroU32;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 pub use vip_presence::expire_vip_presence;
@@ -308,7 +309,7 @@ use capability_support::{capability_of_domain, gated_routes};
 pub const STEP_RETRY_ATTEMPTS: u32 = 4;
 pub const STEP_RETRY_INITIAL_BACKOFF: Duration = Duration::from_millis(100);
 
-/// A state domain of a selected capability from the join snapshot, payload undecoded.
+/// A state domain's snapshot metadata and undecoded payload.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GatedSnapshot {
     pub domain_id: u32,
@@ -394,6 +395,7 @@ pub struct Session<S> {
     duplicates: Vec<DuplicateOutcome>,
     last_probe_id: u64,
     selected_capabilities: Vec<u32>,
+    admission_snapshots: Option<Arc<[GatedSnapshot]>>,
     gated_snapshots: Vec<GatedSnapshot>,
     gated_revisions: Vec<(u32, u64)>,
     events: Vec<SessionEvent>,
