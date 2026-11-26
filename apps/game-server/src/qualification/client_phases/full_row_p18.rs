@@ -68,6 +68,21 @@ pub(super) fn durable_inventory(
     inventory
 }
 
+async fn observe_inventory(
+    expect_change: bool,
+    mut poll: impl AsyncFnMut(Duration) -> TestResult<bool>,
+) -> TestResult<bool> {
+    // The receipt precedes the inventory projection, which may complete on a
+    // subsequent server refresh. Only read from the existing session here.
+    let slices = if expect_change { 20 } else { 1 };
+    for _ in 0..slices {
+        if poll(Duration::from_millis(50)).await? {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
 async fn command(
     client: &mut DevClientSession,
     operation: Operation,
@@ -94,13 +109,21 @@ async fn command(
         .session_mut()
         .gated_command(CAPABILITY_ITEM_FORGE_V1, COMMAND_TYPE_ITEM_FORGE, &payload)
         .await?;
-    client.service_liveness(Duration::from_millis(50)).await?;
-    let body = serde_json::from_slice(&reply.payload).unwrap_or(serde_json::Value::Null);
+    let body = serde_json::from_slice::<serde_json::Value>(&reply.payload)
+        .unwrap_or(serde_json::Value::Null);
+    let expect_change = operation.changes_inventory()
+        && reply.status == CommandStatus::Accepted
+        && body["applied"] == true;
+    let changed = observe_inventory(expect_change, async |duration| {
+        client.service_liveness(duration).await?;
+        Ok(client.inventory() != Some(&before))
+    })
+    .await?;
     Ok(Observation {
         operation,
         status: reply.status,
         body,
-        changed: client.inventory() != Some(&before),
+        changed,
     })
 }
 
@@ -595,6 +618,26 @@ mod tests {
     }
 
     use super::*;
+
+    #[tokio::test]
+    async fn applied_forge_observes_delayed_inventory_publication() -> TestResult {
+        let mut serviced = Duration::ZERO;
+        assert!(
+            observe_inventory(true, async |duration| {
+                serviced += duration;
+                Ok(serviced >= Duration::from_millis(150))
+            })
+            .await?
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn applied_forge_without_inventory_publication_stays_unchanged() -> TestResult {
+        assert!(!observe_inventory(true, async |_| Ok(false)).await?);
+        assert!(observe_inventory(false, async |_| Ok(true)).await?);
+        Ok(())
+    }
 
     #[test]
     fn occurrences_are_v7_session_scoped() -> TestResult {
