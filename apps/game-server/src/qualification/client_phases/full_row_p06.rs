@@ -106,24 +106,38 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(
-        Duration::from_secs(180),
-        verdict::observe(async {
-            let dedicated =
-                character_prep::dedicated_character(clients, "NODE_BOOT_Q_P06_ACCOUNT").await?;
-            let scope = dedicated.clients(clients);
-            let result = journey(&mut row, &scope).await;
-            let cleanup = release_row_characters(&scope).await;
-            result.and(cleanup)
-        }),
-    )
-    .await;
-    row.finish(match result {
-        Ok(result) => result,
-        Err(_) => {
-            Err("step deadline: Wheel journey exceeded 180 seconds; server reply timeout".into())
+    let dedicated = match verdict::observe(character_prep::dedicated_character(
+        clients,
+        "NODE_BOOT_Q_P06_ACCOUNT",
+    ))
+    .await
+    {
+        Ok(dedicated) => dedicated,
+        Err(error) => {
+            row.finish(Err(error));
+            return;
         }
-    });
+    };
+    let scope = dedicated.clients(clients);
+    // The live castle route takes 119 paced steps each way, before the Wheel journey.
+    let result = match verdict::indexed_timeout(Duration::from_secs(360), prepare(&scope)).await {
+        Ok(Ok(client)) => match verdict::indexed_timeout(
+            Duration::from_secs(180),
+            journey(&mut row, &scope, client),
+        )
+        .await
+        {
+            Ok(result) => result,
+            Err(_) => Err("step deadline: Wheel journey exceeded 180 seconds".into()),
+        },
+        Ok(Err(error)) => Err(error),
+        Err(_) => Err("step deadline: Wheel preparation exceeded 360 seconds".into()),
+    };
+    if let Err(error) = &result {
+        evidence(&format!("P06_FIRST_FAILURE observed={error}"));
+    }
+    let cleanup = release_row_characters(&scope).await;
+    row.finish(result.and(cleanup));
 }
 
 fn command(request: &WheelAllocationRequest) -> TestResult<WheelCommand> {
@@ -257,7 +271,10 @@ async fn talk_once(
     loop {
         let delta = session
             .read_gated_delta(wire::STATE_DOMAIN_NPC_CONVERSATION, 1)
-            .await?;
+            .await
+            .map_err(|error| {
+                verdict::context(format!("step=promotion {text} conversation frame"), error)
+            })?;
         if delta.server_sequence > reply.server_sequence {
             let conversation = wire::decode_npc_conversation(&delta.payload)
                 .map_err(|error| format!("step=promotion conversation {text}: {error:?}"))?;
@@ -373,6 +390,7 @@ async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
     use_castle_gate(&mut client, &gate, 0).await?;
     step_exact(&mut client, StepDirection::North, CASTLE_GATE).await?;
     step_exact(&mut client, StepDirection::North, CASTLE_INSIDE).await?;
+    evidence("P06_PREP castle_gate=entered");
 
     let placements = &metadata
         .npcs
@@ -406,6 +424,7 @@ async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
         })
         .map(|entity| entity.entity)
         .ok_or("step=promotion King Tibianus absent from the live entity view")?;
+    evidence("P06_PREP king_tibianus=visible");
     if talk_once(&mut client, npc, "hi").await?.is_empty() {
         return Err("step=promotion greeting absent".into());
     }
@@ -413,10 +432,12 @@ async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
     if quote != ["Do you want to be promoted for 20000 gold coins?"] {
         return Err(format!("step=promotion quote={quote:?}").into());
     }
+    evidence("P06_PREP promotion_quote=20000");
     let confirmation = talk_once(&mut client, npc, "yes").await?;
     if confirmation != ["You are now promoted."] {
         return Err(format!("step=promotion confirmation={confirmation:?}").into());
     }
+    evidence("P06_PREP promotion_purchase=confirmed");
     walk_to(
         &mut client,
         world,
@@ -439,8 +460,11 @@ async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
     connect_character(clients, 0xd6, 0).await
 }
 
-async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    let mut client = prepare(clients).await?;
+async fn journey(
+    row: &mut Row,
+    clients: &SeamClients<'_>,
+    mut client: DevClientSession,
+) -> TestResult {
     if !client
         .selected_capabilities()
         .contains(&wheel::CAPABILITY_WHEEL_ALLOCATION_V1)
