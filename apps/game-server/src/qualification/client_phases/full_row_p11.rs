@@ -333,6 +333,8 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
         }
         let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
         let mut damaged = false;
+        let mut last_health = 100;
+        let attack_started = std::time::Instant::now();
         let mut last = target.position;
         loop {
             client.service_liveness(Duration::from_millis(100)).await?;
@@ -345,7 +347,17 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
                         .filter(|row| row.entity == target.entity)
                     {
                         last = updated.position;
-                        damaged |= matches!(updated.detail, EntityDetail::Actor { health_percent, .. } if health_percent < 100);
+                        if let EntityDetail::Actor { health_percent, .. } = updated.detail
+                            && health_percent != last_health
+                        {
+                            damaged |= health_percent < 100;
+                            last_health = health_percent;
+                            evidence(&format!(
+                                "P11_COMBAT health target={:?} percent={health_percent} elapsed_ms={}",
+                                target.entity,
+                                attack_started.elapsed().as_millis()
+                            ));
+                        }
                     }
                 }
             }
@@ -369,7 +381,7 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
             let vitals = client.actor_vitals().ok_or("P11 corridor vitals missing")?;
             if vitals.health == 0 || tokio::time::Instant::now() >= deadline {
                 return Err(format!(
-                    "P11 corridor kill failed target={:?} damaged={damaged} vitals={vitals:?}",
+                    "P11 corridor kill failed target={:?} damaged={damaged} remaining_percent={last_health} vitals={vitals:?}",
                     target.entity
                 )
                 .into());
