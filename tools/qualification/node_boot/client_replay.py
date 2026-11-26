@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Gate the cloud wrapper's selected client rows on their fresh Rust replays."""
 
+import json
 import os
 from pathlib import Path
 import re
@@ -127,9 +128,38 @@ def replay_targets():
     )]
     targets["e2e_i07"] = [(
         "oteryn-client-ui", "replays_i07_quick_loot_results_and_rejects_invalid_payload",
-        {"i07-expected.txt"},
+        {"i07-expected.txt"}
+        | {f"i07-{key}{suffix}" for key in range(1, 7) for suffix in (".json", "-request.bin")},
     )]
     return targets
+
+
+def read_i07_live_session(log, captures):
+    sessions = re.findall(r"^SEAM_EVIDENCE I07_LIVE_CAPTURE session=([^\s]+)$",
+                          log.read_text(), re.MULTILINE)
+    if len(sessions) != 1 or not re.fullmatch(
+        r"[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}",
+        sessions[0],
+    ):
+        return None
+    session = sessions[0]
+    fields = {"command_id", "game_session_id", "payload", "server_sequence", "status"}
+
+    def read_fields(pairs):
+        values = dict(pairs)
+        if len(pairs) != len(fields) or values.keys() != fields:
+            raise ValueError("invalid I07 envelope keys")
+        return values
+
+    try:
+        for key in range(1, 7):
+            envelope = json.loads((captures / f"i07-{key}.json").read_text(),
+                                  object_pairs_hook=read_fields)
+            if not isinstance(envelope, dict) or envelope["game_session_id"] != session:
+                return None
+    except (OSError, ValueError):
+        return None
+    return session
 
 
 def replay_cause(row, package, test, names, captures, server, log):
@@ -143,9 +173,15 @@ def replay_cause(row, package, test, names, captures, server, log):
         return "replay-not-run"
 
     try:
+        test_options = ["--nocapture"]
+        if row.lower() == "i07":
+            i07_session = read_i07_live_session(log, captures)
+            if i07_session is None:
+                return "replay-failed"
+            test_options.append("--ignored")
         result = subprocess.run(
             [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package,
-             "--lib", test, "--", "--nocapture"],
+             "--lib", test, "--", *test_options],
             cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
     except OSError:
@@ -166,11 +202,9 @@ def replay_cause(row, package, test, names, captures, server, log):
     if counts != [("1", "0")] or not passed_test:
         return "replay-failed"
     if row.lower() == "i07":
-        live = re.findall(r"^SEAM_EVIDENCE I07_LIVE_CAPTURE session=([^\s]+)$",
-                          log.read_text(), re.MULTILINE)
         replay = re.findall(r"^I07_NATIVE_REPLAY session=([^\s]+)$",
                             result.stdout, re.MULTILINE)
-        if len(live) != 1 or replay != live:
+        if replay != [i07_session]:
             return "replay-failed"
     if len(server) != 1 or server[0] not in {("e2e_all", "PASS"), ("e2e_capture", "CAPTURED")}:
         return "server-failed"

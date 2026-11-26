@@ -391,7 +391,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 category: None,
                 ..pouch
             };
-            for extra in [coin_filter, unassigned_pouch] {
+            for (key, extra) in [(5, coin_filter), (6, unassigned_pouch)] {
                 let payload =
                     encode_quick_loot_request(&extra).map_err(|error| format!("{error:?}"))?;
                 let extra_reply = client
@@ -405,6 +405,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                     )
                     .into());
                 }
+                if client.join_snapshot().game_session_id != original_session
+                    || extra_reply.command_id <= previous.0
+                    || extra_reply.server_sequence <= previous.1
+                {
+                    return Err(
+                        "I07 supporting reply does not advance the same live session".into(),
+                    );
+                }
+                previous = (extra_reply.command_id, extra_reply.server_sequence);
+                write_capture(
+                    &capture_dir.join(format!("i07-{key}-request.bin")),
+                    &payload,
+                )?;
+                write_capture(
+                    &capture_dir.join(format!("i07-{key}.json")),
+                    &capture_envelope(
+                        original_session.as_bytes(),
+                        extra_reply.command_id,
+                        extra_reply.server_sequence,
+                        extra_reply.status,
+                        &extra_reply.payload,
+                    )?,
+                )?;
             }
             require_filters(&mut database, character, true, &expected_filters).await?;
         }
