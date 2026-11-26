@@ -596,6 +596,18 @@ def admit_current_staff_profile(root: Path, generated: dict[str, bytes]) -> None
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
 
 
+def apply_spell_catalog_registration(root: Path, catalog: dict) -> None:
+    for entry in catalog["bundles"]:
+        spell_import.project_death_echo_area(root, entry["bundle"]["spell"])
+    spec = importlib.util.spec_from_file_location(
+        "build_executable_catalog",
+        root / "tools/content-schema/spell-authoring/build_executable_catalog.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.apply_owner_decisions(catalog)
+
+
 def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]:
     from native_profile_composition import compact_native_profile_scope
     from qualification_inputs import appearance_input_scope
@@ -1889,15 +1901,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # the live map viewport and LOS bound the cast, rather than Crystal's five tiles.
     catalog_path = spell_import.PROVIDER_DESTINATIONS["catalog"]
     catalog = json.loads(generated[catalog_path])
-    for entry in catalog["bundles"]:
-        spell_import.project_death_echo_area(root, entry["bundle"]["spell"])
-    spec = importlib.util.spec_from_file_location(
-        "build_executable_catalog",
-        root / "tools/content-schema/spell-authoring/build_executable_catalog.py",
-    )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    module.apply_owner_decisions(catalog)
+    apply_spell_catalog_registration(root, catalog)
     generated[catalog_path] = spell_import.canonical_bytes(catalog)
     catalog_digest = spell_import.digest(generated[catalog_path])
     # C18b replaces the Barrage formulas in the registered bundles and Formula collection.
