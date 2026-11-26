@@ -364,56 +364,6 @@ async fn settle(
     Ok(fresh_buyer)
 }
 
-async fn fund_buyer(
-    buyer: &mut DevClientSession,
-    world: &BundleWorld,
-    npcs: &oteryn_world_bundle::npc::Table,
-) -> TestResult {
-    let banker = npcs
-        .npcs
-        .iter()
-        .find(|npc| npc.key == "oteryn:npc.paulie")
-        .ok_or("step=bank observed=missing-paulie")?;
-    walk_once(buyer, world, |at| {
-        banker
-            .placements
-            .iter()
-            .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 3)
-    })
-    .await?;
-    let actor = buyer
-        .world_entities()
-        .and_then(|entities| {
-            entities
-                .iter()
-                .find(|entity| {
-                    entity.kind == oteryn_dev_client::EntityKind::Npc
-                        && banker.placements.iter().any(|p| {
-                            entity.position.x == i32::from(p.x)
-                                && entity.position.y == i32::from(p.y)
-                                && entity.position.floor == -i16::from(p.floor)
-                        })
-                })
-                .map(|entity| entity.entity)
-        })
-        .ok_or("step=bank observed=paulie-not-visible")?;
-    let fee = oteryn_gameplay_economy::market::placement_fee(1, PRICE)
-        .map_err(|error| format!("step=fee observed={error:?}"))?;
-    let gold = fee + PRICE;
-    let talk = super::client_row_e01::talk;
-    talk(buyer, actor, "hi", None).await?;
-    let quote = talk(buyer, actor, &format!("deposit {gold} gold"), None).await?;
-    if !quote
-        .lines
-        .iter()
-        .any(|line| line == &format!("Do you want to deposit {gold} gold?"))
-    {
-        return Err(format!("step=bank observed={:?}", quote.lines).into());
-    }
-    talk(buyer, actor, "yes", None).await?;
-    Ok(())
-}
-
 async fn body(
     mut client: DevClientSession,
     buyer_scope: &SeamClients<'_>,
@@ -533,7 +483,6 @@ async fn body(
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let world_id = WorldId::decode(&clients.world)?;
     let world = load_world(bytes, &pin, world_id, ChannelId::decode(&clients.channel)?)?;
     let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(Path::new(
@@ -572,11 +521,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     );
     let mut client = connect_character(&buyer_scope, 0x8a, 0).await?;
     character_prep::grant_item(&client, 3035, 1).await?;
+    request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        "g24-bank".into(),
+    )
+    .await?;
     character_prep::grant_premium(&client).await?;
     finish(&mut client).await?;
     drop(client);
     let mut client = connect_character(&buyer_scope, 0x8a, 0).await?;
-    fund_buyer(&mut client, world, &metadata.npcs).await?;
     at_depot(&mut client, world).await?;
     body(client, &buyer_scope, &seller_scope, world, native).await
 }
