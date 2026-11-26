@@ -312,9 +312,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     assert_chair(&mut relogged, target, item)?;
     let relog_id = uuid_text(relogged.join_snapshot().game_session_id.as_bytes());
-    let (result, cleanup_report, _, _) = fixture_logout_retrying_busy(&mut relogged).await?;
-    if result != Some(LogoutResult::Accepted) {
-        return Err(format!("I09 relog fixture cleanup refused: {cleanup_report}").into());
+    let cleanup = relogged.session_mut().logout().await?;
+    require_mechanic_acceptance(cleanup.status, "I09 relog logout before public observation")?;
+    if cleanup.result != Some(LogoutResult::Accepted) {
+        return Err(format!("I09 relog first logout refused: {cleanup:?}").into());
     }
     drop(relogged);
     let (observer_id, observer_transcript) =

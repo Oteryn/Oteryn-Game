@@ -754,6 +754,47 @@ fn furniture_rotation_rejects_modified_3521_envelopes() -> Result<(), BoxError> 
     result
 }
 
+// A map replacement invalidates the fixed-route predecessor proof. Reject all
+// replacement frames, including incomplete transfers, before checking the chair.
+fn require_no_snapshot_replacement(
+    frames: &[oteryn_protocol_oteryn::WireEnvelopeView<'_>],
+) -> Result<(), BoxError> {
+    if frames.iter().any(|frame| {
+        matches!(
+            frame.message_type(),
+            MessageType::SnapshotBegin | MessageType::SnapshotChunk | MessageType::SnapshotCommit
+        )
+    }) {
+        return Err("I09 unexpected post-admission snapshot replacement".into());
+    }
+    Ok(())
+}
+
+#[test]
+fn furniture_rotation_rejects_post_admission_snapshot_frames() -> Result<(), BoxError> {
+    let transfer = oteryn_protocol_oteryn::encode_snapshot(
+        1,
+        2,
+        41,
+        &[DomainSnapshot {
+            domain_id: world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+            revision: 2,
+            snapshot_type: world_map::SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1,
+            payload: &[1],
+        }],
+    )?;
+    let frames = transfer
+        .iter()
+        .map(|frame| decode_wire_envelope(frame))
+        .collect::<Result<Vec<_>, _>>()?;
+    require_no_snapshot_replacement(&[])?;
+    assert!(require_no_snapshot_replacement(&frames).is_err());
+    for frame in &frames {
+        assert!(require_no_snapshot_replacement(std::slice::from_ref(frame)).is_err());
+    }
+    Ok(())
+}
+
 async fn admit_original(
     bytes: &[u8],
     frames: &[oteryn_protocol_oteryn::WireEnvelopeView<'_>],
@@ -786,6 +827,7 @@ async fn admit_original(
         .position(|frame| frame.message_type() == MessageType::SnapshotCommit)
         .ok_or("I09 original admission snapshot incomplete")?
         + 1;
+    require_no_snapshot_replacement(&frames[joined..])?;
     let mut remaining = bytes;
     for _ in 0..joined {
         let length =
