@@ -1,4 +1,7 @@
 //! Source map harvesting through ordinary object USE and the existing map-item handle.
+use super::super::world_map::{
+    MapHandleTarget, MapViewSource, resolve_map_handle, resolve_map_target,
+};
 use super::*;
 use crate::durability::item_craft::{MapHarvestOperand, MapHarvestRequest};
 use crate::durability::terrain_tool::{MapMutation, TerrainScope};
@@ -6,6 +9,7 @@ use crate::map::overlay::TilePos;
 use oteryn_gameplay_items::event_planting as fishing;
 use oteryn_protocol_oteryn::world_object::{WorldObjectTarget, encode_item_use_intent};
 
+#[derive(Clone, Copy)]
 enum Target<'a> {
     Object(&'a WorldObjectTarget),
     Handle(Option<ItemKey>),
@@ -82,8 +86,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operand: None,
         };
         let historical = match self
-            .root
-            .plain_use_receipt_exists(
+            .probe_plain_use_receipt(
                 crate::durability::PlainUseReceipt::MapHarvest,
                 request.command,
             )
@@ -97,6 +100,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )));
             }
         };
+        if !historical {
+            let facts = map.facts.pinned();
+            let source = MapViewSource {
+                overlay: &map.overlay,
+                facts: &facts,
+                content_generation: self
+                    .runtime
+                    .lock()
+                    .await
+                    .content_pin()
+                    .client_artifact_digest(),
+                reset_epoch: self.reset_epoch,
+            };
+            match harvest_entry(&source, target, command) {
+                Ok(Some((_, _, entry)))
+                    if fishing::map_harvest(entry.appearance_id, 1).is_some() => {}
+                Ok(_) => return Ok(None),
+                Err(disposition) => return Ok(Some(outcome(disposition))),
+            }
+        }
         let Some(permit) = self.spell_lane_permit().await else {
             return Ok(Some(super::super::use_receipt_refused(
                 command,
@@ -146,81 +169,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 content_generation: runtime.content_pin().client_artifact_digest(),
                 reset_epoch: self.reset_epoch,
             };
-            let (pos, key, before) = match target {
-                Target::Object(target) => {
-                    let selected =
-                        match super::super::world_map::resolve_map_target(&source, target, |_| {
-                            None::<()>
-                        }) {
-                            Ok(value) => value,
-                            Err(_) => return Ok(None),
-                        };
-                    let Ok(Some(tile)) = view::compose_tile(&map.overlay, &facts, selected.pos)
-                    else {
-                        return Ok(Some(super::super::use_receipt_refused(
-                            command,
-                            "harvest_target",
-                        )));
-                    };
-                    let Some(entry) = tile
-                        .entries
-                        .iter()
-                        .find(|e| e.source.key() == MapEntryKey::Base(selected.placement_key))
-                    else {
-                        return Ok(None);
-                    };
-                    (selected.pos, selected.placement_key, entry.facts)
-                }
-                Target::Handle(Some(handle)) => {
-                    match super::super::world_map::resolve_map_handle(&source, handle) {
-                        Ok(super::super::world_map::MapHandleTarget::Base {
-                            pos,
-                            placement_key,
-                            ..
-                        }) => {
-                            let Ok(Some(tile)) = view::compose_tile(&map.overlay, &facts, pos)
-                            else {
-                                return Ok(Some(super::super::use_receipt_refused(
-                                    command,
-                                    "harvest_target",
-                                )));
-                            };
-                            let Some(entry) = tile
-                                .entries
-                                .iter()
-                                .find(|e| e.source.key() == MapEntryKey::Base(placement_key))
-                            else {
-                                return Ok(None);
-                            };
-                            (pos, placement_key, entry.facts)
-                        }
-                        Ok(super::super::world_map::MapHandleTarget::Added { pos, id }) => {
-                            // Only the boot owner's distinct stable namespace enters this path.
-                            // Other movement, dropped and player-grown objects retain their USE owner.
-                            let Some((appearance, x, y, z)) = fishing::world_change_item_source(id)
-                            else {
-                                return Ok(None);
-                            };
-                            if appearance != 13842
-                                || (pos.x, pos.y, pos.floor) != (x, y, -(z as i8))
-                            {
-                                return Ok(Some(outcome(UseDisposition::Rejected)));
-                            }
-                            let Ok(Some(tile)) = view::compose_tile(&map.overlay, &facts, pos)
-                            else {
-                                return Ok(Some(super::super::use_receipt_refused(
-                                    command,
-                                    "harvest_target",
-                                )));
-                            };
-                            let Some(entry) = tile.entries.iter().find(|entry|
-                                matches!(entry.source,view::EntrySource::Added(key) if key.get()==id)) else { return Ok(None); };
-                            (pos, id, entry.facts)
-                        }
-                        _ => return Ok(None),
-                    }
-                }
-                Target::Handle(None) => return Ok(None),
+            let (pos, key, before) = match harvest_entry(&source, target, command) {
+                Ok(Some(entry)) => entry,
+                Ok(None) => return Ok(None),
+                Err(disposition) => return Ok(Some(outcome(disposition))),
             };
             let Some(plan) = fishing::map_harvest(before.appearance_id, 1) else {
                 return Ok(None);
@@ -316,6 +268,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         Ok(Some(outcome(result.disposition)))
     }
+}
+
+fn harvest_entry(
+    source: &MapViewSource<'_, impl view::MapFacts>,
+    target: Target<'_>,
+    command: UseCommand,
+) -> Result<Option<(TilePos, u64, view::EntryFacts)>, UseDisposition> {
+    let (pos, key, added) = match target {
+        Target::Object(target) => {
+            let Ok(selected) = resolve_map_target(source, target, |_| None::<()>) else {
+                return Ok(None);
+            };
+            (selected.pos, selected.placement_key, false)
+        }
+        Target::Handle(Some(handle)) => match resolve_map_handle(source, handle) {
+            Ok(MapHandleTarget::Base {
+                pos, placement_key, ..
+            }) => (pos, placement_key, false),
+            Ok(MapHandleTarget::Added { pos, id }) => {
+                // Only the boot owner's stable namespace enters this path.
+                let Some((appearance, x, y, z)) = fishing::world_change_item_source(id) else {
+                    return Ok(None);
+                };
+                if appearance != 13842 || (pos.x, pos.y, pos.floor) != (x, y, -(z as i8)) {
+                    return Err(UseDisposition::Rejected);
+                }
+                (pos, id, true)
+            }
+            _ => return Ok(None),
+        },
+        Target::Handle(None) => return Ok(None),
+    };
+    let Some(tile) = view::compose_tile(source.overlay, source.facts, pos)
+        .ok()
+        .flatten()
+    else {
+        return Err(super::super::use_receipt_refused(command, "harvest_target").disposition);
+    };
+    Ok(tile
+        .entries
+        .iter()
+        .find(|entry| match entry.source.key() {
+            MapEntryKey::Base(id) => !added && id == key,
+            MapEntryKey::Added(id) => added && id.get() == key,
+            _ => false,
+        })
+        .map(|entry| (pos, key, entry.facts)))
 }
 
 fn spatial(pos: TilePos) -> Vec<u8> {

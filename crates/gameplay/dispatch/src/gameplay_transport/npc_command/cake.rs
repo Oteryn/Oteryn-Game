@@ -158,9 +158,13 @@ pub(super) async fn apply(
         .revision_sequencer
         .acquire(fence.character_id)
         .await;
-    let Ok(Some(current)) = admission.current_quest_fence(command.game_session_id).await else {
-        return rejected();
-    };
+    let holder_budget =
+        crate::gameplay_transport::AdmissionRetryBudget::for_command(admission.root);
+    let current =
+        match super::npc_gameplay_fence(admission, command, "cake_fence", &holder_budget).await {
+            Ok(fence) => fence,
+            Err(disposition) => return NpcTalkOutcome::only(disposition),
+        };
     if current.item_fence() != fence {
         return rejected();
     }

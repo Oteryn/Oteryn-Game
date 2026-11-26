@@ -666,12 +666,11 @@ pub(in crate::gameplay_transport) async fn regression_item_use_with_busy_holder(
     mut admitted: AdmittedSession,
     stream: &mut tokio::io::DuplexStream,
     item: crate::gameplay_transport::item_view::ItemKey,
-    expect_container: bool,
 ) -> Result<oteryn_protocol_oteryn::item_view::ItemHandle, Box<dyn std::error::Error>> {
+    use crate::gameplay_transport::loop_move::{CARRIED_USE_READ_BARRIER, CarriedUseReadBarrier};
     use oteryn_protocol_oteryn::world_object::{
         COMMAND_TYPE_USE_INTENT, UseIntent, UseTarget, encode_item_use_intent,
     };
-    use std::{future::Future, task::Poll};
 
     let actor = admitted.runtime_actor.ok_or("readmitted actor")?;
     let baseline = authority
@@ -749,32 +748,23 @@ pub(in crate::gameplay_transport) async fn regression_item_use_with_busy_holder(
             &mut session,
             input,
         ));
-        let outcome = if expect_container {
-            use crate::gameplay_transport::loop_move::{
-                CARRIED_USE_READ_BARRIER, CarriedUseReadBarrier,
-            };
-            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
-            let barrier = std::sync::Arc::new(CarriedUseReadBarrier::default());
-            let occupy_holder = async {
-                barrier.ready.notified().await;
-                let held = authority.root.issue_ready_semantic_pass().await?;
-                barrier.held.notify_one();
-                barrier.refused.notified().await;
-                held.run(|_, _| Box::pin(async { Ok(()) })).await
-            };
-            let (outcome, released) = tokio::join!(
-                CARRIED_USE_READ_BARRIER.scope(std::sync::Arc::clone(&barrier), work),
-                occupy_holder,
-            );
-            released?;
-            outcome
-        } else {
-            let mut work = std::pin::pin!(work);
-            let first = std::future::poll_fn(|cx| Poll::Ready(work.as_mut().poll(cx))).await;
-            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
-            match first {
-                Poll::Ready(outcome) => outcome,
-                Poll::Pending => work.await,
+        let barrier = std::sync::Arc::new(CarriedUseReadBarrier::default());
+        let occupy_holder = async {
+            barrier.ready.notified().await;
+            barrier.held.notify_one();
+            barrier.refused.notified().await;
+            held.run(|_, _| Box::pin(async { Ok(()) })).await
+        };
+        let mut work =
+            std::pin::pin!(CARRIED_USE_READ_BARRIER.scope(std::sync::Arc::clone(&barrier), work));
+        let outcome = tokio::select! {
+            outcome = work.as_mut() => {
+                outcome.map_err(|end| format!("readmitted USE before container owner: {:?}", end.finish(admitted)))?;
+                return Err("USE resolved before reaching the fenced container read under contention".into());
+            }
+            released = occupy_holder => {
+                released?;
+                work.await
             }
         };
         outcome.map_err(|end| format!("first readmitted item USE: {:?}", end.finish(admitted)))?;

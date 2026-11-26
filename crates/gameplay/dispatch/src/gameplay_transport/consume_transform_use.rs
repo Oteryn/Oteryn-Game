@@ -9,6 +9,10 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent};
 const RUST_REMOVER: &str = "oteryn:item.tibia.i9016";
 const LOTTERY_TICKET: &str = "oteryn:item.tibia.i5957";
 
+fn lottery_candidate(key: &str) -> bool {
+    matches!(key, LOTTERY_TICKET | "oteryn:item.tibia.i6558")
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn use_consume_transform(
         &self,
@@ -109,30 +113,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         command: UseCommand,
-        item: ItemKey,
+        source: &super::item_ref_admission::UseSourceHint,
     ) -> Option<Option<UseOutcome>> {
-        let ItemKey::Instance(id) = item else {
+        let Some(ItemKey::Instance(id)) = source.key else {
             return None;
         };
         let native = self.active_generation?.native_gameplay()?;
         let fence = command.item_fence?;
-        let backpack = self
-            .root
-            .read_character_backpack(self.character, fence.character_id)
-            .await
-            .ok()??;
-        let carried = backpack
-            .entries
-            .iter()
-            .find(|entry| entry.item.item_instance_id == id);
-        if carried.is_some_and(|entry| {
-            !matches!(
-                entry.item.definition.production_key.as_str(),
-                LOTTERY_TICKET | "oteryn:item.tibia.i6558"
-            )
-        }) {
-            return None;
-        }
         let outcome = |disposition| {
             Some(Some(UseOutcome {
                 disposition,
@@ -142,8 +129,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let command_id = CommandId::new(command.command_id).ok()?;
         let reference = CommandRef::new(command.game_session_id, command_id);
         let historical = match self
-            .root
-            .plain_use_receipt_exists(
+            .probe_plain_use_receipt(
                 crate::durability::PlainUseReceipt::ConsumeTransform,
                 reference,
             )
@@ -157,8 +143,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )));
             }
         };
-        if !historical && carried.is_none() {
-            return None;
+        if !historical {
+            match source
+                .candidate(self, command, "lottery_candidate", |definition| {
+                    lottery_candidate(&definition.production_key)
+                })
+                .await
+            {
+                Ok(true) => {}
+                Ok(false) => return None,
+                Err(refusal) => return Some(Some(refusal.into())),
+            }
+        }
+        if !historical {
+            match self.read_use_backpack(fence).await {
+                Ok(Some(backpack))
+                    if backpack.entries.iter().any(|entry| {
+                        entry.item.item_instance_id == id
+                            && lottery_candidate(&entry.item.definition.production_key)
+                    }) => {}
+                Ok(_) => return None,
+                Err(_) => {
+                    return Some(Some(super::use_receipt_refused(
+                        command,
+                        "lottery_inventory",
+                    )));
+                }
+            }
         }
         let Some(permit) = self.spell_lane_permit().await else {
             return Some(Some(super::use_receipt_refused(command, "lottery_permit")));
@@ -171,18 +182,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         if historical {
-            match self
-                .root
-                .consume_transform(
-                    &permit,
-                    self.character,
-                    self.holder,
-                    fence,
-                    request.clone(),
-                    native,
-                    &content,
-                    true,
-                )
+            let budget = super::AdmissionRetryBudget::for_command(self.root);
+            match budget
+                .retry_command_guard(async || {
+                    self.root
+                        .consume_transform(
+                            &permit,
+                            self.character,
+                            self.holder,
+                            fence,
+                            request.clone(),
+                            native,
+                            &content,
+                            true,
+                        )
+                        .await
+                })
                 .await
             {
                 Ok(Some(result)) => return outcome(result),

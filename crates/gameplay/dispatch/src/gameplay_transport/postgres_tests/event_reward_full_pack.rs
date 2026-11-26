@@ -224,7 +224,7 @@ fn scenario(admin: String, quantity: i64) -> TestResult {
         .execute(&harness.pool)
         .await?;
         let failed = owner
-            .use_reward_bag(deps.actor, command, ItemKey::Instance(source))
+            .use_reward_bag(deps.actor, command, &crate::gameplay_transport::item_ref_admission::UseSourceHint::new(Some(ItemKey::Instance(source))))
             .await;
         assert!(matches!(failed, Some(None)), "{failed:?}");
         assert!(
@@ -304,7 +304,7 @@ fn scenario(admin: String, quantity: i64) -> TestResult {
             &actual,
         ).map_err(debug)?;
         let replay = owner
-            .use_reward_bag_intent(deps.actor, command, &intent, None)
+            .use_reward_bag_intent(deps.actor, command, &intent, &crate::gameplay_transport::item_ref_admission::UseSourceHint::new(None))
             .await.map_err(|()| "reward replay unavailable")?
             .ok_or("reward replay")?;
         assert_eq!(replay.disposition, UseDisposition::Committed);

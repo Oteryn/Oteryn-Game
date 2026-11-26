@@ -1323,6 +1323,14 @@ pub enum PlainUseReceipt {
     Timed([u8; 16]),
 }
 
+#[derive(Clone, Copy)]
+pub enum NpcTalkReceipt {
+    BankRobberyReturn,
+    HirelingFood,
+    HirelingPackage,
+    Trade,
+}
+
 /// Foreground preference lasts until this owner finishes or its future is cancelled.
 /// Retaining its root charge keeps the arbitration allocation under root custody.
 #[must_use = "foreground preference ends when the guard is dropped"]
@@ -1557,14 +1565,66 @@ impl DurabilityRoot {
         if let PlainUseReceipt::QuestCarried(ref character) = family {
             query = query.bind(character.as_bytes().as_slice());
         }
-        self.read_gameplay_existence(query, TokioInstant::now() + DB_PASS_DEADLINE).await
+        self.read_gameplay_scalar(query, TokioInstant::now() + DB_PASS_DEADLINE).await
     }
 
-    pub(super) async fn read_gameplay_existence(
+    /// Route selection only. The mechanic owner still proves current custody, revision and fences.
+    pub async fn plain_use_item_definition(
         &self,
-        query: sqlx::query::QueryScalar<'_, Postgres, bool, sqlx::postgres::PgArguments>,
+        item: [u8; 16],
+        world: crate::foundation::WorldId,
+        deadline: tokio::time::Instant,
+    ) -> Result<Option<crate::domain::item_definition::TypedDefinitionRef>, DurabilityError> {
+        let definition: Option<Vec<String>> = self.read_gameplay_scalar(
+            sqlx::query_scalar(
+                "SELECT (SELECT ARRAY[definition_family::text, definition_production_key::text, definition_revision_ref::text]
+                           FROM game_item_instances
+                          WHERE item_instance_id=encode($1,'hex')::uuid
+                            AND world_id=encode($2,'hex')::uuid AND lifecycle=1)",
+            )
+            .bind(item.as_slice())
+            .bind(world.as_bytes().as_slice()),
+            deadline,
+        ).await?;
+        definition.map(|parts| {
+            let [family, production_key, revision_ref] = parts.try_into()
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            Ok(crate::domain::item_definition::TypedDefinitionRef { family, production_key, revision_ref })
+        }).transpose()
+    }
+
+    /// Exact historical evidence only. Positive keys still go through their owning replay.
+    pub async fn npc_talk_receipt_exists(
+        &self,
+        family: NpcTalkReceipt,
+        character: crate::domain::CharacterId,
+        command: crate::foundation::CommandRef,
         deadline: TokioInstant,
     ) -> Result<bool, DurabilityError> {
+        let sql = match family {
+            NpcTalkReceipt::BankRobberyReturn => "SELECT EXISTS(SELECT 1 FROM game_bank_robbery_returns WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)",
+            NpcTalkReceipt::HirelingFood => "SELECT EXISTS(SELECT 1 FROM game_hireling_food_receipts WHERE character_id=encode($3,'hex')::uuid AND game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)",
+            NpcTalkReceipt::HirelingPackage => "SELECT EXISTS(SELECT 1 FROM game_hireling_package_receipts p JOIN game_npc_trades t USING(transaction_id) WHERE t.character_id=encode($3,'hex')::uuid AND t.game_session_id=encode($1,'hex')::uuid AND t.command_id=$2::text::numeric)",
+            NpcTalkReceipt::Trade => "SELECT EXISTS(SELECT 1 FROM game_npc_trades WHERE character_id=encode($3,'hex')::uuid AND game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)",
+        };
+        let session = command.game_session_id();
+        let mut query = sqlx::query_scalar(sql)
+            .bind(session.as_bytes().as_slice())
+            .bind(command.command_id().get().to_string());
+        if !matches!(family, NpcTalkReceipt::BankRobberyReturn) {
+            query = query.bind(character.as_bytes().as_slice());
+        }
+        self.read_gameplay_scalar(query, deadline).await
+    }
+
+    pub(super) async fn read_gameplay_scalar<T>(
+        &self,
+        query: sqlx::query::QueryScalar<'_, Postgres, T, sqlx::postgres::PgArguments>,
+        deadline: tokio::time::Instant,
+    ) -> Result<T, DurabilityError>
+    where
+        T: Send + Unpin + for<'r> sqlx::Decode<'r, Postgres> + sqlx::Type<Postgres>,
+    {
         let pool = self.retained_receipt_publisher_pool()?;
         let mut connection = tokio::time::timeout_at(deadline, pool.acquire())
             .await

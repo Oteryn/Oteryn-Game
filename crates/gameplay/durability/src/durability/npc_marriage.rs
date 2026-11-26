@@ -4,7 +4,10 @@ use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
     state_matches_root,
 };
-use super::db::{begin_type2_transaction, lock_admission_relations};
+use super::db::{
+    DB_PASS_DEADLINE, begin_semantic_transaction, begin_type2_transaction, commit_semantic_read,
+    lock_admission_relations,
+};
 use super::item_loop_move::ItemLoopContent;
 use super::item_mint::TypedDefinitionRef;
 use super::item_mint_audit::check_uuid_v7;
@@ -249,7 +252,8 @@ async fn write_relation(
     Ok(())
 }
 impl DurabilityRoot {
-    /// Historical completion only. The caller still owns accepted-command and actor publication authority.
+    /// Historical completion uses the receipt reader. Only a positive exact key takes the
+    /// recovery fence. Live marriage changes remain on the fenced semantic write holder.
     pub async fn reconcile_npc_marriage(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -259,19 +263,35 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_type2_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    let result = load(&mut tx, character, command)
-                        .await?
-                        .map(|(_, receipt)| receipt);
-                    tx.commit(deadline).await?;
-                    Ok(result)
-                })
-            })
+        let deadline = tokio::time::Instant::now() + DB_PASS_DEADLINE;
+        let exists: bool = self.read_gameplay_scalar(
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_marriage_receipts WHERE character_id=encode($1,'hex')::uuid AND command_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric)")
+                .bind(character.as_bytes().as_slice())
+                .bind(command.game_session_id().as_bytes().as_slice())
+                .bind(command.command_id().get().to_string()),
+            deadline,
+        ).await?;
+        if !exists {
+            return Ok(None);
+        }
+        let pool = self.retained_receipt_publisher_pool()?;
+        let mut connection = tokio::time::timeout_at(deadline, pool.acquire())
             .await
+            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
+        match tokio::time::timeout_at(deadline, async {
+            let mut tx = begin_semantic_transaction(&mut connection, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            let receipt = load(&mut tx, character, command).await?
+                .ok_or(DurabilityError::InvalidStoredState)?.1;
+            commit_semantic_read(tx, deadline).await?;
+            Ok(Some(receipt))
+        }).await {
+            Ok(result) => result,
+            Err(_) => {
+                connection.close_on_drop();
+                Err(DurabilityError::RootPassDeadlineExceeded)
+            }
+        }
     }
     pub(super) async fn commit_npc_marriage<C: ItemLoopContent>(
         &self,
