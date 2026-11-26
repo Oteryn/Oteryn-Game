@@ -418,14 +418,16 @@ async fn prepare_spatial(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let caster_position = tile(position.position());
     // Crystal spells.cpp:1158–1206 resolves the held creature before placing the
-    // area of a target-required instant spell.
+    // area of a target-required instant spell. Legacy position requests still
+    // resolve the held creature when the catalogue advertises held-target casts.
     let targeting = &profile.header.targeting;
-    let position_needs_held_target = aim.is_none()
-        && matches!(intent.target, SpellTarget::Position(_))
-        && matches!(spell.carrier, crate::spell::Carrier::Instant { .. })
-        && targeting.cast_at_position == Some(true)
+    let held_target_profile = matches!(spell.carrier, crate::spell::Carrier::Instant { .. })
+        && targeting.cast_at_position.is_some()
         && targeting.needs_target;
-    let target = if position_needs_held_target {
+    let target = if held_target_profile
+        && aim.is_none()
+        && matches!(intent.target, SpellTarget::Position(_))
+    {
         SpellTarget::AttackTarget
     } else {
         intent.target
@@ -444,7 +446,7 @@ async fn prepare_spatial(
                 })
                 .map(|c| c.actor)
                 .or_else(|| {
-                    (position_needs_held_target
+                    (held_target_profile
                         || matches!(
                             spell.carrier,
                             crate::spell::Carrier::Rune { item: 3165, .. }

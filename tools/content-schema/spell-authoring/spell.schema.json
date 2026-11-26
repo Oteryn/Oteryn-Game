@@ -5735,7 +5735,7 @@
                         "const": true
                       },
                       "base_power": {
-                        "const": 85
+                        "const": 75
                       },
                       "schedule_bound": {
                         "const": 1

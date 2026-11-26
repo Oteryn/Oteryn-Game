@@ -1,4 +1,4 @@
-"""Crystal registration, formula, and presentation-boundary regressions."""
+"""C18b registration, formula, and presentation-boundary regressions."""
 
 import copy
 import hashlib
@@ -17,18 +17,62 @@ CRYSTAL = {
     "repository": "zimbadev/crystalserver",
     "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
 }
-HEADERS = (
-    ("Death Echo", "costs", "mana", 150, 155, "mana", 107),
-    ("Divine Grenade", "requirements", "level", 0, 300, "level", 102),
-    ("Divine Grenade", "targeting", "range_tiles", 4, 7, "range", 106),
+GLOBAL_HEADERS = (
+    ("Death Echo", "costs", "mana", 155, 150, "S15:", "mana", 1),
+    ("Divine Grenade", "requirements", "level", 300, 0, "S22:", "level", 93),
+    ("Divine Grenade", "targeting", "range_tiles", 7, 4, "S3:", "spellrange", 1),
+)
+BARRAGE_HEADERS = (
     ("Divine Barrage", "targeting", "needs_target", False, True, "needTarget", 32),
     ("Ethereal Barrage", "targeting", "needs_target", False, True, "needTarget", 34),
 )
 
 
 class C18bSpellPolicyTests(unittest.TestCase):
+    def assert_manifest_identity(self, row):
+        manifest = row["manifest"]
+        encoded = (
+            json.dumps(
+                manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            )
+            + "\n"
+        ).encode()
+        for identity in row["source_identities"]:
+            self.assertEqual(identity["sources"], manifest["sources"])
+            self.assertEqual(
+                identity["manifest_sha256"], hashlib.sha256(encoded).hexdigest()
+            )
+
+    def test_global_fields_keep_their_source_proofs(self):
+        source_markers = (
+            ("kind", "official_capture"),
+            ("revision", "99902524e052f37574194466c2949c576e4ab269"),
+            ("revision_id", 436982),
+        )
+        for case, (source_key, source_value) in zip(
+            GLOBAL_HEADERS, source_markers, strict=True
+        ):
+            name, section, field, _, expected, rule, source_field, line = case
+            with self.subTest(name=name, field=field):
+                row = entry(name)
+                self.assertEqual(row["bundle"]["spell"][section][field], expected)
+                (proof,) = [
+                    proof
+                    for proof in row["manifest"]["entries"]
+                    if proof.get("destination") == f"/spell/spell/{section}/{field}"
+                ]
+                self.assertTrue(proof["resolution"].startswith(rule))
+                self.assertEqual(
+                    (proof["source_field"], proof["source_line"]), (source_field, line)
+                )
+                self.assertEqual(
+                    row["manifest"]["sources"][proof["source_index"]][source_key],
+                    source_value,
+                )
+                self.assert_manifest_identity(row)
+
     def test_crystal_fields_have_current_provenance(self):
-        for name, section, field, _, expected, source_field, line in HEADERS:
+        for name, section, field, _, expected, source_field, line in BARRAGE_HEADERS:
             with self.subTest(name=name, field=field):
                 row = entry(name)
                 spell = row["bundle"]["spell"]
@@ -52,31 +96,34 @@ class C18bSpellPolicyTests(unittest.TestCase):
                     (path, source_field, line),
                 )
                 self.assertTrue(proof["resolution"].startswith("C18b:"))
-                manifest = row["manifest"]
-                encoded = (
-                    json.dumps(
-                        manifest,
-                        ensure_ascii=False,
-                        sort_keys=True,
-                        separators=(",", ":"),
-                    )
-                    + "\n"
-                ).encode()
-                for identity in row["source_identities"]:
-                    self.assertEqual(identity["sources"], manifest["sources"])
-                    self.assertEqual(
-                        identity["manifest_sha256"], hashlib.sha256(encoded).hexdigest()
-                    )
+                self.assertFalse(spell["targeting"]["cast_at_position"])
+                self.assert_manifest_identity(row)
 
-    def test_source_projection_rejects_superseded_native_header_values(self):
-        for name, section, field, old, _, _, _ in HEADERS[:3]:
+    def test_source_projection_requires_proof_for_global_native_header_values(self):
+        for name, section, field, old, expected, *_ in GLOBAL_HEADERS:
             with self.subTest(name=name, field=field):
                 row = entry(name)
                 bundle, dependencies, catalog = source(row)
                 bundle["spell"][section][field] = old
                 identity = row["bundle"]["spell"]["identity"]
+                projected, _, receipt = project_native_candidate(
+                    bundle, dependencies, row, identity, catalog
+                )
+                self.assertEqual(projected["spell"][section][field], expected)
+                pointer = f"/{section}/{field}"
+                self.assertTrue(
+                    any(
+                        proof["field"] == pointer
+                        for proof in receipt["field_provenance"]
+                    )
+                )
+                row["manifest"]["entries"] = [
+                    proof
+                    for proof in row["manifest"]["entries"]
+                    if proof.get("destination") != f"/spell/spell{pointer}"
+                ]
                 with self.assertRaisesRegex(
-                    ValueError, f"SOURCE_CONFLICT_KEPT:/{section}/{field}"
+                    ValueError, f"SOURCE_CONFLICT_KEPT:{pointer}"
                 ):
                     project_native_candidate(
                         bundle, dependencies, row, identity, catalog
@@ -85,7 +132,7 @@ class C18bSpellPolicyTests(unittest.TestCase):
     def test_sound_sync_preserves_matching_legacy_gameplay(self):
         catalog = copy.deepcopy(CATALOG)
         profiles = json.loads((SAMPLES / "native-spell-profiles.json").read_bytes())
-        for name, section, field, old, _, _, _ in HEADERS[:3]:
+        for name, section, field, old, *_ in GLOBAL_HEADERS:
             spell = next(
                 row["bundle"]["spell"]
                 for row in catalog["bundles"]
@@ -102,7 +149,7 @@ class C18bSpellPolicyTests(unittest.TestCase):
 
     def test_registered_spell_projections_keep_the_authoring_schema(self):
         sample = json.loads((SAMPLES / "executable-spell-catalog.json").read_bytes())
-        names = {name for name, *_ in HEADERS}
+        names = {name for name, *_ in (*GLOBAL_HEADERS, *BARRAGE_HEADERS)}
         for label, catalog in (("production", CATALOG), ("sample", sample)):
             for row in catalog["bundles"]:
                 name = row["bundle"]["spell"]["name"]
@@ -129,7 +176,7 @@ class C18bSpellPolicyTests(unittest.TestCase):
             "profiles"
         ]
         for name, power, expected in (
-            ("Death Echo", 85, (180, 240)),
+            ("Death Echo", 75, (180, 240)),
             ("Divine Barrage", 130, (389, 495)),
             ("Ethereal Barrage", 40, (204, 250)),
         ):

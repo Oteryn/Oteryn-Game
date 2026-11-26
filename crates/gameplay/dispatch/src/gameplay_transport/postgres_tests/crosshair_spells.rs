@@ -1,5 +1,5 @@
-//! C18b: position-target ("crosshair") casts of Divine Barrage, Ethereal Barrage and Thousand
-//! Fist Blows through the wire command, with real Character, Equipment and Premium owners.
+//! C18b: crosshair and legacy position requests through the wire command, with real Character,
+//! Equipment and Premium owners. Barrages require a held target.
 use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_source};
 use super::fixture::{Harness, debug, id, join_two, run};
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -390,6 +390,11 @@ async fn scenario_inner(
                 })
             })
             .ok_or("spell index")?;
+        let (definition, _) = deps.spells.source_indexed(spell).ok_or("spell profile")?;
+        let policy = &definition.authored.as_ref().ok_or("cast policy")?.header.targeting;
+        let position_cast = matches!(targeting, Targeting::PositionOnly);
+        assert_eq!(policy.cast_at_position, Some(position_cast), "{key}");
+        assert_eq!(policy.needs_target, !position_cast, "{key}");
         if index > 0 {
             // Clear the 2 s attack group cooldown of the previous cast.
             owner.clock_origin = owner

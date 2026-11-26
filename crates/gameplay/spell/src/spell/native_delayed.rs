@@ -845,7 +845,7 @@ mod tests {
             let mut f = facts();
             f.targets.push(TargetSnapshot {
                 actor: 3,
-                ..f.targets[0].clone()
+                ..f.targets[0]
             });
             f.event = event;
             if event == Event::DelayedOccurrence {
@@ -928,24 +928,31 @@ mod tests {
     #[test]
     fn c18b_death_echo_rolls_crystal_damage_bounds_at_both_occurrences() {
         let document: Value = serde_json::from_str(include_str!(
-            "../../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+            "../../../../../content/abilities/definitions/player-spells.json"
         ))
-        .expect("native profiles");
-        let echo = document["profiles"]
+        .expect("registered spell catalogue");
+        let echo = document["bundles"]
             .as_array()
-            .expect("profiles")
+            .expect("bundles")
             .iter()
-            .find(|profile| profile["name"] == "Death Echo")
+            .find(|entry| entry["bundle"]["spell"]["name"] == "Death Echo")
             .expect("Death Echo");
-        let compiled = super::super::native::spell_from_bundle(
-            &json!({"spell": echo["spell"]}),
-            &echo["dependencies"],
-        )
-        .expect("compile Death Echo");
+        let compiled =
+            super::super::native::spell_from_bundle(&echo["bundle"], &echo["dependencies"])
+                .expect("compile Death Echo");
         let mut f = facts();
         f.cast.inputs.level = 300;
         f.cast.inputs.magic_level = 50;
         f.current = Some(f.cast.clone());
+        for (id, (x, y)) in [(8, 8), (8, 12), (12, 8), (12, 12)].into_iter().enumerate() {
+            let corner = position(x, y);
+            f.targets.push(TargetSnapshot {
+                actor: id as u64 + 3,
+                position: corner,
+                ..f.targets[0].clone()
+            });
+            f.clear_sight.insert((f.cast_position, corner));
+        }
         for (event, now_ms, expected) in [
             (Event::Cast, 100, (180, 240)),
             (Event::DelayedOccurrence, 1100, (90, 120)),
@@ -953,7 +960,7 @@ mod tests {
             f.event = event;
             f.now_ms = now_ms;
             let mut rolled = None;
-            compiled
+            let planned = compiled
                 .plan(
                     super::super::native::Facts::Delayed(&f),
                     &mut |low, high| {
@@ -963,8 +970,28 @@ mod tests {
                 )
                 .expect("plan Death Echo occurrence");
             assert_eq!(rolled, Some(expected), "{event:?}");
+            let super::super::native::Plan::Delayed(plan) = planned else {
+                panic!("expected delayed plan for {event:?}");
+            };
+            let strike = match *plan {
+                NativeDelayedPlan::Cast {
+                    immediate: Some(strike),
+                    ..
+                }
+                | NativeDelayedPlan::Occurrence {
+                    strike: Some(strike),
+                    ..
+                } => strike,
+                _ => panic!("expected strike for {event:?}"),
+            };
+            assert_eq!(strike.area_tiles.len(), 25, "{event:?}");
+            assert_eq!(
+                strike.hits.iter().map(|hit| hit.actor).collect::<Vec<_>>(),
+                [2, 3, 4, 5, 6],
+                "{event:?} must hit the center and all four corners",
+            );
         }
-        assert_eq!(echo["spell"]["base_power"], 85);
+        assert_eq!(echo["bundle"]["spell"]["base_power"], 75);
     }
 
     #[test]

@@ -936,10 +936,10 @@
             "dependencies": "tools/content-schema/spell-authoring/spell-dependencies.schema.json",
             "manifest": "tools/content-schema/monster-authoring/monster-import-readiness.schema.json"
           },
-          "sha256": "6e57e05705f3fcd5497dc9f895e9e0c2b991a6d65cf66c5c8645a7a463611513",
+          "sha256": "972519ec5d4a299bae624cd5cdba238e75fa46e0cdefe8fe36f858555ef380d3",
           "source_selection": {
             "path": "content/abilities/definitions/player-spell-selection.json",
-            "sha256": "68bd64f34b62197378335cf14aa4ef8e3f19b4611b6d8b26c2b9f4401f11b655"
+            "sha256": "aa8876d827dbac63ead3f781b49f2b7b255fad8939faf15113477eac6a51b3e5"
           }
         },
         {
@@ -990,7 +990,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "2386cf39821bc861d016246d9f33caf8507ce834443cb5065a07ad0deb208852"
+          "sha256": "7d6aa66c5d20cd34a9fdff58b015f9e42c726d6a5826a3bab426505961714223"
         },
         {
           "creates_canonical_identities": false,
@@ -1054,14 +1054,14 @@
             "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
             "records": "tools/content-schema/spell-authoring/spell-dependencies.schema.json#/properties/formulas/items"
           },
-          "sha256": "2992bb5d477ec9c8e28cf9ee37aa72b1fcacb43534666b5ba692432531abab52"
+          "sha256": "b2faf2e54535ecda5f2061415156330c605d0f1f06da98a065ab060b91153d87"
         }
       ],
       "Item": [
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 7489,
+          "record_count": 7499,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1069,7 +1069,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "c0f2475a6740159e56a9fe5c79e56806ccd73580cee5ed62e228328c26e9f0a7"
+          "sha256": "7bfc22dfca7faced118285aa1317771a41c8422690579fb2242851118671e652"
         },
         {
           "creates_canonical_identities": false,

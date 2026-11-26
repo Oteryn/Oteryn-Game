@@ -132,6 +132,7 @@ class CurrentSourceImportTests(unittest.TestCase):
                 self.assertNotIn("range_tiles", expected_spell["targeting"])
                 expected_spell["targeting"]["range_tiles"] = 5
             registered_spell = copy.deepcopy(qualified["bundle"]["spell"])
+            baseline.project_death_echo_area(current.ROOT, registered_spell)
             module.apply_c18b_spell_policy(registered_spell)
             self.assertEqual(registered_spell, expected_spell)
             self.assertEqual(qualified["dependencies"], profile["dependencies"])
