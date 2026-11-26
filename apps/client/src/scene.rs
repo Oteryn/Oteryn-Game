@@ -313,17 +313,17 @@ impl Scene {
                 player_quads.push(name_start..sprites.len());
             }
         }
+        #[cfg(bevy_shell)]
+        let start = sprites.len();
+        if self.minimap {
+            self.draw_minimap(&mut sprites, atlas)?;
+        }
         self.player_quads = player_quads;
         let opacity = std::mem::take(&mut sprites.lighting.opacity);
         sprites.lighting.clone_from(&self.sprites.lighting);
         sprites.lighting.opacity = opacity;
         sprites.lighting.dimmed = dimmed;
         self.sprites = sprites;
-        #[cfg(bevy_shell)]
-        let start = self.sprites.instances().len();
-        if self.minimap {
-            self.draw_minimap()?;
-        }
         #[cfg(bevy_shell)]
         {
             self.minimap_quads = start..self.sprites.instances().len();

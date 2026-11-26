@@ -579,6 +579,99 @@ fn remembered_terrain_and_marks_follow_the_browsed_floor() -> Result<(), BatchEr
 }
 
 #[test]
+fn minimap_projects_pinned_terrain_colour_with_presentation_atlas()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::feature_local_minimap::state::{SharedMinimap, lock};
+    use oteryn_client_ui::personal_map_marks::PersonalMapMark;
+    use oteryn_session::{PresentationEventKind, PresentationSource};
+    use std::{path::Path, sync::Arc, time::Instant};
+
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut live = snapshot(100);
+    let origin = live.header.origin;
+    live.tiles[0].position.x += 2;
+    live.tiles[0].items[0].appearance_id = 4526;
+    live.tiles[0].ground_speed = 100;
+    let world = Arc::new(crate::map::World::resolve_live_map(&root, &live)?);
+    let terrain = (origin.floor, origin.x + 2, origin.y);
+    let colour = *world
+        .minimap_colors
+        .get(&terrain)
+        .filter(|&&colour| (1..216).contains(&colour))
+        .ok_or("pinned terrain minimap colour")?;
+    let terrain_rgba = [colour / 36 * 51, colour / 6 % 6 * 51, colour % 6 * 51, 255];
+
+    let own = TileCoord::new(origin.x, origin.y);
+    let mut scene = crate::scene::Scene::centered_on(
+        world.clone(),
+        Some(TileCoord::new(0, 0)),
+        own,
+        crate::input::StepDir::South,
+        &[],
+    )?;
+    let shared = SharedMinimap::default();
+    {
+        let mut map = lock(&shared);
+        map.cells
+            .insert((origin.floor, origin.x + 3, origin.y), colour);
+        map.edit_marker(origin.x + 5, origin.y, origin.floor, "Depot".into(), 1)?;
+        map.quest_marks.0.push(PersonalMapMark {
+            key: "sterling".into(),
+            x: u16::try_from(origin.x + 6)?,
+            y: u16::try_from(origin.y)?,
+            floor: i8::try_from(origin.floor)?,
+            text: "Treasure".into(),
+        });
+    }
+    scene.minimap_memory.tiles = vec![(origin.x + 4, origin.y, origin.floor, 100)];
+    scene.prime_visual_assets(root);
+    let now = Instant::now();
+    let (frames, changed) = scene.visual_frames(
+        &[crate::play::VisualCue {
+            kind: PresentationEventKind::MagicEffect {
+                position: origin,
+                effect_id: 1,
+                source: PresentationSource::Own,
+            },
+            received: now,
+        }],
+        now,
+        origin.floor,
+    )?;
+    assert!(changed && frames[0].is_some());
+    scene.set_minimap(true, shared, origin.floor)?;
+
+    let atlas = scene.atlas();
+    assert_ne!(atlas.width(), world.atlas().width());
+    let view = oteryn_client_ui::minimap::view()?;
+    let quads = scene.sprites().instances();
+    #[cfg(bevy_shell)]
+    let quads = &quads[scene.minimap_quad_range()];
+    let samples = [
+        ("live terrain", 2, terrain_rgba),
+        ("remembered terrain", 3, terrain_rgba),
+        ("legacy remembered terrain", 4, [102, 204, 102, 255]),
+        ("user marker", 5, [0, 0, 255, 255]),
+        ("personal map mark", 6, [255, 0, 0, 255]),
+    ];
+    let sampled = samples.map(|(label, dx, _)| {
+        let position = view.tile_to_screen(TileCoord::new(15 + dx, 12));
+        let quad = quads
+            .iter()
+            .find(|quad| quad.position == position && quad.uv[0..2] == quad.uv[2..4])
+            .ok_or(label)?;
+        let x = (quad.uv[0] * atlas.width() as f32).floor() as usize;
+        let y = (quad.uv[1] * atlas.height() as f32).floor() as usize;
+        let at = (y * atlas.width() as usize + x) * 4;
+        let rgba: [u8; 4] = atlas.rgba()[at..at + 4].try_into()?;
+        Ok::<_, Box<dyn std::error::Error>>((label, rgba))
+    });
+    let sampled = sampled.into_iter().collect::<Result<Vec<_>, _>>()?;
+    assert_eq!(sampled, samples.map(|(label, _, rgba)| (label, rgba)));
+    Ok(())
+}
+
+#[test]
 fn zoomed_cells_retain_exploration_between_sampled_coordinates() -> Result<(), BatchError> {
     for zoom in [2, 4, 8] {
         let mut play = minimap_view()?;
