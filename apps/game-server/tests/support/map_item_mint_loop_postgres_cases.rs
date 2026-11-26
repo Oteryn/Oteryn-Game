@@ -320,11 +320,19 @@ fn map_item_mint_loop_preflight_and_overlay_acceptance_batch() -> TestResult {
         assert!(harness.in_backpack(minted.item_instance_id).await?);
         let taken = harness
             .root
-            .read_map_item_mint_placements(world, channel, base.digest(), 0, base.entry_count())
+            .read_map_item_mint_placement_states(
+                world,
+                channel,
+                base.digest(),
+                0,
+                base.entry_count(),
+            )
             .await
             .map_err(debug)?;
         let mut rebuilt = ChannelOverlay::new(base.clone(), world, channel);
-        rehide_taken_origins(&mut rebuilt, &taken).map_err(debug)?;
+        assert_eq!(taken, [(key, false)]);
+        let keys: Vec<_> = taken.into_iter().map(|(key, _)| key).collect();
+        rehide_taken_origins(&mut rebuilt, &keys).map_err(debug)?;
         assert!(rebuilt.tile(pos).ok_or("rebuilt hide")?.is_hidden(1));
         let before = harness.footprint().await?;
         refused(
@@ -411,7 +419,7 @@ fn map_item_mint_loop_preflight_and_overlay_acceptance_batch() -> TestResult {
             assert!(
                 harness
                     .root
-                    .read_map_item_mint_placements(
+                    .read_map_item_mint_placement_states(
                         world,
                         channel,
                         digest,
@@ -443,7 +451,7 @@ fn map_item_mint_loop_preflight_and_overlay_acceptance_batch() -> TestResult {
         assert_ne!(other.item_instance_id, minted.item_instance_id);
         let taken = harness
             .root
-            .read_map_item_mint_placements(
+            .read_map_item_mint_placement_states(
                 world,
                 other_channel,
                 base.digest(),
@@ -452,8 +460,9 @@ fn map_item_mint_loop_preflight_and_overlay_acceptance_batch() -> TestResult {
             )
             .await
             .map_err(debug)?;
-        assert_eq!(taken, vec![key]);
-        rehide_taken_origins(&mut other_overlay, &taken).map_err(debug)?;
+        assert_eq!(taken, [(key, false)]);
+        let keys: Vec<_> = taken.into_iter().map(|(key, _)| key).collect();
+        rehide_taken_origins(&mut other_overlay, &keys).map_err(debug)?;
         assert!(other_overlay.tile(pos).ok_or("other hide")?.is_hidden(1));
         let before = harness.footprint().await?;
         refused(

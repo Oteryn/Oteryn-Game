@@ -358,3 +358,77 @@ fn m07_clear_area_extra_floors_are_explicit_bounded_and_bound_to_admission() -> 
     }
     Ok(())
 }
+
+#[test]
+fn too_hot_repair_callbacks_admit_exact_native_sites_and_bound_the_totals() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let callbacks = super::load()?;
+    for (family, item_id, max, sites) in [
+        (
+            "sarcophagus",
+            36544,
+            5,
+            &[
+                (32594, 31843, 1, 35985),
+                (32594, 31849, 2, 35977),
+                (32594, 31853, 1, 35977),
+                (32612, 31849, 2, 35993),
+                (32612, 31853, 1, 35985),
+                (32612, 31857, 1, 35989),
+            ][..],
+        ),
+        (
+            "marble",
+            36545,
+            4,
+            &[
+                (32596, 31844, 0, 35996),
+                (32601, 31842, 0, 35997),
+                (32605, 31842, 0, 35996),
+                (32609, 31843, 0, 35996),
+                (32613, 31844, 0, 35997),
+            ][..],
+        ),
+    ] {
+        let prefix = format!("oteryn:quest-callback/too-hot/{family}-");
+        let rows: Vec<_> = callbacks
+            .iter()
+            .filter(|row| row.key.starts_with(&prefix))
+            .collect();
+        assert_eq!(rows.len(), sites.len(), "{family}");
+        for (row, &(x, y, ordinal, appearance)) in rows.into_iter().zip(sites) {
+            assert_eq!(
+                row.selector.native,
+                Some(super::NativeSelector {
+                    position: super::Position { x, y, floor: -9 },
+                    ordinal,
+                    appearance,
+                }),
+            );
+            let tool = row.item_on_target.as_ref().ok_or("repair item")?;
+            assert_eq!(tool.item, format!("oteryn:item.tibia.i{item_id}"));
+            assert_eq!(tool.count, 1);
+            assert_eq!(tool.reusable, family == "sarcophagus");
+            assert!(!tool.target_remove);
+            assert_eq!(row.effects.transform, (family == "marble").then_some(36532));
+            assert_eq!(
+                row.effects.reset_after_ms,
+                (family == "marble").then_some(15_000)
+            );
+            assert!(loaded.catalogue().transition(&row.key).is_some());
+            let counter = &row.storage[1];
+            assert!(counter.increment);
+            assert_eq!(
+                (counter.minimum, counter.maximum, counter.set),
+                (0, max - 1, 1)
+            );
+            let total = loaded
+                .catalogue()
+                .track(&counter.track)
+                .ok_or("repair total")?;
+            assert_eq!(total.max, max);
+        }
+    }
+    Ok(())
+}

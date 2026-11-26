@@ -1,183 +1,130 @@
-//! W09 exercises the real USE owner with two seeded Kooldown Aids and one Drome Cube.
+//! W09 concoction effects/cooldowns and Drome Cube consume/reward, derived from the item-use owner `crates/gameplay/dispatch/src/gameplay_transport/drome_cube_use.rs`.
+//!
+//! 1. Admit the node-boot character and retain its complete native inventory view.
+//! 2. Look for a Drome Cube and a concoction in that inventory; a player obtains neither through
+//!    any route in the content (no NPC sells them and no creature drops them).
+//! 3. Send ordinary USE for each by definition, exactly as a player's hotkey would; expect the
+//!    server to refuse (nothing to consume) and the inventory to stay unchanged.
+//! 4. Log out. The row cannot reach the consume/reward and cooldown steps without the items, so it
+//!    reports FAIL naming the precondition; it never provisions state.
 use super::*;
-use oteryn_dev_client::{DevClientSession, SessionEvent};
-use oteryn_gameplay_items::concoctions::{ALL, Concoction};
-use oteryn_gameplay_items::drome_cube::DROME_CUBE_KEY;
-use oteryn_protocol_oteryn::{tutorial_notices::TutorialNotice, world_object as wire};
+use oteryn_dev_client::DevClientSession;
+use oteryn_protocol_oteryn::world_object as use_wire;
 use std::collections::BTreeMap;
-use std::num::NonZeroU32;
 
-const RESET_NOTICE: &str = "Your spells are no longer on cooldown.";
+const DROME_CUBE: u32 = 36827;
+const CONCOCTION: u32 = 36723;
+const PROBES: [(&str, u32); 2] = [
+    ("Drome Cube", DROME_CUBE),
+    ("Kooldown Aid concoction", CONCOCTION),
+];
+const NEEDED: &str = "needed:drome-cube-36827-and-concoction-36723-in-inventory;no-player-route(no-npc-seller-in-content/services/trade;no-loot-source-in-content/loot)";
 
-fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<NonZeroU32, u64>> {
-    let mut quantities = BTreeMap::new();
-    let inventory = client.inventory().ok_or("W09 inventory view missing")?;
-    for entry in &inventory.entries {
-        *quantities.entry(entry.item_definition_ref).or_default() += u64::from(entry.count.get());
-    }
-    Ok(quantities)
+pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    let started = std::time::Instant::now();
+    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    let detail = match result {
+        // A held item would need the row's effect checks, which this driver does not implement.
+        Ok(Ok(())) => "step=precondition-observed=item-present-effect-driver-missing".to_owned(),
+        Ok(Err(error)) => compact(&error.to_string()),
+        Err(_) => "step=journey-observed=timeout".to_owned(),
+    };
+    evidence(&format!(
+        "e2e_all scenario=W09.full status=FAIL seconds={:.3} evidence={detail}",
+        started.elapsed().as_secs_f64()
+    ));
 }
 
-async fn use_item(
+fn compact(value: &str) -> String {
+    let token: String = value
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join("-")
+        .chars()
+        .take(400)
+        .collect();
+    if token.is_empty() {
+        "unknown".to_owned()
+    } else {
+        token
+    }
+}
+
+fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
+    let mut result = BTreeMap::new();
+    for entry in &client
+        .inventory()
+        .ok_or("step=admit observed=no-inventory")?
+        .entries
+    {
+        *result.entry(entry.item_definition_ref.get()).or_default() += u64::from(entry.count.get());
+    }
+    Ok(result)
+}
+
+/// The server's answer to a USE of an item the character does not carry.
+fn describe(status: CommandStatus, payload: &[u8]) -> String {
+    let split = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(payload);
+    let disposition = split
+        .ok()
+        .and_then(|(body, _)| use_wire::decode_use_result(body).ok());
+    format!("status:{status:?},disposition:{disposition:?}")
+}
+
+async fn use_by_definition(
     client: &mut DevClientSession,
-    reference: NonZeroU32,
-    expected: (CommandStatus, wire::UseDisposition),
-) -> TestResult {
-    let payload = wire::encode_item_use_intent(&wire::UseIntent {
-        target: wire::UseTarget::ItemByDefinition(reference),
+    reference: std::num::NonZeroU32,
+) -> TestResult<(CommandStatus, String)> {
+    let payload = use_wire::encode_item_use_intent(&use_wire::UseIntent {
+        target: use_wire::UseTarget::ItemByDefinition(reference),
         use_with: None,
         use_with_map_item: None,
         use_with_position: None,
     })
-    .map_err(|error| format!("W09 USE encode: {error:?}"))?;
+    .map_err(|error| format!("step=use observed=encode-{error:?}"))?;
     let reply = client
         .session_mut()
         .world_context_use(&payload)
-        .await
-        .map_err(|error| {
-            verdict::context(
-                format!("W09 USE reference={reference} expected={expected:?} observed={error}"),
-                error,
-            )
-        })?;
-    let (body, _) = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&reply.payload)
-        .map_err(|error| format!("W09 USE refusal detail: {error:?}"))?;
-    let disposition =
-        wire::decode_use_result(body).map_err(|error| format!("W09 USE decode: {error:?}"))?;
-    if (reply.status, disposition) != expected {
-        return Err(format!(
-            "W09 USE reference={reference} expected={expected:?} observed={:?}/{disposition:?}",
-            reply.status
-        )
-        .into());
-    }
-    Ok(())
-}
-
-fn cube_reward(
-    mut expected: BTreeMap<NonZeroU32, u64>,
-    actual: &BTreeMap<NonZeroU32, u64>,
-    pool: &[NonZeroU32],
-) -> Option<NonZeroU32> {
-    let reward = pool.iter().copied().find(|reference| {
-        actual.get(reference).copied().unwrap_or_default()
-            == expected.get(reference).copied().unwrap_or_default() + 1
-    })?;
-    *expected.entry(reward).or_default() += 1;
-    (expected == *actual).then_some(reward)
+        .await?;
+    Ok((reply.status, describe(reply.status, &reply.payload)))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let cube_id = character_prep::item_id(DROME_CUBE_KEY)?;
-    let aid_id = Concoction::KooldownAid.item_id();
+    let mut client = connect_world(clients, 0xd2).await?;
+    let before = quantities(&client)?;
     let index = provisioning::item_index()?;
-    let cube = provisioning::item_reference(&index, cube_id)?;
-    let aid = provisioning::item_reference(&index, aid_id)?;
-    let pool = ALL
-        .iter()
-        .map(|kind| provisioning::item_reference(&index, kind.item_id()))
-        .collect::<TestResult<Vec<_>>>()?;
-    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W09_ACCOUNT").await?;
-    let scope = dedicated.clients(clients);
-    let mut client = connect_character(&scope, 0xd2, 0).await?;
-    let mut expected = quantities(&client)?;
-    if expected.contains_key(&cube) || expected.contains_key(&aid) {
-        return Err("W09 requires a fresh dedicated character".into());
-    }
-    character_prep::declare_seeded(
-        "W09.full",
-        "one Drome Cube and two Kooldown Aids",
-        "no authored player acquisition route",
-    );
-    character_prep::grant_item(&client, cube_id, 1).await?;
-    character_prep::grant_item(&client, aid_id, 2).await?;
-    logout(&mut client).await?;
-    let mut client = connect_character(&scope, 0xd2, 0).await?;
-    expected.extend([(cube, 1), (aid, 2)]);
-    if quantities(&client)? != expected {
-        return Err("W09 fresh admission did not serve exactly the seeded items".into());
-    }
-
-    let committed = (CommandStatus::Accepted, wire::UseDisposition::Committed);
-    let missing = (CommandStatus::Accepted, wire::UseDisposition::NothingToUse);
-    client.take_events();
-    use_item(&mut client, aid, committed).await?;
-    expected.insert(aid, 1);
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    let mut saw_reset = false;
-    loop {
-        saw_reset |= client.take_events().iter().any(|event| {
-            matches!(event, SessionEvent::TutorialNotice(delta)
-                if matches!(&delta.value, TutorialNotice::StatusText(text) if text == RESET_NOTICE))
-        });
-        if saw_reset && quantities(&client)? == expected {
-            break;
+    let mut observed = Vec::new();
+    for (label, id) in PROBES {
+        let Ok(reference) = provisioning::item_reference(&index, id) else {
+            observed.push(format!("{label}:not-in-pinned-item-index"));
+            continue;
+        };
+        if before.contains_key(&reference.get()) {
+            // The character holds it: the effect steps of this row are not driven here. Close the
+            // session with an accepted logout so the next admission does not wait on loss/grace.
+            if client.session_mut().logout().await?.result
+                != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+            {
+                return Err("step=logout observed=refused".into());
+            }
+            return Ok(());
         }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("W09 Kooldown Aid did not emit the reset notice and exact debit".into());
+        let (status, text) = use_by_definition(&mut client, reference).await?;
+        if status == CommandStatus::Accepted && text.contains("Committed") {
+            return Err(format!("step=use-{label} observed=committed-without-item:{text}").into());
         }
-        client.service_liveness(Duration::from_millis(50)).await?;
+        observed.push(format!("{label}:{text}"));
+        client.service_liveness(Duration::from_millis(100)).await?;
     }
-    use_item(&mut client, cube, committed).await?;
-    expected.remove(&cube);
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    let (reward, settled) = loop {
-        let actual = quantities(&client)?;
-        if let Some(reward) = cube_reward(expected.clone(), &actual, &pool) {
-            break (reward, actual);
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(
-                "W09 Cube did not debit exactly one unit and grant exactly one donor reward".into(),
-            );
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-    };
-    evidence(&format!(
-        "W09_CHECK reset-notice=observed cube-reward-ref={reward}"
-    ));
-    logout(&mut client).await?;
-    let mut fresh = connect_character(&scope, 0xd2, 0).await?;
-    if quantities(&fresh)? != settled {
-        return Err("W09 fresh admission did not serve the settled inventory".into());
+    if quantities(&client)? != before {
+        return Err("step=refused-use observed=inventory-changed".into());
     }
-    use_item(&mut fresh, cube, missing).await?;
-    use_item(
-        &mut fresh,
-        aid,
-        (CommandStatus::Accepted, wire::UseDisposition::Exhausted),
-    )
-    .await?;
-    if quantities(&fresh)? != settled {
-        return Err("W09 refused Kooldown Aid consumed the second unit".into());
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("step=logout observed=refused".into());
     }
-    logout(&mut fresh).await?;
-    evidence("W09_CHECK durable-inventory=verified cooldown-refusal=observed");
-    Ok(())
-}
-
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let (result, detail, _, _) = logout_retrying_busy(client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("W09 logout refused: {detail}").into());
-    }
-    Ok(())
-}
-
-pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let started = std::time::Instant::now();
-    let result =
-        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
-    let (status, detail) = match result {
-        Ok(Ok(())) => ("PASS", "reset-and-cube-transform".to_owned()),
-        Ok(Err(error)) => ("FAIL", error.to_string()),
-        Err(_) => ("FAIL", "step=journey-observed=timeout".to_owned()),
-    };
-    evidence(&format!(
-        "e2e_all scenario=W09.full status={status} seconds={:.3} evidence={}",
-        started.elapsed().as_secs_f64(),
-        detail.split_whitespace().collect::<Vec<_>>().join("-")
-    ));
+    Err(format!("step=use observed={} {NEEDED}", observed.join(",")).into())
 }
 
 #[cfg(test)]
@@ -185,18 +132,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn cube_reward_requires_one_pool_unit_and_preserves_every_other_stack() -> TestResult {
-        let reward = NonZeroU32::new(1).ok_or("reward ref")?;
-        let unrelated = NonZeroU32::new(2).ok_or("unrelated ref")?;
-        let before = BTreeMap::from([(reward, 2), (unrelated, 1)]);
-        let after = BTreeMap::from([(reward, 3), (unrelated, 1)]);
-        assert_eq!(cube_reward(before.clone(), &after, &[reward]), Some(reward));
-        assert_eq!(cube_reward(before.clone(), &before, &[reward]), None);
-        assert_eq!(cube_reward(before.clone(), &after, &[unrelated]), None);
-        assert_eq!(
-            cube_reward(before, &BTreeMap::from([(reward, 3)]), &[reward]),
-            None
-        );
-        Ok(())
+    fn needed_precondition_is_one_report_token() {
+        assert!(NEEDED.starts_with("needed:"));
+        assert!(!compact(NEEDED).contains(char::is_whitespace));
+    }
+
+    #[test]
+    fn compact_bounds_and_joins() {
+        assert_eq!(compact("a  b\nc"), "a-b-c");
+        assert_eq!(compact(" "), "unknown");
+        assert_eq!(compact(&"x".repeat(900)).len(), 400);
     }
 }

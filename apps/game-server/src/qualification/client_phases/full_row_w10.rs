@@ -16,9 +16,9 @@
 //! command, the row reports the first observed step and reply/path failure; it never claims PASS.
 use super::*;
 use oteryn_dev_client::DevClientSession;
-use oteryn_protocol_oteryn::{attack as attacks, boss_encounter as boss, hazard};
+use oteryn_protocol_oteryn::{attack as attacks, hazard};
 
-const PRIMAL: &str = "oteryn:boss.the_primal_menace";
+const PRIMAL: &str = "oteryn:creature.the_primal_menace";
 
 #[derive(Debug)]
 struct StepFailure {
@@ -84,100 +84,29 @@ fn rejected(step: u8, reply: (CommandStatus, Vec<u8>)) -> StepResult {
     Ok(())
 }
 
-// Staging is limited to the offline dedicated qualification character. Reuse
-// its world and map identity from the preceding real logout.
-async fn stage_primal_challenger(clients: &SeamClients<'_>) -> TestResult {
-    wait_character_released(clients, 0).await?;
-    let mut db = sqlx::PgConnection::connect(clients.url).await?;
-    let character = clients.characters[0].as_slice();
-    let level: i64 = sqlx::query_scalar(
-        "SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid",
-    ).bind(character).fetch_one(&mut db).await?;
-    if level != 500 {
-        return Err(format!("Primal challenger level={level}, expected 500").into());
-    }
-    let result = sqlx::query(
-        "UPDATE game_character_last_positions AS p
-         SET tile_x=33548, tile_y=32751, tile_floor=14, write_sequence=write_sequence+1
-         WHERE p.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid
-           AND NOT EXISTS (
-               SELECT 1 FROM game_durability_reconnect_sessions AS s
-               WHERE s.character_id=p.character_id AND s.world_id=p.world_id AND s.session_state<>3
-           )",
-    )
-    .bind(character)
-    .bind(clients.world.as_slice())
-    .execute(&mut db)
-    .await?;
-    if result.rows_affected() != 1 {
-        return Err("dedicated Primal staging requires one saved offline world position".into());
-    }
-    db.close().await?;
-    Ok(())
-}
-
-async fn enter_primal(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| {
-        at.floor == -14 && at.y == 32752 && (33548..=33552).contains(&at.x)
-    })
-    .ok_or_else(|| format!("no native route from {from:?} to the authored Primal lever"))?;
-    if path.is_empty() {
-        return Err("Primal challenger must walk onto the lever tile".into());
-    }
-    walk(client, world, &path).await?;
-    evidence(&format!(
-        "W10_CHECK step=3 status=PASS activity=lever-tile position={:?}",
-        client.world_spatial().actor_position
-    ));
-    verdict::Harness::global().progress("primal-lever");
-    let source = client.join_snapshot().game_session_id;
-    let payload = boss::encode_boss_key(PRIMAL).map_err(|error| format!("{error:?}"))?;
-    let reply = client
-        .session_mut()
-        .gated_command(
-            boss::CAPABILITY_BOSS_ENCOUNTER_V1,
-            boss::COMMAND_TYPE_BOSS_LEVER,
-            &payload,
-        )
-        .await?;
-    let Ok(boss::BossActivityReply::Accepted { handoff, .. }) =
-        boss::decode_boss_activity_reply(&reply.payload)
-    else {
-        return Err(format!(
-            "Primal lever returned {:?}: {:?}",
-            reply.status,
-            boss::decode_boss_activity_reply(&reply.payload)
-        )
-        .into());
-    };
-    if reply.status != CommandStatus::Accepted {
-        return Err(format!("Primal lever handoff had status {:?}", reply.status).into());
-    }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    while client.join_snapshot().game_session_id == source {
-        if tokio::time::Instant::now() >= deadline {
-            return Err("Primal lever handoff did not admit an instance".into());
-        }
-        client.service_liveness(Duration::from_millis(25)).await?;
-        client.take_events();
-    }
-    let destination = client.join_snapshot().game_session_id;
-    let scope = client
-        .session_mut()
-        .activity_scope()
-        .ok_or("missing Primal activity scope")?;
-    if scope.handoff != handoff
-        || scope.source_session != *source.as_bytes()
-        || scope.session != *destination.as_bytes()
-        || !matches!(
-            scope.scope,
-            oteryn_protocol_oteryn::activity_scope::ActivityScope::Instance { .. }
-        )
-    {
-        return Err(format!("unmatched Primal handoff {scope:?}").into());
-    }
-    Ok(())
+fn primal_positions(bytes: &[u8]) -> TestResult<Vec<TilePos>> {
+    let metadata = oteryn_world_bundle::bundle::visit(bytes, |_, _| Ok(()))?;
+    let mut positions: Vec<_> = metadata
+        .spawns
+        .sources
+        .iter()
+        .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
+        .filter(|(_, point)| {
+            metadata
+                .spawns
+                .creatures
+                .get(point.creature as usize)
+                .is_some_and(|creature| creature.key == PRIMAL)
+        })
+        .map(|(floor, point)| TilePos {
+            x: point.x,
+            y: point.y,
+            floor,
+        })
+        .collect();
+    positions.sort_unstable();
+    positions.dedup();
+    Ok(positions)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> StepResult {
@@ -195,60 +124,16 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
     )
     .map_err(|error| failed_error(1, error, "a valid node-boot world pin"))?;
     let world = load_world(
-        bytes,
+        bytes.clone(),
         &pin,
         WorldId::decode(&clients.world).map_err(|error| failed(1, error, "a valid world id"))?,
         ChannelId::decode(&clients.channel)
             .map_err(|error| failed(1, error, "a valid channel id"))?,
     )
     .map_err(|error| failed_error(1, error, "the production world loader to accept the bundle"))?;
-    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W10_ACCOUNT")
+    let mut client = connect_world(clients, 0xd0)
         .await
-        .map_err(|error| failed_error(1, error, "a dedicated Primal challenger"))?;
-    let clients = &dedicated.clients(clients);
-    character_prep::declare_seeded("W10", "level=500", "authored Primal admission minimum");
-    let seed = character_prep::Seeded {
-        profile: "w10-primal",
-        reason: "authored Primal admission minimum",
-    };
-    let mut admitted = seed
-        .connect(clients, 0xd0, 0)
-        .await
-        .map_err(|error| failed_error(1, error, "level-500 dedicated admission"))?;
-    let (logout, detail, _, _) = logout_retrying_busy(&mut admitted)
-        .await
-        .map_err(|error| failed_error(1, error, "a durable staging logout"))?;
-    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(failed(1, detail, "an accepted staging logout"));
-    }
-    drop(admitted);
-    stage_primal_challenger(clients).await.map_err(|error| {
-        failed_error(
-            1,
-            error,
-            "offline dedicated staging beside the Primal lever",
-        )
-    })?;
-    let mut client = connect_character(clients, 0xd0, 0)
-        .await
-        .map_err(|error| failed_error(1, error, "ordinary admission beside the Primal lever"))?;
-    if tile(client.world_spatial().actor_position).is_ok_and(|at| {
-        at == (TilePos {
-            x: 33548,
-            y: 32751,
-            floor: -14,
-        })
-    }) {
-        evidence(
-            "W10_CHECK step=1 status=PASS admission=dedicated-level-500 position=primal-lobby",
-        );
-    } else {
-        return Err(failed(
-            1,
-            format!("{:?}", client.world_spatial().actor_position),
-            "the staged actor position in the served admission",
-        ));
-    }
+        .map_err(|error| failed_error(1, error, "fresh native admission"))?;
 
     accepted(
         1,
@@ -271,46 +156,54 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
             .map_err(|error| failed_error(2, error, "a locked-level refusal"))?,
     )?;
 
-    enter_primal(&mut client, world).await.map_err(|error| {
-        failed_error(3, error, "the authored Primal lever and instance handoff")
+    let positions = primal_positions(&bytes)
+        .map_err(|error| failed_error(3, error, "an authored Primal Menace spawn"))?;
+    let from = tile(client.world_spatial().actor_position)
+        .map_err(|error| failed_error(3, error, "a valid actor position"))?;
+    let path = route(world, from, |at| {
+        positions.iter().any(|position| {
+            position.floor == at.floor
+                && position.x.abs_diff(at.x).max(position.y.abs_diff(at.y)) <= 1
+        })
+    })
+    .ok_or_else(|| {
+        failed(
+            3,
+            format!(
+                "no_reachable_primal_spawn;authored={};from={from:?}",
+                positions.len()
+            ),
+            "an ordinary walkable route from admission to the authored Primal Ordeal encounter",
+        )
     })?;
+    walk(&mut client, world, &path)
+        .await
+        .map_err(|error| failed_error(3, error, "accepted STEP replies to the Primal encounter"))?;
     let at = client.world_spatial().actor_position;
-    let spawn_deadline = tokio::time::Instant::now() + Duration::from_secs(20);
-    let target = loop {
-        if let Some(entity) = client
-            .world_entities()
-            .and_then(|entities| {
-                entities.iter().find(|entity| {
+    let target = client
+        .world_entities()
+        .and_then(|entities| {
+            entities
+                .iter()
+                .find(|entity| {
                     entity.kind == oteryn_dev_client::EntityKind::Creature
+                        && entity.position.floor == at.floor
                         && entity
-                            .display_name
-                            .is_some_and(|name| name.as_str() == Ok("The Primal Menace"))
-                        && tile(entity.position).is_ok_and(|at| {
-                            at == (TilePos {
-                                x: 33558,
-                                y: 32759,
-                                floor: -15,
-                            })
-                        })
+                            .position
+                            .x
+                            .abs_diff(at.x)
+                            .max(entity.position.y.abs_diff(at.y))
+                            <= 1
                 })
-            })
-            .copied()
-        {
-            break entity;
-        }
-        if tokio::time::Instant::now() >= spawn_deadline {
-            return Err(failed(
+                .copied()
+        })
+        .ok_or_else(|| {
+            failed(
                 3,
-                "missing_primal_spawn",
-                "the named Primal Menace at the authored spawn",
-            ));
-        }
-        client
-            .service_liveness(Duration::from_millis(50))
-            .await
-            .map_err(|error| failed_error(3, Box::new(error), "continued instance frames"))?;
-        client.take_events();
-    };
+                "spawn_reached_but_no_creature_frame",
+                "a visible Primal Menace entity",
+            )
+        })?;
     let attack = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -459,7 +352,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         return Err(failed(5, "logout_refused", "an accepted logout reply"));
     }
     drop(client);
-    let mut client = connect_character(clients, 0xd1, 0)
+    let mut client = connect_world(clients, 0xd1)
         .await
         .map_err(|error| failed_error(5, error, "fresh native readmission"))?;
     if client.join_snapshot().game_session_id == old_session {

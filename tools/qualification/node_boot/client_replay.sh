@@ -56,6 +56,9 @@ selected_client_replays() {
     return 0
   fi
   while read -r index row package case_name; do
+    if [[ $row == W13.client && ${NODE_BOOT_W13_CLOUD_REPLAY:-0} == 1 ]]; then
+      continue
+    fi
     if (( index >= start && index - start < length )); then
       printf '%s %s %s\n' "$row" "$package" "$case_name"
     fi
