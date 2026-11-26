@@ -75,12 +75,6 @@ pub(super) fn render(
     }
     let content = column(commands, widgets.panel);
     widgets.content = Some(content);
-    text(
-        commands,
-        skins,
-        content,
-        "Saved settings cannot be read back. Changes shown here were confirmed during this session.",
-    );
     let body = commands
         .spawn(Node {
             width: percent(100.),
@@ -251,22 +245,11 @@ pub(super) fn render(
     ] {
         button(commands, skins, filters, key, kind, label, 210., panel);
     }
-    let selected = panel
-        .confirmed
-        .iter()
-        .rev()
-        .find_map(|action| match action {
-            Action::Select(mode)
-            | Action::Add { mode, .. }
-            | Action::Remove { mode, .. }
-            | Action::Clear(mode) => Some(*mode),
-            _ => None,
-        });
     text(
         commands,
         skins,
         filters,
-        match selected {
+        match panel.filter_mode {
             Some(Mode::Skip) => "Confirmed: skip listed items",
             Some(Mode::Accept) => "Confirmed: only listed items",
             None => "Saved filter mode not available",

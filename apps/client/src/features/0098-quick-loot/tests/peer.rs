@@ -64,11 +64,35 @@ pub(in crate::play::tests) fn scenario(
     + Send
     + 'static,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::quick_loot::*;
+    let startup = Exchange {
+        command: ServerMechanicCommand {
+            capability: CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
+            command_type: COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+            payload: encode_quick_loot_request(&quick_loot_filter_review_request())
+                .map_err(|error| format!("{error:?}"))?,
+        },
+        payload: encode_quick_loot_destinations(&QuickLootDestinations {
+            loot: vec![QuickLootDestination {
+                category: None,
+                recipient: QuickLootRecipient::MainContainer,
+                recipient_id: None,
+            }],
+            obtain: vec![],
+            fallback_to_main: true,
+            filters: Some(QuickLootFilters {
+                mode: QuickLootFilterMode::Accept,
+                skipped: vec![4],
+                accepted: vec![7],
+            }),
+        }).map_err(|error| format!("{error:?}"))?,
+        status: CommandStatus::Accepted,
+    };
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || -> Result<(), String> {
             let runtime = ClientRuntime::new().map_err(|e| e.to_string())?;
-            let queue = Arc::new(Mutex::new(std::collections::VecDeque::new()));
+            let queue = Arc::new(Mutex::new(std::collections::VecDeque::from([startup])));
             let (link, rx, outbox) = play_channel();
             let task = runtime
                 .spawn(run_session(
