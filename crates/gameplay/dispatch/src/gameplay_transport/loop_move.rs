@@ -708,7 +708,10 @@ impl LoopGroundCache {
 /// A view may overlap the same connection's inventory refresh on the bounded
 /// durability holder. Retry only that temporary resource refusal, within one
 /// deadline; stored-state and authority errors still close the view.
-async fn projection_read<T, E, F, Fut>(mut read: F, busy: impl Fn(&E) -> bool) -> Option<T>
+pub(super) async fn projection_read<T, E, F, Fut>(
+    mut read: F,
+    busy: impl Fn(&E) -> bool,
+) -> Option<T>
 where
     F: FnMut() -> Fut,
     Fut: std::future::Future<Output = Result<T, E>>,
