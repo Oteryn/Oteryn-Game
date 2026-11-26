@@ -86,11 +86,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             Ok(Ok(None)) => {}
             Ok(Err(())) | Err(_) => {
                 transport::operator_event("drome_cube_use failed: owner_unavailable_or_deadline");
-                // A retained Cube or Kooldown Aid write may have committed without an ACK.
-                if authority.drome_use_unresolved(actor, use_command).await {
-                    return None;
-                }
-                return Some(Dispatch::Use(UseOutcome::rejected()));
+                // The receipt read may have failed before identifying its owner.
+                return None;
             }
         }
     }

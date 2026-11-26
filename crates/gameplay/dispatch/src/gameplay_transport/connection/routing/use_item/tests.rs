@@ -35,7 +35,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Failure {
-    Cube,
+    CubeReceiptUnavailable,
     CubeTimeout,
     TradeRead,
     MapToolProbe,
@@ -123,8 +123,10 @@ impl FreshAdmissionAuthority for Authority {
             self.hits.set(self.hits.get() + 1);
             return std::future::pending().await;
         }
-        if matches!(self.failure, Failure::Cube | Failure::CubeWriteUnknown)
-            && command.command_id == 1
+        if matches!(
+            self.failure,
+            Failure::CubeReceiptUnavailable | Failure::CubeWriteUnknown
+        ) && command.command_id == 1
         {
             self.hits.set(self.hits.get() + 1);
             return Err(());
@@ -151,10 +153,6 @@ impl FreshAdmissionAuthority for Authority {
         }
         Ok(None)
     }
-
-    async fn drome_use_unresolved(&self, _: ExactActorRef, command: UseCommand) -> bool {
-        self.failure == Failure::CubeWriteUnknown && command.command_id == 1
-    }
 }
 
 const POSITION: ActorPosition = ActorPosition {
@@ -170,10 +168,7 @@ fn id(tag: u8) -> [u8; 16] {
     id
 }
 
-fn rejects_and_serves_next(
-    failure: Failure,
-    target: Option<WorldObjectTarget>,
-) -> Result<(), String> {
+fn run_wire_case(failure: Failure, target: Option<WorldObjectTarget>) -> Result<(), String> {
     let run = std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
@@ -252,7 +247,7 @@ async fn drive_use(
         client.write_all(&frame).await?;
     }
     client.shutdown().await?;
-    serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS).await;
+    let end = serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS).await;
     drop(server);
     assert_eq!(authority.hits.get(), 1, "fault injection must be reached");
 
@@ -273,11 +268,17 @@ async fn drive_use(
             ));
         }
     }
-    if failure == Failure::CubeWriteUnknown {
-        assert!(
-            results.is_empty(),
-            "a sent write without an ACK must stay pending"
-        );
+    if matches!(
+        failure,
+        Failure::CubeReceiptUnavailable | Failure::CubeTimeout | Failure::CubeWriteUnknown
+    ) {
+        assert!(results.is_empty(), "an unresolved USE must stay pending");
+        let crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(retained) =
+            end
+        else {
+            return Err(format!("expected resumable disconnect, got {end:?}").into());
+        };
+        assert_eq!(retained.continuity.next_command_id, 1);
     } else {
         assert_eq!(
             results,
@@ -293,23 +294,23 @@ async fn drive_use(
 }
 
 #[test]
-fn cube_authority_failure_keeps_connection_open() -> Result<(), String> {
-    rejects_and_serves_next(Failure::Cube, None)
+fn cube_receipt_unavailable_keeps_use_pending() -> Result<(), String> {
+    run_wire_case(Failure::CubeReceiptUnavailable, None)
 }
 
 #[test]
-fn cube_preflight_timeout_keeps_connection_open() -> Result<(), String> {
-    rejects_and_serves_next(Failure::CubeTimeout, None)
+fn cube_probe_timeout_keeps_use_pending() -> Result<(), String> {
+    run_wire_case(Failure::CubeTimeout, None)
 }
 
 #[test]
 fn generic_use_authority_failure_keeps_connection_open() -> Result<(), String> {
-    rejects_and_serves_next(Failure::TradeRead, None)
+    run_wire_case(Failure::TradeRead, None)
 }
 
 #[test]
 fn dig_use_authority_failure_keeps_connection_open() -> Result<(), String> {
-    rejects_and_serves_next(
+    run_wire_case(
         Failure::MapToolProbe,
         Some(WorldObjectTarget {
             placement: b"dig-target".to_vec(),
@@ -320,7 +321,7 @@ fn dig_use_authority_failure_keeps_connection_open() -> Result<(), String> {
 
 #[test]
 fn fishing_use_authority_failure_keeps_connection_open() -> Result<(), String> {
-    rejects_and_serves_next(
+    run_wire_case(
         Failure::MapToolProbe,
         Some(WorldObjectTarget {
             placement: b"fishing-target".to_vec(),
@@ -331,10 +332,10 @@ fn fishing_use_authority_failure_keeps_connection_open() -> Result<(), String> {
 
 #[test]
 fn use_rejection_frame_round_trips() -> Result<(), String> {
-    rejects_and_serves_next(Failure::TradeRead, None)
+    run_wire_case(Failure::TradeRead, None)
 }
 
 #[test]
 fn cube_unknown_write_closes_without_acknowledging_use() -> Result<(), String> {
-    rejects_and_serves_next(Failure::CubeWriteUnknown, None)
+    run_wire_case(Failure::CubeWriteUnknown, None)
 }

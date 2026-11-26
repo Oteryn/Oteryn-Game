@@ -474,6 +474,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         item: ItemKey,
+        replay_only: bool,
     ) -> Option<Option<UseOutcome>> {
         let ItemKey::Instance(id) = item else {
             return None;
@@ -482,7 +483,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let native = self.active_generation?.native_gameplay()?;
         let command_id = CommandId::new(command.command_id).ok()?;
         let reference = CommandRef::new(command.game_session_id, command_id);
-        let permit = self.spell_lane_permit().await?;
+        let Some(permit) = self.spell_lane_permit().await else {
+            return Some(None);
+        };
         let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         let outcome = |changed| {
             Some(Some(UseOutcome {
@@ -517,6 +520,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(Some(receipt)) => return outcome(receipt.changed),
+            Ok(None) if replay_only => return None,
             Ok(None) => {}
             Err(_) => return Some(None),
         }

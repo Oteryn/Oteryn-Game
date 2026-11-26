@@ -27,6 +27,11 @@ mod rope;
 mod skinning;
 mod terrain;
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static CRAFT_RECEIPT_BARRIER: std::sync::Arc<tokio::sync::Barrier>;
+}
+
 pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,
@@ -203,9 +208,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return disposition(UseDisposition::Rejected);
         };
-        let Some(permit) = self.spell_lane_permit().await else {
-            return disposition(UseDisposition::Rejected);
-        };
+        let permit = self.spell_lane_permit().await?;
         let Ok(encoded) = oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent)
         else {
             return disposition(UseDisposition::Rejected);
@@ -223,6 +226,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent: encoded,
         };
         // Replay precedes current handles and custody, including input retirement and reconnect.
+        #[cfg(test)]
+        if let Ok(barrier) = CRAFT_RECEIPT_BARRIER.try_with(std::sync::Arc::clone) {
+            barrier.wait().await;
+            barrier.wait().await;
+        }
         match retry
             .retry_command_guard(async || {
                 self.root
@@ -242,7 +250,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             Ok(Some(result)) => return disposition(result),
             Ok(None) => {}
-            Err(_) => return disposition(UseDisposition::Rejected),
+            // A failed receipt lookup leaves the original command eligible for replay.
+            Err(_) => return None,
         }
         let Some(ItemKey::Instance(source)) = source else {
             return disposition(UseDisposition::StaleState);

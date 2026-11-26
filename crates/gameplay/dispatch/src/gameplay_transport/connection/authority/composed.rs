@@ -1297,7 +1297,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         item: item_view::ItemKey,
     ) -> Option<UseOutcome> {
-        if let Some(outcome) = self.use_coin(actor, command, item).await {
+        if let Some(outcome) = self.use_coin(actor, command, item, false).await {
             return outcome;
         }
         if let Some(outcome) = self.use_reward_bag(actor, command, item).await {

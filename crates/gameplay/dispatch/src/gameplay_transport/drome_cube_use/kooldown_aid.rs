@@ -52,7 +52,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|gate| gate.cube_pending.clone())
         };
         let retry = AdmissionRetryBudget::for_command(self.root);
-        match retry_item_use_holder(&retry, async || {
+        match retry_cube_read(&retry, "kooldown_aid_receipt", || async {
             self.root
                 .read_kooldown_aid_receipt(self.character, fence, command_ref, binding)
                 .await

@@ -75,7 +75,7 @@ where
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// None delegates an ordinary item. The route checks PREPARE before acknowledging an error.
+    /// None delegates an ordinary item. Errors leave the command open for receipt replay.
     pub(in crate::gameplay_transport) async fn use_drome_cube_impl(
         &self,
         actor: ExactActorRef,
@@ -310,20 +310,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.commit_cube_attempt(actor, command, &request, &content, &budget)
             .await
             .map(|result| Some(outcome(result)))
-    }
-
-    pub(in crate::gameplay_transport) async fn drome_use_has_prepared_write(
-        &self,
-        actor: ExactActorRef,
-        command: UseCommand,
-    ) -> bool {
-        let runtime = self.runtime.lock().await;
-        let mut states = self.states.spell_states.lock().await;
-        states
-            .item_uses
-            .gate(&runtime, actor, command.game_session_id)
-            .and_then(|gate| gate.cube_pending.as_ref())
-            .is_some_and(|pending| pending.request.command_id == command.command_id)
     }
 
     async fn cube_actor_live(&self, actor: ExactActorRef, session: GameSessionId) -> bool {

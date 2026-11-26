@@ -197,7 +197,8 @@ async fn verify(
 }
 
 /// Age the dedicated character's real terminal predecessor, keeping admission and end
-/// evidence from the normal session owner. This transaction changes timestamps only.
+/// evidence from the normal session owner. The next admission follows this session even
+/// if this session itself has a training predecessor from a previous qualification run.
 async fn seed_history(clients: &SeamClients<'_>, session: &[u8; 16]) -> TestResult {
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let mut tx = sqlx::Connection::begin(&mut database).await?;
@@ -216,7 +217,7 @@ async fn seed_history(clients: &SeamClients<'_>, session: &[u8; 16]) -> TestResu
                 extract(epoch FROM (clock_timestamp() - interval '13 months 1 day'))::bigint*1000000
             WHERE game_session_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid
               AND world_id=encode($3,'hex')::uuid AND account_id=$4::text::uuid
-              AND session_state=3 AND training_predecessor_session IS NULL
+              AND session_state=3
             RETURNING game_session_id,character_id,training_created_at_us
          )
          UPDATE game_character_session_ends e

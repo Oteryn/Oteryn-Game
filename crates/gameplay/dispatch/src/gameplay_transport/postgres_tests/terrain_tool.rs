@@ -509,6 +509,36 @@ fn scenario_with_voice(
         restarted.movement_cells = (&restored_cells).into();
 
         deps.initialize(&restarted).await;
+        if shovel == "oteryn:item.tibia.i3457" && before == 867 {
+            // Block only the terrain receipt read while the committed command is retried.
+            let mut lock = harness.pool.begin().await?;
+            sqlx::query("LOCK TABLE game_terrain_tool_receipts IN ACCESS EXCLUSIVE MODE")
+                .execute(&mut *lock)
+                .await?;
+            let retry_intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+                admitted.continuity.selected_capabilities.as_slice(),
+                &payload,
+            )
+            .map_err(debug)?;
+            let probe = restarted
+                .use_craft(
+                    deps.actor,
+                    crate::gameplay_transport::connection::UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: 1,
+                        item_fence: Some(fence),
+                    },
+                    retry_intent,
+                    None,
+                    None,
+                )
+                .await;
+            lock.rollback().await?;
+            assert!(
+                probe.is_none(),
+                "a blocked terrain receipt must stay pending"
+            );
+        }
         let (_, result, _) = exchange(&restarted, admitted, 1, &payload, None)
             .await
             .map_err(|e| format!("replay: {e}"))?;

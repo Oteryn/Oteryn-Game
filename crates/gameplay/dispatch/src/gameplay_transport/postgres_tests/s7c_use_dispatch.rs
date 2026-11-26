@@ -41,6 +41,7 @@ enum Case {
     Gold,
     CubeShort,
     CubeExhausted,
+    AidProbeExhausted,
 }
 
 #[test]
@@ -67,6 +68,14 @@ fn s7c_cube_use_closes_and_logs_when_holder_stays_busy() -> TestResult {
     run(admin, Case::CubeExhausted)
 }
 
+#[test]
+fn s7c_kooldown_aid_probe_exhaustion_keeps_cube_use_pending() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::AidProbeExhausted)
+}
+
 fn run(admin: String, case: Case) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
@@ -80,12 +89,23 @@ fn run(admin: String, case: Case) -> TestResult {
                 result = runtime.block_on(scenario(admin, case));
             });
             result.map_err(|error| error.to_string())?;
-            let exhausted = lines.iter().any(|line| {
-                line.contains("event=session_durability_failed")
-                    && line.contains("stage=drome_cube_receipt")
-                    && line.contains("kind=holder_busy")
-            });
-            assert_eq!(exhausted, matches!(case, Case::CubeExhausted));
+            for (stage, expected) in [
+                (
+                    "stage=drome_cube_receipt",
+                    matches!(case, Case::CubeExhausted),
+                ),
+                (
+                    "stage=kooldown_aid_receipt",
+                    matches!(case, Case::AidProbeExhausted),
+                ),
+            ] {
+                let exhausted = lines.iter().any(|line| {
+                    line.contains("event=session_durability_failed")
+                        && line.contains(stage)
+                        && line.contains("kind=holder_busy")
+                });
+                assert_eq!(exhausted, expected, "{stage}");
+            }
             Ok::<(), String>(())
         })?
         .join()
@@ -98,6 +118,7 @@ async fn scenario(admin: String, case: Case) -> TestResult {
         Case::Gold => ("s7c_gold", &[(GOLD, 100), (GOLD, 99)]),
         Case::CubeShort => ("s7c_cube_short", &[(DROME_CUBE_KEY, 1)]),
         Case::CubeExhausted => ("s7c_cube_exhausted", &[(DROME_CUBE_KEY, 1)]),
+        Case::AidProbeExhausted => ("s7c_aid_probe_exhausted", &[(DROME_CUBE_KEY, 1)]),
     };
     let h = Harness::create_with_admission_seed(admin, label, true, false).await?;
     let result = exercise(&h, case, entries).await;
@@ -225,7 +246,7 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
         let inventory = read_inventory(&mut client).await?;
         match case {
             Case::Gold => assert_gold_wire(&mut client, &inventory, definition(GOLD)?).await,
-            Case::CubeShort | Case::CubeExhausted => {
+            Case::CubeShort | Case::CubeExhausted | Case::AidProbeExhausted => {
                 assert_cube_wire(&mut client, definition(DROME_CUBE_KEY)?, case).await
             }
         }
@@ -265,7 +286,7 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
                 1
             );
         }
-        Case::CubeExhausted => {
+        Case::CubeExhausted | Case::AidProbeExhausted => {
             assert_eq!(retained.continuity.next_command_id, 1);
             assert_eq!(
                 count(h, "SELECT count(*) FROM game_drome_cube_uses").await?,
@@ -323,9 +344,28 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         visible: bool,
         field_runes: bool,
     ) -> Option<UseOutcome> {
-        self.owner
-            .use_rune(actor, command, intent, key, visible, field_runes)
-            .await
+        let result = self
+            .owner
+            .use_rune(actor, command, intent.clone(), key, visible, field_runes)
+            .await;
+        if matches!(self.case, Case::Gold) && command.command_id == 1 {
+            // The connection cache would mask a second owner call. Model an ACK lost
+            // before an inventory refresh, so the original handle still names the
+            // retired instance when the same command reaches the rune bridge again.
+            assert_eq!(
+                result.as_ref().map(|outcome| outcome.disposition),
+                Some(UseDisposition::Committed)
+            );
+            let replay = self
+                .owner
+                .use_rune(actor, command, intent, key, visible, field_runes)
+                .await;
+            assert_eq!(
+                replay.map(|outcome| outcome.disposition),
+                Some(UseDisposition::Committed)
+            );
+        }
+        result
     }
 
     async fn use_drome_cube(
@@ -337,11 +377,17 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
     ) -> Result<Option<UseOutcome>, ()> {
         let started = Instant::now();
         let using = async {
-            let result = self
-                .owner
-                .use_drome_cube(actor, command, intent, source)
-                .await;
-            if matches!(self.case, Case::CubeExhausted) {
+            let result = if matches!(self.case, Case::CubeExhausted) {
+                // Isolate the second probe. The composed entry reaches Kooldown Aid first.
+                self.owner
+                    .use_drome_cube_impl(actor, command, intent, source)
+                    .await
+            } else {
+                self.owner
+                    .use_drome_cube(actor, command, intent, source)
+                    .await
+            };
+            if matches!(self.case, Case::CubeExhausted | Case::AidProbeExhausted) {
                 assert!(started.elapsed() >= COMMAND_HOLDER_WINDOW / 2);
             }
             result
@@ -349,7 +395,9 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         let holding = match self.case {
             Case::Gold => return using.await,
             Case::CubeShort => Duration::from_millis(100),
-            Case::CubeExhausted => COMMAND_HOLDER_WINDOW + Duration::from_millis(200),
+            Case::CubeExhausted | Case::AidProbeExhausted => {
+                COMMAND_HOLDER_WINDOW + Duration::from_millis(200)
+            }
         };
         let mut holder = self.owner.root.try_acquire_ready().expect("fixture holder");
         assert!(!self.owner.root.is_ready());
@@ -428,7 +476,7 @@ async fn assert_cube_wire(client: &mut DuplexStream, cube: NonZeroU32, case: Cas
                 (CommandStatus::Accepted, UseDisposition::Committed)
             );
         }
-        Case::CubeExhausted => loop {
+        Case::CubeExhausted | Case::AidProbeExhausted => loop {
             match read_frame(client).await {
                 Err(error)
                     if error

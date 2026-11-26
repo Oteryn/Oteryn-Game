@@ -63,9 +63,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .as_ref()
                 .map(|_| &self.states.loop_ground),
         );
-        let Some(permit) = self.spell_lane_permit().await else {
-            return Ok(Some(UseOutcome::rejected()));
-        };
+        let permit = self.spell_lane_permit().await.ok_or(())?;
         let retry = AdmissionRetryBudget::for_command(self.root);
         let receipt = retry
             .retry_command_guard(async || {
@@ -82,10 +80,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
             })
-            .await;
-        let Ok(receipt) = receipt else {
-            return Ok(Some(UseOutcome::rejected()));
-        };
+            .await
+            .map_err(|_| ())?;
         if let Some(result) = receipt {
             // A replay may acknowledge an already-committed gobbler XP award.
             if result == UseDisposition::Committed {
