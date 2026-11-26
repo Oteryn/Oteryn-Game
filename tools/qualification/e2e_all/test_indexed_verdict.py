@@ -49,6 +49,13 @@ class IndexedVerdictTests(unittest.TestCase):
             kind, _, row = module.partition('_row_')
             self.assertEqual(scenario, row[0].upper() + row[1:] + '.' + kind)
 
+    def test_n07d_snapshot_does_not_count_as_client_verification(self):
+        source = (PHASES / 'client_row_n07d.rs').read_text()
+        body = packet_body(source)
+        self.assertIn('scenario=N07d.client status=MISSING-CLIENT', body)
+        self.assertNotIn('scenario=N07d.client status=PASS', body)
+        self.assertIn('scenario=N07d.client status=FAIL', body)
+
     def test_row_timeouts_observe_typed_errors_before_reporter_formatting(self):
         for path in PHASES.glob('*_row_*.rs'):
             body = packet_body(path.read_text())

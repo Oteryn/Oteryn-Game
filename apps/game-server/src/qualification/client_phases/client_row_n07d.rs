@@ -64,7 +64,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         .await
     {
         Ok(Ok(observed)) => evidence(&format!(
-            "e2e_all scenario=N07d.client status=PASS seconds={:.3} evidence={observed}",
+            "e2e_all scenario=N07d.client status=MISSING-CLIENT seconds={:.3} evidence=exact-minimap-replay-required;{observed}",
             started.elapsed().as_secs_f64()
         )),
         Ok(Err(error)) => evidence(&format!(
