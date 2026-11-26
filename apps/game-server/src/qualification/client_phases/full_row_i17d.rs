@@ -8,7 +8,7 @@ use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::condition_status::{
     CAPABILITY_CONDITION_STATUS_V1, COMMAND_TYPE_CONDITION_STATUS_QUERY, ConditionStatus,
 };
-use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemEntry};
 
 const COMBAT_APPROACH: TilePos = TilePos {
     x: 33760,
@@ -70,25 +70,52 @@ fn worn(client: &DevClientSession, definition: std::num::NonZeroU32) -> Option<E
         .map(|entry| entry.slot)
 }
 
-async fn settle(
-    client: &mut DevClientSession,
-    definition: std::num::NonZeroU32,
-    want_worn: bool,
-) -> TestResult<()> {
+fn necklace(client: &DevClientSession) -> Option<ItemEntry> {
+    client
+        .inventory()?
+        .equipment
+        .iter()
+        .find(|entry| entry.slot == EquipmentSlot::Necklace)
+        .map(|entry| entry.item)
+}
+
+fn amulet_at(client: &DevClientSession, item: ItemEntry, equipped: bool) -> TestResult<()> {
+    let inventory = client.inventory().ok_or("missing inventory")?;
+    // Wire handles are session-local. The remaining fields describe the persisted item.
+    let matches = |observed: ItemEntry| {
+        ItemEntry {
+            handle: item.handle,
+            ..observed
+        } == item
+    };
+    let carried = quantity(client, item.item_definition_ref)?;
+    let correct = if equipped {
+        carried == 0 && necklace(client).is_some_and(matches)
+    } else {
+        carried == 1
+            && necklace(client).is_none()
+            && worn(client, item.item_definition_ref).is_none()
+            && inventory.entries.iter().copied().any(matches)
+    };
+    if !correct {
+        return Err(format!(
+            "amulet custody mismatch equipped={equipped} carried={carried} necklace={:?}",
+            necklace(client)
+        )
+        .into());
+    }
+    Ok(())
+}
+
+async fn settle(client: &mut DevClientSession, item: ItemEntry, equipped: bool) -> TestResult<()> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(6);
     loop {
+        let result = amulet_at(client, item, equipped);
+        if result.is_ok() || tokio::time::Instant::now() >= deadline {
+            return result;
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
         client.take_events();
-        if worn(client, definition).is_some() == want_worn {
-            return Ok(());
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "step=settle observed=worn:{:?};wanted={want_worn}",
-                worn(client, definition)
-            )
-            .into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
     }
 }
 
@@ -165,7 +192,7 @@ async fn feared(client: &mut DevClientSession) -> TestResult<bool> {
 async fn fight_fear_caster(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
-    amulet: std::num::NonZeroU32,
+    item: ItemEntry,
 ) -> TestResult<()> {
     let world = load_world(
         std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
@@ -176,7 +203,28 @@ async fn fight_fear_caster(
     let start = tile(client.world_spatial().actor_position)?;
     let path = route(world, start, |at| at == COMBAT_APPROACH)
         .ok_or_else(|| format!("no walkable route from {start:?} to {COMBAT_APPROACH:?}"))?;
-    walk(client, world, &path).await?;
+    if start == COMBAT_APPROACH || path.is_empty() {
+        return Err("combat route starts at its destination".into());
+    }
+    for direction in path {
+        let before = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, before, direction)
+            .filter(|at| *at != before)
+            .ok_or("combat step lacks a distinct expected landing")?;
+        let step = client.step(direction).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if step.disposition != StepDisposition::Moved
+            || step.world_spatial_delta.is_none()
+            || actual != expected
+        {
+            return Err(format!("combat step {direction:?} from={before:?} expected={expected:?} actual={actual:?} result={step:?}").into());
+        }
+        verdict::Harness::global().progress("walk");
+        client.take_events();
+    }
+    if tile(client.world_spatial().actor_position)? != COMBAT_APPROACH {
+        return Err("combat route missed its fixed approach".into());
+    }
     let target = client
         .world_entities()
         .into_iter()
@@ -200,10 +248,28 @@ async fn fight_fear_caster(
     if feared(client).await? {
         return Err("Feared was already active before attack selection".into());
     }
+    if client
+        .session_mut()
+        .combat_state()
+        .ok_or("missing initial combat state")?
+        .target
+        .is_some()
+    {
+        return Err("attack pre-state already has a combat target".into());
+    }
     let attack = client.session_mut().attack_target(Some(&target)).await?;
     if attack.status != CommandStatus::Accepted || attack.disposition != AttackIntentDisposition::Ok
     {
         return Err(format!("Shrieking Cry-Stal attack refused: {attack:?}").into());
+    }
+    if client
+        .session_mut()
+        .combat_state()
+        .ok_or("missing attack combat state")?
+        .target
+        != Some(target)
+    {
+        return Err("attack did not set the live caster as the combat target".into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     verdict::Harness::global().bounded_wait(deadline, "authored-fear-cast");
@@ -213,14 +279,19 @@ async fn fight_fear_caster(
         }
         client.service_liveness(Duration::from_millis(100)).await?;
     }
+    amulet_at(client, item, false)?;
+    let before = client
+        .inventory()
+        .ok_or("missing feared pre-inventory")?
+        .clone();
     expect(
         client,
-        amulet,
+        item.item_definition_ref,
         "feared-equip",
         oteryn_dev_client::ItemMoveOutcome::Rejected,
     )
     .await?;
-    if !feared(client).await? || worn(client, amulet).is_some() || quantity(client, amulet)? != 1 {
+    if !feared(client).await? || client.inventory() != Some(&before) {
         return Err(
             "Feared equip refusal did not preserve carried custody within the condition window"
                 .into(),
@@ -241,22 +312,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     character_prep::grant_item(&client, 3572, 1).await?;
     let mut client = relog(client, clients).await?;
-    if quantity(&client, amulet)? != 1 || worn(&client, amulet).is_some() {
-        return Err("step=prerequisite needed=one-carried-amulet-after-relog".into());
-    }
+    let item = client
+        .inventory()
+        .ok_or("missing fixture inventory")?
+        .entries
+        .iter()
+        .find(|entry| entry.item_definition_ref == amulet)
+        .copied()
+        .ok_or("missing carried fixture amulet")?;
+    amulet_at(&client, item, false)?;
     evidence("I17D_CHECK prerequisite PASS fixture=one-carried-amulet-after-relog");
 
     expect(&mut client, amulet, "equip-amulet", Out::Moved).await?;
+    settle(&mut client, item, true).await?;
+    let equipped = client
+        .inventory()
+        .ok_or("missing cooldown pre-inventory")?
+        .clone();
     let repeated_at = tokio::time::Instant::now();
     let refused = hotkey(&mut client, amulet).await?;
     let cooldown_failure = match refused {
         Out::Rejected => {
-            settle(&mut client, amulet, true).await?;
-            let slot = worn(&client, amulet);
-            if slot != Some(EquipmentSlot::Necklace) || quantity(&client, amulet)? != 0 {
-                return Err(format!(
-                    "step=immediate-repeat observed=slot:{slot:?};needed=Necklace-and-no-carried-copy"
-                ).into());
+            if client.inventory() != Some(&equipped) {
+                return Err("immediate cooldown refusal changed inventory".into());
             }
             // Crystal 201189f8 configmanager.cpp:377 defaults the necklace clock to 200 ms.
             wait_for(&mut client, Duration::from_millis(200)).await?;
@@ -275,13 +353,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             return Err(format!("step=immediate-repeat observed={other:?};needed=Rejected").into());
         }
     };
-    settle(&mut client, amulet, false).await?;
+    settle(&mut client, item, false).await?;
+    wait_for(&mut client, Duration::from_millis(200)).await?;
+    expect(&mut client, amulet, "equip-for-durable-reload", Out::Moved).await?;
+    settle(&mut client, item, true).await?;
     let mut client = relog(client, clients).await?;
-    if worn(&client, amulet).is_some() || quantity(&client, amulet)? != 1 {
-        return Err("step=durable-reload needed=one-carried-amulet-and-empty-necklace-slot".into());
-    }
+    amulet_at(&client, item, true)?;
+    expect(&mut client, amulet, "unequip-after-reload", Out::Moved).await?;
+    settle(&mut client, item, false).await?;
     if cooldown_failure.is_none() {
-        evidence("I17D_CHECK jewelry-delay PASS immediate=Rejected recovery=Moved relog=carried");
+        evidence("I17D_CHECK jewelry-delay PASS immediate=Rejected recovery=Moved relog=necklace");
     }
     let combat = async {
         character_prep::declare_seeded(
@@ -309,7 +390,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         if (vitals.max_health, vitals.max_mana) != (health, mana) {
             return Err(format!("seeded combat vitals mismatch: {vitals:?}").into());
         }
-        fight_fear_caster(&mut client, clients, amulet).await?;
+        fight_fear_caster(&mut client, clients, item).await?;
         drop(client);
         wait_character_released(clients, 0).await?;
         Ok::<(), Box<dyn std::error::Error>>(())
