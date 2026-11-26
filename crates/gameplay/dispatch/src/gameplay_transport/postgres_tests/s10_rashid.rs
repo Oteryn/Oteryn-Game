@@ -29,13 +29,28 @@ fn with_world_clocks(name: &str, scenario: impl FnOnce() -> TestResult) -> TestR
     assert!(status.success(), "wall-clock dispatch: {status}");
     #[cfg(feature = "qualification-clock")]
     {
-        let directory = tempfile::tempdir()?;
-        let file = directory.path().join("offset-ms");
+        use std::io::Write;
+        use std::sync::atomic::{AtomicU64, Ordering};
+
         let now = crate::gameplay_transport::npc_trade_command::unix_ms_now();
         // Keep the weekdays distinct even when the wall clock crosses midnight during setup.
         let offset = 2 * DAY_MS + DAY_MS / 2 - now.rem_euclid(DAY_MS);
-        std::fs::write(&file, offset.to_string())?;
-        let status = child.env(CLOCK_FILE, &file).status()?;
+        static NEXT: AtomicU64 = AtomicU64::new(0);
+        let path = std::env::temp_dir().join(format!(
+            "oteryn-w05clock-dispatch-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed),
+        ));
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)?;
+        let written = file.write_all(offset.to_string().as_bytes());
+        drop(file);
+        let status = written.and_then(|()| child.env(CLOCK_FILE, &path).status());
+        let cleanup = std::fs::remove_file(path);
+        let status = status?;
+        cleanup?;
         assert!(status.success(), "qualification-clock dispatch: {status}");
     }
     Ok(())
