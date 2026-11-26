@@ -273,7 +273,8 @@ fn inventory_without_handles(inventory: &CharacterInventory) -> CharacterInvento
 const FUNDED_DUST: u32 = 30;
 const INITIAL_DUST_LIMIT: u32 = 100;
 const FIRST_DUST_LIMIT_COST: u32 = 25;
-const NEXT_DUST_LIMIT: u32 = 120;
+// Global Dust Limit progression: https://tibia.fandom.com/wiki/Dust
+const NEXT_DUST_LIMIT: u32 = 101;
 
 fn check_funded_dust_limit(reply: wire::Payload) -> TestResult {
     let expected = wire::ResourceQuote {
@@ -289,6 +290,18 @@ fn check_funded_dust_limit(reply: wire::Payload) -> TestResult {
         after_slivers: 0,
         after_cores: 0,
     };
+    if let wire::Payload::Resource(observed) = reply
+        && observed.after_limit != expected.after_limit
+    {
+        return Err(format!(
+            "step=funded-dust-limit observed={}->{} expected={}->{}",
+            observed.before.dust_limit,
+            observed.after_limit,
+            expected.before.dust_limit,
+            expected.after_limit,
+        )
+        .into());
+    }
     if reply != wire::Payload::Resource(expected) {
         return Err(
             format!("step=funded-dust-limit observed={reply:?} expected={expected:?}").into(),
@@ -333,6 +346,25 @@ fn browse_metadata(item: &wire::Item, appearance: u16, definition_ref: u32) -> b
         && item.maximum_tier == maximum_tier
 }
 
+fn check_bank(resources: wire::Resources, bank: &serde_json::Value) -> TestResult {
+    let gold = if bank.is_null() {
+        0
+    } else {
+        bank["balance"]
+            .as_u64()
+            .ok_or("step=browse invalid SQL bank balance")?
+    };
+    // The dedicated q_g20 character has no starter-island restriction (BANK-0 §4.4).
+    if resources.bank_gold != gold || !resources.bank_spendable {
+        return Err(format!(
+            "step=browse bank-gold={} expected={gold} bank-spendable={} expected=true",
+            resources.bank_gold, resources.bank_spendable
+        )
+        .into());
+    }
+    Ok(())
+}
+
 fn browse(
     client: &DevClientSession,
     reply: wire::Payload,
@@ -342,6 +374,7 @@ fn browse(
         return Err("step=browse observed=not-a-page".into());
     };
     check_first_page(&page)?;
+    check_bank(page.resources, &custody.other_custody["bank"])?;
     let gold = custody.gold;
     if i64::try_from(page.resources.carried_gold)? != gold {
         return Err(format!(
@@ -582,33 +615,71 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .inventory()
         .ok_or("step=funded missing inventory")?
         .clone();
-    let quote = verdict::observe(preview_unchanged(
-        &mut client,
-        1,
-        wire::Selection::Resource(Operation::DustLimit),
-        &inventory,
-        &mut connection,
-        character,
-        &funded,
-    ))
-    .await
-    .and_then(check_funded_dust_limit);
+    let funded_resources = wire::Resources {
+        dust: FUNDED_DUST,
+        ..resources
+    };
+    let checks = verdict::observe(async {
+        let page = preview_unchanged(
+            &mut client,
+            1,
+            wire::Selection::Browse { after: 0 },
+            &inventory,
+            &mut connection,
+            character,
+            &funded,
+        )
+        .await?;
+        if browse(&client, page, &funded)?.0.resources != funded_resources {
+            return Err("step=funded browse before quote changed resources".into());
+        }
+        let quote = check_funded_dust_limit(
+            preview_unchanged(
+                &mut client,
+                2,
+                wire::Selection::Resource(Operation::DustLimit),
+                &inventory,
+                &mut connection,
+                character,
+                &funded,
+            )
+            .await?,
+        );
+        let page = preview_unchanged(
+            &mut client,
+            3,
+            wire::Selection::Browse { after: 0 },
+            &inventory,
+            &mut connection,
+            character,
+            &funded,
+        )
+        .await?;
+        if browse(&client, page, &funded)?.0.resources != funded_resources {
+            return Err("step=funded browse after quote changed resources".into());
+        }
+        quote
+    })
+    .await;
     let closed = verdict::observe(finish(&mut client)).await;
-    quote?;
-    closed?;
     drop(client);
-    verify_relog(
-        &clients,
-        &mut connection,
-        funded_session,
-        &funded,
-        wire::Resources {
-            dust: FUNDED_DUST,
-            ..resources
-        },
-        &original_inventory,
-    )
-    .await
+    let relog = async {
+        closed?;
+        verify_relog(
+            &clients,
+            &mut connection,
+            funded_session,
+            &funded,
+            funded_resources,
+            &original_inventory,
+        )
+        .await
+    }
+    .await;
+    match (checks, relog) {
+        (Err(quote), Err(relog)) => Err(format!("{quote}; relog also failed: {relog}").into()),
+        (checks, relog) => checks.and(relog),
+    }
 }
 
 async fn verify_relog(
@@ -728,6 +799,26 @@ mod tests {
     }
 
     #[test]
+    fn browse_bank_fields_require_independent_balance_and_eligibility() -> TestResult {
+        let bank = serde_json::json!({"balance": 42});
+        let mut resources = wire::Resources {
+            bank_gold: 42,
+            bank_spendable: true,
+            ..Default::default()
+        };
+        check_bank(resources, &bank)?;
+        resources.bank_gold = 43;
+        assert!(check_bank(resources, &bank).is_err());
+        resources.bank_gold = 42;
+        resources.bank_spendable = false;
+        assert!(check_bank(resources, &bank).is_err());
+        resources.bank_gold = 0;
+        assert!(check_bank(resources, &serde_json::Value::Null).is_err());
+        resources.bank_spendable = true;
+        check_bank(resources, &serde_json::Value::Null)
+    }
+
+    #[test]
     fn funded_dust_limit_requires_the_exact_positive_quote() -> TestResult {
         assert!(check_funded_dust_limit(wire::Payload::Refused).is_err());
         let mut quote = wire::ResourceQuote {
@@ -739,7 +830,7 @@ mod tests {
                 ..Default::default()
             },
             after_dust: 5,
-            after_limit: 120,
+            after_limit: 101,
             after_slivers: 0,
             after_cores: 0,
         };
@@ -747,7 +838,7 @@ mod tests {
         quote.after_dust = 30;
         assert!(check_funded_dust_limit(wire::Payload::Resource(quote)).is_err());
         quote.after_dust = 5;
-        quote.after_limit = 100;
+        quote.after_limit = 120;
         assert!(check_funded_dust_limit(wire::Payload::Resource(quote)).is_err());
         Ok(())
     }
