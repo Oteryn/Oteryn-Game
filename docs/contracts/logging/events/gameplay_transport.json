@@ -278,7 +278,7 @@
       "level": "info",
       "span": false,
       "fields": [
-        "retry_stage",
+        "phase",
         "stage"
       ],
       "codes": [],
@@ -290,7 +290,7 @@
       "span": false,
       "fields": [
         "kind",
-        "retry_stage",
+        "phase",
         "stage"
       ],
       "codes": [],
