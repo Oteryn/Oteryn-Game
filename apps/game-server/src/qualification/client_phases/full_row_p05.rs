@@ -16,9 +16,8 @@
 //! 7. Log out normally, obtain a fresh admission, query again, and require the
 //!    purchased item and upgraded level/balance to remain durable.
 //!
-//! The journey does not manufacture prerequisites. If an ordinary provisioned
-//! character cannot reach a step, its single FAIL names that step and includes
-//! the accepted/rejected status, refusal code, or missing delta actually seen.
+//! The dedicated character receives only the purchase budget from the fixture.
+//! A failed step reports the observed status, refusal, or missing delta.
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
@@ -616,8 +615,55 @@ fn reachable_offer(
         .min_by_key(|(_, offer)| offer.required)
 }
 
+pub(super) async fn funded_buyer(
+    clients: &SeamClients<'_>,
+    tag: u8,
+) -> TestResult<DevClientSession> {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+
+    let mut client = connect_character(clients, tag, 0).await?;
+    let session = client.join_snapshot().game_session_id;
+    let definitions = provisioning::item_index()?;
+    let platinum = provisioning::item_reference(&definitions, 3035)?;
+    let gold = provisioning::item_reference(&definitions, 3031)?;
+    let crystal = provisioning::item_reference(&definitions, 3043)?;
+    if client.inventory().is_none()
+        || [gold, platinum, crystal]
+            .into_iter()
+            .any(|coin| item_count(&client, coin) != 0)
+    {
+        return Err("P05 fixture buyer must start with an empty purse".into());
+    }
+    // Each distinct grant fits the existing fixture's per-request cap of 20.
+    for count in [20, 19, 11] {
+        character_prep::grant_item(&client, 3035, count).await?;
+    }
+    if client.session_mut().logout().await?.result != Some(LogoutResult::Accepted) {
+        return Err("P05 fixture buyer logout refused".into());
+    }
+    drop(client);
+    let fresh = connect_character(clients, tag, 0).await?;
+    if fresh.join_snapshot().game_session_id == session
+        || item_count(&fresh, platinum) != 50
+        || item_count(&fresh, gold) != 0
+        || item_count(&fresh, crystal) != 0
+    {
+        return Err("P05 fixture budget missing on fresh admission".into());
+    }
+    evidence("P05_CHECK step=funding status=PASS spendable_gold=5000");
+    Ok(fresh)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
-    let mut client = connect_character(clients, 0xd5, 0).await.map_err(|error| {
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_P05_ACCOUNT")
+        .await
+        .map_err(|error| StepFailure {
+            step: 1,
+            observed: format!("dedicated-account-{error}"),
+            source: Some(error),
+        })?;
+    let clients = &dedicated.clients(clients);
+    let mut client = funded_buyer(clients, 0xd5).await.map_err(|error| {
         verdict::record_error(verdict::IndexedError::as_error(&error));
         StepFailure {
             step: 1,

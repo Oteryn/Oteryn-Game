@@ -38,7 +38,9 @@ async fn send(client: &mut DevClientSession, action: u8, name: &str) -> TestResu
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_character(clients, 0x27, 0).await?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_P05_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    let mut client = full_row_p05::funded_buyer(clients, 0x27).await?;
     let before = send(&mut client, 4, "p05-query.bin").await?;
     let bought = send(&mut client, 17, "p05-buy.bin").await?;
     if bought.refusal != 0 {
