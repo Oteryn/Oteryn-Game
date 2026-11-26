@@ -2,16 +2,18 @@
 //! Historical receipts precede live handles. Every new/retried write re-proves current
 //! authority; a saved PREPARE request is data, never a replacement for the current fences.
 
+use crate::durability::DurabilityError;
 use crate::durability::character_authority::SERVER_BUILD_ID;
 use crate::durability::item_loop_move::ItemLoopContent;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_use::drome_cube::DromeCubeError;
 use crate::durability::item_use::{ItemUseError, ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
 use crate::foundation::{CommandId, CommandRef, ExactActorRef, GameSessionId};
-use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::{UseCommand, UseOutcome};
+use crate::gameplay_transport::item_craft::retry_item_use_holder;
 use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, pinned_index};
 use crate::gameplay_transport::item_view::ItemKey;
+use crate::gameplay_transport::{AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission};
 use oteryn_gameplay_items::drome_cube::{DROME_CUBE_KEY, reward, reward_index};
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
@@ -40,8 +42,19 @@ fn refusal(error: &DromeCubeError) -> UseDisposition {
     }
 }
 
+fn item_use_commit_unknown(error: &ItemUseError) -> bool {
+    matches!(
+        error,
+        ItemUseError::Unavailable(
+            DurabilityError::CommitOutcomeUnknown
+                | DurabilityError::RootPassDeadlineExceeded
+                | DurabilityError::RootTaskFailed
+        )
+    )
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// None delegates an ordinary item. Err means no terminal result may be acknowledged.
+    /// None delegates an ordinary item. The route checks PREPARE before acknowledging an error.
     pub(in crate::gameplay_transport) async fn use_drome_cube_impl(
         &self,
         actor: ExactActorRef,
@@ -69,10 +82,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let binding: [u8; 32] =
             Sha256::digest(encode_item_use_intent(&intent).map_err(|_| ())?).into();
         let _permit = self.spell_lane_permit().await.ok_or(())?;
-        match self
-            .root
-            .read_drome_cube_receipt(self.character, fence, command_ref, binding)
-            .await
+        let retry = AdmissionRetryBudget::for_command(self.root);
+        match retry_item_use_holder(&retry, async || {
+            self.root
+                .read_drome_cube_receipt(self.character, fence, command_ref, binding)
+                .await
+        })
+        .await
         {
             Ok(Some(receipt)) => {
                 if self
@@ -137,10 +153,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let inventory = match self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
-            .await
+        let inventory = match retry_item_use_holder(&retry, async || {
+            self.root
+                .read_item_use_inventory(self.character, self.holder, fence)
+                .await
+        })
+        .await
         {
             Ok(inventory) => inventory,
             Err(ItemUseError::Unavailable(_)) => return Err(()),
@@ -273,6 +291,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map(|result| Some(outcome(result)))
     }
 
+    pub(in crate::gameplay_transport) async fn drome_use_has_prepared_write(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+    ) -> bool {
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        states
+            .item_uses
+            .gate(&runtime, actor, command.game_session_id)
+            .and_then(|gate| gate.cube_pending.as_ref())
+            .is_some_and(|pending| pending.request.command_id == command.command_id)
+    }
+
     async fn cube_actor_live(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
@@ -307,10 +339,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command.game_session_id,
             CommandId::new(command.command_id).map_err(|_| ())?,
         );
-        let written = self
-            .root
-            .commit_drome_cube(self.character, self.holder, fence, request, content)
-            .await;
+        let retry = AdmissionRetryBudget::for_command(self.root);
+        let written = loop {
+            let result = self
+                .root
+                .commit_drome_cube(self.character, self.holder, fence, request.clone(), content)
+                .await;
+            if !matches!(
+                result,
+                Err(DromeCubeError::ItemUse(ItemUseError::Unavailable(
+                    DurabilityError::RootUnavailable
+                )))
+            ) || !retry
+                .retries_unavailable(AdmissionRefusal::Unavailable)
+                .await
+            {
+                break result;
+            }
+        };
         #[cfg(test)]
         if matches!(
             &written,
@@ -330,11 +376,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                 {
                     Ok(Some(_)) => UseDisposition::Committed,
-                    Err(ItemUseError::Unavailable(_)) => {
-                        self.mark_cube_unknown(actor, command).await;
-                        return Err(());
-                    }
-                    _ if matches!(error, DromeCubeError::ItemUse(ItemUseError::Unavailable(_))) => {
+                    _ if matches!(error, DromeCubeError::ItemUse(ref error) if item_use_commit_unknown(error)) =>
+                    {
                         // No visible row after an unknown COMMIT does not prove rollback.
                         self.mark_cube_unknown(actor, command).await;
                         return Err(());
