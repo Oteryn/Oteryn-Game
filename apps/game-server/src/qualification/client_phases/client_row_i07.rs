@@ -236,7 +236,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     };
     let clients = &scoped;
     let mut client = connect_world(clients, 0x07).await?;
-    if tile(client.world_spatial().actor_position)? != TOWN {
+    let admitted_position = client.world_spatial().actor_position;
+    if tile(admitted_position)? != TOWN {
         return Err("I07 fixture requires admission at the seeded corpse tile".into());
     }
     request_fixture_control(
@@ -295,6 +296,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     .bind(character.as_slice())
     .fetch_one(&mut database)
     .await?;
+    let ground: Vec<u8> = sqlx::query_scalar(
+        "SELECT spatial_position FROM game_item_ground_locations
+         WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(&corpse)
+    .fetch_one(&mut database)
+    .await?;
+    let expected_ground = [
+        admitted_position.x.to_be_bytes().as_slice(),
+        admitted_position.y.to_be_bytes().as_slice(),
+        admitted_position.floor.to_be_bytes().as_slice(),
+    ]
+    .concat();
+    if ground != expected_ground {
+        return Err(format!(
+            "I07 fixture corpse ground location differs: expected={expected_ground:?} observed={ground:?}"
+        )
+        .into());
+    }
     let backpack: Vec<u8> = sqlx::query_scalar(
         "SELECT uuid_send(item_instance_id) FROM game_item_container_slots
          WHERE character_id=encode($1,'hex')::uuid",
