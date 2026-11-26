@@ -51,6 +51,11 @@ const PARTY_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000017";
 const C06_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-00000000001c";
 
 #[cfg(feature = "qualification-spawn")]
+const C10_FULL_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000020";
+#[cfg(feature = "qualification-spawn")]
+const C10_CLIENT_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000021";
+
+#[cfg(feature = "qualification-spawn")]
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "s08-knight" => Some(("knight", 8)),
@@ -58,6 +63,7 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
         "s13-party" => Some(("sorcerer", 32)),
         "w20b-light" => Some(("sorcerer", 26)),
         "c05-exiva" => Some(("sorcerer", 8)),
+        "c10-sorcerer" => Some(("sorcerer", 20)),
         "c11-unassigned" => Some((crate::durability::character_build::NO_VOCATION, 8)),
         "c11-knight" => Some(("knight", 625)),
         "c12-monk" => Some(("monk", 20)),
@@ -765,6 +771,7 @@ async fn prepare_build(
     if matches!(
         profile,
         "premium"
+            | "c10-sorcerer"
             | "c11-unassigned"
             | "c11-knight"
             | "c12-monk"
@@ -804,6 +811,7 @@ async fn prepare_build(
                 return grant_premium(root, premium, *record.account_id.as_bytes(), deadline).await;
             }
             ("c11-unassigned", UNASSIGNED_ACCOUNT)
+            | ("c10-sorcerer", C10_FULL_ACCOUNT | C10_CLIENT_ACCOUNT)
             | ("c11-knight", KNIGHT_ACCOUNT)
             | ("c12-monk", MONK_ACCOUNT)
             | ("c06-sorcerer", C06_CASTER_ACCOUNT)
@@ -2013,6 +2021,7 @@ mod tests {
             "f5-c17d",
             "c11-unassigned",
             "c11-knight",
+            "c10-sorcerer",
             "c12-monk",
             "c06-sorcerer",
             "premium",
