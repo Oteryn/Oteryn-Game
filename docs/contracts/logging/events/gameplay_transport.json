@@ -213,6 +213,14 @@
       "note": "PR3106: listener control-loss result reported only when it changes; kind is recorded, resumed_history, terminal, unknown, not_applicable or refused. No player identifiers, payloads or raw errors."
     },
     {
+      "event": "drome_use_probe_failed",
+      "level": "info",
+      "span": false,
+      "fields": ["command_id", "stage"],
+      "codes": [],
+      "note": "Cube or Kooldown Aid USE could not classify its receipt or prepare a new use."
+    },
+    {
       "event": "fresh_admission_pending",
       "level": "warn",
       "span": false,

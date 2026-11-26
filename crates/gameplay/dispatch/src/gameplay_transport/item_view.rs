@@ -689,6 +689,19 @@ impl SessionItemView {
         self.inventory.entries.iter().any(|entry| entry.key == *key)
     }
 
+    /// The definition published for this live item. It selects a route only;
+    /// each writer still reads current custody and the exact item fence.
+    pub(super) fn shown_definition(&self, key: ItemKey) -> Option<NonZeroU32> {
+        self.inventory
+            .main_backpack
+            .iter()
+            .chain(&self.inventory.entries)
+            .chain(self.inventory.equipment.iter().map(|(_, item)| item))
+            .chain(&self.open_entries)
+            .find(|item| item.key == key)
+            .map(|item| item.item_definition_ref)
+    }
+
     /// The slot domain 9 shows `key` in, if it is equipped.
     pub fn equipped_slot(&self, key: &ItemKey) -> Option<EquipmentSlot> {
         self.inventory

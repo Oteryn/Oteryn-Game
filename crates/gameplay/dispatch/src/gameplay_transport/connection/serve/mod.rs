@@ -580,11 +580,11 @@ pub(in crate::gameplay_transport) async fn regression_routed_step<A: FreshAdmiss
 
 /// Run the first live command while a background pass holds the PostgreSQL holder.
 #[cfg(test)]
-pub(in crate::gameplay_transport) async fn regression_bag_use_with_busy_holder(
+pub(in crate::gameplay_transport) async fn regression_item_use_with_busy_holder(
     authority: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     mut admitted: AdmittedSession,
     stream: &mut tokio::io::DuplexStream,
-    bag: crate::gameplay_transport::item_view::ItemKey,
+    item: crate::gameplay_transport::item_view::ItemKey,
 ) -> Result<oteryn_protocol_oteryn::item_view::ItemHandle, Box<dyn std::error::Error>> {
     use oteryn_protocol_oteryn::world_object::{
         COMMAND_TYPE_USE_INTENT, UseIntent, UseTarget, encode_item_use_intent,
@@ -606,19 +606,20 @@ pub(in crate::gameplay_transport) async fn regression_bag_use_with_busy_holder(
         integrity::Integrity::default(),
     )
     .await
-    .map_err(|_| "readmitted bag USE setup")?;
+    .map_err(|_| "readmitted item USE setup")?;
     let handle = session
         .item_view
         .as_ref()
-        .and_then(|view| view.table().handle(&bag))
-        .ok_or("current backpack handle")?;
-    let payload = encode_item_use_intent(&UseIntent {
+        .and_then(|view| view.table().handle(&item))
+        .ok_or("current item handle")?;
+    let intent = UseIntent {
         target: UseTarget::Item(handle),
         use_with: None,
         use_with_map_item: None,
         use_with_position: None,
-    })
-    .map_err(|error| format!("bag USE payload: {error:?}"))?;
+    };
+    let payload =
+        encode_item_use_intent(&intent).map_err(|error| format!("item USE payload: {error:?}"))?;
     let frame = oteryn_protocol_oteryn::encode_client_command(
         session.generation,
         &oteryn_protocol_oteryn::ClientCommandValue {
@@ -634,23 +635,73 @@ pub(in crate::gameplay_transport) async fn regression_bag_use_with_busy_holder(
         poll::Next::Held(frame, false, tokio::time::Instant::now()),
     )
     .await
-    .map_err(|_| "receive readmitted bag USE")?
-    .ok_or("missing readmitted bag USE")?;
+    .map_err(|_| "receive readmitted item USE")?
+    .ok_or("missing readmitted item USE")?;
 
-    let held = authority.root.issue_ready_semantic_pass().await?;
-    let work = crate::durability::DurabilityRoot::with_holder_owner(command::execute(
+    {
+        let held = authority.root.issue_ready_semantic_pass().await?;
+        let definition = session
+            .item_view
+            .as_ref()
+            .and_then(|view| view.shown_definition(item))
+            .ok_or("definition from the admitted item view")?;
+        let special = authority.use_drome_cube(
+            actor,
+            UseCommand {
+                game_session_id: session.admitted.game_session_id,
+                command_id: session.commands.next_command_id(),
+                item_fence: session.admitted.item_fence,
+            },
+            intent,
+            Some(item),
+            Some(definition),
+        );
+        let decision = tokio::time::timeout(std::time::Duration::from_secs(5), special).await?;
+        assert!(
+            matches!(decision, Ok(None)),
+            "the server-published plain item must bypass both Drome probes while the holder is busy"
+        );
+        let work = crate::durability::DurabilityRoot::with_holder_owner(command::execute(
+            stream,
+            authority,
+            &mut session,
+            input,
+        ));
+        let mut work = std::pin::pin!(work);
+        let first = std::future::poll_fn(|cx| Poll::Ready(work.as_mut().poll(cx))).await;
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        let outcome = match first {
+            Poll::Ready(outcome) => outcome,
+            Poll::Pending => work.await,
+        };
+        outcome.map_err(|end| format!("first readmitted item USE: {:?}", end.finish(admitted)))?;
+    }
+    // A second ordered command must still pass ingress on the same connection.
+    let follow_up = oteryn_protocol_oteryn::encode_client_command(
+        session.generation,
+        &oteryn_protocol_oteryn::ClientCommandValue {
+            command_id: session.commands.next_command_id(),
+            command_type: u32::MAX,
+            payload: &[],
+        },
+    )?;
+    command::execute(
         stream,
         authority,
         &mut session,
-        input,
-    ));
-    let mut work = std::pin::pin!(work);
-    let first = std::future::poll_fn(|cx| Poll::Ready(work.as_mut().poll(cx))).await;
-    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
-    let outcome = match first {
-        Poll::Ready(outcome) => outcome,
-        Poll::Pending => work.await,
-    };
-    outcome.map_err(|end| format!("first readmitted bag USE: {:?}", end.finish(admitted)))?;
+        inbound::Input {
+            frame: follow_up,
+            arrived_while_buffered: false,
+            buffered_original: false,
+            received_at: tokio::time::Instant::now(),
+        },
+    )
+    .await
+    .map_err(|end| {
+        format!(
+            "follow-up after readmitted item USE: {:?}",
+            end.finish(admitted)
+        )
+    })?;
     Ok(handle)
 }
