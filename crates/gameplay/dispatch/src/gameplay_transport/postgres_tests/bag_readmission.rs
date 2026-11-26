@@ -1,8 +1,8 @@
-//! The first USE on a fresh successor must open the Character's persisted backpack.
+//! Bag and potion USE after fresh readmission under holder contention.
 use super::TestResult;
 use super::full_world_support::world_scenario;
 use crate::gameplay_transport::connection::{
-    AdmittedSession, ControllerBinding, SessionContinuity, regression_bag_use_with_busy_holder,
+    AdmittedSession, ControllerBinding, SessionContinuity, regression_item_use_with_busy_holder,
 };
 use oteryn_protocol_oteryn::{self as protocol, container_tree, world_object};
 
@@ -11,10 +11,18 @@ fn bag_use_after_readmission_opens_container_postgres() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e_fixtures::scenario_thread::run("bag-readmission", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("bag-readmission", || scenario(false))
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn potion_use_after_readmission_under_contention_returns_result_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("potion-readmission", || scenario(true))
+}
+
+fn scenario(use_potion: bool) -> TestResult {
     world_scenario!(
         "bag_readmission",
         |h,
@@ -33,6 +41,26 @@ fn scenario() -> TestResult {
          owner,
          fence,
          admitted| {
+            use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
+            let potion = super::annihilator_combat::KNIGHT_POTION;
+            if use_potion {
+                super::quest_world_callbacks_fixtures::input_item(
+                    &owner,
+                    fence,
+                    &Offering {
+                        position: Position {
+                            x: u16::try_from(ENTRY.0)?,
+                            y: u16::try_from(ENTRY.1)?,
+                            floor: -7,
+                        },
+                        item: potion.into(),
+                        count: 1,
+                    },
+                    1,
+                    true,
+                )
+                .await?;
+            }
             assert_eq!(
                 owner.logout_session(admitted).await,
                 LogoutReply::Result(LogoutResult::Accepted)
@@ -100,21 +128,34 @@ fn scenario() -> TestResult {
             );
             owner.admit_loop_training(&mut readmitted).await;
             assert_eq!(readmitted.first_entry, FirstEntryOutcome::Positioned);
-            let bag: Vec<u8> = sqlx::query_scalar(
-                "SELECT uuid_send(item_instance_id) FROM game_item_container_slots
-                 WHERE character_id = encode($1, 'hex')::uuid",
-            )
-            .bind(next_fence.character_id.as_bytes().as_slice())
-            .fetch_one(&h.pool)
-            .await?;
+            let item: Vec<u8> = if use_potion {
+                sqlx::query_scalar(
+                    "SELECT uuid_send(i.item_instance_id)
+                     FROM game_item_container_entries e JOIN game_item_instances i USING (item_instance_id)
+                     WHERE e.character_id = encode($1, 'hex')::uuid
+                       AND i.definition_production_key = $2",
+                )
+                .bind(next_fence.character_id.as_bytes().as_slice())
+                .bind(potion)
+                .fetch_one(&h.pool)
+                .await?
+            } else {
+                sqlx::query_scalar(
+                    "SELECT uuid_send(item_instance_id) FROM game_item_container_slots
+                     WHERE character_id = encode($1, 'hex')::uuid",
+                )
+                .bind(next_fence.character_id.as_bytes().as_slice())
+                .fetch_one(&h.pool)
+                .await?
+            };
             let (mut server, mut client) = tokio::io::duplex(1 << 20);
             let handle = tokio::time::timeout(
                 Duration::from_secs(20),
-                regression_bag_use_with_busy_holder(
+                regression_item_use_with_busy_holder(
                     &owner,
                     readmitted,
                     &mut server,
-                    ItemKey::Instance(bag.try_into().map_err(|_| "invalid bag identity")?),
+                    ItemKey::Instance(item.try_into().map_err(|_| "invalid item identity")?),
                 ),
             )
             .await??;
@@ -127,12 +168,25 @@ fn scenario() -> TestResult {
                     protocol::MessageType::CommandResult => {
                         let reply =
                             protocol::decode_command_result(envelope.payload()).map_err(debug)?;
-                        assert_eq!(reply.command_id, readmitted.continuity.next_command_id);
-                        assert_eq!(reply.status, protocol::CommandStatus::Accepted);
-                        assert_eq!(
-                            world_object::decode_use_result(reply.payload).map_err(debug)?,
-                            world_object::UseDisposition::Committed
-                        );
+                        let first = readmitted.continuity.next_command_id;
+                        if use_potion && replied {
+                            assert_eq!(reply.command_id, first + 1);
+                            assert_eq!(reply.status, protocol::CommandStatus::Rejected);
+                            break;
+                        }
+                        assert_eq!(reply.command_id, first);
+                        let disposition =
+                            world_object::decode_use_result(reply.payload).map_err(debug)?;
+                        if use_potion {
+                            assert!(matches!(
+                                reply.status,
+                                protocol::CommandStatus::Accepted
+                                    | protocol::CommandStatus::Rejected
+                            ));
+                        } else {
+                            assert_eq!(reply.status, protocol::CommandStatus::Accepted);
+                            assert_eq!(disposition, world_object::UseDisposition::Committed);
+                        }
                         replied = true;
                     }
                     protocol::MessageType::StateDelta => {
