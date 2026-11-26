@@ -298,7 +298,7 @@ WORK=.
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 28)
+        self.assertEqual(len(accounts), 29)
         self.assertEqual(len(set(accounts)), len(accounts))
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 
@@ -704,6 +704,73 @@ class CloudRunSummaryTests(unittest.TestCase):
             result = subprocess.run(["bash", "-c", command, "test", temp],
                                     check=True, capture_output=True, text=True)
             self.assertEqual(result.stdout.strip(), str(work.resolve()))
+
+    def test_imbuement_replay_batch_selection(self):
+        cloud = (HERE / "cloud_run.sh").read_text()
+        helper = cloud[cloud.index("selected_imbuement_replay()"):cloud.index("replay_loyalty_capture()")]
+        for group, batch, selected in [
+            ("rows", "177:1", True),
+            ("rows", "176:2", True),
+            ("rows", "all", True),
+            ("rows", "+0177:+01", True),
+            ("rows", "176:1", False),
+            ("rows", "178:1", False),
+            ("rows", None, False),
+            ("rows", "177:0", False),
+            ("core", "177:1", False),
+        ]:
+            with self.subTest(group=group, batch=batch):
+                env = dict(os.environ)
+                env.pop("OTERYN_E2E_ROW_BATCH", None)
+                if batch is not None:
+                    env["OTERYN_E2E_ROW_BATCH"] = batch
+                result = subprocess.run(
+                    ["bash", "-c", helper + 'selected_imbuement_replay "$1"', "test", group],
+                    env=env,
+                )
+                self.assertEqual(result.returncode, 0 if selected else 1)
+
+    def test_imbuement_replay_requires_fresh_complete_capture_and_assertions(self):
+        cloud = (HERE / "cloud_run.sh").read_text()
+        helper = cloud[cloud.index("replay_imbuement_capture()"):cloud.index('if [[ ${1:-} == --summarize ]]')]
+        captured = "SEAM_EVIDENCE e2e_capture scenario=P21.client status=CAPTURED evidence=live\n"
+        failed = "SEAM_EVIDENCE e2e_all scenario=P21.client status=FAIL evidence=row-error\n"
+        command = helper + textwrap.dedent(r'''
+            cargo() {
+                [[ "$E2E_ALL_CAPTURE_DIR" == "$EXPECTED_CAPTURE" ]] || return 1
+                if [[ "$REPLAY_RESULT" == pass ]]; then
+                    printf 'test %s ... ok\n' "$7"
+                else
+                    printf 'running 0 tests\n'
+                fi
+            }
+            export EXPECTED_CAPTURE="$2"
+            replay_imbuement_capture "$1" "$2" "$3" "$4"
+            ''')
+        for node_log, status, complete, replay, passed in [
+            (captured, "0", True, "pass", True),
+            ("", "0", True, "pass", False),
+            (captured * 2, "0", True, "pass", False),
+            (captured + failed, "0", True, "pass", False),
+            (captured, "1", True, "pass", False),
+            (captured, "0", False, "pass", False),
+            (captured, "0", True, "unmatched", False),
+        ]:
+            with self.subTest(node_log=node_log, status=status, complete=complete, replay=replay), tempfile.TemporaryDirectory() as temp:
+                log = Path(temp, "node.log")
+                log.write_text(node_log)
+                for name in ("p21-window.bin", "p21-expected.txt"):
+                    Path(temp, name).write_text("capture")
+                if complete:
+                    Path(temp, "p21-refused.bin").write_text("capture")
+                result = subprocess.run(
+                    ["bash", "-c", command, "test", str(log), temp, str(Path(temp, "client.log")), status],
+                    env={**os.environ, "REPLAY_RESULT": replay},
+                )
+                self.assertEqual(result.returncode, 0 if passed else 1)
+                verdicts = [line for line in log.read_text().splitlines() if "e2e_all scenario=P21.client" in line]
+                self.assertEqual(len(verdicts), 1)
+                self.assertIn("status=PASS" if passed else "status=FAIL", verdicts[0])
 
     def test_loyalty_replay_requires_capture_and_an_executed_test(self):
         cloud = (HERE / "cloud_run.sh").read_text()

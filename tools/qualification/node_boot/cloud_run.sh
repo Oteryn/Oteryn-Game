@@ -41,7 +41,7 @@ summarize() {
 
   rows=$(awk '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=([[:alnum:]_.-]+\.full|P13\.client)$/ && $4 ~ /^status=(PASS|FAIL)$/ {
+      $3 ~ /^scenario=([[:alnum:]_.-]+\.full|P13\.client|P21\.client)$/ && $4 ~ /^status=(PASS|FAIL)$/ {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)
@@ -78,6 +78,19 @@ selected_loyalty_replay() {
   (( first <= loyalty_row && loyalty_row < first + length ))
 }
 
+selected_imbuement_replay() {
+  [[ "$1" == rows ]] || return 1
+  local batch=${OTERYN_E2E_ROW_BATCH-0:15} first length
+  [[ "$batch" != all ]] || return 0
+  [[ "$batch" =~ ^[+]?0*([0-9]{1,3}):[+]?0*([0-9]+)$ ]] || return 1
+  first=$((10#${BASH_REMATCH[1]}))
+  length=${BASH_REMATCH[2]}
+  local imbuement_row=177 # client_phases/world.rs, P21.client
+  (( first <= imbuement_row )) || return 1
+  # A four-digit length already includes this row. Leave range validation to the harness.
+  [[ ${#length} -ge 4 ]] || (( imbuement_row - first < 10#$length ))
+}
+
 replay_loyalty_capture() {
   local log=$1 capture_dir=$2 replay_log=$3
   local test=loyalty_skills::e2e_p13::e2e_p13_replays_snapshot_and_malformed_query_rejection
@@ -92,6 +105,25 @@ replay_loyalty_capture() {
     return 0
   fi
   printf 'SEAM_EVIDENCE e2e_all scenario=P13.client status=FAIL seconds=%s evidence=client-replay-failed\n' "$((SECONDS - started))" >>"$log"
+  return 1
+}
+
+replay_imbuement_capture() {
+  local log=$1 capture_dir=$2 replay_log=$3 status=$4
+  local test=imbue::e2e_p21::e2e_p21_replays_imbuement_window_and_refusal
+  local started=$SECONDS
+  if grep -q '^SEAM_EVIDENCE e2e_all scenario=P21\.client status=FAIL ' "$log"; then
+    return 1
+  fi
+  if [[ "$status" == 0 ]] &&
+    [[ $(grep -c '^SEAM_EVIDENCE e2e_capture scenario=P21\.client status=CAPTURED ' "$log") == 1 ]] &&
+    [[ -s "$capture_dir/p21-expected.txt" && -s "$capture_dir/p21-window.bin" && -s "$capture_dir/p21-refused.bin" ]] &&
+    E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact >"$replay_log" 2>&1 &&
+    grep -Fqx "test $test ... ok" "$replay_log"; then
+    printf 'SEAM_EVIDENCE e2e_all scenario=P21.client status=PASS seconds=%s evidence=live-capture-replayed\n' "$((SECONDS - started))" >>"$log"
+    return 0
+  fi
+  printf 'SEAM_EVIDENCE e2e_all scenario=P21.client status=FAIL seconds=%s evidence=client-replay-failed\n' "$((SECONDS - started))" >>"$log"
   return 1
 }
 
@@ -145,8 +177,12 @@ for group in "$@"; do
   started=$SECONDS
   status=0
   capture_dir=
-  if selected_loyalty_replay "$group"; then
-    capture_dir=$(mktemp -d "$work_dir/$index-loyalty.XXXXXX") || blocked work_dir_unavailable
+  replay_loyalty=0
+  replay_imbuement=0
+  if selected_loyalty_replay "$group"; then replay_loyalty=1; fi
+  if selected_imbuement_replay "$group"; then replay_imbuement=1; fi
+  if (( replay_loyalty || replay_imbuement )); then
+    capture_dir=$(mktemp -d "$work_dir/$index-capture.XXXXXX") || blocked work_dir_unavailable
   fi
   (
     [[ -z "$capture_dir" ]] || export E2E_ALL_CAPTURE_DIR="$capture_dir"
@@ -156,7 +192,10 @@ for group in "$@"; do
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
-  if [[ -n "$capture_dir" ]] && ! replay_loyalty_capture "$log" "$capture_dir" "$work_dir/$index-loyalty.log"; then
+  if (( replay_imbuement )) && ! replay_imbuement_capture "$log" "$capture_dir" "$work_dir/$index-imbuement.log" "$status"; then
+    status=1
+  fi
+  if (( replay_loyalty )) && ! replay_loyalty_capture "$log" "$capture_dir" "$work_dir/$index-loyalty.log"; then
     status=1
   fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1

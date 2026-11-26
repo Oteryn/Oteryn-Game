@@ -10,15 +10,20 @@ use oteryn_protocol_oteryn::imbuement::{
 };
 use std::num::NonZeroU64;
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!(
-            "P21_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
-        ));
+const SWORD: u32 = 3264;
+
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
+    let root = required("E2E_ALL_CAPTURE_DIR")?;
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+    Ok(())
+}
+
+async fn logout(client: &mut DevClientSession) -> TestResult {
+    let outcome = client.session_mut().logout().await?;
+    if outcome.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("P21 logout refused: {:?}", outcome.result).into());
     }
+    Ok(())
 }
 
 async fn query(
@@ -38,7 +43,22 @@ async fn query(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_character(clients, 0x46, 1).await?;
+    character_prep::declare_seeded(
+        "P21.client",
+        "sword-3264",
+        "the row exercises imbuement queries and client rendering",
+    );
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_P21_ACCOUNT").await?;
+    let scope = dedicated.clients(clients);
+    let mut client = connect_character(&scope, 0x46, 0).await?;
+    let setup_session = client.join_snapshot().game_session_id;
+    character_prep::grant_item(&client, SWORD, 1).await?;
+    logout(&mut client).await?;
+    drop(client);
+    let mut client = connect_character(&scope, 0x46, 0).await?;
+    if client.join_snapshot().game_session_id == setup_session {
+        return Err("P21 reused the fixture grant session".into());
+    }
     if !client
         .selected_capabilities()
         .contains(&CAPABILITY_IMBUE_V1)
@@ -55,47 +75,43 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             decode_imbuement_reply(payload).map(|reply| (reply, Vec::new()))
         }
     };
-    let handles: Vec<NonZeroU64> = {
-        let inventory = client.inventory().ok_or("inventory frame missing")?;
-        inventory
-            .entries
-            .iter()
-            .chain(inventory.main_backpack.iter())
-            .chain(inventory.equipment.iter().map(|entry| &entry.item))
-            .map(|entry| entry.handle)
-            .collect()
-    };
-    let mut window = None;
-    for handle in handles {
-        let (status, payload) = query(&mut client, handle).await?;
-        if status != CommandStatus::Accepted {
-            continue;
-        }
-        let (reply, success) =
-            decode(&payload).map_err(|error| format!("reply decode: {error:?}"))?;
-        if let Some(found) = reply.window
-            && found.slot_count > 0
-            && !found.offers.is_empty()
-        {
-            window = Some((payload, found, success));
-            break;
-        }
+    let definitions = provisioning::item_index()?;
+    let definition = provisioning::item_reference(&definitions, SWORD)?;
+    let inventory = client.inventory().ok_or("inventory frame missing")?;
+    let mut swords = inventory
+        .entries
+        .iter()
+        .filter(|entry| entry.item_definition_ref == definition);
+    let sword = swords.next().ok_or("fixture sword missing after relog")?;
+    if sword.count.get() != 1 || swords.next().is_some() {
+        return Err("P21 expected exactly one fixture sword".into());
     }
-    let (payload, found, success) =
-        window.ok_or("no carried item has imbuement slots and offers")?;
-    capture("p21-window.bin", &payload);
+    let handle = sword.handle;
+    let (status, payload) = query(&mut client, handle).await?;
+    if status != CommandStatus::Accepted {
+        return Err(format!("fixture sword query refused: {status:?}").into());
+    }
+    let (reply, success) = decode(&payload).map_err(|error| format!("reply decode: {error:?}"))?;
+    let found = reply.window.ok_or("fixture sword query has no window")?;
+    if reply.result != ImbuementResult::Ok
+        || found.slot_count != 2
+        || found.offers.is_empty()
+        || !found.applied.is_empty()
+    {
+        return Err(format!("unexpected fixture sword window: {found:?}").into());
+    }
+    capture("p21-window.bin", &payload)?;
     let missing = NonZeroU64::new(u64::MAX).ok_or("nonzero handle")?;
     let (status, refused) = query(&mut client, missing).await?;
-    let refused_result = if status == CommandStatus::Accepted {
-        let (reply, _) = decode(&refused).map_err(|error| format!("refusal decode: {error:?}"))?;
-        if reply.result == ImbuementResult::Ok || reply.window.is_some() {
-            return Err(format!("unknown item query was not refused: {reply:?}").into());
-        }
-        capture("p21-refused.bin", &refused);
-        format!("{:?}", reply.result)
-    } else {
-        "None".to_owned()
-    };
+    if status != CommandStatus::Accepted {
+        return Err(format!("unknown item query failed at command boundary: {status:?}").into());
+    }
+    let (refusal, _) = decode(&refused).map_err(|error| format!("refusal decode: {error:?}"))?;
+    if refusal.result != ImbuementResult::NotAllowed || refusal.window.is_some() {
+        return Err(format!("unexpected unknown item query result: {refusal:?}").into());
+    }
+    capture("p21-refused.bin", &refused)?;
+    let refused_result = refusal.result;
     let mut expected = format!(
         "success_selected={success_selected}\nslot_count={}\nclear_gold={}\napplied={}\noffers={}\n",
         found.slot_count,
@@ -113,10 +129,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         expected.push_str(&format!("offer_{index}_success={percent}\n"));
     }
     expected.push_str(&format!(
-        "refused_status={status:?}\nrefused_result={refused_result}\n"
+        "refused_status={status:?}\nrefused_result={refused_result:?}\n"
     ));
-    capture("p21-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await?;
+    capture("p21-expected.txt", expected.as_bytes())?;
+    logout(&mut client).await?;
     Ok(expected.replace('\n', ";"))
 }
 
