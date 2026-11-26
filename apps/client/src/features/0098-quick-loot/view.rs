@@ -28,6 +28,33 @@ fn loot_panel(mailbox: &crate::play::mailbox::Mailbox) -> oteryn_client_ui::quic
     }
     panel
 }
+
+#[cfg(bevy_shell)]
+pub(crate) fn quick_loot_pouch_route(
+    panel: &oteryn_client_ui::quick_loot::Panel,
+) -> Option<oteryn_client_ui::quick_loot::Action> {
+    use oteryn_client_ui::quick_loot::{Action, QuickLootCategory, QuickLootRecipient};
+
+    // Fallback is global, so keep the value from the most recent confirmed assignment.
+    let Action::Destination { fallback, .. } = panel.destinations.last()? else {
+        return None;
+    };
+    let id = panel.destinations.iter().rev().find_map(|route| match route {
+        Action::Destination {
+            recipient: QuickLootRecipient::GoldPouch,
+            id,
+            ..
+        } => *id,
+        _ => None,
+    })?;
+    Some(Action::Destination {
+        category: Some(QuickLootCategory::Gold),
+        recipient: QuickLootRecipient::GoldPouch,
+        id: Some(id),
+        fallback: *fallback,
+    })
+}
+
 #[cfg(bevy_shell)]
 #[derive(Clone, PartialEq, Eq)]
 pub enum QuickLootControl {
@@ -88,6 +115,7 @@ impl PlayLink {
             Action::LootAll | Action::Select(_) | Action::Clear(_) => true,
             Action::Destination { category, recipient, id, .. } =>
                 (*recipient == QuickLootRecipient::MainContainer && id.is_none())
+                || quick_loot_pouch_route(panel).as_ref() == Some(&action)
                 || panel.destinations.iter().any(|current| matches!(current,
                     Action::Destination {category: c,recipient: r,id: i,..} if c==category && r==recipient && i==id)),
             _ => false,

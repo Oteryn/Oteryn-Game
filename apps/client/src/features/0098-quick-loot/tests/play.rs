@@ -379,7 +379,8 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         None,
         false,
     );
-    let steps: [(Action, &[([u8; 16], bool)], Option<&str>); 18] = [
+    type ReplayStep<'a> = (Action, &'a [([u8; 16], bool)], Option<&'a str>);
+    let steps: [ReplayStep<'_>; 18] = [
         (
             Action::Add {
                 mode: skip,

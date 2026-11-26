@@ -59,6 +59,13 @@ fn control(app: &mut App, kind: Kind) -> Result<Entity, Box<dyn std::error::Erro
         .find_map(|(entity, control)| (control.kind == kind).then_some(entity))
         .ok_or("quick loot control absent".into())
 }
+fn named(app: &mut App, name: &str) -> Result<Entity, Box<dyn std::error::Error>> {
+    app.world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(entity, label)| (label.as_str() == name).then_some(entity))
+        .ok_or_else(|| format!("missing {name}").into())
+}
 fn panel(app: &App) -> Result<Panel, Box<dyn std::error::Error>> {
     Ok(app
         .world()
@@ -112,6 +119,162 @@ fn request(
     assert_eq!((command.capability, command.command_type), (98, 114));
     decode_quick_loot_request(&command.payload).map_err(|error| format!("{error:?}").into())
 }
+
+fn click(app: &mut App, entity: Entity) {
+    use bevy::{
+        camera::NormalizedRenderTarget,
+        picking::{
+            backend::HitData,
+            events::{Pointer, PointerClick, PointerPress, PointerRelease},
+            pointer::{Location, PointerButton, PointerId},
+        },
+    };
+    let pointer = Pointer::new(
+        PointerId::Mouse,
+        Location {
+            target: NormalizedRenderTarget::None {
+                width: 800,
+                height: 600,
+            },
+            position: Vec2::ZERO,
+        },
+    );
+    let button = PointerButton::Primary;
+    let hit = HitData::new(Entity::PLACEHOLDER, 0., None, None);
+    let world = app.world_mut();
+    world.trigger(PointerPress {
+        entity,
+        pointer: pointer.clone(),
+        button,
+        hit: hit.clone(),
+        count: 1,
+    });
+    world.flush();
+    world.trigger(PointerClick {
+        entity,
+        pointer: pointer.clone(),
+        button,
+        hit: hit.clone(),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    world.flush();
+    world.trigger(PointerRelease {
+        entity,
+        pointer,
+        button,
+        hit,
+    });
+    app.update();
+}
+
+#[test]
+fn quick_loot_panel_clicks_dispatch_commands() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture(true)?;
+    app.add_plugins(bevy::ui_widgets::ButtonPlugin);
+    let pouch = [9; 16];
+    let link = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link;
+    assert!(link.quick_loot_action(Action::Destination {
+        category: None,
+        recipient: Recipient::GoldPouch,
+        id: Some(pouch),
+        fallback: true,
+    }));
+    let _ = request(&mut commands)?;
+    config_response(&outbox, CommandStatus::Accepted)?;
+    outbox.push(vec![oteryn_session::SessionEvent::Inventory(
+        oteryn_session::AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::CharacterInventory {
+                main_backpack: None,
+                equipment: vec![],
+                entries: vec![oteryn_session::ItemEntry {
+                    appearance_id: 0,
+                    handle: 7.try_into()?,
+                    item_definition_ref: 42.try_into()?,
+                    count: 1.try_into()?,
+                    sub_type: 0,
+                }],
+            },
+        },
+    )]);
+    open(&mut app)?;
+
+    let toggle = control(&mut app, Kind::Request(Action::Select(Mode::Skip)))?;
+    click(&mut app, toggle);
+    let wire = request(&mut commands).map_err(|error| format!("filter mode click: {error}"))?;
+    assert_eq!(
+        (wire.action, wire.filter_mode),
+        (QuickLootAction::FilterSelect, Some(Mode::Skip))
+    );
+    config_response(&outbox, CommandStatus::Accepted)?;
+    app.update();
+
+    let route = control(
+        &mut app,
+        Kind::Request(destination(Some(Category::Gold), true)),
+    )?;
+    click(&mut app, route);
+    let wire = request(&mut commands).map_err(|error| format!("main backpack click: {error}"))?;
+    assert_eq!(wire.action, QuickLootAction::Assign);
+    assert_eq!(wire.category, Some(Category::Gold));
+    assert_eq!(wire.recipient, Some(Recipient::MainContainer));
+    config_response(&outbox, CommandStatus::Accepted)?;
+    app.update();
+
+    for (mode, name) in [(Mode::Skip, "skip"), (Mode::Accept, "accept")] {
+        let add = named(&mut app, &format!("quick_loot.add.{name}"))?;
+        click(&mut app, add);
+        assert!(commands.try_recv().is_err());
+        let pick = named(&mut app, "quick_loot.pick.7")?;
+        click(&mut app, pick);
+        let wire = request(&mut commands).map_err(|error| format!("add {name} click: {error}"))?;
+        assert_eq!(wire.action, QuickLootAction::FilterAdd);
+        assert_eq!(wire.filter_mode, Some(mode));
+        assert_eq!(wire.filter_definition_ref, Some(42));
+        config_response(&outbox, CommandStatus::Accepted)?;
+        app.update();
+
+        let remove = named(&mut app, &format!("quick_loot.remove.{name}.42"))?;
+        click(&mut app, remove);
+        let wire =
+            request(&mut commands).map_err(|error| format!("remove {name} click: {error}"))?;
+        assert_eq!(wire.action, QuickLootAction::FilterRemove);
+        assert_eq!(wire.filter_mode, Some(mode));
+        assert_eq!(wire.filter_definition_ref, Some(42));
+        config_response(&outbox, CommandStatus::Accepted)?;
+        app.update();
+    }
+
+    let assign = control(
+        &mut app,
+        Kind::Request(Action::Destination {
+            category: Some(Category::Gold),
+            recipient: Recipient::GoldPouch,
+            id: Some(pouch),
+            fallback: true,
+        }),
+    )
+    .map_err(|error| format!("gold pouch assignment: {error}"))?;
+    click(&mut app, assign);
+    let wire = request(&mut commands)?;
+    assert_eq!(wire.action, QuickLootAction::Assign);
+    assert_eq!(wire.category, Some(Category::Gold));
+    assert_eq!(wire.recipient, Some(Recipient::GoldPouch));
+    assert_eq!(wire.recipient_id, Some(pouch));
+    assert!(wire.fallback_to_main);
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
 #[test]
 fn admitted_hotkey_opens_one_source_dialog_and_loot_all_uses_real_owner_once() -> TestResult {
     let (mut app, mut commands, outbox) = fixture(true)?;
@@ -447,13 +610,6 @@ fn quick_loot_can_add_carried_item_and_remove_confirmed_filter_entry() -> TestRe
     )]);
     super::super::install::install_scroll_memory(&mut app);
     open(&mut app)?;
-    fn named(app: &mut App, name: &str) -> Result<Entity, Box<dyn std::error::Error>> {
-        app.world_mut()
-            .query::<(Entity, &Name)>()
-            .iter(app.world())
-            .find_map(|(e, n)| (n.as_str() == name).then_some(e))
-            .ok_or_else(|| format!("missing {name}").into())
-    }
     let add = named(&mut app, "quick_loot.add.accept")?;
     app.world_mut().trigger(Activate { entity: add });
     app.update();
