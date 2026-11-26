@@ -121,7 +121,7 @@ pub(super) fn scenario_with_creature_charmed(
     settings: KillScenarioSettings<'_>,
 ) -> TestResult {
     scenario_with_creature_observed(
-        reconcile,
+        reconcile.map(CorpseDecayCheck::Retirement),
         capacity,
         radiant,
         settle_radiant,
@@ -161,12 +161,32 @@ pub(super) fn dwarf_letter_scenario(creature: &str) -> TestResult {
     )
 }
 
+#[derive(Clone, Copy)]
+enum CorpseDecayCheck {
+    FirstTransform,
+    Retirement(bool),
+}
+
+pub(super) fn scenario_with_rat_transform() -> TestResult {
+    scenario_with_creature_observed(
+        Some(CorpseDecayCheck::FirstTransform),
+        false,
+        None,
+        false,
+        false,
+        false,
+        (None, None, None),
+        false,
+        None,
+    )
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "existing composed scenario options plus analyser observation"
 )]
 fn scenario_with_creature_observed(
-    reconcile: Option<bool>,
+    decay_check: Option<CorpseDecayCheck>,
     capacity: bool,
     radiant: Option<&str>,
     settle_radiant: bool,
@@ -1624,7 +1644,7 @@ fn scenario_with_creature_observed(
                 &creature_key,
                 expected_xp,
                 children,
-                reconcile == Some(true),
+                matches!(decay_check, Some(CorpseDecayCheck::Retirement(true))),
                 replay
                     .map(|(_, target, _)| target)
                     .ok_or("real captured kill")?,
@@ -1661,8 +1681,11 @@ fn scenario_with_creature_observed(
         } else {
             children
         };
-        let decay = match reconcile.filter(|_| !settle_radiant) {
-            Some(reconcile) => {
+        let decay = match decay_check.filter(|_| !settle_radiant) {
+            Some(CorpseDecayCheck::FirstTransform) => {
+                super::corpse_decay_fixtures::qualify_first_transform(&mut owner, &harness).await
+            }
+            Some(CorpseDecayCheck::Retirement(reconcile)) => {
                 super::corpse_decay_fixtures::qualify(&mut owner, &harness, children, reconcile)
                     .await
                     .map_err(|error| format!("corpse decay qualification: {error}").into())
