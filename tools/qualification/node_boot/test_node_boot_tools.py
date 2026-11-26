@@ -698,6 +698,32 @@ class CloudRunSummaryTests(unittest.TestCase):
         result = subprocess.run(["bash", "-c", script], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_p04_replay_failure_prevents_stage_success(self):
+        self.assertIn("seam_runner=(p04_seam_with_replay", function("seam_stages"))
+        helper = (HERE / "p04_client_replay.sh").read_text()
+        script = helper + textwrap.dedent("""
+            set -Eeuo pipefail
+            cd "$1"
+            capture() {
+                echo 'SEAM_EVIDENCE e2e_capture scenario=P04.client status=CAPTURED evidence=session=01890f4c-3b2a-7c01-8d11-9a321b7c0004;query'
+            }
+            cargo() { echo 'running 0 tests'; }
+            if p04_seam_with_replay "$PWD/failed-captures" "$PWD/failure.log" capture; then
+                echo NODE_BOOT_RESULT=NODE_BOOT_PASS
+                exit 1
+            fi
+            cargo() {
+                echo 'test task_board::e2e_p04::e2e_p04_replays_query_and_refused_start_weekly ... ok'
+            }
+            p04_seam_with_replay "$PWD/passing-captures" "$PWD/success.log" capture
+            echo NODE_BOOT_RESULT=NODE_BOOT_PASS
+            """)
+        with tempfile.TemporaryDirectory() as temp:
+            result = subprocess.run(["bash", "-c", script, "test", temp],
+                                    check=True, capture_output=True, text=True)
+        self.assertEqual(result.stdout.count("NODE_BOOT_RESULT=NODE_BOOT_PASS"), 1)
+        self.assertLess(result.stdout.index("status=PASS"), result.stdout.index("NODE_BOOT_RESULT="))
+
     def test_p04_replay_requires_fresh_capture_and_executed_test(self):
         helper = (HERE / "p04_client_replay.sh").read_text()
         script = helper + textwrap.dedent("""
