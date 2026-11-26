@@ -24,17 +24,22 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let explorer = name == super::super::explorer_society_journey_fixtures::NAME;
+    let (name, variant) = name.split_once('#').unwrap_or((name, ""));
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let koshei = name == super::super::koshei_the_deathless_journey_fixtures::NAME;
     use super::super::new_frontier_journey_fixtures;
     let recover_bait = name == new_frontier_journey_fixtures::BAIT_RECOVERY;
     let frontier = name == new_frontier_journey_fixtures::NAME || recover_bait;
+    let sarina_vine = name.starts_with("thieves-guild-sarina-vine-");
+    let vampire_coffin = super::super::inquisition_coffin_recovery_fixtures::matches(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
         name == "m07-ring-offering" || name == super::super::m07_dreamer_ring_lost_ack_fixtures::NAME;
-    let m07_too_hot = name.starts_with("m07/too-hot-column-");
+    let tower_defence = name == super::super::tower_defence_journey_fixtures::NAME;
+    let too_hot_research = name == super::super::too_hot_research_fixtures::NAME;
+    let m07_too_hot = name.starts_with("m07/too-hot-column-") || too_hot_research;
     let m07_repair = name.starts_with("m07/machinery-repair-");
     let m07_machinery = name.starts_with("m07/machinery-");
     let m07_machinery_level49 = m07_machinery && name.ends_with("-level49");
@@ -89,7 +94,14 @@ fn scenario_case(
     let last_creep = name == "qengine-rewards-m23-last-creep";
     let pinned_qc_world = name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
-    let native_crop = explorer
+    let tibia_tales_hallowed = name == "qengine-rewards-tibia-tales-hallowed";
+    let cursed_crystal_stairs = name.starts_with("crystal-stairs-");
+    let eroth_mirror = matches!(name, "qengine-rewards-eroth-start" | "qengine-rewards-eroth-legacy");
+    let native_crop = eroth_mirror
+        || sarina_vine
+        || cursed_crystal_stairs
+        || tibia_tales_hallowed
+        || explorer
         || koshei
         || pinned_qc_world
         || frontier
@@ -131,7 +143,18 @@ fn scenario_case(
         || native_story
         || native_upper
         || paradox_journey;
-    let start = if alawars_vault {
+    let start = if vampire_coffin {
+        super::super::inquisition_coffin_recovery_fixtures::staging(name)?
+    } else if sarina_vine {
+        let reverse = if name.ends_with("-climb") {
+            "thieves-guild-sarina-vine-descend"
+        } else {
+            "thieves-guild-sarina-vine-climb"
+        };
+        callback(reverse)?.teleport.ok_or("Sarina vine starting tile")?
+    } else if tibia_tales_hallowed {
+        super::super::tibia_tales_fixtures::HALLOWED_START
+    } else if alawars_vault {
         super::super::alawars_vault_journey_fixtures::START
     } else if explorer {
         super::super::explorer_society_journey_fixtures::START
@@ -159,6 +182,8 @@ fn scenario_case(
         Position { x: trigger.x - 1, ..trigger }
     } else if engenc_asura {
         super::super::engenc_asura_dispatch_fixtures::start(name)?
+    } else if too_hot_research || tower_defence {
+        trigger
     } else if m07_too_hot {
         super::super::m07_too_hot_columns_fixtures::start()
     } else if m07_repair {
@@ -398,6 +423,14 @@ fn scenario_case(
         callback(super::super::qengine_m02_use_fixtures::NAME)?
     } else if name == "unnatural-selection-dance-native" {
         callback("unnatural-selection-dance-2")?
+    } else if tibia_tales_hallowed {
+        callback("tibia-tales/sanctify-grave-4208")?
+    } else if name == "qengine-rewards-tibia-tales-booze" {
+        callback("tibia-tales/fill-ale-bottle")?
+    } else if name == "qengine-rewards-tibia-tales-exterminator" {
+        callback("tibia-tales/poison-slime-pool-31821")?
+    } else if name == "qengine-rewards-tibia-tales-outfox" {
+        callback("tibia-tales/outfox-helmet")?
     } else if name.starts_with("qengine-rewards-m39-bone") {
         callback("bone-pit-collect")?
     } else if last_creep {
@@ -440,6 +473,8 @@ fn scenario_case(
         callback("questpc7-formal-display")?
     } else if outfit_world {
         callback(name)?
+    } else if name == super::super::qengine_rewards_fixtures::cq29_quest_contacts::THIEVES {
+        callback("thieves-guild-sarina-vase")?
     } else if classic_npc {
         callback("behemoth")?
     } else if rotten_purchase {
@@ -741,6 +776,8 @@ fn scenario_case(
         )?
     } else if name == "authored-tinder-box" {
         super::super::quest_callbacks_fixtures::source_world((32085, 31025, -1), 0, 4285, 0)?
+    } else if name == super::super::serpentine_tower_fixtures::NAME {
+        super::super::serpentine_tower_fixtures::world(&callback)?
     } else if name == "mintwallin-cyclops-scene" {
         super::super::questpc8_native_scenes_fixtures::world()?
     } else if name.starts_with("qengine-rewards-fibula-completion") {
@@ -946,6 +983,8 @@ fn scenario_case(
             )],
             &[],
         )?
+    } else if name == super::super::qengine_rewards_fixtures::cq29_quest_contacts::THIEVES {
+        world_ordinal(&callback, trigger, 7892, 1)?
     } else if name == "questpc7-outfits-formal" {
         // The fixture includes the same admitted entry appearance as the real palace.
         let mut physical = callback.clone();
@@ -1016,7 +1055,7 @@ fn scenario_case(
         if name.starts_with("authored-") {
             eprintln!("POSTGRES_CASE_STARTED {name} after PostgreSQL fixture initialization");
         }
-        if m07_machinery_level49 || m07_too_hot {
+        if m07_machinery_level49 || (m07_too_hot && !too_hot_research) {
             // Seed a separate historical character, as the shared harness does;
             // never bypass the progression owner's typed successor guard.
             sqlx::query(
@@ -1273,6 +1312,16 @@ fn scenario_case(
                     .native_gameplay()
                     .ok_or("native Spirit policies")?,
             )?
+        } else if tower_defence {
+            super::super::tower_defence_journey_fixtures::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("Tower Defence policies")?,
+            )?
+        } else if too_hot_research {
+            super::super::too_hot_research_fixtures::world(
+                generation.native_gameplay().ok_or("Too Hot policies")?,
+            )?
         } else if m07_too_hot {
             super::super::m07_too_hot_columns_fixtures::world(
                 generation.native_gameplay().ok_or("Too Hot policies")?,
@@ -1340,7 +1389,11 @@ fn scenario_case(
         } else {
             world
         };
-        let world = if name == "qengine-rewards-smith-story" {
+        let world = if tibia_tales_hallowed {
+            super::super::tibia_tales_fixtures::hallowed_world(
+                generation.native_gameplay().ok_or("native")?,
+            )?
+        } else if name == "qengine-rewards-smith-story" {
             world_with_native_items(
                 &callback,
                 trigger,
@@ -1449,13 +1502,14 @@ fn scenario_case(
             // The settlement journey includes combat with a classed starter loadout.
             new_frontier_journey_fixtures::NAME => Some(8),
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
-            "questpc7-eligibility-high" => Some(1000),
+            "questpc7-eligibility-high" | "questpc7-eligibility-outfit-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
             "questpc7-ferumbras" | "qengine-rewards-heart-story" => Some(150),
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
             _ if paradox_source_probe => Some(30),
+            super::super::too_hot_research_fixtures::NAME => Some(80),
             _ => None,
         };
         if let Some(initial_level) = initial_level {
@@ -1536,6 +1590,58 @@ fn scenario_case(
             )?
         } else if name.starts_with("qengine-rewards-l2-djinn-") {
             super::super::questl2_djinn_world::world()?
+        } else if eroth_mirror {
+            super::super::source_world_crop::compiled_region(
+                crate::map::overlay::TilePos {
+                    x: 32590,
+                    y: 31643,
+                    floor: -2,
+                },
+                crate::map::overlay::TilePos {
+                    x: 32594,
+                    y: 31647,
+                    floor: -2,
+                },
+                crate::map::overlay::TilePos {
+                    x: start.x,
+                    y: start.y,
+                    floor: start.floor,
+                },
+                generation.native_gameplay().ok_or("Elvenbane policies")?,
+            )?
+        } else if cursed_crystal_stairs {
+            let landing = stateless_destination.ok_or("Cursed Crystal stair landing")?;
+            let tile = |position: Position| crate::map::overlay::TilePos {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
+            };
+            super::super::source_world_crop::compiled_step_passage(
+                [tile(start), tile(trigger), tile(landing)],
+                generation.native_gameplay().ok_or("Cursed Crystal policies")?,
+            )?
+        } else if sarina_vine {
+            let landing = callback.teleport.ok_or("Sarina vine landing")?;
+            let minimum = crate::map::overlay::TilePos {
+                x: start.x.min(landing.x),
+                y: start.y.min(landing.y),
+                floor: start.floor.min(landing.floor),
+            };
+            let maximum = crate::map::overlay::TilePos {
+                x: trigger.x.max(landing.x),
+                y: trigger.y.max(landing.y),
+                floor: trigger.floor.max(landing.floor),
+            };
+            super::super::source_world_crop::compiled_region(
+                minimum,
+                maximum,
+                crate::map::overlay::TilePos {
+                    x: start.x,
+                    y: start.y,
+                    floor: start.floor,
+                },
+                generation.native_gameplay().ok_or("Cursed Crystal policies")?,
+            )?
         } else if name == "qengine-rewards-l2-white-raven" {
             super::super::questl2_white_raven_world::world(
                 generation.native_gameplay().ok_or("White Raven policies")?,
@@ -1628,7 +1734,14 @@ fn scenario_case(
             } else if name == "authored-torch" {
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
-                13
+                // Fourteen contacts and the player share this fixture world.
+                15
+            } else if tower_defence {
+                4
+            } else if too_hot_research {
+                3
+            } else if name == "classic-quests-npc" {
+                6
             } else if classic_npc || qd_world {
                 5
             } else if monk {
@@ -1787,8 +1900,21 @@ fn scenario_case(
             owner.rooms =
                 crate::gameplay_transport::SeamRooms::new(native_crop.then_some(room), Some(room));
         }
-        let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-            .map_err(debug)?;
+        use oteryn_gameplay_quests::quest::{authored_bindings::Bindings, loader};
+        let lowered = if name == "qengine-rewards-eroth-start" {
+            // This crop exercises the legacy mirror route without the authored
+            // journey's offer and mountain approach.
+            loader::load_embedded_quest_state_with_bindings(
+                "content-1",
+                &Bindings {
+                    schema: 1,
+                    quests: Vec::new(),
+                },
+            )
+        } else {
+            loader::load_embedded_quest_state("content-1")
+        }
+        .map_err(debug)?;
         owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
         if koshei || alawars_vault || (frontier && !recover_bait) {
             let journal = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
@@ -2098,6 +2224,23 @@ fn scenario_case(
                 &mut owner,
                 &mut admitted,
                 &h,
+                &callback,
+            ))
+            .await?;
+        } else if tower_defence {
+            Box::pin(super::super::tower_defence_journey_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            ))
+            .await?;
+        } else if too_hot_research {
+            Box::pin(super::super::too_hot_research_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
                 &callback,
             ))
             .await?;
@@ -2826,6 +2969,10 @@ fn scenario_case(
             Box::pin(super::super::paradox_tower_journey_fixtures::exercise(
                 &mut owner, &mut admitted, &h, &authority,
             )).await?;
+        } else if name.starts_with("qengine-rewards-tibia-tales-") {
+            Box::pin(super::super::tibia_tales_fixtures::exercise(
+                name, &mut owner, &mut admitted, &h, trigger,
+            )).await?;
         } else if qengine_reward || shared_rewards {
             Box::pin(super::super::qengine_rewards_fixtures::exercise(
                 &mut owner,
@@ -3001,6 +3148,88 @@ fn scenario_case(
                 ),
             )
             .await?;
+        } else if sarina_vine {
+            use crate::map::view::{MapFacts, placement_key};
+            use oteryn_protocol_oteryn::world_object::{decode_use_result, encode_use_intent};
+
+            let selector = callback.selector.native.as_ref().ok_or("Sarina vine selector")?;
+            let landing = local(callback.teleport.ok_or("Sarina vine landing")?);
+            let cells = owner.movement_cells();
+            let destination = crate::content::LogicalCell {
+                x: landing.x,
+                y: landing.y,
+                z: i32::from(landing.floor),
+            };
+            let tile = cells
+                .spell_tiles()
+                .lookup(cells.scope(), destination)
+                .map_err(debug)?;
+            assert!(!tile.flags().protection_zone, "Sarina vine landing has ordinary zone facts");
+            let key = placement_key(
+                crate::map::overlay::TilePos {
+                    x: trigger.x, y: trigger.y, floor: trigger.floor,
+                },
+                selector.ordinal,
+            )
+            .ok_or("Sarina vine placement")?;
+            let mut placement = world.base().digest().to_vec();
+            placement.extend_from_slice(&key.to_be_bytes());
+            let session = admitted.game_session_id;
+            {
+                let mut states = owner.states.spell_states.lock().await;
+                let now = owner.owner_now();
+                let lock = crate::gameplay_transport::pvp_live::lock_mut(
+                    &mut states, deps.actor, session,
+                );
+                lock.on_aggression(now);
+                assert!(lock.blocks_pz_entry(now));
+            }
+            for (command, destination) in [(1, local(start)), (2, landing)] {
+                if command == 2 {
+                    owner.clock_origin = owner.clock_origin
+                        .checked_sub(std::time::Duration::from_secs(120))
+                        .ok_or("expire PZ lock")?;
+                }
+                let target = WorldObjectTarget {
+                    placement: placement.clone(),
+                    expected_revision: world.facts().object_revision(key),
+                };
+                let reply = wire(
+                    &owner, &mut admitted, command, 2, encode_use_intent(&target).map_err(debug)?,
+                )
+                .await?;
+                let disposition = decode_use_result(&reply).map_err(debug)?;
+                if command == 1 {
+                    assert!(
+                        matches!(disposition, UseDisposition::Rejected | UseDisposition::NotPossible),
+                        "PZ-locked vine use returned {disposition:?}",
+                    );
+                } else {
+                    assert_eq!(disposition, UseDisposition::Committed, "unlocked vine use");
+                }
+                assert_eq!(
+                    owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
+                    destination,
+                );
+            }
+        } else if vampire_coffin {
+            Box::pin(super::super::inquisition_coffin_recovery_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                variant,
+            ))
+            .await?;
+        } else if name == super::super::serpentine_tower_fixtures::NAME {
+            Box::pin(super::super::serpentine_tower_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &world,
+                &h,
+                variant,
+            ))
+            .await?;
         } else if name == "mintwallin-cyclops-scene" {
             Box::pin(super::super::questpc8_native_scenes_fixtures::exercise(
                 &mut owner,
@@ -3029,7 +3258,7 @@ fn scenario_case(
             )
             .await?;
         } else if outfit_world
-            || callback.effects != Default::default()
+            || (callback.effects != Default::default() && !name.starts_with("crystal-stairs-"))
             || callback.quest == "oteryn:quest.waterfall_quest" && stateless_destination.is_none()
         {
             Box::pin(super::super::qengine_access_fixtures::exercise(

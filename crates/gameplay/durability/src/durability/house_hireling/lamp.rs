@@ -164,13 +164,14 @@ impl DurabilityRoot {
             let tuple = tx.tuple();
             item_use::write(&mut tx, &current, &plan.item_use, tuple).await.map_err(item_error)?;
             sqlx::query("INSERT INTO game_hireling_lamp_transitions \
-                (game_session_id,command_id,hireling_id,character_id,world_id,house_key,kind,lamp_item_instance_id,transaction_id,x,y,floor) \
-                VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,1,encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,$10,$11)")
+                (game_session_id,command_id,hireling_id,character_id,world_id,house_key,kind,lamp_item_instance_id,transaction_id,x,y,floor,placement_recovery_generation) \
+                VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,1,encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,$10,$11,$12::text::numeric)")
                 .bind(current.game_session_id.as_bytes().as_slice()).bind(plan.item_use.command_id.to_string())
                 .bind(plan.hireling.as_slice()).bind(current.character_id.as_bytes().as_slice())
                 .bind(current.runtime_scope.world_id().as_bytes().as_slice()).bind(&plan.house)
                 .bind(plan.item_use.source_item_instance_id.as_slice()).bind(plan.item_use.transaction_id.as_slice())
                 .bind(i32::from(plan.position.0)).bind(i32::from(plan.position.1)).bind(i16::from(plan.position.2))
+                .bind(recovery.recovery_generation.to_string())
                 .execute(&mut **tx).await?;
             sqlx::query("UPDATE game_house_hirelings SET active=TRUE,house_key=$2,x=$3,y=$4,floor=$5, \
                 last_lamp_session=encode($6,'hex')::uuid,last_lamp_command=$7::text::numeric,last_lamp_transaction=encode($8,'hex')::uuid, \

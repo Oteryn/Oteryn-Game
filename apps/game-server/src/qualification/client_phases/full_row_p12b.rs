@@ -10,7 +10,6 @@
 //! missing precondition instead of passing an empty list.
 use super::*;
 use oteryn_dev_client::DevClientSession;
-use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::cyclopedia_character::{
     Badge, BadgeFacts, BaseVocation, CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
     COMMAND_TYPE_CYCLOPEDIA_BADGES, newly_earned,
@@ -60,11 +59,7 @@ async fn reply_badges(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
             &[],
         )
         .await?;
-    expect(
-        reply.status == CommandStatus::Accepted,
-        "badges",
-        reply.status,
-    )?;
+    require_mechanic_acceptance(reply.status, "badges")?;
     Ok(decode_badges(&reply.payload).map_err(|error| format!("step=decode;observed={error}"))?)
 }
 

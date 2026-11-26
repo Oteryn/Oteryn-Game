@@ -52,6 +52,12 @@ fn scope(runtime: &ChannelRuntimeV1) -> Scope {
 }
 
 impl Cohorts {
+    #[cfg(test)]
+    pub(super) fn clear_for_test(&self) -> Result<(), &'static str> {
+        self.0.lock().map_err(|_| "encounter cohorts")?.clear();
+        Ok(())
+    }
+
     /// Completion retires only the original character/session's eligible projections.
     pub(super) fn complete(
         &self,
@@ -113,10 +119,11 @@ impl Cohorts {
             cohort.scope.0 != scope.0
                 || (cohort.scope.1 == scope.1
                     && (cohort.preparing
-                        || cohort
-                            .actors
-                            .iter()
-                            .any(|actor| runtime.contains_live_creature(*actor))))
+                        || cohort.actors.iter().any(|actor| {
+                            runtime.contains_live_creature(*actor)
+                                || (VampireCoffinKind::for_callback(&cohort.callback).is_some()
+                                    && runtime.corpse_projection_pinned(*actor))
+                        })))
         });
         if cohorts
             .iter()
@@ -185,6 +192,30 @@ impl Reservation<'_> {
         cohort.preparing = false;
         self.published = true;
         Ok(())
+    }
+
+    /// The staged carrier already proved the roster while the Channel owner was
+    /// exclusively borrowed. Nothing can retire this reservation until publication.
+    pub(super) fn publish_staged(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actors: Vec<ExactActorRef>,
+    ) {
+        let mut cohorts = self
+            .pool
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(cohort) = cohorts.iter_mut().find(|cohort| {
+            cohort.scope == scope(runtime)
+                && cohort.callback == self.callback
+                && cohort.origin == self.origin
+                && cohort.preparing
+        }) {
+            cohort.actors = actors;
+            cohort.preparing = false;
+            self.published = true;
+        }
     }
 }
 
@@ -381,6 +412,67 @@ mod tests {
         );
         Ok(())
     }
+    #[test]
+    fn vampire_coffins_share_the_live_count_reservation() -> TestResult {
+        let callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()?;
+        let coffins: Vec<_> = callbacks
+            .iter()
+            .filter(|row| {
+                row.key
+                    .starts_with("oteryn:quest-callback/inquisition-vampire-hunt-coffin")
+            })
+            .collect();
+        let [first, side] = coffins.as_slice() else {
+            return Err("expected both shipped coffin selectors".into());
+        };
+        for (opening, other) in [(first, side), (side, first)] {
+            let mut runtime = runtime(1)?;
+            let pool = Cohorts::default();
+            let mut reservation =
+                checked(pool.reserve(&runtime, opening.encounter_reservation_key(), origin()?))?;
+            let encounter = opening
+                .effects
+                .encounter
+                .as_ref()
+                .ok_or("coffin encounter")?;
+            let boss = encounter.monsters.first().ok_or("coffin boss")?;
+            let spawn = MovementLocalPosition {
+                x: i32::from(boss.position.x),
+                y: i32::from(boss.position.y),
+                floor: -i16::from(boss.position.floor),
+            };
+            let actor = checked(runtime.admit_encounter_actor(&boss.creature, 20, spawn))?;
+            checked(reservation.publish(&runtime, vec![actor]))?;
+            drop(reservation);
+            let at = checked(runtime.read_actor_position(actor))?;
+            checked(
+                runtime
+                    .borrow_movement_position()
+                    .commit_creature_relocation(
+                        actor,
+                        at,
+                        MovementLocalPosition {
+                            y: spawn.y + 2,
+                            ..spawn
+                        },
+                    ),
+            )?;
+            assert!(
+                matches!(
+                    pool.reserve(&runtime, other.encounter_reservation_key(), origin()?),
+                    Err(UseDisposition::Occupied)
+                ),
+                "the living Count must occupy both source selectors"
+            );
+            checked(runtime.remove_encounter_actor(actor))?;
+            assert!(
+                pool.reserve(&runtime, other.encounter_reservation_key(), origin()?)
+                    .is_ok()
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn worldchg_failed_activation_releases_the_bounded_projection_reservation() -> TestResult {
         let runtime = runtime(1)?;

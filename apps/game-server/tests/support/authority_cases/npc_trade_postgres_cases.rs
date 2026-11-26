@@ -5,7 +5,10 @@
 use crate::domain::currency::Coin;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass, ItemTransferOutcome};
+use crate::durability::item_transfer::{
+    ItemDefinitionFacts, ItemStackClass, ItemTransferOutcome, ItemWeightLookup, ItemWeightRefused,
+};
+use crate::durability::item_weight_lookup::TEST_WEIGHTS;
 use crate::durability::npc_trade::{
     CommittedNpcTrade, NpcTradeCause, NpcTradeCoins, NpcTradeError, NpcTradeLineKind,
     NpcTradeOutcome, NpcTradeReceipt, NpcTradeRequest, NpcTradeSide,
@@ -80,6 +83,21 @@ fn trade(
     })
 }
 
+struct TradeFixtureWeights;
+
+impl ItemWeightLookup for TradeFixtureWeights {
+    fn generation_digest(&self) -> [u8; 32] {
+        TEST_WEIGHTS.generation_digest()
+    }
+
+    fn weight_of(&self, definition: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
+        if definition == &typed("oteryn:item.tibia.i8775") {
+            return Ok(5);
+        }
+        TEST_WEIGHTS.weight_of(definition)
+    }
+}
+
 /// MINT `quantity` of `key` on Ground and move it into the backpack (a new entry).
 async fn give(
     harness: &Harness,
@@ -95,6 +113,7 @@ async fn give(
     // remain weight-unknown because that writer does not enforce incoming capacity.
     let mut item_facts = stackable(key);
     item_facts.weight = match key {
+        "oteryn:item.tibia.i8775" => Some(5),
         SWORD => Some(1),
         "oteryn:item.tibia.i3031" | "oteryn:item.tibia.i3035" | "oteryn:item.tibia.i3043" => {
             Some(10)
@@ -102,10 +121,11 @@ async fn give(
         _ => None,
     };
     match harness
-        .transfer(
+        .transfer_with_weights(
             authority,
             fence()?,
             to_backpack(command(command_id)?, item, item_facts),
+            &TradeFixtureWeights,
         )
         .await
         .map_err(debug)?
@@ -984,5 +1004,109 @@ async fn hireling_package_tree_case(h: &Harness) -> TestResult {
         &authority, &h.node, f, request, selection, &Weights,
     ).await.map_err(debug)?, NpcTradeOutcome::Committed(_)));
     assert_eq!(tree_size().await?, 500);
+    Ok(())
+}
+
+#[test]
+fn albinius_fenced_trade_requires_the_tome_contribution() -> TestResult {
+    quest_locked_trade(
+        "oteryn:npc.albinius",
+        "oteryn:item.tibia.i51443",
+        NpcTradeSide::Buy,
+        30_000,
+        "oteryn:quest.forgotten_knowledge_quest",
+        "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+    )
+}
+
+#[test]
+fn telas_fenced_trade_requires_door_final() -> TestResult {
+    quest_locked_trade(
+        "oteryn:npc.telas",
+        "oteryn:item.tibia.i8775",
+        NpcTradeSide::Sell,
+        500,
+        "oteryn:quest.shadows_of_yalahar_quest",
+        "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_final",
+    )
+}
+
+fn quest_locked_trade(
+    npc: &'static str,
+    item: &'static str,
+    side: NpcTradeSide,
+    price: u64,
+    quest: &'static str,
+    track: &'static str,
+) -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            runtime().map_err(|error| error.to_string())?.block_on(async move {
+                let tag = match side {
+                    NpcTradeSide::Buy => "npctrade_gate_albinius",
+                    NpcTradeSide::Sell => "npctrade_gate_telas",
+                    _ => return Err("expected a sale or purchase".into()),
+                };
+                let harness = Harness::create(admin, tag).await?;
+                let version: String = sqlx::query_scalar("SHOW server_version").fetch_one(&harness.pool).await?;
+                eprintln!("NPC_TRADE_GATE_POSTGRES={version} npc={npc}");
+                let seal = harness.recovery.seal_current().map_err(debug)?;
+                let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
+                equip(&harness, &authority).await?;
+                match side {
+                    NpcTradeSide::Buy => {
+                        give(&harness, &authority, Coin::Crystal.production_key(), 3, 201).await?;
+                    }
+                    NpcTradeSide::Sell => {
+                        give(&harness, &authority, item, 1, 201).await?;
+                    }
+                    _ => return Err("expected a sale or purchase".into()),
+                }
+                let mut request = trade(10, side, 1, price)?;
+                request.cause.npc_key = npc.into();
+                request.item = stackable(item);
+                request.item.stack = match side {
+                    NpcTradeSide::Buy => ItemStackClass::NonStackable,
+                    _ => ItemStackClass::Stackable { proven_maximum: Some(100) },
+                };
+                let before = footprint(&harness).await?;
+                let result = commit(&harness, &authority, request.clone()).await;
+                let after = footprint(&harness).await?;
+                let unlocked = if matches!(result, Err(NpcTradeError::RequirementNotMet)) {
+                    // Install the fixture's committed quest state. The trade uses the ordinary writer.
+                    let mut tx = harness.pool.begin().await?;
+                    sqlx::query("SET LOCAL session_replication_role = replica")
+                        .execute(&mut *tx)
+                        .await?;
+                    sqlx::query(
+                        "INSERT INTO game_character_quest_tracks \
+                         (character_id, track_key, quest_key, value, committed_character_revision) \
+                         VALUES (encode($1,'hex')::uuid, $2, $3, 1, 2)",
+                    )
+                    .bind(id(CHARACTER).as_slice())
+                    .bind(track)
+                    .bind(quest)
+                    .execute(&mut *tx)
+                    .await?;
+                    tx.commit().await?;
+                    Some(commit(&harness, &authority, request).await)
+                } else {
+                    None
+                };
+                drop(authority);
+                drop(seal);
+                harness.cleanup().await?;
+                assert!(matches!(result, Err(NpcTradeError::RequirementNotMet)), "{result:?}");
+                assert_eq!(after, before);
+                assert!(matches!(unlocked, Some(Ok(NpcTradeOutcome::Committed(_)))), "{unlocked:?}");
+                Ok::<_, Box<dyn std::error::Error>>(())
+            }).map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "NPC trade case panicked")??;
     Ok(())
 }
