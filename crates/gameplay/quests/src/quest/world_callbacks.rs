@@ -17,8 +17,10 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 // Each source document retains its closed admission bound.
 pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
-// Leave space for the registered package 2–4 cohorts before authored bindings.
 pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1280;
+const MAX_COFFIN_RECOVERY_VARIANTS: usize = 2;
+pub(super) const MAX_EMBEDDED_CALLBACKS: usize =
+    MAX_RUNTIME_CALLBACKS + MAX_COFFIN_RECOVERY_VARIANTS;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
@@ -66,7 +68,7 @@ mod ice_islands_tests;
 mod imported_explore;
 mod legacy_world_claims;
 pub use legacy_world_claims::{
-    SERPENTINE_PEARL_CLAIM, legacy_world_claim, legacy_world_source_unique,
+    OUTFOX_CACHE, SERPENTINE_PEARL_CLAIM, legacy_world_claim, legacy_world_source_unique,
 };
 mod live_admission;
 mod native_trials;
@@ -586,7 +588,49 @@ fn is_default_use_range(value: &u8) -> bool {
     *value == 1
 }
 
+const ORDINARY_COFFIN: &str = "oteryn:quest-callback/inquisition-vampire-hunt-coffin";
+const ORDINARY_COFFIN_SIDE: &str = "oteryn:quest-callback/inquisition-vampire-hunt-coffin-side";
+const WEAKENED_COFFIN: &str = "oteryn:quest-callback/inquisition-weakened-coffin";
+const WEAKENED_COFFIN_SIDE: &str = "oteryn:quest-callback/inquisition-weakened-coffin-side";
+
+pub const VAMPIRE_COFFIN_QUESTLINE: &str =
+    "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline";
+
+/// The encounter variant frozen by the quest transition at either coffin piece.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum VampireCoffinKind {
+    Ordinary,
+    Weakened,
+}
+
+impl VampireCoffinKind {
+    pub fn for_callback(key: &str) -> Option<Self> {
+        match key {
+            ORDINARY_COFFIN | ORDINARY_COFFIN_SIDE => Some(Self::Ordinary),
+            WEAKENED_COFFIN | WEAKENED_COFFIN_SIDE => Some(Self::Weakened),
+            _ => None,
+        }
+    }
+}
+
 impl Callback {
+    /// A garlic offering selects the alternate encounter on the same coffin.
+    pub fn vampire_coffin_fallback(&self) -> Option<&'static str> {
+        match self.key.as_str() {
+            WEAKENED_COFFIN => Some(ORDINARY_COFFIN),
+            WEAKENED_COFFIN_SIDE => Some(ORDINARY_COFFIN_SIDE),
+            _ => None,
+        }
+    }
+
+    pub fn encounter_reservation_key(&self) -> &str {
+        if VampireCoffinKind::for_callback(&self.key).is_some() {
+            ORDINARY_COFFIN
+        } else {
+            &self.key
+        }
+    }
+
     /// Uses the same-floor Chebyshev rule; legacy callbacks retain one-cell reach.
     #[must_use]
     pub fn reaches(&self, actor: Position, target: Position) -> bool {
@@ -736,6 +780,9 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/m39-stories.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/cursed-crystal.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/postman.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -831,6 +878,12 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/feaster-phase-routes.json"
     ))?);
+    let (coffin_variants, quest_contacts): (Vec<_>, Vec<_>) = parse(include_str!(
+        "../../../../../content/quests/world-callbacks/quest-contacts.json"
+    ))?
+    .into_iter()
+    .partition(|callback| callback.vampire_coffin_fallback().is_some());
+    callbacks.extend(quest_contacts);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/rottin-wood.json"
     ))?);
@@ -839,6 +892,12 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/threatened-dreams-mosaic-treasure.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/tibia-tales.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/too-hot-repairs.json"
     ))?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::children_puzzle::callbacks());
@@ -896,6 +955,11 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
         return Err("callback bounds including djinn access".into());
     }
     counterparts::apply(&mut callbacks)?;
+    callbacks.extend(
+        coffin_variants
+            .into_iter()
+            .filter(|callback| super::in_runtime_scope(&callback.quest)),
+    );
     validate_registry(&callbacks)?;
     callbacks.sort_by(|left, right| left.key.cmp(&right.key));
     Ok(callbacks)
@@ -908,12 +972,48 @@ pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
 }
 
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
-    if callbacks.len() > MAX_RUNTIME_CALLBACKS {
+    // The two exact alternate routes share the existing coffin selectors.
+    let coffin_variants = callbacks
+        .iter()
+        .filter(|callback| callback.vampire_coffin_fallback().is_some())
+        .count();
+    if coffin_variants > MAX_COFFIN_RECOVERY_VARIANTS
+        || callbacks.len() - coffin_variants > MAX_RUNTIME_CALLBACKS
+    {
         return Err("callback runtime registry bounds".into());
     }
     let mut keys = BTreeSet::new();
     let mut selectors = BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
     for callback in callbacks {
+        if let Some(fallback) = callback.vampire_coffin_fallback()
+            && !callbacks.iter().any(|ordinary| {
+                ordinary.key == fallback
+                    && ordinary.quest == callback.quest
+                    && ordinary.selector == callback.selector
+                    && ordinary.storage.len() == callback.storage.len()
+                    && ordinary
+                        .storage
+                        .iter()
+                        .any(|gate| gate.track == VAMPIRE_COFFIN_QUESTLINE)
+                    && ordinary
+                        .storage
+                        .iter()
+                        .zip(&callback.storage)
+                        .all(|(first, paid)| {
+                            if first.track == VAMPIRE_COFFIN_QUESTLINE {
+                                let mut recovery = first.clone();
+                                recovery.maximum = recovery.set;
+                                first.set > first.maximum
+                                    && recovery.minimum == first.maximum
+                                    && recovery == *paid
+                            } else {
+                                first == paid
+                            }
+                        })
+            })
+        {
+            return Err("weakened coffin requires its matching source selector".into());
+        }
         if callback
             .item_on_target
             .as_ref()
@@ -937,7 +1037,10 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         let peers = selectors.entry(selector).or_default();
         if peers.len() >= MAX_EFFECTS
             || peers.iter().any(|peer| {
-                !phase::exclusive(peer, callback)
+                let coffin_pair = peer.vampire_coffin_fallback() == Some(callback.key.as_str())
+                    || callback.vampire_coffin_fallback() == Some(peer.key.as_str());
+                !coffin_pair
+                    && !phase::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)
                     && !(selector_gates::disjoint(peer, callback)
@@ -1015,7 +1118,13 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || (callback.use_range > 1
                 && (callback.trigger != Trigger::Use
                     || selector.position.is_none()
-                    || callback.item_on_target.is_none()
+                    || (callback.item_on_target.is_none()
+                        && !callback.effects.encounter.as_ref().is_some_and(|encounter| {
+                            callback.requires_world_admission
+                                && encounter.timing.is_none()
+                                && matches!(encounter.players.as_slice(), [player]
+                                    if selector.position.is_some_and(|target| callback.reaches(player.from, target)))
+                        }))
                     || callback.storage.is_empty()
                     || callback.is_read_only()))
             || (selector.position.is_none()

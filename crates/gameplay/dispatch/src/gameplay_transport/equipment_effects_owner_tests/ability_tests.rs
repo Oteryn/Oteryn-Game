@@ -441,7 +441,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // both pinned appearance banks; no original key is removed or relabeled.
     ("SEASON-W18-HOUSE", 1959),
     // Merged main1ae39c7fb adds53 distinct QENGINE reward identities from
-    // QENGINE2 captures 273 source-qualified Items (qengine_reward_item_profiles.IDS).
+    // QENGINE2 captures 286 source-qualified Items (qengine_reward_item_profiles.IDS).
     // Exact nonzero and unknown source speeds are checked below.
     ("QENGINE-REWARDS", 53),
     // W05d:48 canonical seasonal profiles;35 further keys are new after the
@@ -509,7 +509,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(added_keys.contains(format!("oteryn:item.tibia.i{id}").as_str()));
     }
     // QENGINE2 identities: generated begin
-    assert_eq!(added_keys.len(), 273);
+    assert_eq!(added_keys.len(), 286);
     assert_eq!(
         added_keys,
         std::collections::BTreeSet::from([
@@ -545,7 +545,11 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i12803",
             "oteryn:item.tibia.i131",
             "oteryn:item.tibia.i133",
+            "oteryn:item.tibia.i135",
+            "oteryn:item.tibia.i136",
+            "oteryn:item.tibia.i138",
             "oteryn:item.tibia.i139",
+            "oteryn:item.tibia.i140",
             "oteryn:item.tibia.i14021",
             "oteryn:item.tibia.i14022",
             "oteryn:item.tibia.i14023",
@@ -577,6 +581,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i18263",
             "oteryn:item.tibia.i18264",
             "oteryn:item.tibia.i18265",
+            "oteryn:item.tibia.i18935",
+            "oteryn:item.tibia.i18936",
             "oteryn:item.tibia.i18970",
             "oteryn:item.tibia.i18971",
             "oteryn:item.tibia.i18972",
@@ -610,6 +616,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i19366",
             "oteryn:item.tibia.i19369",
             "oteryn:item.tibia.i19371",
+            "oteryn:item.tibia.i19373",
+            "oteryn:item.tibia.i19374",
             "oteryn:item.tibia.i19391",
             "oteryn:item.tibia.i20275",
             "oteryn:item.tibia.i20276",
@@ -761,6 +769,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i6300",
             "oteryn:item.tibia.i6390",
             "oteryn:item.tibia.i6432",
+            "oteryn:item.tibia.i646",
             "oteryn:item.tibia.i7253",
             "oteryn:item.tibia.i7282",
             "oteryn:item.tibia.i7283",
@@ -775,9 +784,13 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i768",
             "oteryn:item.tibia.i769",
             "oteryn:item.tibia.i770",
+            "oteryn:item.tibia.i7754",
             "oteryn:item.tibia.i7785",
             "oteryn:item.tibia.i7845",
             "oteryn:item.tibia.i8044",
+            "oteryn:item.tibia.i8191",
+            "oteryn:item.tibia.i8192",
+            "oteryn:item.tibia.i8720",
             "oteryn:item.tibia.i875",
             "oteryn:item.tibia.i8995",
             "oteryn:item.tibia.i8996",
@@ -962,7 +975,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .sum::<usize>();
     assert_eq!(later_main_profiles, 2599);
     const QENGINE2_BASE_PROFILES: usize = 53;
-    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 220);
+    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 233);
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
         + QENGINE2_BASE_PROFILES
@@ -1025,7 +1038,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     for (path, expected_count) in [
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 48),
-        ("qengine-reward-item-profiles.json", 273),
+        ("qengine-reward-item-profiles.json", 286),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))

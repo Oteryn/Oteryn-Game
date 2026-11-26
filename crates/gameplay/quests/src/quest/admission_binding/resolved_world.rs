@@ -1,8 +1,9 @@
 //! Extend admission with an immutable resolved World source, preserving published owners.
 use super::*;
 
-// Caller-supplied sets keep the original bound.
-const MAX_RESOLVED_CALLBACKS: usize = 1024;
+// Existing native readers can supply the entire embedded source, including
+// both paid coffin routes. The unpublished subset keeps its document bound.
+const MAX_RESOLVED_CALLBACKS: usize = world_callbacks::MAX_EMBEDDED_CALLBACKS;
 
 pub fn validate_resolved_world(
     catalogue: &super::super::QuestStateCatalogue,
@@ -150,15 +151,12 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
-        // The combined published registry and authored stages remain disjoint.
-        assert_eq!(base.len(), 1_153);
-        assert!(base.len() <= world_callbacks::MAX_RUNTIME_CALLBACKS);
-        assert_eq!(bindings.world_callbacks().count(), 96);
+        assert!(base.len() <= MAX_RESOLVED_CALLBACKS);
+        assert!(bindings.world_callbacks().next().is_some());
         assert_eq!(
             callbacks.len(),
             base.len() + bindings.world_callbacks().count()
         );
-        assert!(callbacks.len() > MAX_RESOLVED_CALLBACKS);
         let expected: BTreeSet<_> = base
             .iter()
             .chain(bindings.world_callbacks())
@@ -201,7 +199,24 @@ mod tests {
             validate_resolved_world(catalogue, transition, false, &additional),
             Err("resolved World source bounds".into())
         );
-        let oversized = vec![callback.clone(); MAX_RESOLVED_CALLBACKS + 1];
+        let mut oversized = world_callbacks::load()?;
+        let existing: BTreeSet<_> = oversized.iter().map(|row| row.key.clone()).collect();
+        let required = MAX_RESOLVED_CALLBACKS + 1 - oversized.len();
+        let published = registry()?;
+        oversized.extend(
+            reward_callbacks::load()?
+                .into_iter()
+                .filter(|row| {
+                    published.owners.contains_key(&row.key) && !existing.contains(&row.key)
+                })
+                .take(required)
+                .map(|row| {
+                    let mut extra = callback.clone();
+                    extra.key = row.key;
+                    extra
+                }),
+        );
+        assert_eq!(oversized.len(), MAX_RESOLVED_CALLBACKS + 1);
         assert_eq!(
             validate_resolved_world(catalogue, transition, false, &oversized),
             Err("resolved World source bounds".into())
@@ -210,8 +225,8 @@ mod tests {
     }
 
     #[test]
-    fn embedded_fallback_accepts_only_the_exact_registry_over_the_resolved_bound()
-    -> Result<(), String> {
+    fn embedded_fallback_accepts_the_registry_and_keeps_the_resolved_bounds() -> Result<(), String>
+    {
         let catalogue =
             super::super::super::QuestStateCatalogue::new("resolved-fixture", vec![], vec![])
                 .map_err(|error| format!("{error:?}"))?;

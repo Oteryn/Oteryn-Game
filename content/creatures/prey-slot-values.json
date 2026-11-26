@@ -3886,7 +3886,7 @@
       "tier": 2
     }
   },
-  "model_input_sha256": "87a8bd0a132105c8711fa44628573f889ce771c0174d28ef5b4ea1906ed5b535",
+  "model_input_sha256": "affc9c33229a53057aade822d490ee62887ba74c4f6c90c95103c4e8f6b2cee2",
   "npc_price_policy": "maximum_catalogue_offer",
   "npc_sell_prices": {
     "oteryn:item.tibia.i10196": 150,

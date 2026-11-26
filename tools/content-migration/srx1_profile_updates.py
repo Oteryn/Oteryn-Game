@@ -48,7 +48,12 @@ def coalesce_dispenser_top_order(document, source_records, house_overlay):
     }
     for index, row in enumerate(document["records"]):
         key = row["production_definition"]["production_key"]
-        if key in enriched and row == enriched[key]:
+        if key not in enriched:
+            continue
+        candidate, projected = copy.deepcopy((row, enriched[key]))
+        compact_item_record(candidate)
+        compact_item_record(projected)
+        if candidate == projected:
             document["records"][index] = copy.deepcopy(original[key])
 
 
@@ -124,19 +129,34 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
     if len(base) > MAX_ITEM_PROFILES:
         raise ValueError("SRX1_ITEM_PROVIDER_SIZE")
     generated[profile_path] = base
-    data = (
-        json.dumps(
-            {
-                "schema": "OTERYN_NATIVE_ITEM_UPDATES/v1",
-                "base_sha256": hashlib.sha256(base).hexdigest(),
-                "records": sorted(updates, key=order),
-            },
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
-        )
-        + "\n"
-    ).encode()
+    document = {
+        "schema": "OTERYN_NATIVE_ITEM_UPDATES/v1",
+        "base_sha256": hashlib.sha256(base).hexdigest(),
+        "records": sorted(updates, key=order),
+    }
+
+    def encode_updates():
+        return (
+            json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+            + "\n"
+        ).encode()
+
+    data = encode_updates()
+    if len(data) > 200_000:
+        # The provider and its supplements use the same native Item decoder.
+        # Omit decode-equivalent defaults and keep only rows that still change
+        # the base provider after that normalization.
+        records = []
+        for row in document["records"]:
+            compact_item_record(row)
+            key = row["production_definition"]["production_key"]
+            predecessor = copy.deepcopy(original.get(key))
+            if predecessor is not None:
+                compact_item_record(predecessor)
+            if predecessor != row:
+                records.append(row)
+        document["records"] = records
+        data = encode_updates()
     if len(data) > 200_000:
         raise ValueError("SRX1_ITEM_UPDATE_SIZE")
     manifest = json.loads(generated[manifest_path])

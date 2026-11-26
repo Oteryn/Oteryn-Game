@@ -12,6 +12,10 @@ pub(super) fn catalogue() -> Result<QuestStateCatalogue, String> {
         dream::QUESTLINE,
         dream::MISSION,
         dream::POTION,
+        "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary",
+        "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary_retrieved",
+        "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/door",
+        "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log",
         "oteryn:quest-progress/authored/nomads_land_quest/s4_window_obscured",
         "oteryn:quest-progress/quest/u8_1/tibia_tales/nomads_land_cabinet",
         "oteryn:quest-progress/quest/u8_1/tibia_tales/nomads_land_exit_reached",
@@ -21,6 +25,7 @@ pub(super) fn catalogue() -> Result<QuestStateCatalogue, String> {
     .collect::<Result<Vec<_>, _>>()?;
     let transitions = [
         dream::COMPLETE,
+        "oteryn:quest-callback/white-raven-monks-diary",
         "oteryn:quest-callback/engenc2/nomads-land-window",
     ]
     .into_iter()

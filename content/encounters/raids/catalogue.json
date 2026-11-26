@@ -9942,7 +9942,7 @@
               "regions": [
                 {
                   "path": "content/world/placements/region-z07-x129-y123.b3",
-                  "sha256": "09d1f548322ea9c618d2fadff59fac78aaa7666b09bfbccd5dd4ac4bccec9b44"
+                  "sha256": "94184ed8613633e2927441c90ee4e8ea77f852658ece4b126bca75ff539569b3"
                 }
               ],
               "to": {
@@ -10232,7 +10232,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x129-y123.b3",
-                        "sha256": "09d1f548322ea9c618d2fadff59fac78aaa7666b09bfbccd5dd4ac4bccec9b44"
+                        "sha256": "94184ed8613633e2927441c90ee4e8ea77f852658ece4b126bca75ff539569b3"
                       }
                     ],
                     "to": {
@@ -15791,7 +15791,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x129-y127.b3",
-                        "sha256": "430c64efc7f2172143d9fa0c2bfa7eda7121cb68c450c62ae9c8b10a77e61690"
+                        "sha256": "43e152b3b9bffbd4135a9f050aaa62dbf863e772dd37b55e5cd94c8deaff19a3"
                       }
                     ],
                     "to": {
@@ -16057,7 +16057,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x129-y127.b3",
-                        "sha256": "430c64efc7f2172143d9fa0c2bfa7eda7121cb68c450c62ae9c8b10a77e61690"
+                        "sha256": "43e152b3b9bffbd4135a9f050aaa62dbf863e772dd37b55e5cd94c8deaff19a3"
                       }
                     ],
                     "to": {
@@ -16582,7 +16582,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x129-y127.b3",
-                        "sha256": "430c64efc7f2172143d9fa0c2bfa7eda7121cb68c450c62ae9c8b10a77e61690"
+                        "sha256": "43e152b3b9bffbd4135a9f050aaa62dbf863e772dd37b55e5cd94c8deaff19a3"
                       }
                     ],
                     "to": {
@@ -16629,7 +16629,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x129-y127.b3",
-                        "sha256": "430c64efc7f2172143d9fa0c2bfa7eda7121cb68c450c62ae9c8b10a77e61690"
+                        "sha256": "43e152b3b9bffbd4135a9f050aaa62dbf863e772dd37b55e5cd94c8deaff19a3"
                       }
                     ],
                     "to": {
@@ -16770,7 +16770,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x129-y127.b3",
-                        "sha256": "430c64efc7f2172143d9fa0c2bfa7eda7121cb68c450c62ae9c8b10a77e61690"
+                        "sha256": "43e152b3b9bffbd4135a9f050aaa62dbf863e772dd37b55e5cd94c8deaff19a3"
                       }
                     ],
                     "to": {
@@ -16811,7 +16811,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x129-y127.b3",
-                        "sha256": "430c64efc7f2172143d9fa0c2bfa7eda7121cb68c450c62ae9c8b10a77e61690"
+                        "sha256": "43e152b3b9bffbd4135a9f050aaa62dbf863e772dd37b55e5cd94c8deaff19a3"
                       }
                     ],
                     "to": {
@@ -16852,7 +16852,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x129-y127.b3",
-                        "sha256": "430c64efc7f2172143d9fa0c2bfa7eda7121cb68c450c62ae9c8b10a77e61690"
+                        "sha256": "43e152b3b9bffbd4135a9f050aaa62dbf863e772dd37b55e5cd94c8deaff19a3"
                       }
                     ],
                     "to": {
@@ -17104,7 +17104,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x129-y127.b3",
-                        "sha256": "430c64efc7f2172143d9fa0c2bfa7eda7121cb68c450c62ae9c8b10a77e61690"
+                        "sha256": "43e152b3b9bffbd4135a9f050aaa62dbf863e772dd37b55e5cd94c8deaff19a3"
                       }
                     ],
                     "to": {
@@ -23597,7 +23597,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z10-x129-y123.b3",
-                        "sha256": "89fc1e39c2aed1f442f544897cf9e51c07f3b5c0236a5bfda91729d59b93f6ad"
+                        "sha256": "cddf7cc9586a87f793ea9d10176f3f09425c426e9036173063da97de509d47d5"
                       }
                     ],
                     "to": {
@@ -24927,7 +24927,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x129-y123.b3",
-                        "sha256": "09d1f548322ea9c618d2fadff59fac78aaa7666b09bfbccd5dd4ac4bccec9b44"
+                        "sha256": "94184ed8613633e2927441c90ee4e8ea77f852658ece4b126bca75ff539569b3"
                       }
                     ],
                     "to": {
@@ -25383,7 +25383,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x129-y123.b3",
-                        "sha256": "09d1f548322ea9c618d2fadff59fac78aaa7666b09bfbccd5dd4ac4bccec9b44"
+                        "sha256": "94184ed8613633e2927441c90ee4e8ea77f852658ece4b126bca75ff539569b3"
                       }
                     ],
                     "to": {
@@ -25533,7 +25533,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x129-y123.b3",
-                        "sha256": "09d1f548322ea9c618d2fadff59fac78aaa7666b09bfbccd5dd4ac4bccec9b44"
+                        "sha256": "94184ed8613633e2927441c90ee4e8ea77f852658ece4b126bca75ff539569b3"
                       }
                     ],
                     "to": {
@@ -25580,7 +25580,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x129-y123.b3",
-                        "sha256": "09d1f548322ea9c618d2fadff59fac78aaa7666b09bfbccd5dd4ac4bccec9b44"
+                        "sha256": "94184ed8613633e2927441c90ee4e8ea77f852658ece4b126bca75ff539569b3"
                       }
                     ],
                     "to": {
@@ -29460,7 +29460,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z09-x125-y128.b3",
-                        "sha256": "6252b56e967de8e9350f4ad3ada82bfde1fdfd51bc358feeff0783954ae447dd"
+                        "sha256": "89be597f0470b458393d1c74cb7994d81c78d3a99582f0f1601325d72fbfd3ab"
                       }
                     ],
                     "to": {
@@ -29863,7 +29863,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z10-x125-y128.b3",
-                        "sha256": "540771a3c3962003b25ae6ef61be8464957bcaa94bd920508e1b58b26cbf8381"
+                        "sha256": "3cf306b70b6a8f909f3996bf435036c28edf518be30deadf5263565f59f124c6"
                       }
                     ],
                     "to": {
@@ -29910,7 +29910,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z10-x125-y128.b3",
-                        "sha256": "540771a3c3962003b25ae6ef61be8464957bcaa94bd920508e1b58b26cbf8381"
+                        "sha256": "3cf306b70b6a8f909f3996bf435036c28edf518be30deadf5263565f59f124c6"
                       }
                     ],
                     "to": {
@@ -29957,7 +29957,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z10-x125-y128.b3",
-                        "sha256": "540771a3c3962003b25ae6ef61be8464957bcaa94bd920508e1b58b26cbf8381"
+                        "sha256": "3cf306b70b6a8f909f3996bf435036c28edf518be30deadf5263565f59f124c6"
                       }
                     ],
                     "to": {
@@ -30004,7 +30004,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z10-x125-y128.b3",
-                        "sha256": "540771a3c3962003b25ae6ef61be8464957bcaa94bd920508e1b58b26cbf8381"
+                        "sha256": "3cf306b70b6a8f909f3996bf435036c28edf518be30deadf5263565f59f124c6"
                       }
                     ],
                     "to": {
@@ -37560,7 +37560,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z10-x127-y127.b3",
-                        "sha256": "32440de8032ffe3cb7405e82ea07f4baacaf90b713840199d274012a481f66f5"
+                        "sha256": "564fc3e49f6aaa86b02eb88498a33b45f6c259f0b52ee087ccf4c6c2cfa4510e"
                       }
                     ],
                     "to": {
@@ -46785,7 +46785,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z10-x128-y126.b3",
-                        "sha256": "bb4ba84d63254c57a1010f7c0a8f88e6a251b37466c7712c1402e95a625a6b1c"
+                        "sha256": "ae00f29584cee8b40935cd06ed3d627d1acc37d53ac6d69733b6c8be51966889"
                       }
                     ],
                     "to": {
@@ -46832,7 +46832,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z10-x128-y126.b3",
-                        "sha256": "bb4ba84d63254c57a1010f7c0a8f88e6a251b37466c7712c1402e95a625a6b1c"
+                        "sha256": "ae00f29584cee8b40935cd06ed3d627d1acc37d53ac6d69733b6c8be51966889"
                       }
                     ],
                     "to": {
@@ -46879,7 +46879,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z10-x128-y126.b3",
-                        "sha256": "bb4ba84d63254c57a1010f7c0a8f88e6a251b37466c7712c1402e95a625a6b1c"
+                        "sha256": "ae00f29584cee8b40935cd06ed3d627d1acc37d53ac6d69733b6c8be51966889"
                       }
                     ],
                     "to": {
@@ -47202,7 +47202,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z09-x129-y125.b3",
-                        "sha256": "c1fcb7d5e080ccec3f7b90b7cac20fd12ef72db083ac86a3dbc823b9b092f2c3"
+                        "sha256": "ab9e36320980f97138b022f778bb9021cb83dff2bf732fd15869b726e72a0bbc"
                       }
                     ],
                     "to": {

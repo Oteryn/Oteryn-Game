@@ -8,6 +8,10 @@ Run --apply [--check]; convert_world_base also applies the same overlay.
 import argparse
 import hashlib
 import json
+import re
+import sys
+import tarfile
+from functools import cache
 from collections import Counter
 from pathlib import Path
 
@@ -181,6 +185,29 @@ def claim_definitions(root):
     return claims
 
 
+@cache
+def charge_projection_inputs():
+    sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
+    import charge_native
+    import reward_claim_authoring
+
+    return (
+        charge_native,
+        reward_claim_authoring.load_items(),
+        reward_claim_authoring.stack_problem,
+    )
+
+
+def verified_source_charges(definition, native):
+    if (
+        native.get("source_difference")
+        != "EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS"
+    ):
+        return False
+    charge_native, items, stack_problem = charge_projection_inputs()
+    return charge_native.derive(definition, items, stack_problem) == native
+
+
 def supported_claim(definition):
     """Match the existing native container/text gate; retain all source holds."""
     native = definition.get("native_contents", {})
@@ -195,6 +222,7 @@ def supported_claim(definition):
         )
         or numbered_key_claim(definition) is not None
         or fibula_amulet_claim(definition)
+        or verified_source_charges(definition, native)
         or (
             definition.get("definition_profile") == "authored_variant_v1"
             and definition.get("readiness") == "waiting_implementation"
@@ -217,7 +245,7 @@ OUTLAW_KEYS = {3301: 2970, 3302: 2969, 3303: 2970, 3304: 2972}
 def source_key_claim(definition):
     return (
         key_claim(definition, 3600, 2969)
-        or key_claim(definition, 4055, 2969)
+        or panpipe_key_claim(definition)
         or outlaw_key_claim(definition)
         or any(key_claim(definition, number, 2969) for number in (3620, 3667, 4603))
     )
@@ -225,6 +253,10 @@ def source_key_claim(definition):
 
 def outlaw_key_claim(definition):
     return any(key_claim(definition, number, item) for number, item in OUTLAW_KEYS.items())
+
+
+def panpipe_key_claim(definition):
+    return key_claim(definition, 4055, 2969)
 
 
 def fibula_amulet_claim(definition):
@@ -325,14 +357,13 @@ def key_claim(definition, number, item):
 
 def capture(source_root, selected, root=ROOT, *, marid_lamp=False, route_access=False):
     """Read exact pinned source facts; never execute donor Lua."""
-    import sys
-
     sys.path.insert(0, str(ROOT / "tools/content-schema/quest-authoring"))
     import lua_tables
 
     sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
     import container_native
     import global_corrections
+    import itemhold_charge_precedence
     import poison_daggers
     import reward_claim_authoring
 
@@ -352,8 +383,12 @@ def capture(source_root, selected, root=ROOT, *, marid_lamp=False, route_access=
         for f in lua_tables.assignments(raw.decode(), {"ChestUnique"})["ChestUnique"]["fields"]
     }
     claims, rows = claim_definitions(root), []
+    charge_cases = (
+        container_native.CHARGED_QUEST_CLAIMS.keys()
+        | itemhold_charge_precedence.CASES.keys()
+    )
     needs_charges = any(
-        claims[key].get("provenance", {}).get("pilot_key") in container_native.CHARGED_QUEST_CLAIMS
+        claims[key].get("provenance", {}).get("pilot_key") in charge_cases
         or key == "oteryn:reward-claim.kv.stealhring1"
         for key in selected
     )
@@ -378,16 +413,29 @@ def capture(source_root, selected, root=ROOT, *, marid_lamp=False, route_access=
                 for item in placement["reward"]["items"]
             ]
             container = placement["reward"].get("container")
-            container_id = int(container["key"].rsplit(".i", 1)[1]) if container else None
-            source_reward = container_native.source_charged_reward(
-                definition.get("provenance", {}).get("pilot_key"),
-                global_corrections.source_reward(
-                    unique,
-                    position,
-                    poison_daggers.source_reward(unique, position, setting["reward"]),
-                ),
-                items,
+            container_id = (
+                int(container["key"].rsplit(".i", 1)[1]) if container else None
             )
+            pilot = definition.get("provenance", {}).get("pilot_key")
+            source_reward = global_corrections.source_reward(
+                unique,
+                position,
+                poison_daggers.source_reward(unique, position, setting["reward"]),
+            )
+            # Troll Cave shares its claim between a charged necklace and
+            # ordinary legs. Only the legs selector has no charge argument.
+            if (pilot, unique) != ("canary:reward-claim/kv/trollcave1", 6040):
+                source_reward = container_native.source_charged_reward(
+                    pilot, source_reward, items
+                )
+
+            if pilot in itemhold_charge_precedence.CASES and len(source_reward) == 1:
+                ((number, amount),) = source_reward
+                item_key = f"oteryn:item.tibia.i{number}"
+                if itemhold_charge_precedence.qualifies(
+                    items.get(item_key), pilot, position, item_key, amount
+                ):
+                    source_reward = [[number, 1]]
             if unique == 6174:
                 # The admitted Protection Amulet already uses one instance at
                 # full charges. Verify Crystal's count argument against that
@@ -814,6 +862,31 @@ def selections(root=ROOT):
         if position in doors:
             raise ValueError("GHOUL_ROOM_WELL_ACTION_CONFLICT")
         doors[position] = {"appearance": 1931, "action": 1000}
+    # Crystal 201189f item.lua:313,4555-4560 marks the fixed goldfish
+    # immovable and assigns UID9266. The held goldfish uses the same Item key,
+    # so retain this source placement attribute when enabling inventory custody.
+    archive = "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz"
+    with tarfile.open(root / archive) as corpus:
+        manifest = json.load(corpus.extractfile("corpus-manifest.json"))
+        witness = next(
+            row
+            for row in manifest["files"]
+            if row["path"] == "data-global/startup/tables/item.lua"
+            and row["sha256"] == ITEM_SHA256
+        )
+        raw = corpus.extractfile(
+            witness.get("blob_path", witness.get("cache_path"))
+        ).read()
+    if hashlib.sha256(raw).hexdigest() != ITEM_SHA256 or not re.search(
+        rb"\[9266\] = \{\s*itemId = 7936,\s*itemPos = \{ x = 32359, y = 32791, z = 6 \}",
+        raw,
+    ):
+        raise ValueError("FISHNAPPING_FIXED_GOLDFISH_SOURCE_DRIFT")
+    fish = (32359, 32791, 6)
+    if fish in bindings:
+        raise ValueError("FISHNAPPING_FIXED_GOLDFISH_SOURCE_CONFLICT")
+    bindings[fish] = {"position": list(fish), "appearance": 7936, "unique": 9266}
+
     alias_path = "content/quests/native-reward-placement-aliases.json"
     key = "oteryn:reward-claim.quest.key.id3899"
     if (root / alias_path).is_file() and any(
@@ -860,7 +933,19 @@ def selections(root=ROOT):
     selector = callback["selector"]
     cell = selector["position"]
     position = (cell["x"], cell["y"], -cell["floor"])
-    if position in bindings or position in doors or position in returns:
+    retained = bindings.get(position)
+    if (
+        position in doors
+        or position in returns
+        or (
+            retained is not None
+            and (
+                retained["claim"] != "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_oasis"
+                or retained["appearance"] != selector["appearance"]
+                or retained["unique"] != 6271
+            )
+        )
+    ):
         raise ValueError("STEAL_FROM_THIEVES_BOX_CONFLICT")
     doors[position] = {
         "position": list(position),
@@ -996,7 +1081,7 @@ def overlay_outputs(outputs, root=ROOT, require_all=False):
         byte_delta += len(raw) - len(previous)
         outputs[path] = raw
         regions[path]["sha256"] = hashlib.sha256(raw).hexdigest()
-    if require_all and imported != len(bindings):
+    if require_all and imported != sum(len(rows) for rows in selections_by_attribute.values()):
         raise ValueError("QUEST_CHEST_INCOMPLETE_OVERLAY")
     x, y, z = world_use_cell
     world_use_region = f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}"

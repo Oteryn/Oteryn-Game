@@ -25,6 +25,14 @@ const SOURCES: &[&str] = &[
     include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-m10.json"),
     include_str!("../../../../../../../content/quests/npc-offers/rookgaard-exchanges.json"),
     include_str!("../../../../../../../content/quests/npc-offers/threatened-dreams.json"),
+    include_str!("../../../../../../../content/quests/shared-reward-offers.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/classic-missions.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/newhaven-gustavo.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/quest-contacts.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/tibia-tales.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/too-hot-to-handle.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/tower-defence.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/vampire-hunter.json"),
 ];
 
 pub(super) fn load(

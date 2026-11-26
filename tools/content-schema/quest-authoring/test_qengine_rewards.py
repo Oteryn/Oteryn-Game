@@ -1087,6 +1087,8 @@ class QuestRewards(unittest.TestCase):
         callbacks = {c["key"].split("/")[-1]: c for c in self.callbacks["callbacks"]}
         for name, side, bit in [("sage", 1, 1), ("villain", 2, 2)]:
             c = callbacks["l1-yalaharian-" + name]
+            achievement = "wisdom" if side == 1 else "power"
+            self.assertEqual(c["achievement"], f"oteryn:achievement/yalahari_of_{achievement}")
             self.assertEqual(c["take"], [])
             self.assertEqual(c["present"], [{"item": "oteryn:item.tibia.i9041", "count": 1}])
             self.assertEqual(c["outfit"]["addons"], bit)

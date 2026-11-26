@@ -673,7 +673,21 @@ mod main_native_contract {
         // Rottin Wall repair adds its legacy wall-count track (`classic_dialogue::extend_rottin`).
         // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
         // Knightwatch adds the shared tower permit and the diamond lever claim.
-        assert_eq!(before.tracks.len(), 2_237);
+        // Main contributes its 44 native tracks, including the two Vampire Hunter tracks.
+        assert_eq!(before.tracks.len(), 2_237 + 44);
+        for (name, max) in [("rank", 6), ("door", 1)] {
+            let key = format!("oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/{name}");
+            assert_eq!(
+                before.tracks.get(&key),
+                Some(&QuestTrack {
+                    key: key.clone(),
+                    quest: "oteryn:quest.vampire_hunter_quest".into(),
+                    initial: 0,
+                    min: 0,
+                    max,
+                })
+            );
+        }
         let festive_guard = "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5";
         assert_eq!(
             before.tracks.get(festive_guard),

@@ -4096,8 +4096,10 @@ mod tests {
                     _ => &weapon.extra_defense,
                 };
                 let expected = match (id, field) {
-                    // Current Global Cyclopedia supersedes the Crystal defence.
+                    // The approved Global Cyclopedia capture supersedes the
+                    // Crystal defence for these two quest shields.
                     (19363, "defense") => 41,
+                    (19373, "defense") => 45,
                     _ => points.parse()?,
                 };
                 assert_eq!(

@@ -5,7 +5,9 @@
 //! Meluna ferry, Vengoth return, Ingol ferries and Oskayaat passage.
 //! Unmapped custom/quest guards stay held.
 use super::NpcServiceModel;
-use crate::content::{ProjectV2DefinitionRef, ProjectV2TravelRoute};
+use crate::content::{
+    ProjectV2DefinitionRef, ProjectV2TravelQuestRequirement, ProjectV2TravelRoute,
+};
 use serde::Deserialize;
 use std::sync::OnceLock;
 
@@ -80,6 +82,8 @@ struct Correction {
     yalahar_town_gate: Option<String>,
     #[serde(default)]
     native_addition: bool,
+    #[serde(default)]
+    quest_tracks: Vec<ProjectV2TravelQuestRequirement>,
     #[serde(default)]
     quest_gate: Option<String>,
     #[serde(default)]
@@ -215,6 +219,9 @@ pub fn resolve(
             route.destination.x = x;
             route.destination.y = y;
             route.destination.floor = floor;
+            route
+                .required_quest_tracks
+                .extend(correction.quest_tracks.iter().cloned());
             Some(TravelRoute {
                 service: service.to_owned(),
                 route,
@@ -540,7 +547,6 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 242);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
@@ -557,6 +563,43 @@ mod tests {
             dalbrect.quest_gate.as_deref(),
             Some("oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log")
         );
+        let eclipse = corrections
+            .iter()
+            .find(|row| row.key == "oteryn:service.travel.uzon/eclipse")
+            .ok_or("source-qualified Eclipse route")?;
+        assert!(eclipse.native_addition && !eclipse.held && !eclipse.premium);
+        assert_eq!(
+            (eclipse.x, eclipse.y, eclipse.floor, eclipse.price),
+            (32659, 31915, 0, 110)
+        );
+        let [gate] = eclipse.quest_tracks.as_slice() else {
+            return Err("one Eclipse gate".into());
+        };
+        assert_eq!(
+            gate.track,
+            "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline"
+        );
+        assert_eq!((gate.minimum, gate.maximum), (4, Some(5)));
+        for (key, fare, x, y, floor) in [
+            (
+                "oteryn:service.travel.brodrosch/cormaya",
+                160,
+                33_311,
+                31_989,
+                15,
+            ),
+            ("oteryn:service.travel.eremo/cormaya", 0, 33_288, 31_956, 6),
+        ] {
+            let route = corrections
+                .iter()
+                .find(|route| route.key == key)
+                .ok_or(key)?;
+            assert!(route.native_addition && !route.held && !route.premium);
+            assert_eq!(
+                (route.price, route.x, route.y, route.floor),
+                (fare, x, y, floor)
+            );
+        }
         let sources = source["rows"].as_array().ok_or("source rows")?;
         let evidence = evidence["records"].as_array().ok_or("evidence rows")?;
         let nargor = "oteryn:service.travel.sebastian/nargor";
@@ -565,6 +608,7 @@ mod tests {
             .filter(|row| !row.native_addition || row.key == nargor)
             .collect::<Vec<_>>();
         assert_eq!(corrected.len(), 195);
+        assert_eq!(corrections.len() - corrected.len(), 48);
         assert_eq!(sources.len(), 195);
         assert_eq!(evidence.len(), 195);
         for ((row, source), evidence) in corrected.into_iter().zip(sources).zip(evidence) {

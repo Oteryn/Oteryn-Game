@@ -1,4 +1,5 @@
-//! World callbacks that retain an existing per-character RewardClaim identity.
+//! Source World callbacks retain their existing per-character RewardClaim identities.
+//! This resolves immutable source pairs, never an alias supplied by a caller.
 use super::{ActorKind, Callback, Trigger};
 use crate::quest::reward_callbacks::{ItemReward, NativeClaimBinding};
 use serde_json::{Value, json};
@@ -23,6 +24,18 @@ const SERPENTINE_CLAIMS: &str = include_str!(concat!(
 ));
 pub const SERPENTINE_PEARL_CLAIM: &str =
     "oteryn:reward-claim.quest.u7_3.serpentine_tower.white_pearl";
+const TIBIA_TALES: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../content/quests/world-callbacks/tibia-tales.json"
+));
+const TIBIA_TALES_CLAIMS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../content/interactions/reward_claims/reward-claims-00100-00199.json"
+));
+pub const OUTFOX_CACHE: &str = "oteryn:quest-callback/tibia-tales/outfox-helmet";
+const OASIS_CALLBACKS: &str =
+    include_str!("../../../../../../content/quests/world-callbacks/qd-steal-from-thieves.json");
+const OASIS_CLAIM: &str = "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_oasis";
 const PAIRS: &[(&str, &str)] = &[
     (
         "l2-tome-children-1",
@@ -100,6 +113,51 @@ struct Binding {
     source_unique: u16,
 }
 
+struct ClaimSource {
+    appearances: &'static [u16],
+    quest_alias: Option<&'static str>,
+    explicit_uid: Option<u16>,
+    action: Option<u16>,
+    required_uid: Option<u16>,
+    premium: bool,
+}
+
+const SOURCE_BOOKS: ClaimSource = ClaimSource {
+    appearances: &[2472, 2480],
+    quest_alias: None,
+    explicit_uid: None,
+    action: None,
+    required_uid: None,
+    premium: false,
+};
+
+const OUTFOX: ClaimSource = ClaimSource {
+    appearances: &[2469],
+    quest_alias: Some("to_outfox_a_fox_quest"),
+    explicit_uid: Some(6257),
+    action: None,
+    required_uid: None,
+    premium: false,
+};
+
+const SERPENTINE: ClaimSource = ClaimSource {
+    appearances: &[2472, 2480],
+    quest_alias: None,
+    explicit_uid: None,
+    action: None,
+    required_uid: None,
+    premium: false,
+};
+
+const OASIS: ClaimSource = ClaimSource {
+    appearances: &[2473],
+    quest_alias: Some("the_thieves_guild_quest"),
+    explicit_uid: None,
+    action: Some(19910),
+    required_uid: Some(6271),
+    premium: true,
+};
+
 fn only(value: &Value, fields: &[&str]) -> bool {
     value
         .as_object()
@@ -115,13 +173,14 @@ fn bind(callbacks: &str, claims: &str) -> Result<Vec<Binding>, String> {
             1,
         )
     });
-    bind_pairs(&super::parse(callbacks)?, claims, pairs)
+    bind_pairs(&super::parse(callbacks)?, claims, pairs, &SOURCE_BOOKS)
 }
 
 fn bind_pairs<'a>(
     callbacks: &[Callback],
     claims: &str,
     pairs: impl IntoIterator<Item = (&'a str, String, &'a str, u16)>,
+    group: &ClaimSource,
 ) -> Result<Vec<Binding>, String> {
     let claims: Value = serde_json::from_str(claims).map_err(|error| error.to_string())?;
     if claims["schema"] != "OTERYN_REWARD_CLAIM_SHARD/v1" || claims["family"] != "RewardClaim" {
@@ -134,7 +193,7 @@ fn bind_pairs<'a>(
     let mut positions = BTreeSet::new();
     for (callback_suffix, claim_key, item, count) in pairs {
         let reward: ItemReward = serde_json::from_value(json!({
-            "item": item, "count": count, "contents": [],
+            "item": item, "count": count, "contents": [], "premium": group.premium,
         }))
         .map_err(|error| error.to_string())?;
         let key = format!("oteryn:quest-callback/{callback_suffix}");
@@ -179,10 +238,11 @@ fn bind_pairs<'a>(
             .as_u64()
             .filter(|uid| (1..=u64::from(u16::MAX)).contains(uid))
             .ok_or("legacy World source id")?;
-        let source_quest = callback
+        let world_quest = callback
             .quest
             .strip_prefix("oteryn:quest.")
             .ok_or("legacy World quest identity")?;
+        let source_quest = group.quest_alias.unwrap_or(world_quest);
         if !positions.insert(position)
             || !only(
                 definition,
@@ -219,9 +279,13 @@ fn bind_pairs<'a>(
                 ])
             || callback.trigger != Trigger::Use
             || callback.actor_kind != ActorKind::Player
-            || !matches!(appearance, 2472 | 2480)
-            || callback.selector.unique.is_some()
-            || callback.selector.action.is_some()
+            || !group.appearances.contains(&appearance)
+            || callback.selector.unique != group.explicit_uid
+            || group
+                .required_uid
+                .or(group.explicit_uid)
+                .is_some_and(|expected| uid != u64::from(expected))
+            || callback.selector.action != group.action
             || callback.selector.native.is_some()
             || callback.effects.item_reward.as_ref() != Some(&reward)
             || callback.effects.item_reward_cycle.is_some()
@@ -254,7 +318,7 @@ fn bind_pairs<'a>(
     Ok(bindings)
 }
 
-fn load() -> Result<Vec<Binding>, String> {
+fn bind_all() -> Result<Vec<Binding>, String> {
     let mut bindings = bind(CALLBACKS, CLAIMS)?;
     let tower = crate::quest::authored_bindings::Bindings::parse(SERPENTINE_BINDING.as_bytes())?;
     let tower_callbacks = tower.world_callbacks().cloned().collect::<Vec<_>>();
@@ -267,6 +331,7 @@ fn load() -> Result<Vec<Binding>, String> {
             "oteryn:item.tibia.i3026",
             1,
         )],
+        &SERPENTINE,
     )?);
     bindings.extend(bind_pairs(
         &super::parse(PARADOX_CALLBACKS)?,
@@ -279,6 +344,29 @@ fn load() -> Result<Vec<Binding>, String> {
                 count,
             )
         }),
+        &SOURCE_BOOKS,
+    )?);
+    bindings.extend(bind_pairs(
+        &super::parse(TIBIA_TALES)?,
+        TIBIA_TALES_CLAIMS,
+        [(
+            "tibia-tales/outfox-helmet",
+            "oteryn:reward-claim.quest.u8_1.to_outfox_afox_quest.mining_helmet".into(),
+            "oteryn:item.tibia.i139",
+            1,
+        )],
+        &OUTFOX,
+    )?);
+    bindings.extend(bind_pairs(
+        &super::parse(OASIS_CALLBACKS)?,
+        TIBIA_TALES_CLAIMS,
+        [(
+            "qd-steal-from-thieves-oasis-box",
+            OASIS_CLAIM.into(),
+            "oteryn:item.tibia.i235",
+            1,
+        )],
+        &OASIS,
     )?);
     Ok(bindings)
 }
@@ -299,7 +387,10 @@ pub fn legacy_world_source_unique(callback: &Callback) -> Result<Option<u16>, St
 
 fn legacy_world_binding(callback: &Callback) -> Result<Option<&'static Binding>, String> {
     static BINDINGS: OnceLock<Result<Vec<Binding>, String>> = OnceLock::new();
-    let bindings = BINDINGS.get_or_init(load).as_ref().map_err(Clone::clone)?;
+    let bindings = BINDINGS
+        .get_or_init(bind_all)
+        .as_ref()
+        .map_err(Clone::clone)?;
     let bound =
         bindings.iter().find(|binding| {
             callback.key == binding.callback.key
@@ -318,6 +409,20 @@ fn legacy_world_binding(callback: &Callback) -> Result<Option<&'static Binding>,
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn oasis_action_and_crystal_uid_share_one_claim_identity() -> Result<(), String> {
+        let callbacks = super::super::parse(OASIS_CALLBACKS)?;
+        let [callback] = callbacks.as_slice() else {
+            return Err("expected the exact Oasis callback".into());
+        };
+        assert_eq!(legacy_world_source_unique(callback)?, Some(6271));
+        assert_eq!(
+            legacy_world_claim(callback)?.ok_or("Oasis claim")?.key,
+            OASIS_CLAIM
+        );
+        Ok(())
+    }
 
     #[test]
     fn nine_source_books_retain_their_once_identity_and_the_tenth_stays_independent()
@@ -377,7 +482,7 @@ mod tests {
 
     #[test]
     fn a_changed_callback_cannot_borrow_or_escape_the_legacy_identity() -> Result<(), String> {
-        let bindings = bind(CALLBACKS, CLAIMS)?;
+        let bindings = bind_all()?;
         for binding in bindings {
             for mutation in 0..9 {
                 let mut changed = binding.callback.clone();

@@ -325,13 +325,20 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     // a missing corpse is different from an authored but inadmissible corpse.
     // Change these source-qualification expectations only with admitted content.
     let newly_admitted = [
+        "oteryn:creature.arachir_the_ancient_one",
         "oteryn:creature.arbaziloth",
         "oteryn:creature.count_vlarkorth",
         "oteryn:creature.demodras",
+        "oteryn:creature.diblis_the_fair",
         "oteryn:creature.duke_krule",
         "oteryn:creature.earl_osam",
         "oteryn:creature.furyosa",
         "oteryn:creature.goshnar_s_spite",
+        "oteryn:creature.sir_valorcrest",
+        "oteryn:creature.the_pale_count",
+        "oteryn:creature.the_percht_queen",
+        "oteryn:creature.the_weakened_count",
+        "oteryn:creature.zevelon_duskbringer",
         "oteryn:creature.hirintror",
         "oteryn:creature.ocyakao",
         "oteryn:creature.shardhead",
@@ -503,7 +510,6 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     | "oteryn:creature.spirit_overlord"
                     | "oteryn:creature.the_enraged_thorn_knight"
                     | "oteryn:creature.the_souldespoiler"
-                    | "oteryn:creature.the_weakened_count"
                     | "oteryn:creature.unaz_the_mean"
                     | "oteryn:creature.vok_the_freakish"
             )
@@ -686,7 +692,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 241, 28, 75)
+        (52, 236, 27, 81)
     );
     assert_eq!(
         admitted,
@@ -694,6 +700,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.ahau",
             "oteryn:creature.anomaly",
             "oteryn:creature.apprentice_sheng",
+            "oteryn:creature.arachir_the_ancient_one",
             "oteryn:creature.arbaziloth",
             "oteryn:creature.armenius_creature",
             "oteryn:creature.ascending_ferumbras",
@@ -708,6 +715,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.cublarc_the_plunderer",
             "oteryn:creature.deep_terror",
             "oteryn:creature.demodras",
+            "oteryn:creature.diblis_the_fair",
             "oteryn:creature.dragonking_zyrtarch",
             "oteryn:creature.dreadful_disruptor",
             "oteryn:creature.duke_krule",
@@ -748,14 +756,17 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.scarlett_etzel",
             "oteryn:creature.shardhead",
             "oteryn:creature.sir_baeloc",
+            "oteryn:creature.sir_valorcrest",
             "oteryn:creature.solid_frozen_horror",
             "oteryn:creature.sugar_daddy",
             "oteryn:creature.tazhadur",
             "oteryn:creature.the_first_dragon",
             "oteryn:creature.the_many",
+            "oteryn:creature.the_pale_count",
             "oteryn:creature.the_percht_queen",
             "oteryn:creature.the_primal_menace",
             "oteryn:creature.the_scion_of_havoc",
+            "oteryn:creature.the_weakened_count",
             "oteryn:creature.the_welter",
             "oteryn:creature.twisterror",
             "oteryn:creature.tyrn",
@@ -765,6 +776,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.white_pale",
             "oteryn:creature.willi_wasp",
             "oteryn:creature.yakchal",
+            "oteryn:creature.zevelon_duskbringer",
             "oteryn:creature.zushuka",
         ]
     );

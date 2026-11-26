@@ -18,6 +18,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import engoutfit_m36
+import lua_tables
 import qb_barbarian
 import qb_citizen_warrior
 import qengine_mounts
@@ -139,6 +140,7 @@ def donor_inputs():
         for n in (
             "morgan",
             "navigator",
+            "black_bert",
             "rock_steady",
             *qb_barbarian.DONOR_NPCS,
             *qb_citizen_warrior.DONOR_NPCS,
@@ -894,7 +896,10 @@ def build():
         "tibia_tales",
         "budrik",
         ["mission", "quest"],
-        [storage(prefix + "u8_1/to_outfox_afox_quest", 1, 2)],
+        [
+            storage(prefix + "u8_1/to_outfox_afox_quest", 1, 2),
+            storage(prefix + "u8_1/to_outfox_afox_quest/questline", -1, 2, 1),
+        ],
         take=[(139, 1)],
         give=(875, 1),
     )
@@ -4009,6 +4014,30 @@ def build():
     quest_shops.append(
         json.loads((ROOT / "tools/content-schema/quest-authoring/cael-shop.json").read_bytes())
     )
+    service = 'oteryn:service.trade.black_bert'
+    trade = json.loads((ROOT / 'content/services/trade/trade-00000-00323.json').read_bytes())
+    stock = next(row['declaration']['offers'] for row in trade['records']
+                 if row['declaration']['identity']['key'] == service)
+    bert_source = inputs['data-global/npc/black_bert.lua']
+    # The corpus copy is byte-identical to the chosen 201189f8 shop source.
+    if sha(bert_source) != 'd4e83b34b3f20b62f0e1f06a764c6dadea0010a61f252048300c44eda27e6e0c':
+        raise ValueError('Black Bert shop source changed')
+    bert_shop = lua_tables.as_python(lua_tables.assignments(bert_source.decode(), {'shop'})['shop'])
+    # Keep source stock already admitted by the Item catalogue and the two
+    # previously reviewed Global variants (special flask and lump of clay).
+    prices = {f"oteryn:item.tibia.i{row['clientid']}": row['buy']
+              for row in bert_shop if 'buy' in row}
+    stock_keys = prices.keys() | {'oteryn:item.tibia.i125', 'oteryn:item.tibia.i11329'}
+    retained = [row | {'unit_price': prices.get(row['item']['key'], row['unit_price'])}
+                for row in stock
+                if row['direction'] == 'SellToPlayer' and row['item']['key'] in stock_keys]
+    requirement = {'quest': 'oteryn:quest.the_thieves_guild_quest',
+                   'track': 'oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline',
+                   'initial': 0, 'minimum': 9, 'maximum': 9}
+    quest_shops.append({'npc': 'oteryn:npc.black_bert', 'service': service,
+                  'offers': [row | {'requirements': [requirement]} for row in retained],
+                  'sources': ['crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:211-219',
+                              f'crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/black_bert.lua:23-154:sha256:{sha(bert_source)}']})
     quest_shops.sort(key=lambda shop: shop["npc"])
     generated["content/quests/shared-quest-shops.json"] = encoded({"schema": 1, "shops": quest_shops})
     generated["content/quests/questl2-djinn-world.json"] = encoded(
@@ -4081,6 +4110,14 @@ def build():
         native.provider_order,
         cosmetics.canonical,
     )
+    import srx1_profile_updates
+
+    updates = json.loads((ROOT / srx1_profile_updates.PATH).read_bytes())
+    if updates["base_sha256"] != sha(generated[reward_items.PROFILE]):
+        srx1_profile_updates.generate(
+            ROOT, generated, reward_items.PROFILE, "content/spells.manifest.json",
+            native.provider_order, cosmetics.canonical,
+        )
     generated.update(lane.outputs(ROOT, inputs, PIN, load_module, lane_data))
     # The selected smith port owns these keys and the explicit cache placement.
     # Retain all other authored programmes; do not mount the older native-cache

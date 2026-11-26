@@ -1045,6 +1045,7 @@ mod tests {
             crate::quest::world_callbacks::EMBEDDED,
             // QMECH source cohorts retain their separate registration owners.
             include_str!("../../../../../content/quests/world-callbacks/children-grease.json"),
+            include_str!("../../../../../content/quests/world-callbacks/cursed-crystal.json"),
             include_str!("../../../../../content/quests/world-callbacks/dream-courts.json"),
             include_str!("../../../../../content/quests/world-callbacks/engenc2-cults.json"),
             include_str!("../../../../../content/quests/world-callbacks/hot-cuisine-books.json"),
@@ -1070,6 +1071,7 @@ mod tests {
             include_str!("../../../../../content/quests/world-callbacks/qm48-mammoth.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-clocks.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-crafts.json"),
+            include_str!("../../../../../content/quests/world-callbacks/quest-contacts.json"),
             include_str!("../../../../../content/quests/world-callbacks/source-outfits.json"),
             include_str!("../../../../../content/quests/world-callbacks/nomads-land.json"),
             include_str!(
@@ -1092,6 +1094,8 @@ mod tests {
             include_str!(
                 "../../../../../content/quests/world-callbacks/threatened-dreams-mosaic-treasure.json"
             ),
+            include_str!("../../../../../content/quests/world-callbacks/tibia-tales.json"),
+            include_str!("../../../../../content/quests/world-callbacks/too-hot-repairs.json"),
             include_str!("../../../../../content/quests/questl2-djinn-world.json"),
         ];
         let mut expected = std::collections::BTreeSet::new();

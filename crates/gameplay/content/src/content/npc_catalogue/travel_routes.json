@@ -2844,6 +2844,26 @@
     "carpet": true
   },
   {
+    "key": "oteryn:service.travel.uzon/eclipse",
+    "keyword": "eclipse",
+    "price": 110,
+    "premium": false,
+    "x": 32659,
+    "y": 31915,
+    "floor": 0,
+    "postman": true,
+    "held": false,
+    "carpet": true,
+    "native_addition": true,
+    "quest_tracks": [
+      {
+        "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+        "minimum": 4,
+        "maximum": 5
+      }
+    ]
+  },
+  {
     "key": "oteryn:service.travel.uzon/edron",
     "keyword": "edron",
     "price": 60,

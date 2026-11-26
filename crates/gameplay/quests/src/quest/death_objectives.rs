@@ -324,7 +324,7 @@ mod tests {
                     .any(|row| row.key == key && row.guardian.is_some())
             );
         }
-        assert_eq!(objectives.len(), 61);
+        assert_eq!(objectives.len(), 69);
         assert_eq!(
             objectives
                 .iter()

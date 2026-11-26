@@ -158,6 +158,7 @@ class CorpseQualification(unittest.TestCase):
             6072,
             6078,
             7763,
+            8109,
             8909,
             11675,
             17445,
@@ -169,6 +170,7 @@ class CorpseQualification(unittest.TestCase):
             18099,
             18110,
             18186,
+            18953,
             20972,
             21910,
             22010,
@@ -189,15 +191,18 @@ class CorpseQualification(unittest.TestCase):
         projected_roots = {
             int(row["item"].rsplit("i", 1)[1]) for row in packet["capacity_projections"]
         }
-        self.assertEqual(self.plan.roots, baseline_roots | projected_roots)
-        new_stages = set()
-        for number in projected_roots - baseline_roots:
-            while number:
-                new_stages.add(number)
-                number = int(corpse.grizzly.source.attrs(self.xml[number])["decayto"])
-        new_keys = {f"oteryn:item.tibia.i{number}" for number in new_stages}
-        self.assertTrue(new_keys <= self.plan.records.keys())
-        self.assertEqual(len(self.plan.records.keys() - new_keys), 166)
+        expected_roots = baseline_roots | projected_roots
+        self.assertEqual(self.plan.roots, expected_roots)
+        expected_stages = set()
+        for number in expected_roots:
+            while number and number not in expected_stages:
+                expected_stages.add(number)
+                attributes = corpse.grizzly.source.attrs(self.xml[number])
+                number = int(attributes.get("decayto", 0))
+        self.assertEqual(
+            self.plan.records.keys(),
+            {f"oteryn:item.tibia.i{number}" for number in expected_stages},
+        )
         for number in (4991, 4992, 4993):
             row = self.plan.records[f"oteryn:item.tibia.i{number}"]
             self.assertEqual(row["admission"]["legal_destinations"], ["Ground"])
@@ -239,6 +244,8 @@ class CorpseQualification(unittest.TestCase):
             (5967, 10, 4266),
             (5968, 5, 4007),
             (5975, 20, 4291),
+            (8109, 10, 8110),
+            (18953, 15, 18954),
         ]:
             row = self.plan.records[f"oteryn:item.tibia.i{number}"]
             self.assertEqual(row["admission"]["legal_destinations"], ["Ground"])

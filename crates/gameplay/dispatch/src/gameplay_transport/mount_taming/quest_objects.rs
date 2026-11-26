@@ -84,7 +84,25 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                             | "oteryn:quest-callback/ape-city-cask-32503"
                             | "oteryn:quest-callback/ape-city-cask-32505"
                             | "oteryn:quest-callback/ape-city-cask-32507"
-                    )))
+                            | "oteryn:quest-callback/thieves-guild-cathedral-note"
+                            | "oteryn:quest-callback/thieves-guild-fish-room-key"
+                            | "oteryn:quest-callback/thieves-guild-sarina-vase"
+                            | "oteryn:quest-callback/elvenbane-mirror-crystal"
+                            | "oteryn:quest-callback/inquisition-eclipse-brew-32657-31927"
+                            | "oteryn:quest-callback/inquisition-eclipse-brew-32658-31927"
+                            | "oteryn:quest-callback/inquisition-eclipse-brew-32657-31928"
+                            | "oteryn:quest-callback/inquisition-eclipse-brew-32658-31928"
+                            | "oteryn:quest-callback/tibia-tales/fill-ale-bottle"
+                            | "oteryn:quest-callback/tibia-tales/poison-slime-pool-31821"
+                            | "oteryn:quest-callback/tibia-tales/poison-slime-pool-31822"
+                    )
+                    || (callback
+                        .key
+                        .starts_with("oteryn:quest-callback/tibia-tales/sanctify-grave-")
+                        && callback
+                            .selector
+                            .action
+                            .is_some_and(|action| (4208..=4223).contains(&action)))))
             || rottin_walls::accepts(callback)
             || callback.effects.place_item == Some(12187)
             || matches!(
@@ -193,6 +211,39 @@ mod tests {
                 unhandled.is_empty(),
                 "unhandled {prefix} tools: {unhandled:?}"
             );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn thieves_guild_tools_use_the_selected_carried_instance() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        for name in ["cathedral-note", "fish-room-key", "sarina-vase"] {
+            let key = format!("oteryn:quest-callback/thieves-guild-{name}");
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or(key)?;
+            assert!(accepts(callback));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn mirror_and_eclipse_brews_reach_the_carried_tool_owner() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        let routes: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                callback.key == "oteryn:quest-callback/elvenbane-mirror-crystal"
+                    || callback
+                        .key
+                        .starts_with("oteryn:quest-callback/inquisition-eclipse-brew-")
+            })
+            .collect();
+        assert_eq!(routes.len(), 5);
+        for callback in routes {
+            assert!(accepts(callback), "{}", callback.key);
         }
         Ok(())
     }
@@ -407,6 +458,23 @@ mod tests {
             Some(definition)
         ));
         assert!(!matches_source(&handle, None, [1; 16], Some(definition)));
+        Ok(())
+    }
+
+    #[test]
+    fn tibia_tales_selected_tools_reach_the_world_receipt_owner() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        let tools: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                callback
+                    .key
+                    .starts_with("oteryn:quest-callback/tibia-tales/")
+                    && callback.item_on_target.is_some()
+            })
+            .collect();
+        assert_eq!(tools.len(), 35);
+        assert!(tools.into_iter().all(accepts));
         Ok(())
     }
 }

@@ -241,22 +241,37 @@ fn hunter_hymn_items_piano_and_crossbow_load_as_source_actions() -> Result<(), S
             floor: -9
         })
     );
+    let authored = worlds
+        .iter()
+        .find(|c| c.key == "oteryn:quest-callback/authored-hunter-hymn-piano")
+        .ok_or("authored Hunter hymn piano")?;
+    assert_eq!(authored.teleport, piano.teleport);
     for (verse, item) in (6087..=6090).enumerate() {
         let key = format!("oteryn:item.tibia.i{item}");
-        let use_ = rewards
-            .iter()
-            .find(|c| c.carried_item.as_deref() == Some(&key))
-            .ok_or_else(|| format!("Hunter sheet {item}"))?;
-        assert_eq!(use_.take.len(), 1);
-        assert_eq!(use_.take[0].item, key);
-        assert_eq!(use_.take[0].count, 1);
-        assert_eq!(use_.storage.len(), 1);
-        let learned = &use_.storage[0];
-        assert_eq!((learned.minimum, learned.maximum, learned.set), (-1, 0, 1));
-        let required = &piano.storage[verse];
-        assert_eq!(required.track, learned.track);
-        assert_eq!((required.minimum, required.maximum), (1, 1));
-        assert!(required.read_only);
+        for (prefix, allowed, route) in [
+            ("hunter-hymn-verse-", 0, piano),
+            ("chosen/hunter-outfits/verse-", -1, authored),
+        ] {
+            let callback_key = format!("oteryn:quest-reward/{prefix}{}", verse + 1);
+            let use_ = rewards
+                .iter()
+                .find(|c| c.key == callback_key)
+                .ok_or(callback_key)?;
+            assert_eq!(use_.carried_item.as_deref(), Some(key.as_str()));
+            assert_eq!(use_.take.len(), 1);
+            assert_eq!(use_.take[0].item, key);
+            assert_eq!(use_.take[0].count, 1);
+            assert_eq!(use_.storage.len(), 1);
+            let learned = &use_.storage[0];
+            assert_eq!(
+                (learned.minimum, learned.maximum, learned.set),
+                (-1, allowed, 1)
+            );
+            let required = &route.storage[verse];
+            assert_eq!(required.track, learned.track);
+            assert_eq!((required.minimum, required.maximum), (1, 1));
+            assert!(required.read_only);
+        }
     }
     let chest = worlds
         .iter()

@@ -1933,6 +1933,10 @@ pub fn record_creature_kill(
     now_ms: u64,
     observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 ) {
+    let lethal_unix_micros = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()
+        .and_then(|at| i64::try_from(at.as_micros()).ok());
     // Physical statistics precede every reward/principal/Bestiary admission.
     // The owner-issued lethal receipt proves death even for a no-corpse arena
     // or Instance; projections and rewards retain their existing independent rules.
@@ -2314,6 +2318,7 @@ pub fn record_creature_kill(
                             source_completion: None,
                             no_progression_logged: false,
                         },
+                        lethal_unix_micros,
                     );
                 }
                 return;
@@ -2401,7 +2406,7 @@ pub fn record_creature_kill(
             entry.world_change = world_change;
             refuse(reason.as_str(), &creature);
             entry.prey_checkpoint = prey_checkpoint;
-            accept_encounter_kill(runtime, sink.queue, sink.prey, entry);
+            accept_encounter_kill(runtime, sink.queue, sink.prey, entry, lethal_unix_micros);
             return;
         }
     };
@@ -2718,7 +2723,7 @@ pub fn record_creature_kill(
         source_completion: None,
         no_progression_logged: false,
     };
-    accept_encounter_kill(runtime, sink.queue, sink.prey, entry);
+    accept_encounter_kill(runtime, sink.queue, sink.prey, entry, lethal_unix_micros);
 }
 
 /// Crystal 201189f player.cpp:6584-6607,12932-12936: only the non-summon stack-40
@@ -2804,7 +2809,7 @@ fn record_soulpit_kill(
     entry.soulpit_experience = Some(oteryn_simulation_determinism::ExactI64::new(amount));
     entry.activity_at_death = Some(sink.activity.to_vec());
     entry.damage_shares = shares;
-    accept_encounter_kill(runtime, sink.queue, sink.prey, entry);
+    accept_encounter_kill(runtime, sink.queue, sink.prey, entry, None);
 }
 
 /// Append `entry` to `queue`. Once the queue accepts it (queued or parked), pin its killed
@@ -2817,7 +2822,7 @@ fn accept_kill(
     queue: &KillSettlementQueue,
     entry: PendingKillSettlement,
 ) -> AppendOutcome {
-    accept_encounter_kill(runtime, queue, None, entry)
+    accept_encounter_kill(runtime, queue, None, entry, None)
 }
 
 fn accept_encounter_kill(
@@ -2825,6 +2830,7 @@ fn accept_encounter_kill(
     queue: &KillSettlementQueue,
     states: Option<&super::actor_spell::ChannelSpellStates>,
     mut entry: PendingKillSettlement,
+    lethal_unix_micros: Option<i64>,
 ) -> AppendOutcome {
     queue.state().prune_source_refusals(runtime);
     // A source-controlled lethal publication already reserved its deferred
@@ -2839,7 +2845,7 @@ fn accept_encounter_kill(
         }
     };
     if entry.soulpit_experience.is_none() {
-        super::grizzly_kills::capture(runtime, queue, &mut entry);
+        super::grizzly_kills::capture(runtime, queue, &mut entry, lethal_unix_micros);
         super::quest_kill_objectives::capture(runtime, queue, &mut entry);
     }
     super::quest_death_loot::capture(&mut entry);

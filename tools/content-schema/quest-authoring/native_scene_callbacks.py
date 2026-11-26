@@ -35,6 +35,43 @@ def katana():
     }
 
 
+def serpentine():
+    walls = [(x, y) for y in (32867, 32868) for x in (33148, 33149)]
+    crystal = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/"
+    return {
+        "key": "oteryn:quest-callback/serpentine-tower-lever",
+        "quest": "oteryn:quest.serpentine_tower_quest",
+        "trigger": "use",
+        "selector": {"position": position(33152, 32866, -8), "unique": None,
+                     "action": 5633, "appearance": 2772},
+        "lever": [2772, 2773], "reversible": True, "passages": [],
+        "teleport": None, "storage": [], "offerings": [],
+        "return_on_failure": False, "failure_message": None,
+        "effects": {"scene": {
+            "open": [
+                {"position": position(x, y, -9), "remove": 2129, "create": None,
+                 "passable": None, "allow_missing": True}
+                for x, y in walls
+            ],
+            "close": [
+                {"position": position(x, y, -9), "remove": None, "create": 2129,
+                 "passable": False}
+                for x, y in walls
+            ],
+            "evacuate_close": [
+                {"from": position(x, y, -9), "players_to": position(x, 32869, -9),
+                 "creatures_to": position(x, 32869, -9), "all": True}
+                for x, y in walls
+            ],
+            "relocate_items_close": True,
+        }},
+        "sources": [
+            crystal + "scripts/quests/others/actions_serpentine_tower_lever.lua:1-34",
+            crystal + "startup/tables/lever.lua:79-83",
+        ],
+    }
+
+
 def generate():
     edits = [{"position": position(32592, y), "remove": None, "create": 1270, "passable": False}
              for y in (32105, 32106)]
@@ -53,7 +90,7 @@ def generate():
         "sources": [SOURCE,
             "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua",
             "Committed native region-z14-x127-y125.b3: lever32600,32105,14 appearance2772 ordinal1; action30008 is not retained, so no legacy tag is invented."]
-    }]}
+    }, serpentine()]}
 
 
 if __name__ == "__main__":
