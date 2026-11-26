@@ -10,6 +10,8 @@ use oteryn_protocol_oteryn::CommandStatus;
 use sqlx::Connection;
 
 const NPC: &str = "oteryn:npc.hanna";
+// Crystal Hanna walks within two tiles of her placement.
+const HANNA_WANDER_RADIUS: u32 = 2;
 const TRANSITION: &str = "oteryn:quest-reward/qb-citizen-hat-start";
 
 struct Offer {
@@ -123,7 +125,6 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    use oteryn_dev_client::client_runtime::npc_shop as runtime;
     use oteryn_protocol_oteryn::npc_service as wire;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -146,7 +147,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let path = route(world, here, |at| {
         npc.placements.iter().any(|p| {
             p.floor == at.floor
-                && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= wire::TALK_RANGE_TILES
+                && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)))
+                    <= wire::TALK_RANGE_TILES - HANNA_WANDER_RADIUS
         })
     })
     .ok_or("step=select;needed=walkable-hanna-approach")?;
@@ -159,61 +161,99 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         }
         before.push(value);
     }
-    walk(&mut client, world, &path).await?;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Npc
-                    && npc.placements.iter().any(|p| {
-                        entity.position.x == i32::from(p.x)
-                            && entity.position.y == i32::from(p.y)
-                            && entity.position.floor == -i16::from(p.floor)
-                    })
+    let mut wait_ms = 0;
+    for direction in path {
+        if wait_ms != 0 {
+            client
+                .service_liveness(Duration::from_millis(u64::from(wait_ms)))
+                .await?;
+        }
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, from, direction)
+            .ok_or("step=walk;observed=missing-planned-landing")?;
+        let outcome = client.step(direction).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if outcome.status != CommandStatus::Accepted
+            || outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.as_ref().is_none_or(|delta| {
+                delta.server_sequence <= outcome.result_server_sequence
+                    || tile(delta.value.actor_position).ok() != Some(expected)
             })
+            || actual != expected
+        {
+            return Err(format!(
+                "step=walk;from={from:?};direction={direction:?};expected={expected:?};actual={actual:?};disposition={:?}",
+                outcome.disposition
+            )
+            .into());
+        }
+        wait_ms = outcome.step_wait_ms;
+        verdict::Harness::global().progress("walk");
+        client.take_events();
+    }
+    let player = client.world_spatial().actor_position;
+    let mut visible_hanna = client
+        .world_entities()
+        .ok_or("step=walk;observed=missing-entity-view")?
+        .iter()
+        .filter(|entity| {
+            entity.kind == oteryn_dev_client::EntityKind::Npc
+                && entity
+                    .display_name
+                    .is_some_and(|name| name.as_str() == Ok("Hanna"))
+                && entity.position.floor == player.floor
+                && entity
+                    .position
+                    .x
+                    .abs_diff(player.x)
+                    .max(entity.position.y.abs_diff(player.y))
+                    <= wire::TALK_RANGE_TILES
+                && npc.placements.iter().any(|p| {
+                    entity.position.floor == -i16::from(p.floor)
+                        && entity
+                            .position
+                            .x
+                            .abs_diff(i32::from(p.x))
+                            .max(entity.position.y.abs_diff(i32::from(p.y)))
+                            <= HANNA_WANDER_RADIUS
+                })
+        });
+    let actor = visible_hanna
+        .next()
+        .ok_or("step=walk;observed=npc-not-visible")?
+        .entity;
+    if visible_hanna.next().is_some() {
+        return Err("step=walk;observed=ambiguous-hanna".into());
+    }
+    let mut confirmation_sequence = 0;
+    for text in ["hi", "addon", offer.keyword.as_str()] {
+        let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
+            npc_actor: actor,
+            text: text.into(),
         })
-        .map(|entry| entry.entity)
-        .ok_or("step=walk;observed=npc-not-visible")?;
-    for text in ["hi", "addon"] {
-        let reply = runtime::talk(
-            client.session_mut(),
-            &wire::NpcTalkIntent {
-                npc_actor: actor,
-                text: text.into(),
-            },
-        )
-        .await?;
-        if reply != wire::NpcIntentDisposition::Ok {
+        .map_err(|error| format!("step=talk;encode={error:?}"))?;
+        let reply = client
+            .session_mut()
+            .gated_command(
+                wire::CAPABILITY_NPC_SERVICE_V1,
+                wire::COMMAND_TYPE_NPC_TALK_INTENT,
+                &payload,
+            )
+            .await?;
+        if reply.status != CommandStatus::Accepted
+            || wire::decode_npc_intent_result(&reply.payload).ok()
+                != Some(wire::NpcIntentDisposition::Ok)
+        {
             return Err(format!("step=talk;text={text};observed={reply:?}").into());
         }
-    }
-    let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
-        npc_actor: actor,
-        text: offer.keyword.clone(),
-    })
-    .map_err(|error| format!("step=talk;encode={error:?}"))?;
-    let reply = client
-        .session_mut()
-        .gated_command(
-            wire::CAPABILITY_NPC_SERVICE_V1,
-            wire::COMMAND_TYPE_NPC_TALK_INTENT,
-            &payload,
-        )
-        .await?;
-    if !matches!(
-        reply.status,
-        CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) || wire::decode_npc_intent_result(&reply.payload).ok()
-        != Some(wire::NpcIntentDisposition::Ok)
-    {
-        return Err(format!("step=talk;keyword={};observed={reply:?}", offer.keyword).into());
+        confirmation_sequence = reply.server_sequence;
     }
     let head: String = offer.reply.chars().take(24).collect();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
         if client.take_events().into_iter().any(|event| {
             matches!(event, SessionEvent::NpcConversation(delta)
-                if delta.server_sequence > reply.server_sequence
+                if delta.server_sequence > confirmation_sequence
                     && delta.value.open.map(|(npc, _)| npc) == Some(actor)
                     && delta.value.lines.iter().any(|line| line.contains(&head)))
         }) {
