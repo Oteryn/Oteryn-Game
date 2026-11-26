@@ -1468,7 +1468,15 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
       failed=1
       continue
     fi
-    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || { failed=1; continue; }
+    if ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation"; then
+      :
+    elif [[ $? == 7 ]]; then
+      # OPS_OUTCOME_AMBIGUOUS: reconcile the original operation exactly once.
+      ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || { failed=1; continue; }
+    else
+      failed=1
+      continue
+    fi
     # An exact retry of the same operation id is idempotent.
     ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || failed=1
   done

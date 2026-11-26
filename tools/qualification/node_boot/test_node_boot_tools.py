@@ -658,6 +658,49 @@ class PgObserveTests(unittest.TestCase):
         self.assertIn('cp -R "$PG_OBS" "$NODE_BOOT_FAILURE_LOG_DIR/postgres-world', RUN_TEXT)
 
 
+class CharacterBootstrapTests(unittest.TestCase):
+    def test_first_bootstrap_retries_only_an_ambiguous_outcome(self):
+        cases = (
+            ("0 0", 0, 2),
+            ("7 0 0", 0, 3),
+            ("7 7", 1, 2),
+            ("6", 1, 1),
+            ("0 7", 1, 2),
+        )
+        for statuses, expected_status, attempts in cases:
+            with self.subTest(statuses=statuses):
+                script = textwrap.dedent(f"""\
+                    set -eu
+                    NODE_BOOT_PROFILE=knight NODE_BOOT_WORLD=0
+                    GAME_SOURCE=/unused WORK=/unused WORLD_ID=world BASE=/node
+                    BOOTSTRAP_ACCOUNTS=(account)
+                    INTENT_OPERATIONS=(operation-1)
+                    INTENT_NAMES=(name)
+                    INTERPRETATION=()
+                    S13_ACCOUNT=unused LIGHT_ACCOUNT_ID=unused EXIVA_ACCOUNT_ID=unused
+                    F5_C17A_ACCOUNT=unused F5_C17C_ACCOUNT=unused
+                    F5_C13_ACCOUNT=unused F5_C18A_ACCOUNT=unused F5_C17D_ACCOUNT=unused
+                    C11_UNASSIGNED_ACCOUNT=unused C11_KNIGHT_ACCOUNT=unused C12_MONK_ACCOUNT=unused
+                    C06_CASTER_ACCOUNT=unused
+                    statuses=({statuses})
+                    calls=0
+                    python3() {{ :; }}
+                    evidence() {{ :; }}
+                    fail() {{ exit 1; }}
+                    ops() {{
+                        printf '%s\\n' "$*"
+                        local rc=${{statuses[calls]:-99}}
+                        calls=$((calls + 1))
+                        return "$rc"
+                    }}
+                    """)
+                result = bash(script + function('character_bootstrap') + '\ncharacter_bootstrap\n')
+                self.assertEqual(result.returncode, expected_status, result.stderr)
+                self.assertEqual(result.stdout.splitlines(), [
+                    'character bootstrap --socket /node/run/control.sock --operation-id operation-1'
+                ] * attempts)
+
+
 class CloudRunSummaryTests(unittest.TestCase):
     def test_cloud_uses_first_eligible_work_parent(self):
         cloud = (HERE / "cloud_run.sh").read_text()
