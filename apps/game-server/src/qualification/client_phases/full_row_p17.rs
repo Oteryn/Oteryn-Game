@@ -231,8 +231,43 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_Q_P17_ACCOUNT").await?;
+    let caster_clients = identity.clients(clients);
+    character_prep::declare_seeded("P17", "level-8-sorcerer", "Find Person requires level 8");
+    let mut caster = connect_character(&caster_clients, 0xd5, 0).await?;
+    let preparation_session = caster.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(preparation_session.as_bytes()),
+        "--profile",
+        "c05-exiva".into(),
+    )
+    .await?;
+    logout(&mut caster).await?;
+    drop(caster);
+    let mut caster = connect_character(&caster_clients, 0xd7, 0).await?;
+    let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        "sorcerer",
+        8,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    )
+    .ok_or("level-8 sorcerer vitals unavailable")?;
+    if caster.join_snapshot().game_session_id == preparation_session
+        || full_e2ef7::player_level(&mut caster).await? != 8
+        || !caster.actor_vitals().is_some_and(|vitals| {
+            vitals.max_health == max_health && vitals.max_mana == max_mana && vitals.mana >= 20
+        })
+    {
+        return Err(format!(
+            "P17 prepared caster readmission mismatch: {:?}",
+            caster.actor_vitals()
+        )
+        .into());
+    }
+    evidence(&format!(
+        "E2E_P17_CHECK caster-preparation PASS level=8 max_health={max_health} max_mana={max_mana}"
+    ));
     let mut target = connect_character(clients, 0xd4, 0).await?;
-    let mut caster = connect_character(clients, 0xd5, 1).await?;
     if !target
         .selected_capabilities()
         .contains(&CAPABILITY_EXIVA_SETTINGS_V1)
@@ -274,15 +309,32 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or("step 3 List lacked added player delta")?;
     if allowed.modes != 2
         || allowed.players.len() != 1
-        || *caster_id != clients.characters[1]
+        || *caster_id != caster_clients.characters[0]
         || listed_name != &caster_name
     {
         return Err(format!("step 3 unexpected List delta: {allowed:?}").into());
     }
     row.pass("add-name", &allowed);
 
+    let caster_tile = tile(caster.world_spatial().actor_position)?;
+    let target_tile = tile(target.world_spatial().actor_position)?;
+    if caster_tile.floor != target_tile.floor
+        || caster_tile
+            .x
+            .abs_diff(target_tile.x)
+            .max(caster_tile.y.abs_diff(target_tile.y))
+            >= 5
+    {
+        return Err(format!(
+            "Find Person near-target fixture mismatch: {caster_tile:?} -> {target_tile:?}"
+        )
+        .into());
+    }
     let (_, located) = cast(&mut caster, &target_name, ChatDisposition::Ok).await?;
-    if !located.iter().any(|line| line.starts_with(&target_name)) {
+    if !located
+        .iter()
+        .any(|line| line == &format!("{target_name} is standing next to you."))
+    {
         return Err(format!("step 4 allowed cast lacked Find Person reply: {located:?}").into());
     }
     row.pass("allowed-cast", located);
@@ -329,7 +381,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("removed-cast-refusal", denied);
     logout(&mut target).await?;
-    logout(&mut caster).await
+    logout(&mut caster).await?;
+    release_row_characters(&caster_clients).await
 }
 
 #[cfg(test)]
