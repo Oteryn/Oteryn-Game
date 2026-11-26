@@ -7,6 +7,7 @@ use super::*;
 use oteryn_dev_client::SessionEvent;
 use oteryn_protocol_oteryn::actor_spell;
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+use oteryn_protocol_oteryn::logout::LogoutResult;
 use std::io::Write;
 
 fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
@@ -60,6 +61,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             return Err("W01c client capture: no spider damage delta in 45s".into());
         }
     };
+
+    // Release the character through the normal logout path. Dropping the
+    // session at the encounter leaves the fixture held by combat loss/grace.
+    let home = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at == TOWN
+    })
+    .ok_or("W01c client capture: no walking route back to town")?;
+    walk(&mut client, world, &home).await?;
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(LogoutResult::Accepted) {
+        return Err(format!("W01c client capture: town logout refused: {logout:?}").into());
+    }
+
     capture(
         capture_root,
         "w01c-vitals.bin",
@@ -80,7 +94,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
+    // Include both live town traversals and the bounded damage observation.
+    match verdict::indexed_timeout(Duration::from_secs(540), verdict::observe(journey(clients)))
         .await
     {
         Ok(Ok(expected)) => evidence(&format!(
