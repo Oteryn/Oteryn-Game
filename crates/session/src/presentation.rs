@@ -2,6 +2,79 @@
 use super::*;
 use oteryn_protocol_oteryn::presentation::*;
 
+impl<S: SessionStream> Session<S> {
+    pub(super) async fn apply_pushed_delta(
+        &mut self,
+        sequence: u64,
+        payload: &[u8],
+    ) -> Result<SessionEvent, SessionError> {
+        let cooldown = decode_state_delta(payload)?;
+        if cooldown.domain_id != STATE_DOMAIN_ACTOR_COOLDOWNS
+            || cooldown.delta_type != DELTA_TYPE_ACTOR_COOLDOWNS_WITH_VITALS_V1
+        {
+            return self.apply_state_delta(sequence, payload);
+        }
+        if !self.is_selected(CAPABILITY_PRESENTATION_V1) {
+            return Err(SessionError::UnselectedDomain {
+                domain_id: cooldown.domain_id,
+            });
+        }
+        let index = self
+            .gated_revisions
+            .iter()
+            .position(|(domain, _)| *domain == STATE_DOMAIN_ACTOR_COOLDOWNS)
+            .ok_or(SessionError::MissingDomain(STATE_DOMAIN_ACTOR_COOLDOWNS))?;
+        check_delta(
+            &cooldown,
+            DELTA_TYPE_ACTOR_COOLDOWNS_WITH_VITALS_V1,
+            self.gated_revisions[index].1,
+        )?;
+        let cooldowns = AppliedDelta {
+            server_sequence: sequence,
+            base_revision: cooldown.base_revision,
+            new_revision: cooldown.new_revision,
+            value: decode_update(cooldown.payload, false)?,
+        };
+
+        // Like the rest of a started frame, this continuation uses the frame
+        // deadline even if the caller's idle window has ended.
+        let frame = bounded(
+            self.deadline,
+            "Gift of Life vitals",
+            read_frame(&mut self.stream),
+        )
+        .await?;
+        self.last_received = tokio::time::Instant::now();
+        let envelope = decode_wire_envelope(&frame)?;
+        envelope.validate(Direction::ServerToClient, true)?;
+        self.check_generation(&envelope)?;
+        if let Some(error) = self.terminal_protocol_error(&envelope)? {
+            return Err(error);
+        }
+        if envelope.message_type() != MessageType::StateDelta {
+            return Err(SessionError::UnexpectedMessage {
+                expected: MessageType::StateDelta,
+                actual: envelope.message_type(),
+            });
+        }
+        let sequence = self.next_sequence(&envelope)?;
+        let delta = decode_state_delta(envelope.payload())?;
+        if delta.domain_id != actor_spell::STATE_DOMAIN_ACTOR_VITALS {
+            return Err(SessionError::UnexpectedDomain {
+                expected: actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                actual: delta.domain_id,
+            });
+        }
+        let SessionEvent::ActorVitals(vitals) =
+            self.apply_state_delta(sequence, envelope.payload())?
+        else {
+            return Err(SessionError::SessionUnusable);
+        };
+        self.gated_revisions[index].1 = cooldowns.new_revision;
+        Ok(SessionEvent::GiftOfLife { cooldowns, vitals })
+    }
+}
+
 pub(super) fn validate_join(
     selected: &[u32],
     snapshots: &[GatedSnapshot],

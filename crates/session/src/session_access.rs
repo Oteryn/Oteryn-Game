@@ -381,7 +381,9 @@ impl<S: SessionStream> Session<S> {
                 MessageType::SnapshotBegin => self.replace_snapshot(envelope.payload()).await?,
                 MessageType::StateDelta => {
                     let server_sequence = self.next_sequence(&envelope)?;
-                    let event = self.apply_state_delta(server_sequence, envelope.payload())?;
+                    let event = self
+                        .apply_pushed_delta(server_sequence, envelope.payload())
+                        .await?;
                     self.queue_event(event)?;
                 }
                 actual => {

@@ -550,8 +550,12 @@ impl State {
         } else {
             authority.observe_house_vitals(self.actor, *admitted).await
         };
-        let frames =
-            super::cooldowns::frames(authority, self.cooldowns.as_ref(), &mut admitted.continuity)?;
+        let frames = super::cooldowns::frames(
+            authority,
+            self.cooldowns.as_ref(),
+            &mut admitted.continuity,
+            None,
+        )?;
         super::cooldowns::write_batch(stream, &frames, None).await?;
         if let Some((_, vitals)) = &current
             && self

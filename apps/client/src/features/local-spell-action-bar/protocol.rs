@@ -11,6 +11,10 @@ pub(in crate::play) fn vitals_events(mailbox: &mut Mailbox, events: &[SessionEve
                 mailbox.spell_bar.apply_cooldowns(&delta.value);
             }
             SessionEvent::ActorVitals(delta) => mailbox.apply_death_vitals(delta.value),
+            SessionEvent::GiftOfLife { cooldowns, vitals } => {
+                mailbox.spell_bar.apply_cooldowns(&cooldowns.value);
+                mailbox.apply_death_vitals(vitals.value);
+            }
             _ => {}
         }
     }

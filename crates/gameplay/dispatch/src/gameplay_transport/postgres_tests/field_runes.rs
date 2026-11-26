@@ -2772,7 +2772,7 @@ async fn drive_gift_field_entry(
     let now = owner.owner_now().get();
     let deadline = now + 90_000_000;
     let shortened = now + 30_000_000;
-    let feed = {
+    let mut feed = {
         let runtime = owner.runtime.lock().await;
         let mut states = owner.states.spell_states.lock().await;
         let state = states.get_mut(&runtime, actor, session).ok_or("victim")?;
@@ -2802,7 +2802,8 @@ async fn drive_gift_field_entry(
             .subscribe_cooldowns(&runtime, actor, admitted, book)
             .ok_or("victim cooldown subscription")?
     };
-    assert_eq!(feed.snapshot.get(&cooldown), Some(&deadline));
+    let snapshot = feed.take_snapshot().ok_or("current cooldown snapshot")?;
+    assert_eq!(snapshot.get(&cooldown), Some(&deadline));
 
     owner.root.await_ready().await?;
     let mut interrupted = rollback.then(|| faults::arm(faults::PLAYER, false));
@@ -2841,7 +2842,7 @@ async fn drive_gift_field_entry(
         (state.revision(), state.vitals())
     };
     let published = feed
-        .take(generation)
+        .take(generation, None)
         .ok_or("current cooldown subscription")?;
     assert_eq!(published.deadlines, [(cooldown, shortened)].into());
     assert_eq!(published.rescued, Some((revision, vitals)));

@@ -16,8 +16,8 @@ pub type JoinVitals = (Option<Vitals>, Option<CooldownFeed>);
 /// so a stalled connection cannot grow an unbounded queue.
 #[derive(Debug)]
 pub struct CooldownFeed {
-    pub(super) snapshot: BTreeMap<Key, u64>,
-    pending: Arc<Mutex<CommittedCooldowns>>,
+    snapshot: BTreeMap<Key, u64>,
+    pending: Arc<Mutex<Option<CommittedCooldowns>>>,
     connection_generation: u64,
 }
 
@@ -31,17 +31,46 @@ pub(super) struct CommittedCooldowns {
 pub(super) struct Subscriber {
     fence: CurrentCharacterItemFence,
     spell_indices: BTreeMap<String, u32>,
-    pending: Weak<Mutex<CommittedCooldowns>>,
+    pending: Weak<Mutex<Option<CommittedCooldowns>>>,
 }
 
 impl CooldownFeed {
-    pub(super) fn take(&self, connection_generation: u64) -> Option<CommittedCooldowns> {
-        (self.connection_generation == connection_generation)
-            .then(|| std::mem::take(&mut *self.pending.lock().unwrap_or_else(|e| e.into_inner())))
+    pub(super) fn take_snapshot(&mut self) -> Option<BTreeMap<Key, u64>> {
+        let pending = self.pending.lock().unwrap_or_else(|e| e.into_inner());
+        pending.as_ref()?;
+        Some(std::mem::take(&mut self.snapshot))
+    }
+
+    pub(super) fn take(
+        &self,
+        connection_generation: u64,
+        cast_revision: Option<u64>,
+    ) -> Option<CommittedCooldowns> {
+        if self.connection_generation != connection_generation {
+            return None;
+        }
+        let mut mailbox = self.pending.lock().unwrap_or_else(|e| e.into_inner());
+        let pending = mailbox.as_mut()?;
+        // A rescue at or after the paid cast can satisfy its post-result
+        // vitals requirement. Leave the whole receipt for the spell follow-up.
+        if let Some(cast_revision) = cast_revision
+            && pending
+                .rescued
+                .is_some_and(|(revision, _)| revision >= cast_revision)
+        {
+            return None;
+        }
+        Some(std::mem::take(pending))
     }
 }
 
 impl Subscriber {
+    fn invalidate(&self) {
+        if let Some(mailbox) = self.pending.upgrade() {
+            *mailbox.lock().unwrap_or_else(|e| e.into_inner()) = None;
+        }
+    }
+
     fn keys(&self, cooldowns: &Cooldowns) -> BTreeMap<Key, u64> {
         static GROUPS: OnceLock<Vec<String>> = OnceLock::new();
         let groups = GROUPS.get_or_init(|| {
@@ -112,6 +141,49 @@ fn current(
 }
 
 impl ChannelSpellStates {
+    pub(super) fn replace_cooldown_transport(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        generation: u64,
+    ) {
+        let key = actor.placement_identity();
+        if self
+            .cooldown_generations
+            .get(&key)
+            .is_some_and(|(held_actor, held_session, current)| {
+                *held_actor == actor && *held_session == session && *current >= generation
+            })
+        {
+            // A durable recovery receipt can replay for the same transport.
+            return;
+        }
+        self.cooldown_generations
+            .insert(key, (actor, session, generation));
+        if let Some(subscriber) = self.cooldown_subscribers.remove(&key) {
+            subscriber.invalidate();
+        }
+    }
+
+    pub(super) fn current_cooldown_transport(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        generation: u64,
+    ) -> bool {
+        let current = self
+            .cooldown_generations
+            .get(&actor.placement_identity())
+            .filter(|(held_actor, held_session, _)| {
+                *held_actor == actor && *held_session == session
+            })
+            .map_or(
+                super::connection::SessionContinuity::FRESH.connection_generation,
+                |(_, _, generation)| *generation,
+            );
+        generation == current
+    }
+
     pub(super) fn subscribe_cooldowns(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -127,6 +199,7 @@ impl ChannelSpellStates {
             .contains(wire::CAPABILITY_PRESENTATION_V1)
             || fence.game_session_id != session
             || fence.connection_generation.get() != admitted.continuity.connection_generation
+            || !self.current_cooldown_transport(actor, session, fence.connection_generation.get())
             || !current(runtime, actor, fence)
         {
             return None;
@@ -136,7 +209,7 @@ impl ChannelSpellStates {
         } else {
             self.get(runtime, actor, session)?
         };
-        let pending = Arc::new(Mutex::new(CommittedCooldowns::default()));
+        let pending = Arc::new(Mutex::new(Some(CommittedCooldowns::default())));
         let subscriber = Subscriber {
             fence,
             spell_indices: (1..=u32::try_from(book.source_len()).ok()?)
@@ -158,7 +231,9 @@ impl ChannelSpellStates {
         }) {
             return None;
         }
-        self.cooldown_subscribers.insert(key, subscriber);
+        if let Some(displaced) = self.cooldown_subscribers.insert(key, subscriber) {
+            displaced.invalidate();
+        }
         Some(CooldownFeed {
             snapshot,
             pending,
@@ -203,7 +278,13 @@ impl ChannelSpellStates {
         let Some(subscriber) = self.cooldown_subscribers.get(&actor.placement_identity()) else {
             return;
         };
-        if subscriber.fence.game_session_id != session || !current(runtime, actor, subscriber.fence)
+        if subscriber.fence.game_session_id != session
+            || !self.current_cooldown_transport(
+                actor,
+                session,
+                subscriber.fence.connection_generation.get(),
+            )
+            || !current(runtime, actor, subscriber.fence)
         {
             return;
         }
@@ -212,7 +293,10 @@ impl ChannelSpellStates {
         };
         let before = subscriber.keys(before);
         let after = subscriber.keys(after);
-        let mut pending = pending.lock().unwrap_or_else(|e| e.into_inner());
+        let mut mailbox = pending.lock().unwrap_or_else(|e| e.into_inner());
+        let Some(pending) = mailbox.as_mut() else {
+            return;
+        };
         for (key, deadline) in &after {
             if before.get(key) != Some(deadline) {
                 pending.deadlines.insert(*key, *deadline);
@@ -265,4 +349,46 @@ pub(super) fn payload(
         rtt_ms: None,
         entries,
     })
+}
+
+#[cfg(test)]
+pub(super) struct TestReceipt {
+    pending: Arc<Mutex<Option<CommittedCooldowns>>>,
+    rescued: std::cell::Cell<Option<Vitals>>,
+}
+
+#[cfg(test)]
+impl Default for TestReceipt {
+    fn default() -> Self {
+        Self {
+            pending: Arc::new(Mutex::new(Some(CommittedCooldowns::default()))),
+            rescued: Default::default(),
+        }
+    }
+}
+
+#[cfg(test)]
+impl TestReceipt {
+    pub(super) fn feed(&self, admitted: AdmittedSession) -> CooldownFeed {
+        CooldownFeed {
+            snapshot: BTreeMap::new(),
+            pending: Arc::clone(&self.pending),
+            connection_generation: admitted.continuity.connection_generation,
+        }
+    }
+
+    pub(super) fn rescue(&self, vitals: Vitals) -> Option<()> {
+        self.rescued.set(Some(vitals));
+        let mut pending = self.pending.lock().unwrap_or_else(|e| e.into_inner());
+        let pending = pending.as_mut()?;
+        pending.rescued = Some(vitals);
+        pending
+            .deadlines
+            .insert((wire::ActorCooldownKind::Spell, 1), 30_000_000);
+        Some(())
+    }
+
+    pub(super) fn rescued(&self) -> Option<Vitals> {
+        self.rescued.get()
+    }
 }

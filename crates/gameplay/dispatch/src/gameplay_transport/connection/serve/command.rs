@@ -408,10 +408,17 @@ where
     if matches!(dispatch, Dispatch::Vip(None)) {
         return Err(ServeEnd::Disconnected);
     }
+    let cast_revision = match &dispatch {
+        Dispatch::Spell(cast) | Dispatch::ParameterSpell(cast, _) => {
+            cast.vitals.map(|(revision, _)| revision)
+        }
+        _ => None,
+    };
     let cooldown_frames = cooldowns::frames(
         authority,
         session.cooldowns.as_ref(),
         &mut session.admitted.continuity,
+        cast_revision,
     )?;
     session.sequence = session.admitted.continuity.server_sequence;
     let Some(result_sequence) = session.sequence.checked_add(1) else {
