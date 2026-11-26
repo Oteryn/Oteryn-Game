@@ -7,13 +7,11 @@ use oteryn_dev_client::{DevClientSession, EntityRef};
 use oteryn_protocol_oteryn::{CommandStatus, party_skull};
 use runtime::party::PartyIntent;
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S02_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
+    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        std::fs::write(Path::new(&root).join(name), bytes)?;
     }
+    Ok(())
 }
 
 fn own(client: &DevClientSession) -> TestResult<EntityRef> {
@@ -93,7 +91,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if !(1..=2).contains(&invited_shield) {
         return Err(format!("invitation shield {invited_shield} is not blue/yellow").into());
     }
-    capture("s02-invited.bin", &invited_bytes);
+    capture("s02-invited.bin", &invited_bytes)?;
 
     let view = party(&mut peer, None).await?;
     let state = runtime::party::decode_party_result(&view)
@@ -112,26 +110,68 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if leader_shield != 4 && leader_shield != 6 {
         return Err(format!("leader shield {leader_shield} is not leader/shared").into());
     }
-    capture("s02-member.bin", &member_bytes);
-    capture("s02-leader.bin", &leader_bytes);
-    let expected = format!(
+    capture("s02-member.bin", &member_bytes)?;
+    capture("s02-leader.bin", &leader_bytes)?;
+    let mut expected = format!(
         "peer_identity={}\npeer_generation={}\nleader_identity={}\nleader_generation={}\ninvited_shield={invited_shield}\ninvited_skull={invited_skull}\nmember_shield={peer_shield}\nmember_skull={peer_skull}\nleader_shield={leader_shield}\nleader_skull={leader_skull}\n",
         hex(&peer_ref.identity),
         peer_ref.generation,
         hex(&leader_ref.identity),
         leader_ref.generation,
     );
-    capture("s02-expected.txt", expected.as_bytes());
+    use std::fmt::Write as _;
+    const SHIELDS: [&str; 12] = [
+        "None",
+        "Invitation blue",
+        "Invitation yellow",
+        "Member",
+        "Leader",
+        "Shared member",
+        "Shared leader",
+        "Inactive blinking member",
+        "Inactive blinking leader",
+        "Inactive member",
+        "Inactive leader",
+        "Outsider gray",
+    ];
+    const SKULLS: [&str; 7] = ["None", "Yellow", "Green", "White", "Red", "Black", "Orange"];
+    expected.push('\n');
+    for (view, bytes) in [
+        ("invited", invited_bytes),
+        ("member", member_bytes),
+        ("leader", leader_bytes),
+    ] {
+        let icons = party_skull::decode_party_icons(&bytes)
+            .map_err(|error| format!("S02 {view} icon decode: {error:?}"))?;
+        for icon in icons {
+            let id = icon.entity.identity;
+            let generation = icon.entity.generation;
+            let shield = icon.shield;
+            let skull = icon.skull;
+            let shield_label = SHIELDS
+                .get(usize::from(shield))
+                .ok_or("invalid shield code")?;
+            let skull_label = SKULLS.get(usize::from(skull)).ok_or("invalid skull code")?;
+            writeln!(
+                expected,
+                "{view}\t{}\t{generation}\t{shield}\t{skull}\tEntity {id:02x?} / {generation} | Shield: {shield_label} | Skull: {skull_label}",
+                hex(&id)
+            )?;
+        }
+    }
+    capture("s02-expected.txt", expected.as_bytes())?;
     party(&mut leader, Some(PartyIntent::Leave)).await?;
     let _ = leader.session_mut().logout().await?;
     let _ = peer.session_mut().logout().await?;
-    Ok(expected.replace('\n', ";"))
+    Ok("party-icon-replay-captured".into())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
-            "e2e_all scenario=S02.client status=CAPTURED evidence={expected}"
+            "e2e_all scenario=S02.client status=PASS evidence={expected}"
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=S02.client status=FAIL evidence={error}"
