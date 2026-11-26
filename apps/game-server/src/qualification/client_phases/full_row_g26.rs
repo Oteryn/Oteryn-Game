@@ -1,15 +1,13 @@
-//! G26: house sale escrow/authority (cmd 6129, cap 49).
-//! Reads the house-sale catalogue, and for a house the character does not own sends a real
-//! transfer offer (action 3) to the other provisioned character: the server must not change the
-//! catalogue. No player route grants a house in a run (ownership is settled by Control-side auction
-//! settlement), so the row ends FAIL `needed:owned-house` after the refusal is proven.
+//! G26: house sale escrow and durable ownership through the admitted wire.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use sqlx::Connection;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -48,62 +46,257 @@ async fn character_name(clients: &SeamClients<'_>, index: usize) -> TestResult<S
 
 use oteryn_protocol_oteryn::house_sale as sale;
 
-async fn catalogue(client: &mut DevClientSession) -> TestResult<sale::HouseSaleReply> {
-    let payload = sale::encode_request(&sale::HouseSaleRequest::catalogue(String::new()))
-        .map_err(|error| format!("step=encode observed={error:?}"))?;
+const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
+const PRICE: u64 = 200;
+const RENT: u64 = 50;
+
+async fn prepare_owned_house(seller: &SeamClients<'_>, buyer: &SeamClients<'_>) -> TestResult {
+    let mut database = sqlx::PgConnection::connect(seller.url).await?;
+    let mut tx = database.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let world = seller.world.as_slice();
+    let result = sqlx::query(include_str!(
+        "../../../tests/support/owned_house_fixture.sql"
+    ))
+    .bind(world)
+    .bind(HOUSE)
+    .bind(seller.characters[1].as_slice())
+    .execute(&mut *tx)
+    .await?;
+    if result.rows_affected() != 1 {
+        return Err("step=fixture observed=missing-seller".into());
+    }
+    sqlx::query(
+        "UPDATE game_house_properties SET rent_gold=$3, revision=revision+1
+                WHERE world_id=encode($1,'hex')::uuid AND house_key=$2",
+    )
+    .bind(world)
+    .bind(HOUSE)
+    .bind(i64::try_from(RENT)?)
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_house_bed_revisions(world_id,house_key,revision)
+                 VALUES(encode($1,'hex')::uuid,$2,1)",
+    )
+    .bind(world)
+    .bind(HOUSE)
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(include_str!("g26_bank_fixture.sql"))
+        .bind(&buyer.accounts[0])
+        .bind(world)
+        .bind(buyer.channel.as_slice())
+        .bind(buyer.characters[0].as_slice())
+        .bind(i64::try_from(PRICE + RENT)?)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+fn action(kind: u8, revision: u64) -> sale::HouseSaleRequest {
+    sale::HouseSaleRequest {
+        action: kind,
+        house: HOUSE.into(),
+        expected_revision: revision,
+        due_at_unix_ms: 0,
+        recipient: String::new(),
+        price: 0,
+        after_house: String::new(),
+    }
+}
+
+async fn send(
+    client: &mut DevClientSession,
+    request: &sale::HouseSaleRequest,
+    expected: CommandStatus,
+) -> TestResult<Option<sale::HouseSaleReply>> {
+    let payload = sale::encode_request(request)
+        .map_err(|error| format!("step=encode action={} observed={error:?}", request.action))?;
     let response = client
         .session_mut()
         .gated_command(sale::CAPABILITY, sale::COMMAND, &payload)
         .await?;
-    if response.status != CommandStatus::Accepted {
-        return Err(format!("step=catalogue observed=status:{:?}", response.status).into());
-    }
-    sale::decode_reply(&response.payload)
-        .map_err(|error| format!("step=catalogue-decode observed={error:?}").into())
-}
-
-async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let own = character_name(clients, 1).await?;
-    let peer = character_name(clients, 0).await?;
-    let mut client = connect_world(clients, 0xd6).await?;
-    if !client.selected_capabilities().contains(&sale::CAPABILITY) {
+    if response.status != expected {
         return Err(format!(
-            "step=admit observed=capability-{}-not-selected",
-            sale::CAPABILITY
+            "step=sale-wire action={} observed={:?} needed={expected:?}",
+            request.action, response.status
         )
         .into());
     }
-    let before = catalogue(&mut client).await?;
-    let owned = before.rows.iter().filter(|row| row.owner == own).count();
-    let mut refusal = "no-house-rows".to_owned();
-    if let Some(row) = before.rows.iter().find(|row| row.owner != own) {
-        let request = sale::HouseSaleRequest {
-            action: 3,
-            house: row.house.clone(),
-            expected_revision: row.revision.max(1),
-            due_at_unix_ms: before.now_unix_ms + 86_400_000,
-            recipient: peer,
-            price: 1_000,
-            after_house: String::new(),
-        };
-        let payload = sale::encode_request(&request)
-            .map_err(|error| format!("step=offer-encode observed={error:?}"))?;
-        let response = client
-            .session_mut()
-            .gated_command(sale::CAPABILITY, sale::COMMAND, &payload)
-            .await?;
-        refusal = format!("status:{:?}", response.status);
-        let after = catalogue(&mut client).await?;
-        if format!("{:?}", after.rows) != format!("{:?}", before.rows) {
-            return Err(format!("step=offer-not-owner observed={refusal};catalogue-changed;needed=refusal-without-change").into());
+    if expected == CommandStatus::Rejected {
+        return Ok(None);
+    }
+    Ok(Some(sale::decode_reply(&response.payload).map_err(
+        |error| format!("step=decode action={} observed={error:?}", request.action),
+    )?))
+}
+
+async fn accepted(
+    client: &mut DevClientSession,
+    request: &sale::HouseSaleRequest,
+) -> TestResult<sale::HouseSaleReply> {
+    send(client, request, CommandStatus::Accepted)
+        .await?
+        .ok_or_else(|| "missing accepted reply".into())
+}
+
+fn only_house(page: &sale::HouseSaleReply) -> TestResult<&sale::HouseSaleRow> {
+    match page.rows.as_slice() {
+        [row] if row.house == HOUSE && !page.has_more => Ok(row),
+        _ => Err(format!(
+            "step=catalogue observed=houses:{} needed={HOUSE}",
+            page.rows.len()
+        )
+        .into()),
+    }
+}
+
+async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    use super::full_row_e06::bank_balance;
+
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_G26_ACCOUNT").await?;
+    let buyer_scope = dedicated.clients(clients);
+    let seller_name = character_name(clients, 1).await?;
+    let buyer_name = character_name(&buyer_scope, 0).await?;
+    let mut buyer = connect_character(&buyer_scope, 0xd6, 0).await?;
+    character_prep::grant_premium(&buyer).await?;
+    logout(&mut buyer).await?;
+    drop(buyer);
+
+    prepare_owned_house(clients, &buyer_scope).await?;
+    let seller_gold = bank_balance(clients, 1).await?;
+    let buyer_gold = bank_balance(&buyer_scope, 0).await?;
+    if buyer_gold != PRICE + RENT {
+        return Err(format!("step=fixture observed=buyer-gold:{buyer_gold}").into());
+    }
+    let mut seller = connect_world(clients, 0xd6).await?;
+    let mut buyer = connect_character(&buyer_scope, 0xd7, 0).await?;
+    for client in [&seller, &buyer] {
+        if !client.selected_capabilities().contains(&sale::CAPABILITY) {
+            return Err(format!(
+                "step=admit observed=capability-{}-not-selected",
+                sale::CAPABILITY
+            )
+            .into());
         }
     }
-    logout(&mut client).await?;
-    if owned == 0 {
-        return Err(format!("step=sale-flow observed=houses:{};owned:0;offer-by-non-owner:{refusal};needed:owned-house", before.rows.len()).into());
+
+    let request = sale::HouseSaleRequest::catalogue(String::new());
+    let original = accepted(&mut seller, &request).await?;
+    let row = only_house(&original)?;
+    if row.owner != seller_name || row.transfer_state != 0 || row.rent != RENT {
+        return Err(format!("step=initial-ownership observed={row:?}").into());
     }
-    Err(format!(
-        "step=sale-flow observed=owned:{owned};needed:escrow-and-recipient-drive-not-implemented"
+    let mut offer = action(3, row.revision);
+    offer.due_at_unix_ms = original.now_unix_ms + 172_800_000;
+    offer.recipient = buyer_name.clone();
+    offer.price = PRICE;
+    let offered = accepted(&mut seller, &offer).await?;
+    let incoming = accepted(&mut buyer, &request).await?;
+    let row = only_house(&incoming)?;
+    if row.owner != seller_name
+        || row.recipient != buyer_name
+        || row.transfer_state != 1
+        || row.revision != offer.expected_revision + 1
+        || row.due_at_unix_ms != offer.due_at_unix_ms
+        || row.price != PRICE
+        || row.rent != RENT
+        || row.allowed != ((1 << 5) | (1 << 6))
+        || only_house(&offered)?.revision != row.revision
+        || bank_balance(&buyer_scope, 0).await? != buyer_gold
+    {
+        return Err(format!("step=offer observed={row:?}").into());
+    }
+
+    let mut unauthorized = offer.clone();
+    unauthorized.expected_revision = row.revision;
+    unauthorized.recipient = seller_name.clone();
+    send(&mut buyer, &unauthorized, CommandStatus::Rejected).await?;
+    let after = accepted(&mut buyer, &request).await?;
+    if after.rows != incoming.rows {
+        return Err("step=offer-not-owner observed=catalogue-changed".into());
+    }
+    let accept = action(5, row.revision);
+    send(&mut seller, &accept, CommandStatus::Rejected).await?;
+    if accepted(&mut seller, &request).await?.rows != offered.rows {
+        return Err("step=accept-not-recipient observed=catalogue-changed".into());
+    }
+    let escrowed = accepted(&mut buyer, &accept).await?;
+    let escrow = only_house(&escrowed)?;
+    if escrow.transfer_state != 2
+        || escrow.owner != seller_name
+        || escrow.recipient != buyer_name
+        || escrow.revision != row.revision + 1
+        || escrow.price != PRICE
+        || escrow.rent != RENT
+        || bank_balance(&buyer_scope, 0).await? != buyer_gold - PRICE - RENT
+        || bank_balance(clients, 1).await? != seller_gold
+    {
+        return Err(format!("step=escrow observed={escrow:?}").into());
+    }
+
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let original_calendar: String = sqlx::query_scalar(
+        "SELECT pg_get_functiondef('game_house_calendar_milliseconds(timestamptz)'::regprocedure)",
     )
-    .into())
+    .fetch_one(&mut database)
+    .await?;
+    sqlx::query(
+        "CREATE OR REPLACE FUNCTION game_house_calendar_milliseconds(t TIMESTAMPTZ)
+        RETURNS BIGINT LANGUAGE sql IMMUTABLE STRICT
+        AS $$ SELECT floor(extract(epoch FROM t)*1000)::bigint + 259200000 $$",
+    )
+    .execute(&mut database)
+    .await?;
+    let settled: TestResult = async {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+        loop {
+            let page = accepted(&mut buyer, &request).await?;
+            let current = only_house(&page)?;
+            if current.owner == buyer_name {
+                if current.transfer_state != 0 || !current.recipient.is_empty() {
+                    return Err(format!("step=settlement observed={current:?}").into());
+                }
+                return Ok(());
+            }
+            if current.owner != seller_name
+                || current.transfer_state != 2
+                || tokio::time::Instant::now() >= deadline
+            {
+                return Err(format!("step=settlement observed={current:?}").into());
+            }
+            tokio::time::sleep(Duration::from_millis(250)).await;
+        }
+    }
+    .await;
+    sqlx::raw_sql(sqlx::AssertSqlSafe(original_calendar))
+        .execute(&mut database)
+        .await?;
+    settled?;
+
+    let buyer_session = buyer.join_snapshot().game_session_id;
+    logout(&mut buyer).await?;
+    logout(&mut seller).await?;
+    drop((buyer, seller));
+    let mut buyer = connect_character(&buyer_scope, 0xd8, 0).await?;
+    let mut seller = connect_world(clients, 0xd9).await?;
+    let durable = accepted(&mut buyer, &request).await?;
+    let row = only_house(&durable)?;
+    if buyer.join_snapshot().game_session_id == buyer_session
+        || row.owner != buyer_name
+        || row.transfer_state != 0
+        || !row.recipient.is_empty()
+        || !accepted(&mut seller, &request).await?.rows.is_empty()
+        || bank_balance(&buyer_scope, 0).await? != buyer_gold - PRICE - RENT
+        || bank_balance(clients, 1).await? != seller_gold + PRICE
+    {
+        return Err(format!("step=relog observed={row:?}").into());
+    }
+    logout(&mut buyer).await?;
+    logout(&mut seller).await?;
+    Ok("owner-and-recipient-authority;exact-escrow;settled-owner-and-balances-after-relog".into())
 }
