@@ -207,14 +207,15 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     assert_eq!(selection.amulet, expected_amulet);
     assert_eq!(selection.lost, expected_lost);
     let should_burn = expected_amulet.is_some();
-    let ground: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_ground_locations WHERE spatial_position=$1 AND map_revision=$2 AND world_id=encode($3,'hex')::uuid AND channel_id=encode($4,'hex')::uuid")
-        .bind(&request.death_cell.spatial_position).bind(&request.death_cell.map_revision)
-        .bind(id(42).as_slice()).bind(id(43).as_slice()).fetch_one(&h.pool).await?;
-    assert_eq!(
-        ground,
-        i64::try_from(expected_lost.len())?,
-        "computed death loss must reach Ground"
-    );
+    let counts: (i64, i64, i64) = sqlx::query_as(
+        "SELECT count(DISTINCT e.parent_item_instance_id),count(e.item_instance_id),count(g.item_instance_id)
+         FROM game_player_death_item_records r
+         LEFT JOIN game_item_corpse_container_entries e ON e.item_instance_id=r.item_instance_id
+         LEFT JOIN game_item_ground_locations g ON g.item_instance_id=r.item_instance_id
+         WHERE r.death_occurrence_id=encode($1,'hex')::uuid AND r.operation=1",
+    )
+    .bind(committed.occurrence.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(counts, (i64::from(!expected_lost.is_empty()), i64::try_from(expected_lost.len())?, 0));
     // A lost backpack carries its child by identity, without expanding the death plan.
     let parent_query = if expected_lost.contains(&id(70)) {
         "SELECT parent_item_instance_id::text FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid"
@@ -292,7 +293,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         .map_err(debug)?
         .ok_or("pending respawn lost")?;
     eprintln!(
-        "C20b_POSTGRES_EXECUTED: amulet={amulet} skull={skull} ground={ground} records={records}; replay and respawn durable"
+        "C20b_POSTGRES_EXECUTED: amulet={amulet} skull={skull} corpse_entries={} records={records}; replay and respawn durable", counts.1
     );
     drop(owner);
     drop(authority);

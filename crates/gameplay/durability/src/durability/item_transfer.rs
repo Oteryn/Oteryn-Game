@@ -1429,7 +1429,7 @@ async fn source_eligibility(
     // D133: the exclusivity window, read against the database clock.
     if let Some(corpse) = source.corpse.as_ref() {
         let row = sqlx::query(
-            "SELECT corpse_top_damage_character_id::text AS top_damage, materialized_at, \
+            "SELECT corpse_top_damage_character_id::text AS top_damage, materialized_at, \n                    loot_table_family='PlayerDeath' AS player_corpse, \
                     floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS db_now \
                FROM game_item_mint_receipts \
               WHERE item_instance_id = encode($1,'hex')::uuid \
@@ -1442,19 +1442,18 @@ async fn source_eligibility(
         let Some(row) = row else {
             return Err(DurabilityError::InvalidStoredState);
         };
-        let top_damage = uuid_text(
-            &row.try_get::<Option<String>, _>("top_damage")?
-                .ok_or(DurabilityError::InvalidStoredState)?,
-        )?;
         let materialized_at = row
             .try_get::<Option<i64>, _>("materialized_at")?
             .ok_or(DurabilityError::InvalidStoredState)?;
-        if !corpse_window_allows(
-            *fence.character_id.as_bytes(),
-            top_damage,
-            materialized_at,
-            row.try_get("db_now")?,
-        ) {
+        if !row.try_get::<bool, _>("player_corpse")?
+            && !corpse_window_allows(
+                *fence.character_id.as_bytes(),
+                uuid_text(&row.try_get::<Option<String>, _>("top_damage")?
+                    .ok_or(DurabilityError::InvalidStoredState)?)?,
+                materialized_at,
+                row.try_get("db_now")?,
+            )
+        {
             return Ok(Err(ItemTransferError::Refused(
                 ItemTransferRefusal::CorpseExclusiveWindow,
             )));
