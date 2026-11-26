@@ -7,6 +7,8 @@ use crate::gameplay_transport::{ComposedFreshAdmission, last_position::Admission
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use std::time::Duration;
 
+#[path = "monster_attacks/holder_contention.rs"]
+mod holder_contention;
 #[path = "monster_attacks/invisible_area.rs"]
 mod invisible_area;
 #[path = "monster_attacks/removal.rs"]
@@ -664,6 +666,22 @@ fn dependencies(
     pin: &crate::content::NativeEntryContentPin,
     case: AttackCase,
 ) -> TestResult<(Dependencies, ExactActorRef)> {
+    let monster_x = if matches!(case, AttackCase::Rat | AttackCase::TheMonster) {
+        2
+    } else {
+        -1
+    };
+    dependencies_at(active, pin, case, (3, 12, -7), (monster_x, 12, -7), None)
+}
+
+fn dependencies_at(
+    active: &crate::content::ActiveGeneration,
+    pin: &crate::content::NativeEntryContentPin,
+    case: AttackCase,
+    player_at: (i32, i32, i16),
+    monster_at: (i32, i32, i16),
+    login_at: Option<u64>,
+) -> TestResult<(Dependencies, ExactActorRef)> {
     let mut deps = Dependencies::new()?;
     deps.room = pin.qualified_room().clone();
     deps.combat_room = Some(deps.room.clone());
@@ -693,12 +711,16 @@ fn dependencies(
     let reservation = runtime
         .reserve_fresh_session(deps.admitted.game_session_id)
         .map_err(debug)?;
-    deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+    deps.actor = match login_at {
+        Some(now) => runtime.commit_fresh_session_at(reservation, now),
+        None => runtime.commit_fresh_session(reservation),
+    }
+    .map_err(debug)?;
     runtime
         .initialize_source_pinned_lab_player_position(
             deps.actor,
             deps.admitted.game_session_id,
-            MovementLocalPosition { x: 3, y: 12, floor: -7 },
+            MovementLocalPosition { x: player_at.0, y: player_at.1, floor: player_at.2 },
         )
         .map_err(debug)?;
     let maximum_health = u64::try_from(
@@ -706,7 +728,7 @@ fn dependencies(
     )?;
     runtime
         .begin_activation_spawn_sources(vec![(
-            vec![((if matches!(case, AttackCase::Rat | AttackCase::TheMonster) { 2 } else { -1 }, 12, -7), 60_000, case.creature_key().to_owned(), maximum_health, false)],
+            vec![(monster_at, 60_000, case.creature_key().to_owned(), maximum_health, false)],
             5_000,
         )])
         .map_err(debug)?;

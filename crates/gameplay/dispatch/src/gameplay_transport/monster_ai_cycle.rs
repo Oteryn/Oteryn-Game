@@ -7,6 +7,7 @@ use crate::movement::relocate::{accepted_entry_movement, cell_open, creature_cel
 use super::ComposedFreshAdmission;
 use super::actor_spell::ChannelSpellStates;
 use super::attack::ChannelAttackStates;
+use super::monster_profile_cycle::{ProfileDriveError, native_think_root};
 use crate::ability::creature_bite::ReentryProtection;
 use crate::ai::{AiProvenance, AiProvenanceInput, ResourceLimit};
 use crate::ai_monster_melee::{Dispatch, MeleeDefinition, think_target_only};
@@ -596,6 +597,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let candidates = think_candidates(&runtime, &states, &targets);
         #[cfg(test)]
         trace.set("ai_profile_gate");
+        let mut profile_deferred = false;
         let (next_think, thought_actors, ran_profile) = if periodic_pass
             || source_due
             || states.primal_callbacks.has_native_due(now.get())
@@ -625,7 +627,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
             {
                 Ok(next) => next,
-                Err(()) => {
+                Err(ProfileDriveError::CheckoutBusy)
+                    if periodic_pass
+                        && room.pinned_activity_source_room().is_none()
+                        && matches!(
+                            runtime.binding().runtime_scope(),
+                            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+                        ) =>
+                {
+                    // Keep the profile wake due for the existing bounded owner-loop
+                    // retry. The held lane and current runtime fence authorize only
+                    // independent melee thinks; their actor deadlines still advance.
+                    profile_deferred = true;
+                    let actors =
+                        Box::pin(states.monster_melee.creature_ai.run_due_melee_only_thinks(
+                            &mut runtime,
+                            now.get(),
+                            &native_think_root(content),
+                            &revisions,
+                            &candidates,
+                            // These native onThink callbacks also run outside activity rooms.
+                            |key| {
+                                !matches!(
+                                    key,
+                                    "oteryn:creature.outburst"
+                                        | "oteryn:creature.omrafir"
+                                        | "oteryn:creature.gaz_haragoth"
+                                )
+                            },
+                        ))
+                        .await;
+                    (
+                        None,
+                        actors.into_iter().map(|(actor, _)| actor).collect(),
+                        false,
+                    )
+                }
+                Err(_) => {
                     let source_action = states.source_death_action.is_some();
                     drop(attack);
                     drop(states);
@@ -642,7 +680,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // A split source callback retains this pass's reservation, but its
         // periodic admission is already consumed. Advance the cadence before
         // continuing it so completion cannot start endless empty fresh passes.
-        if periodic_pass && !ran_profile {
+        if periodic_pass && !ran_profile && !profile_deferred {
             states.next_monster_ai_pass_us = due;
             states.monster_ai_sequence = sequence;
             if swing_pass {
@@ -677,7 +715,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.finish_rotten_area(&permit).await;
             return;
         }
-        if !ran_profile || (retained_work && thought_actors.is_empty()) {
+        if !profile_deferred && (!ran_profile || (retained_work && thought_actors.is_empty())) {
             if ran_profile {
                 states.next_monster_ai_pass_us = next_monster_ai_pass_us(
                     now.get(),
@@ -697,7 +735,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return;
         }
-        if let Some(map) = self.bundle_map() {
+        if !profile_deferred && let Some(map) = self.bundle_map() {
             super::paced_movement::monster_trap::apply_monster_trap_steps(
                 &mut runtime,
                 &states,
@@ -705,7 +743,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 now.get(),
             );
         }
-        if periodic_pass {
+        let swing_pass = swing_pass && !profile_deferred;
+        if periodic_pass && !profile_deferred {
             states.next_monster_ai_pass_us = due;
             states.monster_ai_sequence = sequence;
         }
@@ -716,7 +755,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if swing_pass {
             states.monster_melee.next_swing_pass_us = due;
         }
-        let next_pass = if periodic_pass || (retained_work && ran_profile) {
+        let next_pass = if !profile_deferred && (periodic_pass || (retained_work && ran_profile)) {
             next_monster_ai_pass_us(
                 now.get(),
                 states.monster_melee.next_swing_pass_us,

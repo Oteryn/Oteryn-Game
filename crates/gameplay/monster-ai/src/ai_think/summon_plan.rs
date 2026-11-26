@@ -333,12 +333,15 @@ impl CreatureAiState {
         sequence: u64,
         facts: &CreatureThinkFacts<'_>,
         runtime: &ChannelRuntimeV1,
-        reader: &mut impl MonsterThinkReader,
+        reader: Option<&mut impl MonsterThinkReader>,
         route_hint: Option<(ExactActorRef, Vec<MovementLocalPosition>)>,
     ) -> Result<ThinkReport, ThinkError> {
         let flee_health = self.current_flee_health(runtime);
         let selected = self.select_think(sequence, facts, flee_health)?;
-        let summons = if self.profile.behavior().summons.is_some() && !selected.report.over_budget {
+        let summons = if self.profile.behavior().summons.is_some()
+            && !selected.report.over_budget
+            && let Some(reader) = reader
+        {
             reader
                 .summon_facts(
                     runtime,
@@ -451,9 +454,19 @@ impl CreatureAiTable {
         runtime: &mut ChannelRuntimeV1,
         now_us: u64,
     ) -> Option<ReservedNativeThinkBatch> {
+        self.reserve_current_thinks_where(runtime, now_us, |_, _, _| true)
+    }
+
+    fn reserve_current_thinks_where(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        now_us: u64,
+        accepts: impl Fn(&ChannelRuntimeV1, ExactActorRef, &CreatureAiState) -> bool,
+    ) -> Option<ReservedNativeThinkBatch> {
         let stamp = runtime.issue_owner_work().ok()?;
         let pin = native_think_pin(runtime);
-        let (taken, _) = self.take_due_bounded(now_us);
+        let (taken, _) =
+            self.take_due_bounded_where(now_us, |actor, state| accepts(runtime, actor, state));
         let mut entries = Vec::with_capacity(taken.len());
         for actor in taken {
             if runtime.live_creature_health(actor).is_none() {
@@ -538,6 +551,90 @@ impl CreatureAiTable {
         revisions: &RevisionSet,
         players: &[TargetCandidate],
         reader: &mut R,
+        consume: impl FnMut(&mut ChannelRuntimeV1, &mut Self, ExactActorRef, &ThinkReport, &mut R),
+    ) -> Vec<(ExactActorRef, ThinkReport)> {
+        self.run_reserved_thinks(
+            runtime,
+            batch,
+            root,
+            revisions,
+            players,
+            Some(reader),
+            consume,
+        )
+        .await
+    }
+
+    /// Run thinks whose profile has only melee. They have no Map-dependent
+    /// summons or profile proposals to publish. The caller fences older source work.
+    pub async fn run_due_melee_only_thinks(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        now_us: u64,
+        root: &GameplayDecisionRoot,
+        revisions: &RevisionSet,
+        players: &[TargetCandidate],
+        independent: impl Fn(&str) -> bool,
+    ) -> Vec<(ExactActorRef, ThinkReport)> {
+        use crate::content::{ProjectV2AbilityKind, ProjectV2BehaviorEvent};
+
+        let Some(batch) =
+            self.reserve_current_thinks_where(runtime, now_us, |runtime, actor, state| {
+                let profile = state.profile();
+                let behavior = profile.behavior();
+                profile.is_native()
+                    && behavior.targeting.hostile
+                    && behavior.targeting.can_target
+                    && behavior.summons.is_none()
+                    && behavior.defenses.is_empty()
+                    && !behavior.attacks.is_empty()
+                    && behavior
+                        .event_bindings
+                        .iter()
+                        .all(|binding| binding.event != ProjectV2BehaviorEvent::Think)
+                    && behavior.attacks.iter().all(|entry| {
+                        profile
+                            .abilities()
+                            .get(&entry.ability)
+                            .and_then(|ability| ability.details.as_ref())
+                            .is_some_and(|details| details.kind == ProjectV2AbilityKind::Melee)
+                    })
+                    && state.creature_key().is_some_and(&independent)
+                    && !runtime.is_tibiadrome(actor)
+                    && runtime.companion_snapshot(actor).is_ok_and(|snapshot| {
+                        let policy = &snapshot.state.policy;
+                        state.creature_key() == Some(policy.definition_key.as_str())
+                            && state.creature_revision.as_deref()
+                                == Some(policy.definition_revision.as_str())
+                    })
+            })
+        else {
+            return Vec::new();
+        };
+        self.run_reserved_thinks(
+            runtime,
+            &batch,
+            root,
+            revisions,
+            players,
+            None::<&mut summon_path::NativeMonsterThinkRead<'_, '_, '_>>,
+            |_, _, _, _, _| {},
+        )
+        .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "shared fenced native think with optional Map-backed consumers"
+    )]
+    async fn run_reserved_thinks<R: MonsterThinkReader>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        batch: &ReservedNativeThinkBatch,
+        root: &GameplayDecisionRoot,
+        revisions: &RevisionSet,
+        players: &[TargetCandidate],
+        mut reader: Option<&mut R>,
         mut consume: impl FnMut(&mut ChannelRuntimeV1, &mut Self, ExactActorRef, &ThinkReport, &mut R),
     ) -> Vec<(ExactActorRef, ThinkReport)> {
         if !runtime
@@ -639,7 +736,7 @@ impl CreatureAiTable {
             let sequence = reserved.occurrence.sequence;
             if let Ok(report) = entry
                 .state
-                .think_current(sequence, &facts, runtime, reader, route)
+                .think_current(sequence, &facts, runtime, reader.as_deref_mut(), route)
                 .await
             {
                 entry.sequence = sequence;
@@ -649,7 +746,9 @@ impl CreatureAiTable {
                     runtime.clear_source_player_damage(actor);
                 }
                 self.record_native_attack_positions(actor, runtime);
-                consume(runtime, self, actor, &report, reader);
+                if let Some(reader) = reader.as_deref_mut() {
+                    consume(runtime, self, actor, &report, reader);
+                }
                 self.run_think_hook(actor, position.position(), now_us, &report);
                 reports.push((actor, report));
             }

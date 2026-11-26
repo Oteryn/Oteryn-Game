@@ -178,6 +178,14 @@ impl CreatureAiTable {
     /// collects nor sorts every due think, so a backlog of n due thinks costs a window
     /// `O(n log 1,024)` reads and `O(1,024)` memory instead of an `O(n log n)` sort of n.
     pub fn take_due_bounded(&mut self, now_us: u64) -> (Vec<ExactActorRef>, Option<u64>) {
+        self.take_due_bounded_where(now_us, |_, _| true)
+    }
+
+    pub(super) fn take_due_bounded_where(
+        &mut self,
+        now_us: u64,
+        accepts: impl Fn(ExactActorRef, &CreatureAiState) -> bool,
+    ) -> (Vec<ExactActorRef>, Option<u64>) {
         let window = now_us / CREATUREAI0_THINK_WINDOW_MICROS;
         if self.window != Some(window) {
             self.window = Some(window);
@@ -191,7 +199,7 @@ impl CreatureAiTable {
             let Some(due) = entry.due_us else {
                 continue;
             };
-            if due > now_us {
+            if due > now_us || !accepts(entry.state.actor(), &entry.state) {
                 leave(due);
                 continue;
             }
