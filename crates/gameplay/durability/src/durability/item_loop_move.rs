@@ -2187,7 +2187,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let pass = if let Some((_, _, deadline)) = &current {
-            self.try_issue_semantic_pass_by(*deadline)?
+            self.try_issue_semantic_pass_by(deadline.into_std())?
         } else {
             self.try_issue_semantic_pass()?
         };

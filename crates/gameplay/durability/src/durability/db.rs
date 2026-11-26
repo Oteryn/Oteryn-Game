@@ -1556,13 +1556,13 @@ impl DurabilityRoot {
         if let PlainUseReceipt::QuestCarried(ref character) = family {
             query = query.bind(character.as_bytes().as_slice());
         }
-        self.read_gameplay_existence(query, TokioInstant::now() + DB_PASS_DEADLINE).await
+        self.read_gameplay_existence(query, tokio::time::Instant::now() + DB_PASS_DEADLINE).await
     }
 
     pub(super) async fn read_gameplay_existence(
         &self,
         query: sqlx::query::QueryScalar<'_, Postgres, bool, sqlx::postgres::PgArguments>,
-        deadline: TokioInstant,
+        deadline: tokio::time::Instant,
     ) -> Result<bool, DurabilityError> {
         let pool = self.retained_receipt_publisher_pool()?;
         let mut connection = tokio::time::timeout_at(deadline, pool.acquire())
