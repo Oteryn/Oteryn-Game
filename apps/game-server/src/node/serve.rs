@@ -3119,6 +3119,8 @@ async fn control_loop(
                         native,
                         #[cfg(feature = "qualification-spawn")]
                         premium,
+                        #[cfg(feature = "qualification-spawn")]
+                        spawn,
                         &request,
                     ))
                     .await

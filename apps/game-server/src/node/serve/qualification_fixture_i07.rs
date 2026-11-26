@@ -23,6 +23,7 @@ pub(super) async fn seed(
     >,
     native: &NativeGameplayState,
     character: crate::domain::CharacterId,
+    spawn: SpawnOwners<'_>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let scope = current.current_runtime_scope();
     let fence = CurrentCharacterItemFence {
@@ -197,6 +198,50 @@ pub(super) async fn seed(
                 return Err("I07 fixture corpse entry did not commit".into());
             }
         }
+        if death_slot == u32::MAX - 7 {
+            publish_corpse(spawn, fence.game_session_id, corpse.item_instance_id).await?;
+        }
     }
+    Ok(())
+}
+
+async fn publish_corpse(
+    spawn: SpawnOwners<'_>,
+    session: crate::foundation::GameSessionId,
+    item: [u8; 16],
+) -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_gameplay_entities::MovementLocalPosition;
+    let mut runtime = spawn.runtime.lock().await;
+    let (_, position) = runtime
+        .positioned_player_for_session(session)
+        .map_err(qualification_build::debug)?
+        .ok_or("I07 fixture actor is not positioned")?;
+    let position = position.position();
+    let creature = runtime
+        .admit_pinned_test_creature(MovementLocalPosition {
+            x: position.x,
+            y: position.y,
+            floor: position.floor,
+        })
+        .map_err(qualification_build::debug)?;
+    runtime
+        .commit_monster_lab_damage(creature, b"quick-loot-corpse", 20)
+        .map_err(qualification_build::debug)?;
+    let mut death = runtime.borrow_combat_death();
+    let receipt = death
+        .committed_lethal_receipt(creature)
+        .map_err(qualification_build::debug)?;
+    death
+        .project_committed_lethal(receipt)
+        .map_err(qualification_build::debug)?;
+    runtime
+        .bind_corpse_item(
+            creature,
+            item,
+            "Item",
+            "oteryn:item.tibia.i5973",
+            "definition-r1",
+        )
+        .map_err(qualification_build::debug)?;
     Ok(())
 }

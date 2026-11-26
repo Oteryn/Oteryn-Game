@@ -131,6 +131,7 @@ pub(super) async fn prepare(
     #[cfg(feature = "qualification-spawn")] premium: Option<
         &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
     >,
+    #[cfg(feature = "qualification-spawn")] spawn: Option<SpawnOwners<'_>>,
     bytes: &[u8],
 ) -> &'static str {
     let (native, session, profile) =
@@ -152,6 +153,8 @@ pub(super) async fn prepare(
         profile,
         #[cfg(feature = "qualification-spawn")]
         premium,
+        #[cfg(feature = "qualification-spawn")]
+        spawn,
     )))
     .await
     {
@@ -727,6 +730,7 @@ async fn prepare_build(
     #[cfg(feature = "qualification-spawn")] premium: Option<
         &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
     >,
+    #[cfg(feature = "qualification-spawn")] spawn: Option<SpawnOwners<'_>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     let session = crate::foundation::GameSessionId::decode(&session)?;
@@ -825,7 +829,8 @@ async fn prepare_build(
             return Err("I07 fixture requires its active disposable admission".into());
         }
         grant_premium(root, premium, *record.account_id.as_bytes(), None).await?;
-        return i07::seed(root, authority, proof, &current, native, character).await;
+        let spawn = spawn.ok_or("I07 fixture requires a live channel runtime")?;
+        return i07::seed(root, authority, proof, &current, native, character, spawn).await;
     }
     #[cfg(feature = "qualification-spawn")]
     if let Some(item) = named_item(profile) {
