@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Gate the cloud wrapper's selected client rows on their fresh Rust replays."""
 
+import json
 import os
 from pathlib import Path
 import re
 import subprocess
 import sys
+import uuid
 
 ROOT = Path(__file__).resolve().parents[3]
 PHASES = ROOT / "apps/game-server/src/qualification/client_phases"
@@ -130,7 +132,7 @@ def replay_targets():
     return targets
 
 
-def replay_cause(row, package, test, names, captures, server, log):
+def replay_cause(row, package, test, names, captures, server, log, features=()):
     # Some replays construct filenames from a prefix. Those replays check the
     # individual reads themselves, but still need at least one row-owned file.
     files = {path.name for path in captures.glob(f"{row.lower()}[-_.]*")
@@ -143,7 +145,7 @@ def replay_cause(row, package, test, names, captures, server, log):
     try:
         result = subprocess.run(
             [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package,
-             "--lib", test, "--", "--nocapture"],
+             "--lib", *features, test, "--", "--nocapture"],
             cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
     except OSError:
@@ -168,6 +170,33 @@ def replay_cause(row, package, test, names, captures, server, log):
     return None
 
 
+def g20_replay_cause(captures, server, log):
+    path = captures / "g20-funded.json"
+    if not path.is_file():
+        return "capture-missing"
+    try:
+        frame = json.loads(path.read_bytes())
+        session = uuid.UUID(frame["game_session_id"])
+        if session.version != 7 or str(session) != frame["game_session_id"]:
+            return "invalid-envelope"
+        if not all(type(frame[key]) is int and frame[key] > 0
+                   for key in ("command_id", "server_sequence", "status")):
+            return "invalid-envelope"
+        marker = (
+            f"SEAM_EVIDENCE G20_FRAME game_session_id={session} command_id={frame['command_id']}"
+            f" server_sequence={frame['server_sequence']} status={frame['status']}"
+        )
+    except (ValueError, TypeError, KeyError, AttributeError):
+        return "invalid-envelope"
+    if log.read_text(errors="replace").splitlines().count(marker) != 1:
+        return "capture-session-mismatch"
+    return replay_cause(
+        "g20", "oteryn-game-server", "e2e_g20_funded_preview_replay",
+        {"g20-funded.json"}, captures, server, log,
+        ("--features", "qualification-clock,qualification-unprivileged"),
+    )
+
+
 def main(log, batch, validate=False):
     try:
         selected, registered = selected_rows(batch)
@@ -180,11 +209,16 @@ def main(log, batch, validate=False):
         return validate_rows(selected, registered, server_rows)
 
     rows = sorted(scenario for scenario in selected if scenario.endswith(".client"))
-    if not rows:
+    if not rows and "G20.full" not in selected:
         return 0
     captures = Path(os.environ["E2E_ALL_CAPTURE_DIR"])
     targets = replay_targets()
     failed = False
+    if "G20.full" in selected:
+        cause = g20_replay_cause(captures, server_rows.get("G20.full"), log)
+        verdict = f"FAIL cause={cause}" if cause else "PASS"
+        print(f"SEAM_EVIDENCE e2e_replay scenario=G20.full status={verdict}")
+        failed |= cause is not None
     for scenario in rows:
         row = scenario.removesuffix(".client")
         module = f"e2e_{row.lower()}"

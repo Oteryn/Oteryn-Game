@@ -781,6 +781,32 @@ class CloudRunSummaryTests(unittest.TestCase):
                     self.assertIn(f'cause={cause}', result.stdout)
                 self.assertEqual(result.stderr, '')
 
+    def test_g20_replay_rejects_a_frame_with_a_different_sequence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            capture = Path(temporary)
+            log = capture / "node.log"
+            session = "01890f4c-3b2a-7c01-8d11-9a321b7c0004"
+            log.write_text(
+                "SEAM_EVIDENCE e2e_all scenario=G20.full status=PASS\n"
+                f"SEAM_EVIDENCE G20_FRAME game_session_id={session} "
+                "command_id=2 server_sequence=6 status=1\n"
+            )
+            (capture / "g20-funded.json").write_text(json.dumps({
+                "game_session_id": session,
+                "command_id": 2,
+                "server_sequence": 7,
+                "status": 1,
+                "payload": [],
+            }))
+            result = subprocess.run(
+                [sys.executable, str(HERE / "client_replay.py"), str(log)],
+                env={**os.environ, "OTERYN_E2E_ROW_BATCH": "252:1",
+                     "E2E_ALL_CAPTURE_DIR": temporary},
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertIn("cause=capture-session-mismatch", result.stdout)
+
     def test_world_seam_stage_rejects_invalid_batch_and_missing_verdict(self):
         with tempfile.TemporaryDirectory() as tmp:
             work = Path(tmp)

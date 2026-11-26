@@ -3,7 +3,7 @@
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
-use oteryn_protocol_oteryn::{CommandStatus, item_view::CharacterInventory};
+use oteryn_protocol_oteryn::item_view::CharacterInventory;
 use oteryn_protocol_oteryn::{forge_preview as wire, item_forge::Operation};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -39,32 +39,6 @@ fn gate(client: &DevClientSession, capability: u32) -> TestResult {
     .into())
 }
 
-async fn send(
-    client: &mut DevClientSession,
-    capability: u32,
-    command: u32,
-    payload: &[u8],
-) -> TestResult<(CommandStatus, Vec<u8>)> {
-    gate(client, capability)?;
-    let reply = client
-        .session_mut()
-        .gated_command(capability, command, payload)
-        .await?;
-    client.service_liveness(Duration::from_millis(50)).await?;
-    Ok((reply.status, reply.payload))
-}
-
-async fn accepted(
-    client: &mut DevClientSession,
-    capability: u32,
-    command: u32,
-    payload: &[u8],
-) -> TestResult<Vec<u8>> {
-    let (status, payload) = send(client, capability, command, payload).await?;
-    require_mechanic_acceptance(status, &format!("G20 command {command}"))?;
-    Ok(payload)
-}
-
 async fn finish(client: &mut DevClientSession) -> TestResult {
     let (result, detail, attempts, _) = logout_once(client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) || attempts != 1 {
@@ -83,14 +57,35 @@ async fn preview(
     let payload = wire::Request { nonce, selection }
         .encode()
         .ok_or("step=preview observed=request-encode")?;
-    let reply = accepted(
-        client,
-        CAPABILITY,
-        wire::COMMAND_TYPE_FORGE_PREVIEW,
-        &payload,
-    )
-    .await?;
-    let reply = wire::Reply::decode(&reply).ok_or("step=preview observed=decode-failed")?;
+    gate(client, CAPABILITY)?;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let response = client
+        .session_mut()
+        .gated_command(CAPABILITY, wire::COMMAND_TYPE_FORGE_PREVIEW, &payload)
+        .await?;
+    if nonce == 2 && selection == wire::Selection::Resource(Operation::DustLimit) {
+        evidence(&format!(
+            "G20_FRAME game_session_id={session} command_id={} server_sequence={} status={}",
+            response.command_id, response.server_sequence, response.status as u32,
+        ));
+        if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+            let file = std::fs::File::create_new(Path::new(&directory).join("g20-funded.json"))?;
+            serde_json::to_writer(
+                file,
+                &serde_json::json!({
+                    "game_session_id": session,
+                    "command_id": response.command_id,
+                    "server_sequence": response.server_sequence,
+                    "status": response.status as u32,
+                    "payload": response.payload,
+                }),
+            )?;
+        }
+    }
+    client.service_liveness(Duration::from_millis(50)).await?;
+    require_mechanic_acceptance(response.status, "G20 Forge preview")?;
+    let reply =
+        wire::Reply::decode(&response.payload).ok_or("step=preview observed=decode-failed")?;
     if reply.nonce != nonce {
         return Err(format!("step=preview observed=nonce-{}-for-{nonce}", reply.nonce).into());
     }
@@ -273,7 +268,7 @@ fn inventory_without_handles(inventory: &CharacterInventory) -> CharacterInvento
 const FUNDED_DUST: u32 = 30;
 const INITIAL_DUST_LIMIT: u32 = 100;
 const FIRST_DUST_LIMIT_COST: u32 = 25;
-// Global Dust Limit progression: https://tibia.fandom.com/wiki/Dust
+// Global Dust Limit progression: https://tibia.fandom.com/wiki/Equipment_Upgrade?oldid=1205481
 const NEXT_DUST_LIMIT: u32 = 101;
 
 fn check_funded_dust_limit(reply: wire::Payload) -> TestResult {
@@ -713,15 +708,51 @@ async fn verify_relog(
     .await
     .and_then(|reply| browse(&fresh, reply, custody));
     let closed = verdict::observe(finish(&mut fresh)).await;
-    if durable?.0.resources != resources {
+    let actual = durable?.0.resources;
+    if actual != resources {
         return Err("step=read-only-relog Forge previews changed resources".into());
     }
-    closed
+    closed?;
+    evidence(&format!(
+        "G20_RELOG dust={} dust_limit={} bank_gold={} bank_spendable={}",
+        actual.dust, actual.dust_limit, actual.bank_gold, actual.bank_spendable,
+    ));
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn e2e_g20_funded_preview_replay() -> TestResult {
+        #[derive(serde::Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Envelope {
+            game_session_id: String,
+            command_id: u64,
+            server_sequence: u64,
+            status: u32,
+            payload: Vec<u8>,
+        }
+
+        let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+            return Ok(());
+        };
+        let data = std::fs::read(Path::new(&directory).join("g20-funded.json"))?;
+        let envelope: Envelope = serde_json::from_slice(&data)?;
+        assert!(!envelope.game_session_id.is_empty());
+        assert!(envelope.command_id > 0);
+        assert!(envelope.server_sequence > 0);
+        assert_eq!(
+            envelope.status,
+            oteryn_protocol_oteryn::CommandStatus::Accepted as u32
+        );
+        let reply =
+            wire::Reply::decode(&envelope.payload).ok_or("invalid captured Forge preview")?;
+        assert_eq!(reply.nonce, 2);
+        check_funded_dust_limit(reply.payload)
+    }
 
     #[test]
     fn first_page_rejects_wrong_cursor_and_unexpected_continuation() -> TestResult {
