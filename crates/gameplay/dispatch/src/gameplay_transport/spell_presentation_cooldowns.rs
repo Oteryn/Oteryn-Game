@@ -1,14 +1,11 @@
-//! Candidate readonly own-actor cooldown producer. Exact active book/group ordinals, absolute
+//! Read-only own-actor cooldown producer. Exact active book/group ordinals, absolute
 //! monotonic expiries and current session binding are retained. RTT uses only matched existing
 //! FND-02 probe/ack frames and owner monotonic send/receive time, never a client timestamp.
-#![allow(
-    dead_code,
-    reason = "spell import candidate; awaits its production owner caller"
-)]
 use super::super::actor_spell::ChannelSpellStates;
 use super::*;
 use crate::content::native_gameplay::NativeGameplayState;
-use oteryn_protocol_oteryn::{Direction, MessageType, WireEnvelopeView};
+use crate::spell::{SpellBook, cast::PlayerSpellState};
+use oteryn_protocol_oteryn::{Direction, MessageType, WireEnvelopeView, presentation};
 use oteryn_simulation_determinism::SemanticTimeMicros;
 use std::collections::BTreeMap;
 type Key = (wire::CooldownKind, u32);
@@ -27,10 +24,6 @@ pub struct CandidateCooldownPublisher {
     probe_high_water: u64,
     rtt: Option<u32>,
 }
-#[allow(
-    clippy::expect_used,
-    reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
-)]
 fn map_owned(
     read: &CooldownRead<'_>,
     observer: &Observer,
@@ -42,7 +35,13 @@ fn map_owned(
         .states
         .get(read.source.runtime, observer.actor, observer.session)
         .ok_or(Error::Stale)?;
-    let book = read.active.spell_book();
+    map_deadlines(state, read.active.spell_book())
+}
+
+fn map_deadlines(
+    state: &PlayerSpellState,
+    book: &SpellBook,
+) -> Result<(BTreeMap<Key, u64>, usize), Error> {
     let limit = book.source_len().checked_add(16).ok_or(Error::Bound)?;
     if limit > wire::MAX_COOLDOWNS {
         return Err(Error::Bound);
@@ -63,16 +62,14 @@ fn map_owned(
             continue;
         }
         let entry = if let Some(key) = key.strip_prefix("spell:") {
-            let index = (1..=book.source_len())
+            let index = (1..=book.source_len() as u32)
+                .filter_map(std::num::NonZeroU32::new)
                 .find(|index| {
-                    book.source_indexed(
-                        std::num::NonZeroU32::new(*index as u32)
-                            .expect("positive bounded book index"),
-                    )
-                    .is_some_and(|(spell, _)| spell.key == key)
+                    book.source_indexed(*index)
+                        .is_some_and(|(spell, _)| spell.key == key)
                 })
                 .ok_or(Error::Source)?;
-            (wire::CooldownKind::Spell, index as u32)
+            (wire::CooldownKind::Spell, index.get())
         } else if let Some(key) = key.strip_prefix("group:") {
             let ordinal = groups
                 .iter()
@@ -164,6 +161,55 @@ impl CandidateCooldownPublisher {
         let observer = current_observer(tx, read.source).await?;
         self.bind(&observer);
         let (mapped, limit) = map_owned(read, &observer).map_err(rejected)?;
+        self.delta(read.now, mapped, limit)
+            .and_then(|value| {
+                value
+                    .map(|value| wire::encode_cooldowns(&value).map_err(|_| Error::Wire))
+                    .transpose()
+            })
+            .map_err(rejected)
+    }
+
+    /// The admitted connection owns this cursor. The caller qualifies the current
+    /// actor and content before handing over the committed cooldown state.
+    pub(in crate::gameplay_transport) fn live_delta(
+        &mut self,
+        state: &PlayerSpellState,
+        book: &SpellBook,
+        now: SemanticTimeMicros,
+    ) -> Result<Option<Vec<u8>>, Error> {
+        let (mut mapped, limit) = map_deadlines(state, book)?;
+        mapped.retain(|_, expiry| *expiry > now.get() / 1000);
+        let Some(value) = self.delta(now, mapped, limit)? else {
+            return Ok(None);
+        };
+        let entries = value
+            .entries
+            .into_iter()
+            .map(|entry| presentation::ActorCooldown {
+                kind: match entry.kind {
+                    wire::CooldownKind::Spell => presentation::ActorCooldownKind::Spell,
+                    wire::CooldownKind::Group => presentation::ActorCooldownKind::Group,
+                },
+                id: entry.id,
+                expires_at_ms: entry.expires_at_ms,
+            })
+            .collect();
+        presentation::encode_actor_cooldowns(&presentation::ActorCooldowns {
+            server_now_ms: value.server_now_ms,
+            rtt_ms: self.rtt,
+            entries,
+        })
+        .map(Some)
+        .map_err(|_| Error::Wire)
+    }
+
+    fn delta(
+        &mut self,
+        now: SemanticTimeMicros,
+        mapped: BTreeMap<Key, u64>,
+        limit: usize,
+    ) -> Result<Option<wire::Cooldowns>, Error> {
         let mut entries = Vec::new();
         for ((kind, id), expiry) in &mapped {
             if self.published.get(&(*kind, *id)) != Some(expiry) {
@@ -175,7 +221,7 @@ impl CandidateCooldownPublisher {
             }
         }
         for ((kind, id), expiry) in &self.published {
-            if !mapped.contains_key(&(*kind, *id)) && *expiry > read.now.get() / 1000 {
+            if !mapped.contains_key(&(*kind, *id)) && *expiry > now.get() / 1000 {
                 entries.push(wire::Cooldown {
                     kind: *kind,
                     id: *id,
@@ -188,12 +234,10 @@ impl CandidateCooldownPublisher {
             return Ok(None);
         }
         entries.sort_by_key(|entry| (entry.kind, entry.id));
-        let value = self.message(read.now, entries).map_err(rejected)?;
-        let bytes = wire::encode_cooldowns(&value).map_err(|_| rejected(Error::Wire))?;
-        self.retain_before_ack(&value.entries, limit)
-            .map_err(rejected)?;
+        let value = self.message(now, entries)?;
+        self.retain_before_ack(&value.entries, limit)?;
         self.published = mapped;
-        Ok(Some(bytes))
+        Ok(Some(value))
     }
     /// Called by the actual sender after handing off its existing FND probe. The encoded server
     /// frame, current canonical connection and monotonic timestamp are checked together.
