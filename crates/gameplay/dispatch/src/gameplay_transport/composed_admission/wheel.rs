@@ -1,4 +1,10 @@
 use super::*;
+use crate::durability::{
+    character_atelier::{AtelierOutcome, AtelierRequest},
+    character_progression::CurrentCharacterGameplayFence,
+    character_revision_sequencer::RevisionSlot,
+    item_transfer::CurrentCharacterItemFence,
+};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Installs the current Wheel maxima in the live vitals owner. Re-reading current actor
@@ -116,39 +122,84 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return;
         }
-        if let (Ok(Some(fence)), Some(_), Some(_)) = (
-            self.current_quest_fence(session).await,
-            &self.wheel_ruleset,
-            self.premium_coordinator,
-        ) {
-            let _ = self
-                .execute_gem_atelier(
-                    session,
-                    super::super::atelier::GemBuildCommand::Atelier(
-                        crate::durability::character_atelier::AtelierRequest::initialize(
-                            fence.character_id,
-                        ),
-                    ),
-                )
-                .await;
+        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+            return;
+        };
+        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        let atelier = self.initialize_and_load_atelier(&mut slot, fence).await;
+        if !matches!(self.current_quest_fence(session).await, Ok(Some(current)) if current.item_fence() == fence.item_fence())
+        {
+            return;
         }
-        let atelier = self
-            .root
-            .read_character_atelier(
-                self.character,
-                match self.current_quest_fence(session).await {
-                    Ok(Some(fence)) => fence.character_id,
-                    _ => return,
-                },
-            )
-            .await
-            .ok()
-            .flatten();
         if let Ok(mut sessions) = self.states.atelier_sessions.lock() {
             sessions.insert(session, atelier);
         }
         if let Ok(mut sessions) = self.states.wheel_sessions.lock() {
             sessions.insert(session, allocation);
+        }
+    }
+
+    /// The same initialization occurrence is used on admission and on buying promotion.
+    /// The writer qualifies eligibility and the session fence inside its transaction.
+    async fn initialize_and_load_atelier(
+        &self,
+        slot: &mut RevisionSlot,
+        fence: CurrentCharacterGameplayFence,
+    ) -> Option<super::super::atelier::AtelierState> {
+        if let (Some(ruleset), Some(gate)) = (&self.wheel_ruleset, self.premium_coordinator)
+            && let Ok(AtelierOutcome::Committed { state, .. }) = slot
+                .atelier(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    AtelierRequest::initialize(fence.character_id),
+                    std::sync::Arc::clone(ruleset),
+                    gate,
+                )
+                .await
+        {
+            return Some(state);
+        }
+        // Admission can load existing state even when no initialization was possible.
+        // A replay's receipt describes the first grant, so load today's gems and vessels.
+        self.root
+            .read_character_atelier(self.character, fence.character_id)
+            .await
+            .ok()
+            .flatten()
+    }
+
+    pub(in crate::gameplay_transport) async fn initialize_atelier_after_promotion(
+        &self,
+        slot: &mut RevisionSlot,
+        actor: ExactActorRef,
+        expected: CurrentCharacterItemFence,
+    ) {
+        if self.wheel_ruleset.is_none() || self.premium_coordinator.is_none() {
+            return;
+        }
+        let session = expected.game_session_id;
+        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+            return;
+        };
+        if fence.item_fence() != expected
+            || !atelier_actor_current(&*self.runtime.lock().await, actor, expected)
+        {
+            return;
+        }
+        let Some(state) = self.initialize_and_load_atelier(slot, fence).await else {
+            return;
+        };
+        if !matches!(self.current_quest_fence(session).await, Ok(Some(current)) if current.item_fence() == expected)
+        {
+            return;
+        }
+        let runtime = self.runtime.lock().await;
+        if atelier_actor_current(&runtime, actor, expected)
+            && let Ok(mut sessions) = self.states.atelier_sessions.lock()
+        {
+            sessions.insert(session, Some(state));
         }
     }
 
@@ -224,6 +275,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         Some(effects)
     }
+}
+
+fn atelier_actor_current(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    fence: CurrentCharacterItemFence,
+) -> bool {
+    let binding = runtime.binding();
+    binding.runtime_scope() == fence.runtime_scope
+        && binding.scope_generation() == fence.scope_ownership_generation
+        && runtime.owner_fence().is_ok()
+        && runtime
+            .player_control_facts(actor, fence.game_session_id)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+        && runtime
+            .bound_attacker_lease(actor, fence.game_session_id)
+            .is_ok_and(|lease| {
+                lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                    && lease.generation() == fence.character_lease_generation
+            })
 }
 
 fn project_wheel_runtime_effects(
