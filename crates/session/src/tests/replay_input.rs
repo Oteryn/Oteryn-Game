@@ -28,37 +28,12 @@ impl ReplayInput {
         expected: &[u8],
         primary: u32,
     ) -> Result<Self, BoxError> {
-        if take::<4>(&mut transcript)? != *b"OTR1" {
-            return Err("unrecognized replay transcript".into());
-        }
-        let sequence = u64::from_le_bytes(take(&mut transcript)?);
-        let selected = read_list(&mut transcript)?;
-        let refs = read_list(&mut transcript)?;
-        let count = u32::from_le_bytes(take(&mut transcript)?);
-        let mut snapshots = Vec::new();
-        let mut found = false;
-        for _ in 0..count {
-            let domain_id = u32::from_le_bytes(take(&mut transcript)?);
-            let revision = u64::from_le_bytes(take(&mut transcript)?);
-            let snapshot_type = u32::from_le_bytes(take(&mut transcript)?);
-            let mut payload = read_bytes(&mut transcript)?;
-            if domain_id == primary {
-                if found || !payload.is_empty() || snapshot.is_empty() {
-                    return Err("invalid primary replay snapshot".into());
-                }
-                found = true;
-                payload = snapshot;
-            }
-            snapshots.push(GatedSnapshot {
-                domain_id,
-                revision,
-                snapshot_type,
-                payload: payload.to_vec(),
-            });
-        }
-        if !found {
-            return Err("missing primary replay snapshot".into());
-        }
+        let SnapshotTranscript {
+            sequence,
+            selected,
+            refs,
+            snapshots,
+        } = SnapshotTranscript::decode(snapshot, &mut transcript, primary)?;
         let mut deltas = Vec::new();
         while !transcript.is_empty() {
             deltas.push(read_bytes(&mut transcript)?.to_vec());
@@ -110,28 +85,14 @@ impl ReplayInput {
             .map_err(|e| format!("{e:?}"))?
             .0
             .content_generation;
-        let (client, mut server) = tokio::io::duplex(256 * 1024);
-        let selected = self.selected.clone();
-        let snapshots = self.snapshots.clone();
-        let sequence = self.sequence;
-        let peer =
-            tokio::spawn(
-                async move { server_join(&mut server, &selected, &snapshots, sequence).await },
-            );
-        let session = Session::admit(
-            client,
-            Admission {
-                appearance_items: (!self.refs.is_empty()).then_some(AppearanceItemDictionary {
-                    content_generation: generation,
-                    definition_refs: &self.refs,
-                }),
-                ..entity_admission()?
-            },
+        admit_snapshots(
+            self.sequence,
+            &self.selected,
+            &self.snapshots,
+            &self.refs,
+            generation,
         )
-        .await;
-        let session = session?;
-        peer.await??;
-        Ok(session)
+        .await
     }
 
     pub(super) fn apply(
@@ -154,6 +115,89 @@ impl ReplayInput {
             })
             .collect()
     }
+}
+
+pub(super) struct SnapshotTranscript {
+    pub(super) sequence: u64,
+    pub(super) selected: Vec<u32>,
+    pub(super) refs: Vec<u32>,
+    pub(super) snapshots: Vec<GatedSnapshot>,
+}
+
+impl SnapshotTranscript {
+    pub(super) fn decode(
+        snapshot: &[u8],
+        transcript: &mut &[u8],
+        primary: u32,
+    ) -> Result<Self, BoxError> {
+        if take::<4>(transcript)? != *b"OTR1" {
+            return Err("unrecognized replay transcript".into());
+        }
+        let sequence = u64::from_le_bytes(take(transcript)?);
+        let selected = read_list(transcript)?;
+        let refs = read_list(transcript)?;
+        let count = u32::from_le_bytes(take(transcript)?);
+        let mut snapshots = Vec::new();
+        let mut found = false;
+        for _ in 0..count {
+            let domain_id = u32::from_le_bytes(take(transcript)?);
+            let revision = u64::from_le_bytes(take(transcript)?);
+            let snapshot_type = u32::from_le_bytes(take(transcript)?);
+            let mut payload = read_bytes(transcript)?;
+            if domain_id == primary {
+                if found || !payload.is_empty() || snapshot.is_empty() {
+                    return Err("invalid primary replay snapshot".into());
+                }
+                found = true;
+                payload = snapshot;
+            }
+            snapshots.push(GatedSnapshot {
+                domain_id,
+                revision,
+                snapshot_type,
+                payload: payload.to_vec(),
+            });
+        }
+        if !found {
+            return Err("missing primary replay snapshot".into());
+        }
+        Ok(Self {
+            sequence,
+            selected,
+            refs,
+            snapshots,
+        })
+    }
+}
+
+pub(super) async fn admit_snapshots(
+    sequence: u64,
+    selected: &[u32],
+    snapshots: &[GatedSnapshot],
+    refs: &[u32],
+    generation: [u8; 32],
+) -> Result<Session<DuplexStream>, BoxError> {
+    let (client, mut server) = tokio::io::duplex(256 * 1024);
+    let selected = selected.to_vec();
+    let snapshots = snapshots.to_vec();
+    let peer =
+        tokio::spawn(
+            async move { server_join(&mut server, &selected, &snapshots, sequence).await },
+        );
+    let session = Session::admit(
+        client,
+        Admission {
+            appearance_items: (!refs.is_empty()).then_some(AppearanceItemDictionary {
+                content_generation: generation,
+                definition_refs: refs,
+            }),
+            ..entity_admission()?
+        },
+    )
+    .await;
+    let session = session?;
+    peer.await??;
+    Ok(session)
 }
 
 async fn server_join(
