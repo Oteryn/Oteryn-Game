@@ -174,25 +174,47 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             && at.x.abs_diff(target_tile.x).max(at.y.abs_diff(target_tile.y)) >= 3
     })
     .ok_or("W01a client capture: no retreat lane")?;
-    super::full_row_w01a::walk_once(&mut client, world, &retreat).await?;
+    client.take_events();
     let mut chase = Segment::begin(&client, "chase", target.entity)?;
-    let player = client.world_spatial().actor_position;
     let start = target_state(&client, target.entity)
         .map(|entity| entity.position)
         .ok_or("W01a client capture: rat vanished before chase")?;
+    for direction in retreat {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, from, direction).ok_or("W01a retreat has no landing")?;
+        let step = client.step(direction).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if step.disposition != StepDisposition::Moved
+            || step.world_spatial_delta.is_none()
+            || actual != expected
+        {
+            return Err(format!(
+                "W01a client retreat STEP {direction:?} from={from:?} expected={expected:?} actual={actual:?} reply={step:?}"
+            )
+            .into());
+        }
+        verdict::Harness::global().progress("walk");
+        chase.record(client.take_events())?;
+    }
+    let player = client.world_spatial().actor_position;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
     let chased = loop {
-        client.service_liveness(Duration::from_millis(50)).await?;
-        chase.record(client.take_events())?;
         if let Some(entity) = target_state(&client, target.entity)
             && entity.position != start
+            && entity.position.floor == start.floor
             && distance(entity.position, player) < distance(start, player)
         {
             break entity.position;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("W01a client capture: rat never closed the distance".into());
+            return Err(format!(
+                "W01a client capture: rat never closed the distance from={start:?} player={player:?} live={:?}",
+                target_state(&client, target.entity).map(|entity| entity.position)
+            )
+            .into());
         }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        chase.record(client.take_events())?;
     };
 
     // Damage and flee: attack until the low-health boundary, stop, and record the retreat.
