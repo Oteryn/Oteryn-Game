@@ -3,21 +3,6 @@ use super::*;
 use crate::foundation::ExactActorRef;
 use oteryn_protocol_oteryn::exiva::COMMAND_TYPE_EXIVA_SETTINGS;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 pub(in super::super) async fn exercise(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,

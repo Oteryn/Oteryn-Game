@@ -13,8 +13,8 @@ use crate::map::overlay::TilePos;
 use oteryn_protocol_oteryn::world_object::WorldObjectTarget;
 
 use oteryn_protocol_oteryn::{
-    ClientCommandValue, MessageType, decode_command_result,
-    decode_state_delta, decode_wire_envelope, encode_client_command,
+    ClientCommandValue, MessageType, decode_command_result, decode_state_delta,
+    decode_wire_envelope, encode_client_command,
 };
 
 use std::time::Duration;
@@ -199,6 +199,21 @@ pub(super) async fn read(client: &mut DuplexStream) -> TestResult<Vec<u8>> {
     let mut frame = vec![0; usize::try_from(len)?];
     client.read_exact(&mut frame).await?;
     Ok(frame)
+}
+
+pub(super) async fn command_reply(
+    client: &mut DuplexStream,
+    id: u64,
+) -> TestResult<(oteryn_protocol_oteryn::CommandStatus, Vec<u8>)> {
+    loop {
+        let frame = read(client).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::CommandResult {
+            let result = decode_command_result(envelope.payload())?;
+            assert_eq!(result.command_id, id);
+            return Ok((result.status, result.payload.to_vec()));
+        }
+    }
 }
 
 pub(super) async fn result(client: &mut DuplexStream, id: u64) -> TestResult<(Vec<u8>, usize)> {
