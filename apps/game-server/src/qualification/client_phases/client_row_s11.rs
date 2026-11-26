@@ -211,8 +211,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err(format!("step=loyalty-details observed={loyalty:?}").into());
     }
+    let session = client.session_mut().join_snapshot().game_session_id;
     let mut expected = format!(
-        "world={}\nown_page={}\ncategory={}\nvocation=0\npage={}\nsnapshot_id={}\ncomputed_at={}\nhas_more={}\nrows={}\n",
+        "game_session_id={}\nworld={}\nown_page={}\ncategory={}\nvocation=0\npage={}\nsnapshot_id={}\ncomputed_at={}\nhas_more={}\nrows={}\n",
+        uuid_text(session.as_bytes()),
         uuid_text(&clients.world),
         expected_own_page,
         page.category,
@@ -236,7 +238,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if logout != Some(LogoutResult::Accepted) {
         return Err(format!("step=logout observed={observed}").into());
     }
-    let session = client.session_mut().join_snapshot().game_session_id;
     drop(client);
     let mut rejoined = connect_world(clients, 0x41).await?;
     if rejoined.session_mut().join_snapshot().game_session_id == session {

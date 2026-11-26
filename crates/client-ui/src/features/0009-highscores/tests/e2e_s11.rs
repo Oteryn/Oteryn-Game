@@ -123,6 +123,7 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
     assert!(panel.pending);
 
     let (session, response) = live_reply(root, "s11-experience-exchange.json", &command, 0)?;
+    assert_eq!(session, value(expected, "game_session_id")?);
     assert_eq!(response.status, CommandStatus::Accepted);
     assert!(panel.reply.is_none());
     apply_result(&mut panel, &response);
