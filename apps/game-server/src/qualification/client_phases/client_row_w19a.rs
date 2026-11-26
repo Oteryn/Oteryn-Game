@@ -141,7 +141,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .map_err(|error| format!("step=use-with result: {error:?}"))?;
     if refused.status != CommandStatus::Accepted
         || disposition != use_wire::UseDisposition::NothingToUse
-        || client.inventory().map(units).as_ref() != Some(&held_before)
+        || client.inventory() != Some(&before)
     {
         return Err(format!(
             "step=use-with status={:?} disposition={disposition:?}",
@@ -166,7 +166,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if *remaining == 0 {
         consumed.remove(&id);
     }
-    if !random_outcome_matches(&consumed, &held_after, &rewards, rule.picks) {
+    if held_after == held_before
+        || !random_outcome_matches(&consumed, &held_after, &rewards, rule.picks)
+    {
         return Err(format!("step=outcome before={held_before:?} after={held_after:?} need={} distinct admitted rewards", rule.picks).into());
     }
     let after_payload = item_view::encode_character_inventory_with_equip_drop(&after, true)
@@ -189,7 +191,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "w19a-expected.txt",
         visible(&after).as_bytes(),
     )?;
-    Ok(format!("bundle={} rewards={}", bag_ref.get(), rule.picks))
+    Ok(format!(
+        "bundle={} rewards={} session={used_session:?} sequence={}",
+        bag_ref.get(),
+        rule.picks,
+        reply.result_server_sequence,
+    ))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
