@@ -811,6 +811,10 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     # original static facts, so this producer cannot widen general yield admission.
     qualified_corpses = set()
     for key, ref in corpse_refs.items():
+        # The movable Rat stage is needed by decay and Animate Dead. Its
+        # separate Munster death-loot admission remains with that creature.
+        if key == 'oteryn:item.tibia.i3994':
+            continue
         profiles = native_by_key.get(key, [])
         if key in yield_keys or len(profiles) != 1:
             continue
