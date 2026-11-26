@@ -844,6 +844,21 @@ class CloudRunSummaryTests(unittest.TestCase):
                     self.assertIn(f'NODE_BOOT_ROW_BATCH=FAIL cause={cause}', result.stdout)
                     self.assertIn('STAGE_STATUS=FAIL(row batch)', result.stdout)
 
+            live = stage_test.replace(
+                'stage seam_stages -- true',
+                "stage seam_stages -- echo SEAM_EVIDENCE e2e_all scenario=G20.full status=PASS",
+            )
+            result = bash(live, env={
+                'WORK': tmp, 'GAME_SOURCE': str(HERE.parents[2]), 'G20_CAPTURE_DIR': tmp,
+                'NODE_BOOT_E2E_ONLY': 'rows', 'OTERYN_E2E_ROW_BATCH': '252:1',
+            })
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn(
+                'SEAM_EVIDENCE e2e_replay scenario=G20.full status=FAIL cause=capture-missing',
+                result.stdout,
+            )
+            self.assertIn('STAGE_STATUS=FAIL(G20 replay)', result.stdout)
+
             for group, status in (('', 'FAIL(row batch)'), ('core', 'PASS')):
                 with self.subTest(group=group):
                     result = bash('unset OTERYN_E2E_ROW_BATCH\n' + stage_test, env={

@@ -297,6 +297,8 @@ if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
 else
   WORK="$(mktemp -d "${RUNNER_TEMP:-/tmp}/node-boot.XXXXXX")"
 fi
+G20_CAPTURE_DIR="$(mktemp -d "$WORK/g20-capture.XXXXXX")"
+export G20_CAPTURE_DIR
 readonly BASE PVP_BASE="$BASE/pvp"
 if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
   NODE_GAMEPLAY_ENV=("OTERYN_NATIVE_GAMEPLAY_MANIFEST=$BASE/gameplay/$NODE_BOOT_SPELL_MANIFEST_REL")
@@ -1185,6 +1187,12 @@ stage() { # name prerequisite... -- function
       [[ "$groups" == *,rows,* || "$groups" == ,, ]] &&
       ! python3 "$GAME_SOURCE/tools/qualification/node_boot/client_replay.py" --validate "$WORK/stage-$name.log"; then
       STATUS[$name]="FAIL(row batch)"
+    fi
+    if [[ "${STATUS[$name]}" == PASS && "$name" == seam_stages && "$NODE_BOOT_WORLD" == 1 ]] &&
+      [[ "$groups" == *,rows,* || "$groups" == ,, ]] &&
+      ! E2E_ALL_CAPTURE_DIR="$G20_CAPTURE_DIR" python3 "$GAME_SOURCE/tools/qualification/node_boot/client_replay.py" \
+        --g20-only "$WORK/stage-$name.log"; then
+      STATUS[$name]="FAIL(G20 replay)"
     fi
     # A FAIL row fails its stage even when the stage process exits 0, unless the row is
     # listed in known_fail_rows.txt (debt that every run prints).

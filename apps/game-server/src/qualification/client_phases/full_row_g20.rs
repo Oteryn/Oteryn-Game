@@ -72,7 +72,7 @@ async fn preview(
             response.status as u32,
             super::client_row_p20::hex(&Sha256::digest(&response.payload)),
         ));
-        if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        if let Some(directory) = std::env::var_os("G20_CAPTURE_DIR") {
             let file = std::fs::File::create_new(Path::new(&directory).join("g20-funded.json"))?;
             serde_json::to_writer(
                 file,
@@ -164,6 +164,10 @@ async fn forge_custody(
                    'stash', (SELECT jsonb_agg(to_jsonb(s) ORDER BY to_jsonb(s))
                        FROM game_character_stash_balances s JOIN owner o USING (character_id)),
                    'bank', (SELECT to_jsonb(b) FROM game_account_bank_balances b JOIN owner o USING (account_id, world_id)),
+                   'bank_operations', (SELECT jsonb_agg(to_jsonb(p) ORDER BY operation_occurrence_id)
+                       FROM game_account_bank_operations p JOIN owner o USING (account_id, world_id)),
+                   'bank_entries', (SELECT jsonb_agg(to_jsonb(e) ORDER BY entry_id)
+                       FROM game_account_bank_entries e JOIN owner o USING (account_id, world_id)),
                    'forge_cooldown', (SELECT to_jsonb(c) FROM game_forge_cooldowns c JOIN owner o USING (character_id)),
                    'forge_operations', (SELECT jsonb_agg(to_jsonb(p) ORDER BY to_jsonb(p))
                        FROM game_forge_operations p JOIN owner o USING (character_id)),
@@ -234,6 +238,20 @@ fn check_first_page(page: &wire::Page) -> TestResult {
             page.after, page.next
         )
         .into());
+    }
+    Ok(())
+}
+
+fn check_browse_suffix(first: &wire::Page, after: u64, reply: wire::Payload) -> TestResult {
+    let wire::Payload::Page(page) = reply else {
+        return Err("step=browse-cursor expected a page".into());
+    };
+    if page.after != after
+        || page.next.is_some()
+        || page.items != first.items[1..]
+        || page.resources != first.resources
+    {
+        return Err(format!("step=browse-cursor after={after} observed={page:?}").into());
     }
     Ok(())
 }
@@ -473,7 +491,46 @@ async fn body(
     if refused != wire::Payload::Refused {
         return Err(format!("step=empty-dust-limit observed={refused:?}").into());
     }
-    match read_preview!(5, wire::Selection::Resource(Operation::SliversToCores)) {
+    let resources = check_quotes(
+        client,
+        connection,
+        character,
+        custody,
+        &inventory,
+        &page,
+        [first, second],
+        5,
+    )
+    .await?;
+    let after = page.items[0].handle.get();
+    check_browse_suffix(
+        &page,
+        after,
+        read_preview!(7, wire::Selection::Browse { after }),
+    )?;
+    evidence(&format!("G20_BROWSE_CURSOR after={after} remaining=2"));
+    Ok(resources)
+}
+
+async fn check_quotes(
+    client: &mut DevClientSession,
+    connection: &mut sqlx::PgConnection,
+    character: &[u8; 16],
+    custody: &ForgeCustody,
+    inventory: &CharacterInventory,
+    page: &wire::Page,
+    [first, second]: [wire::Item; 2],
+    nonce: u64,
+) -> TestResult<wire::Resources> {
+    macro_rules! read_preview {
+        ($nonce:expr, $selection:expr) => {
+            preview_unchanged(
+                client, $nonce, $selection, inventory, connection, character, custody,
+            )
+            .await?
+        };
+    }
+    match read_preview!(nonce, wire::Selection::Resource(Operation::SliversToCores)) {
         wire::Payload::Resource(quote)
             if quote.operation == Operation::SliversToCores
                 && quote.full_resources
@@ -491,7 +548,7 @@ async fn body(
         boost: false,
         protect: false,
     };
-    match read_preview!(6, selection) {
+    match read_preview!(nonce + 1, selection) {
         wire::Payload::Quote(quote)
             if quote.selection == selection
                 && quote.first == first
@@ -507,6 +564,10 @@ async fn body(
                 && quote.protection_percent == 0
                 && quote.target_tier == first.tier + 1 =>
         {
+            evidence(&format!(
+                "G20_QUOTES fusion_bank_gold={} slivers_to_core_bank_gold={}",
+                page.resources.bank_gold, page.resources.bank_gold,
+            ));
             Ok(page.resources)
         }
         other => Err(format!("step=pair observed={other:?}").into()),
@@ -657,6 +718,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=funded-pre-state expected the exact nonzero bank fixture balance".into());
     }
     expected_funded.other_custody["bank"] = bank.clone();
+    for key in ["bank_operations", "bank_entries"] {
+        let rows = &funded.other_custody[key];
+        if !custody.other_custody[key].is_null() || rows.as_array().map(Vec::len) != Some(1) {
+            return Err(format!("step=funded-pre-state expected one fixture {key} row").into());
+        }
+        expected_funded.other_custody[key] = rows.clone();
+    }
     let ledger = &funded.other_custody["dust_ledger"];
     let Some([credit]) = ledger.as_array().map(Vec::as_slice) else {
         return Err("step=funded-pre-state expected exactly one fixture dust entry".into());
@@ -695,9 +763,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             &funded,
         )
         .await?;
-        if browse(&client, page, &funded)?.0.resources != funded_resources {
+        let (page, pair, _) = browse(&client, page, &funded)?;
+        if page.resources != funded_resources {
             return Err("step=funded browse before quote changed resources".into());
         }
+        check_quotes(
+            &mut client,
+            &mut connection,
+            character,
+            &funded,
+            &inventory,
+            &page,
+            pair,
+            4,
+        )
+        .await?;
         let quote = check_funded_dust_limit(
             preview_unchanged(
                 &mut client,
@@ -822,6 +902,32 @@ mod tests {
             wire::Reply::decode(&envelope.payload).ok_or("invalid captured Forge preview")?;
         assert_eq!(reply.nonce, 2);
         check_funded_dust_limit(reply.payload)
+    }
+
+    #[test]
+    fn browse_suffix_rejects_a_repeated_first_page() -> TestResult {
+        let first = wire::Page {
+            after: 0,
+            next: None,
+            items: (1..=3)
+                .map(|value| wire::Item {
+                    handle: std::num::NonZeroU64::new(value).unwrap(),
+                    definition_ref: 1,
+                    appearance: u32::from(SWORD),
+                    name: "sword".into(),
+                    container: false,
+                    classification: 1,
+                    tier: 0,
+                    maximum_tier: 1,
+                })
+                .collect(),
+            resources: wire::Resources::default(),
+        };
+        let mut repeated = first.clone();
+        repeated.after = 1;
+        assert!(check_browse_suffix(&first, 1, wire::Payload::Page(repeated.clone())).is_err());
+        repeated.items.remove(0);
+        check_browse_suffix(&first, 1, wire::Payload::Page(repeated))
     }
 
     #[test]
@@ -979,6 +1085,8 @@ mod tests {
         appended_dust.other_custody["dust_ledger"] = serde_json::json!([{"amount":1}]);
         assert!(check_custody(&expected, &appended_dust).is_err());
         for table in [
+            "bank_operations",
+            "bank_entries",
             "forge_history",
             "dust_limit_reservations",
             "dust_limit_receipts",
