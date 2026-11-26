@@ -15,9 +15,7 @@ use super::super::character_authority::{ReconciledCharacterAuthority, assert_rec
 use super::super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence,
 };
-use super::super::db::{
-    begin_semantic_transaction, lock_admission_relations,
-};
+use super::super::db::{begin_semantic_transaction, lock_admission_relations};
 use super::super::runtime_scope_assignment::NodeIncarnationProof;
 use super::super::{DurabilityError, DurabilityRoot};
 

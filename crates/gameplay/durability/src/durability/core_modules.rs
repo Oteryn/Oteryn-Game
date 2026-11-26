@@ -555,7 +555,7 @@ impl AdmissionReconnectJournalV2 {
             if !replacement_receipt_matches(&mut transaction, authorization, record).await? {
                 return Err(DurabilityError::InvalidStoredState);
             }
-            admission_journal::commit_pass_transaction(transaction, deadline).await?;
+            admission_journal::commit_pass_read(transaction, deadline).await?;
             return Ok(ReplacementPassResult::ReplayReceipt);
         }
 
@@ -590,7 +590,7 @@ impl AdmissionReconnectJournalV2 {
             if candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?
                 && replacement_receipt_matches(&mut transaction, authorization, record).await?
             {
-                admission_journal::commit_pass_transaction(transaction, deadline).await?;
+                admission_journal::commit_pass_read(transaction, deadline).await?;
                 return Ok(ReplacementPassResult::ReplayReceipt);
             }
             return Err(DurabilityError::InvalidStoredState);
@@ -1015,7 +1015,7 @@ impl AdmissionReconnectJournalV2 {
                         return Err(DurabilityError::InvalidStoredState);
                     }
                     let state = row.try_get("state").map_err(DurabilityError::from)?;
-                    admission_journal::commit_pass_transaction(transaction, deadline).await?;
+                    admission_journal::commit_pass_read(transaction, deadline).await?;
                     Ok(state)
                 })
             })

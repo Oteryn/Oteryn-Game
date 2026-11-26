@@ -278,7 +278,7 @@ impl FreshAdmissionStore {
         lock_admission_portfolio(&mut tx, &b.account_id).await?;
         if let Some(receipt) = store.receipt_locked(&mut tx, &replay).await? {
             let outcome = receipt.classify_retry(operation);
-            super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+            super::admission_journal::commit_pass_read(tx, deadline).await?;
             return Ok(outcome);
         }
         let service_blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle IN(3,4))")

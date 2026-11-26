@@ -13,27 +13,22 @@ async fn latch_premium(
         root.latch_premium_activation(activation_id, switch_over_us, latched_at_us)
             .await
     };
-    match latch().await {
+    let stored = match latch().await {
         Err(DurabilityError::CommitOutcomeUnknown) => {
             root.await_ready().await?;
             match root.read_premium_activation::<()>().await? {
-                PremiumActivationRead::Latched(stored) => {
-                    assert_eq!(stored.activation_id, activation_id);
-                    assert_eq!(stored.switch_over_us, switch_over_us);
-                    assert_eq!(stored.latched_at_us, latched_at_us);
-                }
-                PremiumActivationRead::Empty => {
-                    latch().await?;
-                }
+                PremiumActivationRead::Latched(stored) => stored,
+                PremiumActivationRead::Empty => latch().await?,
                 PremiumActivationRead::PreDelivery(()) => {
                     return Err("read-only premium reconciliation ran a bypass".into());
                 }
             }
         }
-        result => {
-            result?;
-        }
-    }
+        result => result?,
+    };
+    assert_eq!(stored.activation_id, activation_id);
+    assert_eq!(stored.switch_over_us, switch_over_us);
+    assert_eq!(stored.latched_at_us, latched_at_us);
     Ok(())
 }
 

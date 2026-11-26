@@ -14,7 +14,7 @@ impl FreshAdmissionStore {
                         super::admission_journal::begin_pass_transaction(holder, deadline).await?;
                     super::db::lock_admission_relations(&mut tx).await?;
                     let result = store.reconcile_locked(&mut tx, &original).await?;
-                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    super::admission_journal::commit_pass_read(tx, deadline).await?;
                     Ok(result)
                 })
             })

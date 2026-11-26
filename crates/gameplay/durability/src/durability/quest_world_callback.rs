@@ -95,9 +95,7 @@ impl super::DurabilityRoot {
     ) -> Result<bool, super::character_progression::CharacterProgressionError> {
         use super::character_authority::assert_recovery_fence;
         use super::character_progression::{CharacterProgressionError, assert_item_only_fence};
-        use super::db::{
-            begin_semantic_transaction, lock_admission_relations,
-        };
+        use super::db::{begin_semantic_transaction, lock_admission_relations};
         let callback = oteryn_gameplay_quests::quest::world_callbacks::load_for(&catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .into_iter()

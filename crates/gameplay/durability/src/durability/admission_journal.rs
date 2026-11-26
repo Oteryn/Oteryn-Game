@@ -156,6 +156,16 @@ pub(super) async fn commit_pass_transaction(
     }
 }
 
+pub(super) async fn commit_pass_read(
+    transaction: Transaction<'_, Postgres>,
+    deadline: Option<Instant>,
+) -> Result<(), DurabilityError> {
+    match deadline {
+        Some(deadline) => db::commit_semantic_read(transaction, deadline).await,
+        None => transaction.commit().await.map_err(DurabilityError::from),
+    }
+}
+
 #[derive(Clone)]
 pub struct AdmissionReconnectJournal {
     pub(super) backend: JournalBackend,

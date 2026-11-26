@@ -1,6 +1,6 @@
 //! M41: bounded self-skinning provenance; an inventory beak is never a quest credit.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::db::{begin_semantic_transaction};
+use super::db::begin_semantic_transaction;
 use super::item_mint_audit::Type2Transaction;
 use super::item_transfer::CurrentCharacterItemFence;
 use super::{DurabilityError, DurabilityRoot};

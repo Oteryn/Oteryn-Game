@@ -3,7 +3,7 @@ use super::super::{
     DurabilityError, DurabilityRoot,
     character_authority::{ReconciledCharacterAuthority, assert_recovery_fence},
     character_progression::CharacterProgressionError as Error,
-    db::{begin_semantic_transaction},
+    db::begin_semantic_transaction,
     item_mint::CommittedItemMint,
     item_mint_audit,
 };
