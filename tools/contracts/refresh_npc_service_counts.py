@@ -14,9 +14,10 @@ parser.add_argument('--check', action='store_true')
 args = parser.parse_args()
 env = {**os.environ, 'OTERYN_CAPTURE_NPC_SERVICE_COUNTS': '1'}
 result = subprocess.run(['cargo', 'test', '--locked', '-p', 'oteryn-game-server',
-    '--test', 'content_npc_service_model', '--', '--nocapture'], cwd=ROOT, env=env,
-    text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-records = re.findall(r'^NPC_SERVICE_COUNTS (\{.*\})$', result.stdout, re.M)
+    '--test', 'content_npc_service_model', '--', '--nocapture', '--test-threads=1'],
+    cwd=ROOT, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+# Libtest can print the current test name before the capture on the same line.
+records = re.findall(r'\bNPC_SERVICE_COUNTS (\{.*\})$', result.stdout, re.M)
 if len(records) != 1:
     raise SystemExit(result.stdout)
 counts = json.loads(records[0])
