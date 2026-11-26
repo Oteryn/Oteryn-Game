@@ -1632,10 +1632,12 @@ PY_P02_SELECTED
       "${test_command[@]}"
   )
   if [[ -n "$p02_log" ]]; then
+    if grep -q '^SEAM_EVIDENCE e2e_all scenario=P02\.client status=FAIL ' "$p02_log"; then
+      return 1
+    fi
     local replay=boss_encounter::e2e_p02::e2e_p02_replays_bosstiary_progress_slots_and_refusal
     local replay_log="$p02_captures/replay.log" replay_started=$SECONDS
     if [[ $(grep -c '^SEAM_EVIDENCE e2e_capture scenario=P02\.client status=CAPTURED ' "$p02_log") == 1 ]] &&
-      ! grep -q '^SEAM_EVIDENCE e2e_all scenario=P02\.client status=FAIL ' "$p02_log" &&
       E2E_ALL_CAPTURE_DIR="$p02_captures" cargo +1.100.0 test --locked -p oteryn-client-ui --lib \
         "$replay" -- --exact --nocapture 2>&1 | tee "$replay_log" &&
       grep -Eq "^test $replay \\.\.\. ok$" "$replay_log" &&
