@@ -107,7 +107,9 @@ async fn admit(
             character_id: crate::foundation::CharacterId::decode(&clients.characters[INDEX])?,
             admission_material: token.as_bytes(),
             client_build_id: "oteryn-dev-client/world-qualification",
-            supported_capabilities: oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES,
+            // Negotiate the map, movement and logout profile on both live admissions.
+            // Unrelated panels can send automatic queries before the first movement.
+            supported_capabilities: &[4, 6, 11, 13, 15, 18, 21, 30],
             deadline: Duration::from_secs(20),
         },
     )
@@ -177,17 +179,33 @@ fn viewport_ground(
         .tiles
         .iter()
         .filter(|tile| tile.ground_speed > 0 && in_window(expected, tile.position))
-        .map(|tile| {
-            (
-                (tile.position.floor, tile.position.x, tile.position.y),
-                tile.ground_speed,
-            )
-        })
+        .map(|tile| ((tile.position.floor, tile.position.x, tile.position.y), tile))
         .collect::<std::collections::BTreeMap<_, _>>();
     if !ground.iter().copied().eq(observed.keys().copied()) || ground.is_empty() {
         return Err(format!("N07d viewport ground differs from pinned World: origin={expected:?} expected={} actual={}", ground.len(), observed.len()).into());
     }
-    verify_ground_speeds(observed)?;
+    verify_ground_speeds(observed.iter().map(|(&key, tile)| (key, tile.ground_speed)))?;
+    // Bind the client's pinned appearance colours to the pinned World stack at this position.
+    // The fixed walk never changes a tile entry, so a different served stack is an error.
+    use oteryn_gameplay_world::map::view::{compose_into, cut_indices};
+    let mut entries = Vec::new();
+    for (key, snapshot_tile) in observed {
+        entries.clear();
+        compose_into(
+            world.base(),
+            None,
+            world.facts(),
+            tile(snapshot_tile.position)?,
+            &mut entries,
+        ).map_err(|error| format!("N07d pinned terrain stack at {key:?}: {error:?}"))?;
+        let (kept, more) = cut_indices(entries.len());
+        if more != snapshot_tile.more || !kept
+            .map(|index| entries[index].facts.appearance_id)
+            .eq(snapshot_tile.items.iter().map(|item| item.appearance_id))
+        {
+            return Err(format!("N07d appearance stack differs from pinned World at {key:?}").into());
+        }
+    }
     ground.retain(|&(floor, _, _)| floor >= map.header.first_visible_floor);
     Ok(ground)
 }

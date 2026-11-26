@@ -578,3 +578,62 @@ mod admission_tests;
 
 #[cfg(test)]
 mod reentry_tests;
+
+#[cfg(test)]
+pub(crate) struct N07dHost(HostOwner);
+
+#[cfg(test)]
+impl N07dHost {
+    pub(crate) fn new() -> Result<Self, String> {
+        bevy_tasks::IoTaskPool::get_or_init(|| {
+            bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+        });
+        HostOwner::new(None)
+            .map(Self)
+            .map_err(|error| error.to_string())
+    }
+
+    pub(crate) fn admit(&mut self, view: PlayView, link: PlayLink) {
+        self.0.finish_admission(Ok((view, link)), None);
+        assert_eq!(self.0.phase, Phase::Playing);
+    }
+
+    pub(crate) fn view(&self) -> &PlayView {
+        &self.0.play.as_ref().expect("N07d active play").view
+    }
+
+    pub(crate) fn poll(&mut self) {
+        self.0.poll([800, 600]);
+    }
+
+    pub(crate) fn step_east(&self) {
+        self.0
+            .play
+            .as_ref()
+            .expect("N07d active play")
+            .link
+            .request(crate::input::StepDir::East);
+    }
+
+    pub(crate) fn logout(&self) {
+        self.0
+            .play
+            .as_ref()
+            .expect("N07d active play")
+            .link
+            .request_logout();
+    }
+
+    pub(crate) fn route(&mut self, key: oteryn_input_actions::NormalizedInputEvent) {
+        self.0.route_input(&[key], false);
+    }
+
+    pub(crate) fn logged_out(&self) -> bool {
+        assert!(self.0.play.is_some() || self.0.status.contains("Logged out."));
+        self.0.play.is_none()
+    }
+
+    pub(crate) fn has_retired_saves(&self) -> bool {
+        !self.0.retired_minimaps.is_empty()
+    }
+}

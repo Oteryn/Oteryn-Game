@@ -312,3 +312,37 @@ fn project_quad(
     );
     Some((sprite, transform))
 }
+
+#[cfg(test)]
+pub(crate) fn n07d_sidebar_colors(
+    scene: &crate::scene::Scene,
+) -> impl Iterator<Item = ([f32; 2], [u8; 4])> + '_ {
+    let size = super::game_ui::minimap::SIZE.as_vec2();
+    let sprites = scene.sprites();
+    scene.minimap_quad_range().filter_map(move |index| {
+        let quad = &sprites.instances()[index];
+        let tint = sprites.lighting.quad_tint(quad, index, QuadLayer::Overlay);
+        assert_eq!(
+            tint[3], 1.0,
+            "world opacity dimmed N07d minimap quad {index}"
+        );
+        let (sprite, _) = project_quad(
+            quad,
+            tint,
+            scene.tiles().instances().len() + index,
+            &Handle::default(),
+            scene.atlas(),
+            QuadViewport {
+                scale: 1.,
+                size,
+                offset: Vec2::ZERO,
+                clip_size: size,
+                scroll: Vec2::ZERO,
+            },
+        )?;
+        sprite.rect.is_none().then(|| {
+            use bevy::color::ColorToPacked;
+            (quad.position, sprite.color.to_srgba().to_u8_array())
+        })
+    })
+}

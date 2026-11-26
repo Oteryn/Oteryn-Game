@@ -29,9 +29,9 @@ select_work_parent() {
 }
 
 summarize() {
-  local log=$1 group=$2 seconds=${3:-0} status=${4:-0} result rows row
-  result=$(awk '/^NODE_BOOT_RESULT=(NODE_BOOT_[A-Z0-9_]+|BLOCKED)([[:space:]]|$)/ {
-    sub(/^NODE_BOOT_RESULT=/, "", $1)
+  local log=$1 group=$2 seconds=${3:-0} status=${4:-0} publish=${5:-0} result rows row
+  result=$(awk '/^NODE_BOOT_(SERVER_)?RESULT=(NODE_BOOT_[A-Z0-9_]+|BLOCKED)([[:space:]]|$)/ {
+    sub(/^[^=]*=/, "", $1)
     result = $1
   } END { print result }' < "$log") || return 1
   # A recursive basic pass can succeed before the outer run exits without a result.
@@ -65,6 +65,10 @@ summarize() {
 
   if [[ "$result" == NODE_BOOT_PASS ]] && grep -qE '^[^|]+\.client\|FAIL\|' <<< "$rows"; then
     result=NODE_BOOT_FAIL
+  fi
+  if [[ "$publish" == 1 && "$group" == rows ]] &&
+    grep -q '^NODE_BOOT_SERVER_RESULT=NODE_BOOT_PASS ' "$log"; then
+    printf 'NODE_BOOT_RESULT=%s mode=unprivileged\n' "$result" | tee -a "$log" || return 1
   fi
   grep -aE '^NODE_BOOT_PORTS ([A-Z_]+=[0-9]+ ?)+$' "$log" | sort -u || true
   printf 'CLOUD_RUN group=%s result=%s seconds=%s\nROWS-BEGIN\n' "$group" "$result" "$seconds"
@@ -129,7 +133,7 @@ for group in "$@"; do
   capture_env=()
   if [[ "$group" == rows ]]; then
     capture_dir=$(mktemp -d "$work_dir/captures.XXXXXX") || blocked capture_dir_unavailable
-    capture_env=(E2E_ALL_CAPTURE_DIR="$capture_dir")
+    capture_env=(E2E_ALL_CAPTURE_DIR="$capture_dir" NODE_BOOT_DEFER_ROWS_RESULT=1)
   fi
   env "${capture_env[@]}" NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
@@ -144,7 +148,7 @@ for group in "$@"; do
       status=1
     fi
   fi
-  summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
+  summarize "$log" "$group" "$((SECONDS - started))" "$status" 1 || failed=1
   [[ "$status" == 0 ]] || failed=1
 done
 exit "$failed"

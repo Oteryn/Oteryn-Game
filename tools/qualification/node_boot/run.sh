@@ -536,7 +536,11 @@ cleanup() {
   fi
   evidence "cleanup=complete"
   evidence "result_scope world_bundle=$NODE_BOOT_WORLD spells=$NODE_BOOT_SPELLS stage=$ACTIVE_STAGE exit=$rc"
-  echo "NODE_BOOT_RESULT=$result${result_mode:-}"
+  if [[ "${NODE_BOOT_DEFER_ROWS_RESULT:-0}" == 1 && "$result" == NODE_BOOT_PASS ]]; then
+    echo "NODE_BOOT_SERVER_RESULT=$result${result_mode:-}"
+  else
+    echo "NODE_BOOT_RESULT=$result${result_mode:-}"
+  fi
   exit "$rc"
 }
 trap cleanup EXIT

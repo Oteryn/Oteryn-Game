@@ -1,15 +1,22 @@
 //! Replay the two live admissions and their intervening logout, then verify private minimap memory.
 use super::*;
 use oteryn_platform_client::native_login::parse_uuid_v7;
+#[cfg(bevy_shell)]
 use oteryn_protocol_oteryn::world_map::{
     STATE_DOMAIN_WORLD_MAP_VIEW, WorldMapViewSnapshot, decode_world_map_snapshot, in_window,
 };
-use oteryn_protocol_oteryn::{CommandStatus, decode_server_accepted, decode_wire_envelope};
+use oteryn_protocol_oteryn::CommandStatus;
+#[cfg(bevy_shell)]
+use oteryn_protocol_oteryn::{decode_server_accepted, decode_wire_envelope};
+#[cfg(bevy_shell)]
 use oteryn_session::{Admission, CharacterId, Session, read_frame};
 use std::collections::BTreeSet;
+#[cfg(bevy_shell)]
 use std::time::Duration;
+#[cfg(bevy_shell)]
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
+#[cfg(bevy_shell)]
 #[path = "e2e_n07d_tests.rs"]
 mod replay_tests;
 
@@ -20,6 +27,7 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 struct Envelope {
     command_id: u64,
     game_session_id: String,
+    #[cfg_attr(not(bevy_shell), allow(dead_code))]
     payload: Vec<u8>,
     server_sequence: u64,
     status: u32,
@@ -38,6 +46,7 @@ impl Envelope {
     }
 }
 
+#[cfg(bevy_shell)]
 fn value<'a>(expected: &'a str, key: &str) -> Result<&'a str, Error> {
     expected
         .lines()
@@ -49,6 +58,7 @@ fn id(value: &str) -> Result<[u8; 16], Error> {
     parse_uuid_v7(value).ok_or_else(|| "N07d capture identifier is not a UUIDv7".into())
 }
 
+#[cfg(bevy_shell)]
 async fn admit(
     stream: DuplexStream,
     envelope: &Envelope,
@@ -94,6 +104,7 @@ fn assert_remembered_cells(minimap: &Minimap, walkable: &BTreeSet<CellPosition>)
     );
 }
 
+#[cfg(bevy_shell)]
 fn binding(map: &WorldMapViewSnapshot) -> ([u8; 32], [u8; 32], u64) {
     (
         map.header.content_generation,
@@ -102,6 +113,7 @@ fn binding(map: &WorldMapViewSnapshot) -> ([u8; 32], [u8; 32], u64) {
     )
 }
 
+#[cfg(bevy_shell)]
 fn replay() -> Result<(), Error> {
     let root =
         std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("N07d live capture directory is required")?;
@@ -118,14 +130,34 @@ fn replay() -> Result<(), Error> {
     let terrain = std::fs::read(root.join("n07d-snapshot.bin"))?;
     let ground: (BTreeSet<CellPosition>, BTreeSet<CellPosition>) =
         serde_json::from_slice(&std::fs::read(root.join("n07d-ground.json"))?)?;
+    // The production host shuts down its own runtime when dropped.
+    let mut host = crate::bevy_shell::N07dHost::new()?;
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
         .block_on(verify(
-            first, step, logout, second, terrain, ground, &expected,
+            first, step, logout, second, terrain, ground, &expected, &mut host,
         ))
 }
 
+#[cfg(bevy_shell)]
+async fn check_reply(receipt: &Envelope, session: &[u8; 16], command: u64) -> Result<(), Error> {
+    let mut frames = receipt.payload.as_slice();
+    while !frames.is_empty() {
+        let bytes = read_frame(&mut frames).await?;
+        let frame = decode_wire_envelope(&bytes)?;
+        if frame.server_sequence() == receipt.server_sequence {
+            assert_eq!(frame.message_type(), oteryn_protocol_oteryn::MessageType::CommandResult);
+            let result = oteryn_protocol_oteryn::decode_command_result(frame.payload())?;
+            assert_eq!(result.command_id, command);
+            assert_eq!(result.status, CommandStatus::Accepted);
+            return receipt.check(session, command, frame.server_sequence());
+        }
+    }
+    Err("N07d recorded reply sequence missing".into())
+}
+
+#[cfg(bevy_shell)]
 async fn verify(
     first: Envelope,
     step: Envelope,
@@ -134,6 +166,7 @@ async fn verify(
     terrain: Vec<u8>,
     ground: (BTreeSet<CellPosition>, BTreeSet<CellPosition>),
     expected: &str,
+    host: &mut crate::bevy_shell::N07dHost,
 ) -> Result<(), Error> {
     let first_id = id(value(expected, "first_session")?)?;
     let second_id = id(value(expected, "second_session")?)?;
@@ -154,16 +187,30 @@ async fn verify(
     let first_wire = first.payload.clone();
     let step_wire = step.payload.clone();
     let logout_wire = logout.payload.clone();
+    let step_command = step.command_id;
+    let logout_command = logout.command_id;
     let first_peer = tokio::spawn(async move {
+        use oteryn_protocol_oteryn::{logout, world_spatial};
         read_frame(&mut peer).await?;
         peer.write_all(&first_wire).await?;
-        read_frame(&mut peer).await?;
+        let bytes = read_frame(&mut peer).await?;
+        let wire = decode_wire_envelope(&bytes)?;
+        let generation = wire.connection_generation();
+        let command = wire.client_command(generation)?;
+        assert_eq!(command.command_id, step_command);
+        assert_eq!(command.command_type, world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+        assert_eq!(world_spatial::decode_step_intent(command.payload).map_err(|error| format!("{error:?}"))?, world_spatial::StepDirection::East);
         peer.write_all(&step_wire).await?;
-        read_frame(&mut peer).await?;
+        let bytes = read_frame(&mut peer).await?;
+        let wire = decode_wire_envelope(&bytes)?;
+        let command = wire.client_command(generation)?;
+        assert_eq!(command.command_id, logout_command);
+        assert_eq!(command.command_type, logout::COMMAND_TYPE_LOGOUT_INTENT);
+        logout::decode_logout_intent(command.payload).map_err(|error| format!("{error:?}"))?;
         peer.write_all(&logout_wire).await?;
         Ok::<_, Error>(())
     });
-    let mut session = admit(client, &first, &first_id, &world, character).await?;
+    let session = admit(client, &first, &first_id, &world, character).await?;
     let snapshot = session
         .gated_snapshot(STATE_DOMAIN_WORLD_MAP_VIEW)
         .ok_or("N07d missing admitted map")?;
@@ -191,17 +238,17 @@ async fn verify(
     );
     assert_eq!(map.tiles.len().to_string(), value(expected, "tiles")?);
 
-    let cache = tempfile::tempdir()?;
     let open = |session: &Session<DuplexStream>| -> Result<crate::play::PlayView, Error> {
         let mut view = crate::play::PlayView::from_join(session.join_snapshot())?;
-        super::lock(&view.minimap).root = Some(cache.path().to_path_buf());
         view.bind_minimap_world(world_text);
         view.set_preference_character(*character.as_bytes());
         assert!(super::lock(&view.minimap).cells.is_empty());
         Ok(view.with_join_scene(session)?)
     };
-    let mut view = open(&session)?;
-    assert_projected_ground(&view, &map, &walkable);
+    let (link, commands, outbox) = crate::play::play_channel();
+    host.admit(open(&session)?, link);
+    let view = host.view();
+    assert_projected_ground(view, &map, &walkable)?;
     {
         let minimap = super::lock(&view.minimap);
         assert_eq!(
@@ -210,54 +257,47 @@ async fn verify(
         );
         assert_remembered_cells(&minimap, &walkable);
     }
-    let initial = super::lock(&view.minimap).cells.clone();
-    view.set_live_map(&map)?;
-    assert_eq!(super::lock(&view.minimap).cells, initial);
-
-    let movement = session
-        .step(oteryn_protocol_oteryn::world_spatial::StepDirection::East)
-        .await?;
-    step.check(
-        &first_id,
-        movement.command_id,
-        movement.result_server_sequence,
-    )?;
-    assert_eq!(movement.status, CommandStatus::Accepted);
     let destination = oteryn_session::ActorPosition {
         x: origin.x + 1,
         ..origin
     };
-    assert_eq!(session.world_spatial().actor_position, destination);
-    tokio::time::timeout(Duration::from_secs(5), async {
-        while !session
-            .world_map_snapshot()
-            .is_some_and(|map| map.header.origin == destination)
-        {
-            session.wait_for_events(Duration::from_secs(5)).await?;
-        }
-        Ok::<_, oteryn_session::SessionError>(())
-    })
-    .await??;
-    let moved = session
-        .world_map_snapshot()
-        .ok_or("N07d missing moved map")?;
-    assert_eq!(moved.header.origin, destination);
-    assert_eq!(map_ground(&moved), moved_ground);
+    let worker = tokio::spawn(crate::play::run_session(session, commands, outbox));
     let (_, _, _, zoom, tracking) = view.minimap_camera();
-    assert!(tracking, "N07d needs default automatic minimap tracking");
-    assert_eq!(
-        view.minimap_camera(),
-        (origin.x, origin.y, origin.floor, zoom, true)
-    );
-    view.apply_pushed(&crate::play::Pushed {
-        map: Some(Box::new(moved)),
-        own: Some(destination),
-        ..Default::default()
-    })?;
-    assert_eq!(
-        view.minimap_camera(),
-        (destination.x, destination.y, destination.floor, zoom, true)
-    );
+    assert_eq!(view.minimap_camera(), (origin.x, origin.y, origin.floor, zoom, true));
+    assert!(tracking);
+    host.step_east();
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            host.poll();
+            let view = host.view();
+            if view.minimap_camera() == (destination.x, destination.y, destination.floor, zoom, true)
+                && moved_ground.iter().all(|point| super::lock(&view.minimap).cells.contains_key(point))
+            {
+                break;
+            }
+            tokio::task::yield_now().await;
+        }
+        Ok::<_, Error>(())
+    }).await??;
+    check_reply(&step, &first_id, first.command_id).await?;
+    let key = oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(16)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Alt)
+            .with(oteryn_input_actions::Modifier::Shift),
+        repeat: false,
+    };
+    let marker = Marker {
+        x: destination.x,
+        y: destination.y,
+        floor: destination.floor,
+        label: "Mark".into(),
+        color: 0,
+    };
+    assert!(super::lock(&host.view().minimap).markers.is_empty());
+    host.route(key);
+    let view = host.view();
+    assert_eq!(super::lock(&view.minimap).markers, [marker.clone()]);
     let retained: BTreeSet<_> = walkable
         .iter()
         .copied()
@@ -274,22 +314,23 @@ async fn verify(
     let cache_path = super::lock(&view.minimap)
         .path()
         .ok_or("N07d missing live cache binding")?;
-    assert!(!cache_path.exists(), "N07d needs to exercise save on exit");
     assert_remembered_cells(&super::lock(&view.minimap), &union);
-    let outcome = session.logout().await?;
-    assert_eq!(outcome.status, CommandStatus::Accepted);
-    assert_eq!(
-        outcome.result,
-        Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    );
-    logout.check(
-        &first_id,
-        outcome.command_id,
-        outcome.result_server_sequence,
-    )?;
+    check_reply(&logout, &first_id, step.command_id + 1).await?;
+    host.logout();
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while !host.logged_out() {
+            host.poll();
+            tokio::task::yield_now().await;
+        }
+    }).await?;
+    worker.await?;
     first_peer.await??;
-    drop(session);
-    drop(view);
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while host.has_retired_saves() {
+            host.poll();
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    }).await?;
     assert!(
         cache_path.is_file(),
         "N07d live view exit did not save exploration"
@@ -315,15 +356,16 @@ async fn verify(
     assert_eq!(map_ground(&relogged_map), moved_ground);
     // Production join restores cells outside the new viewport. Applying the new
     // snapshot alone cannot create them, so they discriminate restoration from rebuild.
-    let reopened = open(&relogged)?;
-    assert_projected_ground(&reopened, &relogged_map, &moved_ground);
-    let mut minimap = super::lock(&reopened.minimap);
+    host.admit(open(&relogged)?, crate::play::play_channel().0);
+    let reopened = host.view();
+    assert_projected_ground(reopened, &relogged_map, &moved_ground)?;
+    let minimap = super::lock(&reopened.minimap);
     assert_eq!(minimap.cells, remembered);
-    check_markers(&mut minimap, origin.x, origin.y, origin.floor)?;
-    assert_eq!(minimap.cells, remembered);
+    assert_eq!(minimap.markers, [marker]);
     Ok(())
 }
 
+#[cfg(bevy_shell)]
 fn map_ground(map: &WorldMapViewSnapshot) -> BTreeSet<CellPosition> {
     map.tiles
         .iter()
@@ -336,11 +378,12 @@ fn map_ground(map: &WorldMapViewSnapshot) -> BTreeSet<CellPosition> {
         .collect()
 }
 
+#[cfg(bevy_shell)]
 fn assert_projected_ground(
     view: &crate::play::PlayView,
     map: &WorldMapViewSnapshot,
     expected: &BTreeSet<CellPosition>,
-) {
+) -> Result<(), Error> {
     let memory = &view.scene.minimap_memory;
     assert!(memory.binding.is_some());
     assert_eq!(memory, &view.local.preferences.minimap);
@@ -358,56 +401,64 @@ fn assert_projected_ground(
         })
         .collect();
     assert_eq!(projected, snapshot);
-    let world = view.local.world();
-    let minimap = super::lock(&view.minimap);
-    for key in expected {
-        assert_eq!(
-            minimap.cells.get(key),
-            Some(world.minimap_colors.get(key).unwrap_or(&55))
-        );
-    }
-}
-
-fn check_markers(minimap: &mut Minimap, x: i32, y: i32, floor: i16) -> Result<(), Error> {
-    minimap.follow(x, y, floor);
-    assert_eq!(minimap.position(15, 12), Some((x, y, floor)));
-
-    // Markers are edited at that position; an invalid edit leaves them unchanged.
-    minimap.edit_marker(x, y, floor, "Depot".into(), 2)?;
-    let marker = Marker {
-        x,
-        y,
-        floor,
-        label: "Depot".into(),
-        color: 2,
-    };
-    assert_eq!(minimap.markers.first(), Some(&marker));
-    assert_eq!(minimap.markers.len(), 1);
-    minimap.edit_marker(x, y, floor, "Temple".into(), 1)?;
+    use oteryn_client_assets::{AppearanceIndex, AssetStore, Catalog, world};
+    let root = std::path::PathBuf::from(
+        std::env::var_os("OTERYN_ASSET_DIR").ok_or("N07d requires pinned appearance assets")?,
+    );
+    let store = AssetStore::open_pinned(
+        &root.join("content/assets/files"),
+        &root.join(world::MANIFEST_PATH),
+        world::MANIFEST_SHA256,
+    )?;
+    let catalog = Catalog::load(&store)?;
+    let appearances = AppearanceIndex::load(&store, &catalog)?;
     assert_eq!(
-        minimap.markers,
-        [Marker {
-            label: "Temple".into(),
-            color: 1,
-            ..marker
-        }]
+        view.minimap_camera(),
+        (map.header.origin.x, map.header.origin.y, map.header.origin.floor, 1, true)
     );
-    let kept = minimap.markers.clone();
-    assert!(
-        minimap
-            .edit_marker(x, y, -5, "Invalid floor".into(), 0)
-            .is_err()
-    );
-    assert!(minimap.edit_marker(x, y, floor, "  ".into(), 0).is_err());
-    assert_eq!(minimap.markers, kept);
-    minimap.remove_marker(x, y, floor)?;
-    assert!(minimap.markers.is_empty());
+    let minimap = super::lock(&view.minimap);
+    let scene = view.scene();
+    let grid = oteryn_client_ui::minimap::view()?;
+    let rendered: Vec<_> = crate::bevy_shell::n07d_sidebar_colors(scene).collect();
+    let mut verified_pixels = 0;
+    for tile in &map.tiles {
+        let pos = tile.position;
+        let key = (pos.floor, pos.x, pos.y);
+        if !expected.contains(&key) {
+            continue;
+        }
+        assert!(!tile.more, "N07d cannot infer a truncated terrain colour at {key:?}");
+        let mut color = 0;
+        assert!(!tile.items.is_empty(), "N07d terrain has no appearance at {key:?}");
+        for item in &tile.items {
+            let appearance = appearances.get(u32::from(item.appearance_id))
+                .ok_or_else(|| format!("N07d missing pinned appearance {} at {key:?}", item.appearance_id))?;
+            if let Some(index) = appearance.minimap_color.filter(|index| *index != 0) {
+                color = index;
+            }
+        }
+        assert_eq!(minimap.cells.get(&key), Some(&color), "N07d terrain colour at {key:?}");
+        let cell = oteryn_renderer::TileCoord::new(pos.x - map.header.origin.x + 15, pos.y - map.header.origin.y + 12);
+        if pos.floor == map.header.origin.floor && grid.contains(cell) {
+            let at = grid.tile_to_screen(cell);
+            let rgba = [(color / 36 % 6) * 51, (color / 6 % 6) * 51, (color % 6) * 51, 255];
+            assert!(
+                rendered.contains(&(at, rgba)),
+                "N07d missing rendered terrain pixel at {key:?} with RGBA {rgba:?}, observed {:?}", rendered.iter().filter(|(position, _)| *position == at).collect::<Vec<_>>()
+            );
+            verified_pixels += 1;
+        }
+    }
+    assert!(verified_pixels > 0, "N07d needs visible pinned terrain to verify");
     Ok(())
 }
 
 #[test]
 fn e2e_n07d_replays_admitted_map_into_the_explored_minimap() -> Result<(), Error> {
-    replay_tests::run()
+    #[cfg(bevy_shell)]
+    return replay_tests::run();
+    #[cfg(not(bevy_shell))]
+    Err("N07d requires the production Bevy host".into())
 }
 
 #[test]

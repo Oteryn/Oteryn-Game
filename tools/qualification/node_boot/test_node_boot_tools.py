@@ -914,6 +914,27 @@ class CloudRunSummaryTests(unittest.TestCase):
                             'e2e_s18_say_and_whisper_echo_replay -- --nocapture',
                         ])
 
+    def test_cloud_publishes_rows_result_after_replay(self):
+        cloud = (HERE / 'cloud_run.sh').read_text()
+        summary = cloud[cloud.index('summarize()'):cloud.index('if [[ ${1:-} == --summarize')]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / 'rows.log'
+            for replay_status, status, verdict in [('PASS', 0, 'PASS'), ('FAIL', 1, 'FAIL')]:
+                with self.subTest(replay_status=replay_status):
+                    replay = ('SEAM_EVIDENCE e2e_all scenario=N07d.client '
+                              f'replay=e2e_n07d status={replay_status}')
+                    stage = 'NODE_BOOT_SERVER_RESULT=NODE_BOOT_PASS mode=unprivileged'
+                    log.write_text(f'{stage}\n{replay}\n')
+                    subprocess.run(
+                        ['bash', '-c', summary + 'summarize "$1" rows 0 "$2" 1',
+                         'test', str(log), str(status)],
+                        capture_output=True, text=True, check=True,
+                    )
+                    self.assertEqual(log.read_text().splitlines(), [
+                        stage, replay, f'NODE_BOOT_RESULT=NODE_BOOT_{verdict} mode=unprivileged',
+                    ])
+
     def test_summary_counts_client_replay_verdict_only(self):
         with tempfile.TemporaryDirectory() as tmp:
             log = Path(tmp) / 'node.log'

@@ -17,9 +17,11 @@ mod login;
 pub(crate) mod maintenance;
 mod owner;
 #[cfg(test)]
-pub(crate) use owner::offline_training_logout_status;
+pub(crate) use owner::{N07dHost, offline_training_logout_status};
 mod render_settings;
 mod scene;
+#[cfg(test)]
+pub(crate) use scene::n07d_sidebar_colors;
 mod screenshots;
 mod selection;
 mod speech_bubbles;

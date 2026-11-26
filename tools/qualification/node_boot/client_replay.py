@@ -138,11 +138,20 @@ def replay_cause(row, package, test, names, captures, server, log):
     if not package or not server:
         return "replay-not-run"
 
+    features = []
+    env = os.environ.copy()
+    if row == "N07d":
+        features = ["--features", "bevy-shell"]
+        # The full Bevy test is a single replay per capture and shares the cached binary.
+        env["CARGO_INCREMENTAL"] = "0"
+        env["CARGO_BUILD_JOBS"] = "1"
+        env["OTERYN_ASSET_DIR"] = str(ROOT)
+        env["XDG_CONFIG_HOME"] = str(captures / "n07d-client-config")
     try:
         result = subprocess.run(
             [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package,
-             "--lib", test, "--", "--nocapture"],
-            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+             *features, "--lib", test, "--", "--nocapture"],
+            cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
     except OSError:
         return "replay-not-run"
