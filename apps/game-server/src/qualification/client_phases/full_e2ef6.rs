@@ -2435,20 +2435,33 @@ pub(super) async fn walk_once(
     Ok(())
 }
 
-/// Plan once outside the hostile spawn approach range before any STEP is sent.
+/// Plan once around spawn cells and the wolf pack near the blessing route.
 pub(super) fn spawn_clear_route(
     world: &BundleWorld,
     from: TilePos,
     spawns: &oteryn_world_bundle::spawn::Table,
     goal: impl Fn(TilePos) -> bool,
 ) -> Option<Vec<StepDirection>> {
-    const APPROACH_CLEARANCE: i16 = 8;
+    const WOLF_CLEARANCE: i16 = 5;
     let mut occupied = BTreeSet::new();
     for source in &spawns.sources {
         for point in &source.points {
-            for dx in -APPROACH_CLEARANCE..=APPROACH_CLEARANCE {
-                for dy in -APPROACH_CLEARANCE..=APPROACH_CLEARANCE {
-                    if let Some((x, y)) = point.x.checked_add_signed(dx).zip(point.y.checked_add_signed(dy)) {
+            let clearance = if spawns
+                .creatures
+                .get(point.creature as usize)
+                .is_some_and(|creature| creature.key == "oteryn:creature.wolf")
+            {
+                WOLF_CLEARANCE
+            } else {
+                0
+            };
+            for dx in -clearance..=clearance {
+                for dy in -clearance..=clearance {
+                    if let Some((x, y)) = point
+                        .x
+                        .checked_add_signed(dx)
+                        .zip(point.y.checked_add_signed(dy))
+                    {
                         occupied.insert((source.floor, x, y));
                     }
                 }
