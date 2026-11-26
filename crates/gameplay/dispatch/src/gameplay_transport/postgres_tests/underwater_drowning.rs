@@ -420,7 +420,11 @@ fn scenario_in_world(
     let started = std::time::Instant::now();
     let result = run(async |admin| {
         reset();
-        let h = Harness::create_with_admission_seed(admin, "underwater_drown", true, false).await?;
+        let h = if appearance_wire {
+            Harness::create_appearance(admin, "underwater_drown").await?
+        } else {
+            Harness::create_with_admission_seed(admin, "underwater_drown", true, false).await?
+        };
         eprintln!(
             "POSTGRES_STARTED PAR-M10 callback={callback:?} portals={portals} optional={optional}"
         );
