@@ -1225,6 +1225,7 @@ def main() -> int:
 
     install_buddel(ROOT, WORLD)
     project_routes(ROOT, WORLD)
+    run(["python3", "tools/content-migration/pema_display_name.py"])
     canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     run(["python3", "tools/content-schema/world-object-authoring/spawn_ground.py"])
