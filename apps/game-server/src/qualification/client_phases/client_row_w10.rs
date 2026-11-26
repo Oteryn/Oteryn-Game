@@ -44,7 +44,11 @@ async fn probe(
     }
     capture(root, &format!("w10-{name}-request.bin"), request)?;
     capture(root, &format!("w10-{name}.bin"), &reply.payload)?;
-    capture(root, &format!("w10-{name}-status.bin"), &(reply.status as u32).to_be_bytes())?;
+    capture(
+        root,
+        &format!("w10-{name}-status.bin"),
+        &(reply.status as u32).to_be_bytes(),
+    )?;
     let binding = serde_json::json!({
         "session_id": uuid_text(session.as_bytes()),
         "command_id": reply.command_id,

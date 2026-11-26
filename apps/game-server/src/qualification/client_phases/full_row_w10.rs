@@ -367,9 +367,11 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
             .map_err(|error| failed_error(2, error, "a locked-level refusal"))?,
     )?;
 
-    enter_primal(&mut client, world, false).await.map_err(|error| {
-        failed_error(3, error, "the authored Primal lever and instance handoff")
-    })?;
+    enter_primal(&mut client, world, false)
+        .await
+        .map_err(|error| {
+            failed_error(3, error, "the authored Primal lever and instance handoff")
+        })?;
     let (at, defeated) = defeat_primal(&mut client).await?;
 
     accepted(
