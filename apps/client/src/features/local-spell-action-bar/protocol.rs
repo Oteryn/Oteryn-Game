@@ -10,7 +10,7 @@ pub(in crate::play) fn vitals_events(mailbox: &mut Mailbox, events: &[SessionEve
             SessionEvent::ActorCooldowns(delta) => {
                 mailbox
                     .spell_bar
-                    .replace_cooldowns(Some(delta.value.clone()));
+                    .apply_cooldown_delta(&delta.value);
             }
             SessionEvent::GatedSnapshotReplaced(delta) if delta.value.domain_id == 20 => {
                 mailbox.spell_bar.replace_cooldowns(
@@ -117,5 +117,60 @@ impl Outbox {
             state.deferred_item_read = None;
             mailbox.spell_bar.feedback = "Item cooldown data unavailable; no action sent".into();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::play::{mailbox::lock, play_channel};
+    use oteryn_session::{ActorCooldown, ActorCooldownKind, ActorCooldowns, AppliedDelta, SessionEvent};
+    use std::num::NonZeroU32;
+
+    fn push(outbox: &super::Outbox, revision: u64, rtt_ms: Option<u32>, entries: Vec<ActorCooldown>) {
+        outbox.push(vec![SessionEvent::ActorCooldowns(AppliedDelta {
+            server_sequence: revision,
+            base_revision: revision - 1,
+            new_revision: revision,
+            value: ActorCooldowns {
+                server_now_ms: 1_000,
+                rtt_ms,
+                entries,
+            },
+        })]);
+    }
+
+    #[test]
+    fn spell_cooldowns_keep_unchanged_attack_and_apply_keyed_tombstones() {
+        let (link, _, outbox) = play_channel();
+        let attack = ActorCooldown {
+            kind: ActorCooldownKind::Group,
+            id: 1,
+            expires_at_ms: 5_000,
+        };
+        let exura = ActorCooldown { kind: ActorCooldownKind::Spell, id: 1, expires_at_ms: 2_000 };
+        push(&outbox, 1, None, vec![attack]);
+        push(&outbox, 2, None, vec![exura]);
+        push(&outbox, 3, None, vec![ActorCooldown { expires_at_ms: 0, ..exura }]);
+        let mailbox = lock(&link.mailbox);
+        assert_eq!(
+            mailbox.spell_bar.bar.cooldowns.as_ref().map(|state| state.entries.as_slice()),
+            Some([attack].as_slice())
+        );
+    }
+
+    #[test]
+    fn spell_cooldowns_compensate_for_half_the_round_trip_on_correction() -> Result<(), &'static str> {
+        let (link, _, outbox) = play_channel();
+        let spell = NonZeroU32::new(1).ok_or("spell index")?;
+        let entry = ActorCooldown {
+            kind: ActorCooldownKind::Spell,
+            id: spell.get(),
+            expires_at_ms: 2_000,
+        };
+        push(&outbox, 1, None, vec![entry]);
+        assert_eq!(lock(&link.mailbox).spell_bar.bar.remaining_ms(spell, &[]), 1_000);
+        push(&outbox, 2, Some(200), vec![entry]);
+        assert_eq!(lock(&link.mailbox).spell_bar.bar.remaining_ms(spell, &[]), 900);
+        Ok(())
     }
 }

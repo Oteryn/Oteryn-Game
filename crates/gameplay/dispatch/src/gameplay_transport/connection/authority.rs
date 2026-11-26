@@ -1604,13 +1604,18 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
-    /// Cooldown presentation from the admitted caster's committed runtime state.
-    fn spell_cooldown_delta(
+    /// Cooldown presentation from the admitted actor's committed runtime state.
+    fn observe_spell_cooldowns(
         &self,
         _admitted: AdmittedSession,
         _publisher: &mut SpellCooldownPublisher,
-    ) -> impl Future<Output = Option<Vec<u8>>> {
-        async { None }
+        _snapshot: bool,
+    ) -> impl Future<Output = CooldownObservation> {
+        async { CooldownObservation::Unchanged }
+    }
+
+    fn spell_cooldown_now(&self) -> oteryn_simulation_determinism::SemanticTimeMicros {
+        oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0)
     }
 
     fn observe_house_vitals(

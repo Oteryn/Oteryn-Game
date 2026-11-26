@@ -1,6 +1,9 @@
 //! A separate projection of server cooldowns, independent of action-bar assignments.
 use super::super::ActionBarPanel;
-use oteryn_client_runtime::{spell::ActorCooldownKind, spell_catalog::CatalogState};
+use oteryn_client_runtime::{
+    spell::{ActorCooldownKind, cooldown_remaining},
+    spell_catalog::CatalogState,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CooldownIcon {
@@ -33,7 +36,7 @@ pub fn cooldown_icons(panel: &ActionBarPanel, catalog: &CatalogState) -> Vec<Coo
                 .entries
                 .iter()
                 .filter(|entry| entry.id == id && (entry.kind == ActorCooldownKind::Group) == group)
-                .map(|entry| entry.expires_at_ms.saturating_sub(state.server_now_ms))
+                .map(|entry| cooldown_remaining(state, entry.expires_at_ms))
                 .max()
                 .unwrap_or(0)
         });

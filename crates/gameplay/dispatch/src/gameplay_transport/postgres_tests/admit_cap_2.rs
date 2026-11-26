@@ -25,7 +25,9 @@ use oteryn_protocol_oteryn::world_object::{
     COMMAND_TYPE_USE_INTENT, UseDisposition, UseIntent, UseTarget, decode_use_result,
     encode_item_use_intent,
 };
-use oteryn_protocol_oteryn::{CommandStatus, decode_command_result, decode_snapshot_chunk};
+use oteryn_protocol_oteryn::{
+    CommandStatus, decode_command_result, decode_snapshot_chunk, decode_state_delta, presentation,
+};
 use tokio::io::AsyncWriteExt;
 
 // Future activation graph, only in this test. The production offer remains closed.
@@ -273,6 +275,15 @@ async fn field_case(admin: String, enabled: bool) -> TestResult {
         })
         .map_err(debug)?
         .selected();
+    if enabled {
+        let offered = crate::gameplay_transport::native_cue_offer::offered(FIELD_OFFER, true);
+        admitted.continuity.selected_capabilities =
+            crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                &offered,
+                &[4, 6, 11, 15, 18, 22, 23, 30],
+            )
+            .ok_or("presentation offer for rune test")?;
+    }
     let before = {
         let runtime = dependencies.runtime.lock().await;
         owner
@@ -365,12 +376,21 @@ async fn field_case(admin: String, enabled: bool) -> TestResult {
         if enabled {
             client.write_u32(u32::try_from(bytes.len())?).await?;
             client.write_all(&bytes).await?;
+            let mut cooldowns = Vec::new();
             loop {
                 let bytes = read_frame(&mut client)
                     .await
                     .map_err(|error| format!("field wire enabled={enabled}: {error}"))?;
                 let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
                 assert_ne!(envelope.message_type(), MessageType::ProtocolError);
+                if envelope.message_type() == MessageType::StateDelta {
+                    let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
+                    if delta.domain_id == presentation::STATE_DOMAIN_ACTOR_COOLDOWNS {
+                        cooldowns.push(
+                            presentation::decode_actor_cooldowns(delta.payload).map_err(debug)?,
+                        );
+                    }
+                }
                 if envelope.message_type() == MessageType::CommandResult {
                     // FND-02 §13.2: the retained outcome replays; the family is not called
                     // again, which the single receipt and quantity below prove durably.
@@ -383,6 +403,19 @@ async fn field_case(admin: String, enabled: bool) -> TestResult {
                     break;
                 }
             }
+            assert_eq!(
+                cooldowns.len(),
+                1,
+                "the committed rune must publish exactly once"
+            );
+            assert!(
+                cooldowns[0].entries.iter().any(|entry| {
+                    entry.kind == presentation::ActorCooldownKind::Group
+                        && entry.id == 1
+                        && entry.expires_at_ms > cooldowns[0].server_now_ms
+                }),
+                "the rune's attack group must be cooling down"
+            );
         }
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(())

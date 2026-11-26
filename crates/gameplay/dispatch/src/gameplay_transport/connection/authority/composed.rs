@@ -1,7 +1,8 @@
 //! Production delegation to the existing mechanic owners.
 
 use crate::gameplay_transport::connection::{
-    AchievementNoticeObservation, SelectedCapabilities, SpellCooldownPublisher, UseCommand,
+    AchievementNoticeObservation, CooldownObservation, SelectedCapabilities,
+    SpellCooldownPublisher, UseCommand,
 };
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
@@ -1655,49 +1656,132 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_actor_vitals(actor, game_session_id).await
     }
 
-    async fn spell_cooldown_delta(
+    fn spell_cooldown_now(&self) -> oteryn_simulation_determinism::SemanticTimeMicros {
+        self.owner_now()
+    }
+
+    async fn observe_spell_cooldowns(
         &self,
         admitted: AdmittedSession,
         publisher: &mut SpellCooldownPublisher,
-    ) -> Option<Vec<u8>> {
-        let actor = admitted.runtime_actor?;
-        let fence = admitted.item_fence?;
-        let controller = admitted.controller?;
+        snapshot: bool,
+    ) -> CooldownObservation {
+        use CooldownObservation::{Changed, Stale, Unavailable, Unchanged};
+        let (Some(actor), Some(fence), Some(controller)) = (
+            admitted.runtime_actor,
+            admitted.item_fence,
+            admitted.controller,
+        ) else {
+            return Stale;
+        };
+        let session = admitted.game_session_id;
+        if fence.connection_generation.get() != admitted.continuity.connection_generation {
+            return Stale;
+        }
+
+        let owns_actor = |runtime: &ChannelRuntimeV1| {
+            if runtime.owner_fence().is_err()
+                || self.active_generation.is_some_and(|active| {
+                    active.identity().server_artifact_digest()
+                        != runtime.content_pin().server_artifact_digest()
+                })
+            {
+                return false;
+            }
+            if actor.runtime_scope() != fence.runtime_scope {
+                // House custody keeps the original carrier reference while a
+                // separate owner holds its current scope and Character lease.
+                return runtime
+                    .house_actor_state(actor, session)
+                    .is_ok_and(|house| {
+                        house.scope == fence.runtime_scope
+                            && house.generation == fence.scope_ownership_generation
+                            && house.lease.character_id().as_bytes()
+                                == fence.character_id.as_bytes()
+                            && house.lease.generation() == fence.character_lease_generation
+                    })
+                    && runtime
+                        .house_player_control_facts(actor, session)
+                        .is_ok_and(|facts| facts.control_loss.is_none());
+            }
+            let binding = runtime.binding();
+            binding.runtime_scope() == fence.runtime_scope
+                && binding.scope_generation() == fence.scope_ownership_generation
+                && runtime
+                    .player_control_facts(actor, session)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+        };
+        let actor_state = |states: &actor_spell::ChannelSpellStates| {
+            states
+                .actors
+                .iter()
+                .position(|(a, s, _)| *a == actor && *s == session)
+        };
+        if !snapshot {
+            // Most visibility turns have no change. Avoid a durable read for
+            // those turns while still observing commits made by other actors.
+            let Ok(runtime) = self.runtime.try_lock() else {
+                return Unavailable;
+            };
+            if !owns_actor(&runtime) {
+                return Stale;
+            }
+            let Ok(states) = self.states.spell_states.try_lock() else {
+                return Unavailable;
+            };
+            let cooldowns = actor_state(&states).map(|i| &states.actors[i].2.cooldowns);
+            if !publisher.needs_live_observation(cooldowns) {
+                return Unchanged;
+            }
+        }
+
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let budget = AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
-        let (current, _) = budget
-            .retry_command_guard(async || store.current_session_at(admitted.game_session_id).await)
-            .await
-            .ok()?;
-        if current.session_state() != GameSessionState::Active
-            || current.current_transport() != Some(controller.transport)
-            || item_fence_of(current) != Some(fence)
-            || fence.connection_generation.get() != admitted.continuity.connection_generation
-        {
-            return None;
+        let mut next = publisher.clone();
+        let mut observe = async || {
+            store
+                .observe_current_session(session, |current| {
+                    if current.session_state() != GameSessionState::Active
+                        || current.current_transport() != Some(controller.transport)
+                        || item_fence_of(current) != Some(fence)
+                    {
+                        return Stale;
+                    }
+                    let Ok(runtime) = self.runtime.try_lock() else {
+                        return Unavailable;
+                    };
+                    if !owns_actor(&runtime) {
+                        return Stale;
+                    }
+                    let Ok(states) = self.states.spell_states.try_lock() else {
+                        return Unavailable;
+                    };
+                    let state = actor_state(&states).map(|i| &states.actors[i].2);
+                    match next.live_observation(state, self.spells, self.owner_now(), snapshot) {
+                        Ok(Some(payload)) => Changed(payload),
+                        Ok(None) => Unchanged,
+                        Err(_) => Unavailable,
+                    }
+                })
+                .await
+        };
+        let observation = if snapshot {
+            let Ok(budget) = AdmissionRetryBudget::for_foreground_command(self.root) else {
+                return Unavailable;
+            };
+            budget
+                .retry_unavailable(async || match observe().await {
+                    Ok(Unavailable) | Err(_) => Err(AdmissionRefusal::Unavailable),
+                    Ok(other) => Ok(other),
+                })
+                .await
+                .unwrap_or(Unavailable)
+        } else {
+            observe().await.unwrap_or(Unavailable)
+        };
+        if matches!(observation, Changed(_) | Unchanged) {
+            *publisher = next;
         }
-        let runtime = self.runtime.lock().await;
-        runtime.owner_fence().ok()?;
-        let binding = runtime.binding();
-        if binding.runtime_scope() != fence.runtime_scope
-            || binding.scope_generation() != fence.scope_ownership_generation
-            || self.active_generation.is_some_and(|active| {
-                active.identity().server_artifact_digest()
-                    != runtime.content_pin().server_artifact_digest()
-            })
-            || runtime
-                .player_control_facts(actor, admitted.game_session_id)
-                .ok()?
-                .control_loss
-                .is_some()
-        {
-            return None;
-        }
-        let states = self.states.spell_states.lock().await;
-        let state = states.get(&runtime, actor, admitted.game_session_id)?;
-        publisher
-            .live_delta(state, self.spells, self.owner_now())
-            .ok()?
+        observation
     }
 
     async fn observe_house_vitals(

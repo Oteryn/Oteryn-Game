@@ -3,6 +3,7 @@
 use super::*;
 
 struct LiveSetup {
+    cooldowns: SpellCooldownPublisher,
     integrity: integrity::Integrity,
     initial: snapshot::InitialSnapshot,
     items: snapshot::ItemSnapshot,
@@ -203,7 +204,8 @@ where
     if let Some(message) = zones_nologout_transport::snapshot(authority, admitted) {
         payloads.push(message.map_err(|()| ServeEnd::Disconnected)?);
     }
-    native_cues::snapshot_observations(authority, actor, admitted, &mut payloads).await?;
+    let cooldowns =
+        native_cues::snapshot_observations(authority, actor, admitted, &mut payloads).await?;
     let mut domains = payloads
         .iter()
         .map(|domain| DomainSnapshot {
@@ -267,6 +269,7 @@ where
         generation,
         revision,
         LiveSetup {
+            cooldowns,
             integrity,
             initial,
             items,
@@ -297,6 +300,7 @@ async fn live<A: FreshAdmissionAuthority>(
     setup: LiveSetup,
 ) -> Result<ServeState, ServeEnd> {
     let LiveSetup {
+        cooldowns,
         integrity,
         initial,
         items,
@@ -484,8 +488,7 @@ async fn live<A: FreshAdmissionAuthority>(
         next_periodic_refresh: 0,
         activity_ack: None,
         cast_chat_revision: u64::from(cast_chat_active),
-        cooldown_revision: 0,
-        cooldowns: SpellCooldownPublisher::default(),
+        cooldowns,
         require_session_binding: false,
         spell_catalog,
         integrity,

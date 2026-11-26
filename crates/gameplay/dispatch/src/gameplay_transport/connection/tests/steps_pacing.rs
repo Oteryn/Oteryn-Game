@@ -62,6 +62,7 @@ fn admitted_steps_are_sequenced_and_a_replayed_id_expires() -> Result<(), Box<dy
                 spatial_revision: 2,
                 player_trade_revision: 0, // This peer did not select PLAYER_TRADE_V1.
                 presentation_revision: 0,
+                cooldown_revision: 0,
                 overlay_revision: 0,
                 vitals_revision: 0,
                 achievement_notice_revision: None,

@@ -81,6 +81,26 @@ fn kooldown_aid_lost_ack_replays_once_and_keeps_its_durable_cooldown() -> TestRe
 
 struct WireOwner<'a, 'b, 'f, 's>(&'a ComposedFreshAdmission<'b, 'f, 's>);
 impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
+    async fn observe_spell_cooldowns(
+        &self,
+        admitted: AdmittedSession,
+        publisher: &mut crate::gameplay_transport::connection::SpellCooldownPublisher,
+        snapshot: bool,
+    ) -> crate::gameplay_transport::connection::CooldownObservation {
+        use crate::gameplay_transport::connection::CooldownObservation;
+        // This legacy item-use fixture seeds a session row without an admission
+        // receipt. Feed its real committed actor state through the production codec.
+        let runtime = self.0.runtime.lock().await;
+        let states = self.0.states.spell_states.lock().await;
+        let state = admitted
+            .runtime_actor
+            .and_then(|actor| states.get(&runtime, actor, admitted.game_session_id));
+        match publisher.live_observation(state, self.0.spells, self.0.owner_now(), snapshot) {
+            Ok(Some(payload)) => CooldownObservation::Changed(payload),
+            Ok(None) => CooldownObservation::Unchanged,
+            Err(_) => CooldownObservation::Unavailable,
+        }
+    }
     fn take_tutorial_notice(
         &self,
         session: GameSessionId,

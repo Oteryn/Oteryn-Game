@@ -198,10 +198,16 @@ impl State {
             &mut payloads,
         )
         .await?;
-        super::super::native_cues::snapshot_observations(authority, actor, admitted, &mut payloads)
-            .await?;
+        let cooldowns = super::super::native_cues::snapshot_observations(
+            authority,
+            actor,
+            admitted,
+            &mut payloads,
+        )
+        .await?;
         Ok((
             Self {
+                cooldowns,
                 spell_catalog,
                 actor,
                 enabled,

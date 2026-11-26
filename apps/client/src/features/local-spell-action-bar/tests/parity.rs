@@ -29,21 +29,20 @@ fn multi_action_uses_first_ready_spell_through_play_queue_and_persists()
         r#"{"kind":"Multi","actions":[{"kind":"Spell","name":"Spell1","words":"words1"},{"kind":"Spell","name":"Spell2","words":"words2"},{"kind":"Spell","name":"Spell3","words":"words3"}]}"#,
     )?;
     assert!(link.assign_bar_action(0, action));
-    for (blocked, expected) in [
+    for (revision, (blocked, expected)) in (1..).zip([
         (vec![1, 2], Some(3)),
         (vec![1], Some(2)),
         (vec![], Some(1)),
         (vec![1, 2, 3], None),
-    ] {
+    ]) {
         outbox.push(vec![SessionEvent::ActorCooldowns(AppliedDelta {
-            server_sequence: 1,
-            base_revision: 0,
-            new_revision: 1,
+            server_sequence: revision,
+            base_revision: revision - 1,
+            new_revision: revision,
             value: ActorCooldowns {
                 server_now_ms: 100,
                 rtt_ms: None,
-                entries: blocked
-                    .into_iter()
+                entries: (1..=3)
                     .map(|id| ActorCooldown {
                         kind: if id == 1 {
                             ActorCooldownKind::Spell
@@ -51,7 +50,7 @@ fn multi_action_uses_first_ready_spell_through_play_queue_and_persists()
                             ActorCooldownKind::Group
                         },
                         id,
-                        expires_at_ms: 60100,
+                        expires_at_ms: if blocked.contains(&id) { 60_100 } else { 0 },
                     })
                     .collect(),
             },

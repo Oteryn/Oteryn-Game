@@ -9,6 +9,7 @@ pub(super) struct Exchange {
     pub results: Vec<UseDisposition>,
     pub notices: Vec<TutorialNotice>,
     pub retained: AdmittedSession,
+    pub cooldowns: Vec<oteryn_protocol_oteryn::presentation::ActorCooldowns>,
 }
 
 pub(super) async fn exchange(
@@ -50,6 +51,7 @@ pub(super) async fn exchange(
     let mut cursor = 0;
     let mut results = Vec::new();
     let mut notices = Vec::new();
+    let mut cooldowns = Vec::new();
     while cursor < output.len() {
         let prefix = output.get(cursor..cursor + 4).ok_or("short frame length")?;
         let length = usize::try_from(u32::from_be_bytes(prefix.try_into()?))?;
@@ -72,6 +74,13 @@ pub(super) async fn exchange(
                 let delta = oteryn_protocol_oteryn::decode_state_delta(frame.payload())?;
                 if delta.domain_id == STATE_DOMAIN_TUTORIAL_NOTICES {
                     notices.push(decode_tutorial_notice(delta.payload).map_err(debug)?);
+                } else if delta.domain_id
+                    == oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ACTOR_COOLDOWNS
+                {
+                    cooldowns.push(
+                        oteryn_protocol_oteryn::presentation::decode_actor_cooldowns(delta.payload)
+                            .map_err(debug)?,
+                    );
                 }
             }
             _ => {}
@@ -82,5 +91,6 @@ pub(super) async fn exchange(
         results,
         notices,
         retained,
+        cooldowns,
     })
 }

@@ -63,11 +63,19 @@ impl ActionBar {
                     ActorCooldownKind::Spell => entry.id == spell.get(),
                     ActorCooldownKind::Group => groups.contains(&entry.id),
                 })
-                .map(|entry| entry.expires_at_ms.saturating_sub(state.server_now_ms))
+                .map(|entry| cooldown_remaining(state, entry.expires_at_ms))
                 .max()
                 .unwrap_or(0)
         })
     }
+}
+
+/// Estimate how much of the server deadline was left when its frame arrived.
+#[must_use]
+pub fn cooldown_remaining(state: &oteryn_session::ActorCooldowns, expires_at_ms: u64) -> u64 {
+    expires_at_ms
+        .saturating_sub(state.server_now_ms)
+        .saturating_sub(u64::from(state.rtt_ms.unwrap_or(0)) / 2)
 }
 
 #[cfg(test)]

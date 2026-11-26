@@ -112,6 +112,10 @@ where
             return Ok(None);
         }
         Next::Visibility => {
+            crate::durability::DurabilityRoot::with_background_holder(
+                authority.background_operation(cooldowns::refresh_live(stream, authority, session)),
+            )
+            .await?;
             refresh::visibility(stream, authority, session).await?;
             // Browse observations can outlast the visibility interval. Start the next
             // existing interval after completion so another ready refresh cannot keep
@@ -141,11 +145,11 @@ where
             }
             match decode_wire_envelope(&frame)
                 .and_then(|envelope| envelope.liveness_ack(session.generation))
-                .and_then(|ack| session.liveness.ack(ack.probe_id))
             {
-                Ok(()) => return Ok(None),
+                Ok(ack) => cooldowns::ack_live(stream, authority, session, ack.probe_id).await?,
                 Err(error) => return Err(close(stream, session.admitted, error).await),
             }
+            return Ok(None);
         }
         Next::Frame(Ok(frame)) => (frame, false, tokio::time::Instant::now()),
         Next::Frame(Err(_)) => {
@@ -166,7 +170,7 @@ where
                 Err(_) => return Err(ServeEnd::Disconnected),
             }
             let probe = match session.liveness.tick() {
-                Ok(probe_id) => encode_liveness_probe(session.generation, probe_id),
+                Ok(probe_id) => probe_id,
                 Err(LivenessEnd::ControlLost) => {
                     return Err(ServeEnd::ControlLost("liveness_missed"));
                 }
@@ -174,13 +178,14 @@ where
                     return Err(ServeEnd::Disconnected);
                 }
             };
-            let Ok(probe) = probe else {
+            let Ok(frame) = encode_liveness_probe(session.generation, probe) else {
                 return Err(ServeEnd::Disconnected);
             };
             // A peer that does not consume even one small probe within a cadence is not
             // in control; an unbounded write would also stall the cadence itself.
-            match tokio::time::timeout(session.policy.interval, write_frame(stream, &probe)).await {
-                Ok(Ok(())) => {}
+            let sent = authority.spell_cooldown_now();
+            match tokio::time::timeout(session.policy.interval, write_frame(stream, &frame)).await {
+                Ok(Ok(())) => session.cooldowns.live_probe_sent(probe, sent),
                 Ok(Err(_)) => {
                     return Err(ServeEnd::Disconnected);
                 }

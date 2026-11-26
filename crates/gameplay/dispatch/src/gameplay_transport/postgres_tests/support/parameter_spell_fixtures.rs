@@ -41,6 +41,10 @@ use std::time::Duration;
 mod cooldowns;
 
 pub(super) const COOLDOWN_CASE: u8 = 7;
+pub(super) const COOLDOWN_REJOIN: u8 = 8;
+pub(super) const COOLDOWN_GIFT: u8 = 9;
+pub(super) const COOLDOWN_RTT: u8 = 10;
+pub(super) const COOLDOWN_RETRY: u8 = 11;
 
 pub(super) fn scenario(case: u8) -> TestResult {
     scenario_in_world(case, None)
@@ -72,9 +76,17 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     eprintln!(
         "PARAM-CAST-WIRE-1 PostgreSQL harness created, case={case}, world_type={world_type:?}"
     );
-    prepare_current_session(&h).await?;
+    let cooldown_case = (COOLDOWN_CASE..=COOLDOWN_RETRY).contains(&case);
+    let recovery = if case == COOLDOWN_REJOIN {
+        let source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+        super::house_transfer_fixtures::prepare_owned_session(&h).await?;
+        Some(source)
+    } else {
+        prepare_current_session(&h).await?;
+        None
+    };
     h.seed_pvp_target().await?;
-    if !matches!(case, 1 | 5 | 6 | COOLDOWN_CASE) {
+    if !cooldown_case && !matches!(case, 1 | 5 | 6) {
         observer::admit(&h).await?;
     }
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -106,7 +118,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         pin.identity().client_artifact_digest(),
         room.frame_binding().digest(),
         room.map_revision_digest(),
-        if case == COOLDOWN_CASE {
+        if cooldown_case {
             (12, 14, -7) // Walkable, ground-only protection-zone tile in the pinned Thalom map.
         } else {
             (2, 11, -7)
@@ -121,6 +133,9 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     deps.combat_room = Some(room);
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
+    if let Some(recovery) = &recovery {
+        owner.evidence = &recovery.evidence;
+    }
     let mut admitted = deps.admitted;
     let actor = deps.actor;
     let session = admitted.game_session_id;
@@ -238,7 +253,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             .map_err(debug)?;
     }
     let target_session = GameSessionId::decode(&id(110)).map_err(debug)?;
-    let target_actor = if !matches!(case, 1 | 5 | 6 | COOLDOWN_CASE) {
+    let target_actor = if !cooldown_case && !matches!(case, 1 | 5 | 6) {
         Some(observer::initialize(&deps, &owner).await?)
     } else {
         None
@@ -262,7 +277,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
     for current_session in [
         Some(session),
-        (!matches!(case, 1 | 5 | 6 | COOLDOWN_CASE)).then_some(target_session),
+        (!cooldown_case && !matches!(case, 1 | 5 | 6)).then_some(target_session),
     ]
     .into_iter()
     .flatten()
@@ -300,8 +315,12 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             .ok_or("install equipment effects")?;
     }
     admitted.first_entry = FirstEntryOutcome::Positioned;
-    if case == COOLDOWN_CASE {
-        cooldowns::check(&owner, admitted, &deps.spells).await?;
+    if cooldown_case {
+        if case == COOLDOWN_CASE {
+            cooldowns::check(&owner, admitted, &deps.spells).await?;
+        } else {
+            cooldowns::review_case(&owner, admitted, &deps.spells, case).await?;
+        }
         drop(owner);
         drop(authority);
         drop(seal);

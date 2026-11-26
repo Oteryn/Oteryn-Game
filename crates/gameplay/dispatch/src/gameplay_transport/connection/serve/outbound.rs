@@ -211,6 +211,9 @@ where
             effects::step(stream, authority, session, outcome).await?;
         }
         Dispatch::Use(outcome) => {
+            if outcome.disposition == UseDisposition::Committed {
+                cooldowns::refresh_live(stream, authority, session).await?;
+            }
             use_effects::use_effects(stream, authority, session, command, outcome).await?;
         }
         Dispatch::Spell(outcome) | Dispatch::ParameterSpell(outcome, _) => {

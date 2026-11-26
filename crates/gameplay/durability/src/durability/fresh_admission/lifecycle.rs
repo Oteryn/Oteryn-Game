@@ -310,6 +310,35 @@ impl FreshAdmissionStore {
             .await
     }
 
+    /// Observe runtime data against the current session while the admission
+    /// relation fence still excludes session replacement. The callback must
+    /// use nonblocking owner reads so a runtime writer can acquire this fence.
+    pub async fn observe_current_session<T: Send>(
+        &self,
+        session: GameSessionId,
+        observe: impl FnMut(GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>) -> T + Send,
+    ) -> Result<T> {
+        let pass = self
+            .guards
+            .backend
+            .try_issue_root()?
+            .ok_or(DurabilityError::InvalidConfiguration)?;
+        let mut context = (self, observe);
+        pass.run_with_context(&mut context, move |holder, deadline, (store, observe)| {
+            Box::pin(async move {
+                let mut tx =
+                    super::admission_journal::begin_pass_transaction(holder, Some(deadline))
+                        .await?;
+                super::db::try_lock_admission_relations(&mut tx).await?;
+                let current = store.current_session_locked(&mut tx, session).await?;
+                let observed = observe(current);
+                tx.rollback().await?;
+                Ok(observed)
+            })
+        })
+        .await
+    }
+
     /// The current canonical session together with the database clock sampled
     /// in the same fenced pass. Loss observations are timed on this clock: the
     /// final decision samples it again, so a faster host clock cannot refuse

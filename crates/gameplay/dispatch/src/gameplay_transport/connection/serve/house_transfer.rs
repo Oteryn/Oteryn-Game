@@ -226,6 +226,8 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 ..
             } = match event {
                 house_hireling::step::Event::Services => {
+                    cooldowns::refresh(stream, authority, &mut admitted, &mut services.cooldowns)
+                        .await?;
                     services.tick(stream, authority, &mut admitted).await?;
                     house_hireling::step::services_completed(&mut service_cadence);
                     continue;
@@ -245,9 +247,11 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         .map_err(|_| ServeEnd::ControlLost("house_transfer"))?;
                     let frame = encode_liveness_probe(generation, probe)
                         .map_err(|_| ServeEnd::Disconnected)?;
+                    let sent = authority.spell_cooldown_now();
                     write_frame(stream, &frame)
                         .await
                         .map_err(|_| ServeEnd::Disconnected)?;
+                    services.cooldowns.live_probe_sent(probe, sent);
                     continue;
                 }
                 house_hireling::step::Event::PodiumWalk => {
@@ -277,14 +281,18 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 ));
             }
             if envelope.message_type() == MessageType::LivenessAck {
-                liveness
-                    .ack(
-                        envelope
-                            .liveness_ack(generation)
-                            .map_err(ServeEnd::Closed)?
-                            .probe_id,
-                    )
-                    .map_err(ServeEnd::Closed)?;
+                let id = envelope
+                    .liveness_ack(generation)
+                    .map_err(ServeEnd::Closed)?
+                    .probe_id;
+                liveness.ack(id).map_err(ServeEnd::Closed)?;
+                if services
+                    .cooldowns
+                    .live_probe_ack(id, authority.spell_cooldown_now())
+                {
+                    cooldowns::refresh(stream, authority, &mut admitted, &mut services.cooldowns)
+                        .await?;
+                }
                 continue;
             }
             if !command_session_matches(&frame, admitted, require_session_binding)

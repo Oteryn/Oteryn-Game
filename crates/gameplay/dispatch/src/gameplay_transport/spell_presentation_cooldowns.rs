@@ -4,7 +4,7 @@
 use super::super::actor_spell::ChannelSpellStates;
 use super::*;
 use crate::content::native_gameplay::NativeGameplayState;
-use crate::spell::{SpellBook, cast::PlayerSpellState};
+use crate::spell::{Cooldowns, SpellBook, cast::PlayerSpellState};
 use oteryn_protocol_oteryn::{Direction, MessageType, WireEnvelopeView, presentation};
 use oteryn_simulation_determinism::SemanticTimeMicros;
 use std::collections::BTreeMap;
@@ -15,7 +15,15 @@ pub struct CooldownRead<'a> {
     pub active: &'a NativeGameplayState,
     pub now: SemanticTimeMicros,
 }
-#[derive(Debug, Default)]
+#[derive(Debug)]
+pub enum CooldownObservation {
+    Changed(Vec<u8>),
+    Unchanged,
+    Stale,
+    Unavailable,
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct CandidateCooldownPublisher {
     binding: Option<(ScopeContext, GameSessionId, u64)>,
     published: BTreeMap<Key, u64>,
@@ -23,6 +31,8 @@ pub struct CandidateCooldownPublisher {
     probe: Option<(u64, u64)>,
     probe_high_water: u64,
     rtt: Option<u32>,
+    live_observed: Option<Cooldowns>,
+    live_correction: bool,
 }
 fn map_owned(
     read: &CooldownRead<'_>,
@@ -35,12 +45,13 @@ fn map_owned(
         .states
         .get(read.source.runtime, observer.actor, observer.session)
         .ok_or(Error::Stale)?;
-    map_deadlines(state, read.active.spell_book())
+    map_deadlines(state, read.active.spell_book(), None)
 }
 
 fn map_deadlines(
     state: &PlayerSpellState,
     book: &SpellBook,
+    now: Option<SemanticTimeMicros>,
 ) -> Result<(BTreeMap<Key, u64>, usize), Error> {
     let limit = book.source_len().checked_add(16).ok_or(Error::Bound)?;
     if limit > wire::MAX_COOLDOWNS {
@@ -56,8 +67,9 @@ fn map_deadlines(
         .ok_or(Error::Source)?;
     let mut mapped = BTreeMap::new();
     for (key, micros) in state.source_cooldown_deadlines() {
-        if key.strip_prefix("group:")
-            == Some(oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY)
+        if now.is_some_and(|now| micros <= now.get())
+            || key.strip_prefix("group:")
+                == Some(oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY)
         {
             continue;
         }
@@ -170,38 +182,114 @@ impl CandidateCooldownPublisher {
             .map_err(rejected)
     }
 
-    /// The admitted connection owns this cursor. The caller qualifies the current
-    /// actor and content before handing over the committed cooldown state.
-    pub(in crate::gameplay_transport) fn live_delta(
+    pub(in crate::gameplay_transport) fn needs_live_observation(
+        &self,
+        cooldowns: Option<&Cooldowns>,
+    ) -> bool {
+        self.live_correction || self.live_observed.as_ref() != cooldowns
+    }
+
+    pub(in crate::gameplay_transport) fn live_observation(
         &mut self,
-        state: &PlayerSpellState,
+        state: Option<&PlayerSpellState>,
         book: &SpellBook,
         now: SemanticTimeMicros,
+        snapshot: bool,
     ) -> Result<Option<Vec<u8>>, Error> {
-        let (mut mapped, limit) = map_deadlines(state, book)?;
-        mapped.retain(|_, expiry| *expiry > now.get() / 1000);
-        let Some(value) = self.delta(now, mapped, limit)? else {
-            return Ok(None);
+        let now_ms = now.get() / 1_000;
+        let (mapped, limit) = match state {
+            Some(state) => map_deadlines(state, book, Some(now))?,
+            None => (BTreeMap::new(), wire::MAX_COOLDOWNS),
         };
-        let entries = value
-            .entries
-            .into_iter()
-            .map(|entry| presentation::ActorCooldown {
-                kind: match entry.kind {
-                    wire::CooldownKind::Spell => presentation::ActorCooldownKind::Spell,
-                    wire::CooldownKind::Group => presentation::ActorCooldownKind::Group,
-                },
-                id: entry.id,
-                expires_at_ms: entry.expires_at_ms,
-            })
-            .collect();
-        presentation::encode_actor_cooldowns(&presentation::ActorCooldowns {
-            server_now_ms: value.server_now_ms,
-            rtt_ms: self.rtt,
-            entries,
-        })
-        .map(Some)
-        .map_err(|_| Error::Wire)
+        let mut entries = BTreeMap::new();
+        for (&key, &expiry) in &mapped {
+            if snapshot || self.published.get(&key) != Some(&expiry) {
+                entries.insert(key, expiry);
+            }
+        }
+        if !snapshot {
+            if self.live_correction {
+                // Include every last pre-ack key, even one that expired without
+                // another update. A current renewal always wins over expiry.
+                for &key in self.before_ack.keys() {
+                    entries.insert(key, mapped.get(&key).copied().unwrap_or(0));
+                }
+            }
+            for (&key, &expiry) in &self.published {
+                if !mapped.contains_key(&key) && expiry > now_ms {
+                    entries.insert(key, 0);
+                }
+            }
+        }
+        let payload = if snapshot || self.live_correction || !entries.is_empty() {
+            let encoded_entries = entries
+                .iter()
+                .map(
+                    |(&(kind, id), &expires_at_ms)| presentation::ActorCooldown {
+                        kind: match kind {
+                            wire::CooldownKind::Spell => presentation::ActorCooldownKind::Spell,
+                            wire::CooldownKind::Group => presentation::ActorCooldownKind::Group,
+                        },
+                        id,
+                        expires_at_ms,
+                    },
+                )
+                .collect();
+            Some(
+                presentation::encode_actor_cooldowns(&presentation::ActorCooldowns {
+                    server_now_ms: now_ms,
+                    rtt_ms: self.rtt,
+                    entries: encoded_entries,
+                })
+                .map_err(|_| Error::Wire)?,
+            )
+        } else {
+            None
+        };
+        if snapshot || self.live_correction {
+            self.before_ack.clear();
+        }
+        if self.rtt.is_none() {
+            for ((kind, id), expires_at_ms) in entries {
+                self.before_ack.insert(
+                    (kind, id),
+                    wire::Cooldown {
+                        kind,
+                        id,
+                        expires_at_ms,
+                    },
+                );
+            }
+            if self.before_ack.len() > limit {
+                return Err(Error::Bound);
+            }
+        }
+        self.published = mapped;
+        self.live_observed = state.map(|state| state.cooldowns.clone());
+        self.live_correction = false;
+        Ok(payload)
+    }
+
+    pub(in crate::gameplay_transport) fn live_probe_sent(
+        &mut self,
+        id: u64,
+        now: SemanticTimeMicros,
+    ) {
+        // The liveness owner has advanced to this probe. An unanswered earlier
+        // probe cannot become a timing sample when its late ack arrives.
+        self.probe = Some((id, now.get()));
+    }
+
+    pub(in crate::gameplay_transport) fn live_probe_ack(
+        &mut self,
+        id: u64,
+        now: SemanticTimeMicros,
+    ) -> bool {
+        if self.measure_ack(id, now) == Ok(true) {
+            self.live_correction = true;
+            return true;
+        }
+        false
     }
 
     fn delta(
@@ -292,6 +380,16 @@ impl CandidateCooldownPublisher {
         id: u64,
         received: SemanticTimeMicros,
     ) -> Result<Option<wire::Cooldowns>, Error> {
+        if !self.measure_ack(id, received)? {
+            return Ok(None);
+        }
+        let entries = self.before_ack.values().copied().collect();
+        let message = self.message(received, entries)?;
+        self.before_ack.clear();
+        Ok(Some(message))
+    }
+
+    fn measure_ack(&mut self, id: u64, received: SemanticTimeMicros) -> Result<bool, Error> {
         let (probe, sent) = self.probe.ok_or(Error::Stale)?;
         if probe != id {
             return Err(Error::Stale);
@@ -305,13 +403,7 @@ impl CandidateCooldownPublisher {
             ((u64::from(old) * 7 + u64::from(sample)) / 8) as u32
         }));
         self.probe = None;
-        if !first {
-            return Ok(None);
-        }
-        let entries = self.before_ack.values().copied().collect();
-        let message = self.message(received, entries)?;
-        self.before_ack.clear();
-        Ok(Some(message))
+        Ok(first)
     }
 }
 fn rejected(_error: Error) -> SpellItemError {

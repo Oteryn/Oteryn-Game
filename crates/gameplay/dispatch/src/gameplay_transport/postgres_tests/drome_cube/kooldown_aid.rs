@@ -16,7 +16,7 @@ pub(super) async fn run(
     session: GameSessionId,
     index: &ItemDefinitionIndex,
 ) -> TestResult {
-    let before = armed(owner.owner_now())?;
+    let before = armed(owner, owner.owner_now())?;
     install(owner, actor, session, before.clone()).await?;
     let open = encode_use_item_intent(NonZeroU64::new(2).ok_or("bag handle")?);
     let used = encode_use_item_intent(NonZeroU64::new(3).ok_or("concoction handle")?);
@@ -54,13 +54,41 @@ pub(super) async fn run(
     assert_eq!(harness.count("game_character_concoction_effects").await?, 0);
     assert_eq!(snapshot(owner, actor, session).await?, before);
 
+    let mut admitted = cases::admitted(owner, actor, session)?;
+    let offered = [
+        crate::gameplay_transport::capabilities::OfferedCapability {
+            id: 4,
+            requires: &[],
+        },
+        crate::gameplay_transport::capabilities::OfferedCapability {
+            id: 6,
+            requires: &[],
+        },
+        crate::gameplay_transport::capabilities::OfferedCapability {
+            id: 14,
+            requires: &[4],
+        },
+        crate::gameplay_transport::capabilities::OfferedCapability {
+            id: 15,
+            requires: &[4],
+        },
+        crate::gameplay_transport::capabilities::OfferedCapability {
+            id: 23,
+            requires: &[6],
+        },
+        crate::gameplay_transport::capabilities::OfferedCapability {
+            id: 31,
+            requires: &[],
+        },
+    ];
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            &offered,
+            &[4, 6, 14, 15, 23, 31],
+        )
+        .ok_or("Kooldown Aid presentation offer")?;
     ComposedFreshAdmission::lose_next_kooldown_ack();
-    let lost = wire::exchange(
-        owner,
-        cases::admitted(owner, actor, session)?,
-        &[open, used.clone()],
-    )
-    .await?;
+    let lost = wire::exchange(owner, admitted, &[open, used.clone()]).await?;
     assert_eq!(lost.results, vec![UseDisposition::Committed]);
     assert!(lost.notices.is_empty());
     assert_eq!(lost.retained.continuity.next_command_id, 2);
@@ -96,6 +124,18 @@ pub(super) async fn run(
         replayed.notices,
         vec![TutorialNotice::StatusText(TEXT.into())]
     );
+    assert!(
+        lost.cooldowns.is_empty(),
+        "an unsettled instant effect must not publish"
+    );
+    assert_eq!(
+        replayed.cooldowns.len(),
+        1,
+        "Kooldown Aid must publish the clear"
+    );
+    let cleared = &replayed.cooldowns[0].entries;
+    assert_eq!(cleared.len(), before.spells.len() + 2);
+    assert!(cleared.iter().all(|entry| entry.expires_at_ms == 0));
     let reset = snapshot(owner, actor, session).await?;
     let after = owner.owner_now();
     assert_eq!(
@@ -115,7 +155,7 @@ pub(super) async fn run(
     assert_eq!(harness.count("game_drome_cube_uses").await?, 0);
 
     // A settled historical result is not permission to reset a later spell.
-    let later = armed(after)?;
+    let later = armed(owner, after)?;
     install(owner, actor, session, later.clone()).await?;
     let replay = owner
         .use_drome_cube(actor, command(2)?, intent.clone(), None)
@@ -265,12 +305,33 @@ pub(super) async fn run(
     Ok(())
 }
 
-fn armed(now: SemanticTimeMicros) -> TestResult<Cooldowns> {
+fn armed(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    now: SemanticTimeMicros,
+) -> TestResult<Cooldowns> {
     let future = now.checked_add(3_600_000_000).map_err(debug)?;
     Ok(Cooldowns {
         spells: [
-            ("oteryn:spell.light_healing".into(), future),
-            ("other_unresolved_spell".into(), future),
+            (
+                owner
+                    .spells
+                    .spoken("exura")
+                    .ok_or("exura")?
+                    .spell
+                    .key
+                    .clone(),
+                future,
+            ),
+            (
+                owner
+                    .spells
+                    .spoken("exura gran")
+                    .ok_or("exura gran")?
+                    .spell
+                    .key
+                    .clone(),
+                future,
+            ),
         ]
         .into(),
         groups: [

@@ -50,12 +50,30 @@ pub(super) async fn snapshot_observations<A: FreshAdmissionAuthority>(
     actor: ExactActorRef,
     admitted: &AdmittedSession,
     domains: &mut Vec<crate::gameplay_transport::item_view::ItemViewSnapshotDomain>,
-) -> Result<(), ServeEnd> {
+) -> Result<SpellCooldownPublisher, ServeEnd> {
+    let mut cooldowns = SpellCooldownPublisher::default();
+    use oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ACTOR_COOLDOWNS;
     observation_snapshots(
         &admitted.continuity.selected_capabilities,
         admitted.continuity.presentation_revision,
         domains,
     )?;
+    if let Some(row) = domains
+        .iter_mut()
+        .find(|row| row.domain_id == STATE_DOMAIN_ACTOR_COOLDOWNS)
+    {
+        row.revision = admitted.continuity.cooldown_revision;
+        match authority
+            .observe_spell_cooldowns(*admitted, &mut cooldowns, true)
+            .await
+        {
+            CooldownObservation::Changed(payload) => row.payload = payload,
+            CooldownObservation::Unchanged => {}
+            CooldownObservation::Stale | CooldownObservation::Unavailable => {
+                return Err(ServeEnd::Disconnected);
+            }
+        }
+    }
     if admitted
         .continuity
         .selected_capabilities
@@ -81,7 +99,7 @@ pub(super) async fn snapshot_observations<A: FreshAdmissionAuthority>(
             1
         };
     }
-    Ok(())
+    Ok(cooldowns)
 }
 
 /// House commands retain their own live loop, but consume the same scoped

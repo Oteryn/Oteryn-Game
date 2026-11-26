@@ -553,6 +553,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .map_err(|_| Unavailable)?,
             );
         }
+        let cooldown_domain = oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ACTOR_COOLDOWNS;
+        if lost
+            .continuity
+            .selected_capabilities
+            .domain_selected(cooldown_domain)
+        {
+            domains.push(
+                StateDomainRevisionV1::new(cooldown_domain, lost.continuity.cooldown_revision)
+                    .map_err(|_| Unavailable)?,
+            );
+        }
         let fnd02 = Fnd02ReconciliationFenceV1::new(
             CommandId::new(lost.continuity.next_command_id).map_err(|_| Unavailable)?,
             Vec::new(),

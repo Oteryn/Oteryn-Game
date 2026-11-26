@@ -3,7 +3,9 @@
 //! decides admission itself and fails closed for every message it does not own.
 
 pub(super) mod appearance_change;
-pub use super::spell_presentation_publisher::cooldowns::CandidateCooldownPublisher as SpellCooldownPublisher;
+pub use super::spell_presentation_publisher::cooldowns::{
+    CandidateCooldownPublisher as SpellCooldownPublisher, CooldownObservation,
+};
 mod authority;
 pub use authority::{AchievementNoticeObservation, DepotObservation, FreshAdmissionAuthority};
 mod gameplay_idle;
@@ -327,6 +329,8 @@ pub struct SessionContinuity {
     pub player_trade_revision: u64,
     /// Last presentation domain revision delivered, shared by movement effects and sounds.
     pub presentation_revision: u64,
+    /// Last own-actor cooldown revision delivered on this session.
+    pub cooldown_revision: u64,
     /// The last `WORLD_OBJECT_OVERLAY` (domain 2) revision emitted to this connection, from
     /// either the join/resync snapshot or a committed-use delta (USE-WIRE-V1, #162 5868482467).
     /// Unlike `spatial_revision` (this actor's own per-actor counter), the door overlay is
@@ -399,6 +403,7 @@ impl SessionContinuity {
         spatial_revision: 1,
         player_trade_revision: 0,
         presentation_revision: 0,
+        cooldown_revision: 0,
         overlay_revision: 0,
         vitals_revision: 0,
         achievement_notice_revision: None,

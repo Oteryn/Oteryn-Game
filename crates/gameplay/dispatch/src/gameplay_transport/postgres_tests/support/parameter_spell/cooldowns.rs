@@ -191,3 +191,252 @@ fn assert_cooldowns(
         )]
     );
 }
+
+pub(super) async fn review_case(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: AdmittedSession,
+    book: &crate::spell::SpellBook,
+    case: u8,
+) -> TestResult {
+    use crate::gameplay_transport::connection::{ConnectionEnd, ControlLossResult, ResumeAttempt};
+    use oteryn_simulation_determinism::SemanticTimeMicros;
+
+    let offered = native_cue_offer::offered(owner.offered_capabilities(), true);
+    let supported = [4, 6, 7, wire::CAPABILITY_PRESENTATION_V1];
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(&offered, &supported).ok_or("presentation selected")?;
+    let actor = admitted.runtime_actor.ok_or("cooldown recipient")?;
+    let session = admitted.game_session_id;
+    let key = book.spoken("exura").ok_or("exura")?.spell.key.clone();
+    let spell = (1..=u32::try_from(book.source_len())?)
+        .filter_map(NonZeroU32::new)
+        .find(|i| {
+            book.source_indexed(*i)
+                .is_some_and(|(spell, _)| spell.key == key)
+        })
+        .ok_or("exura index")?;
+    let clock = NativeOwnerClock::new(owner);
+    clock.set(1_000_000);
+    if case == COOLDOWN_GIFT {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        let state = states
+            .get_mut(&runtime, actor, session)
+            .ok_or("recipient state")?;
+        state
+            .cooldowns
+            .spells
+            .insert(key.clone(), SemanticTimeMicros::from_micros(91_000_000));
+    }
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serving = async move { serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await };
+    let test_clock = &clock;
+    let driving = async move {
+        join_cooldowns(&mut client).await?;
+        if case == COOLDOWN_GIFT {
+            {
+                let runtime = owner.runtime.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
+                // Initial vitals read refreshes the durable Wheel projection.
+                // Set the qualified hit fixture after the join has read it.
+                let state = states
+                    .get_mut(&runtime, actor, session)
+                    .ok_or("recipient state")?;
+                let facts = crate::spell::cast::CharacterCastFacts {
+                    vocation: crate::spell::Vocation::EliteKnight,
+                    level: oteryn_gameplay_progression::wheel::WHEEL_LEVEL_OFFSET + 1,
+                    ..state.character_facts()
+                };
+                let mut before = crate::spell::cast::PlayerSpellState::new(facts, 0, 0)
+                    .ok_or("Wheel-eligible recipient")?;
+                before.cooldowns = state.cooldowns.clone();
+                before
+                    .apply_owner_promotion_transition(true, true, Some(u64::MAX))
+                    .map_err(debug)?;
+                let mut effects =
+                    oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+                effects.revelation_stages.insert("gift_of_life".into(), 1);
+                before.install_wheel_effects(effects);
+                assert!(before.restore_wheel_gift(0, 0));
+                before.install_wheel_gift_spellbook(book);
+                before.restore_saved_vitals(10, 0);
+                *state = before;
+                let (next, hit) =
+                    crate::spell::actor_conditions::stage_creature_hit(state, 10, 1_000_000)
+                        .map_err(debug)?;
+                assert!(hit.health_after > 0);
+                assert_eq!(next.cooldowns.spells[&key].get(), 31_000_000);
+                assert!(states.commit(&runtime, actor, session, next));
+            }
+            let (base, value) = next_cooldowns(&mut client, "recipient Gift of Life").await?;
+            assert_eq!(base, 0);
+            assert_eq!(
+                value.entries,
+                vec![wire::ActorCooldown {
+                    kind: wire::ActorCooldownKind::Spell,
+                    id: spell.get(),
+                    expires_at_ms: 31_000,
+                }]
+            );
+        } else {
+            if case == COOLDOWN_RETRY {
+                let runtime = owner.runtime.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
+                let state = states
+                    .get_mut(&runtime, actor, session)
+                    .ok_or("caster state")?;
+                state.cooldowns.groups.insert(
+                    "invalid_fixture_group".into(),
+                    SemanticTimeMicros::from_micros(90_000_000),
+                );
+            }
+            let payload = actor_spell::encode_spell_cast_intent(&actor_spell::SpellCastIntent {
+                spell,
+                target: actor_spell::SpellTarget::None,
+                aim_at_target: false,
+            });
+            let command = actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT;
+            send(&mut client, 1, command, &payload).await?;
+            let (status, cast, _) = result(&mut client, 1).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(
+                actor_spell::decode_spell_cast_result(&cast).map_err(debug)?,
+                actor_spell::SpellCastDisposition::Cast
+            );
+            if case == COOLDOWN_RETRY {
+                send(&mut client, 1, command, &payload).await?;
+                let (status, _, entries) = result(&mut client, 1).await?;
+                assert_eq!(status, CommandStatus::DuplicateReplay);
+                assert!(entries.is_empty(), "the first publication must fail");
+                {
+                    let runtime = owner.runtime.lock().await;
+                    let mut states = owner.states.spell_states.lock().await;
+                    let state = states
+                        .get_mut(&runtime, actor, session)
+                        .ok_or("caster state")?;
+                    state.cooldowns.groups.remove("invalid_fixture_group");
+                }
+                let (base, value) =
+                    next_cooldowns(&mut client, "retry after publication failure").await?;
+                assert_eq!(base, 0);
+                assert_eq!(value.entries.len(), 2);
+            } else {
+                let (_, value) = next_cooldowns(&mut client, "committed cast").await?;
+                assert_eq!(value.rtt_ms, None);
+                if case == COOLDOWN_RTT {
+                    loop {
+                        let bytes = read(&mut client).await?;
+                        let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
+                        if envelope.message_type() == MessageType::LivenessProbe {
+                            let id =
+                                oteryn_protocol_oteryn::decode_liveness_probe(envelope.payload())
+                                    .map_err(debug)?;
+                            test_clock.set(1_040_000);
+                            let ack = oteryn_protocol_oteryn::encode_liveness_ack(1, id, 0)
+                                .map_err(debug)?;
+                            crate::gameplay_transport::tcp_tls::write_frame(&mut client, &ack)
+                                .await?;
+                            break;
+                        }
+                    }
+                    let (base, correction) =
+                        next_cooldowns(&mut client, "first probe correction").await?;
+                    assert_eq!(base, 1);
+                    assert_eq!(correction.rtt_ms, Some(40));
+                    assert_eq!(correction.entries, value.entries);
+                }
+            }
+        }
+        client.shutdown().await?;
+        Ok(())
+    };
+    let (end, result): (_, TestResult) =
+        tokio::time::timeout(Duration::from_secs(18), join_two(serving, driving)).await?;
+    result?;
+    if case == COOLDOWN_REJOIN {
+        let ConnectionEnd::AdmittedThenDisconnected(retained) = end else {
+            return Err(format!("cast connection end: {end:?}").into());
+        };
+        assert_eq!(
+            owner.lose_control(retained, Duration::ZERO, None).await,
+            ControlLossResult::Recorded
+        );
+        let token = super::super::house_transfer_fixtures::RecoverySource::token(2)?;
+        let resumed = owner
+            .resume(ResumeAttempt {
+                game_session_id: session,
+                recovery_material: token.as_bytes(),
+                transport: crate::foundation::AuthenticatedTransportRefV1::decode(&[2; 16])
+                    .map_err(debug)?,
+                last_applied_server_sequence: retained.continuity.server_sequence,
+                supported_capabilities: &supported,
+            })
+            .await
+            .map_err(debug)?;
+        assert_eq!(resumed.continuity.connection_generation, 2);
+        let (mut server, mut client) = tokio::io::duplex(1 << 20);
+        let serving =
+            async move { serve_admitted(&mut server, resumed, owner, IDLE_LIVENESS).await };
+        let driving = async move {
+            let (revision, snapshot) = join_cooldowns(&mut client).await?;
+            assert_eq!(snapshot.entries.len(), 2, "rejoin lost committed deadlines");
+            assert_eq!(revision, 1, "rejoin lost the delivered domain revision");
+            client.shutdown().await?;
+            Ok(())
+        };
+        let (_, result): (_, TestResult) =
+            tokio::time::timeout(Duration::from_secs(10), join_two(serving, driving)).await?;
+        result?;
+    }
+    Ok(())
+}
+
+async fn join_cooldowns(client: &mut DuplexStream) -> TestResult<(u64, wire::ActorCooldowns)> {
+    let mut snapshot = None;
+    loop {
+        let bytes = read(client).await?;
+        let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
+        match envelope.message_type() {
+            MessageType::SnapshotChunk => {
+                for row in oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())
+                    .map_err(debug)?
+                    .1
+                {
+                    if row.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS {
+                        snapshot = Some((
+                            row.revision,
+                            wire::decode_actor_cooldowns(row.payload).map_err(debug)?,
+                        ));
+                    }
+                }
+            }
+            MessageType::SnapshotCommit => {
+                return snapshot.ok_or_else(|| "no cooldown snapshot".into());
+            }
+            _ => {}
+        }
+    }
+}
+
+async fn next_cooldowns(
+    client: &mut DuplexStream,
+    context: &str,
+) -> TestResult<(u64, wire::ActorCooldowns)> {
+    tokio::time::timeout(Duration::from_secs(3), async {
+        loop {
+            let bytes = read(client).await?;
+            let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
+            if envelope.message_type() == MessageType::StateDelta {
+                let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
+                if delta.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS {
+                    return Ok((
+                        delta.base_revision,
+                        wire::decode_actor_cooldowns(delta.payload).map_err(debug)?,
+                    ));
+                }
+            }
+        }
+    })
+    .await
+    .map_err(|_| format!("{context}: no domain 20 delta"))?
+}

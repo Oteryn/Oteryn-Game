@@ -85,23 +85,19 @@ fn multiaction_skips_rune_group_cooldown_then_uses_live_item_handle()
             ]
         }
     ));
-    for blocked in [true, false] {
+    for (revision, blocked) in (1..).zip([true, false]) {
         outbox.push(vec![SessionEvent::ActorCooldowns(AppliedDelta {
-            server_sequence: 1,
-            base_revision: 0,
-            new_revision: 1,
+            server_sequence: revision,
+            base_revision: revision - 1,
+            new_revision: revision,
             value: ActorCooldowns {
                 server_now_ms: 100,
                 rtt_ms: None,
-                entries: if blocked {
-                    vec![ActorCooldown {
-                        kind: ActorCooldownKind::Group,
-                        id: 2,
-                        expires_at_ms: 60100,
-                    }]
-                } else {
-                    vec![]
-                },
+                entries: vec![ActorCooldown {
+                    kind: ActorCooldownKind::Group,
+                    id: 2,
+                    expires_at_ms: if blocked { 60_100 } else { 0 },
+                }],
             },
         })]);
         view.cast(NonZeroU32::MIN);

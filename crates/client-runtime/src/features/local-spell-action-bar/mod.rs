@@ -1,7 +1,7 @@
 //! Spell command construction and feedback over the session adapter.
 mod bar;
 mod protocol;
-pub use bar::{ACTION_BAR_SLOTS, ActionBar};
+pub use bar::{ACTION_BAR_SLOTS, ActionBar, cooldown_remaining};
 mod state;
 pub use oteryn_session::{ActorCooldown, ActorCooldownKind, ActorCooldowns, ActorVitals};
 pub(crate) use protocol::run_cast;

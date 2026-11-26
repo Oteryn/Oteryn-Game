@@ -10,6 +10,7 @@ mod activity_transfer;
 mod analyser;
 mod autowalk;
 mod command;
+mod cooldowns;
 mod creature_push;
 mod cyclopedia_tracker;
 mod forge;
@@ -76,7 +77,6 @@ async fn observed<T>(phase: &'static str, work: impl std::future::Future<Output 
 // release the pacing claim before dropping the session command stream (which locks ingress).
 struct ServeState {
     cast_chat_revision: u64,
-    cooldown_revision: u64,
     cooldowns: SpellCooldownPublisher,
     spell_catalog: Option<spell_catalog::SessionCatalog>,
     integrity: integrity::Integrity,

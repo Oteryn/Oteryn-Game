@@ -9,6 +9,7 @@ pub(super) mod step;
 pub(super) use reply::result;
 
 pub(super) struct State {
+    pub(super) cooldowns: SpellCooldownPublisher,
     spell_catalog: Option<super::spell_catalog::SessionCatalog>,
     actor: ExactActorRef,
     enabled: bool,
@@ -354,6 +355,7 @@ impl State {
                 self.npc(stream, authority, admitted, &update).await?;
             }
             Dispatch::Use(outcome) if outcome.disposition == UseDisposition::Committed => {
+                super::cooldowns::refresh(stream, authority, admitted, &mut self.cooldowns).await?;
                 self.inventory(stream, authority, admitted).await?;
                 self.vitals(stream, authority, admitted, false).await?;
             }
