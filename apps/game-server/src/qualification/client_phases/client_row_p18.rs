@@ -11,10 +11,12 @@ use std::num::NonZeroU64;
 use oteryn_dev_client::client_runtime::server_mechanic::{
     CommandStatus as UiStatus, ServerMechanicResponse,
 };
-use oteryn_dev_client::client_ui::item_forge::{ItemForgePanel, apply_result, panel_text, reply};
+use oteryn_dev_client::client_ui::item_forge::{
+    ItemForgePanel, apply_result, command, panel_text, reply, request, resource_dialog::Content,
+};
 use oteryn_protocol_oteryn::item_forge::COMMAND_TYPE_FORGE_DUST_QUERY;
 
-type LiveReply = (u64, u64, u32, Vec<u8>);
+type LiveReply = (u64, u64, u32, Vec<u8>, Vec<u8>);
 
 async fn dust(client: &mut DevClientSession) -> TestResult<(u64, u64)> {
     let result = client
@@ -49,7 +51,8 @@ fn replay(root: &Path, session: [u8; 16], frames: &[LiveReply]) -> TestResult {
         selected: true,
         ..Default::default()
     };
-    for (index, (command_id, server_sequence, status, payload)) in captured.into_iter().enumerate()
+    for (index, (command_id, server_sequence, status, payload, submitted_bytes)) in
+        captured.into_iter().enumerate()
     {
         if status != UiStatus::Accepted as u32
             || command_id == 0
@@ -59,7 +62,13 @@ fn replay(root: &Path, session: [u8; 16], frames: &[LiveReply]) -> TestResult {
         {
             return Err(format!("invalid Forge reply metadata at frame {index}").into());
         }
-        panel.pending = true;
+        let submitted =
+            Request::decode(&submitted_bytes).ok_or("captured Forge request invalid")?;
+        request(&mut panel, command(submitted_bytes)).ok_or("Forge UI refused submission")?;
+        if !panel.pending || panel.submitted != Some(submitted) {
+            return Err("Forge UI did not track the submitted request".into());
+        }
+        let previous_dialog = panel.resource_dialog.serial;
         apply_result(
             &mut panel,
             &ServerMechanicResponse {
@@ -69,7 +78,12 @@ fn replay(root: &Path, session: [u8; 16], frames: &[LiveReply]) -> TestResult {
                 payload: payload.clone(),
             },
         );
-        if panel.pending || panel.feedback.is_some() || panel.response != payload {
+        if panel.pending
+            || panel.submitted.is_some()
+            || panel.retry.is_some()
+            || panel.feedback.is_some()
+            || panel.response != payload
+        {
             return Err("Forge panel did not consume the live reply".into());
         }
         let expected = match (index, &panel.decoded) {
@@ -91,6 +105,32 @@ fn replay(root: &Path, session: [u8; 16], frames: &[LiveReply]) -> TestResult {
             }
             _ => return Err(format!("unexpected Forge panel decode at frame {index}").into()),
         };
+        if index != 0 {
+            let reason = if index == 1 {
+                "INVALID_ITEM_HANDLE"
+            } else {
+                "INSUFFICIENT_DUST"
+            };
+            let body = serde_json::from_slice(&payload)?;
+            check_refusal(&body, reason)?;
+        }
+        let dialog_matches = match (&panel.resource_dialog.content, &panel.decoded) {
+            (
+                Some(Content::Exaltation {
+                    receipt,
+                    target: None,
+                    donor: None,
+                }),
+                Some(reply::Reply::Result(decoded)),
+            ) if index == 1 => receipt == decoded,
+            (Some(Content::Result(dialog)), Some(decoded)) if index != 1 => dialog == decoded,
+            _ => false,
+        };
+        if panel.resource_dialog.serial == previous_dialog || !dialog_matches {
+            return Err(
+                format!("Forge dialog did not show the submitted result at frame {index}").into(),
+            );
+        }
         if panel_text(&panel).lines().nth(3) != Some(expected) {
             return Err(format!("unexpected Forge panel text at frame {index}").into());
         }
@@ -157,9 +197,25 @@ async fn forge(
             reply.server_sequence,
             reply.status as u32,
             reply.payload,
+            payload.to_vec(),
         ),
         body,
     ))
+}
+
+fn check_refusal(body: &serde_json::Value, reason: &str) -> TestResult {
+    if body["succeeded"].as_bool() != Some(false)
+        || body["applied"].as_bool() != Some(false)
+        || body["reason"].as_str() != Some(reason)
+        || body["bonus"].as_u64() != Some(0)
+        || body.get("result") != Some(&serde_json::Value::Null)
+    {
+        return Err(format!(
+            "expected Forge refusal {reason} with zero bonus and null result, got {body}"
+        )
+        .into());
+    }
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -209,16 +265,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             0,
         )
         .await?;
-        let succeeded = body["succeeded"].as_bool().ok_or("reply lacks succeeded")?;
-        let applied = body["applied"].as_bool().ok_or("reply lacks applied")?;
-        let reason = body["reason"].as_str().unwrap_or("");
-        if succeeded || applied || reason != expected_reason {
-            return Err(format!("{name} expected refusal {expected_reason}, got {body}").into());
-        }
+        check_refusal(&body, expected_reason).map_err(|error| format!("{name}: {error}"))?;
         if dust(&mut client).await? != balance || client.inventory() != Some(&inventory) {
             return Err(format!("{name} refusal changed inventory or Forge balance").into());
         }
         frames.push(bytes);
+    }
+    client.service_liveness(Duration::from_millis(490)).await?;
+    let (_, final_history) = forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
+    if final_history != history {
+        return Err("Forge refusal history changed before logout".into());
     }
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -266,5 +322,34 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=P18.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=P18.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn refusal_rejects_value_bonus_and_missing_result() -> TestResult {
+        let valid = serde_json::json!({
+            "succeeded": false, "applied": false, "reason": "INSUFFICIENT_DUST",
+            "bonus": 0, "result": null,
+        });
+        check_refusal(&valid, "INSUFFICIENT_DUST")?;
+        for (field, value) in [
+            ("result", serde_json::json!({ "dust": 0 })),
+            ("bonus", serde_json::json!(1)),
+        ] {
+            let mut invalid = valid.clone();
+            invalid[field] = value;
+            assert!(check_refusal(&invalid, "INSUFFICIENT_DUST").is_err());
+        }
+        let mut missing = valid;
+        missing
+            .as_object_mut()
+            .ok_or("refusal object")?
+            .remove("result");
+        assert!(check_refusal(&missing, "INSUFFICIENT_DUST").is_err());
+        Ok(())
     }
 }
