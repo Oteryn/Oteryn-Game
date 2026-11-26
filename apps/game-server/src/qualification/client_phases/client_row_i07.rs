@@ -236,6 +236,7 @@ async fn require_routes(
     character: &[u8],
     pouch: &[u8],
     fallback: bool,
+    accept_only: bool,
 ) -> TestResult {
     let settings: (bool, bool, bool, Option<Vec<u8>>) = sqlx::query_as(
         "SELECT accept_only, fallback_to_main, unassigned_gold_pouch, uuid_send(unassigned_container_id)
@@ -245,7 +246,7 @@ async fn require_routes(
         "SELECT category, gold_pouch, uuid_send(container_id)
          FROM game_character_quick_loot_categories WHERE character_id=encode($1,'hex')::uuid ORDER BY category",
     ).bind(character).fetch_all(database).await?;
-    if settings != (true, fallback, false, None)
+    if settings != (accept_only, fallback, false, None)
         || routes != [(0, false, None), (2, true, Some(pouch.to_vec()))]
     {
         return Err(format!(
@@ -276,7 +277,12 @@ impl Capture<'_> {
             .session_mut()
             .gated_command(98, 114, &payload)
             .await?;
-        if reply.status != CommandStatus::Accepted
+        let expected_status = if key == 18 {
+            CommandStatus::Rejected
+        } else {
+            CommandStatus::Accepted
+        };
+        if reply.status != expected_status
             || client.join_snapshot().game_session_id != session
             || reply.command_id <= self.previous.0
             || reply.server_sequence <= self.previous.1
@@ -325,14 +331,15 @@ impl Capture<'_> {
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     use sqlx::Connection as _;
     const FILTERS: [(bool, &str); 2] = [
-        (false, "oteryn:item.tibia.i3031"),
+        (false, "oteryn:item.tibia.i3577"),
         (true, "oteryn:item.tibia.i3357"),
     ];
     let capture_dir = std::env::var_os("E2E_ALL_CAPTURE_DIR")
         .ok_or("I07 requires a fresh E2E_ALL_CAPTURE_DIR")?;
     let capture_dir = Path::new(&capture_dir);
     let index = provisioning::item_index()?;
-    let skip_reference = provisioning::item_reference(&index, 3031)?.get();
+    let skip_reference = provisioning::item_reference(&index, 3577)?.get();
+    let gold_reference = provisioning::item_reference(&index, 3031)?.get();
     let accept_reference = provisioning::item_reference(&index, 3357)?.get();
     let dedicated = character_prep::dedicated_named_character(
         clients,
@@ -412,7 +419,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let corpse_id = corpse.as_slice().try_into()?;
     let before = placements(&mut database, Storage::Corpse, character, corpse).await?;
     let stacked_before = placements(&mut database, Storage::Corpse, character, stacked).await?;
-    let ([coin, armor, filtered], [other]) = (before.as_slice(), stacked_before.as_slice()) else {
+    let ([coin, armor, filtered], [other, listed]) = (before.as_slice(), stacked_before.as_slice())
+    else {
         return Err("I07 fixture corpse count differs".into());
     };
     if !before
@@ -424,6 +432,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             ("oteryn:item.tibia.i3357", 1, 2),
             ("oteryn:item.tibia.i3577", 1, 3),
             ("oteryn:item.tibia.i3578", 1, 1),
+            ("oteryn:item.tibia.i3577", 1, 2),
         ])
     {
         return Err("I07 fixture item definition, count or slot differs".into());
@@ -473,7 +482,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             &mut client,
             2,
             QuickLootRequest {
-                filter_definition_ref: Some(skip_reference),
+                filter_definition_ref: Some(gold_reference),
                 ..accept
             },
             &[],
@@ -492,6 +501,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 (armor, false),
                 (filtered, false),
                 (other, false),
+                (listed, false),
             ],
         )
         .await?;
@@ -518,13 +528,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .await?;
     capture.probe(&mut client, 8, accept, &[]).await?;
     require_filters(&mut database, character, true, &expected_filters).await?;
-    require_routes(&mut database, character, &pouch, false).await?;
+    require_routes(&mut database, character, &pouch, false, true).await?;
     capture
         .probe(
             &mut client,
             9,
             request(QuickLootAction::LootAll),
-            &[(armor, false), (filtered, false), (other, false)],
+            &[
+                (armor, false),
+                (filtered, false),
+                (other, false),
+                (listed, false),
+            ],
         )
         .await?;
     let remaining = [armor.clone(), filtered.clone()];
@@ -567,7 +582,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     capture
         .probe(&mut client, 10, armor_route(true), &[])
         .await?;
-    require_routes(&mut database, character, &pouch, true).await?;
+    require_routes(&mut database, character, &pouch, true, true).await?;
     require_logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0x07).await?;
@@ -578,7 +593,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("I07 relog changed the original Inbox pouch or equipped backpack custody, or reused a session".into());
     }
     require_filters(&mut database, character, true, &expected_filters).await?;
-    require_routes(&mut database, character, &pouch, true).await?;
+    require_routes(&mut database, character, &pouch, true, true).await?;
     require_placements(
         &mut database,
         Storage::Corpse,
@@ -621,7 +636,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             &mut fresh,
             11,
             request(QuickLootAction::LootAll),
-            &[(armor, true), (filtered, false), (other, false)],
+            &[
+                (armor, true),
+                (filtered, false),
+                (other, false),
+                (listed, false),
+            ],
         )
         .await?;
     expected_backpack.push(bag_armor);
@@ -718,7 +738,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             &mut fresh,
             15,
             request(QuickLootAction::LootAll),
-            &[(other, false)],
+            &[(other, false), (listed, false)],
         )
         .await?;
     require_placements(
@@ -743,7 +763,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             &mut fresh,
             17,
             request(QuickLootAction::LootAll),
-            &[(other, true)],
+            &[(other, true), (listed, false)],
         )
         .await?;
     // The starter backpack already contains one of this food. The transfer merges
@@ -756,7 +776,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("I07 expected one starter food stack containing exactly one item".into());
     }
     stack.quantity += other.quantity;
-    require_placements(&mut database, Storage::Corpse, character, stacked, &[]).await?;
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        stacked,
+        std::slice::from_ref(listed),
+    )
+    .await?;
     require_placements(
         &mut database,
         Storage::Backpack,
@@ -774,6 +801,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     evidence("I07_LOOT_CUSTODY unassigned=pouch_refused_then_main_moved");
+    capture
+        .probe(
+            &mut fresh,
+            18,
+            route(None, QuickLootRecipient::GoldPouch, Some(backpack), true),
+            &[],
+        )
+        .await?;
+    evidence("I07_INVALID_POUCH status=rejected");
     require_logout(&mut fresh).await?;
     drop(fresh);
     let mut readback = connect_world(clients, 0x07).await?;
@@ -801,17 +837,59 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     require_placements(&mut database, Storage::Corpse, character, corpse, &[]).await?;
-    require_placements(&mut database, Storage::Corpse, character, stacked, &[]).await?;
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        stacked,
+        std::slice::from_ref(listed),
+    )
+    .await?;
     require_filters(&mut database, character, false, &expected_filters).await?;
+    require_routes(&mut database, character, &pouch, false, false).await?;
+    let inventory = readback
+        .inventory()
+        .ok_or("I07 fresh client inventory snapshot absent")?;
+    let mut actual: Vec<_> = inventory
+        .entries
+        .iter()
+        .map(|entry| {
+            (
+                entry.item_definition_ref.get(),
+                i64::from(entry.count.get()),
+            )
+        })
+        .collect();
+    let mut expected = Vec::new();
+    for entry in &expected_backpack {
+        let tibia_id: u32 = entry
+            .key
+            .strip_prefix("oteryn:item.tibia.i")
+            .ok_or("I07 expected authored Tibia item")?
+            .parse()?;
+        expected.push((
+            provisioning::item_reference(&index, tibia_id)?.get(),
+            entry.quantity,
+        ));
+    }
+    actual.sort_unstable();
+    expected.sort_unstable();
+    if actual != expected {
+        return Err(format!(
+            "I07 relog inventory hydration differs: expected={expected:?} actual={actual:?}"
+        )
+        .into());
+    }
+    evidence("I07_CLIENT_INVENTORY final_relog=exact_definitions_and_quantities");
     require_logout(&mut readback).await?;
     evidence(
-        "I07_LOOT_CUSTODY final_relog=true exact_ids_counts_slots=true pouch=inbox backpack=equipped corpses=empty",
+        "I07_LOOT_CUSTODY final_relog=true exact_ids_counts_slots=true pouch=inbox backpack=equipped target_corpse=empty skip_listed=retained",
     );
     let fresh_session = uuid_text(fresh_session.as_bytes());
     write_capture(
         &capture_dir.join("i07-expected.txt"),
         &serde_json::to_vec(&serde_json::json!({
-            "skip": skip_reference, "accept": accept_reference, "pouch": pouch, "corpse": corpse_id,
+            "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "corpse": corpse_id,
             "coin": coin.item, "armor": armor.item, "filtered": filtered.item, "other": other.item,
         }))?,
     )?;

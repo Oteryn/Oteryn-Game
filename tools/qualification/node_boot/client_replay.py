@@ -129,7 +129,7 @@ def replay_targets():
     targets["e2e_i07"] = [(
         "oteryn-client", "e2e_i07_real_replies_replay_through_play_outbox",
         {"i07-expected.txt"}
-        | {f"i07-{key}{suffix}" for key in range(1, 18) for suffix in (".json", "-request.bin")},
+        | {f"i07-{key}{suffix}" for key in range(1, 19) for suffix in (".json", "-request.bin")},
     )]
     return targets
 
@@ -152,7 +152,7 @@ def read_i07_live_session(log, captures):
         return values
 
     try:
-        for key in range(1, 18):
+        for key in range(1, 19):
             envelope = json.loads((captures / f"i07-{key}.json").read_text(),
                                   object_pairs_hook=read_fields)
             if not isinstance(envelope, dict) or envelope["game_session_id"] != (first if key < 11 else relog):
@@ -250,4 +250,10 @@ def main(log, batch, validate=False, *, mode=None):
 if __name__ == "__main__":
     args = sys.argv[1:]
     mode = args[0] if len(args) > 1 else None
+    if mode == "--require-i07-world" or args == ["--require-i07-world"]:
+        try:
+            selected, _ = selected_rows(os.environ.get("OTERYN_E2E_ROW_BATCH"))
+        except ValueError:
+            sys.exit(0)  # Batch validation owns malformed selectors.
+        sys.exit(int("I07.client" in selected))
     sys.exit(main(Path(args[-1]), os.environ.get("OTERYN_E2E_ROW_BATCH"), mode == "--validate", mode=mode))

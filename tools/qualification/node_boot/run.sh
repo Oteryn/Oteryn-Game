@@ -180,6 +180,13 @@ case "$NODE_BOOT_WORLD_PROFILE" in
 esac
 readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
+i07_groups=",${NODE_BOOT_E2E_ONLY:-},"
+i07_groups=${i07_groups//[[:space:]]/}
+if [[ "$NODE_BOOT_WORLD" == 0 ]] &&
+   [[ "$i07_groups" == *,rows,* || -n "${OTERYN_E2E_ROW_BATCH:-}" ]] &&
+   ! python3 "$GAME_SOURCE/tools/qualification/node_boot/client_replay.py" --require-i07-world; then
+  blocked i07_requires_world
+fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Packet journeys may move, loot or kill their Characters before the required core runs.
@@ -246,7 +253,7 @@ fi
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
   && "${NODE_BOOT_LIFECYCLE:-}" == native_reference \
   && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
-  NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
+  env -u OTERYN_E2E_ROW_BATCH -u NODE_BOOT_E2E_ONLY NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
 NODE_BOOT_LIBTEST=""
 WORLD_COMPILER=(cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler --)

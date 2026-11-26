@@ -322,6 +322,9 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     #[serde(deny_unknown_fields)]
     struct Expected {
         skip: u32,
+        gold: u32,
+        listed: [u8; 16],
+        backpack: [u8; 16],
         accept: u32,
         pouch: [u8; 16],
         corpse: [u8; 16],
@@ -376,7 +379,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         None,
         false,
     );
-    let steps: [(Action, &[([u8; 16], bool)], Option<&str>); 17] = [
+    let steps: [(Action, &[([u8; 16], bool)], Option<&str>); 18] = [
         (
             Action::Add {
                 mode: skip,
@@ -388,7 +391,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         (
             Action::Add {
                 mode: accept,
-                definition: expected.skip,
+                definition: expected.gold,
             },
             &[],
             None,
@@ -402,8 +405,9 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 (expected.armor, false),
                 (expected.filtered, false),
                 (expected.other, false),
+                (expected.listed, false),
             ],
-            Some("Looted 1 of 4 items"),
+            Some("Looted 1 of 5 items"),
         ),
         (gold_main.clone(), &[], None),
         (armor(false), &[], None),
@@ -421,8 +425,9 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 (expected.armor, false),
                 (expected.filtered, false),
                 (expected.other, false),
+                (expected.listed, false),
             ],
-            Some("Looted 0 of 3 items"),
+            Some("Looted 0 of 4 items"),
         ),
         (armor(true), &[], None),
         (
@@ -431,8 +436,9 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 (expected.armor, true),
                 (expected.filtered, false),
                 (expected.other, false),
+                (expected.listed, false),
             ],
-            Some("Looted 1 of 3 items"),
+            Some("Looted 1 of 4 items"),
         ),
         (
             click,
@@ -452,14 +458,24 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         ),
         (
             Action::LootAll,
-            &[(expected.other, false)],
-            Some("Looted 0 of 1 items"),
+            &[(expected.other, false), (expected.listed, false)],
+            Some("Looted 0 of 2 items"),
         ),
         (main.clone(), &[], None),
         (
             Action::LootAll,
-            &[(expected.other, true)],
-            Some("Looted 1 of 1 items"),
+            &[(expected.other, true), (expected.listed, false)],
+            Some("Looted 1 of 2 items"),
+        ),
+        (
+            route(
+                None,
+                QuickLootRecipient::GoldPouch,
+                Some(expected.backpack),
+                true,
+            ),
+            &[],
+            None,
         ),
     ];
     let (link, mut commands, outbox) = crate::play::play_channel();
@@ -481,11 +497,12 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         }
         let reply: Reply =
             serde_json::from_slice(&std::fs::read(directory.join(format!("i07-{key}.json")))?)?;
-        assert_eq!(
-            reply.status,
-            CommandStatus::Accepted as u32,
-            "I07 probe {key}"
-        );
+        let status = if key == 18 {
+            CommandStatus::Rejected
+        } else {
+            CommandStatus::Accepted
+        };
+        assert_eq!(reply.status, status as u32, "I07 probe {key}");
         assert!(
             reply.command_id > previous.0 && reply.server_sequence > previous.1,
             "I07 probe {key}"
@@ -498,7 +515,47 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             reply.game_session_id, sessions[session_index],
             "I07 probe {key}"
         );
-        assert!(link.quick_loot_action(action), "I07 probe {key}");
+        let mode = |mode| (mode as u8).to_string();
+        let dispatched = match action {
+            Action::LootAll => link.discovery_action(98, 1, &[], 0),
+            Action::Add {
+                mode: filter,
+                definition,
+            } => link.discovery_action(98, 2, &[definition.to_string(), mode(filter)], 0),
+            Action::Select(filter) => {
+                link.discovery_action(98, 5, &[String::new(), mode(filter)], 0)
+            }
+            Action::Destination {
+                category,
+                recipient,
+                id,
+                fallback,
+            } => {
+                let id = id
+                    .map(|id| {
+                        id.iter()
+                            .map(|byte| format!("{byte:02x}"))
+                            .collect::<String>()
+                    })
+                    .unwrap_or_default();
+                link.discovery_action(
+                    98,
+                    6,
+                    &[
+                        String::new(),
+                        String::new(),
+                        category.map_or(0, |category| category as u8).to_string(),
+                        u8::from(fallback).to_string(),
+                        (recipient as u8).to_string(),
+                        id,
+                    ],
+                    0,
+                )
+            }
+            Action::Corpse(_) => link.quick_loot_action(action),
+            _ => return Err("unexpected I07 replay action".into()),
+        };
+        assert!(dispatched, "I07 probe {key}");
         let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
             return Err("I07 client queued the wrong command".into());
         };
@@ -516,17 +573,28 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 .scoped_text(console.filters, console.display, NoticeScope::LootOnly)
         };
         let before = notices();
+        let before_panel = link.discovery_panel().loot;
         outbox.discovery_result(
             98,
             &GatedCommandResult {
                 command_id: reply.command_id,
                 server_sequence: reply.server_sequence,
-                status: CommandStatus::Accepted,
+                status,
                 payload: reply.payload,
             },
         );
         let panel = link.discovery_panel().loot;
         assert_eq!(panel.pending, None);
+        if key == 18 {
+            assert_eq!(panel.destinations, before_panel.destinations);
+            assert_eq!(panel.result, before_panel.result);
+            assert_eq!(notices(), before);
+            assert_eq!(
+                panel.feedback,
+                "Loot request refused or invalid reply; try again"
+            );
+            continue;
+        }
         assert_eq!(panel.feedback, "Confirmed by the server");
         let items = &panel
             .result
@@ -558,7 +626,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             assert_eq!(panel.skipped, [expected.skip].into_iter().collect());
             assert_eq!(
                 panel.accepted,
-                [expected.accept, expected.skip].into_iter().collect()
+                [expected.accept, expected.gold].into_iter().collect()
             );
             assert_eq!(
                 panel.destinations,
