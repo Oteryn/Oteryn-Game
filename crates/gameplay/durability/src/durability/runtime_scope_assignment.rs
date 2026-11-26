@@ -957,6 +957,8 @@ enum Dispatch {
 pub enum SlotOpenCommitFault {
     Committed,
     RolledBack,
+    CommittedReplyStalled,
+    RolledBackReplyStalled,
 }
 
 #[cfg(any(test, feature = "test-support"))]
@@ -986,10 +988,23 @@ async fn commit_writer_slot_open(
     deadline: std::time::Instant,
 ) -> Result<(), DurabilityError> {
     #[cfg(any(test, feature = "test-support"))]
-    if let Ok(Some(fault)) = SLOT_OPEN_COMMIT_FAULT.try_with(std::cell::Cell::take) {
+    if let Ok(Some(fault)) = SLOT_OPEN_COMMIT_FAULT.try_with(std::cell::Cell::get) {
         match fault {
-            SlotOpenCommitFault::Committed => commit_semantic_transaction(tx, deadline).await?,
-            SlotOpenCommitFault::RolledBack => tx.rollback().await?,
+            SlotOpenCommitFault::Committed | SlotOpenCommitFault::CommittedReplyStalled => {
+                commit_semantic_transaction(tx, deadline).await?;
+            }
+            SlotOpenCommitFault::RolledBack | SlotOpenCommitFault::RolledBackReplyStalled => {
+                tx.rollback().await?;
+            }
+        }
+        SLOT_OPEN_COMMIT_FAULT.with(|fault| fault.set(None));
+        if matches!(
+            fault,
+            SlotOpenCommitFault::CommittedReplyStalled | SlotOpenCommitFault::RolledBackReplyStalled
+        ) {
+            // Hold the settled result at the COMMIT boundary until the outer
+            // pass timer cancels this future.
+            return std::future::pending().await;
         }
         return Err(DurabilityError::CommitOutcomeUnknown);
     }
@@ -1071,7 +1086,14 @@ impl RuntimeScopeAssignmentWriter {
         }
         let mut slot = open_writer_slot(&root, registration.clone(), false).await;
         for _ in 0..SLOT_OPEN_RECONCILE_ATTEMPTS {
-            if !matches!(slot, Err(DurabilityError::CommitOutcomeUnknown)) {
+            // The outer pass timer can cancel COMMIT before the inner timer
+            // reports an unknown outcome. The same slot read resolves both.
+            if !matches!(
+                slot,
+                Err(
+                    DurabilityError::CommitOutcomeUnknown | DurabilityError::RootPassDeadlineExceeded
+                )
+            ) {
                 break;
             }
             // The failed pass retires its holder. Replenish it through the

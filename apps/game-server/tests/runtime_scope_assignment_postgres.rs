@@ -187,7 +187,32 @@ where
 
 #[test]
 fn slot_open_reconciles_committed_insert() -> TestResult {
-    run_slot_open_postgres("slot_committed", |database| {
+    check_committed_slot_open("slot_committed", SlotOpenCommitFault::Committed)
+}
+
+#[test]
+fn slot_open_reconciles_committed_insert_after_pass_deadline() -> TestResult {
+    check_committed_slot_open(
+        "slot_commit_deadline",
+        SlotOpenCommitFault::CommittedReplyStalled,
+    )
+}
+
+async fn slot_open_backend_pid(root: &DurabilityRoot) -> TestResult<i32> {
+    Ok(root
+        .try_issue_semantic_pass()?
+        .run(|holder, _| {
+            Box::pin(async move {
+                Ok(sqlx::query_scalar("SELECT pg_backend_pid()")
+                    .fetch_one(&mut **holder)
+                    .await?)
+            })
+        })
+        .await?)
+}
+
+fn check_committed_slot_open(test_name: &'static str, fault: SlotOpenCommitFault) -> TestResult {
+    run_slot_open_postgres(test_name, move |database| {
         Box::pin(async move {
             let pool = database.pool().await?;
             // Publish the occupied key only at COMMIT, after the original pass
@@ -211,12 +236,14 @@ fn slot_open_reconciles_committed_insert() -> TestResult {
             .await?;
 
             let root = ready_root(&database.url).await?;
+            let original_pid = slot_open_backend_pid(&root).await?;
             let writer = with_slot_open_commit_fault(
-                SlotOpenCommitFault::Committed,
-                RuntimeScopeAssignmentWriter::open(root, "writer-a"),
+                fault,
+                RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a"),
             )
             .await
             .map_err(|error| format!("open after committed slot insert: {error:?}"))?;
+            assert_ne!(slot_open_backend_pid(&root).await?, original_pid);
             // A different root keeps the comparison independent of the in-memory queue.
             let clean =
                 RuntimeScopeAssignmentWriter::open(ready_root(&database.url).await?, "writer-a")
@@ -231,15 +258,29 @@ fn slot_open_reconciles_committed_insert() -> TestResult {
 
 #[test]
 fn slot_open_reconciles_rolled_back_insert() -> TestResult {
-    run_slot_open_postgres("slot_rolled_back", |database| {
+    check_rolled_back_slot_open("slot_rolled_back", SlotOpenCommitFault::RolledBack)
+}
+
+#[test]
+fn slot_open_reconciles_rolled_back_insert_after_pass_deadline() -> TestResult {
+    check_rolled_back_slot_open(
+        "slot_rollback_deadline",
+        SlotOpenCommitFault::RolledBackReplyStalled,
+    )
+}
+
+fn check_rolled_back_slot_open(test_name: &'static str, fault: SlotOpenCommitFault) -> TestResult {
+    run_slot_open_postgres(test_name, move |database| {
         Box::pin(async move {
             let root = ready_root(&database.url).await?;
+            let original_pid = slot_open_backend_pid(&root).await?;
             let writer = with_slot_open_commit_fault(
-                SlotOpenCommitFault::RolledBack,
-                RuntimeScopeAssignmentWriter::open(root, "writer-a"),
+                fault,
+                RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a"),
             )
             .await
             .map_err(|error| format!("open after rolled-back slot insert: {error:?}"))?;
+            assert_ne!(slot_open_backend_pid(&root).await?, original_pid);
             let pool = database.pool().await?;
             let occupied: Option<Vec<u8>> = sqlx::query_scalar(
                 "SELECT operation_key FROM game_runtime_scope_assignment_slots
