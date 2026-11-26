@@ -411,6 +411,13 @@ impl NpcConversations {
         let prior_focus = chat.engaged(session);
         let mut outcome = self.converse(chat, runtime, actor, session, intent);
         let talking_to = chat.engaged(session);
+        if prior_focus.is_some()
+            && prior_focus != talking_to
+            && let Ok(mut sessions) = self.sessions.lock()
+            && let Some(state) = sessions.get_mut(&session)
+        {
+            state.quest_dialogue.restart_topic();
+        }
         let opened = (outcome.disposition == NpcIntentDisposition::Ok
             && talking_to.is_some_and(|npc| npc.placement_identity() == intent.npc_actor.identity))
         .then(|| {

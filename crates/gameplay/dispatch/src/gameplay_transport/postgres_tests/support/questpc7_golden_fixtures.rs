@@ -31,8 +31,13 @@ pub(super) async fn legacy(
     for (command, word) in [(800, "hi"), (801, "outfit"), (802, "yes")] {
         talk(owner, admitted, king, command, word).await?;
     }
-    for (index, (keyword, price, stage)) in [("armor",100_000,1),("boots",50_000,2),("helmet",50_000,4)]
-        .into_iter().enumerate()
+    for (index, (keyword, price, stage)) in [
+        ("armor", 500_000_000, 1),
+        ("boots", 250_000_000, 2),
+        ("helmet", 250_000_000, 4),
+    ]
+    .into_iter()
+    .enumerate()
     {
         let command = 803 + 2 * u64::try_from(index)?;
         let before = bank(h).await?;
@@ -45,7 +50,8 @@ pub(super) async fn legacy(
     let amount: i64 = sqlx::query_scalar(
         "SELECT sum(bank_debit_gold_units)::bigint FROM game_item_fee_burns WHERE cause_kind=18",
     ).fetch_one(&h.pool).await?;
-    assert_eq!(amount, 200_000);
+    assert_eq!(amount, 1_000_000_000);
+    assert_eq!(bank(h).await?, 0);
     assert_eq!(money(h).await?, 0);
     Ok(())
 }
