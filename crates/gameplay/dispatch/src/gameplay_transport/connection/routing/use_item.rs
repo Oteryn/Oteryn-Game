@@ -23,9 +23,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         admitted.continuity.selected_capabilities.as_slice(),
         command.payload,
     );
-    // W09: a committed Cube may have consumed the last source unit. Its original
-    // command still resolves from a receipt even when the view handle no longer exists.
-    // The harvest owner can have sent its durable write before an opaque error or timeout.
+    // A harvest can have sent its durable write before an opaque error or timeout.
     if let Ok(UseIntent {
         target: UseTarget::WorldObject(target),
         use_with: None,
@@ -67,6 +65,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             UseTarget::Item(_) | UseTarget::ItemByDefinition(_)
         )
     {
+        // A committed Cube may have consumed the last source unit. Probe its
+        // receipt even if the original handle no longer resolves.
         let source = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
             _ => None,

@@ -51,18 +51,12 @@ pub(super) async fn retry_item_use_holder<T>(
     retry: &AdmissionRetryBudget<'_>,
     mut step: impl AsyncFnMut() -> Result<T, ItemUseError>,
 ) -> Result<T, ItemUseError> {
-    loop {
-        let result = step().await;
-        if !matches!(
-            result,
-            Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
-        ) || !retry
-            .retries_unavailable(AdmissionRefusal::Unavailable)
-            .await
-        {
-            return result;
-        }
-    }
+    retry_busy(retry, async || match step().await {
+        Err(ItemUseError::Unavailable(error)) => Err(error),
+        result => Ok(result),
+    })
+    .await
+    .unwrap_or_else(|error| Err(ItemUseError::Unavailable(error)))
 }
 
 // These calls acquire the holder before issuing the transaction. Only retry an
@@ -192,7 +186,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             Ok(Some(outcome)) => return Some(outcome),
             Ok(None) => {}
-            Err(()) => return None,
+            // The rope authority errors before the Channel movement is applied.
+            Err(()) => return Some(UseOutcome::rejected()),
         }
         let disposition = |d| {
             Some(UseOutcome {
@@ -200,13 +195,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ..UseOutcome::rejected()
             })
         };
-        let (Some(fence), Ok(id), Some(native), Some(permit)) = (
+        let (Some(fence), Ok(id), Some(native)) = (
             command.item_fence,
             CommandId::new(command.command_id),
             self.active_generation
                 .and_then(crate::content::ActiveGeneration::native_gameplay),
-            self.spell_lane_permit().await,
         ) else {
+            return disposition(UseDisposition::Rejected);
+        };
+        let Some(permit) = self.spell_lane_permit().await else {
             return disposition(UseDisposition::Rejected);
         };
         let Ok(encoded) = oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent)
@@ -276,12 +273,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return disposition(UseDisposition::Rejected);
             };
-            let entry = inventory
+            let Some(entry) = inventory
                 .backpack
                 .iter()
                 .flat_map(|bag| &bag.entries)
                 .chain(inventory.nested.iter().map(|(_, entry)| entry))
-                .find(|entry| entry.item.item_instance_id == ingredient)?;
+                .find(|entry| entry.item.item_instance_id == ingredient)
+            else {
+                return disposition(UseDisposition::Rejected);
+            };
             request.ingredient = Some(ingredient);
             request.station = Some(entry.item.definition.clone());
         }

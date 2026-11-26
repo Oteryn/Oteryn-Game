@@ -20,15 +20,18 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             market_details::decode_query(command.payload),
             Ok(Query::Statistics { .. })
         )
-        && !commands
-            .admit_market_statistics(tokio::time::Instant::now())
-            .unwrap_or(false)
     {
-        let bytes = market_details::encode_reply(&Reply::Refused {
-            code: market_details::STATISTICS_RATE_LIMITED,
-        })
-        .ok()?;
-        return Some(Dispatch::Reply(CommandStatus::Accepted, bytes));
+        match commands.admit_market_statistics(tokio::time::Instant::now()) {
+            Some(true) => {}
+            Some(false) => {
+                let bytes = market_details::encode_reply(&Reply::Refused {
+                    code: market_details::STATISTICS_RATE_LIMITED,
+                })
+                .ok()?;
+                return Some(Dispatch::Reply(CommandStatus::Accepted, bytes));
+            }
+            None => return refusal(details),
+        }
     }
     match authority
         .market_command(*admitted, command.command_id, command.payload)
