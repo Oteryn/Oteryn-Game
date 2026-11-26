@@ -1625,6 +1625,15 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// Committed cooldowns of the exact actor on the Channel owner's monotonic clock.
+    fn observe_actor_cooldowns(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::presentation::ActorCooldowns>> {
+        async { None }
+    }
+
     fn observe_house_vitals(
         &self,
         actor: ExactActorRef,
