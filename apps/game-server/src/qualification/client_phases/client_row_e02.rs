@@ -32,9 +32,11 @@ fn pairs(client: &DevClientSession) -> String {
     })
 }
 
-fn encoded(client: &DevClientSession) -> TestResult<Vec<u8>> {
-    let inventory = client.inventory().ok_or("inventory absent")?;
-    item_view::encode_character_inventory(inventory)
+pub(super) fn encoded_backpack(client: &DevClientSession) -> TestResult<Vec<u8>> {
+    // The coin replays negotiate the backpack-only inventory capability.
+    let mut inventory = client.inventory().cloned().ok_or("inventory absent")?;
+    inventory.equipment.clear();
+    item_view::encode_character_inventory(&inventory)
         .map_err(|error| format!("inventory encode: {error:?}").into())
 }
 
@@ -269,7 +271,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let initial = earn_gold(&mut client, world, &metadata.npcs, &talk_book, refs).await?;
     let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs, &talk_book).await?;
     let before_pairs = pairs(&client);
-    let before_payload = encoded(&client)?;
+    let before_payload = encoded_backpack(&client)?;
     let reply = exchange(&mut client, actor, &["1", "yes"]).await?;
     let platinum = [initial[0] - 100, initial[1] + 1, initial[2]];
     wait_coins(&mut client, refs, platinum, "gold-to-platinum").await?;
@@ -278,7 +280,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let after_pairs = pairs(&client);
     capture("e02-before.bin", &before_payload);
-    capture("e02-after.bin", &encoded(&client)?);
+    capture("e02-after.bin", &encoded_backpack(&client)?);
     capture(
         "e02-expected.txt",
         format!("before={before_pairs}\nafter={after_pairs}\n").as_bytes(),

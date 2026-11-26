@@ -3,9 +3,8 @@
 //! views are session-owned and re-encoded with the production encoder (C09/I11 practice).
 //! A dedicated character receives the exact gold stack before live conversion.
 use super::*;
-use oteryn_protocol_oteryn::item_view;
 
-use super::client_row_e02::{backpack_coins, coin_refs, wait_coins};
+use super::client_row_e02::{backpack_coins, coin_refs, encoded_backpack, wait_coins};
 
 fn capture(name: &str, bytes: &[u8]) {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
@@ -26,12 +25,6 @@ fn pairs(client: &oteryn_dev_client::DevClientSession) -> String {
             .map(|item| format!("{}:{};", item.item_definition_ref, item.count))
             .collect()
     })
-}
-
-fn encoded(client: &oteryn_dev_client::DevClientSession) -> TestResult<Vec<u8>> {
-    let inventory = client.inventory().ok_or("inventory absent")?;
-    item_view::encode_character_inventory(inventory)
-        .map_err(|error| format!("inventory encode: {error:?}").into())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -62,7 +55,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .copied()
         .ok_or("E03 served inventory has no single stack of 100 gold coins")?;
     let before_pairs = pairs(&client);
-    let before_payload = encoded(&client)?;
+    let before_payload = encoded_backpack(&client)?;
     let outcome = client.use_item(stack.handle).await?;
     if outcome.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
         return Err(format!("E03 coin use refused: {:?}", outcome.disposition).into());
@@ -79,7 +72,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     wait_coins(&mut client, refs, after, "E03 gold-to-platinum").await?;
     let after_pairs = pairs(&client);
     capture("e03-before.bin", &before_payload);
-    capture("e03-after.bin", &encoded(&client)?);
+    capture("e03-after.bin", &encoded_backpack(&client)?);
     capture(
         "e03-expected.txt",
         format!("before={before_pairs}\nafter={after_pairs}\n").as_bytes(),
