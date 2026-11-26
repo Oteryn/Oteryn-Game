@@ -5,9 +5,7 @@
 //!    revision to move; auction row: bid and require an accepted, decodable result.
 //! 4. Log out, freshly admit, re-query and require the durable ACL revision/ownership to agree.
 //!
-//! No player route during the run grants a house (ownership is settled by Control-side auction
-//! settlement) or funds a winning bid, so the row ends FAIL naming the missing precondition; it
-//! never provisions state.
+//! The disposable fixture prepares an ended authored auction. The live owner settles it.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::{
@@ -20,7 +18,8 @@ const TOWNS: [&str; 5] = ["thais", "carlin", "venore", "edron", "ab_dendriel"];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(75), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(75), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
@@ -180,14 +179,19 @@ pub(super) async fn prepare_owned_house(
         }
         client = prepared;
     }
-    evidence(&format!(
-        "G01_CHECK step=served-ownership status=PASS house={HOUSE}"
-    ));
+    evidence(&format!("G01_CHECK step=served-ownership status=PASS house={HOUSE}"));
     Ok(client)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xc1).await?;
+    character_prep::declare_seeded(
+        "G01",
+        "level 20 and ended authored auction",
+        "owner settlement eligibility",
+    );
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_G01_ACCOUNT").await?;
+    let clients = &identity.clients(clients);
+    let mut client = prepare_owned_house(clients, 0xc1).await?;
     if !client.selected_capabilities().contains(&49) {
         return Err("step=admit observed=house-capability-not-selected".into());
     }
@@ -196,7 +200,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     panel.admitted(*world.as_bytes(), client.selected_capabilities());
     let town = catalogue(&mut client, &mut panel).await?;
     let rows = panel.page.rows.clone();
-    let owned = rows.iter().position(|row| row.owned);
+    let owned = rows.iter().position(|row| row.house == HOUSE && row.owned);
     let auction = rows.iter().position(|row| row.ends.is_some());
     let mut observed = format!("rows={}", rows.len());
     let mut revision_after = None;
@@ -211,6 +215,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .await?;
         let (disposition, _) = house::result(&reply.payload)?;
+        if reply.status != CommandStatus::Accepted
+            || disposition != oteryn_protocol_oteryn::house::HouseDisposition::Ok as u64
+        {
+            return Err(format!("step=set-guests observed={:?}/{disposition}", reply.status).into());
+        }
+        evidence("G01_CHECK step=set-guests status=PASS");
         panel.town.clone_from(town);
         send(&mut client, &mut panel, None, false).await?;
         let after = panel.page.rows.get(index).map(|row| row.acl_revision);
@@ -235,7 +245,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let Some(revision) = revision_after else {
         return Err(format!("step=acl observed={observed};needed=acl-revision-advance").into());
     };
-    let mut fresh = connect_world(clients, 0xc2).await?;
+    let mut fresh = connect_character(clients, 0xc2, 0).await?;
     let mut again = panel_ui::Panel::default();
     again.admitted(*world.as_bytes(), fresh.selected_capabilities());
     again.town = town.ok_or("step=fresh observed=no-town")?;
@@ -243,7 +253,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let durable = again
         .page
         .rows
-        .get(owned.unwrap_or(0))
+        .iter()
+        .find(|row| row.house == HOUSE && row.owned)
         .map(|row| row.acl_revision);
     let out = fresh.session_mut().logout().await?;
     if out.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {

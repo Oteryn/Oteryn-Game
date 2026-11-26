@@ -3393,6 +3393,9 @@ pub(super) async fn journeys(
                 })
                 .await;
             }
+            if e2e_row_selected(306) {
+                full_e2ef20::greet_ten(clients, world, &metadata.npcs).await;
+            }
         }
         for index in 0..clients.accounts.len() {
             wait_character_released(clients, index).await?;
