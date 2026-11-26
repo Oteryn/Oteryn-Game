@@ -1,7 +1,7 @@
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
-use super::fixture::{Harness, debug, id, run};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use super::fixture::{Harness, debug, id, run};
 
 use super::{TestResult, prepare_current_session};
 
@@ -166,16 +166,7 @@ pub(super) fn dwarf_letter_scenario(creature: &str) -> TestResult {
 
 pub(super) fn scenario_with_blocked_bounty_read() -> TestResult {
     scenario_with_creature_observed(
-        None,
-        false,
-        None,
-        false,
-        false,
-        false,
-        (None, None, None),
-        false,
-        None,
-        true,
+        None, false, None, false, false, false, (None, None, None), false, None, true,
     )
 }
 
@@ -1189,11 +1180,7 @@ fn scenario_with_creature_observed(
             let mut dead = false;
             for _ in 0..30 {
                 assert!(owner.tick_combat(actor, session).await.is_some());
-                let health = owner
-                    .runtime
-                    .lock()
-                    .await
-                    .live_creature_health(target_actor);
+                let health = owner.runtime.lock().await.live_creature_health(target_actor);
                 damaged |= health.is_some_and(|hp| Some(hp) < initial_health);
                 dead = health.is_none();
                 if dead {
@@ -1202,10 +1189,7 @@ fn scenario_with_creature_observed(
                 owner.clock_origin = owner.clock_origin.checked_sub(PASS).ok_or("clock origin")?;
             }
             blocker.rollback().await?;
-            assert!(
-                damaged,
-                "accepted attack dealt no damage during 90 seconds of owner time"
-            );
+            assert!(damaged, "accepted attack dealt no damage during 90 seconds of owner time");
             assert!(dead, "target remained alive after 90 seconds of owner time");
             // Settlement also uses this table. Recover any holder retired by its
             // own timeout before testing that the queued death mints a corpse.
@@ -1347,9 +1331,7 @@ fn scenario_with_creature_observed(
             if let Some(creature) = letter_creature {
                 let runtime = owner.runtime.lock().await;
                 if runtime.visible_entities().creatures.is_empty() {
-                    return Err(
-                        format!("{creature}: lethal auto-attack queued no Letter reward").into(),
-                    );
+                    return Err(format!("{creature}: lethal auto-attack queued no Letter reward").into());
                 }
             }
             swings += 1;
@@ -1435,11 +1417,7 @@ fn scenario_with_creature_observed(
                 &mut table,
                 event_rates.loot,
             );
-            super::scheduled_event_rates_fixtures::expected(
-                &mut table,
-                &row.loot_table,
-                event_rates.loot,
-            );
+            super::scheduled_event_rates_fixtures::expected(&mut table, &row.loot_table, event_rates.loot);
             let raised = table != row.loot_table;
             assert!(
                 raised,

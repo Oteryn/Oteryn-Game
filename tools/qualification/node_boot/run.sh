@@ -731,12 +731,6 @@ PY_REGION_PIN
   install_owned root:root -d -m 0755 "$BASE/world"
   install_owned root:root -m 0644 "$WORK/world.otwb" "$BASE/world/world.otbundle"
   install_owned root:root -m 0644 "$PIN" "$BASE/world/world.json"
-  python3 "$GAME_SOURCE/deploy/synology-game/stage_npc_data.py" \
-    "$GAME_SOURCE/deploy/synology-game/npc-data.pin.json" "$GAME_SOURCE" "$WORK/npc-data"
-  "${as_operator[@]}" cp -R "$WORK/npc-data" "$BASE/npc-data"
-  "${as_operator[@]}" chmod -R a+rX "$BASE/npc-data"
-  NODE_NPC_ARGS=(--npc-data-project "$BASE/npc-data/content/world"
-    --npc-data-sha256 "$(<"$WORK/npc-data/PROJECT_SHA256")")
   MAP_REVISION="$WORLD_DIGEST"
   source "$GAME_SOURCE/tools/qualification/node_boot/npc_data.sh"
   node_boot_stage_npc_data

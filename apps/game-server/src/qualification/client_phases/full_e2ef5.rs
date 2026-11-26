@@ -1159,7 +1159,7 @@ pub(super) async fn rune_cleanup(client: &mut DevClientSession, world: &BundleWo
         return Err("rune cleanup did not reach TOWN".into());
     }
     use oteryn_protocol_oteryn::logout::LogoutResult;
-    let (result, detail, attempts, busy_timed_out) = logout_retrying_busy(client).await?;
+    let (result, detail, attempts, busy_timed_out) = fixture_logout_retrying_busy(client).await?;
     if result != Some(LogoutResult::Accepted) {
         return Err(format!("cleanup logout refused: {detail}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }

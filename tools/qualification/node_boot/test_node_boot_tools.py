@@ -346,6 +346,7 @@ WORK=.
         self.assertEqual(len(accounts), 30)
         self.assertEqual(len(set(accounts)), len(accounts))
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
+        self.assertEqual(accounts[28], "01934f10-7c00-7000-8000-000000000020")
         self.assertEqual(accounts[29], "01934f10-7c00-7000-8000-000000000021")
 
 
@@ -799,7 +800,6 @@ class CloudRunSummaryTests(unittest.TestCase):
             result = subprocess.run(["bash", "-c", command, "test", temp],
                                     check=True, capture_output=True, text=True)
             self.assertEqual(result.stdout.strip(), str(work.resolve()))
-
     def test_qualification_shared_logout_has_explicit_fixture_retry_path(self):
         world = HERE.parents[2] / 'apps/game-server/src/qualification/client_phases/world.rs'
         source = world.read_text()
