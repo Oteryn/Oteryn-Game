@@ -31,6 +31,39 @@ pub(super) async fn test_analyser_route(
     }
 }
 
+#[cfg(test)]
+pub(super) async fn test_world_object_use_route(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: AdmittedSession,
+    command_id: u64,
+    target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    use oteryn_protocol_oteryn::{ClientCommandView, world_object as wire};
+    let actor = admitted.runtime_actor.ok_or("positioned actor")?;
+    let payload = wire::encode_use_intent(target).map_err(|error| format!("{error:?}"))?;
+    let command = ClientCommandView {
+        command_id,
+        command_type: wire::COMMAND_TYPE_USE_INTENT,
+        payload: &payload,
+    };
+    match routing::use_item::route(
+        owner,
+        actor,
+        &mut admitted,
+        command,
+        &mut None,
+        &mut None,
+        &None,
+    )
+    .await
+    {
+        Some(Dispatch::Reply(crate::foundation::CommandStatus::Accepted, payload)) => Ok(payload),
+        Some(Dispatch::Use(outcome)) => wire::encode_use_result(outcome.disposition)
+            .map_err(|error| format!("{error:?}").into()),
+        _ => Err("missing world-object USE outcome".into()),
+    }
+}
+
 mod serve;
 use crate::combat_pickup::GroundPickupError;
 use routing::Dispatch;

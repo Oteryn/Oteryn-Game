@@ -1630,6 +1630,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_map_harvest_object(actor, command, &target).await
     }
 
+    async fn use_imbuing_shrine(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+        target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Option<crate::gameplay_transport::imbuement::ShrineUseOutcome> {
+        self.open_imbuing_shrine(actor, admitted, target).await
+    }
+
     async fn use_object(
         &self,
         actor: ExactActorRef,

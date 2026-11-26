@@ -1,7 +1,7 @@
 //! PARITY-REFUSAL-DETAIL-1: real session ingress on a bundle World answers an unreachable map
 //! door `TOO_FAR`; with capability 66 field 15 names `TOO_FAR_AWAY`, without it the bytes are
 //! the pre-66 payload.
-use super::autowalk_fixtures::{COIN, DOOR, at, bundle, object, pos, result, send};
+use super::autowalk_fixtures::{COIN, DOOR, at, bundle_with_scenery, object, pos, result, send};
 use super::fixture::{Harness, debug, id, join_two, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
@@ -24,14 +24,28 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
 fn refusal_detail_bundle_world_door_too_far_with_and_without_capability_66() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "refusal detail e2e panicked")?
         .map_err(Into::into)
 }
 
-fn scenario() -> TestResult {
-    run(async |admin| {
+#[test]
+fn shrine_use_requires_reach_and_knowledge_and_door_still_opens() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "shrine use scenario panicked")?
+        .map_err(Into::into)
+}
+
+const SHRINE: &str = "oteryn:item.tibia.i25060";
+
+fn scenario(shrine_use: bool) -> TestResult {
+    run(async move |admin| {
         let h = Harness::create_with_admission_seed(admin, "refusal_detail", true, false).await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -54,22 +68,27 @@ fn scenario() -> TestResult {
                 .definition_ref("Item", key, "definition-r1")
                 .ok_or("item ref")
         };
-        let (bytes, pins) = bundle(reference(DOOR)?.get() - 1, reference(COIN)?.get() - 1)?;
+        let scenery = if shrine_use { SHRINE } else { COIN };
+        let start = if shrine_use { (2, 5) } else { (1, 1) };
+        let (bytes, pins) = bundle_with_scenery(
+            reference(DOOR)?.get() - 1,
+            (scenery, reference(scenery)?.get() - 1),
+        )?;
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let world = boot(
             &bytes,
             &BootPins {
                 map_revision: crate::map::overlay::map_revision(&base),
                 bundle: pins,
-                start: pos(1, 1),
+                start: pos(start.0, start.1),
             },
             deps.admitted.world_id,
             deps.admitted.channel_id,
             |key| {
                 Some(ItemDefinition {
                     reference: reference(key).ok()?,
-                    solid: Some(key == DOOR),
-                    blocks_projectile: key == DOOR,
+                    solid: Some(key == DOOR || key == SHRINE),
+                    blocks_projectile: key == DOOR || key == SHRINE,
                     pickupable: key == COIN,
                     door: key == DOOR,
                 })
@@ -86,7 +105,7 @@ fn scenario() -> TestResult {
             active.identity().client_artifact_digest(),
             pin.frame_binding().digest(),
             world.map_revision_digest(),
-            (1, 1, 7),
+            (i32::from(start.0), i32::from(start.1), 7),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             deps.admitted.world_id,
@@ -105,7 +124,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
         runtime
-            .initialize_pinned_test_position(deps.actor, at(1, 1))
+            .initialize_pinned_test_position(deps.actor, at(i32::from(start.0), i32::from(start.1)))
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
@@ -127,22 +146,30 @@ fn scenario() -> TestResult {
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
         let digest = world.base().digest();
-        // The bundle World offers capability 66; the door at (12, 1) has no route.
-        for (command_id, requested, expected) in [
-            (
-                1,
-                &[4, 6, 11, 15, 18, 31, CAPABILITY_REFUSAL_DETAIL_V1][..],
-                &[0x08, 0x05, 0x78, 0x02][..],
-            ),
-            (2, &[4, 6, 11, 15, 18, 31][..], &[0x08, 0x05][..]),
-        ] {
-            admitted.continuity.selected_capabilities =
-                SelectedCapabilities::select(owner.offered_capabilities(), requested)
-                    .ok_or("selection")?;
-            assert_eq!(admitted.continuity.selected_capabilities.as_slice(), requested);
-            admitted = refused_use(&owner, admitted, digest, command_id, expected).await?;
-            // A refused world action keeps its 200 ms cooldown.
-            tokio::time::sleep(Duration::from_millis(250)).await;
+        if shrine_use {
+            deps.initialize(&owner).await;
+            tokio::select! {
+                result = shrine_and_door(&h, &owner, admitted, digest) => result?,
+                result = super::item_craft_fixtures::maintain_ready(&owner) => result?,
+            }
+        } else {
+            // The bundle World offers capability 66; the door at (12, 1) has no route.
+            for (command_id, requested, expected) in [
+                (
+                    1,
+                    &[4, 6, 11, 15, 18, 31, CAPABILITY_REFUSAL_DETAIL_V1][..],
+                    &[0x08, 0x05, 0x78, 0x02][..],
+                ),
+                (2, &[4, 6, 11, 15, 18, 31][..], &[0x08, 0x05][..]),
+            ] {
+                admitted.continuity.selected_capabilities =
+                    SelectedCapabilities::select(owner.offered_capabilities(), requested)
+                        .ok_or("selection")?;
+                assert_eq!(admitted.continuity.selected_capabilities.as_slice(), requested);
+                admitted = refused_use(&owner, admitted, digest, command_id, expected).await?;
+                // A refused world action keeps its 200 ms cooldown.
+                tokio::time::sleep(Duration::from_millis(250)).await;
+            }
         }
         drop(owner);
         drop(authority);
@@ -197,5 +224,55 @@ async fn client_scenario(
     let (refused, steps) = result(client, command_id).await?;
     assert_eq!(steps, 0);
     assert_eq!(refused, expected);
+    Ok(())
+}
+
+async fn shrine_and_door(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: AdmittedSession,
+    digest: [u8; 32],
+) -> TestResult {
+    use crate::gameplay_transport::connection::test_world_object_use_route;
+    use oteryn_protocol_oteryn::imbuement::{
+        CAPABILITY_IMBUE_V1, CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1, ImbuementResult,
+        decode_imbuement_reply_with_success,
+    };
+    use oteryn_protocol_oteryn::world_object::{UseDisposition, decode_use_result};
+
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        owner.offered_capabilities(),
+        &[4, 6, 11, 15, 18, 31, CAPABILITY_IMBUE_V1, CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1],
+    ).ok_or("shrine capabilities")?;
+    let shrine = object(digest, pos(1, 5), 0)?;
+    let far = object(digest, pos(7, 5), 0)?;
+    let bytes = test_world_object_use_route(owner, admitted, 1, &shrine).await?;
+    assert_eq!(decode_use_result(&bytes).map_err(debug)?, UseDisposition::RequirementNotMet);
+
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,1,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(41).as_slice())
+        .bind("oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes")
+        .bind("oteryn:quest.forgotten_knowledge_quest")
+        .execute(&mut *tx).await?;
+    tx.commit().await?;
+
+    let bytes = test_world_object_use_route(owner, admitted, 2, &far).await?;
+    assert_eq!(decode_use_result(&bytes).map_err(debug)?, UseDisposition::TooFar);
+
+    let bytes = test_world_object_use_route(owner, admitted, 3, &shrine).await?;
+    let (reply, _) = decode_imbuement_reply_with_success(&bytes).map_err(debug)?;
+    assert_eq!(reply.result, ImbuementResult::Ok);
+    let window = reply.window.ok_or("shrine opens the item chooser")?;
+    assert_eq!(window.slot_count, 0);
+
+    let facts = &owner.bundle_map().ok_or("bundle map")?.facts;
+    let door_tile = pos(1, 6);
+    assert!(facts.doors().blocks(door_tile));
+    let door = object(digest, door_tile, 0)?;
+    let bytes = test_world_object_use_route(owner, admitted, 4, &door).await?;
+    assert_eq!(decode_use_result(&bytes).map_err(debug)?, UseDisposition::Committed);
+    assert!(!facts.doors().blocks(door_tile));
     Ok(())
 }

@@ -307,7 +307,129 @@ fn shrine_in_reach(
         })
 }
 
+const SHRINE_KNOWLEDGE_TRACK: &str =
+    "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes";
+
+pub enum ShrineUseOutcome {
+    Window(Vec<u8>),
+    Refused(UseDisposition),
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn open_imbuing_shrine(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+        target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Option<ShrineUseOutcome> {
+        if let Err(disposition) = self.imbuing_shrine_access(actor, admitted, target).await? {
+            return Some(ShrineUseOutcome::Refused(disposition));
+        }
+        let Ok(Some(current)) = self.current_quest_fence(admitted.game_session_id).await else {
+            return Some(ShrineUseOutcome::Refused(UseDisposition::Rejected));
+        };
+        if Some(current.item_fence()) != admitted.item_fence {
+            return Some(ShrineUseOutcome::Refused(UseDisposition::Rejected));
+        }
+        let Ok(quests) = self.root.read_character_quest_state(self.character, current.character_id).await
+        else {
+            return Some(ShrineUseOutcome::Refused(UseDisposition::Rejected));
+        };
+        if quests.character_revision() != Some(current.expected_character_revision) {
+            return Some(ShrineUseOutcome::Refused(UseDisposition::Rejected));
+        }
+        // Re-resolve the placement and the actor's position after the durable read.
+        if let Err(disposition) = self
+            .imbuing_shrine_access(actor, admitted, target)
+            .await
+            .unwrap_or(Err(UseDisposition::StaleState))
+        {
+            return Some(ShrineUseOutcome::Refused(disposition));
+        }
+        if !quests.tracks().get(SHRINE_KNOWLEDGE_TRACK).is_some_and(|value| *value > 0) {
+            return Some(ShrineUseOutcome::Refused(UseDisposition::RequirementNotMet));
+        }
+        // The initial window has no selected item. The existing item Query
+        // supplies that item's slots, applied imbuements and offers.
+        Some(match encode_selected(
+            &wire::ImbuementReply {
+                result: ImbuementResult::Ok,
+                window: Some(wire::ImbuementWindow {
+                    slot_count: 0,
+                    applied: Vec::new(),
+                    offers: Vec::new(),
+                    clear_gold: u32::try_from(IMBUEMENT_CLEAR_GOLD).unwrap_or(u32::MAX),
+                }),
+            },
+            admitted.continuity.selected_capabilities.contains(
+                wire::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1,
+            ),
+        ) {
+            ImbuementReply::Payload(bytes) => ShrineUseOutcome::Window(bytes),
+            ImbuementReply::Unavailable | ImbuementReply::Rejected => {
+                ShrineUseOutcome::Refused(UseDisposition::Rejected)
+            }
+        })
+    }
+
+    async fn imbuing_shrine_access(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+        target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Option<Result<(), UseDisposition>> {
+        use super::world_map::{MapViewSource, resolve_map_target};
+        let runtime = self.runtime.lock().await;
+        let map = self.bundle_map()?;
+        let index = pinned_index(&runtime, self.active_generation)?;
+        let facts = map.facts.pinned();
+        let source = MapViewSource {
+            overlay: &map.overlay,
+            facts: &facts,
+            content_generation: runtime.content_pin().client_artifact_digest(),
+            reset_epoch: self.reset_epoch,
+        };
+        let selected = resolve_map_target(&source, target, |_| None::<()>).ok()?;
+        let tile = view::compose_tile(&map.overlay, &facts, selected.pos).ok()??;
+        let is_shrine = tile.entries.iter().any(|entry| {
+            entry.source.key() == view::MapEntryKey::Base(selected.placement_key)
+                && matches!(entry.facts.definition, MapDefinition::Item(reference)
+                    if index.definition_at(reference)
+                        .is_some_and(|(key, _)| SHRINE_KEYS.binary_search(&key).is_ok()))
+        });
+        if !is_shrine {
+            return None;
+        }
+        let binding = runtime.binding();
+        if !admitted.item_fence.is_some_and(|fence| {
+            fence.game_session_id == admitted.game_session_id
+                && fence.connection_generation.get() == admitted.continuity.connection_generation
+                && fence.runtime_scope == binding.runtime_scope()
+                && fence.scope_ownership_generation == binding.scope_generation()
+        }) || admitted.runtime_actor != Some(actor)
+            || runtime.owner_fence().is_err()
+            || map.overlay.runtime_scope() != binding.runtime_scope()
+            || !runtime.player_control_facts(actor, admitted.game_session_id)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+            || self.states.spell_states.lock().await.is_dead(actor)
+        {
+            return Some(Err(UseDisposition::Rejected));
+        }
+        let Ok(position) = runtime.read_actor_position(actor) else {
+            return Some(Err(UseDisposition::Rejected));
+        };
+        let from = position.position();
+        let pos = selected.pos;
+        Some(if oteryn_gameplay_items::reach::within_reach(
+            (from.x, from.y, i32::from(from.floor)),
+            (i32::from(pos.x), i32::from(pos.y), -i32::from(pos.floor)),
+        ) {
+            Ok(())
+        } else {
+            Err(UseDisposition::TooFar)
+        })
+    }
+
     /// Production USE-with adapter. `None` means this is not an imbuement source and lets the
     /// next existing item-on-item owner inspect it. A retained receipt is reconciled first.
     pub(super) async fn use_imbuement_item_impl(

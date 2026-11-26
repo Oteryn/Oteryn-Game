@@ -34,6 +34,13 @@ pub(super) fn at(x: i32, y: i32) -> MovementLocalPosition {
 }
 
 pub(super) fn bundle(door: u32, coin: u32) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_with_scenery(door, (COIN, coin))
+}
+
+pub(super) fn bundle_with_scenery(
+    door: u32,
+    (scenery, scenery_id): (&str, u32),
+) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{
         self as writer, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -89,9 +96,9 @@ pub(super) fn bundle(door: u32, coin: u32) -> TestResult<(Vec<u8>, crate::map::B
                 terrain: None,
             },
             PaletteEntry {
-                key: COIN.into(),
+                key: scenery.into(),
                 family: Family::Item,
-                id: coin,
+                id: scenery_id,
                 terrain: None,
             },
         ],

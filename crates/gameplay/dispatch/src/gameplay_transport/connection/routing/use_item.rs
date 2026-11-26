@@ -605,8 +605,25 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 use_with: None,
                 use_with_map_item: None,
                 use_with_position: None,
-            }) => Dispatch::Use(
-                authority
+            }) => {
+                if admitted.continuity.selected_capabilities.contains(
+                    oteryn_protocol_oteryn::imbuement::CAPABILITY_IMBUE_V1,
+                ) {
+                    match tokio::time::timeout(
+                        std::time::Duration::from_secs(10),
+                        authority.use_imbuing_shrine(actor, *admitted, &target),
+                    ).await {
+                        Ok(Some(transport::imbuement::ShrineUseOutcome::Window(bytes))) => {
+                            return Some(Dispatch::Reply(crate::foundation::CommandStatus::Accepted, bytes));
+                        }
+                        Ok(Some(transport::imbuement::ShrineUseOutcome::Refused(disposition))) => {
+                            return Some(Dispatch::Use(UseOutcome { disposition, ..UseOutcome::rejected() }));
+                        }
+                        Ok(None) => {}
+                        Err(_) => return Some(Dispatch::Use(UseOutcome::rejected())),
+                    }
+                }
+                Dispatch::Use(authority
                     .use_object(
                         actor,
                         UseCommand {
@@ -616,8 +633,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         },
                         target,
                     )
-                    .await,
-            ),
+                    .await)
+            },
             Err(_) => Dispatch::Use(UseOutcome::rejected()),
         }
     })

@@ -663,6 +663,15 @@ pub trait FreshAdmissionAuthority {
         async { Ok(None) }
     }
 
+    fn use_imbuing_shrine(
+        &self,
+        _actor: ExactActorRef,
+        _admitted: AdmittedSession,
+        _target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> impl Future<Output = Option<crate::gameplay_transport::imbuement::ShrineUseOutcome>> {
+        async { None }
+    }
+
     fn use_object(
         &self,
         _actor: ExactActorRef,
