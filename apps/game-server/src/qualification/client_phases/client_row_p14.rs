@@ -2,6 +2,7 @@
 //! and for a walked-to authored statue (disposition 3). The consumer is `apply` in
 //! `apps/client/src/features/0054-training/protocol.rs`.
 use super::client_row_p15::training_reply;
+use super::full_row_p14::offline_status_matches;
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::item_view::ItemHandle;
@@ -85,6 +86,7 @@ fn map_statue_handle(
 async fn offline(
     client: &mut DevClientSession,
     target: ItemHandle,
+    expected: CommandStatus,
 ) -> TestResult<(Vec<u8>, TrainingResult)> {
     let mut payload = vec![8];
     let mut value = target.get();
@@ -95,10 +97,18 @@ async fn offline(
     payload.push(value as u8);
     let reply = client
         .session_mut()
-        .gated_command(CAPABILITY_TRAINING_V1, COMMAND_TYPE_OFFLINE_TRAINING, &payload)
+        .gated_command(
+            CAPABILITY_TRAINING_V1,
+            COMMAND_TYPE_OFFLINE_TRAINING,
+            &payload,
+        )
         .await?;
-    if reply.status != CommandStatus::Accepted {
-        return Err(format!("offline training status={:?}", reply.status).into());
+    if !offline_status_matches(reply.status, expected) {
+        return Err(format!(
+            "offline training expected={expected:?} status={:?}",
+            reply.status
+        )
+        .into());
     }
     let decoded = training_reply(&reply.payload).ok_or("malformed training reply")?;
     Ok((reply.payload, decoded))
@@ -123,7 +133,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let positions = statue_positions(&bytes, &references)?;
     let mut client = connect_world(clients, 0x40).await?;
-    let (refused_bytes, refused) = offline(&mut client, NonZeroU64::MAX).await?;
+    let (refused_bytes, refused) =
+        offline(&mut client, NonZeroU64::MAX, CommandStatus::Rejected).await?;
     if refused != TrainingResult::REFUSED {
         return Err(format!("unknown handle reply={refused:?}").into());
     }
@@ -136,7 +147,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     .ok_or("no reachable authored statue")?;
     walk(&mut client, world, &path).await?;
     let statue = map_statue_handle(&mut client, &references)?;
-    let (selected_bytes, selected) = offline(&mut client, statue).await?;
+    let (selected_bytes, selected) = offline(&mut client, statue, CommandStatus::Accepted).await?;
     if selected.disposition != 3 || selected.revision == 0 || selected.pool_seconds == 0 {
         return Err(format!("statue reply={selected:?}").into());
     }

@@ -2,7 +2,7 @@
 //!
 //! Player scenario derived from the P14 matrix/audit row and the dispatch owner:
 //! 1. Log in and verify that the server offered training capability 54.
-//! 2. Send OFFLINE_TRAINING with a nonexistent handle; expect an accepted command frame carrying
+//! 2. Send OFFLINE_TRAINING with a nonexistent handle; expect a rejected command frame carrying
 //!    the explicit refused training result and no logout or offline-training state delta.
 //! 3. Walk through the compiled world to an authored offline-training statue, obtain its live
 //!    server-issued handle, and send OFFLINE_TRAINING; expect disposition 3, a nonzero durable
@@ -84,7 +84,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     let before_session = client.join_snapshot().game_session_id;
     let before_pool = general_stats(&mut client).await?;
-    let refused = training(&mut client, NonZeroU64::MAX).await?;
+    let refused = training(&mut client, NonZeroU64::MAX, CommandStatus::Rejected).await?;
     if !offered
         || refused != TrainingResult::REFUSED
         || client.join_snapshot().game_session_id != before_session
@@ -97,7 +97,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     evidence("P14_CHECK step=1 status=PASS observed=capability-54");
-    evidence("P14_CHECK step=2 status=PASS observed=accepted-frame,disposition-4,no-pool-delta");
+    evidence("P14_CHECK step=2 status=PASS observed=rejected-frame,disposition-4,no-pool-delta");
 
     let from = tile(client.world_spatial().actor_position)?;
     let path = route(world, from, |at| {
@@ -108,7 +108,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let statue = adjacent_map_handle(&mut client, &references).ok_or(
         "step=statue-handle observed=authored-statue-without-live-handle need=map-item-handle",
     )?;
-    let selected = training(&mut client, statue).await?;
+    let selected = training(&mut client, statue, CommandStatus::Accepted).await?;
     if selected == TrainingResult::REFUSED {
         let current_pool = general_stats(&mut client).await?;
         if current_pool != before_pool || client.join_snapshot().game_session_id != before_session {
@@ -263,7 +263,15 @@ fn adjacent_map_handle(
         })
 }
 
-async fn training(client: &mut DevClientSession, target: ItemHandle) -> TestResult<TrainingResult> {
+pub(super) fn offline_status_matches(actual: CommandStatus, expected: CommandStatus) -> bool {
+    actual == expected
+}
+
+async fn training(
+    client: &mut DevClientSession,
+    target: ItemHandle,
+    expected: CommandStatus,
+) -> TestResult<TrainingResult> {
     let payload = offline_payload(target);
     oteryn_protocol_oteryn::loop_training::decode_offline_training(&payload)
         .map_err(|error| format!("offline training encode: {error:?}"))?;
@@ -275,9 +283,9 @@ async fn training(client: &mut DevClientSession, target: ItemHandle) -> TestResu
             &payload,
         )
         .await?;
-    if reply.status != CommandStatus::Accepted {
+    if !offline_status_matches(reply.status, expected) {
         return Err(format!(
-            "step=offline-training-command observed=status:{:?},payload:{:?} need=accepted-command-with-training-result",
+            "step=offline-training-command observed=status:{:?},payload:{:?} need=status:{expected:?}-with-training-result",
             reply.status, reply.payload
         )
         .into());
@@ -441,6 +449,15 @@ mod tests {
     }
 
     use super::*;
+
+    #[test]
+    fn offline_status_requires_the_exact_envelope_for_each_exchange() {
+        use CommandStatus::{Accepted, Rejected};
+        assert!(offline_status_matches(Rejected, Rejected));
+        assert!(offline_status_matches(Accepted, Accepted));
+        assert!(!offline_status_matches(Accepted, Rejected));
+        assert!(!offline_status_matches(Rejected, Accepted));
+    }
 
     #[test]
     fn offline_payload_round_trips_maximum_handle() -> TestResult {
