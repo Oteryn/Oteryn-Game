@@ -1,7 +1,9 @@
 //! CHARACTER-INFO-1 transport seam. Native owners resolve identity and facts.
 use oteryn_protocol_oteryn::character_info::{CharacterInfoOperation, CharacterTitle, PageRequest};
 
-use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
+use super::connection::{AdmissionRefusal, AdmittedSession};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission, capabilities::OfferedCapability};
+use crate::durability::{DurabilityError, character_authority::CharacterAuthorityError};
 
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
     let mut result: Vec<_> = base
@@ -92,6 +94,15 @@ pub(super) fn unix_now_ms() -> i64 {
         .ok()
         .and_then(|duration| i64::try_from(duration.as_millis()).ok())
         .unwrap_or(0)
+}
+
+fn read_refusal(error: CharacterAuthorityError) -> AdmissionRefusal {
+    match error {
+        CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable) => {
+            AdmissionRefusal::Unavailable
+        }
+        _ => AdmissionRefusal::Rejected,
+    }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -249,42 +260,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         page: PageRequest,
         now: i64,
     ) -> CharacterInfoReply {
+        let retry = AdmissionRetryBudget::for_command(self.root);
         // The self view runs the automatic unlock first, so it never shows a stale catalogue.
+        // Retry only a failed holder checkout. A transaction with an ambiguous result is final.
         if target == fence.character_id
-            && self
-                .root
-                .refresh_character_titles(
-                    self.character,
-                    self.holder,
-                    fence,
-                    now,
-                    self.appearance_context().map(|(_, content)| content),
-                    self.bundle_map().map(|map| &map.overlay.base().subareas),
-                )
+            && retry
+                .retry_unavailable(async || {
+                    self.root
+                        .refresh_character_titles(
+                            self.character,
+                            self.holder,
+                            fence,
+                            now,
+                            self.appearance_context().map(|(_, content)| content),
+                            self.bundle_map().map(|map| &map.overlay.base().subareas),
+                        )
+                        .await
+                        .map_err(read_refusal)
+                })
                 .await
                 .is_err()
         {
             return CharacterInfoReply::Rejected;
         }
-        let mut bytes = match self
-            .root
-            .read_character_info(self.character, fence.character_id, target, page, now)
+        let mut bytes = match retry
+            .retry_unavailable(async || {
+                self.root
+                    .read_character_info(self.character, fence.character_id, target, page, now)
+                    .await
+                    .map_err(read_refusal)
+            })
             .await
         {
             Ok(bytes) => bytes,
             Err(_) => return CharacterInfoReply::Rejected,
         };
-        let titles = match self
-            .root
-            .read_and_requalify_character_titles(
-                self.character,
-                self.holder,
-                fence,
-                target,
-                now,
-                self.appearance_context().map(|(_, content)| content),
-                self.bundle_map().map(|map| &map.overlay.base().subareas),
-            )
+        let titles = match retry
+            .retry_unavailable(async || {
+                self.root
+                    .read_and_requalify_character_titles(
+                        self.character,
+                        self.holder,
+                        fence,
+                        target,
+                        now,
+                        self.appearance_context().map(|(_, content)| content),
+                        self.bundle_map().map(|map| &map.overlay.base().subareas),
+                    )
+                    .await
+                    .map_err(read_refusal)
+            })
             .await
         {
             Ok(titles) => titles,
