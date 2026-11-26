@@ -6,15 +6,10 @@
 //!    rat spawn, and observe the rat damage the visible caster (normal monster targeting).
 //! 2. Have the second player select the visible caster with ATTACK; assert the accepted reply and
 //!    exact combat-state target delta, then clear that target.
-//! 3. Cast `utana vid` through ACTOR_SPELL; assert Cast, the exact mana delta, and a nonzero server
-//!    sequence. Assert the rat produces no further attributed damage and the caster disappears
-//!    from the other player's entity view.
-//! 4. Re-send ATTACK from the other player using the previously observed entity reference; assert
-//!    the TargetNotVisible refusal and that no target is installed. Immediately recast Invisible;
-//!    assert the Cooldown refusal and no mana delta (the negative/resource-free path).
-//! 5. Log the invisible caster out and freshly admit the same character. Assert a new session with
-//!    the paid mana and position retained, and assert the observer still receives no caster entity
-//!    (durable active condition). Walk home, log both characters out, and report one row verdict.
+//! 3. Cast `utana vid` through ACTOR_SPELL and verify the exact mana debit and cooldown refusal.
+//! 4. Verify the Rat stops damaging the caster while the other player can still see and target
+//!    the caster, as documented at https://tibia.fandom.com/wiki/Invisible.
+//! 5. Relog and check the fresh session, retained position and vitals, and observer visibility.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
@@ -26,8 +21,7 @@ const ACTIONS: &[&str] = &[
     "player-targets-visible",
     "cast-and-cost",
     "monster-drops-invisible",
-    "observer-loses-entity",
-    "known-reference-refused",
+    "player-targets-invisible",
     "cooldown-no-cost",
     "fresh-admission-condition",
 ];
@@ -143,40 +137,6 @@ fn damage_sequence(
         SessionEvent::Presentation(delta) if delta.value.iter().any(|event| matches!(event.kind, PresentationEventKind::ValueText { attacker: Some(a), target: t, primary, .. } if a == attacker && t == target && primary.value > 0)) => Some(delta.server_sequence),
         _ => None,
     }).max().unwrap_or(0)
-}
-async fn wait_visible(
-    client: &mut DevClientSession,
-    target: oteryn_dev_client::EntityRef,
-    expected: bool,
-) -> TestResult<u64> {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    let mut sequence = 0;
-    loop {
-        sequence = client
-            .take_events()
-            .into_iter()
-            .filter_map(|event| match event {
-                SessionEvent::WorldSpatialEntities(delta)
-                    if delta.value.leave.contains(&target) =>
-                {
-                    Some(delta.server_sequence)
-                }
-                _ => None,
-            })
-            .max()
-            .unwrap_or(sequence);
-        if visible(client, target) == expected && sequence != 0 {
-            return Ok(sequence);
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "step=observer-visibility observed={} expected={expected} need=visibility-delta",
-                visible(client, target)
-            )
-            .into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-    }
 }
 async fn logout(client: &mut DevClientSession) -> TestResult {
     let (result, detail, _, _) = logout_once(client).await?;
@@ -479,26 +439,49 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .await?
         .entity;
     let caster_ref = own(&caster)?;
+    let caster_tile = tile(caster.world_spatial().actor_position)?;
+    let rat_tile = caster
+        .world_entities()
+        .and_then(|view| view.get(&rat))
+        .ok_or("FIXTURE C17b Rat absent after staging")?;
+    let rat_tile = tile(rat_tile.position)?;
+    if rat_tile.floor != caster_tile.floor
+        || rat_tile
+            .x
+            .abs_diff(caster_tile.x)
+            .max(rat_tile.y.abs_diff(caster_tile.y))
+            != 1
+    {
+        return Err(format!(
+            "FIXTURE C17b Rat is not adjacent: caster={caster_tile:?} rat={rat_tile:?}"
+        )
+        .into());
+    }
+    evidence(&format!(
+        "FIXTURE C17b aggro caster={caster_tile:?} rat={rat_tile:?} target={rat:?} deadline_seconds=30"
+    ));
     caster.take_events();
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let visible_health = caster
         .actor_vitals()
         .ok_or("C17b visible caster vitals absent")?
         .health;
-    let pre_damage = loop {
-        caster.service_liveness(Duration::from_millis(100)).await?;
-        let seq = damage_sequence(&mut caster, rat, caster_ref);
-        if seq != 0
-            && caster
-                .actor_vitals()
-                .is_some_and(|vitals| vitals.health < visible_health)
-        {
-            break seq;
+    let pre_damage = provisioning::with_peer_liveness(&mut observer, async {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+        let mut damage = 0;
+        loop {
+            caster.service_liveness(Duration::from_millis(100)).await?;
+            damage = damage.max(damage_sequence(&mut caster, rat, caster_ref));
+            let health = caster.actor_vitals().ok_or("C17b visible caster vitals absent")?.health;
+            if damage != 0 && health < visible_health {
+                evidence(&format!("FIXTURE C17b attributed_rat_damage sequence={damage} health_before={visible_health} health_after={health}"));
+                return Ok(damage);
+            }
+            if tokio::time::Instant::now() >= deadline {
+                let last_rat = caster.world_entities().and_then(|view| view.get(&rat)).map(|entity| entity.position);
+                return Err(format!("step=monster-targets-visible observed=fixture-aggro-timeout deadline_seconds=30 rat={rat:?} rat_position={last_rat:?} damage_sequence={damage} health_before={visible_health} health_after={health}").into());
+            }
         }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("step=monster-targets-visible observed=no-attributed-damage-within-5s need=rat-AI-target/swing".into());
-        }
-    };
+    }).await?;
     row.pass("monster-targets-visible", pre_damage)?;
     let modes = FightModes {
         fight_mode: FightMode::Defensive,
@@ -575,8 +558,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     row.pass("cooldown-no-cost", cooldown.result_server_sequence)?;
-    let lost_seq = wait_visible(&mut observer, caster_ref, false).await?;
-    row.pass("observer-loses-entity", lost_seq)?;
     let hidden_health = caster
         .actor_vitals()
         .ok_or("C17b hidden caster vitals absent")?
@@ -593,19 +574,29 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         }
     }
     row.pass("monster-drops-invisible", cast.result_server_sequence)?;
-    let refused = observer
+    let retained = observer
         .session_mut()
         .attack_target(Some(&caster_ref))
         .await?;
-    if refused.disposition != AttackIntentDisposition::TargetNotVisible
+    if retained.disposition != AttackIntentDisposition::Ok
+        || !visible(&observer, caster_ref)
         || observer
             .session_mut()
             .combat_state()
-            .is_some_and(|s| s.target.is_some())
+            .is_none_or(|state| state.target != Some(caster_ref))
     {
-        return Err(format!("step=known-reference-refused observed={refused:?}/state:{:?} need=TargetNotVisible-without-target", observer.session_mut().combat_state()).into());
+        return Err(format!("step=player-targets-invisible observed={retained:?}/visible:{} need=Global-player-remains-visible-and-targetable", visible(&observer, caster_ref)).into());
     }
-    row.pass("known-reference-refused", refused.result_server_sequence)?;
+    row.pass("player-targets-invisible", retained.result_server_sequence)?;
+    let cleared = observer.session_mut().attack_target(None).await?;
+    if cleared.disposition != AttackIntentDisposition::Ok
+        || observer
+            .session_mut()
+            .combat_state()
+            .is_none_or(|state| state.target.is_some())
+    {
+        return Err("C17b post-cast clear TARGET did not remove the caster".into());
+    }
     let paid = caster
         .actor_vitals()
         .copied()
@@ -625,8 +616,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     observer
         .service_liveness(Duration::from_millis(100))
         .await?;
-    if visible(&observer, own(&caster)?) {
-        return Err("step=fresh-admission-condition observed=caster-visible need=reloaded-invisibility-condition".into());
+    if !visible(&observer, own(&caster)?) {
+        return Err("step=fresh-admission-condition observed=caster-absent need=Global-player-remains-visible".into());
     }
     row.pass("fresh-admission-condition", cast.result_server_sequence)?;
     let back = staging.path(&caster, Some(&observer), |at| at == TOWN)?;
