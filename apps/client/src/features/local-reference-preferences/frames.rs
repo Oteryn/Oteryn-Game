@@ -98,8 +98,7 @@ impl crate::play::PlayLink {
         crate::play::mailbox::lock(&self.mailbox)
             .spell_bar
             .bar
-            .cooldowns
-            .as_ref()
+            .last_cooldown_observation()
             .and_then(|cooldowns| cooldowns.rtt_ms)
     }
 }

@@ -23,7 +23,6 @@ pub(super) fn initialize<T: Stepper>(
     outbox
         .spell_catalog_initialize(session.feature_selected(287), session.feature_snapshot(100))?;
     outbox.battle_metadata_initialize(session.server_mechanic_selected(17));
-    outbox.spell_bar_initialize(session.actor_cooldown_snapshot());
     outbox.bar_item_cooldowns_initialize(session.feature_selected(463));
     outbox.appearance_initialize(session);
     outbox.actor_motion_initialize(session.feature_selected(502));

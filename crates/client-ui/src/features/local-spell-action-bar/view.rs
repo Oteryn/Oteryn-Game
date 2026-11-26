@@ -1,44 +1,12 @@
 use oteryn_client_runtime::spell::ActorVitals;
 use oteryn_renderer::{AtlasImage, BatchError, QuadInstance};
 
-/// oteryn-choice: show the server's reported remaining cooldown, without claiming local cast authority.
 #[must_use]
 pub fn panel_text(
     panel: &super::ActionBarPanel,
     catalog: &oteryn_client_runtime::spell_catalog::CatalogState,
 ) -> String {
-    use std::fmt::Write;
-    let mut text = String::from(tr!(
-        "Assign server cast indices (empty clears a slot). Ctrl+Shift+U: catalogue\r\n"
-    ));
-    for (slot, field) in panel.bar.fields().iter().enumerate() {
-        let entry = field.parse::<u32>().ok().and_then(|id| {
-            catalog
-                .entries()
-                .iter()
-                .find(|entry| entry.cast_index == id)
-        });
-        let remaining = field.parse().ok().map_or(0, |spell| {
-            panel.bar.remaining_ms(
-                spell,
-                entry.map_or(&[], |entry| entry.cooldown_groups.as_slice()),
-            )
-        });
-        let _ = lwrite!(
-            text,
-            "{}: {} {} | Server cooldown: {} ms\r\n",
-            slot + 1,
-            field,
-            entry.map_or("", |entry| entry.name.as_str()),
-            if panel.bar.cooldowns.is_some() {
-                remaining.to_string()
-            } else {
-                tr!("unknown").into()
-            }
-        );
-    }
-    text.push_str(&panel.feedback);
-    text
+    crate::actor_cooldown_deltas::view::panel_text(panel, catalog)
 }
 
 pub const BAR_WIDTH_PX: f32 = 120.0;
@@ -161,7 +129,7 @@ fn slot_labels_at(
                     now,
                 )
             });
-            let state = match (panel.bar.cooldowns.as_ref(), cooldown) {
+            let state = match (panel.bar.last_cooldown_observation(), cooldown) {
                 (_, None) => "Empty".into(),
                 (None, _) => "Cooldown ?".into(),
                 (Some(_), Some(0)) => "Ready".into(),

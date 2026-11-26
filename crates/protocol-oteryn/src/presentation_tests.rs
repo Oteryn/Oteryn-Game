@@ -809,10 +809,10 @@ fn registry_binds_the_presentation_wire_ids_and_limits() -> Result<(), Box<dyn s
             let entries = domain[section].as_array().expect(section);
             assert_eq!(
                 entries.len(),
-                if domain_id == STATE_DOMAIN_WORLD_PRESENTATION {
-                    2
-                } else {
-                    1
+                match (domain_id, section) {
+                    (STATE_DOMAIN_WORLD_PRESENTATION, _) => 2,
+                    (STATE_DOMAIN_ACTOR_COOLDOWNS, "delta_types") => 2,
+                    _ => 1,
                 },
                 "{section}"
             );
@@ -864,6 +864,17 @@ fn registry_binds_the_presentation_wire_ids_and_limits() -> Result<(), Box<dyn s
             "ActorCooldownsV1",
             MAX_ACTOR_COOLDOWNS_BYTES,
         ),
+    );
+
+    let cooldowns = only("state_domains", STATE_DOMAIN_ACTOR_COOLDOWNS);
+    assert_eq!(
+        cooldowns["delta_types"][1],
+        serde_json::json!({
+            "id": DELTA_TYPE_ACTOR_COOLDOWNS_SPARSE_V1,
+            "name": "ACTOR_COOLDOWNS_SPARSE_DELTA_V1",
+            "payload_schema": format!("{SCHEMA_PATH}#ActorCooldownsV1"),
+            "max_payload_bytes": MAX_ACTOR_COOLDOWNS_BYTES,
+        })
     );
 
     let limits: Value = serde_json::from_str(RESOURCE_REGISTRY).expect("resource registry");

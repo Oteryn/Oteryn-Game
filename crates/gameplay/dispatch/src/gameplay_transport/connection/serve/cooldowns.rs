@@ -33,7 +33,15 @@ pub(super) fn frames<A: FreshAdmissionAuthority>(
         return Ok(Vec::new());
     };
     let mut frames = Vec::new();
-    if !committed.deadlines.is_empty() {
+    if let Some(deadlines) = committed.deadlines {
+        let sparse = next
+            .selected_capabilities
+            .contains(wire::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1);
+        let delta_type = if sparse {
+            wire::DELTA_TYPE_ACTOR_COOLDOWNS_SPARSE_V1
+        } else {
+            wire::DELTA_TYPE_ACTOR_COOLDOWNS_V1
+        };
         let revision = next
             .cooldown_revision
             .checked_add(1)
@@ -42,7 +50,7 @@ pub(super) fn frames<A: FreshAdmissionAuthority>(
             .server_sequence
             .checked_add(1)
             .ok_or(ServeEnd::Disconnected)?;
-        let payload = owner::payload(&committed.deadlines, authority.cooldown_clock_us(), false)
+        let payload = owner::payload(&deadlines, authority.cooldown_clock_us(), !sparse)
             .map_err(|_| ServeEnd::Disconnected)?;
         frames.push(
             encode_state_delta(
@@ -51,7 +59,7 @@ pub(super) fn frames<A: FreshAdmissionAuthority>(
                 wire::STATE_DOMAIN_ACTOR_COOLDOWNS,
                 next.cooldown_revision,
                 revision,
-                wire::DELTA_TYPE_ACTOR_COOLDOWNS_V1,
+                delta_type,
                 &payload,
             )
             .map_err(|_| ServeEnd::Disconnected)?,

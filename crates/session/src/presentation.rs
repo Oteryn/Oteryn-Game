@@ -111,12 +111,23 @@ pub(super) fn apply<S: SessionStream>(
     if native_delta && !native_basis {
         return Err(SessionError::SessionUnusable);
     }
+    let cooldowns = delta.domain_id == STATE_DOMAIN_ACTOR_COOLDOWNS;
+    let sparse_cooldowns = cooldowns && session.is_selected(CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1);
     let row = session
         .gated_revisions
         .iter_mut()
         .find(|(id, _)| *id == delta.domain_id)
         .ok_or(SessionError::MissingDomain(delta.domain_id))?;
-    check_delta(&delta, if native_delta { 2 } else { 1 }, row.1)?;
+    let expected_type = if sparse_cooldowns {
+        DELTA_TYPE_ACTOR_COOLDOWNS_SPARSE_V1
+    } else if cooldowns {
+        DELTA_TYPE_ACTOR_COOLDOWNS_V1
+    } else if native_delta {
+        2
+    } else {
+        1
+    };
+    check_delta(&delta, expected_type, row.1)?;
     let event = if item {
         SessionEvent::ItemEffects(AppliedDelta {
             server_sequence: sequence,
@@ -151,7 +162,7 @@ pub(super) fn apply<S: SessionStream>(
             server_sequence: sequence,
             base_revision: delta.base_revision,
             new_revision: delta.new_revision,
-            value: decode_update(delta.payload, false)?,
+            value: decode_update(delta.payload, !sparse_cooldowns)?,
         })
     };
     row.1 = delta.new_revision;
