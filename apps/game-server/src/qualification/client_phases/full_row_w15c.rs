@@ -274,7 +274,7 @@ async fn say(
 }
 
 fn expect(lines: &[String], needle: &str, step: &str) -> TestResult {
-    if lines.iter().any(|line| line.contains(needle)) {
+    if lines == [needle] {
         Ok(())
     } else {
         Err(format!(
@@ -291,11 +291,7 @@ async fn expect_task_status(
     expected: &str,
     step: &str,
 ) -> TestResult {
-    let lines = say(client, actor, "status").await?;
-    if lines.as_slice() != [expected] {
-        return Err(format!("step={step} observed={lines:?} expected={expected:?}").into());
-    }
-    Ok(())
+    expect(&say(client, actor, "status").await?, expected, step)
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -492,33 +488,51 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
     assert_build(&mut client).await?;
     sail_to_port_hope(&mut client, world, &metadata.npcs).await?;
     let actor = reach(&mut client, world, &metadata.npcs, NPC).await?;
-    expect(&say(&mut client, actor, "hi").await?, "join", "hi")?;
-    expect(&say(&mut client, actor, "join").await?, "Welcome", "join")?;
+    const NONMEMBER: &str = "Would you like to join the Paw and Fur - Hunting Elite?";
+    const MEMBER: &str =
+        "Welcome back! Ask me about tasks, status, promotion, bosses or special tasks.";
+    const NO_TASK: &str = "You have not started any task yet.";
+    expect(
+        &say(&mut client, actor, "hi").await?,
+        NONMEMBER,
+        "before-join",
+    )?;
+    expect(
+        &say(&mut client, actor, "join").await?,
+        "Welcome to the Paw and Fur - Hunting Elite! Ask me for a task.",
+        "join",
+    )?;
+    expect(&say(&mut client, actor, "hi").await?, MEMBER, "after-join")?;
     expect(
         &say(&mut client, actor, "points").await?,
-        "Paw and Fur points",
+        "You have 0 Paw and Fur points. Your rank is Member.",
         "points",
     )?;
+    expect_task_status(&mut client, actor, NO_TASK, "before-task").await?;
     let reply = say(&mut client, actor, &task).await?;
     let line = reply.first().cloned().unwrap_or_default();
     let started = match classify(&line) {
         TaskReply::Offer => {
             let expected_offer =
                 format!("Hunt {target} {task}. Do you want to start this task? Say yes or no.");
-            if line != expected_offer {
+            if reply.as_slice() != [expected_offer.as_str()] {
                 return Err(
                     format!("step=task observed={line:?} expected={expected_offer:?}").into(),
                 );
             }
             expect(
                 &say(&mut client, actor, "yes").await?,
-                "Happy hunting",
+                "Happy hunting! Return here when your task is complete.",
                 "confirm",
             )?;
             expect_task_status(&mut client, actor, &expected_status, "status").await?;
             true
         }
-        TaskReply::Refusal => false,
+        TaskReply::Refusal => {
+            expect(&reply, &line, "task-refusal")?;
+            expect_task_status(&mut client, actor, NO_TASK, "after-refusal").await?;
+            false
+        }
         TaskReply::Other => {
             return Err(format!("step=task observed=unexpected-reply:{}", compact(&line)).into());
         }
@@ -537,12 +551,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
     let actor = reach(&mut client, world, &metadata.npcs, NPC).await?;
     expect(
         &say(&mut client, actor, "hi").await?,
-        "Welcome back",
+        MEMBER,
         "durable-join",
     )?;
-    if started {
-        expect_task_status(&mut client, actor, &expected_status, "durable-task").await?;
-    }
+    let durable_status = if started { &expected_status } else { NO_TASK };
+    expect_task_status(&mut client, actor, durable_status, "durable-task").await?;
     logout(&mut client).await?;
     Ok(if started {
         Outcome::Started(task)
