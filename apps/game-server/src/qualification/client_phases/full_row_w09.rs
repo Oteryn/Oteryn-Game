@@ -214,6 +214,11 @@ async fn reconnect_cooldowns(
     )
     .await?;
     let resumed_sequence = resumed.last_server_sequence();
+    let resumed_next_command = resumed.next_command_id();
+    let resumed_session = resumed.join_snapshot().game_session_id;
+    let continuity = format!(
+        "original_session={session:?} resumed_session={resumed_session:?} original_sequence={sequence} resumed_sequence={resumed_sequence} original_next_command={next_command} resumed_next_command={resumed_next_command}"
+    );
     let cooldowns = resumed
         .session_mut()
         .gated_snapshot(presentation::STATE_DOMAIN_ACTOR_COOLDOWNS)
@@ -221,25 +226,26 @@ async fn reconnect_cooldowns(
         .and_then(|snapshot| {
             presentation::decode_actor_cooldowns(&snapshot.payload)
                 .map_err(|_| "W09 reconnect sent malformed ACTOR_COOLDOWNS")
-        })?;
+        })
+        .map_err(|error| format!("{error} {continuity}"))?;
     let active: Vec<_> = expected
         .into_iter()
         .filter(|entry| entry.expires_at_ms > cooldowns.server_now_ms)
         .collect();
-    if resumed.join_snapshot().game_session_id != session
+    if resumed_session != session
         || resumed_sequence <= sequence
-        || resumed.next_command_id() != next_command
+        || resumed_next_command != next_command
         || !active
             .iter()
             .any(|entry| entry.kind == ActorCooldownKind::Spell)
         || cooldowns.entries != active
     {
         return Err(format!(
-            "W09 reconnect cooldown replay diverged sequence={resumed_sequence} frame={cooldowns:?} expected={active:?}"
+            "W09 reconnect cooldown replay diverged {continuity} frame={cooldowns:?} expected={active:?}"
         ).into());
     }
     evidence(&format!(
-        "W09_CHECK cooldown-reconnect sequence={resumed_sequence} spell-deadline=preserved"
+        "W09_CHECK cooldown-reconnect {continuity} spell-deadline=preserved"
     ));
     Ok(resumed)
 }
@@ -426,6 +432,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         || quantities(&verified)? != settled
     {
         return Err("W09 fresh admission did not preserve inventory through both refusals".into());
+    }
+    let sequence = verified.last_server_sequence();
+    let cooldowns = verified
+        .session_mut()
+        .gated_snapshot(presentation::STATE_DOMAIN_ACTOR_COOLDOWNS)
+        .ok_or("W09 full relog omitted ACTOR_COOLDOWNS")
+        .and_then(|snapshot| {
+            presentation::decode_actor_cooldowns(&snapshot.payload)
+                .map_err(|_| "W09 full relog sent malformed ACTOR_COOLDOWNS")
+        })?;
+    if !cooldowns.entries.iter().any(|entry| {
+        entry.kind == ActorCooldownKind::Spell
+            && entry.id == spell.get()
+            && entry.expires_at_ms > cooldowns.server_now_ms
+    }) {
+        return Err(format!(
+            "W09 BLOCKED-CONTRACT full relog lost the active spell cooldown sequence={sequence} frame={cooldowns:?}"
+        ).into());
     }
     logout(&mut verified).await?;
     evidence(
