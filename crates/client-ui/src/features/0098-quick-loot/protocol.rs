@@ -30,6 +30,7 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
     let mut wire = QuickLootRequest {
         action: QuickLootAction::LootAll,
         corpse: None,
+        selected_item: None,
         category: None,
         recipient: None,
         recipient_id: None,

@@ -121,6 +121,7 @@ pub enum QuickLootFilterMode {
 pub struct QuickLootRequest {
     pub action: QuickLootAction,
     pub corpse: Option<[u8; 16]>,
+    pub selected_item: Option<[u8; 16]>,
     pub category: Option<QuickLootCategory>,
     pub recipient: Option<QuickLootRecipient>,
     pub recipient_id: Option<[u8; 16]>,
@@ -348,6 +349,9 @@ fn encode_request(r: &QuickLootRequest, handle: Option<[u8; 8]>) -> Vec<u8> {
     if let Some(reference) = request.filter_definition_ref {
         push_varint_field(&mut out, 8, u64::from(reference));
     }
+    if let Some(item) = request.selected_item {
+        push_message_field(&mut out, 9, &item);
+    }
     out
 }
 
@@ -366,6 +370,9 @@ fn validate_request(r: &QuickLootRequest, has_handle: bool) -> WireResult<()> {
         return malformed();
     }
     if !filter_action && (r.filter_mode.is_some() || r.filter_definition_ref.is_some()) {
+        return malformed();
+    }
+    if r.action != QuickLootAction::Click && r.selected_item.is_some() {
         return malformed();
     }
     let valid = match r.action {
@@ -450,6 +457,7 @@ pub fn decode_quick_loot_view_request(
     let (mut action, mut corpse, mut category, mut recipient, mut recipient_id, mut fallback) =
         (None, None, None, None, None, None);
     let (mut filter_mode, mut filter_definition_ref) = (None, None);
+    let mut selected_item = None;
     let mut raw_handle = None;
     let mut reference = |bytes: &[u8]| -> WireResult<[u8; 16]> {
         if let Ok(handle_bytes) = <[u8; 8]>::try_from(bytes) {
@@ -522,12 +530,14 @@ pub fn decode_quick_loot_view_request(
                 )?,
             ),
             (8, 0) => set_once(&mut filter_definition_ref, read_uint32(input, cursor)?),
+            (9, 2) => set_once(&mut selected_item, uuid(read_bytes(input, cursor)?)?),
             _ => malformed(),
         }
     })?;
     let result = QuickLootRequest {
         action: action.ok_or(QuickLootWireError::Malformed)?,
         corpse,
+        selected_item,
         category,
         recipient,
         recipient_id,
@@ -603,10 +613,11 @@ pub fn decode_quick_loot_result(payload: &[u8]) -> WireResult<QuickLootResult> {
 mod tests {
     use super::*;
     #[test]
-    fn requests_round_trip_and_reject_ambiguous_shapes() -> WireResult<()> {
+    fn corpse_only_click_round_trips_with_legacy_bytes() -> WireResult<()> {
         let r = QuickLootRequest {
             action: QuickLootAction::Click,
             corpse: Some([7; 16]),
+            selected_item: None,
             category: None,
             recipient: None,
             recipient_id: None,
@@ -614,11 +625,47 @@ mod tests {
             filter_mode: None,
             filter_definition_ref: None,
         };
-        let b = encode_quick_loot_request(&r)?;
-        assert_eq!(decode_quick_loot_request(&b), Ok(r));
+        let legacy = [&[0x08, 1, 0x12, 16][..], &[7; 16]].concat();
+        assert_eq!(encode_quick_loot_request(&r)?, legacy);
+        assert_eq!(decode_quick_loot_request(&legacy), Ok(r));
         let mut bad = r;
         bad.fallback_to_main = true;
         assert!(encode_quick_loot_request(&bad).is_err());
+        Ok(())
+    }
+    #[test]
+    fn selected_item_click_round_trips_and_rejects_invalid_shapes() -> WireResult<()> {
+        let fields = [&[0x08, 1, 0x12, 16][..], &[7; 16], &[0x4a, 16], &[8; 16]];
+        let bytes = fields.concat();
+        let request = decode_quick_loot_request(&bytes)?;
+        assert_eq!(request.action, QuickLootAction::Click);
+        assert_eq!(request.corpse, Some([7; 16]));
+        assert_eq!(request.selected_item, Some([8; 16]));
+        assert_eq!(encode_quick_loot_request(&request)?, bytes);
+
+        let mut duplicated = bytes.clone();
+        duplicated.extend_from_slice(&fields[2..].concat());
+        let no_corpse = [&[0x08, 1][..], fields[2], fields[3]].concat();
+        let loot_all = [&[0x08, 2][..], fields[2], fields[3]].concat();
+        for malformed in [
+            duplicated.as_slice(),
+            &no_corpse,
+            &loot_all,
+            &bytes[..bytes.len() - 1],
+        ] {
+            assert_eq!(
+                decode_quick_loot_request(malformed),
+                Err(QuickLootWireError::Malformed)
+            );
+        }
+        assert_eq!(
+            encode_quick_loot_request(&QuickLootRequest {
+                action: QuickLootAction::LootAll,
+                corpse: None,
+                ..request
+            }),
+            Err(QuickLootWireError::Malformed)
+        );
         Ok(())
     }
     #[test]
@@ -694,6 +741,7 @@ mod tests {
             let request = QuickLootRequest {
                 action,
                 corpse: None,
+                selected_item: None,
                 category: None,
                 recipient: None,
                 recipient_id: None,

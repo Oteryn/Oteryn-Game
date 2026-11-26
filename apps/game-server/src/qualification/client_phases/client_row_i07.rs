@@ -21,6 +21,7 @@ fn request(action: QuickLootAction) -> QuickLootRequest {
     QuickLootRequest {
         action,
         corpse: None,
+        selected_item: None,
         category: None,
         recipient: None,
         recipient_id: None,
