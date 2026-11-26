@@ -67,6 +67,7 @@ fn admitted_steps_are_sequenced_and_a_replayed_id_expires() -> Result<(), Box<dy
                 achievement_notice_revision: None,
                 selected_capabilities: SelectedCapabilities::NONE,
                 house_input_pending: None,
+                non_activity_session: None,
                 item_view: ItemViewContinuity::default(),
                 quest_log: QuestLogContinuity::FRESH,
                 look: LookWindow::EMPTY,
