@@ -141,6 +141,7 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
             return None;
         }
         let before = self.states.get(runtime, target, session)?;
+        let health_before = before.health;
         let (_, _, gate) = crate::spell::actor_conditions::stage_typed_hit_with_gate(
             runtime,
             target,
@@ -305,6 +306,18 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
             minor = evaluate_minor(self.states, runtime, source_health > 0);
             commit(self.states, runtime)?
         };
+        if native_bite {
+            self.states.sounds.record_damage(
+                runtime,
+                source,
+                target,
+                oteryn_gameplay_entities::OwnerDamageResult {
+                    applied: receipt.applied > 0,
+                    health_before: i64::from(health_before),
+                    health_after: i64::from(receipt.health_after),
+                },
+            );
+        }
         for (index, result) in reflected
             .iter()
             .enumerate()
