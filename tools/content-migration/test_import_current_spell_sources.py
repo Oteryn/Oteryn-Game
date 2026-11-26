@@ -2,7 +2,6 @@
 
 import copy
 import hashlib
-import importlib.util
 import json
 import tempfile
 import unittest
@@ -11,6 +10,7 @@ from unittest.mock import patch
 
 import import_current_spell_sources as current
 import import_spell_families as baseline
+import register_spell_families as registration
 
 
 class CurrentSourceImportTests(unittest.TestCase):
@@ -38,6 +38,12 @@ class CurrentSourceImportTests(unittest.TestCase):
             key = identity["key"], identity["revision"]
             self.assertEqual(identity, after["bundle"]["spell"]["identity"])
             self.assertEqual(before["catalog"], after["catalog"])
+            if identity["key"] == "candidate:spell/death_echo":
+                historical = before["bundle"]["spell"]["execution"]["native_behavior"]
+                imported = after["bundle"]["spell"]["execution"]["native_behavior"]
+                self.assertEqual(
+                    imported["parameters"]["area"], historical["parameters"]["area"]
+                )
             for section in ("abilities", "effects", "formulas"):
                 self.assertEqual(
                     sorted(
@@ -106,34 +112,32 @@ class CurrentSourceImportTests(unittest.TestCase):
                 / "tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
             ).read_bytes()
         )["profiles"]
-        catalog_builder = (
-            current.ROOT
-            / "tools/content-schema/spell-authoring/build_executable_catalog.py"
-        )
-        spec = importlib.util.spec_from_file_location(
-            "build_executable_catalog", catalog_builder
-        )
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
         by_name = {
             (row["bundle"]["spell"]["name"], row["bundle"]["spell"]["carrier"]): row
             for row in new["bundles"]
         }
+        registered = copy.deepcopy(new)
+        registration.apply_spell_catalog_registration(current.ROOT, registered)
+        registered_by_name = {
+            (row["bundle"]["spell"]["name"], row["bundle"]["spell"]["carrier"]): row
+            for row in registered["bundles"]
+        }
         self.assertEqual(len(native_profiles), 67)
         for profile in native_profiles:
-            qualified = by_name[(profile["name"], profile["carrier"])]
-            expected_spell = copy.deepcopy(profile["spell"])
+            key = profile["name"], profile["carrier"]
+            qualified = by_name[key]
+            imported_spell = qualified["bundle"]["spell"]
             if (
-                expected_spell["identity"]["key"]
+                imported_spell["identity"]["key"]
                 == "candidate:spell/rune/destroy_field_rune"
             ):
                 # PKG1R2: the raw donor still has range 5; the owner-approved
                 # Global profile removes that cap at final registration only.
-                self.assertNotIn("range_tiles", expected_spell["targeting"])
-                expected_spell["targeting"]["range_tiles"] = 5
-            registered_spell = copy.deepcopy(qualified["bundle"]["spell"])
-            module.apply_c18b_spell_policy(registered_spell)
-            self.assertEqual(registered_spell, expected_spell)
+                self.assertEqual(imported_spell["targeting"]["range_tiles"], 5)
+                self.assertNotIn("range_tiles", profile["spell"]["targeting"])
+            self.assertEqual(
+                registered_by_name[key]["bundle"]["spell"], profile["spell"], key
+            )
             self.assertEqual(qualified["dependencies"], profile["dependencies"])
         a = json.loads(self.generated[current.SELECTION])
         b = json.loads(actual[current.SELECTION])
