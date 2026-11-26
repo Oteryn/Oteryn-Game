@@ -9,11 +9,20 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[3]
 PHASES = ROOT / "apps/game-server/src/qualification/client_phases"
-CLIENT_ROW = re.compile(
-    r'e2e_row_selected\((\d+)\)\s*\{\s*verdict::indexed\("([A-Za-z0-9]+)\.client"'
+ROW = re.compile(
+    r'e2e_row_selected\((\d+)\)\s*\{\s*(?:verdict::indexed\("([A-Za-z0-9]+\.(?:full|client))"'
+    r'|(\w+::\w+)\(clients\))'
 )
+# These older indexed call sites invoke their reporters directly.
+LEGACY_REPORTERS = {
+    "full_e2ef19::run_packet": "S04b.full",
+    "full_e2ef18::run_packet": "C14.full",
+    "full_e2ef20::run_packet": "E02.full",
+    "client_row_c07::run_client_packet": "C07.client",
+}
 SERVER_ROW = re.compile(
-    r"^SEAM_EVIDENCE (e2e_all|e2e_capture) scenario=([A-Za-z0-9]+)\.client status=([A-Z-]+)\b"
+    r"^SEAM_EVIDENCE (e2e_all|e2e_capture) scenario=([A-Za-z0-9]+\.(?:full|client)) "
+    r"status=(PASS|FAIL|SKIPPED|MISSING-SERVER|MISSING-CLIENT|CAPTURED)(?:\s|$)"
 )
 PACKAGES = (
     "apps/client", "crates/session", "crates/client-ui", "crates/client-runtime",
@@ -38,10 +47,46 @@ def selected_rows(batch):
         selected = range(start, start + length)
     else:
         raise ValueError("invalid OTERYN_E2E_ROW_BATCH")
-    return [
-        row for index, row in CLIENT_ROW.findall((PHASES / "world.rs").read_text())
-        if int(index) in selected
-    ]
+    source = (PHASES / "world.rs").read_text()
+    rows = {
+        int(index): scenario or LEGACY_REPORTERS[reporter]
+        for index, scenario, reporter in ROW.findall(source)
+    }
+    if len(rows) != len(re.findall(r"e2e_row_selected\(\d+\)", source)):
+        raise RuntimeError("unmapped row selector")
+    return {scenario for index, scenario in rows.items() if index in selected}, set(rows.values())
+
+
+def read_verdicts(log):
+    verdicts = {}
+    for line in log.read_text(errors="replace").splitlines():
+        if match := SERVER_ROW.match(line):
+            kind, scenario, status = match.groups()
+            if kind == "e2e_capture" and (not scenario.endswith(".client") or status != "CAPTURED"):
+                continue
+            if kind == "e2e_all" and status == "CAPTURED":
+                continue
+            verdicts.setdefault(scenario, []).append((kind, status))
+    return verdicts
+
+
+def batch_failure(cause, scenario=None):
+    detail = f" scenario={scenario}" if scenario else ""
+    print(f"NODE_BOOT_ROW_BATCH=FAIL cause={cause}{detail}")
+    return 1
+
+
+def validate_rows(selected, registered, verdicts):
+    failed = 0
+    for scenario in sorted(selected):
+        count = len(verdicts.get(scenario, []))
+        if count != 1:
+            failed = batch_failure("missing-verdict" if count == 0 else "duplicate-verdict", scenario)
+    # A rows-only run has no other journey groups supplying indexed verdicts.
+    if os.environ.get("NODE_BOOT_E2E_ONLY", "").strip() == "rows":
+        for scenario in sorted((verdicts.keys() & registered) - selected):
+            failed = batch_failure("unexpected-verdict", scenario)
+    return failed
 
 
 def capture_names(row, source):
@@ -105,34 +150,41 @@ def replay_cause(row, package, test, names, captures, server, log):
     passed_test = re.search(rf"^test (?:\w+::)*{test} \.\.\. ok$", result.stdout, re.MULTILINE)
     if counts != [("1", "0")] or not passed_test:
         return "replay-failed"
-    if any(verdict not in {("e2e_all", "PASS"), ("e2e_capture", "CAPTURED")} for verdict in server):
+    if len(server) != 1 or server[0] not in {("e2e_all", "PASS"), ("e2e_capture", "CAPTURED")}:
         return "server-failed"
     return None
 
 
-def main(log, batch):
-    rows = selected_rows(batch)
-    captures = Path(os.environ["E2E_ALL_CAPTURE_DIR"])
-    server_rows = {}
-    for line in log.read_text(errors="replace").splitlines():
-        if match := SERVER_ROW.match(line):
-            kind, row, status = match.groups()
-            server_rows.setdefault(row, []).append((kind, status))
+def main(log, batch, validate=False):
+    try:
+        selected, registered = selected_rows(batch)
+    except ValueError:
+        return batch_failure("malformed-batch")
+    if not selected:
+        return batch_failure("empty-batch")
+    server_rows = read_verdicts(log)
+    if validate:
+        return validate_rows(selected, registered, server_rows)
 
+    rows = sorted(scenario for scenario in selected if scenario.endswith(".client"))
     if not rows:
         return 0
+    captures = Path(os.environ["E2E_ALL_CAPTURE_DIR"])
     targets = replay_targets()
     failed = False
-    for row in rows:
+    for scenario in rows:
+        row = scenario.removesuffix(".client")
         module = f"e2e_{row.lower()}"
         matches = targets.get(module, [])
         package, test, names = matches[0] if len(matches) == 1 else (None, module, set())
-        cause = replay_cause(row, package, test, names, captures, server_rows.get(row), log)
+        cause = replay_cause(row, package, test, names, captures, server_rows.get(scenario), log)
         verdict = f"FAIL cause={cause}" if cause else "PASS"
-        print(f"SEAM_EVIDENCE e2e_all scenario={row}.client replay={test} status={verdict}")
+        print(f"SEAM_EVIDENCE e2e_all scenario={scenario} replay={test} status={verdict}")
         failed |= cause is not None
     return int(failed)
 
 
 if __name__ == "__main__":
-    sys.exit(main(Path(sys.argv[1]), os.environ.get("OTERYN_E2E_ROW_BATCH")))
+    args = sys.argv[1:]
+    validate = args[0] == "--validate"
+    sys.exit(main(Path(args[-1]), os.environ.get("OTERYN_E2E_ROW_BATCH"), validate))
