@@ -175,7 +175,7 @@ at the path reported on stderr. It exits nonzero if any group fails. For a
 each selected client row's named replay against that directory. A client row
 requires successful server evidence and exactly one passing replay test. Its
 `SEAM_EVIDENCE` verdict names the replay and any failure cause. Node boot
-rejects a malformed or empty explicit row batch and requires exactly one
+rejects a malformed or empty row batch and requires exactly one
 server verdict for every selected scenario.
 
 Use `tools/qualification/node_boot/cloud_run.sh c19a` to run the starter

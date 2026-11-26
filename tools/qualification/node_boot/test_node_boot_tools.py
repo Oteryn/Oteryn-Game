@@ -763,6 +763,15 @@ class CloudRunSummaryTests(unittest.TestCase):
                     self.assertIn(f'NODE_BOOT_ROW_BATCH=FAIL cause={cause}', result.stdout)
                     self.assertIn('STAGE_STATUS=FAIL(row batch)', result.stdout)
 
+            for group, status in (('', 'FAIL(row batch)'), ('core', 'PASS')):
+                with self.subTest(group=group):
+                    result = bash('unset OTERYN_E2E_ROW_BATCH\n' + stage_test, env={
+                        'WORK': tmp, 'GAME_SOURCE': str(HERE.parents[2]),
+                        'NODE_BOOT_E2E_ONLY': group,
+                    })
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn(f'STAGE_STATUS={status}', result.stdout)
+
     def test_client_replay_verdicts(self):
         cases = [
             (False, 0, 1, 'PASS', 'FAIL cause=capture-missing', False),
