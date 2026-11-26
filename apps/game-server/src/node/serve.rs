@@ -4790,13 +4790,20 @@ assignment_epoch = 1
     }
 
     #[tokio::test]
-    async fn store_client_presents_the_configured_store_identity()
+    async fn store_catalogue_balance_presents_the_configured_store_identity()
     -> Result<(), Box<dyn std::error::Error>> {
-        use crate::native_admission_source::store::PENDING_PATH;
+        use crate::native_admission_source::store::BALANCE_PATH;
         use rcgen::{BasicConstraints, CertificateParams, CertifiedIssuer, IsCa, KeyPair};
         use std::sync::Arc;
         use tokio::io::{AsyncBufReadExt, BufReader};
 
+        let balance = include_str!(
+            "../../../../crates/gameplay/native-admission-source/tests/fixtures/store-wire-v1/balance-response.valid.json"
+        );
+        let expected: serde_json::Value = serde_json::from_str(balance)?;
+        let account = expected["account_id"].as_str().ok_or("fixture account")?;
+        // This fixture has no whitespace inside strings. Keep its contract member order.
+        let balance: String = balance.split_ascii_whitespace().collect();
         let mut ca_params = CertificateParams::new(Vec::<String>::new())?;
         ca_params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
         let ca = CertifiedIssuer::self_signed(ca_params, KeyPair::generate()?)?;
@@ -4840,7 +4847,6 @@ assignment_epoch = 1
         .expect("configured Store descriptor")
         .expect("Store enabled");
         let mut client = store_client(&descriptor);
-        let cursor = Default::default();
         let peer = async {
             let (socket, _) = listener.accept().await?;
             let tls = acceptor.accept(socket).await?;
@@ -4853,7 +4859,7 @@ assignment_epoch = 1
             let mut stream = BufReader::new(tls);
             let mut line = String::new();
             stream.read_line(&mut line).await?;
-            assert_eq!(line, format!("POST {PENDING_PATH} HTTP/1.1\r\n"));
+            assert_eq!(line, format!("POST {BALANCE_PATH} HTTP/1.1\r\n"));
             let mut length = None;
             loop {
                 line.clear();
@@ -4869,10 +4875,11 @@ assignment_epoch = 1
             }
             let mut body = vec![0; length.ok_or("missing Store request content length")?];
             stream.read_exact(&mut body).await?;
-            let page = r#"{"contract_version":1,"pending":[]}"#;
+            let request: serde_json::Value = serde_json::from_slice(&body)?;
+            assert_eq!(request["account_id"], account);
             let reply = format!(
-                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{page}",
-                page.len()
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{balance}",
+                balance.len()
             );
             stream.write_all(reply.as_bytes()).await?;
             stream.shutdown().await?;
@@ -4882,7 +4889,7 @@ assignment_epoch = 1
             tokio::try_join!(
                 async {
                     client
-                        .list_pending(&cursor)
+                        .balance(account)
                         .await
                         .map_err(|error| format!("{error:?}").into())
                 },
@@ -4890,7 +4897,12 @@ assignment_epoch = 1
             )
         })
         .await??;
-        assert!(page.entries.is_empty());
+        assert_eq!(page.account_id, account);
+        assert_eq!(page.balances.len(), 1);
+        assert_eq!(
+            page.balances[0].available,
+            expected["balances"][0]["available"]
+        );
         Ok(())
     }
 
