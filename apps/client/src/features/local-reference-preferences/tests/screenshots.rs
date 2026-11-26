@@ -196,6 +196,62 @@ fn screenshot_backlog_and_death_trigger_follow_server_vitals()
 }
 
 #[test]
+fn paired_gift_of_life_rearms_low_health_screenshot() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::{
+        ActorCooldownUpdate, ActorCooldowns, ActorVitals, AppliedDelta, SessionEvent,
+    };
+    use std::time::Instant;
+
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let mut state = SettingsState::new(None);
+    let mut preferences = state.preferences.clone();
+    preferences.screenshots.folder = fixture.path().to_string_lossy().into_owned();
+    preferences.screenshots.on_low_health = true;
+    state.apply(preferences);
+    let (link, _, outbox) = crate::play::play_channel();
+    let mut source = Source(Vec::new());
+    let now = Instant::now();
+    let mut capture_count = || -> std::io::Result<usize> {
+        Ok(state.process_screenshots(now, Some(&link), &mut source)?.len())
+    };
+    let vitals = |server_sequence, revision, health| AppliedDelta {
+        server_sequence,
+        base_revision: revision - 1,
+        new_revision: revision,
+        value: ActorVitals {
+            health,
+            max_health: 100,
+            ..Default::default()
+        },
+    };
+    outbox.push(vec![SessionEvent::ActorVitals(vitals(1, 1, 30))]);
+    assert_eq!(capture_count()?, 0);
+    outbox.push(vec![SessionEvent::ActorVitals(vitals(2, 2, 3))]);
+    assert_eq!(capture_count()?, 1);
+    outbox.push(vec![SessionEvent::GiftOfLife {
+        cooldowns: AppliedDelta {
+            server_sequence: 3,
+            base_revision: 0,
+            new_revision: 1,
+            value: ActorCooldownUpdate {
+                value: ActorCooldowns {
+                    server_now_ms: 0,
+                    rtt_ms: None,
+                    entries: vec![],
+                },
+                received_at: now,
+                snapshot: false,
+            },
+        },
+        vitals: vitals(4, 3, 20),
+    }]);
+    assert_eq!(capture_count()?, 0);
+    outbox.push(vec![SessionEvent::ActorVitals(vitals(5, 4, 3))]);
+    assert_eq!(capture_count()?, 1);
+    Ok(())
+}
+
+#[test]
 fn screenshot_editors_reconcile_destinations_and_independent_backlog_modes() {
     use crate::play::ScreenshotPreferences;
     let original = ScreenshotPreferences {

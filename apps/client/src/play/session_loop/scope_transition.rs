@@ -1,19 +1,6 @@
 //! The scope barrier a session error crosses: reset the source scope and publish the destination.
 use super::{Outbox, Stepper, publish};
 
-pub(super) fn initialize<T: Stepper>(
-    session: &T,
-    outbox: &Outbox,
-) -> Result<(), oteryn_session::SessionError> {
-    super::super::session_initialize::initialize(session, outbox)?;
-    outbox.cast_control_initialize(session.server_mechanic_selected(290));
-    outbox.cast_consent_initialize(session.server_mechanic_selected(292));
-    outbox.cast_chat_initialize(
-        session.server_mechanic_selected(290) && session.server_mechanic_selected(291),
-    );
-    Ok(())
-}
-
 pub(super) fn publish_scope_transition<T: Stepper>(
     error: &oteryn_session::SessionError,
     session: &mut T,
