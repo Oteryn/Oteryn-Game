@@ -415,7 +415,7 @@ class ReuseTests(unittest.TestCase):
     def test_kept_or_reused_stack_never_reports_a_pass(self):
         self.assertIn('STATUS[stack_kept]="SKIP(shutdown and restart stages not run)"', RUN_TEXT)
         self.assertIn('result=NODE_BOOT_PARTIAL\n  exit 3', RUN_TEXT)
-        self.assertIn('"$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then\n  NODE_BOOT_WORLD=0 bash', RUN_TEXT)
+        self.assertIn('"$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then\n  env -u OTERYN_E2E_ROW_BATCH -u NODE_BOOT_E2E_ONLY NODE_BOOT_WORLD=0 bash', RUN_TEXT)
 
 
 class SeamPassThroughTests(unittest.TestCase):
