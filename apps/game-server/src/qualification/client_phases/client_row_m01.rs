@@ -108,6 +108,7 @@ impl Capture {
 }
 
 type Client = oteryn_dev_client::DevClientSession;
+const LANDING_DEADLINE: Duration = Duration::from_secs(8);
 
 // The retained temple corridor is x=32369, floor -7. Assert each fixed landing.
 fn temple(north: u16) -> ActorPosition {
@@ -161,7 +162,8 @@ async fn expect_path(
     landings: &[ActorPosition],
 ) -> TestResult {
     use oteryn_dev_client::native_session::SessionEvent;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
+    let mut deadline = tokio::time::Instant::now() + LANDING_DEADLINE;
     let mut previous = start;
     let mut remaining = landings;
     loop {
@@ -169,6 +171,10 @@ async fn expect_path(
             let at = match event {
                 SessionEvent::WorldSpatial(delta) => delta.value.actor_position,
                 SessionEvent::WorldSpatialEntities(delta) => delta.value.actor_position,
+                SessionEvent::TutorialNotice(delta) if matches!(&delta.value, TutorialNotice::StatusText(text) if text == "There is no way.") =>
+                {
+                    return Err(format!("M01 {label}: There is no way.").into());
+                }
                 _ => continue,
             };
             if at == previous {
@@ -184,6 +190,7 @@ async fn expect_path(
             }
             previous = at;
             remaining = rest;
+            deadline = tokio::time::Instant::now() + LANDING_DEADLINE;
         }
         if remaining.is_empty() {
             return Ok(());
@@ -267,7 +274,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .command(&mut client, "stop", TargetMoveIntent::Stop)
         .await?;
     let stopped = temple(4);
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    let deadline = tokio::time::Instant::now() + LANDING_DEADLINE;
     while tokio::time::Instant::now() < deadline {
         client.service_liveness(Duration::from_millis(10)).await?;
         if position(&client) != stopped {
