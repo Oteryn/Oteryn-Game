@@ -42,16 +42,23 @@ class RewardGreetingOwnership(unittest.TestCase):
             for name in CALLBACK_DOCUMENTS
             for callback in json.loads((ROOT / name).read_bytes())["callbacks"]
         ]
-        # Muhad's Nomads Land dialogue has its own greeting document.
-        nomads = json.loads(
-            (ROOT / "content/quests/npc-callbacks/nomads-land.json").read_bytes()
-        )
-        (arito_referral,) = [
-            callback for callback in nomads["callbacks"]
-            if callback["key"] == "oteryn:quest-reward/nomads-land-arito-referral"
-        ]
-        cls.callbacks.append(arito_referral)
         cls.inputs = qengine_rewards.donor_inputs()
+
+    def test_arito_keeps_his_greeting_while_the_referral_is_disabled(self):
+        callbacks = json.loads(
+            (ROOT / "content/quests/npc-callbacks/nomads-land.json").read_bytes()
+        )["callbacks"]
+        offers = json.loads(
+            (ROOT / "content/quests/npc-offers/nomads-land.json").read_bytes()
+        )["offers"]
+        self.assertNotIn("oteryn:npc.arito", [row["npc"] for row in callbacks + offers])
+        (greeting,) = [
+            row for row in qengine_rewards.reward_greetings(self.callbacks, self.inputs)
+            if row["npc"] == "oteryn:npc.arito"
+        ]
+        self.assertEqual(greeting["greet"], "Greetings, |PLAYERNAME|.")
+        self.assertEqual(greeting["farewell"], "Do visit us again.")
+        self.assertEqual(greeting["walkaway"], "Do visit us again.")
 
     def test_actual_native_registry_has_one_row_per_npc(self):
         seen = {}

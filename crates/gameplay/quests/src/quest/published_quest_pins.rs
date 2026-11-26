@@ -694,6 +694,11 @@ const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
             b"8d75517e41359a25abea653c8fd44fa5b4d2768c1470d9acaa9442b73f543065",
         )],
     ),
+    (
+        "oteryn:quest.tibia_tales",
+        TIBIA_TALES_WITHOUT_ARITO_REFERRAL,
+        &[TIBIA_TALES_TRAIN_SUCCESSOR],
+    ),
     // The native crypt and parcel extensions preserve saves from 3e0991642.
     (
         "oteryn:quest.too_hot_to_handle_quest",
@@ -772,6 +777,8 @@ pub(super) const BROTHERHOOD_BEFORE_DREAD_LORD: DefinitionHash =
 // The pkq2 Tibia Tales and Cursed Crystal source cohorts extend this successor.
 const TIBIA_TALES_TRAIN_SUCCESSOR: DefinitionHash =
     hash(b"08ddd97de427afb52741eacdef7781de95f438f5a86a88915d484b447e885db7");
+const TIBIA_TALES_WITHOUT_ARITO_REFERRAL: DefinitionHash =
+    hash(b"3e47096ea96ec29008c3666724672aeea3489bcd8e02ce3131c5be0a2837f05f");
 
 // Exact successors captured from the integrated production loader. The unit
 // hashes remain valid predecessors for their own quest.
@@ -845,7 +852,10 @@ fn is_content_train_successor(
 
 fn is_successor(quest: &str, current: DefinitionHash, active: Option<DefinitionHash>) -> bool {
     active == Some(current)
-        || (quest == "oteryn:quest.tibia_tales" && active == Some(TIBIA_TALES_TRAIN_SUCCESSOR))
+        || (quest == "oteryn:quest.tibia_tales"
+            && (active == Some(TIBIA_TALES_WITHOUT_ARITO_REFERRAL)
+                || (current != TIBIA_TALES_WITHOUT_ARITO_REFERRAL
+                    && active == Some(TIBIA_TALES_TRAIN_SUCCESSOR))))
         || is_content_train_successor(quest, current, active)
 }
 
@@ -892,13 +902,26 @@ mod tests {
         let mut catalogue = loaded.catalogue().clone();
         let quest = "oteryn:quest.tibia_tales";
         let main = hash(b"8d75517e41359a25abea653c8fd44fa5b4d2768c1470d9acaa9442b73f543065");
-        for (successor, accepted) in [(TIBIA_TALES_TRAIN_SUCCESSOR, true), ([0x5a; 32], false)] {
+        assert_eq!(
+            catalogue.definition_hash(quest),
+            Some(TIBIA_TALES_WITHOUT_ARITO_REFERRAL)
+        );
+        for (successor, accepted) in [
+            (TIBIA_TALES_TRAIN_SUCCESSOR, true),
+            (TIBIA_TALES_WITHOUT_ARITO_REFERRAL, true),
+            ([0x5a; 32], false),
+        ] {
             catalogue.predecessors.remove(quest);
             catalogue.hashes.insert(quest.into(), successor);
             retain_predecessors(&mut catalogue);
             assert_eq!(
                 npc_rules::legacy_defaults(&catalogue, quest, &main).is_some(),
                 accepted
+            );
+            assert_eq!(
+                npc_rules::legacy_defaults(&catalogue, quest, &TIBIA_TALES_TRAIN_SUCCESSOR)
+                    .is_some(),
+                successor == TIBIA_TALES_WITHOUT_ARITO_REFERRAL
             );
         }
         Ok(())

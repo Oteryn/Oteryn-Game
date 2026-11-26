@@ -3,6 +3,8 @@ use super::*;
 use crate::durability::reward_claim_mint::{
     QuestCarriedUse, quest_creature::QuestCreatureUseProof,
 };
+use crate::durability::spell_owner_commit::SpellLanePermit;
+use crate::foundation::{ChannelId, RuntimeScopeRefV1};
 use oteryn_gameplay_content::content::{
     NativeEntryContentPin, native_gameplay::NativeGameplayState,
 };
@@ -121,14 +123,18 @@ pub(super) async fn sample(
         )),
         use_with_position: None,
     };
+    let permit = SpellLanePermit::of_fresh_scope(initial.runtime_scope)
+        .await
+        .map_err(f::debug)?;
     let apply = |body, command| {
         let callback = callback.clone();
         let catalogue = catalogue.clone();
         let runtime = &runtime;
         let intent = &intent;
+        let permit = &permit;
         async move {
             let proof = QuestCreatureUseProof::read_current_corpse(
-                runtime, actor, initial, command, &callback, intent, body,
+                runtime, actor, initial, command, &callback, intent, body, permit,
             )
             .ok_or("corpse proof")?;
             let carried = QuestCarriedUse {
@@ -256,16 +262,20 @@ pub(super) async fn explorer_sample(
         source,
         intent: encode_item_use_intent(&intent).map_err(f::debug)?,
     };
+    let lane = SpellLanePermit::of_fresh_scope(fence.runtime_scope)
+        .await
+        .map_err(f::debug)?;
     let apply = |body, ordinal| {
         let callback = callback.clone();
         let catalogue = catalogue.clone();
         let intent = &intent;
         let runtime = &runtime;
         let carried = &carried;
+        let permit = &lane;
         async move {
             let command = command(ordinal)?;
             let proof = QuestCreatureUseProof::read_current_corpse(
-                runtime, actor, fence, command, &callback, intent, body,
+                runtime, actor, fence, command, &callback, intent, body, permit,
             ).ok_or("corpse proof")?;
             let weights = Weights(native);
             h.root.commit_fixture_quest_reward(
@@ -291,13 +301,19 @@ pub(super) async fn explorer_sample(
              LEFT JOIN game_item_corpse_container_entries c USING(item_instance_id)
              LEFT JOIN game_item_nested_entries n USING(item_instance_id)
              WHERE item_instance_id IN (encode($1,'hex')::uuid, encode($2,'hex')::uuid,
-                                        encode($3,'hex')::uuid, encode($4,'hex')::uuid)
+                                        encode($3,'hex')::uuid, encode($4,'hex')::uuid,
+                                        encode($5,'hex')::uuid)
              ORDER BY item_instance_id",
-        ).bind(protected[0].as_slice()).bind(protected[1].as_slice())
-         .bind(protected[2].as_slice()).bind(source.to_vec()).fetch_all(&h.pool)
+        )
+        .bind(protected[0].as_slice())
+        .bind(protected[1].as_slice())
+        .bind(protected[2].as_slice())
+        .bind(source.as_slice())
+        .bind(body.as_slice())
+        .fetch_all(&h.pool)
     };
     let before = snapshot().await?;
-    assert_eq!(before.len(), 4, "body, nested loot and carried tool are present");
+    assert_eq!(before.len(), 5, "both bodies, nested loot and carried tool are present");
     let fresh: bool = sqlx::query_scalar(
         "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint < materialized_at + 10000
          FROM game_item_mint_receipts WHERE item_instance_id=encode($1,'hex')::uuid",
@@ -318,12 +334,37 @@ pub(super) async fn explorer_sample(
          FROM game_spell_field_temporal_schedules WHERE item_instance_id=encode($1,'hex')::uuid AND source_stage=1",
     ).bind(body.as_slice()).fetch_one(&h.pool).await?;
     tokio::time::sleep(std::time::Duration::from_millis(wait_ms.try_into()?)).await;
-    let lane = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(fence.runtime_scope)
-        .await.map_err(f::debug)?;
     assert_eq!(h.root.drain_spell_item_deadlines(
         &lane, authority, &h.node, fence.runtime_scope, fence.scope_ownership_generation.get(),
     ).await.map_err(f::debug)?, 2);
-    drop(lane);
+    let wrong_scope = RuntimeScopeRefV1::channel(
+        fence.runtime_scope.world_id(),
+        ChannelId::decode(&f::id(88)).map_err(f::debug)?,
+    );
+    let wrong = SpellLanePermit::of_fresh_scope(wrong_scope)
+        .await
+        .map_err(f::debug)?;
+    let before = snapshot().await?;
+    assert!(
+        QuestCreatureUseProof::read_current_corpse(
+            &runtime,
+            actor,
+            fence,
+            command(9701)?,
+            &callback,
+            &intent,
+            body,
+            &wrong,
+        )
+        .is_none(),
+        "wrong scope must be refused before commit"
+    );
+    assert_eq!(
+        snapshot().await?,
+        before,
+        "refusal preserves corpse and tool custody"
+    );
+
     let result = apply(body, 9701).await?;
     assert!(matches!(result, QuestTransitionOutcome::Committed(_)), "{result:?}");
     let after: (i16, i64, bool) = sqlx::query_as(

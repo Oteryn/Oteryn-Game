@@ -86,7 +86,7 @@ def reward_greetings(callbacks, inputs, *, root=None):
 
     greetings = []
     npcs = {c["npc"] for c in callbacks} | {
-        "oteryn:npc." + npc for npc in ("alesar", "yaman", "haroun", "nah_bob")
+        "oteryn:npc." + npc for npc in ("alesar", "yaman", "haroun", "nah_bob", "arito")
     }
     for npc in sorted(npcs - owners.keys()):
         path = "data-global/npc/" + npc.removeprefix("oteryn:npc.") + ".lua"
@@ -940,45 +940,6 @@ def build():
                 "storage": [storage("oteryn:quest-progress/navigator", -1, 4, 0)],
             }
         )
-    # The death list is evidence for Arito's referral and stays in carried custody.
-    arito_path = "data-global/npc/arito.lua"
-    arito_lines = inputs[arito_path].decode().splitlines()
-    arito_offer = arito_lines[72:81]
-    arito_referral = arito_lines[82:96]
-    death_list = int(re.search(r"player:getItemCount\((\d+)\)", "\n".join(arito_offer))[1])
-    task = prefix + "u8_1/tibia_tales/aritos_task"
-    start = prefix + "u8_1/tibia_tales/default_start"
-    add(
-        "nomads-land-arito-referral",
-        "tibia_tales",
-        "arito",
-        [re.search(r'MsgContains\(message, "(\w+)"\)', arito_referral[0])[1]],
-        [storage(task, 0, 1), storage(start, 0, 1, 1)],
-        topic=1,
-        present=[(death_list, 1)],
-    )
-    referral_lines = [line.strip()[1:-2] for line in arito_referral if line.strip().startswith('"')]
-    # Keep the referral and describe the cave's current state.
-    callbacks[-1]["reply"] = [
-        referral_lines[0],
-        referral_lines[1].split(" Please go", 1)[0],
-        "The entrance is sealed.",
-    ]
-    callbacks[-1]["sources"] = [
-        f"crystal:{PIN}:{arito_path}:71-96:sha256:{sha(inputs[arito_path])}"
-    ]
-    arito_callback = callbacks.pop()
-    arito_prompt = {
-        "npc": "oteryn:npc.arito",
-        "keywords": [re.search(r'MsgContains\(message, "(\w+)"\)', arito_offer[1])[1]],
-        "topic": 0,
-        "next_topic": 1,
-        "storage": [storage(task, 0, 0, preserve=True)],
-        "inventory": [
-            {"item": f"oteryn:item.tibia.i{death_list}", "minimum": 1, "maximum": 4294967295}
-        ],
-        "reply": [line.strip()[1:-2] for line in arito_offer if line.strip().startswith('"')],
-    }
     # L1: keep parent QuestState ownership for shared prerequisite tracks.
     frontier = prefix + "u8_54/the_new_frontier/"
     yalahar = prefix + "u8_4/in_service_of_yalahar/"
@@ -3961,16 +3922,17 @@ def build():
             ],
         }
     )
-    for kind, field, row, identity in (
-        ("callbacks", "callbacks", arito_callback, "key"),
-        ("offers", "offers", arito_prompt, "npc"),
+    # The sealed cave has no route to Muhad. Suppress the referral and its prompt.
+    for kind, identity, disabled in (
+        ("callbacks", "key", "oteryn:quest-reward/nomads-land-arito-referral"),
+        ("offers", "npc", "oteryn:npc.arito"),
     ):
         path = f"content/quests/npc-{kind}/nomads-land.json"
         document = json.loads((ROOT / path).read_bytes())
-        document[field] = [
-            existing for existing in document[field] if existing[identity] != row[identity]
-        ] + [row]
-        if field == "callbacks":
+        document[kind] = [
+            row for row in document[kind] if row[identity] != disabled
+        ]
+        if kind == "callbacks":
             validate_callbacks(document)
         generated[path] = encoded(document)
     generated.update(elane_gloves(inputs))
@@ -3980,8 +3942,7 @@ def build():
         + m39_callbacks
         + ready_callbacks
         + l13_callbacks
-        + programme_callbacks
-        + [arito_callback],
+        + programme_callbacks,
         inputs,
     )
     generated["content/dialogues/quests/shared-reward-greetings.json"] = encoded(

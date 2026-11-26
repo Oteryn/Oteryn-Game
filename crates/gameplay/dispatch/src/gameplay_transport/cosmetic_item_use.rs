@@ -877,6 +877,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &callback,
                     intent,
                     corpse,
+                    &permit,
                 )
             } else if let Some(operand) = corpse_operand {
                 QuestCreatureUseProof::read_corpse(

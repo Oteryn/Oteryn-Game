@@ -2,69 +2,57 @@
 use oteryn_gameplay_quests::quest::{loader::load_embedded_quest_state, reward_callbacks};
 use std::collections::BTreeMap;
 
+const TASK: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task";
+
 #[test]
-fn arito_referral_unlocks_muhad_assignment_from_initial_progress() -> Result<(), String> {
-    const TASK: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task";
-    const START: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/default_start";
+fn no_reward_dialogue_starts_aritos_task_while_the_cave_is_sealed() -> Result<(), String> {
     let loaded =
         load_embedded_quest_state("nomads-referral").map_err(|error| format!("{error:?}"))?;
     let catalogue = loaded.catalogue();
-    let callbacks = reward_callbacks::offered_for(catalogue)?;
-    let referral = callbacks
-        .iter()
-        .find(|row| row.key == "oteryn:quest-reward/nomads-land-arito-referral")
-        .ok_or("Arito has no published referral from fresh progress")?;
-    assert_eq!(referral.npc, "oteryn:npc.arito");
-    let [death_list] = referral.present.as_slice() else {
-        return Err("Arito must require exactly one item of evidence".into());
-    };
-    assert_eq!(death_list.item, "oteryn:item.tibia.i7533");
-    assert_eq!(death_list.count, 1);
-    assert!(referral.take.is_empty());
-
-    let mut tracks = BTreeMap::new();
-    let transition = catalogue
-        .transition(&referral.key)
-        .ok_or("referral transition")?;
-    let writes = catalogue
-        .evaluate(transition, &tracks, 0)
-        .map_err(|error| format!("{error:?}"))?;
-    tracks.extend(writes.into_iter().map(|write| (write.track, write.after)));
-    assert_eq!(tracks.get(TASK), Some(&1));
-    assert_eq!(tracks.get(START), Some(&1));
-    assert!(catalogue.evaluate(transition, &tracks, 0).is_err());
-
-    let assignment = catalogue
-        .transition("oteryn:quest-reward/nomads-land-assignment")
-        .ok_or("Muhad assignment transition")?;
-    let writes = catalogue
-        .evaluate(assignment, &tracks, 0)
-        .map_err(|error| format!("{error:?}"))?;
     assert!(
-        writes
-            .iter()
-            .any(|write| write.track == TASK && write.after == 2)
+        catalogue
+            .transition("oteryn:quest-reward/nomads-land-arito-referral")
+            .is_none()
     );
+    let callbacks = reward_callbacks::offered_for(catalogue)?;
+    for callback in callbacks {
+        assert!(
+            callback.storage.iter().all(|write| write.track != TASK
+                || write.preserve
+                || !(write.minimum..=write.maximum).contains(&0)),
+            "{} can advance Arito's Task from fresh progress",
+            callback.key
+        );
+    }
     Ok(())
 }
 
 #[test]
-fn arito_reports_the_sealed_cave() -> Result<(), String> {
-    let catalogue = load_embedded_quest_state("nomads-sealed-entrance")
+fn aritos_journal_starts_after_the_blocked_negotiation() -> Result<(), String> {
+    use oteryn_gameplay_quests::quest::log::{QuestJournal, loader::load_embedded_quest_log};
+
+    let state = load_embedded_quest_state("nomads-sealed-entrance")
         .map_err(|error| format!("{error:?}"))?;
-    let referral = reward_callbacks::offered_for(catalogue.catalogue())?
-        .into_iter()
-        .find(|row| row.key == "oteryn:quest-reward/nomads-land-arito-referral")
-        .ok_or("Arito referral")?;
-    let reply = referral.reply.join(" ").to_ascii_lowercase();
-    assert!(reply.contains("the entrance is sealed"));
-    assert!(!reply.contains("will be revealed"));
+    let log = load_embedded_quest_log(&state)?;
+    let mission = log
+        .content
+        .active()
+        .quests()
+        .iter()
+        .find(|quest| quest.key == "oteryn:quest.tibia_tales")
+        .and_then(|quest| quest.missions.iter().find(|mission| mission.track == TASK))
+        .ok_or("Arito's Task journal")?;
+    assert_eq!((mission.start_value, mission.end_value), (2, 3));
+    let QuestJournal::PerStage(stages) = &mission.journal else {
+        return Err("Arito's Task must keep the journals for later stages".into());
+    };
+    assert_eq!(stages.keys().copied().collect::<Vec<_>>(), [2, 3]);
     Ok(())
 }
 
 #[test]
-fn muhad_assignment_requires_aritos_referral_and_grants_hideout_access() -> Result<(), String> {
-    const TASK: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task";
+fn muhad_assignment_requires_aritos_prior_progress_and_grants_hideout_access() -> Result<(), String>
+{
     const DOOR: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task_door";
     let loaded =
         load_embedded_quest_state("nomads-assignment").map_err(|error| format!("{error:?}"))?;
@@ -257,7 +245,6 @@ fn nomads_keeps_existing_tibia_tales_and_window_progress_writable() -> Result<()
 fn nomads_cabinet_accepts_completed_arito_without_reissuing_rewards() -> Result<(), String> {
     use oteryn_gameplay_quests::quest::QuestRefusal;
 
-    const TASK: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task";
     const CLAIMED: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/nomads_land_cabinet";
     const CALLBACK: &str = "oteryn:quest-callback/nomads-land-sacred-casket-cabinet";
     let loaded =

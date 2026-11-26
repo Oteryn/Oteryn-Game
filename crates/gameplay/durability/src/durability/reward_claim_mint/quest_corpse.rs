@@ -5,11 +5,13 @@ use crate::durability::{
     DurabilityError,
     character_progression::CurrentCharacterGameplayFence,
     quest_state::{QuestCause, QuestTransitionRequest},
+    spell_owner_commit::SpellLanePermit,
 };
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
 use sqlx::Row;
 
+#[allow(clippy::too_many_arguments)]
 pub(super) async fn record(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: CurrentCharacterGameplayFence,
@@ -17,12 +19,14 @@ pub(super) async fn record(
     callback: &RewardCallback,
     carried: &QuestCarriedUse,
     proof: &QuestCreatureUseProof<'_>,
+    permit: &SpellLanePermit,
     native: &NativeGameplayState,
 ) -> Result<bool, DurabilityError> {
     let Some(spec) = &callback.corpse_target else {
         return Ok(true);
     };
-    let Some((corpse, position)) = proof.corpse() else {
+    permit.check_scope(fence.runtime_scope)?;
+    let Some((corpse, position, _)) = proof.corpse() else {
         return Ok(false);
     };
     let Some(species) = &callback.creature_target else {

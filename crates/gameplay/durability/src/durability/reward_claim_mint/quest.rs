@@ -557,6 +557,9 @@ pub(crate) async fn apply(
         let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else {
             return Ok(false);
         };
+        let Some((_, _, permit)) = proof.corpse() else {
+            return Ok(false);
+        };
         if !super::quest_corpse::record(
             tx,
             fence,
@@ -564,6 +567,7 @@ pub(crate) async fn apply(
             callback,
             carried,
             proof,
+            permit,
             admission.native,
         )
         .await?
