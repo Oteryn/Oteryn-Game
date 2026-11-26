@@ -134,6 +134,7 @@ pub(super) async fn handle_replay(
                 use_with_position: None,
             },
             None,
+            None,
         )
         .await
         .map_err(|_| "known receipt became unknown")?
@@ -242,6 +243,7 @@ pub(super) async fn concurrent(
             },
             intent.clone(),
             Some(ItemKey::Instance(id(110))),
+            None,
         )
     };
     let mut first = std::pin::pin!(attempt(1));
