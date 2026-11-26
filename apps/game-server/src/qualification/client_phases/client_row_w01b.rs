@@ -327,7 +327,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         corpse.position.floor,
         spawn.x,
         spawn.y,
-        spawn.floor,
+        // TilePos uses native negative floors. The replay compares ActorPosition wire floors.
+        -i16::from(spawn.floor),
         hex(&replacement.entity.identity),
         replacement.entity.generation,
         replacement.position.x,
