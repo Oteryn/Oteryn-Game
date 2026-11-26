@@ -58,7 +58,7 @@ mod e2e_e03;
 mod e2e_i06;
 #[path = "tests/e2e_i08.rs"]
 mod e2e_i08;
-#[path = "tests/e2e_i09.rs"]
+#[path = "tests/e2e_i09_tests.rs"]
 mod e2e_i09;
 #[path = "tests/e2e_i12.rs"]
 mod e2e_i12;
