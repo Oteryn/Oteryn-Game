@@ -9,6 +9,7 @@
 //! decimal forge_stacks, separated by spaces, followed by a newline.
 
 use super::{appearance_session_tests::appearance_fixture, replay_input::*, *};
+use crate::appearance_state::AppearanceUpdate;
 use oteryn_protocol_oteryn::appearance;
 use replay_capture::P19_FILES;
 
@@ -23,6 +24,31 @@ fn e2e_p19_forge_marker_replay() -> Result<(), BoxError> {
 
 async fn replay_forge() -> Result<(), BoxError> {
     let fixture = forge_fixture()?;
+    let mut delayed = forge_fixture()?;
+    let reframe = |frame: &[u8], sequence| -> Result<Vec<u8>, BoxError> {
+        let envelope = decode_wire_envelope(frame)?;
+        let delta = decode_state_delta(envelope.payload())?;
+        Ok(encode_state_delta(
+            1,
+            sequence,
+            delta.domain_id,
+            delta.base_revision,
+            delta.new_revision,
+            delta.delta_type,
+            delta.payload,
+        )?)
+    };
+    delayed.deltas = vec![
+        reframe(&fixture.deltas[1], 41)?,
+        reframe(&fixture.deltas[0], 43)?,
+    ];
+    let rejected = assert_forge(&delayed, &mut delayed.admit().await?)
+        .expect_err("a marker published after spatial entry must fail replay");
+    assert_eq!(
+        rejected.to_string(),
+        "P19 spatial entry preceded its exact marker"
+    );
+
     let mut session = fixture.admit().await?;
     let corrupt = encode_state_delta(1, 41, APPEARANCE, 1, 2, 1, &[0])?;
     assert!(matches!(
@@ -61,7 +87,40 @@ async fn replay_forge() -> Result<(), BoxError> {
 }
 
 fn assert_forge(input: &ReplayInput, session: &mut Session<DuplexStream>) -> Result<(), BoxError> {
-    input.apply(session)?;
+    let mut stacks = None;
+    let mut entered = false;
+    for event in input.apply(session)? {
+        match event {
+            SessionEvent::Appearance(delta) => {
+                if let AppearanceUpdate::Mappings(mappings) = delta.value
+                    && let Some(binding) = mappings
+                        .upserts
+                        .iter()
+                        .find(|entry| entry.entity == input.entity)
+                {
+                    stacks = binding.forge_stacks;
+                    assert_eq!(stacks, Some(input.expected));
+                }
+            }
+            SessionEvent::WorldSpatialEntities(delta)
+                if delta
+                    .value
+                    .enter
+                    .iter()
+                    .any(|entry| entry.entity == input.entity) =>
+            {
+                if stacks != Some(input.expected) {
+                    return Err("P19 spatial entry preceded its exact marker".into());
+                }
+                entered = true;
+            }
+            _ => {}
+        }
+    }
+    assert!(
+        entered,
+        "P19 exact creature never entered spatial visibility"
+    );
     let entry = session
         .visible_appearances()
         .into_iter()
