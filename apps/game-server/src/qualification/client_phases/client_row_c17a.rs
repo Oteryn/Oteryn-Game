@@ -41,6 +41,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     character_prep::grant_premium(&client).await?;
+    require_current_premium(&mut client, "before_relog").await?;
     logout(&mut client).await?;
     drop(client);
     wait_character_released(clients, 0).await?;
@@ -68,7 +69,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .spoken("utani gran hur")
         .ok_or("C17a Strong Haste absent")?
         .spell;
-    full_e2ef7::require_current_light_premium(&mut client).await?;
+    // As in W19d, the last-session logout releases current proof.
+    // Provision Premium on the consuming admission before either cast.
+    character_prep::grant_premium(&client).await?;
+    require_current_premium(&mut client, "after_relog").await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    loop {
+        if client
+            .session_mut()
+            .spell_catalog()?
+            .is_some_and(|catalog| {
+                ["utani hur", "utani gran hur"].iter().all(|words| {
+                    catalog
+                        .entries
+                        .iter()
+                        .any(|entry| entry.words == *words && entry.available)
+                })
+            })
+        {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C17a current Premium did not reach the live spell catalog".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+    }
     full_e2ef5::prepare_spell_access(&mut client, strong_spell).await?;
     let (before, _) = query_conditions(&mut client).await?;
     if before
@@ -121,6 +146,38 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "C17A_CAPTURE session={} haste_sequence={haste_sequence} strong_sequence={strong_sequence}",
         uuid_text(cast_session.as_bytes())
     ));
+    Ok(())
+}
+
+async fn require_current_premium(
+    client: &mut oteryn_dev_client::DevClientSession,
+    phase: &str,
+) -> TestResult {
+    use oteryn_protocol_oteryn::{character_info, premium_overview};
+    let reply = client
+        .session_mut()
+        .gated_command(
+            character_info::CAPABILITY_CHARACTER_INFO_V1,
+            character_info::COMMAND_TYPE_CHARACTER_INFO,
+            &[premium_overview::OPERATION],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!(
+            "C17a Premium query refused phase={phase}: {:?}",
+            reply.status
+        )
+        .into());
+    }
+    let overview = premium_overview::Overview::decode(&reply.payload)
+        .ok_or("C17a malformed Premium overview")?;
+    evidence(&format!(
+        "C17A_PREMIUM phase={phase} state={:?} valid_for_us={} authority_revision={}",
+        overview.state, overview.valid_for_us, overview.authority_revision
+    ));
+    if overview.state != premium_overview::State::Active || overview.valid_for_us == 0 {
+        return Err(format!("C17a Premium is not current phase={phase}").into());
+    }
     Ok(())
 }
 
