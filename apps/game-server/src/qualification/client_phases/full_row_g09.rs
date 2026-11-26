@@ -73,17 +73,33 @@ fn time_line_minute(text: &str) -> Option<u32> {
         .then_some(hours * 60 + minutes)
 }
 
+// Global time advances one minute per 2.5 real seconds. The wire clock
+// uses the Unix epoch as its origin.
+const GLOBAL_MINUTE_MS: u64 = 2_500;
+const GLOBAL_DAY_MINUTES: u64 = 1_440;
+
 fn clock_elapsed_ms() -> TestResult<u64> {
-    use crate::world_clock::{DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS, now_utc_ms};
-    let now = now_utc_ms().ok_or("step=clock observed=utc-unavailable")?;
-    Ok(now
-        .checked_sub(DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS)
-        .ok_or("step=clock observed=before-world-epoch")?)
+    Ok(u64::try_from(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_millis(),
+    )?)
+}
+
+fn validate_published_minute(minute: u16, from_ms: u64, through_ms: u64) -> TestResult {
+    let first = from_ms / GLOBAL_MINUTE_MS;
+    let last = through_ms / GLOBAL_MINUTE_MS;
+    if !(first..=last).any(|tick| tick % GLOBAL_DAY_MINUTES == u64::from(minute)) {
+        return Err(format!(
+            "step=clock observed=published-minute:{minute} expected=ticks:{first}..={last}"
+        )
+        .into());
+    }
+    Ok(())
 }
 
 fn minute_in_command(minute: u32, first: u64, last: u64) -> bool {
-    let day = u64::from(oteryn_protocol_oteryn::world_clock::TIBIAN_MINUTES_PER_DAY);
-    first == last && first % day == u64::from(minute)
+    first == last && first % GLOBAL_DAY_MINUTES == u64::from(minute)
 }
 
 fn carried(
@@ -125,20 +141,76 @@ async fn use_target(
     Ok((reply.status, disposition, reply.server_sequence))
 }
 
+#[derive(Default)]
+struct NpcEvidence {
+    greeting: Option<npc::NpcConversation>,
+    window: Option<npc::NpcTradeWindow>,
+}
+
+impl NpcEvidence {
+    fn check(&self, event: &SessionEvent) -> TestResult {
+        let consistent = match event {
+            SessionEvent::NpcConversation(delta) => self.greeting.as_ref() == Some(&delta.value),
+            SessionEvent::NpcTradeWindow(delta) => self.window.as_ref() == Some(&delta.value),
+            SessionEvent::GatedSnapshotReplaced(delta) => !matches!(
+                delta.value.domain_id,
+                npc::STATE_DOMAIN_NPC_CONVERSATION | npc::STATE_DOMAIN_NPC_TRADE_WINDOW
+            ),
+            _ => true,
+        };
+        if !consistent {
+            return Err(format!(
+                "step=npc observed=conflicting-update domain={}",
+                event.domain_id()
+            )
+            .into());
+        }
+        Ok(())
+    }
+}
+
+fn fixed_position(position: ActorPosition) -> TestResult {
+    if tile(position)? != LUBO_APPROACH {
+        return Err(
+            format!("step=position observed={position:?} expected={LUBO_APPROACH:?}").into(),
+        );
+    }
+    Ok(())
+}
+
+fn check_position_event(event: &SessionEvent) -> TestResult {
+    match event {
+        SessionEvent::WorldSpatial(delta) => fixed_position(delta.value.actor_position),
+        SessionEvent::WorldSpatialEntities(delta) => fixed_position(delta.value.actor_position),
+        _ => Ok(()),
+    }
+}
+
 async fn read_time(
     client: &mut DevClientSession,
     handle: oteryn_dev_client::ItemHandle,
     before: &CharacterInventory,
     phase: std::ops::RangeInclusive<u64>,
+    npc: &NpcEvidence,
+    mut clock_from: u64,
 ) -> TestResult<u32> {
-    use crate::world_clock::TIBIAN_MINUTE_MS;
+    let minute_ms = GLOBAL_MINUTE_MS;
     let mut minute = None;
-    let phase_deadline = tokio::time::Instant::now() + Duration::from_millis(2 * TIBIAN_MINUTE_MS);
+    let phase_deadline = tokio::time::Instant::now() + Duration::from_millis(2 * minute_ms);
     let (first, phase_ms) = loop {
-        observe_use(client, before, &mut minute, u64::MAX, 0, 0)?;
+        observe_use(
+            client,
+            before,
+            npc,
+            &mut clock_from,
+            &mut minute,
+            u64::MAX,
+            0,
+            0,
+        )?;
         let elapsed = clock_elapsed_ms()?;
-        if phase.contains(&(elapsed % TIBIAN_MINUTE_MS)) {
-            break (elapsed / TIBIAN_MINUTE_MS, elapsed % TIBIAN_MINUTE_MS);
+        if phase.contains(&(elapsed % minute_ms)) {
+            break (elapsed / minute_ms, elapsed % minute_ms);
         }
         if tokio::time::Instant::now() >= phase_deadline {
             return Err("step=clock observed=missed-sample-phase".into());
@@ -146,7 +218,7 @@ async fn read_time(
         client.service_liveness(Duration::from_millis(10)).await?;
     };
     let (status, disposition, reply) = use_target(client, UseTarget::Item(handle)).await?;
-    let last = clock_elapsed_ms()? / TIBIAN_MINUTE_MS;
+    let last = clock_elapsed_ms()? / minute_ms;
     if status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(
             format!("step=use observed=status:{status:?},disposition:{disposition:?}").into(),
@@ -154,13 +226,40 @@ async fn read_time(
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while tokio::time::Instant::now() < deadline {
-        observe_use(client, before, &mut minute, reply, first, last)?;
+        observe_use(
+            client,
+            before,
+            npc,
+            &mut clock_from,
+            &mut minute,
+            reply,
+            first,
+            last,
+        )?;
         client.service_liveness(Duration::from_millis(50)).await?;
     }
-    observe_use(client, before, &mut minute, reply, first, last)?;
+    observe_use(
+        client,
+        before,
+        npc,
+        &mut clock_from,
+        &mut minute,
+        reply,
+        first,
+        last,
+    )?;
     let observed = minute.ok_or("step=chat observed=no-server-time-line")?;
     logout(client).await?;
-    observe_use(client, before, &mut minute, reply, first, last)?;
+    observe_use(
+        client,
+        before,
+        npc,
+        &mut clock_from,
+        &mut minute,
+        reply,
+        first,
+        last,
+    )?;
     evidence(&format!(
         "G09_CHECK step=clock status=PASS minute={observed} phase_ms={phase_ms} reply_sequence={reply}"
     ));
@@ -170,13 +269,23 @@ async fn read_time(
 fn observe_use(
     client: &mut DevClientSession,
     before: &CharacterInventory,
+    npc: &NpcEvidence,
+    clock_from: &mut u64,
     minute: &mut Option<u32>,
     reply: u64,
     first: u64,
     last: u64,
 ) -> TestResult {
+    let through = clock_elapsed_ms()?;
+    fixed_position(client.world_spatial().actor_position)?;
     for event in client.take_events() {
+        npc.check(&event)?;
+        check_position_event(&event)?;
         match event {
+            SessionEvent::WorldClock(delta) => {
+                validate_published_minute(delta.value.tibian_minute, *clock_from, through)?
+            }
+
             SessionEvent::ChatLine(delta) => {
                 if let Some(text) = private_clock_text(&delta.value)? {
                     check_clock_line(minute, text, delta.server_sequence, reply, first, last)?;
@@ -193,6 +302,7 @@ fn observe_use(
             _ => {}
         }
     }
+    *clock_from = through;
     if client.inventory() != Some(before) {
         return Err("step=use observed=inventory-changed-after-exchange".into());
     }
@@ -365,8 +475,17 @@ fn inspect_approach_events(
     inventory: &CharacterInventory,
     seller: EntityRef,
     home: TilePos,
+    npc: &NpcEvidence,
+    at_shop: bool,
 ) -> TestResult {
+    if at_shop {
+        fixed_position(client.world_spatial().actor_position)?;
+    }
     for event in client.take_events() {
+        npc.check(&event)?;
+        if at_shop {
+            check_position_event(&event)?;
+        }
         match event {
             SessionEvent::Inventory(delta) => require_unchanged_inventory(inventory, &delta.value)?,
             SessionEvent::WorldSpatialEntities(delta) => {
@@ -477,7 +596,8 @@ async fn buy_watch(
     gold: std::num::NonZeroU32,
     funded_gold: u64,
     remaining_gold: u64,
-) -> TestResult<CharacterInventory> {
+) -> TestResult<(CharacterInventory, NpcEvidence, u64)> {
+    let mut npc_state = NpcEvidence::default();
     let before = client
         .inventory()
         .cloned()
@@ -508,8 +628,13 @@ async fn buy_watch(
     )?;
     let here = tile(client.world_spatial().actor_position)?;
     require_departure(here)?;
-    let path =
-        route(world, here, is_approach).ok_or("step=seller observed=no-route-to-lubo-approach")?;
+    let path = route_with_landings(
+        here,
+        is_approach,
+        |_| true,
+        |at, direction| destination_with_teleports(world, at, direction, false),
+    )
+    .ok_or("step=seller observed=no-route-to-lubo-approach")?;
     if path.is_empty() {
         return Err("step=walk observed=empty-route".into());
     }
@@ -517,7 +642,7 @@ async fn buy_watch(
         "G09_ROUTE from={here:?} approach={LUBO_APPROACH:?} seller_home={home:?} steps={}",
         path.len()
     ));
-    inspect_approach_events(client, &before, expected_seller, home)?;
+    inspect_approach_events(client, &before, expected_seller, home, &npc_state, false)?;
     for direction in path {
         let from = tile(client.world_spatial().actor_position)?;
         let outcome = client.step(direction).await?;
@@ -526,7 +651,7 @@ async fn buy_watch(
             || outcome.disposition != StepDisposition::Moved
             || from == after
             || outcome.world_spatial_delta.is_none()
-            || destination(world, from, direction) != Some(after)
+            || destination_with_teleports(world, from, direction, false) != Some(after)
         {
             return Err(format!(
                 "step=walk from={from:?} direction={direction:?} to={after:?} observed={:?}",
@@ -535,7 +660,7 @@ async fn buy_watch(
             .into());
         }
         verdict::Harness::global().progress("walk");
-        inspect_approach_events(client, &before, expected_seller, home)?;
+        inspect_approach_events(client, &before, expected_seller, home, &npc_state, false)?;
         if outcome.step_wait_ms != 0 {
             client
                 .service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms)))
@@ -548,7 +673,7 @@ async fn buy_watch(
             format!("step=walk observed=arrival:{here:?} expected={LUBO_APPROACH:?}").into(),
         );
     }
-    inspect_approach_events(client, &before, expected_seller, home)?;
+    inspect_approach_events(client, &before, expected_seller, home, &npc_state, false)?;
     let entry = {
         let mut visible = client
             .world_entities()
@@ -609,6 +734,8 @@ async fn buy_watch(
             delta.server_sequence, conversation.open, conversation.lines
         ).into());
     }
+    inspect_approach_events(client, &before, expected_seller, home, &npc_state, true)?;
+    npc_state.greeting = Some(conversation);
     let trade = talk(client, actor, "trade").await?;
     let delta = client
         .session_mut()
@@ -621,7 +748,8 @@ async fn buy_watch(
         return Err("step=buy observed=trade-window-for-other-seller".into());
     }
     let (offer_index, offer) = watch_offer(&window.offers, watch.get())?;
-    inspect_approach_events(client, &before, expected_seller, home)?;
+    npc_state.window = Some(window.clone());
+    inspect_approach_events(client, &before, expected_seller, home, &npc_state, true)?;
     if !carried(client, watch).is_empty() || gold_balance(client, gold) != funded_gold {
         return Err("step=buy observed=inventory-changed-before-purchase".into());
     }
@@ -634,11 +762,22 @@ async fn buy_watch(
         expected_unit_price: offer.unit_price,
     })
     .map_err(|error| format!("step=buy encode={error:?}"))?;
+    let clock_from = clock_elapsed_ms()?;
     let purchase = npc_command(client, npc::COMMAND_TYPE_NPC_TRADE_INTENT, &payload).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
         let mut purchased = None;
+        fixed_position(client.world_spatial().actor_position)?;
         for event in client.take_events() {
+            npc_state.check(&event)?;
+            check_position_event(&event)?;
+            if let SessionEvent::WorldClock(delta) = &event {
+                validate_published_minute(
+                    delta.value.tibian_minute,
+                    clock_from,
+                    clock_elapsed_ms()?,
+                )?;
+            }
             if let SessionEvent::Inventory(delta) = event {
                 if let Some(expected) = &purchased {
                     require_unchanged_inventory(expected, &delta.value)?;
@@ -666,7 +805,7 @@ async fn buy_watch(
             evidence(&format!(
                 "G09_CHECK step=buy status=PASS watch={WATCH} price={PRICE} gold_before={funded_gold} gold_after={remaining_gold}"
             ));
-            return Ok(purchased);
+            return Ok((purchased, npc_state, clock_from));
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("step=buy observed=missing-exact-watch-credit-and-gold-debit".into());
@@ -703,7 +842,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if !carried(&client, definition).is_empty() || gold_balance(&client, gold) != funded_gold {
         return Err("step=fixture observed=expected-only-purchase-gold".into());
     }
-    let purchased_inventory = buy_watch(
+    let (purchased_inventory, npc_state, clock_from) = buy_watch(
         &mut client,
         clients,
         definition,
@@ -723,21 +862,35 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         handle,
         &purchased_inventory,
         LATE_CLOCK_PHASE_MS,
+        &npc_state,
+        clock_from,
     )
     .await?;
     if carried(&client, definition) != inventory {
         return Err("step=consume observed=watch-consumed;needed=clock-read-keeps-item".into());
     }
     let previous_session = client.join_snapshot().game_session_id;
-    let purchased_at = client.world_spatial().actor_position;
     drop(client);
+    let admission_started = clock_elapsed_ms()?;
     let mut fresh = connect_character(clients, 0xcf, 0).await?;
     if fresh.join_snapshot().game_session_id == previous_session
-        || fresh.world_spatial().actor_position != purchased_at
         || gold_balance(&fresh, gold) != remaining_gold
     {
         return Err("step=fresh observed=stale-session-or-position-or-gold-debit-lost".into());
     }
+    fixed_position(fresh.world_spatial().actor_position)?;
+    use oteryn_protocol_oteryn::world_clock::{STATE_DOMAIN_WORLD_CLOCK, decode_world_clock};
+    let snapshot = fresh
+        .session_mut()
+        .gated_snapshot(STATE_DOMAIN_WORLD_CLOCK)
+        .ok_or("step=clock observed=missing-world-clock-snapshot")?;
+    let published = decode_world_clock(&snapshot.payload)
+        .map_err(|error| format!("step=clock observed=snapshot-decode:{error:?}"))?;
+    validate_published_minute(
+        published.tibian_minute,
+        admission_started,
+        clock_elapsed_ms()?,
+    )?;
     let fresh_inventory = fresh
         .inventory()
         .cloned()
@@ -749,9 +902,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let [(again, 1)] = durable_inventory.as_slice() else {
         return Err("step=fresh observed=expected-exactly-one-durable-watch".into());
     };
-    let second_minute = read_time(&mut fresh, *again, &fresh_inventory, EARLY_CLOCK_PHASE_MS)
-        .await
-        .map_err(|error| verdict::context("step=fresh-clock".into(), error))?;
+    let second_minute = read_time(
+        &mut fresh,
+        *again,
+        &fresh_inventory,
+        EARLY_CLOCK_PHASE_MS,
+        &NpcEvidence::default(),
+        admission_started,
+    )
+    .await
+    .map_err(|error| verdict::context("step=fresh-clock".into(), error))?;
     let after = carried(&fresh, definition);
     if second_minute == first_minute {
         return Err("step=fresh observed=clock-did-not-advance".into());
@@ -765,6 +925,68 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rejects_wrong_seller_after_valid_window() -> TestResult {
+        let seller = EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        };
+        let window = npc::NpcTradeWindow {
+            open: Some((seller, 1)),
+            ..Default::default()
+        };
+        let state = NpcEvidence {
+            window: Some(window.clone()),
+            ..Default::default()
+        };
+        let event = |value| {
+            SessionEvent::NpcTradeWindow(oteryn_dev_client::AppliedDelta {
+                server_sequence: 5,
+                base_revision: 1,
+                new_revision: 2,
+                value,
+            })
+        };
+        state.check(&event(window.clone()))?;
+        assert!(
+            state
+                .check(&event(npc::NpcTradeWindow {
+                    open: Some((
+                        EntityRef {
+                            identity: [2; 16],
+                            ..seller
+                        },
+                        1
+                    )),
+                    ..window
+                }))
+                .is_err()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn rejects_transient_move_and_wrong_published_minute() -> TestResult {
+        let approach = ActorPosition {
+            x: i32::from(LUBO_APPROACH.x),
+            y: i32::from(LUBO_APPROACH.y),
+            floor: -i16::from(LUBO_APPROACH.floor),
+        };
+        fixed_position(approach)?;
+        assert!(
+            fixed_position(ActorPosition {
+                x: approach.x + 1,
+                ..approach
+            })
+            .is_err()
+        );
+        let start = 5 * GLOBAL_MINUTE_MS;
+        assert!(minute_in_command(5, 5, 5));
+        validate_published_minute(5, start, start + 2000)?;
+        assert!(validate_published_minute(6, start, start + 2000).is_err());
+        Ok(())
+    }
 
     #[test]
     fn conflicting_watch_quote_cannot_hide_behind_correct_quote() {
@@ -1003,11 +1225,11 @@ mod tests {
 
     #[test]
     fn late_sample_exposes_premature_rollover() {
-        use crate::world_clock::TIBIAN_MINUTE_MS;
+        let minute_ms = GLOBAL_MINUTE_MS;
         for phase in LATE_CLOCK_PHASE_MS {
             assert!(!EARLY_CLOCK_PHASE_MS.contains(&phase));
             // A clock ticking 500 ms early already reads minute 6 at this sample.
-            let premature = (5 * TIBIAN_MINUTE_MS + phase + 500) / TIBIAN_MINUTE_MS;
+            let premature = (5 * minute_ms + phase + 500) / minute_ms;
             assert!(!minute_in_command(
                 u32::try_from(premature).expect("sample minute fits"),
                 5,
