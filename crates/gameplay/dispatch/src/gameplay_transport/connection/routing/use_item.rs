@@ -73,22 +73,23 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
             _ => None,
         };
-        if let Some(outcome) = tokio::time::timeout(
-            std::time::Duration::from_secs(10),
-            authority.use_drome_cube(
-                actor,
-                UseCommand {
-                    game_session_id: admitted.game_session_id,
-                    command_id: command.command_id,
-                    item_fence: admitted.item_fence,
-                },
-                intent.clone(),
-                source,
-            ),
+        let definition = source.and_then(|key| {
+            item_view.as_ref().and_then(|view| view.shown_definition(key))
+                .or_else(|| container_views.as_ref().and_then(|views| views.shown_definition(key)))
+        });
+        if let Some(outcome) = authority.use_drome_cube(
+            actor,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: command.command_id,
+                item_fence: admitted.item_fence,
+            },
+            intent.clone(),
+            source,
+            definition,
         )
         .await
-        .map_err(|_| "drome_cube_timeout")?
-        .map_err(|_| "drome_cube_unresolved")?
+        .map_err(|_| "drome_use_fence_or_unresolved_write")?
         {
             return Ok(Dispatch::Use(outcome));
         }

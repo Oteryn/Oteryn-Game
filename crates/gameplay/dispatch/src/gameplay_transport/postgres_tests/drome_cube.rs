@@ -133,8 +133,9 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         command: UseCommand,
         intent: UseIntent,
         source: Option<ItemKey>,
+        definition: Option<std::num::NonZeroU32>,
     ) -> Result<Option<UseOutcome>, ()> {
-        self.0.use_drome_cube(actor, command, intent, source).await
+        self.0.use_drome_cube(actor, command, intent, source, definition).await
     }
 }
 
@@ -183,6 +184,7 @@ async fn run(
             },
             intent.clone(),
             Some(ItemKey::Instance(id(110))),
+            None,
         )
         .await
         .map_err(|_| "stale fence outcome unknown")?
@@ -260,17 +262,9 @@ async fn run(
         1
     );
     let mut altered = intent.clone();
-    altered.target = UseTarget::ItemByDefinition(
-        index
-            .definition_ref(
-                "Item",
-                "oteryn:item.tibia.i2854",
-                index
-                    .revision("oteryn:item.tibia.i2854")
-                    .ok_or("bag revision")?,
-            )
-            .ok_or("bag index")?,
-    );
+    // A retired handle still probes exact Cube history. The changed wire
+    // binding must never replay command 2's result or consume another source.
+    altered.target = UseTarget::Item(std::num::NonZeroU64::MIN);
     let replay = owner
         .use_drome_cube(
             actor,
@@ -280,6 +274,7 @@ async fn run(
                 item_fence: Some(item_fence()?),
             },
             altered,
+            None,
             None,
         )
         .await

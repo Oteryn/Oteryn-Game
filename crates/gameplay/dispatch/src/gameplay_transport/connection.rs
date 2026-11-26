@@ -37,7 +37,7 @@ use routing::Dispatch;
 use serve::serve_admitted_actor;
 #[cfg(test)]
 pub(in crate::gameplay_transport) use serve::{
-    regression_bag_use_with_busy_holder, regression_routed_step,
+    regression_item_use_with_busy_holder, regression_routed_step,
 };
 #[path = "newhaven_travel_transport.rs"]
 mod newhaven_travel_transport;
