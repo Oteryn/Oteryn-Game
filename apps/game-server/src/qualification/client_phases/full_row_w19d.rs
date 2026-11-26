@@ -537,6 +537,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step=doll-duplicate-sequence observed=state-changed".into());
     }
+    let owned_feedback = "You already have this outfit with this addon.";
+    let expected_feedback = if client.selected_capabilities().contains(
+        &oteryn_protocol_oteryn::chat::CAPABILITY_CHAT_SYSTEM_MESSAGE_V1,
+    ) {
+        oteryn_dev_client::ChatLine::System { text: owned_feedback.into() }
+    } else {
+        oteryn_dev_client::ChatLine::Private { speaker_name: "Game".into(), text: owned_feedback.into() }
+    };
     let before_duplicate = client.last_server_sequence();
     expect_item_use(&mut client, doll_reference, use_wire::UseDisposition::Committed).await?;
     tokio::time::timeout(Duration::from_secs(3), async {
@@ -545,8 +553,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             if events.into_iter().any(|event| {
                 matches!(event, oteryn_dev_client::SessionEvent::ChatLine(delta)
                     if delta.server_sequence > before_duplicate
-                        && matches!(&delta.value, oteryn_dev_client::ChatLine::System { text }
-                            if text == "You already have this outfit with this addon."))
+                        && delta.value == expected_feedback)
             }) {
                 return Ok::<(), oteryn_dev_client::DevClientError>(());
             }
