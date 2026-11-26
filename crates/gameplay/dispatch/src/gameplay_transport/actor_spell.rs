@@ -1625,6 +1625,12 @@ impl ChannelSpellStates {
         if let Some(value) =
             std::num::NonZeroU32::new(health_before.saturating_sub(damage.health_after))
         {
+            if kind == crate::player_lethal::PlayerHitKind::Physical
+                && let Some(attacker) = analyser_source.attacker
+            {
+                self.sounds
+                    .record_damage(runtime, attacker, target, value.into());
+            }
             self.analyser.push_hit(
                 target,
                 target_session,
