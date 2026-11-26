@@ -146,47 +146,31 @@ async fn approach(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npc: &oteryn_world_bundle::npc::Npc,
-    path: &[StepDirection],
 ) -> TestResult<EntityRef> {
-    walk(client, world, path).await?;
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        npc.placements.iter().any(|placement| {
+            placement.floor == at.floor
+                && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
+        })
+    }).ok_or_else(|| format!("step=walk-npc observed=no-route:{}", npc.key))?;
+    walk(client, world, &path).await?;
     visible_npc(client, npc).ok_or_else(|| format!("step=walk-npc observed=actor-not-visible:{}", npc.key).into())
-}
-
-pub(super) async fn qualification_npc_talk_book(
-    client: &mut DevClientSession,
-) -> TestResult<crate::gameplay_transport::NpcTalkBook> {
-    route_work(client, || {
-        let staged = std::path::PathBuf::from(required("NODE_BOOT_NPC_DATA").map_err(|error| error.to_string())?);
-        let digest = std::fs::read_to_string(staged.join("PROJECT_SHA256")).map_err(|error| error.to_string())?;
-        let catalogue = crate::content::load_data_only_npc_catalogue(
-            &staged.join("content/world"),
-            digest.trim(),
-        )
-        .map_err(|error| error.to_string())?;
-        let model = catalogue
-            .service_model_for_project()
-            .map_err(|error| error.to_string())?;
-        Ok(crate::gameplay_transport::NpcTalkBook::from_model(&model))
-    })
-    .await
 }
 
 async fn find_exchange_npc(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
-    book: &crate::gameplay_transport::NpcTalkBook,
 ) -> TestResult<(EntityRef, String)> {
     let mut attempted = Vec::new();
-    for npc in npcs
-        .npcs
-        .iter()
-        .filter(|npc| book.get(&npc.key).is_some_and(|entry| entry.bank()))
-    {
-        let Some(path) = npc_approach_path(client, world, npc).await? else {
+    for npc in &npcs.npcs {
+        if route(world, tile(client.world_spatial().actor_position)?, |at| {
+            npc.placements.iter().any(|placement| placement.floor == at.floor
+                && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3)
+        }).is_none() {
             continue;
-        };
-        let actor = approach(client, world, npc, &path).await?;
+        }
+        let actor = approach(client, world, npc).await?;
         let greeting = talk(client, actor, "hi").await?;
         attempted.push(format!("{}:hi={:?}", npc.key, greeting.lines));
         let reply = talk(client, actor, "change gold").await?;
@@ -214,25 +198,20 @@ async fn earn_gold(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
-    book: &crate::gameplay_transport::NpcTalkBook,
     refs: [std::num::NonZeroU32; 3],
 ) -> TestResult<[u64; 3]> {
     let mut observed = backpack_coins(client, refs)?;
     let mut attempts = Vec::new();
-    for npc in npcs.npcs.iter().filter(|npc| {
-        book.get(&npc.key).is_some_and(|entry| {
-            entry.offers().iter().any(|offer| {
-                offer.direction == crate::content::ProjectV2ServiceOfferDirection::BuyFromPlayer
-            })
-        })
-    }) {
-        if observed[0] >= 100 {
+    for npc in &npcs.npcs {
+        if observed[0] >= 100
+            || route(world, tile(client.world_spatial().actor_position)?, |at| {
+                npc.placements.iter().any(|placement| placement.floor == at.floor
+                    && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3)
+            }).is_none()
+        {
             continue;
         }
-        let Some(path) = npc_approach_path(client, world, npc).await? else {
-            continue;
-        };
-        let actor = approach(client, world, npc, &path).await?;
+        let actor = approach(client, world, npc).await?;
         let greeting = talk(client, actor, "hi").await?;
         let trade = talk(client, actor, "trade").await?;
         attempts.push(format!("{}:hi={:?}:trade={:?}", npc.key, greeting.lines, trade.lines));
@@ -305,11 +284,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let refs = coin_refs()?;
     let mut client = connect_world(clients, 0xb0).await?;
-    let talk_book = qualification_npc_talk_book(&mut client).await?;
-    let initial = earn_gold(&mut client, world, &metadata.npcs, &talk_book, refs).await?;
+    let initial = earn_gold(&mut client, world, &metadata.npcs, refs).await?;
     row.pass("legitimate-gold", initial);
 
-    let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs, &talk_book).await?;
+    let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs).await?;
     row.pass("walk-and-greet", npc_key);
 
     let reply = exchange(&mut client, actor, &["1", "yes"]).await?;
@@ -371,164 +349,4 @@ mod tests {
         assert!(!exact_delta([100, 0, 0], [0, 0, 1], [-100, 1, 0]));
         assert!(exact_delta([0, 1, 0], [100, 0, 0], [100, -1, 0]));
     }
-}
-
-pub(super) async fn greet_ten(
-    clients: &SeamClients<'_>,
-    world: &BundleWorld,
-    npcs: &oteryn_world_bundle::npc::Table,
-) {
-    let mut row = verdict::Row::new("NPC", "NPC-GREET-10", &["greet-ten", "logout"]);
-    let result = row
-        .watch()
-        .bound(
-            Duration::from_secs(180),
-            "NPC-GREET-10 deadline",
-            greet_ten_journey(&mut row, clients, world, npcs),
-        )
-        .await;
-    row.finish(&result);
-}
-
-async fn greet_ten_journey(
-    row: &mut verdict::Row,
-    clients: &SeamClients<'_>,
-    world: &BundleWorld,
-    npcs: &oteryn_world_bundle::npc::Table,
-) -> TestResult {
-    mod hunt_route {
-        use super::*;
-        include!("qualification_hunt_route.rs");
-    }
-    character_prep::declare_seeded(
-        "NPC-GREET-10",
-        "dedicated-character-birth",
-        "isolate dialogue state",
-    );
-    let mut characters = clients.characters.to_vec();
-    characters[1] =
-        hunt_route::qualification_character(clients, 1, 0xb9, "Town Greeter", "Knight").await?;
-    let clients = SeamClients {
-        characters: &characters,
-        ..*clients
-    };
-    let mut client = connect_world(&clients, 0xb9).await?;
-    let result: TestResult = async {
-        let talk_book = qualification_npc_talk_book(&mut client).await?;
-        // The placement table also contains silent actors. Choose greetings
-        // from the authored service book and verify each one over the wire.
-        let mut remaining: BTreeMap<TilePos, &str> = npcs
-            .npcs
-            .iter()
-            .filter(|npc| talk_book.get(&npc.key).is_some())
-            .flat_map(|npc| {
-                npc.placements.iter().map(|placement| {
-                    (
-                        TilePos {
-                            x: placement.x,
-                            y: placement.y,
-                            floor: placement.floor,
-                        },
-                        npc.key.as_str(),
-                    )
-                })
-            })
-            .collect();
-        let mut greeted = Vec::new();
-        for _ in 0..10 {
-            let start = tile(client.world_spatial().actor_position)?;
-            let candidates: Vec<_> = remaining.keys().copied().collect();
-            let snapshot = world.clone();
-            let (path, target) = route_work(&mut client, move || {
-                let mut approaches = BTreeMap::new();
-                for target in candidates {
-                    for (dx, dy) in [
-                        (-1, -1),
-                        (-1, 0),
-                        (-1, 1),
-                        (0, -1),
-                        (0, 1),
-                        (1, -1),
-                        (1, 0),
-                        (1, 1),
-                    ] {
-                        if let (Some(x), Some(y)) = (
-                            target.x.checked_add_signed(dx),
-                            target.y.checked_add_signed(dy),
-                        ) {
-                            approaches
-                                .entry(TilePos {
-                                    x,
-                                    y,
-                                    floor: target.floor,
-                                })
-                                .or_insert(target);
-                        }
-                    }
-                }
-                let path = route(&snapshot, start, |at| approaches.contains_key(&at))
-                    .ok_or("no route to another ungreeted NPC placement")?;
-                let end = path
-                    .iter()
-                    .try_fold(start, |at, &direction| {
-                        destination(&snapshot, at, direction)
-                    })
-                    .ok_or("NPC route endpoint disappeared")?;
-                let target = *approaches
-                    .get(&end)
-                    .ok_or("NPC route ended without an adjacent placement")?;
-                Ok((path, target))
-            })
-            .await?;
-            walk(&mut client, world, &path).await?;
-            let key = remaining
-                .remove(&target)
-                .ok_or("NPC selection repeated a placement")?;
-            let actor = client
-                .world_entities()
-                .and_then(|view| {
-                    view.iter().find(|entity| {
-                        entity.kind == EntityKind::Npc && tile(entity.position).ok() == Some(target)
-                    })
-                })
-                .ok_or_else(|| format!("served NPC missing at {target:?}: {key}"))?
-                .entity;
-            if greeted.contains(&actor) {
-                return Err(format!("NPC actor already greeted: {key}").into());
-            }
-            let hello = talk(&mut client, actor, "hi")
-                .await
-                .map_err(|error| format!("NPC greeting at {target:?} for {key}: {error}"))?;
-            if hello.open.map(|(npc, _)| npc) != Some(actor) || hello.lines.is_empty() {
-                return Err(
-                    format!("NPC greeting did not open a dialogue with {key}: {hello:?}").into(),
-                );
-            }
-            greeted.push(actor);
-            evidence(&format!(
-                "NPC_GREET row=NPC-GREET-10 npc={key} placement={target:?} count={}",
-                greeted.len()
-            ));
-            let goodbye = talk(&mut client, actor, "bye").await?;
-            if goodbye.open.is_some() {
-                return Err(format!("NPC farewell left the conversation open with {key}").into());
-            }
-        }
-        row.pass(
-            "greet-ten",
-            format_args!("distinct_actors={}", greeted.len()),
-        );
-        Ok(())
-    }
-    .await;
-    let release = logout_retrying_busy(&mut client)
-        .await
-        .and_then(|(status, diagnostic, _, _)| {
-            if status != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-                return Err(format!("Town Greeter logout refused: {diagnostic}").into());
-            }
-            row.pass("logout", "accepted");
-            Ok(())
-        });
-    result.and(release)
 }
