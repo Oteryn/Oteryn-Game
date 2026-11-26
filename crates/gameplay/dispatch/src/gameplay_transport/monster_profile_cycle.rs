@@ -16,6 +16,16 @@ pub(super) mod rotten_waves;
 pub(super) mod source_heals;
 mod source_items;
 
+// Match the existing visible-actor admission chunk. The much larger AI window
+// is a scheduling budget, not a budget for one checked-out durability holder.
+pub(super) const PROFILES_PER_PASS: usize = 32;
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static PROFILE_CHECKOUT_BARRIER:
+        Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
 pub(super) fn publish_native_facing(
     runtime: &mut ChannelRuntimeV1,
     table: &crate::ai_think::CreatureAiTable,
@@ -132,6 +142,27 @@ pub(super) fn native_owner_turn(
     }
 }
 
+pub(super) fn native_think_root(native: &NativeGameplayState) -> GameplayDecisionRoot {
+    let seed = native.source_digest();
+    #[cfg(test)]
+    let seed = NATIVE_PROFILE_TEST_SEED
+        .try_with(|seed| *seed)
+        .unwrap_or(seed);
+    GameplayDecisionRoot::from_bytes(seed)
+}
+
+#[derive(Debug)]
+pub(super) enum ProfileDriveError {
+    CheckoutBusy,
+    Refused,
+}
+
+impl From<()> for ProfileDriveError {
+    fn from((): ()) -> Self {
+        Self::Refused
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     pub(super) async fn drive_monster_profiles(
@@ -146,7 +177,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         candidates: &[crate::ai_think::targeting::TargetCandidate],
         now: u64,
         native_health_names: &super::source_names::NativeHealthNamesData,
-    ) -> Result<(Option<u64>, Vec<crate::foundation::ExactActorRef>, bool), ()> {
+    ) -> Result<(Option<u64>, Vec<crate::foundation::ExactActorRef>, bool), ProfileDriveError> {
         use crate::durability::spell_item_transaction::{
             assert_spell_item_scope_in_transaction, begin_spell_owner_transaction,
         };
@@ -173,7 +204,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if now > execution_now {
             #[cfg(test)]
             native_owner_turn(room, "profile_time", "future_original");
-            return Err(());
+            return Err(ProfileDriveError::Refused);
         }
         if primal_pending
             .as_ref()
@@ -181,7 +212,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             #[cfg(test)]
             native_owner_turn(room, "profile_start", "primal_pending_refused");
-            return Err(());
+            return Err(ProfileDriveError::Refused);
         }
         runtime
             .note_rotten_movement_time(execution_now)
@@ -264,7 +295,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 // The outer native loop drops its guards before executing the
                 // exact retained copied action, including all physical SQL.
-                Err(())
+                Err(ProfileDriveError::Refused)
             };
         }
         // The coalesced monster scheduler must not retake the returned holder
@@ -276,9 +307,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 #[cfg(test)]
                 native_owner_turn(room, "profile_checkout", "refused");
             })
-            .map_err(|_| ())?;
+            .map_err(|error| {
+                // An older source action owns its place even when the holder
+                // refuses. Only a fresh, unordered profile attempt may yield to melee.
+                if !matches!(error, crate::durability::DurabilityError::RootUnavailable)
+                    || has_due_source
+                    || native_pending.is_some()
+                    || primal_pending.is_some()
+                    || runtime.has_pending_source_creature_deaths()
+                    || runtime.rotten_movement_pending()
+                    || states.spite_steps.creatures.is_pending()
+                    || states.rotten_area.pending()
+                {
+                    ProfileDriveError::Refused
+                } else {
+                    ProfileDriveError::CheckoutBusy
+                }
+            })?;
         #[cfg(test)]
         native_owner_turn(room, "profile_checkout", "acquired");
+        #[cfg(test)]
+        if let Ok(barrier) = PROFILE_CHECKOUT_BARRIER.try_with(Arc::clone) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
+        }
         let (next_due, proposals, native_actors, ran_profile) = {
             let mut context = (
                 self,
@@ -406,10 +458,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     native_owner_turn(room, "profile_guard", "movement_before_think");
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
-                let seed = native.source_digest();
-                #[cfg(test)]
-                let seed = NATIVE_PROFILE_TEST_SEED.try_with(|seed| *seed).unwrap_or(seed);
-                let root = GameplayDecisionRoot::from_bytes(seed);
+                let root = native_think_root(native);
                 let bloodjaw_players = if wave_enabled {
                     bloodjaw_targeting::current_players(runtime, states)
                 } else { None };
@@ -501,7 +550,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             None => {
                                 #[cfg(test)]
                                 native_owner_turn(room, "native_reservation", "begin");
-                                Arc::new(table.reserve_current_thinks(runtime,now)
+                                Arc::new(table.reserve_current_thinks_up_to(runtime, now, PROFILES_PER_PASS)
                                     .inspect(|_batch| {
                                         #[cfg(test)]
                                         native_owner_turn(room, "native_reservation", if _batch.occurrences().is_empty() { "empty" } else { "nonempty" });
@@ -817,7 +866,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok((next_due, native_actors, false));
         }
         if states.rotten_blood_callbacks.critical_scope_pending() {
-            return Err(());
+            return Err(ProfileDriveError::Refused);
         }
         let Some(pending) = states
             .native_profile_pass
@@ -832,7 +881,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?;
         if !pending.batch().current_for(runtime) {
-            return Err(());
+            return Err(ProfileDriveError::Refused);
         }
         if let Some(pending) = primal_pending.as_ref() {
             states.primal_callbacks.complete_normal(pending)?;

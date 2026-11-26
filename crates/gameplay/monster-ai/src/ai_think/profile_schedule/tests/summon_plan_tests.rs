@@ -132,16 +132,17 @@ fn one_think_reports_abilities_and_summons_and_changed_path_conflicts_without_re
         facts: Some(summon_facts(&behavior, 0)),
         selected: Vec::new(),
     };
-    let first = ready(state.think_current(0, &facts, &runtime, &mut reader, None)).expect("think");
+    let first =
+        ready(state.think_current(0, &facts, &runtime, Some(&mut reader), None)).expect("think");
     assert_eq!(reader.selected, [Some(actor(2))]);
     assert_eq!(first.proposals.len(), 2);
     assert_eq!(first.summon_proposals.len(), 1);
     let replay =
-        ready(state.think_current(0, &facts, &runtime, &mut reader, None)).expect("replay");
+        ready(state.think_current(0, &facts, &runtime, Some(&mut reader), None)).expect("replay");
     assert_eq!(replay.proposals, first.proposals);
     assert_eq!(replay.summon_proposals, first.summon_proposals);
     reader.facts.as_mut().expect("facts").target_with_path = None;
-    let changed = ready(state.think_current(0, &facts, &runtime, &mut reader, None))
+    let changed = ready(state.think_current(0, &facts, &runtime, Some(&mut reader), None))
         .expect("conflicting facts");
     assert_eq!(changed.refusal, Some(ScheduleError::OccurrenceConflict));
     assert!(changed.proposals.is_empty() && changed.summon_proposals.is_empty());

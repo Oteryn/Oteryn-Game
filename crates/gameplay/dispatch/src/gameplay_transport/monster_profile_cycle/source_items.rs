@@ -80,7 +80,19 @@ pub(super) async fn execute(
             }
             Err(error) => Err(error),
         };
-        outcomes.push((proposal.ability.clone(), result));
+        // Foreground work may take the holder when the profile pass returns it.
+        // Leave this cohort pending on a refused checkout. Existing receipts
+        // reconcile any earlier Item proposals when the same cohort resumes.
+        match result {
+            Err(
+                error @ SpellItemError::Durability(
+                    crate::durability::DurabilityError::RootUnavailable,
+                ),
+            ) => {
+                return Err(error);
+            }
+            outcome => outcomes.push((proposal.ability.clone(), outcome)),
+        }
     }
     Ok(outcomes)
 }
