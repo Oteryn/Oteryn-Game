@@ -102,7 +102,7 @@ async fn character_core(
     if saved == initial {
         return Err("core step did not leave the configured spawn".into());
     }
-    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
+    let (result, logout, attempts, busy_timed_out) = fixture_logout_retrying_busy(&mut client).await?;
     if busy_timed_out {
         return Err(format!(
             "core logout refused after Busy retries: {logout}; attempt count: {attempts}"
