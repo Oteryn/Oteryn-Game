@@ -81,6 +81,14 @@ fn kooldown_aid_lost_ack_replays_once_and_keeps_its_durable_cooldown() -> TestRe
 
 struct WireOwner<'a, 'b, 'f, 's>(&'a ComposedFreshAdmission<'b, 'f, 's>);
 impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
+    async fn observe_actor_cooldowns(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::presentation::ActorCooldowns> {
+        self.0.observe_actor_cooldowns(actor, session).await
+    }
+
     fn take_tutorial_notice(
         &self,
         session: GameSessionId,

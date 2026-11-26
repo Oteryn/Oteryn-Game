@@ -16,6 +16,19 @@ pub(super) async fn run(
     session: GameSessionId,
     index: &ItemDefinitionIndex,
 ) -> TestResult {
+    use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+    let mut admitted = cases::admitted(owner, actor, session)?;
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        &[
+            OfferedCapability { id: 4, requires: &[] },
+            OfferedCapability { id: 6, requires: &[] },
+            OfferedCapability { id: 14, requires: &[4] },
+            OfferedCapability { id: 15, requires: &[4] },
+            OfferedCapability { id: 23, requires: &[6] },
+            OfferedCapability { id: 31, requires: &[] },
+        ],
+        &[4, 6, 14, 15, 23, 31],
+    ).ok_or("cooldown capability selection")?;
     let before = armed(owner.owner_now())?;
     install(owner, actor, session, before.clone()).await?;
     let open = encode_use_item_intent(NonZeroU64::new(2).ok_or("bag handle")?);
@@ -57,7 +70,7 @@ pub(super) async fn run(
     ComposedFreshAdmission::lose_next_kooldown_ack();
     let lost = wire::exchange(
         owner,
-        cases::admitted(owner, actor, session)?,
+        admitted,
         &[open, used.clone()],
     )
     .await?;
@@ -96,6 +109,31 @@ pub(super) async fn run(
         replayed.notices,
         vec![TutorialNotice::StatusText(TEXT.into())]
     );
+    let observed = owner.observe_actor_cooldowns(actor, session).await.ok_or("reset observation")?;
+    assert!(observed.entries.is_empty());
+    let [reset_delta] = replayed.cooldowns.as_slice() else {
+        return Err("Aid must send exactly one cooldown update".into());
+    };
+    let mut expected = Vec::new();
+    let spell_index = owner.spells.spells.iter()
+        .position(|spell| spell.key == "oteryn:spell.light_healing")
+        .ok_or("healing spell index")?;
+    use oteryn_protocol_oteryn::presentation::ActorCooldownKind;
+    expected.push((ActorCooldownKind::Spell, u32::try_from(spell_index + 1)?));
+    let groups = crate::gameplay_transport::spell_catalog::cooldown_group_keys().ok_or("group keys")?;
+    for group in ["attack", "healing"] {
+        let index = groups.iter().position(|key| key == group).ok_or("group index")?;
+        expected.push((ActorCooldownKind::Group, u32::try_from(index + 1)?));
+    }
+    let mut cleared = reset_delta.entries.iter()
+        .map(|entry| {
+            assert_eq!(entry.expires_at_ms, 0);
+            (entry.kind, entry.id)
+        })
+        .collect::<Vec<_>>();
+    cleared.sort_unstable();
+    expected.sort_unstable();
+    assert_eq!(cleared, expected);
     let reset = snapshot(owner, actor, session).await?;
     let after = owner.owner_now();
     assert_eq!(
@@ -235,13 +273,16 @@ pub(super) async fn run(
     .map_err(debug)?;
     let cooling = wire::exchange(owner, replayed.retained, std::slice::from_ref(&next)).await?;
     assert_eq!(cooling.results, vec![UseDisposition::Exhausted]);
-    assert!(cooling.notices.is_empty());
+    assert!(matches!(cooling.notices.as_slice(), [TutorialNotice::StatusText(_)]));
     assert_eq!(next_quantity(harness).await?, 1);
     assert_eq!(snapshot(owner, actor, session).await?, later);
     // Only the isolated fixture's effect clock is changed; session/lease clocks stay current.
     effect_clock(harness, 86_399).await?;
     let boundary = wire::exchange(owner, cooling.retained, std::slice::from_ref(&next)).await?;
     assert_eq!(boundary.results, vec![UseDisposition::Exhausted]);
+    assert_eq!(boundary.notices, vec![TutorialNotice::StatusText(
+        "Kooldown Aid can be used again in 1 second.".into(),
+    )]);
     assert_eq!(next_quantity(harness).await?, 1);
     effect_clock(harness, 86_400).await?;
     let ready = wire::exchange(owner, boundary.retained, std::slice::from_ref(&next)).await?;

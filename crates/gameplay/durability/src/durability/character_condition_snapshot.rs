@@ -10,15 +10,31 @@ use super::{DurabilityError, DurabilityRoot};
 use crate::durability::db::commit_semantic_read;
 use sqlx::Row;
 
+const SPELL_COOLDOWNS_FIELD: &str = "spell_cooldowns_unix_us";
+
 #[derive(Debug, Clone)]
 pub struct CharacterConditionSnapshot {
     pub lease_generation: u64,
     pub content_digest: [u8; 32],
     pub conditions: serde_json::Value,
+    /// Active spell and group deadlines, using stable keys and Unix microseconds.
+    pub spell_cooldowns: Vec<(String, u64)>,
 }
 impl CharacterConditionSnapshot {
+    fn valid_cooldowns(cooldowns: &[(String, u64)]) -> bool {
+        cooldowns.len() <= oteryn_protocol_oteryn::presentation::MAX_COOLDOWN_ENTRIES
+            && cooldowns.windows(2).all(|pair| pair[0].0 < pair[1].0)
+            && cooldowns.iter().all(|(key, expiry)| {
+                *expiry > 0
+                    && key.split_once(':').is_some_and(|(family, key)| {
+                        matches!(family, "spell" | "group") && !key.is_empty()
+                    })
+            })
+    }
+
     fn valid(&self) -> bool {
         self.lease_generation > 0
+            && Self::valid_cooldowns(&self.spell_cooldowns)
             && self
                 .conditions
                 .get("schema")
@@ -48,10 +64,21 @@ impl DurabilityRoot {
             let row = sqlx::query("SELECT character_lease_generation::text,content_digest,snapshot FROM game_character_condition_snapshots WHERE character_id=encode($1,'hex')::uuid")
                 .bind(character.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let saved = row.map(|row| {
-                Ok::<_, DurabilityError>(CharacterConditionSnapshot {
+                let mut conditions: serde_json::Value = row.try_get("snapshot")?;
+                let cooldowns = conditions.as_object_mut()
+                    .ok_or(DurabilityError::InvalidStoredState)?
+                    .remove(SPELL_COOLDOWNS_FIELD);
+                let spell_cooldowns: Vec<(String, u64)> = cooldowns.map(serde_json::from_value)
+                    .transpose().map_err(|_| DurabilityError::InvalidStoredState)?
+                    .unwrap_or_default();
+                if !CharacterConditionSnapshot::valid_cooldowns(&spell_cooldowns) {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                Ok(CharacterConditionSnapshot {
                     lease_generation: row.try_get::<String, _>("character_lease_generation")?.parse().map_err(|_| DurabilityError::InvalidStoredState)?,
                     content_digest: row.try_get::<Vec<u8>, _>("content_digest")?.try_into().map_err(|_| DurabilityError::InvalidStoredState)?,
-                    conditions: row.try_get("snapshot")?,
+                    conditions,
+                    spell_cooldowns,
                 })
             }).transpose()?;
             commit_semantic_read(tx, deadline).await?;
@@ -65,10 +92,21 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         origin_channel: [u8; 16],
-        saved: CharacterConditionSnapshot,
+        mut saved: CharacterConditionSnapshot,
     ) -> Result<(), ItemUseError> {
         if !saved.valid() || saved.lease_generation != fence.character_lease_generation {
             return Err(ItemUseError::InvalidInput);
+        }
+        if !saved.spell_cooldowns.is_empty() {
+            let snapshot = saved
+                .conditions
+                .as_object_mut()
+                .ok_or(ItemUseError::InvalidInput)?;
+            snapshot.insert(
+                SPELL_COOLDOWNS_FIELD.into(),
+                serde_json::to_value(saved.spell_cooldowns)
+                    .map_err(|_| ItemUseError::InvalidInput)?,
+            );
         }
         let recovery = authority
             .record_for(self)
@@ -102,6 +140,7 @@ mod tests {
             lease_generation: 1,
             content_digest: [7; 32],
             conditions: serde_json::json!({"schema":1,"conditions":[]}),
+            spell_cooldowns: Vec::new(),
         };
         assert!(snapshot.valid());
         snapshot.lease_generation = 0;
