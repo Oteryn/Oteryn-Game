@@ -639,7 +639,7 @@ fn global_parity_creature_resistance_precedes_armor_and_mitigation() {
     use oteryn_gameplay_content::content::creature_policy::{
         CreatureExactRatio, CreatureResistance,
     };
-    let policies = rat_policy([0; 32]);
+    let policies = rat_policy([1; 32]);
     let mut policy = (*policies.policies()[0]).clone();
     policy.resistances.push(CreatureResistance {
         damage_type: "physical".into(),
