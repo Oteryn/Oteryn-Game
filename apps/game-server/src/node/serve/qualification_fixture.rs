@@ -2,9 +2,13 @@
 //! proof; the root-only control socket supplies only an admitted session id.
 use super::*;
 use crate::content::native_gameplay::NativeGameplayState;
+#[cfg(feature = "qualification-spawn")]
+use crate::foundation::MovementLocalPosition;
 use crate::qualification_spell_character as qualification_build;
 #[cfg(any(test, feature = "qualification-spawn"))]
 use crate::qualification_wild_spawn as wild_spawn;
+#[cfg(feature = "qualification-spawn")]
+use oteryn_gameplay_domain::domain::forge_creature::ForgeCreature;
 
 fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let text = std::str::from_utf8(bytes).ok()?.trim_end_matches('\n');
@@ -99,12 +103,73 @@ fn spawn_request(enabled: bool, bytes: &[u8]) -> Result<([u8; 16], &str), &'stat
         .and_then(|rest| rest.split_once(' '))
         .ok_or("malformed_request")?;
     let session = parse_operation_id(session.as_bytes()).ok_or("malformed_request")?;
-    let bounded = !key.is_empty()
+    valid_creature_key(key)
+        .then_some((session, key))
+        .ok_or("malformed_request")
+}
+
+fn valid_creature_key(key: &str) -> bool {
+    !key.is_empty()
         && key.len() <= 128
         && key
             .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric() || b":._/-".contains(&byte));
-    bounded.then_some((session, key)).ok_or("malformed_request")
+            .all(|byte| byte.is_ascii_alphanumeric() || b":._/-".contains(&byte))
+}
+
+#[cfg(feature = "qualification-spawn")]
+pub(super) const FORGE_SPAWN_PREFIX: &[u8] = b"spawn-forge ";
+
+#[cfg_attr(not(any(test, feature = "qualification-spawn")), allow(dead_code))]
+struct SpawnRequest<'a> {
+    session: [u8; 16],
+    key: &'a str,
+    #[cfg(feature = "qualification-spawn")]
+    forge: Option<(MovementLocalPosition, ForgeCreature)>,
+}
+
+fn parse_spawn(enabled: bool, bytes: &[u8]) -> Result<SpawnRequest<'_>, &'static str> {
+    #[cfg(feature = "qualification-spawn")]
+    if let Some(fields) = bytes.strip_prefix(FORGE_SPAWN_PREFIX) {
+        if !enabled {
+            return Err("not_qualification");
+        }
+        return forge_spawn_request(fields).ok_or("malformed_request");
+    }
+    let (session, key) = spawn_request(enabled, bytes)?;
+    Ok(SpawnRequest {
+        session,
+        key,
+        #[cfg(feature = "qualification-spawn")]
+        forge: None,
+    })
+}
+
+#[cfg(feature = "qualification-spawn")]
+fn forge_spawn_request(bytes: &[u8]) -> Option<SpawnRequest<'_>> {
+    let mut fields = std::str::from_utf8(bytes)
+        .ok()?
+        .strip_suffix('\n')?
+        .split(' ');
+    let session = parse_operation_id(fields.next()?.as_bytes())?;
+    let key = fields.next()?;
+    if !valid_creature_key(key) {
+        return None;
+    }
+    let position = MovementLocalPosition {
+        x: fields.next()?.parse().ok()?,
+        y: fields.next()?.parse().ok()?,
+        floor: fields.next()?.parse().ok()?,
+    };
+    let classification = match fields.next()? {
+        "influenced" => ForgeCreature::new_influenced(fields.next()?.parse().ok()?)?,
+        "fiendish" => ForgeCreature::Fiendish,
+        _ => return None,
+    };
+    fields.next().is_none().then_some(SpawnRequest {
+        session,
+        key,
+        forge: Some((position, classification)),
+    })
 }
 
 fn spawn_rejected(reason: &str) -> String {
@@ -143,7 +208,7 @@ pub(super) async fn spawn(
         emit(PROCESS, &spawn_refusal_warning(reason, detail));
         spawn_rejected(reason)
     };
-    let (session, key) = match spawn_request(config.qualification_fixture, bytes) {
+    let request = match parse_spawn(config.qualification_fixture, bytes) {
         Ok(request) => request,
         Err(reason) => return refuse(reason, None),
     };
@@ -151,7 +216,7 @@ pub(super) async fn spawn(
         return refuse("native_unavailable", None);
     };
     Box::pin(spawn_placed(
-        root, authority, proof, native, owners, session, key, refuse,
+        root, authority, proof, native, owners, request, refuse,
     ))
     .await
 }
@@ -240,21 +305,19 @@ pub(super) async fn inspect_damage(
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
-#[allow(clippy::too_many_arguments)]
 async fn spawn_placed(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     proof: &NodeIncarnationProof,
     native: &NativeGameplayState,
     owners: SpawnOwners<'_>,
-    session: [u8; 16],
-    key: &str,
+    request: SpawnRequest<'_>,
     refuse: impl Fn(&'static str, Option<&str>) -> String,
 ) -> String {
     let budget = SpawnBudget::new(tokio::time::Instant::now());
     let placed = spawn_with_watchdog(budget.reply_deadline, async |published| {
         Box::pin(place(
-            root, authority, proof, native, owners, session, key, budget, published,
+            root, authority, proof, native, owners, request, budget, published,
         ))
         .await
     })
@@ -278,15 +341,13 @@ async fn spawn_placed(
 }
 
 #[cfg(not(any(test, feature = "qualification-spawn")))]
-#[allow(clippy::too_many_arguments)]
 async fn spawn_placed(
     _root: &DurabilityRoot,
     _authority: &ReconciledCharacterAuthority<'_, '_>,
     _proof: &NodeIncarnationProof,
     _native: &NativeGameplayState,
     _owners: SpawnOwners<'_>,
-    _session: [u8; 16],
-    _key: &str,
+    _request: SpawnRequest<'_>,
     refuse: impl Fn(&'static str, Option<&str>) -> String,
 ) -> String {
     // The test-support owners are not in this build; only the qualification-spawn build places.
@@ -342,22 +403,32 @@ async fn place(
     proof: &NodeIncarnationProof,
     native: &NativeGameplayState,
     owners: SpawnOwners<'_>,
-    session: [u8; 16],
-    key: &str,
+    request: SpawnRequest<'_>,
     budget: SpawnBudget,
     published: &mut Option<crate::foundation::CompanionSnapshot>,
 ) -> Result<(), wild_spawn::SpawnRefusal> {
     let fence = wild_spawn::SpawnRefusal::Fence;
-    let session = crate::foundation::GameSessionId::decode(&session)
+    let session = crate::foundation::GameSessionId::decode(&request.session)
         .map_err(|_| wild_spawn::SpawnRefusal::SessionUnknown)?;
+    let placement = wild_spawn::Placement::Adjacent(session);
+    #[cfg(feature = "qualification-spawn")]
+    let placement = match request.forge {
+        Some((position, classification)) => wild_spawn::Placement::Forge {
+            session,
+            position,
+            classification,
+        },
+        None => placement,
+    };
+    let key = request.key;
     let source = wild_spawn::next_command_source()?;
     let mut runtime = owners.runtime.lock().await;
-    let mut plan = Some(wild_spawn::snapshot_adjacent_spawn(
+    let mut plan = Some(wild_spawn::snapshot_spawn(
         owners.room,
         native,
         &mut runtime,
         key,
-        session,
+        placement,
     )?);
     drop(runtime);
     let acquire_holder = async || {
@@ -1690,6 +1761,32 @@ mod tests {
         let line = format!("spawn {id} {}\n", "k".repeat(128));
         assert_eq!(line.len(), CONTROL_REQUEST_BYTES);
         assert!(spawn_request(true, line.as_bytes()).is_ok());
+    }
+
+    #[cfg(feature = "qualification-spawn")]
+    #[test]
+    fn forge_spawn_request_requires_fixture_mode_and_valid_classification() {
+        let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
+        let line = format!(
+            "spawn-forge {id} {} {} {} {} influenced 5\n",
+            "k".repeat(128),
+            i32::MIN,
+            i32::MIN,
+            i16::MIN,
+        );
+        assert_eq!(line.len(), FORGE_CONTROL_REQUEST_BYTES);
+        assert!(parse_spawn(true, line.as_bytes()).is_ok());
+        assert_eq!(
+            parse_spawn(false, line.as_bytes()).err(),
+            Some("not_qualification")
+        );
+        for classification in ["influenced 0", "influenced 6", "influenced", "fiendish 3"] {
+            let invalid = format!("spawn-forge {id} canary:creature/rat 0 0 -7 {classification}\n");
+            assert_eq!(
+                parse_spawn(true, invalid.as_bytes()).err(),
+                Some("malformed_request")
+            );
+        }
     }
 
     #[test]
