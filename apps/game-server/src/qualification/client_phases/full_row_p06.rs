@@ -43,6 +43,21 @@ const ACTIONS: &[&str] = &[
 const PROFILE: &str = "p06-wheel";
 const LEVEL: u32 = 300;
 const BASE_VITALS: (u32, u32, u32) = (1645, 8850, 100);
+const CASTLE_GATE: TilePos = TilePos {
+    x: 32314,
+    y: 32180,
+    floor: -7,
+};
+const CASTLE_OUTSIDE: TilePos = TilePos {
+    x: 32314,
+    y: 32181,
+    floor: -7,
+};
+const CASTLE_INSIDE: TilePos = TilePos {
+    x: 32314,
+    y: 32179,
+    floor: -7,
+};
 const CORE_SLOT: usize = 20; // protocol slot 21: an open max-mana core in every vocation.
 
 struct Row {
@@ -254,6 +269,76 @@ async fn talk_once(
     }
 }
 
+async fn step_exact(
+    client: &mut DevClientSession,
+    direction: StepDirection,
+    expected: TilePos,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let outcome = client.step(direction).await?;
+    let observed = tile(client.world_spatial().actor_position)?;
+    if outcome.status != CommandStatus::Accepted
+        || outcome.disposition != StepDisposition::Moved
+        || outcome.world_spatial_delta.is_none()
+        || observed != expected
+    {
+        return Err(format!("step=promotion-walk from={from:?} direction={direction:?} expected={expected:?} observed={observed:?} reply={outcome:?}").into());
+    }
+    verdict::Harness::global().progress("promotion-walk");
+    client.take_events();
+    tokio::time::sleep(Duration::from_millis(u64::from(outcome.step_wait_ms))).await;
+    Ok(())
+}
+
+async fn walk_to(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    goal: impl Fn(TilePos) -> bool,
+    description: &str,
+) -> TestResult {
+    let origin = tile(client.world_spatial().actor_position)?;
+    let path = route(world, origin, goal)
+        .ok_or_else(|| format!("step=promotion no route from {origin:?} to {description}"))?;
+    for direction in path {
+        let current = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, current, direction)
+            .ok_or("step=promotion authored landing absent")?;
+        step_exact(client, direction, expected).await?;
+    }
+    Ok(())
+}
+
+fn castle_gate_target(world: &BundleWorld) -> TestResult<Vec<u8>> {
+    let mut keys = world.facts().doors().keys().filter(|key| {
+        crate::map::view::placement_of(*key).is_some_and(|(at, _)| at == CASTLE_GATE)
+    });
+    let key = keys
+        .next()
+        .ok_or("step=promotion authored castle gate absent")?;
+    if keys.next().is_some() || !world.facts().doors().blocks(CASTLE_GATE) {
+        return Err("step=promotion expected one authored closed castle gate".into());
+    }
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    Ok(placement)
+}
+
+async fn use_castle_gate(
+    client: &mut DevClientSession,
+    placement: &[u8],
+    revision: u64,
+) -> TestResult {
+    let outcome = client.use_object(placement, revision).await?;
+    if outcome.status != CommandStatus::Accepted
+        || outcome.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+    {
+        return Err(
+            format!("step=promotion castle gate revision={revision} reply={outcome:?}").into(),
+        );
+    }
+    Ok(())
+}
+
 async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
     character_prep::declare_seeded(
         "P06.full",
@@ -277,13 +362,50 @@ async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
     let bundle = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bundle, |_, _| Ok(()))?;
     let origin = tile(client.world_spatial().actor_position)?;
-    let npc = full_row_p20::approach_npc(
+    let gate = castle_gate_target(world)?;
+    walk_to(
         &mut client,
         world,
-        &metadata.npcs,
-        "oteryn:npc.king_tibianus",
+        |at| at == CASTLE_OUTSIDE,
+        "outer castle gate",
     )
     .await?;
+    use_castle_gate(&mut client, &gate, 0).await?;
+    step_exact(&mut client, StepDirection::North, CASTLE_GATE).await?;
+    step_exact(&mut client, StepDirection::North, CASTLE_INSIDE).await?;
+
+    let placements = &metadata
+        .npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == "oteryn:npc.king_tibianus")
+        .ok_or("step=promotion King Tibianus placement absent")?
+        .placements;
+    let [king] = placements.as_slice() else {
+        return Err("step=promotion King Tibianus placement must be unique".into());
+    };
+    let target = TilePos {
+        x: king.x,
+        y: king.y,
+        floor: king.floor,
+    };
+    walk_to(
+        &mut client,
+        world,
+        |at| at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 3,
+        "King Tibianus",
+    )
+    .await?;
+    let npc = client
+        .world_entities()
+        .and_then(|snapshot| {
+            snapshot.iter().find(|entity| {
+                entity.kind == oteryn_dev_client::EntityKind::Npc
+                    && tile(entity.position).is_ok_and(|at| at == target)
+            })
+        })
+        .map(|entity| entity.entity)
+        .ok_or("step=promotion King Tibianus absent from the live entity view")?;
     if talk_once(&mut client, npc, "hi").await?.is_empty() {
         return Err("step=promotion greeting absent".into());
     }
@@ -295,11 +417,23 @@ async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
     if confirmation != ["You are now promoted."] {
         return Err(format!("step=promotion confirmation={confirmation:?}").into());
     }
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at == origin
-    })
-    .ok_or("step=promotion no route back to the original temple tile")?;
-    walk(&mut client, world, &path).await?;
+    walk_to(
+        &mut client,
+        world,
+        |at| at == CASTLE_INSIDE,
+        "inner castle gate",
+    )
+    .await?;
+    step_exact(&mut client, StepDirection::South, CASTLE_GATE).await?;
+    step_exact(&mut client, StepDirection::South, CASTLE_OUTSIDE).await?;
+    use_castle_gate(&mut client, &gate, 1).await?;
+    walk_to(
+        &mut client,
+        world,
+        |at| at == origin,
+        "original temple tile",
+    )
+    .await?;
     logout(&mut client).await?;
     drop(client);
     connect_character(clients, 0xd6, 0).await
