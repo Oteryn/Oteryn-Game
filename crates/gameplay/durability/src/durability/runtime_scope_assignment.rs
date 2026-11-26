@@ -985,6 +985,116 @@ pub async fn with_slot_open_commit_fault<T>(
 
 async fn commit_writer_slot_open(
     tx: Transaction<'_, Postgres>,
+    deadline: std::time::Instant,
+) -> Result<(), DurabilityError> {
+    #[cfg(any(test, feature = "test-support"))]
+    if let Ok(Some(fault)) = SLOT_OPEN_COMMIT_FAULT.try_with(std::cell::Cell::get) {
+        match fault {
+            SlotOpenCommitFault::Committed | SlotOpenCommitFault::CommittedReplyStalled => {
+                commit_semantic_transaction(tx, deadline).await?;
+            }
+            SlotOpenCommitFault::RolledBack | SlotOpenCommitFault::RolledBackReplyStalled => {
+                tx.rollback().await?;
+            }
+        }
+        SLOT_OPEN_COMMIT_FAULT.with(|fault| fault.set(None));
+        if matches!(
+            fault,
+            SlotOpenCommitFault::CommittedReplyStalled | SlotOpenCommitFault::RolledBackReplyStalled
+        ) {
+            // Hold the settled result at the COMMIT boundary until the outer
+            // pass timer cancels this future.
+            return std::future::pending().await;
+        }
+        return Err(DurabilityError::CommitOutcomeUnknown);
+    }
+    commit_semantic_transaction(tx, deadline).await
+}
+
+async fn open_writer_slot(
+    root: &DurabilityRoot,
+    registration: Arc<str>,
+    reconcile: bool,
+) -> Result<Option<OperationKey>, DurabilityError> {
+    root.try_issue_semantic_pass()?
+        .run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                let read_slot = || {
+                    sqlx::query_scalar::<_, Option<Vec<u8>>>(
+                        "SELECT operation_key FROM game_runtime_scope_assignment_slots \
+                         WHERE writer_registration = $1",
+                    )
+                    .bind(&*registration)
+                };
+                // A present row with a NULL key is an existing empty slot.
+                let existing = if reconcile {
+                    read_slot().fetch_optional(&mut *tx).await?
+                } else {
+                    None
+                };
+                let occupied = match existing {
+                    Some(occupied) => {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        occupied
+                    }
+                    None => {
+                        sqlx::query(
+                            "INSERT INTO game_runtime_scope_assignment_slots (writer_registration) \
+                             VALUES ($1) ON CONFLICT DO NOTHING",
+                        )
+                        .bind(&*registration)
+                        .execute(&mut *tx)
+                        .await?;
+                        let occupied = read_slot().fetch_one(&mut *tx).await?;
+                        commit_writer_slot_open(tx, deadline).await?;
+                        occupied
+                    }
+                };
+                occupied
+                    .map(|key| operation_key_from_stored(&key))
+                    .transpose()
+            })
+        })
+        .await
+}
+
+// Inject only the writer-slot open COMMIT result, so PostgreSQL tests can exercise
+// both durable outcomes through the ordinary open and pass-retirement paths.
+#[cfg(any(test, feature = "test-support"))]
+#[doc(hidden)]
+#[derive(Clone, Copy)]
+pub enum SlotOpenCommitFault {
+    Committed,
+    RolledBack,
+    CommittedReplyStalled,
+    RolledBackReplyStalled,
+}
+
+#[cfg(any(test, feature = "test-support"))]
+tokio::task_local! {
+    static SLOT_OPEN_COMMIT_FAULT: std::cell::Cell<Option<SlotOpenCommitFault>>;
+}
+
+#[cfg(any(test, feature = "test-support"))]
+#[doc(hidden)]
+pub async fn with_slot_open_commit_fault<T>(
+    fault: SlotOpenCommitFault,
+    open: impl std::future::Future<Output = T>,
+) -> T {
+    SLOT_OPEN_COMMIT_FAULT
+        .scope(std::cell::Cell::new(Some(fault)), async {
+            let result = open.await;
+            SLOT_OPEN_COMMIT_FAULT.with(|fault| {
+                assert!(fault.get().is_none(), "slot open did not reach COMMIT");
+            });
+            result
+        })
+        .await
+}
+
+async fn commit_writer_slot_open(
+    tx: Transaction<'_, Postgres>,
     deadline: tokio::time::Instant,
 ) -> Result<(), DurabilityError> {
     #[cfg(any(test, feature = "test-support"))]
