@@ -1822,6 +1822,13 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.apply_owner_decisions(catalog)
+    # Owner 2026-11-26 selected Crystal 201189f8 for C17a.
+    # data/scripts/spells/support/haste.lua registers Haste as Premium.
+    haste = next(
+        entry["bundle"]["spell"] for entry in catalog["bundles"]
+        if entry["bundle"]["spell"]["identity"]["key"] == "candidate:spell/haste"
+    )
+    haste["requirements"]["premium"] = True
     generated[catalog_path] = spell_import.canonical_bytes(catalog)
     selection_path = spell_import.PROVIDER_DESTINATIONS["source_selection"]
     selection = json.loads(generated[selection_path])
