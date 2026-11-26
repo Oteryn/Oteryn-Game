@@ -4,6 +4,7 @@ use super::*;
 
 struct LiveSetup {
     integrity: integrity::Integrity,
+    baseline: WorldSpatialObservation,
     initial: snapshot::InitialSnapshot,
     items: snapshot::ItemSnapshot,
     sessions: snapshot::SessionSnapshot,
@@ -268,6 +269,7 @@ where
         revision,
         LiveSetup {
             integrity,
+            baseline,
             initial,
             items,
             sessions,
@@ -298,6 +300,7 @@ async fn live<A: FreshAdmissionAuthority>(
 ) -> Result<ServeState, ServeEnd> {
     let LiveSetup {
         integrity,
+        baseline,
         initial,
         items,
         sessions,
@@ -415,16 +418,16 @@ async fn live<A: FreshAdmissionAuthority>(
         refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         refresh
     });
-    // VIS-3: only a session with capability 6 looks for entities that changed without its own
-    // step.
-    let visibility_refresh = visibility.is_some().then(|| {
+    // Sessions with the core spatial domain still observe their own external relocations.
+    let legacy_spatial = visibility.is_none().then_some(baseline);
+    let visibility_refresh = {
         let mut refresh = tokio::time::interval_at(
             tokio::time::Instant::now() + VISIBILITY_REFRESH,
             VISIBILITY_REFRESH,
         );
         refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
-        refresh
-    });
+        Some(refresh)
+    };
     // SPEED-1 (CONDITIONS-0 §4.3): the actor's pacing clock, this connection's one-step buffer
     // and the frames read while a step waits in it. Those frames run, in order, only after the
     // buffered step's result, because results commit in CommandId order (FND-02 §13); a step
@@ -547,6 +550,7 @@ async fn live<A: FreshAdmissionAuthority>(
         npc_shown,
         combat_refresh,
         visibility_refresh,
+        legacy_spatial,
         pacer,
         step_holder,
         step_wait_receipts,

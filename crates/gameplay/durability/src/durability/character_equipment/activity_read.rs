@@ -120,7 +120,7 @@ pub(super) async fn read(
                     Ok(equipment) => equipment,
                     Err(error) => return Ok(Err(error)),
                 };
-                super::super::db::commit_semantic_transaction(tx, deadline).await?;
+                super::super::db::commit_semantic_read(tx, deadline).await?;
                 Ok(Ok(MovementEquipmentSnapshot { fence, equipment }))
             })
         })
@@ -165,7 +165,7 @@ pub(super) async fn read_lifecycle(
                     Ok(facts) => facts,
                     Err(error) => return Ok(Err(error)),
                 };
-                super::super::db::commit_semantic_transaction(tx, deadline).await?;
+                super::super::db::commit_semantic_read(tx, deadline).await?;
                 Ok(Ok(facts))
             })
         })
@@ -211,7 +211,7 @@ pub(super) async fn read_cast(
                     Ok(facts) => facts,
                     Err(error) => return Ok(Err(error)),
                 };
-                super::super::db::commit_semantic_transaction(tx, deadline).await?;
+                super::super::db::commit_semantic_read(tx, deadline).await?;
                 Ok(Ok(facts))
             })
         })

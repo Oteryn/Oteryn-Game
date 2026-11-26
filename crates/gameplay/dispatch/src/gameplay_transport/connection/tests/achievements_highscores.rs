@@ -3,6 +3,7 @@
 struct AchievementsAuthority {
     calls: RefCell<Vec<AccountAchievementsRequest>>,
     reply: AccountAchievementsReply,
+    commands: Option<crate::gameplay_transport::session_ingress::SessionCommands>,
 }
 
 impl FreshAdmissionAuthority for AchievementsAuthority {
@@ -15,6 +16,16 @@ impl FreshAdmissionAuthority for AchievementsAuthority {
 
     async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
         Some(at(0))
+    }
+
+    fn session_commands(
+        &self,
+    ) -> Option<&crate::gameplay_transport::session_ingress::SessionCommands> {
+        self.commands.as_ref()
+    }
+
+    async fn logout(&self, _: AdmittedSession) -> LogoutReply {
+        LogoutReply::Result(LogoutResult::Accepted)
     }
 
     async fn account_achievements(
@@ -72,6 +83,7 @@ fn account_achievements_query_reads_only_the_controller_account() -> Result<(), 
         let authority = AchievementsAuthority {
             calls: RefCell::new(Vec::new()),
             reply: AccountAchievementsReply::Page(vec![0x08, 0x02]),
+            commands: None,
         };
         let (_end, frames) = drive_session(
             &authority,
@@ -120,6 +132,7 @@ fn account_achievements_query_reads_only_the_controller_account() -> Result<(), 
             let failing = AchievementsAuthority {
                 calls: RefCell::new(Vec::new()),
                 reply: AccountAchievementsReply::Terminal(error),
+                commands: None,
             };
             let (_end, frames) = drive_session(
                 &failing,
@@ -135,6 +148,59 @@ fn account_achievements_query_reads_only_the_controller_account() -> Result<(), 
             assert_eq!(frames.last(), Some(&terminal), "{error:?}");
             assert_eq!(*failing.calls.borrow(), [request(0, 1)]);
         }
+        Ok(())
+    })
+}
+
+#[test]
+fn malformed_achievement_query_allows_first_logout() -> Result<(), Box<dyn Error>> {
+    use crate::gameplay_transport::capabilities::PRODUCTION_OFFERED_CAPABILITIES;
+    use oteryn_protocol_oteryn::logout::{
+        CAPABILITY_LOGOUT_V1, COMMAND_TYPE_LOGOUT_INTENT, encode_logout_intent, encode_logout_result,
+    };
+    run(async {
+        let mut admitted = positioned()?;
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &[CAPABILITY_LOGOUT_V1])
+                .ok_or("logout capability")?;
+        admitted.controller = Some(ControllerBinding {
+            transport: AuthenticatedTransportRefV1::decode(&[0x5a; 16])?,
+            account_id: uuid_v7(0x55),
+        });
+        let authority = AchievementsAuthority {
+            calls: RefCell::new(Vec::new()),
+            reply: AccountAchievementsReply::Rejected,
+            commands: Some(Default::default()),
+        };
+        let logout = oteryn_protocol_oteryn::encode_client_command(
+            ADMITTED_GENERATION,
+            &oteryn_protocol_oteryn::ClientCommandValue {
+                command_id: 2,
+                command_type: COMMAND_TYPE_LOGOUT_INTENT,
+                payload: &encode_logout_intent(),
+            },
+        )?;
+        let (end, frames) = drive_session(
+            &authority,
+            admitted,
+            &[achievements_command(1, &[0x08]), logout],
+        )
+        .await?;
+        assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)), "{end:?}");
+        let mut expected = baseline();
+        expected.extend([
+            encode_command_result(ADMITTED_GENERATION, 1, 1, CommandStatus::Rejected, &[])?,
+            encode_command_result(
+                ADMITTED_GENERATION,
+                2,
+                2,
+                CommandStatus::Accepted,
+                &encode_logout_result(LogoutResult::Accepted)
+                    .map_err(|error| format!("{error:?}"))?,
+            )?,
+        ]);
+        assert_eq!(frames, expected);
+        assert!(authority.calls.borrow().is_empty());
         Ok(())
     })
 }

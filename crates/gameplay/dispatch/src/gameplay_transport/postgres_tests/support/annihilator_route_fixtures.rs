@@ -534,10 +534,14 @@ pub(super) fn run(route: Route) -> TestResult {
             }
         }
         let lever = target(map, 33226, 31671)?;
-        assert_eq!(
-            use_target(&mut owner, &mut admitted[0], &lever).await?,
-            UseDisposition::Committed
-        );
+        if route == Route::Entry {
+            lever_moves_party_over_wire(&owner, admitted.as_slice().try_into()?, &lever).await?;
+        } else {
+            assert_eq!(
+                use_target(&mut owner, &mut admitted[0], &lever).await?,
+                UseDisposition::Committed
+            );
+        }
         let runtime = owner.runtime.lock().await;
         for (member, x) in admitted.iter().zip([33222, 33221, 33220, 33219]) {
             let at = runtime
@@ -563,6 +567,111 @@ pub(super) fn run(route: Route) -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn lever_moves_party_over_wire(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut party: [AdmittedSession; 4],
+    lever: &WorldObjectTarget,
+) -> TestResult {
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
+    use oteryn_protocol_oteryn::world_object::{COMMAND_TYPE_USE_INTENT, decode_use_result};
+    use oteryn_protocol_oteryn::world_spatial::{
+        ActorPosition, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, decode_world_spatial,
+    };
+    use oteryn_protocol_oteryn::world_spatial_entities::{
+        EntityFields, decode_world_spatial_entities_delta_with_fields,
+    };
+    use oteryn_protocol_oteryn::{
+        ClientCommandValue, MessageType, decode_command_result, decode_state_delta,
+        decode_wire_envelope, encode_client_command,
+    };
+    use tokio::io::AsyncWriteExt;
+
+    // Include a mover that only negotiates the core own-position projection.
+    party[3].continuity.selected_capabilities = SelectedCapabilities::NONE;
+    let [(s1, c1), (s2, c2), (s3, c3), (s4, c4)] =
+        std::array::from_fn(|_| tokio::io::duplex(1 << 20));
+    let leader = party[0].continuity;
+    let command = encode_client_command(
+        leader.connection_generation,
+        &ClientCommandValue {
+            command_id: leader.next_command_id,
+            command_type: COMMAND_TYPE_USE_INTENT,
+            payload: &oteryn_protocol_oteryn::world_object::encode_use_intent(lever)
+                .map_err(debug)?,
+        },
+    )?;
+    let serve_member = |mut stream, member| async move {
+        serve_admitted(&mut stream, member, owner, IDLE_LIVENESS).await
+    };
+    let serve = async {
+        tokio::join!(
+            Box::pin(serve_member(s1, party[0])),
+            Box::pin(serve_member(s2, party[1])),
+            Box::pin(serve_member(s3, party[2])),
+            Box::pin(serve_member(s4, party[3])),
+        );
+    };
+    let receive = async move {
+        let mut clients = [c1, c2, c3, c4];
+        for client in &mut clients {
+            while decode_wire_envelope(&super::item_look_fixtures::read_frame(client).await?)?
+                .message_type() != MessageType::SnapshotCommit
+            {}
+        }
+        clients[0].write_u32(u32::try_from(command.len())?).await?;
+        clients[0].write_all(&command).await?;
+
+        for (index, (client, x)) in clients.iter_mut().zip([33222, 33221, 33220, 33219]).enumerate() {
+            let selected = party[index].continuity.selected_capabilities;
+            let mut committed = index != 0;
+            loop {
+                let bytes = super::item_look_fixtures::read_frame(client).await?;
+                let frame = decode_wire_envelope(&bytes)?;
+                if frame.message_type() == MessageType::CommandResult {
+                    let result = decode_command_result(frame.payload())?;
+                    assert_eq!(result.command_id, leader.next_command_id);
+                    assert_eq!(
+                        decode_use_result(result.payload).map_err(debug)?,
+                        UseDisposition::Committed,
+                    );
+                    committed = true;
+                }
+                if frame.message_type() != MessageType::StateDelta {
+                    continue;
+                }
+                let delta = decode_state_delta(frame.payload())?;
+                if delta.domain_id != STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
+                    continue;
+                }
+                let position = if index == 3 {
+                    decode_world_spatial(delta.payload).map_err(debug)?.actor_position
+                } else {
+                    decode_world_spatial_entities_delta_with_fields(
+                        delta.payload,
+                        EntityFields::selected(selected.as_slice()),
+                    )
+                    .map_err(debug)?
+                    .0
+                    .actor_position
+                };
+                if position.y == 31671 {
+                    continue;
+                }
+                assert!(committed, "the leader's result must precede its own move");
+                assert_eq!(position, ActorPosition { x, y: 31659, floor: 13 });
+                client.shutdown().await?;
+                break;
+            }
+        }
+        TestResult::Ok(())
+    };
+    tokio::time::timeout(std::time::Duration::from_secs(8), async {
+        tokio::join!(serve, receive).1
+    })
+    .await?
 }
 
 pub(super) fn target(

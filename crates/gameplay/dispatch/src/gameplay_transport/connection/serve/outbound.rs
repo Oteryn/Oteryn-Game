@@ -530,25 +530,8 @@ where
     if training_logged_out {
         return Err(ServeEnd::LoggedOut);
     }
-    if newhaven_travel_transport::emit_relocation(
-        stream,
-        authority,
-        session.actor,
-        &mut session.admitted,
-        session.visibility.as_mut(),
-        session.item_view.as_mut(),
-        session.container_views.as_mut(),
-        session.world_map.as_mut(),
-        session.generation,
-        &mut session.sequence,
-        &mut session.revision,
-        &mut session.appearances,
-        npc_relocation,
-    )
-    .await
-    .is_none()
-    {
-        return Err(ServeEnd::Disconnected);
+    if let Some(observation) = npc_relocation {
+        effects::movement(stream, authority, session, observation).await?;
     }
     if observe_achievements {
         achievement_notices::refresh(stream, authority, session).await?;

@@ -24,6 +24,22 @@ pub(super) async fn observe_result<A: FreshAdmissionAuthority>(
     authority.observe_projected_entities(actor, selected).await
 }
 
+pub(super) async fn observe_with_published_names<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    selected: SelectedCapabilities,
+    view: &SessionVisibility,
+) -> Result<ChannelEntities, AdmissionRefusal> {
+    let without_names = selected.without_projection(
+        oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
+    );
+    let mut channel = authority
+        .observe_projected_entities(actor, without_names)
+        .await?;
+    view.defer_unnamed_actors(&mut channel);
+    Ok(channel)
+}
+
 enum Source {
     Player(GameSessionId),
     Name(EntityDisplayName),

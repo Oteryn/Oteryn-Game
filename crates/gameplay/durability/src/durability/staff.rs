@@ -16,6 +16,7 @@ use super::db::{
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
+use crate::durability::db::commit_semantic_read;
 use oteryn_protocol_oteryn::staff::{SignedEnvelope, StaffResult, encode_result};
 use sqlx::Row;
 use std::sync::{Arc, OnceLock};
@@ -346,7 +347,7 @@ impl DurabilityRoot {
                     "SELECT ends_at_ms FROM game_character_sanctions WHERE character_id=encode($1,'hex')::uuid AND ($2::text IS NULL OR environment=$2) AND lifted_at_ms IS NULL ORDER BY ends_at_ms DESC LIMIT 1",
                 ).bind(fence.character_id.as_bytes().as_slice()).bind(environment)
                     .fetch_optional(&mut *tx).await?;
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 Ok(Some(until.unwrap_or(0).try_into()
                     .map_err(|_| DurabilityError::InvalidStoredState)?))
             })).await

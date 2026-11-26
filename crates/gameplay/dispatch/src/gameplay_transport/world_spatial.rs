@@ -299,6 +299,21 @@ impl SessionVisibility {
         self.published
     }
 
+    /// A delta carrying the position or departure of an actor already on the wire.
+    pub(crate) fn has_actor_movement(&self, update: &VisibilityUpdate) -> bool {
+        let VisibilityUpdate::Delta(delta) = update else {
+            return false;
+        };
+        delta.leave.iter().any(|entity| self.shows(*entity))
+            || delta.update.iter().any(|current| {
+                self.shows(current.entity)
+                    && self
+                        .entities
+                        .get(&current.entity.identity)
+                        .is_some_and(|prior| prior.position != current.position)
+            })
+    }
+
     /// Reuse published names for exact incarnations and defer actors without a name.
     pub(crate) fn defer_unnamed_actors(&self, channel: &mut ChannelEntities) {
         channel.entities.retain_mut(|entity| {

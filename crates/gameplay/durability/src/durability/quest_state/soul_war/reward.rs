@@ -1,3 +1,4 @@
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::domain::CharacterId;
 use sqlx::{Postgres, Row, Transaction};
@@ -73,7 +74,7 @@ impl DurabilityRoot {
                 claim_key: row.try_get("claim_key")?,
                 content_revision: row.try_get("content_revision")?,
             }) }).transpose()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(pending))
         })).await?
     }

@@ -66,9 +66,9 @@ impl SessionAppearance {
             )
             .await;
         let observation = match observation {
-            Err(HolderBusy) if moved => {
-                // The movement already committed. Publish the new position using the
-                // exact incarnations the client knows. A later refresh will bind entrants.
+            Err(HolderBusy) if moved || view.has_actor_movement(&update) => {
+                // The movement already committed, possibly in another session's turn.
+                // Publish it using the known incarnations and bind entrants later.
                 let mut bindings = Vec::new();
                 let mut skipped = Vec::new();
                 for entity in &player_refs {

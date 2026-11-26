@@ -44,7 +44,7 @@ impl DurabilityRoot {
             assert_current_equipment_in_transaction(&mut tx, &recovery, &node, &fence, Some(command), digest).await.map_err(grant_error)?;
             let matched: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_dawnport_departures WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric AND vocation=$4)")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(vocation).fetch_one(&mut *tx).await?;
-            super::db::commit_semantic_transaction(tx, deadline).await?;
+            super::db::commit_semantic_read(tx, deadline).await?;
             Ok(matched)
         })).await
     }

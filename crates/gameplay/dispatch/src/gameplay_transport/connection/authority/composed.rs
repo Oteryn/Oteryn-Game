@@ -1621,6 +1621,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         recovered
     }
 
+    fn is_bundle_door_target(
+        &self,
+        target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> bool {
+        self.bundle_map()
+            .is_some_and(|map| map_door::owns_target(&map.overlay, &map.facts, target))
+    }
+
     async fn use_event_world_object(
         &self,
         actor: ExactActorRef,

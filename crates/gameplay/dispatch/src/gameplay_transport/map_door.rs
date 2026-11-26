@@ -16,6 +16,7 @@ use crate::map::facts::BundleFacts;
 use crate::map::overlay::ChannelOverlay;
 use crate::map::overlay::TilePos;
 use oteryn_protocol_oteryn::refusal_detail::RefusalDetail;
+use oteryn_protocol_oteryn::world_map::MAP_TARGET_BYTES;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 fn outcome(disposition: UseDisposition) -> UseOutcome {
@@ -28,6 +29,24 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
         potion_utterance: None,
         refusal_detail: None,
     }
+}
+
+/// Check ownership without checking the revision. A stale door target still
+/// belongs to the door handler, which returns its own stale-state result.
+pub(super) fn owns_target(
+    overlay: &ChannelOverlay,
+    facts: &BundleFacts,
+    target: &WorldObjectTarget,
+) -> bool {
+    let Ok(placement) = <&[u8; MAP_TARGET_BYTES]>::try_from(target.placement.as_slice()) else {
+        return false;
+    };
+    let (digest, key) = placement.split_at(32);
+    digest == overlay.base().digest()
+        && key
+            .try_into()
+            .ok()
+            .is_some_and(|key| facts.doors().contains(u64::from_be_bytes(key)))
 }
 
 /// `WORLDINT0-RL-02`: the per-actor `world_action` cooldown.

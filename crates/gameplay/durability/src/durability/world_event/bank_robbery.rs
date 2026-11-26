@@ -1,4 +1,5 @@
 //! World-owned Bank Robbery selection and Channel projection binding.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::durability::character_progression::assert_runtime_scope_fence;
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
@@ -564,7 +565,7 @@ impl DurabilityRoot {
                 None
             };
             // The observation linearizes under the occurrence lock, before any first return.
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(Some(Dialogue { phase: o.phase, bag })))
         })).await?
     }

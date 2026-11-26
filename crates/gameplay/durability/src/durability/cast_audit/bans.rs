@@ -1,5 +1,6 @@
 //! Game-owned, account-scoped persistent bans. Account UUIDs come exclusively
 //! from authenticated admission; no Platform foreign key or character lease.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 impl DurabilityRoot {
     pub async fn cast_account_banned(
@@ -13,7 +14,7 @@ impl DurabilityRoot {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             if !prove_current_incarnation(&mut tx,&node).await? {return Err(DurabilityError::Unavailable);}
             let banned=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_cast_account_bans WHERE owner_account=$1 AND subject_account=$2)").bind(owner.as_slice()).bind(subject.as_slice()).fetch_one(&mut *tx).await?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(banned)
+            commit_semantic_read(tx,deadline).await?;Ok(banned)
         })).await
     }
     /// Ban and its immutable audit event commit together, before active viewers

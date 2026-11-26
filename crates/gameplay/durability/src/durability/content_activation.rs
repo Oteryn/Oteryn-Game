@@ -3,6 +3,7 @@
 //! The control plane records one immutable issuance per Channel scope and monotonic sequence;
 //! the newest row of a scope is its current activation and floor. The node reads only that row.
 
+use crate::durability::db::commit_semantic_read;
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::{ChannelId, WorldId};
@@ -106,7 +107,7 @@ impl DurabilityRoot {
                     .bind(channel_id.as_bytes().as_slice())
                     .fetch_optional(&mut *tx)
                     .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     let Some(row) = row else { return Ok(None) };
                     let invalid = |_| DurabilityError::InvalidStoredState;
                     let digest = |index: usize| -> Result<[u8; 32]> {
