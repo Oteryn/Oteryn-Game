@@ -203,6 +203,7 @@ pub(super) async fn check_fanout(
     target: EntityRef,
     [leader_id, member_id]: [[u8; 16]; 2],
     h: &Harness,
+    lock_unrelated_ledger: bool,
 ) -> TestResult {
     select_notices(owner, admitted)?;
     let [leader, member, ..] = admitted else {
@@ -223,7 +224,31 @@ pub(super) async fn check_fanout(
         let [invitation] = invitations.as_slice() else {
             return Err("expected one invitation".into());
         };
-        b.command(Some(PartyIntent::Accept(invitation.handle))).await?;
+        let unrelated_lock = if lock_unrelated_ledger {
+            let mut tx = h.pool.begin().await?;
+            let foreground = h.root.foreground_demand()?;
+            b.command(Some(PartyIntent::Accept(invitation.handle))).await?;
+            sqlx::query("LOCK TABLE game_durability_reconnect_pending_commands IN ROW SHARE MODE")
+                .execute(&mut *tx)
+                .await?;
+            let leader_generation: String = sqlx::query_scalar(
+                "SELECT connection_generation::text FROM game_party_membership_notices
+                 WHERE character_id = encode($1, 'hex')::uuid
+                   AND game_session_id = encode($2, 'hex')::uuid
+                   AND events = ARRAY[ $3::bytea || decode('01','hex') ]",
+            )
+            .bind(leader_id.as_slice())
+            .bind(a.session.game_session_id.as_bytes().as_slice())
+            .bind(member_id.as_slice())
+            .fetch_one(&mut *tx)
+            .await?;
+            assert_eq!(leader_generation, a.generation().to_string());
+            drop(foreground);
+            Some(tx)
+        } else {
+            b.command(Some(PartyIntent::Accept(invitation.handle))).await?;
+            None
+        };
 
         for (peer, character, change) in [
             (&mut a, member_id, PartyMembershipChange::Joined),
@@ -232,6 +257,9 @@ pub(super) async fn check_fanout(
             assert_notice(peer, character, change).await?;
         }
         assert_notice(&mut b, member_id, PartyMembershipChange::Joined).await?;
+        if let Some(tx) = unrelated_lock {
+            tx.rollback().await?;
+        }
 
         // Keep the actor's foreground turn through the leave result so the
         // test can acquire the holder before the background drains.
