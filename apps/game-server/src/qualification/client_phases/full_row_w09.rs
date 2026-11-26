@@ -341,9 +341,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if quantities(&client)? != expected {
         return Err("W09 reconnect changed the first conjure inventory".into());
     }
-    evidence(
-        "GAP row=W09.full status=BLOCKED-CONTRACT check=spell-and-group-cooldowns-survive-full-logout",
-    );
     let before = client
         .actor_vitals()
         .copied()
@@ -361,8 +358,52 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     client.take_events();
+    let used_at = tokio::time::Instant::now();
     use_item(&mut client, aid, committed).await?;
+    let reset_until = tokio::time::Instant::now() + Duration::from_secs(5);
+    let mut saw_reset = false;
+    let mut saw_clear = false;
+    while !saw_reset || !saw_clear {
+        for event in client.take_events() {
+            match event {
+                SessionEvent::ActorCooldowns(frame) => {
+                    let expected_clear = cooldowns
+                        .iter()
+                        .filter(|entry| entry.expires_at_ms > frame.value.server_now_ms)
+                        .map(|entry| ActorCooldown {
+                            expires_at_ms: 0,
+                            ..*entry
+                        })
+                        .collect::<Vec<_>>();
+                    if expected_clear.is_empty() || frame.value.entries != expected_clear {
+                        return Err(format!("W09 Aid clearance mismatch sequence={} expected={expected_clear:?} frame={:?}", frame.server_sequence, frame.value).into());
+                    }
+                    saw_clear = true;
+                }
+                SessionEvent::TutorialNotice(delta)
+                    if matches!(&delta.value,
+                    TutorialNotice::StatusText(text) if text == RESET_NOTICE) =>
+                {
+                    saw_reset = true
+                }
+                _ => {}
+            }
+        }
+        if saw_reset && saw_clear {
+            break;
+        }
+        if tokio::time::Instant::now() >= reset_until {
+            return Err(format!(
+                "W09 missing Aid clearance or notice after sequence={}",
+                client.last_server_sequence()
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+    let second_cast = tokio::time::Instant::now();
     cast_wand(&mut client, spell).await?;
+    let [durable_spell, _] = assert_conjure_cooldowns(&mut client, spell, second_cast).await?;
     if first_cast.elapsed() >= natural_cooldown {
         return Err(
             "W09 Conjure Wand of Darkness recast did not precede natural cooldown expiry".into(),
@@ -371,13 +412,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     expected.insert(aid, 1);
     *expected.entry(wand).or_default() += 1;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    let mut saw_reset = false;
     loop {
-        saw_reset |= client.take_events().iter().any(|event| {
-            matches!(event, SessionEvent::TutorialNotice(delta)
-                if matches!(&delta.value, TutorialNotice::StatusText(text) if text == RESET_NOTICE))
-        });
-        if saw_reset && quantities(&client)? == expected {
+        if quantities(&client)? == expected {
             break;
         }
         if tokio::time::Instant::now() >= deadline {
@@ -416,6 +452,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if quantities(&fresh)? != settled {
         return Err("W09 missing Cube refusal changed inventory".into());
     }
+    fresh.take_events();
     use_item(
         &mut fresh,
         aid,
@@ -424,6 +461,42 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     .await?;
     if quantities(&fresh)? != settled {
         return Err("W09 refused Kooldown Aid consumed the second unit".into());
+    }
+    let until = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let events = fresh.take_events();
+        let remaining = events.iter().find_map(|event| {
+            let SessionEvent::TutorialNotice(delta) = event else {
+                return None;
+            };
+            let TutorialNotice::StatusText(text) = &delta.value else {
+                return None;
+            };
+            text.strip_prefix("Kooldown Aid can be used again in ")?
+                .strip_suffix(" seconds.")?
+                .parse::<u64>()
+                .ok()
+        });
+        if let Some(seconds) = remaining {
+            let lower = 86_400_u64.saturating_sub(used_at.elapsed().as_secs().saturating_add(1));
+            if !(lower..=86_400).contains(&seconds) {
+                return Err(
+                    format!("W09 Aid remaining seconds {seconds} outside {lower}..=86400").into(),
+                );
+            }
+            evidence(&format!(
+                "W09_CHECK cooldown-aid-reuse remaining_seconds={seconds}"
+            ));
+            break;
+        }
+        if tokio::time::Instant::now() >= until {
+            return Err(format!(
+                "W09 missing remaining-time notice after sequence={}",
+                fresh.last_server_sequence()
+            )
+            .into());
+        }
+        fresh.service_liveness(Duration::from_millis(50)).await?;
     }
     let refused_session = fresh.join_snapshot().game_session_id;
     logout(&mut fresh).await?;
@@ -442,13 +515,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             presentation::decode_actor_cooldowns(&snapshot.payload)
                 .map_err(|_| "W09 full relog sent malformed ACTOR_COOLDOWNS")
         })?;
-    if !cooldowns.entries.iter().any(|entry| {
-        entry.kind == ActorCooldownKind::Spell
-            && entry.id == spell.get()
-            && entry.expires_at_ms > cooldowns.server_now_ms
-    }) {
+    if !cooldowns
+        .entries
+        .iter()
+        .any(|entry| *entry == durable_spell && entry.expires_at_ms > cooldowns.server_now_ms)
+    {
         return Err(format!(
-            "W09 BLOCKED-CONTRACT full relog lost the active spell cooldown sequence={sequence} frame={cooldowns:?}"
+            "W09 full relog changed the active spell deadline sequence={sequence} expected={durable_spell:?} frame={cooldowns:?}"
         ).into());
     }
     logout(&mut verified).await?;
