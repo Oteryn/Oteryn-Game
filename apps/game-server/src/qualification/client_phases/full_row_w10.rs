@@ -291,10 +291,10 @@ pub(super) async fn equip_primal_weapon(client: &mut DevClientSession) -> TestRe
     let weapon = provisioning::item_reference(&provisioning::item_index()?, PRIMAL_AXE_ITEM)?;
     let equipped = |client: &DevClientSession| {
         client.inventory().is_some_and(|inventory| {
-            inventory
-                .equipment
-                .iter()
-                .any(|entry| entry.item.item_definition_ref == weapon)
+            inventory.equipment.iter().any(|entry| {
+                entry.slot == oteryn_protocol_oteryn::item_view::EquipmentSlot::RightHand
+                    && entry.item.item_definition_ref == weapon
+            })
         })
     };
     if equipped(client) {
