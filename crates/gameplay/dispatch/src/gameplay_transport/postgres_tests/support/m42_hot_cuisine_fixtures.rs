@@ -598,6 +598,14 @@ pub(super) async fn exercise_books(
             ],
         ),
     ] {
+        if !route.is_empty() {
+            // Leaving the first doorway to reach its chest closed it behind us.
+            // Reopen it from the room to enter the doorway before stepping east.
+            assert_eq!(
+                use_object(owner, admitted, 33065, 32529, 1674).await?,
+                UseDisposition::Committed
+            );
+        }
         for direction in route {
             owner.clock_origin -= std::time::Duration::from_secs(1);
             let command = admitted.continuity.next_command_id;

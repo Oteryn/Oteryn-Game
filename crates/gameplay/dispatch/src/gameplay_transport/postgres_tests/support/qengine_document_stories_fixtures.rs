@@ -209,7 +209,10 @@ pub(super) async fn exercise(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    super::qengine_outfit_stories_fixtures::earn_level(owner, admitted, authority, 50).await?;
+    // Dread Lord takes 1,500 essences at 1 oz each. The returning Brotherhood
+    // character needs capacity for the full payment, bags and prior rank rewards.
+    let carrying_level = if family == "brotherhood" { 60 } else { 50 };
+    super::qengine_outfit_stories_fixtures::earn_level(owner, admitted, authority, carrying_level).await?;
     let mut bags = vec![];
     let mut ordinal = 700;
     for (stage, item, price) in [
