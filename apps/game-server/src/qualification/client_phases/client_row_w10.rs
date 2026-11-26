@@ -108,7 +108,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             "Primal challenger did not freshly admit at the authored lobby approach".into(),
         );
     }
-    full_row_w10::enter_primal(&mut client, world, true).await?;
+    full_row_w10::enter_primal(&mut client, world).await?;
     let instance_session = client.join_snapshot().game_session_id;
     probe(
         &mut client,

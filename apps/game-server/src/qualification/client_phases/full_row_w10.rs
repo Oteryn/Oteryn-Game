@@ -1,13 +1,13 @@
 //! W10 player scenario, derived from the matrix row, re-audit, and the native Hazard owner:
 //! 1. Admit a node-boot character and send an empty Hazard command. Expect ACCEPTED and the
 //!    two-byte `[unlocked, selected]` state delta, initially with level 1 selected.
-//! 2. Send selection level 1. Expect ACCEPTED, the same two-byte state, and no unrelated state
-//!    mutation. Then send locked level 2 and expect a REJECTED reply with no payload (the refusal).
+//! 2. Send locked level 2 and require REJECTED with no payload and unchanged Hazard state.
 //! 3. Walk, using compiled-world collision, to an authored Primal Menace encounter. Send ATTACK,
 //!    require the accepted combat-state delta, remain alive while servicing native combat, and
 //!    require the monster's removal/death frames.
 //! 4. Require the kill's Hazard unlock reply to change `[1, 1]` to `[2, 1]`; select level 2 and
-//!    require `[2, 2]`. Fight and loot an authored Hazard-area creature, asserting combat vitals
+//!    require `[2, 2]`. Switch back to level 1 and restore level 2. Fight and loot an authored
+//!    Hazard-area creature, asserting combat vitals
 //!    and carried-inventory deltas rather than inspecting storage directly.
 //! 5. Log out, freshly admit the same character, query Hazard again, and require `[2, 2]` plus the
 //!    retained loot. Re-select locked level 3 and require the same empty REJECTED refusal.
@@ -118,16 +118,14 @@ pub(super) async fn stage_primal_challenger(clients: &SeamClients<'_>) -> TestRe
     Ok(())
 }
 
-pub(super) async fn enter_primal(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    first_chair_only: bool,
-) -> TestResult {
+pub(super) async fn enter_primal(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
     let path = route(world, from, |at| {
-        at.floor == -14
-            && at.y == 32752
-            && (33548..=if first_chair_only { 33548 } else { 33552 }).contains(&at.x)
+        at == (TilePos {
+            x: 33548,
+            y: 32752,
+            floor: -14,
+        })
     })
     .ok_or_else(|| format!("no native route from {from:?} to the authored Primal lever"))?;
     if path.is_empty() {
@@ -318,11 +316,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         .await
         .map_err(|error| failed_error(1, error, "the first staging logout"))?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(failed(
-            1,
-            detail,
-            "an accepted first staging logout",
-        ));
+        return Err(failed(1, detail, "an accepted first staging logout"));
     }
     drop(admitted);
     stage_primal_challenger(clients).await.map_err(|error| {
@@ -384,13 +378,6 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
             .map_err(|error| failed_error(1, error, "a Hazard query reply"))?,
         [1, 1],
     )?;
-    accepted(
-        2,
-        command(&mut client, Some(1))
-            .await
-            .map_err(|error| failed_error(2, error, "a Hazard selection reply"))?,
-        [1, 1],
-    )?;
     rejected(
         2,
         command(&mut client, Some(2))
@@ -405,11 +392,9 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         [1, 1],
     )?;
 
-    enter_primal(&mut client, world, true)
-        .await
-        .map_err(|error| {
-            failed_error(3, error, "the authored Primal lever and instance handoff")
-        })?;
+    enter_primal(&mut client, world).await.map_err(|error| {
+        failed_error(3, error, "the authored Primal lever and instance handoff")
+    })?;
     let (at, defeated) = defeat_primal(&mut client).await?;
 
     accepted(
@@ -424,6 +409,20 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         command(&mut client, Some(2))
             .await
             .map_err(|error| failed_error(4, error, "the level-2 Hazard selection delta"))?,
+        [2, 2],
+    )?;
+    accepted(
+        4,
+        command(&mut client, Some(1))
+            .await
+            .map_err(|error| failed_error(4, error, "the switch back to Hazard level 1"))?,
+        [2, 1],
+    )?;
+    accepted(
+        4,
+        command(&mut client, Some(2))
+            .await
+            .map_err(|error| failed_error(4, error, "the restoration of Hazard level 2"))?,
         [2, 2],
     )?;
     let inventory_before = client
