@@ -47,13 +47,19 @@ async fn probe(
         &(reply.status as u32).to_be_bytes(),
     )?;
     capture(root, &format!("w10-{name}-frame.bin"), &frame)?;
+    let digest = |bytes: &[u8]| {
+        Sha256::digest(bytes)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+    };
     let binding = serde_json::json!({
         "session_id": uuid_text(session.as_bytes()),
         "command_id": reply.command_id,
         "server_sequence": reply.server_sequence,
         "status": reply.status as u32,
-        "frame_sha256": format!("{:x}", Sha256::digest(&frame)),
-        "request_sha256": format!("{:x}", Sha256::digest(request)),
+        "frame_sha256": digest(&frame),
+        "request_sha256": digest(request),
     });
     capture(
         root,
@@ -108,6 +114,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         );
     }
     full_row_w10::assert_primal_vitals(&client)?;
+    full_row_w10::equip_primal_weapon(&mut client).await?;
     full_row_w10::enter_primal(&mut client, world).await?;
     let instance_session = client.join_snapshot().game_session_id;
     probe(

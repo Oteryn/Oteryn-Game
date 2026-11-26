@@ -15,6 +15,7 @@
 //! Every command above is a native player command. If authored encounter access prevents a later
 //! command, the row reports the first observed step and reply/path failure; it never claims PASS.
 use super::*;
+use crate::qualification_spell_character::{PRIMAL_AXE_ITEM, PRIMAL_AXE_SKILL};
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{attack as attacks, boss_encounter as boss, hazard};
 
@@ -92,11 +93,16 @@ pub(super) async fn stage_primal_challenger(clients: &SeamClients<'_>) -> TestRe
     wait_character_released(clients, 0).await?;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
     let character = clients.characters[0].as_slice();
-    let level: i64 = sqlx::query_scalar(
-        "SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid",
+    let (level, axe): (i64, i32) = sqlx::query_as(
+        "SELECT progression.level, build.axe_level FROM game_character_progression_state progression
+         JOIN game_character_build_state build USING (character_id)
+         WHERE progression.character_id=encode($1,'hex')::uuid",
     ).bind(character).fetch_one(&mut db).await?;
-    if level != 500 {
-        return Err(format!("Primal challenger level={level}, expected 500").into());
+    if (level, axe) != (500, i32::from(PRIMAL_AXE_SKILL)) {
+        return Err(format!(
+            "Primal challenger level={level} axe={axe}, expected level=500 axe={PRIMAL_AXE_SKILL}"
+        )
+        .into());
     }
     let result = sqlx::query(
         "UPDATE game_character_last_positions AS p
@@ -222,6 +228,90 @@ pub(super) fn primal_world(clients: &SeamClients<'_>) -> StepResult<&'static Bun
     .map_err(|error| failed_error(1, error, "the production world loader to accept the bundle"))
 }
 
+async fn attack_once(
+    client: &mut DevClientSession,
+    target: &oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    step: u8,
+) -> StepResult {
+    if client
+        .session_mut()
+        .combat_state()
+        .is_some_and(|state| state.target == Some(*target))
+    {
+        return Err(failed(
+            step,
+            "target_already_set",
+            "a new native attack target",
+        ));
+    }
+    let reply = client
+        .session_mut()
+        .attack_target(Some(target))
+        .await
+        .map_err(|error| failed_error(step, error, "the first ATTACK result"))?;
+    if reply.disposition != attacks::AttackIntentDisposition::Ok {
+        return Err(failed(
+            step,
+            format!("{reply:?}"),
+            "an accepted first ATTACK",
+        ));
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let remaining = deadline
+            .checked_duration_since(tokio::time::Instant::now())
+            .ok_or_else(|| {
+                failed(
+                    step,
+                    "missing_combat_delta",
+                    "the post-result combat-state delta",
+                )
+            })?;
+        let events = client.wait_for_events(remaining).await.map_err(|error| {
+            failed_error(step, Box::new(error), "the post-result combat-state delta")
+        })?;
+        for event in events {
+            if let oteryn_dev_client::SessionEvent::ActorCombatState(delta) = event
+                && delta.server_sequence > reply.result_server_sequence
+            {
+                if delta.value.target != Some(*target) {
+                    return Err(failed(
+                        step,
+                        format!("target={:?}", delta.value.target),
+                        "the exact newly selected target",
+                    ));
+                }
+                return Ok(());
+            }
+        }
+    }
+}
+
+pub(super) async fn equip_primal_weapon(client: &mut DevClientSession) -> TestResult {
+    let weapon = provisioning::item_reference(&provisioning::item_index()?, PRIMAL_AXE_ITEM)?;
+    let equipped = |client: &DevClientSession| {
+        client.inventory().is_some_and(|inventory| {
+            inventory
+                .equipment
+                .iter()
+                .any(|entry| entry.item.item_definition_ref == weapon)
+        })
+    };
+    if equipped(client) {
+        return Err("Primal fixture axe was equipped before the first equip command".into());
+    }
+    let result = client.session_mut().equip_item_definition(weapon).await?;
+    require_mechanic_acceptance(result.status, "equip Primal fixture axe")?;
+    if result.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved {
+        return Err(format!("Primal fixture axe equip outcome: {:?}", result.outcome).into());
+    }
+    full_row_p05::wait_for_inventory(client, "primal-fixture-axe", equipped).await?;
+    evidence(&format!(
+        "FIXTURE row=W10 weapon={PRIMAL_AXE_ITEM} axe_skill={PRIMAL_AXE_SKILL} input=primal_damage"
+    ));
+    Ok(())
+}
+
 pub(super) async fn defeat_primal(
     client: &mut DevClientSession,
 ) -> StepResult<(
@@ -265,32 +355,30 @@ pub(super) async fn defeat_primal(
             .map_err(|error| failed_error(3, Box::new(error), "continued instance frames"))?;
         client.take_events();
     };
-    let attack = client
-        .session_mut()
-        .attack_target(Some(&target.entity))
-        .await
-        .map_err(|error| failed_error(3, error, "an ATTACK reply"))?;
-    if attack.disposition != attacks::AttackIntentDisposition::Ok {
-        return Err(failed(
-            3,
-            format!("attack={attack:?}"),
-            "an accepted Primal Menace ATTACK with combat delta",
-        ));
-    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+    attack_once(client, &target.entity, 3).await?;
     evidence("W10_CHECK step=3 status=PASS reply=ATTACK_OK combat-delta=present");
 
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    while client
-        .world_entities()
-        .is_some_and(|entities| entities.iter().any(|entity| entity.entity == target.entity))
-    {
+    while let Some(boss) = client.world_entities().and_then(|entities| {
+        entities
+            .iter()
+            .find(|entity| entity.entity == target.entity)
+    }) {
         if tokio::time::Instant::now() >= deadline {
-            let _ = client.session_mut().attack_target(None).await;
+            use oteryn_protocol_oteryn::world_spatial_entities::EntityDetail;
+            let health = match boss.detail {
+                EntityDetail::Actor { health_percent, .. }
+                | EntityDetail::ActorWithIcons { health_percent, .. } => Some(health_percent),
+                _ => None,
+            };
             return Err(failed(
                 3,
-                format!("combat_timeout;vitals={:?}", client.actor_vitals()),
-                "the provisioned player build or legitimate encounter support needed to complete the Primal fight",
+                format!(
+                    "combat_timeout boss_health_percent={health:?} vitals={:?}",
+                    client.actor_vitals()
+                ),
+                "the live Primal Menace kill within 90 seconds",
             ));
         }
         client
@@ -391,6 +479,9 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         [1, 1],
     )?;
 
+    equip_primal_weapon(&mut client)
+        .await
+        .map_err(|error| failed_error(3, error, "the live equipped Primal fixture axe"))?;
     enter_primal(&mut client, world).await.map_err(|error| {
         failed_error(3, error, "the authored Primal lever and instance handoff")
     })?;
@@ -477,18 +568,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
                 "an authored reachable Hazard-area combat and loot target for the scaling comparison",
             )
         })?;
-    let second_attack = client
-        .session_mut()
-        .attack_target(Some(&second.entity))
-        .await
-        .map_err(|error| failed_error(4, error, "a scaled-combat ATTACK reply"))?;
-    if second_attack.disposition != attacks::AttackIntentDisposition::Ok {
-        return Err(failed(
-            4,
-            format!("scaled_attack={second_attack:?}"),
-            "an accepted Hazard-area ATTACK and combat delta",
-        ));
-    }
+    attack_once(&mut client, &second.entity, 4).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
     while client
         .world_entities()
