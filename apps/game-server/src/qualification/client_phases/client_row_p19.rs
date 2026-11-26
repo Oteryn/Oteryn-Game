@@ -240,21 +240,9 @@ async fn equip_fixture_axe(client: &mut DevClientSession, axe: NonZeroU32) -> Te
     {
         return Ok(());
     }
-    let source = inventory
-        .entries
-        .iter()
-        .find(|item| item.item_definition_ref == axe)
-        .ok_or("P19 fixture axe absent")?
-        .handle;
     evidence("P19 FIXTURE weapon=axe");
-    let reply = client
-        .session_mut()
-        .move_item_counted(oteryn_dev_client::client_runtime::inventory::MoveRequest {
-            source,
-            destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::LeftHand),
-            count: None,
-        })
-        .await?;
+    let reply = client.session_mut().equip_item_definition(axe).await?;
+    require_mechanic_acceptance(reply.status, "P19 equip fixture axe")?;
     if reply.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("P19 fixture axe equip refused: {reply:?}").into());
     }
