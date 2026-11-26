@@ -25,6 +25,21 @@ fn qengine_rewards_hallowed_ground_exchange() -> TestResult {
     scenario("qengine-rewards-hallowed")
 }
 #[test]
+fn qengine_rewards_eroth_starts_mission_and_issues_mirror() -> TestResult {
+    scenario("qengine-rewards-eroth-start")
+}
+
+#[test]
+fn qengine_rewards_eroth_legacy_save_uses_tagged_crystal() -> TestResult {
+    scenario("qengine-rewards-eroth-legacy")
+}
+
+#[test]
+fn qengine_rewards_one_eyed_joe_accepts_cursed_crystal_mission() -> TestResult {
+    scenario("qengine-rewards-joe-start")
+}
+
+#[test]
 fn qengine_rewards_outfox_exchange() -> TestResult {
     scenario("qengine-rewards-outfox")
 }

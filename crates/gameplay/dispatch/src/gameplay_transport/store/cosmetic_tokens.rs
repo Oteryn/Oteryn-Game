@@ -11,6 +11,20 @@ pub(super) async fn purchase(
         let retained = owner.root.has_store_purchase_request(request.purchase_request_id, admitted.controller?.account_id, *fence.character_id.as_bytes()).await.ok()?;
         if !retained { return Some(refusal(wire::StorePurchaseCode::PurchaseDisabled)); }
     }
+    let fence = gameplay_fence(owner, admitted).await?;
+    let mut binding = wire::encode_purchase_request(&request).ok()?;
+    binding.extend(admitted.world_id.as_bytes());
+    let journal = PurchaseRequest {
+        purchase_request_id: request.purchase_request_id,
+        account_id: admitted.controller?.account_id,
+        character_id: *fence.character_id.as_bytes(),
+        binding,
+    };
+    if request.currency == wire::cosmetic_tokens::CURRENCY
+        && let Some(answer) = owner.root.read_store_purchase_answer(journal.clone()).await.ok()?
+    {
+        return wire::decode_purchase_result(&answer).ok();
+    }
     let Some(catalogue) = catalogue_for_key(&request.offer_key) else {
         return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
     };
@@ -33,23 +47,16 @@ pub(super) async fn purchase(
     if !crate::content::store_cosmetics::compatible(native, cosmetic) {
         return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
     }
-    let fence = gameplay_fence(owner, admitted).await?;
-    let mut binding = wire::encode_purchase_request(&request).ok()?;
-    binding.extend(admitted.world_id.as_bytes());
     owner
         .root
         .purchase_store_cosmetic_tokens(
             owner.character,
             owner.holder,
             fence,
-            PurchaseRequest {
-                purchase_request_id: request.purchase_request_id,
-                account_id: admitted.controller?.account_id,
-                character_id: *fence.character_id.as_bytes(),
-                binding,
-            },
+            journal,
             request.offer_key,
             request.catalog_revision,
+            native.clone(),
         )
         .await
         .ok()

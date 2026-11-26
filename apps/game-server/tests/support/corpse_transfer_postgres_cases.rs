@@ -223,6 +223,25 @@ pub(crate) async fn mint_corpse(
     actor: u32,
     top_damage: [u8; 16],
 ) -> TestResult<[u8; 16]> {
+    mint_corpse_with_definition(
+        harness,
+        authority,
+        actor,
+        top_damage,
+        typed("LootTable", "fixture:loot.alpha", "loot-r1"),
+        typed("ItemType", "fixture:corpse.rat", "corpse-r1"),
+    )
+    .await
+}
+
+pub(crate) async fn mint_corpse_with_definition(
+    harness: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    actor: u32,
+    top_damage: [u8; 16],
+    source: TypedDefinitionRef,
+    item: TypedDefinitionRef,
+) -> TestResult<[u8; 16]> {
     let request = ItemMintRequest {
         cause: ItemMintCause::for_test(
             WorldId::decode(&id(WORLD)).map_err(debug)?,
@@ -230,11 +249,11 @@ pub(crate) async fn mint_corpse(
             ScopeOwnershipGeneration::new(GENERATION).map_err(debug)?,
             actor,
             1,
-            typed("LootTable", "fixture:loot.alpha", "loot-r1"),
+            source,
             CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
             0,
         ),
-        item: typed("ItemType", "fixture:corpse.rat", "corpse-r1"),
+        item,
         quantity: 1,
         ground: GroundPlacement {
             // Canonical 10-byte Ground64 address (x=9, y=9, floor=0).

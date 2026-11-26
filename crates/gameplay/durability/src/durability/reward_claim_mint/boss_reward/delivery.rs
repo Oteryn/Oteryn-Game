@@ -1,10 +1,10 @@
 use super::*;
-use crate::durability::item_loop_move::carried_weight;
+use crate::durability::item_loop_move::{ITEM_LOOP_TREE_ITEMS_MAX, carried_weight};
 use crate::durability::item_mint::uuid_text;
 use crate::durability::item_mint_audit::{self as mint, OneItemStateV1, Type2Transaction};
 use crate::durability::item_transfer::{
-    ContainerEntryPosition, definition_message, entry_message, load_entries, load_slot,
-    read_derived_transfer_capacity_centi_oz, stack_maximum,
+    ContainerEntryPosition, GAMEITEM01_CONTAINER_ENTRIES_MAX, definition_message, entry_message,
+    load_entries, load_slot, read_derived_transfer_capacity_centi_oz, stack_maximum,
 };
 use crate::durability::item_transfer_audit::{OneItemCommandRefV1, OneItemInventoryV1};
 use crate::durability::reward_claim_mint_audit::{
@@ -21,33 +21,47 @@ pub(super) struct CapacityLine {
     pub container: bool,
 }
 
-/// Selects the exact sequential prefix, stopping at the first item that cannot be placed.
-/// It never skips an overweight entry to grant a later reward, matching Crystal collectAll.
+impl CapacityLine {
+    pub(super) fn carried_weight(self) -> Option<u64> {
+        if self.quantity == 0
+            || self.quantity > self.maximum
+            || (self.container && self.quantity != 1)
+        {
+            return None;
+        }
+        Some(u64::from(self.weight?) * u64::from(self.quantity))
+    }
+}
+
+pub(super) struct TreeFootprint {
+    pub weight: Option<u64>,
+    pub items: usize,
+}
+
+/// Stop at the first whole tree that cannot be placed. Children consume
+/// weight and carried-tree space, but only their root takes a backpack slot.
 pub(super) fn capacity_prefix(
-    lines: &[CapacityLine],
+    trees: impl IntoIterator<Item = TreeFootprint>,
     slots: usize,
-    carried: u64,
+    mut tree_room: usize,
+    mut carried: u64,
     capacity: u64,
 ) -> Result<usize, BossRewardCollectionStatus> {
-    let mut used = carried;
     let mut count = 0;
-    for line in lines.iter().take(BOSS_REWARD_COLLECTION_MAX) {
-        let refusal = if count == slots {
+    for tree in trees.into_iter().take(BOSS_REWARD_COLLECTION_MAX) {
+        let refusal = if count == slots || tree.items > tree_room {
             Some(BossRewardCollectionStatus::NoRoom)
-        } else if line.quantity == 0
-            || line.quantity > line.maximum
-            || (line.container && line.quantity != 1)
-            || line.weight.is_none()
-        {
-            Some(BossRewardCollectionStatus::ContentUnavailable)
-        } else {
-            match used.checked_add(u64::from(line.weight.unwrap_or(0)) * u64::from(line.quantity)) {
+        } else if let Some(weight) = tree.weight {
+            match carried.checked_add(weight) {
                 Some(next) if next <= capacity => {
-                    used = next;
+                    carried = next;
+                    tree_room -= tree.items;
                     None
                 }
                 _ => Some(BossRewardCollectionStatus::NoRoom),
             }
+        } else {
+            Some(BossRewardCollectionStatus::ContentUnavailable)
         };
         if let Some(refusal) = refusal {
             return if count == 0 { Err(refusal) } else { Ok(count) };
@@ -55,6 +69,33 @@ pub(super) fn capacity_prefix(
         count += 1;
     }
     Ok(count)
+}
+
+fn tree_weight<C: ItemLoopContent>(tree: &[store::Entitlement], content: &C) -> Option<u64> {
+    let mut weight = 0_u64;
+    for (index, row) in tree.iter().enumerate() {
+        let facts = content.loop_facts(&row.item.definition)?;
+        if index == 0
+            && tree.len() > 1
+            && tree.len() - 1
+                > facts
+                    .container_capacity?
+                    .min(GAMEITEM01_CONTAINER_ENTRIES_MAX) as usize
+        {
+            return None;
+        }
+        let (maximum, _) = stack_maximum(facts.stack).ok()?;
+        weight = weight.checked_add(
+            CapacityLine {
+                quantity: row.item.quantity,
+                maximum,
+                weight: facts.weight,
+                container: facts.container_capacity.is_some(),
+            }
+            .carried_weight()?,
+        )?;
+    }
+    Some(weight)
 }
 
 pub(super) async fn deliver<C: ItemLoopContent>(
@@ -83,11 +124,11 @@ pub(super) async fn deliver<C: ItemLoopContent>(
     let entries = load_entries(tx, backpack.item_instance_id).await?;
     let tree_count: i64 = sqlx::query_scalar("WITH RECURSIVE tree(item_instance_id,depth) AS (SELECT item_instance_id,1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid UNION ALL SELECT e.item_instance_id,t.depth+1 FROM tree t JOIN game_item_nested_entries e ON e.parent_item_instance_id=t.item_instance_id WHERE t.depth<8) SELECT count(*) FROM (SELECT item_instance_id FROM tree LIMIT 501) bounded")
         .bind(backpack.item_instance_id.as_slice()).fetch_one(&mut ***tx).await?;
-    let slots = (capacity.min(20) as usize)
-        .saturating_sub(entries.len())
-        .min(500_usize.saturating_sub(
-            usize::try_from(tree_count).map_err(|_| DurabilityError::InvalidStoredState)?,
-        ));
+    let slots =
+        (capacity.min(GAMEITEM01_CONTAINER_ENTRIES_MAX) as usize).saturating_sub(entries.len());
+    let tree_room = (ITEM_LOOP_TREE_ITEMS_MAX as usize).saturating_sub(
+        usize::try_from(tree_count).map_err(|_| DurabilityError::InvalidStoredState)?,
+    );
     let carried = match carried_weight(
         tx,
         fence.character_id,
@@ -100,49 +141,44 @@ pub(super) async fn deliver<C: ItemLoopContent>(
         Err(_) => return Ok(refuse(BossRewardCollectionStatus::ContentUnavailable)),
     };
     let limit = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
-    let lines = rows
-        .iter()
-        .map(|row| {
-            let facts = content.loop_facts(&row.item.definition);
-            CapacityLine {
-                quantity: row.item.quantity,
-                maximum: facts
-                    .as_ref()
-                    .and_then(|f| stack_maximum(f.stack).ok())
-                    .map_or(0, |(maximum, _)| maximum),
-                weight: facts.as_ref().and_then(|f| f.weight),
-                container: facts.is_some_and(|f| f.container_capacity.is_some()),
-            }
-        })
-        .collect::<Vec<_>>();
-    let count = match capacity_prefix(&lines, slots, carried, limit) {
+    let same_tree = |left: &store::Entitlement, right: &store::Entitlement| {
+        left.death == right.death
+            && left.parent_ordinal.unwrap_or(left.item.ordinal)
+                == right.parent_ordinal.unwrap_or(right.item.ordinal)
+    };
+    let footprints = rows.chunk_by(same_tree).map(|tree| TreeFootprint {
+        weight: tree_weight(tree, content),
+        items: tree.len(),
+    });
+    let count = match capacity_prefix(footprints, slots, tree_room, carried, limit) {
         Ok(count) => count,
         Err(status) => return Ok(refuse(status)),
     };
     let now_u64 = u64::try_from(now).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let mut selected = Vec::with_capacity(count);
-    // Reuse the personal container's real collect_all/expiry consumer for each qualified group.
-    for group in rows[..count].chunk_by(|left, right| left.death == right.death) {
-        let mut chest = store::chest(&group[0], *fence.character_id.as_bytes(), group.to_vec())?;
-        chest
-            .collect_prefix(now_u64, &mut selected, BOSS_REWARD_COLLECTION_MAX, 0)
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
-    }
     let mut ordinal = entries
         .iter()
         .map(|entry| entry.placement_ordinal)
         .max()
         .unwrap_or(0);
+    let mut moved = 0;
     let mut touched = std::collections::BTreeSet::new();
-    for row in &selected {
+    for tree in rows.chunk_by(same_tree).take(count) {
+        let head = tree.first().ok_or(DurabilityError::InvalidStoredState)?;
+        let mut chest = store::chest(head, *fence.character_id.as_bytes(), tree.iter().collect())?;
+        let mut selected = Vec::with_capacity(tree.len());
+        chest
+            .collect_all(now_u64, &mut selected, tree.len())
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let mut selected = selected.into_iter();
+        let root = selected.next().ok_or(DurabilityError::InvalidStoredState)?;
         ordinal = ordinal
             .checked_add(1)
             .ok_or(DurabilityError::InvalidStoredState)?;
-        mint_one(
+        let parent = mint_one(
             tx,
             fence,
             request,
-            row,
+            root,
             ContainerEntryPosition {
                 parent_item_instance_id: backpack.item_instance_id,
                 placement_ordinal: ordinal,
@@ -150,19 +186,33 @@ pub(super) async fn deliver<C: ItemLoopContent>(
             now,
         )
         .await?;
-        touched.insert(row.death);
+        for (index, row) in selected.enumerate() {
+            mint_one(
+                tx,
+                fence,
+                request,
+                row,
+                ContainerEntryPosition {
+                    parent_item_instance_id: parent,
+                    placement_ordinal: (index + 1) as u64,
+                },
+                now,
+            )
+            .await?;
+        }
+        moved += tree.len();
+        touched.insert(root.death);
     }
     for death in touched {
         store::refresh_group(tx, fence, death).await?;
     }
     Ok(BossRewardCollection {
         status: BossRewardCollectionStatus::Collected,
-        moved: u16::try_from(selected.len()).map_err(|_| DurabilityError::InvalidStoredState)?,
+        moved: u16::try_from(moved).map_err(|_| DurabilityError::InvalidStoredState)?,
         remaining: store::remaining(tx, fence, request.selection, now).await?,
     })
 }
 
-#[allow(clippy::too_many_arguments)]
 async fn mint_one(
     tx: &mut Type2Transaction<'_>,
     fence: CurrentCharacterItemFence,
@@ -170,7 +220,7 @@ async fn mint_one(
     row: &store::Entitlement,
     destination: ContainerEntryPosition,
     now: i64,
-) -> Result<(), DurabilityError> {
+) -> Result<[u8; 16], DurabilityError> {
     let ids = sqlx::query("SELECT game_character_uuid_v7()::text AS transaction_id,game_character_uuid_v7()::text AS event_id,game_character_uuid_v7()::text AS item_id").fetch_one(&mut ***tx).await?;
     let transaction = uuid_text(ids.try_get("transaction_id")?)?;
     let event = uuid_text(ids.try_get("event_id")?)?;
@@ -240,9 +290,15 @@ async fn mint_one(
     sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,$6,1,encode($7,'hex')::uuid)")
         .bind(item.as_slice()).bind(world.as_bytes().as_slice()).bind(&row.item.definition.family).bind(&row.item.definition.production_key).bind(&row.item.definition.revision_ref)
         .bind(i64::from(row.item.quantity)).bind(transaction.as_slice()).execute(&mut ***tx).await?;
-    sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid)")
-        .bind(item.as_slice()).bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(destination.parent_item_instance_id.as_slice())
-        .bind(destination.placement_ordinal.to_string()).bind(transaction.as_slice()).execute(&mut ***tx).await?;
+    if row.parent_ordinal.is_some() {
+        sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid)")
+            .bind(item.as_slice()).bind(world.as_bytes().as_slice()).bind(destination.parent_item_instance_id.as_slice())
+            .bind(destination.placement_ordinal.to_string()).bind(transaction.as_slice()).execute(&mut ***tx).await?;
+    } else {
+        sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid)")
+            .bind(item.as_slice()).bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(destination.parent_item_instance_id.as_slice())
+            .bind(destination.placement_ordinal.to_string()).bind(transaction.as_slice()).execute(&mut ***tx).await?;
+    }
     let tuple = tx.tuple();
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(event.as_slice()).bind(transaction.as_slice()).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(item.as_slice())
@@ -252,5 +308,5 @@ async fn mint_one(
     if updated.rows_affected() != 1 {
         return Err(DurabilityError::InvalidStoredState);
     }
-    Ok(())
+    Ok(item)
 }
