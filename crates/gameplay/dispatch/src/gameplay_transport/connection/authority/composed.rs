@@ -1664,9 +1664,32 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             ActorCooldown, ActorCooldownKind, ActorCooldowns,
         };
         let groups = spell_catalog::cooldown_group_keys()?;
+        let house_fence = if matches!(
+            actor.runtime_scope(),
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) && self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, session)
+            .is_ok()
+        {
+            Some(
+                self.root
+                    .observe_current_gameplay_fence(self.character, session, true)
+                    .await
+                    .ok()??
+                    .item_fence(),
+            )
+        } else {
+            None
+        };
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
-        let state = states.get(&runtime, actor, session)?;
+        let state = match house_fence {
+            Some(fence) => states.house_spell_state(&runtime, actor, session, fence),
+            None => states.get(&runtime, actor, session),
+        }?;
         let now = self.owner_now().get();
         let mut entries = Vec::new();
         let mut collect =
@@ -1698,7 +1721,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         Some(ActorCooldowns {
-            server_now_ms: now.div_ceil(1000),
+            server_now_ms: now / 1000,
             rtt_ms: None,
             entries,
         })
