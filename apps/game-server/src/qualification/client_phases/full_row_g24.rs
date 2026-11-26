@@ -1,5 +1,5 @@
 //! G24 market details and statistics (capability 63, command 6126).
-//! 1. Admit the node-boot character; read the market catalogue page 0: every ware must satisfy
+//! 1. Admit the node-boot character and walk to a depot; read catalogue page 0: every ware must satisfy
 //!    the (empty) filter, and a name search built from the first ware must keep that ware.
 //! 2. Query the statistics and the order book of that ware: the echoed definition must match.
 //! 3. The price statistics must come from completed trades; a node-boot server with no trade
@@ -13,7 +13,8 @@ use oteryn_protocol_oteryn::market_details as wire;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
@@ -99,6 +100,9 @@ async fn ask(client: &mut DevClientSession, query: &wire::Query) -> TestResult<w
     .await?;
     let reply = wire::decode_reply(&reply)
         .map_err(|error| format!("step=query observed=decode-{error:?}"))?;
+    if let wire::Reply::Refused { code } = reply {
+        return Err(format!("step=market-details query={query:?} observed=refused-{code}").into());
+    }
     Ok(reply)
 }
 
@@ -184,8 +188,39 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
     let mut client = connect_world(clients, 0x8a).await?;
-    let outcome = verdict::observe(body(&mut client, clients)).await;
+    let outcome = verdict::observe(async {
+        let start = tile(client.world_spatial().actor_position)?;
+        let path = route(world, start, |at| near_locker(world, at))
+            .ok_or("step=depot observed=no-reachable-authored-locker")?;
+        for direction in path {
+            let from = tile(client.world_spatial().actor_position)?;
+            let expected =
+                destination(world, from, direction).ok_or("step=depot observed=invalid-route")?;
+            let outcome = client.step(direction).await?;
+            if outcome.disposition != StepDisposition::Moved
+                || outcome.world_spatial_delta.is_none()
+                || tile(client.world_spatial().actor_position)? != expected
+            {
+                return Err(format!(
+                    "step=depot from={from:?} expected={expected:?} observed={outcome:?}"
+                )
+                .into());
+            }
+            verdict::Harness::global().progress("walk");
+            client.take_events();
+        }
+        body(&mut client, clients).await
+    })
+    .await;
     let closed = verdict::observe(finish(&mut client)).await;
     outcome?;
     closed
