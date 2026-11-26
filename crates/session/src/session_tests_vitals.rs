@@ -272,7 +272,7 @@ fn gift_cooldown_and_vitals_cross_an_idle_deadline_together() -> Result<(), BoxE
         assert_eq!(session.actor_vitals(), Some(&vitals(30, 20)));
         assert!(matches!(
             session.take_events().as_slice(),
-            [SessionEvent::GiftOfLife { .. }]
+            [SessionEvent::GiftOfLife { cooldowns, .. }] if cooldowns.value.snapshot
         ));
         Ok(())
     })?
@@ -281,9 +281,9 @@ fn gift_cooldown_and_vitals_cross_an_idle_deadline_together() -> Result<(), BoxE
 #[test]
 fn cast_claims_the_vitals_in_its_queued_rescue_pair() -> Result<(), BoxError> {
     use oteryn_protocol_oteryn::presentation::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1;
-    for capabilities in [&[6, 23][..], &[6, 23, CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1][..]] {
-        block_on(async {
-        let (mut session, mut peer) = gift_pair(capabilities).await?;
+    block_on(async {
+        let (mut session, mut peer) =
+            gift_pair(&[6, 23, CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1]).await?;
         let responder = tokio::spawn(async move {
             let command = read_frame(&mut peer).await?;
             let id = decode_wire_envelope(&command)?
@@ -325,17 +325,12 @@ fn cast_claims_the_vitals_in_its_queued_rescue_pair() -> Result<(), BoxError> {
             return Err(format!("expected one queued rescue pair, got {events:?}").into());
         };
         assert_eq!(cooldowns.server_sequence, 42);
-        assert_eq!(
-            cooldowns.value.snapshot,
-            !capabilities.contains(&CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1),
-        );
+        assert!(!cooldowns.value.snapshot);
         assert_eq!(delivered, &claimed);
         assert_eq!(session.actor_vitals(), Some(&claimed.value));
         responder.await??;
-        Ok::<_, BoxError>(())
-        })??;
-    }
-    Ok(())
+        Ok(())
+    })?
 }
 
 #[test]

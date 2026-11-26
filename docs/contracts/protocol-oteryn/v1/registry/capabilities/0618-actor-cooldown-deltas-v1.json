@@ -9,5 +9,5 @@
   "command_types": [],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "Offered with the qualified native presentation source and requires PRESENTATION_V1. Selects domain 20 delta type 2."
+  "offer_gate": "Offered with the qualified native presentation source and requires PRESENTATION_V1. Selects domain 20 delta type 2 and sparse payloads for paired delta type 3."
 }

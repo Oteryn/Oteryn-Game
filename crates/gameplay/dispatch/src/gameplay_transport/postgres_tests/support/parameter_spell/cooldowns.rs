@@ -333,8 +333,11 @@ async fn gift(
                     let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
                     if delta.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS {
                         assert!(!health_seen, "rescued vitals arrived before their cooldown");
+                        assert_eq!(delta.delta_type, wire::DELTA_TYPE_ACTOR_COOLDOWNS_WITH_VITALS_V1);
                         cooldown_sequence = Some(envelope.server_sequence());
-                        cooldowns.extend(wire::decode_actor_cooldowns(delta.payload).map_err(debug)?.entries);
+                        let update = wire::decode_actor_cooldowns(delta.payload).map_err(debug)?;
+                        assert_eq!(update.server_now_ms, 0, "negotiated sparse payload");
+                        cooldowns.extend(update.entries);
                     }
                     if delta.domain_id == actor_spell::STATE_DOMAIN_ACTOR_VITALS
                         && delta.new_revision >= health_revision && !health_seen
