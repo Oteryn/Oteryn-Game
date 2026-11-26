@@ -734,7 +734,7 @@ async fn committed_hunt_death(
     .map_err(|_| "no committed death receipt for the spawned creature")?
 }
 
-fn parse_spawned_entity(answer: &str) -> TestResult<oteryn_dev_client::EntityRef> {
+pub(crate) fn parse_spawned_entity(answer: &str) -> TestResult<oteryn_dev_client::EntityRef> {
     let fields: Vec<_> = answer.split_ascii_whitespace().collect();
     let ["spawned", identity, generation] = fields.as_slice() else {
         return Err(format!("invalid hunt spawn response: {answer}").into());
@@ -754,7 +754,7 @@ async fn request_spawn(session: String, key: String) -> Result<String, String> {
     request_fixture_control(session, "--spawn", key).await
 }
 
-async fn request_fixture_control(
+pub(crate) async fn request_fixture_control(
     session: String,
     operation: &'static str,
     argument: String,
