@@ -353,38 +353,46 @@ pub(super) async fn travel_to_poison_spider(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
-    let from = tile(client.world_spatial().actor_position)?;
-    let points: Vec<_> = spawns
-        .sources
-        .iter()
-        .flat_map(|source| {
-            source.points.iter().filter_map(|point| {
-                let creature = spawns.creatures.get(point.creature as usize)?;
-                (creature.key == "oteryn:creature.poison_spider").then_some((
-                    source.floor,
-                    point.x,
-                    point.y,
-                ))
+    const SPAWN: TilePos = TilePos {
+        x: 32463,
+        y: 32226,
+        floor: -7,
+    };
+    const APPROACH: TilePos = TilePos {
+        x: 32464,
+        y: 32225,
+        floor: -7,
+    };
+    let authored = spawns.sources.iter().any(|source| {
+        source.floor == SPAWN.floor
+            && source.points.iter().any(|point| {
+                point.x == SPAWN.x
+                    && point.y == SPAWN.y
+                    && spawns
+                        .creatures
+                        .get(point.creature as usize)
+                        .is_some_and(|creature| creature.key == "oteryn:creature.poison_spider")
             })
-        })
-        .collect();
-    // Reach the spawn's visible approach before planning a route around live occupants.
+    });
+    if !authored {
+        return Err("C08 authored Poison Spider spawn missing".into());
+    }
+    if !world
+        .base()
+        .tile(APPROACH.x, APPROACH.y, APPROACH.floor)
+        .is_some_and(|tile| !tile.protection_zone())
+    {
+        return Err("C08 authored encounter approach missing or protected".into());
+    }
+    let from = tile(client.world_spatial().actor_position)?;
     let occupied = c08_visible_occupants(client);
     let path = route_avoiding(
         world,
         from,
-        |at| {
-            world
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|tile| !tile.protection_zone())
-                && points.iter().any(|&(floor, x, y)| {
-                    at.floor == floor && at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 2
-                })
-        },
+        |at| at == APPROACH,
         |at| !occupied.contains(&at),
     )
-    .ok_or("no reachable oteryn:creature.poison_spider spawn within town route budget")?;
+    .ok_or("C08 authored Poison Spider approach is unreachable within town route budget")?;
     walk_c08(client, world, &path).await?;
 
     let here = client.world_spatial().actor_position;
@@ -427,7 +435,10 @@ pub(super) async fn travel_to_poison_spider(
             return Ok(spider);
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("C08 selected Poison Spider did not approach: player={here:?} spider={target:?}").into());
+            return Err(format!(
+                "C08 selected Poison Spider did not approach: player={here:?} spider={target:?}"
+            )
+            .into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
