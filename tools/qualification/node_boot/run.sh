@@ -166,6 +166,7 @@ case "$NODE_BOOT_D150_LEGACY" in
   *) blocked invalid_d150_mode ;;
 esac
 NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"
+WORLD_START=(32369 32238 7)
 case "$NODE_BOOT_WORLD_PROFILE" in
   # Real Thais/town outskirts and the default-start and seller regions.
   town)
@@ -176,9 +177,24 @@ case "$NODE_BOOT_WORLD_PROFILE" in
     esac
     ;;
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
-  *) blocked invalid_world_profile ;;
+  *)
+    # The registry holds profile, allowed single-row batches, extra regions, and start x/y/z.
+    profiles="$GAME_SOURCE/tools/qualification/node_boot/row-world-profiles.tsv"
+    declaration="$(awk -F '\t' -v name="$NODE_BOOT_WORLD_PROFILE" '$1 == name { print }' "$profiles")"
+    [[ -n "$declaration" ]] || blocked invalid_world_profile
+    [[ "${NODE_BOOT_E2E_ONLY:-}" == rows && "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 ]] \
+      || blocked row_world_profile_requires_world_rows
+    IFS=$'\t' read -r _ batches regions x y z <<< "$declaration"
+    case ",$batches," in
+      *,"${OTERYN_E2E_ROW_BATCH:-}",*) ;;
+      *) blocked row_world_profile_requires_declared_batch ;;
+    esac
+    WORLD_START=("$x" "$y" "$z")
+    WORLD_REGIONS="$(printf '%s\n' "$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt");125,124;$regions" \
+      | tr ';' '\n' | sort -t, -k1,1n -k2,2n -u | paste -sd ';')"
+    ;;
 esac
-readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS
+readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS WORLD_START
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
@@ -710,12 +726,13 @@ if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   if [[ "$NODE_BOOT_WORLD_PROFILE" == town ]]; then compile_world=compile-town-qualification; fi
   "${WORLD_COMPILER[@]}" "$compile_world" "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$WORLD_REGIONS" > "$WORK/world-compile.json"
   PIN="$WORK/world.json"
-  python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
+  python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" "${WORLD_START[@]}" <<'PY_REGION_PIN'
 import json, sys
 pin = json.load(open(sys.argv[1]))
 pin["schema"] = "OTERYN_QUALIFICATION_WORLD/v1"
 pin["digest"] = json.load(open(sys.argv[2]))["digest"]
-pin["entry_start"] = {"x": 32369, "y": 32238, "floor": -7}
+x, y, floor = map(int, sys.argv[4:])
+pin["entry_start"] = {"x": x, "y": y, "floor": -floor}
 with open(sys.argv[3], "w") as output:
     json.dump(pin, output, sort_keys=True)
 PY_REGION_PIN
@@ -846,9 +863,9 @@ project_format_version = "{pin['project_format_version']}"
 world_schema_version = "{pin['world_schema_version']}"
 content_revision = "{pin['content_revision']}"
 production = false
-start_x = 32369
-start_y = 32238
-start_floor = 7''')
+start_x = {pin['entry_start']['x']}
+start_y = {pin['entry_start']['y']}
+start_floor = {-pin['entry_start']['floor']}''')
 PY_WORLD
     cat >> "$WORK/node.toml" <<'TOML'
 [premium_activation]

@@ -388,6 +388,19 @@ fn boot_world(
     world: WorldId,
     channel: ChannelId,
 ) -> TestResult<QualificationWorld> {
+    #[derive(serde::Deserialize)]
+    struct EntryStart {
+        x: u16,
+        y: u16,
+        floor: i8,
+    }
+    let start = match pin.get("entry_start") {
+        Some(start) => {
+            let EntryStart { x, y, floor } = serde_json::from_value(start.clone())?;
+            TilePos { x, y, floor }
+        }
+        None => TOWN,
+    };
     let digest = hex32(pin["digest"].as_str().ok_or("World digest")?)?;
     let checked = crate::map::boot::check(
         data,
@@ -409,7 +422,7 @@ fn boot_world(
                 production: false,
             },
             map_revision: format!("sha256:{}", pin["digest"].as_str().ok_or("World digest")?),
-            start: TOWN,
+            start,
         },
     )?;
     let input = native_input()?;
@@ -1126,8 +1139,9 @@ pub(super) async fn journeys(
         ChannelId::decode(&clients.channel)?,
     )?;
     let world = &generation.bundle;
+    let expected_start = world.start();
     evidence(&format!(
-        "world_loader state=booted duration_ms={} start={TOWN:?}",
+        "world_loader state=booted duration_ms={} start={expected_start:?}",
         started.elapsed().as_millis()
     ));
     let groups = verdict::Groups::from_env()?;
@@ -1137,9 +1151,9 @@ pub(super) async fn journeys(
     evidence(&format!(
         "world_fixture role=core phase=first_entry position={entered_at:?}"
     ));
-    if entered_at != TOWN {
+    if entered_at != expected_start {
         return Err(format!(
-            "Platform-created character did not enter the configured town: expected={TOWN:?} actual={entered_at:?}"
+            "Platform-created character did not enter the configured town: expected={expected_start:?} actual={entered_at:?}"
         )
         .into());
     }
@@ -3812,7 +3826,7 @@ fn qualification_nbtown_checks_first_entry_before_mutating_packets() -> TestResu
         .split_once("async fn profile_journey(")
         .ok_or("missing profile journey boundary")?;
     let entry_check = journey
-        .find("if entered_at != TOWN {")
+        .find("if entered_at != expected_start {")
         .ok_or("missing strict Platform-created town assertion")?;
     for packet in [
         "include!(\"full_e2ef6_mount.rs\")",
