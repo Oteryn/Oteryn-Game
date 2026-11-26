@@ -53,7 +53,7 @@ fn delayed_strikes_postgres_death_echo_two_hits() -> TestResult {
         vocation: "sorcerer",
         experience: 30_000_000,
         weapon: "oteryn:item.tibia.i3277",
-        spells: &[("candidate:spell/death_echo", 120, 150)],
+        spells: &[("candidate:spell/death_echo", 120, 155)],
         case: Case::Echo,
     })
 }
@@ -76,7 +76,7 @@ fn grenade(case: Case, tag: &'static str) -> TestResult {
         vocation: "paladin",
         experience: 30_000_000_000,
         weapon: "oteryn:item.tibia.i3277",
-        spells: &[("candidate:spell/divine_grenade", 0, 160)],
+        spells: &[("candidate:spell/divine_grenade", 300, 160)],
         case,
     })
 }
@@ -105,7 +105,7 @@ fn delayed_strikes_postgres_logout_drops_pending() -> TestResult {
         vocation: "sorcerer",
         experience: 30_000_000,
         weapon: "oteryn:item.tibia.i3277",
-        spells: &[("candidate:spell/death_echo", 120, 150)],
+        spells: &[("candidate:spell/death_echo", 120, 155)],
         case: Case::Logout,
     })
 }
@@ -117,7 +117,7 @@ fn delayed_strikes_postgres_departed_target_does_not_block_timer_lane() -> TestR
         vocation: "sorcerer",
         experience: 30_000_000,
         weapon: "oteryn:item.tibia.i3277",
-        spells: &[("candidate:spell/death_echo", 120, 150)],
+        spells: &[("candidate:spell/death_echo", 120, 155)],
         case: Case::DepartedTarget,
     })
 }
@@ -130,8 +130,8 @@ fn delayed_strikes_postgres_overlapping_callbacks_follow_lane_order() -> TestRes
         experience: 30_000_000,
         weapon: "oteryn:item.tibia.i3277",
         spells: &[
-            ("candidate:spell/death_echo", 120, 150),
-            ("candidate:spell/death_echo", 120, 150),
+            ("candidate:spell/death_echo", 120, 155),
+            ("candidate:spell/death_echo", 120, 155),
         ],
         case: Case::QueuedOrder,
     })

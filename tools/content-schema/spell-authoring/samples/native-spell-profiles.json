@@ -1807,7 +1807,7 @@
           "learning_required": false
         },
         "costs": {
-          "mana": 150,
+          "mana": 155,
           "soul": 0
         },
         "cooldown_ms": 6000,
@@ -2555,7 +2555,7 @@
             "paladin",
             "royal_paladin"
           ],
-          "level": 0,
+          "level": 300,
           "premium": true,
           "learning_required": false,
           "wheel_unlock": true
@@ -2580,7 +2580,7 @@
           "block_walls": true,
           "allow_on_self": true,
           "check_floor": true,
-          "range_tiles": 4,
+          "range_tiles": 7,
           "parameter": "none",
           "cast_at_position": true
         },
