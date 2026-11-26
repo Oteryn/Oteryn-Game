@@ -52,6 +52,22 @@ pub(super) fn durable_inventory(
     inventory
 }
 
+fn unrelated_inventory(
+    mut inventory: oteryn_protocol_oteryn::item_view::CharacterInventory,
+    affected_definitions: &[u32],
+) -> oteryn_protocol_oteryn::item_view::CharacterInventory {
+    inventory.entries.retain(|item| !affected_definitions.contains(&item.item_definition_ref.get()));
+    durable_inventory(inventory)
+}
+
+fn valid_history_ordinals(history: &[serde_json::Value]) -> bool {
+    history.iter().rev().enumerate().all(|(index, entry)| {
+        let first = history.last().and_then(|entry| entry["ordinal"].as_u64());
+        first.is_some_and(|first| first > 0 && (history.len() == 50 || first == 1)
+            && first.checked_add(index as u64) == entry["ordinal"].as_u64())
+    })
+}
+
 async fn observe_inventory(
     expect_change: bool,
     mut poll: impl AsyncFnMut(Duration) -> TestResult<bool>,
@@ -154,7 +170,7 @@ fn validate_history(step: &str, observation: &Observation, applied: &[&Observati
             observation.body
         )
     })?;
-    if entries.len() != applied.len() {
+    if entries.len() != applied.len() || !valid_history_ordinals(entries) {
         return Err(format!(
             "{step} HISTORY receipt count mismatch expected={} observed={} payload={}",
             applied.len(),
@@ -297,6 +313,9 @@ async fn fusion_case(
         )
         .into());
     }
+    let mut affected = coins.iter().map(|(definition, _)| definition.get()).collect::<Vec<_>>();
+    affected.push(pair_ref.get());
+    let before = unrelated_inventory(client.inventory().cloned().ok_or("Fusion pre-state missing")?, &affected);
     let mut fusion_outcome = None;
     let operations = [Operation::Fusion];
     let mut observations = Vec::new();
@@ -335,7 +354,9 @@ async fn fusion_case(
             let bonus = observed.body["bonus"]
                 .as_u64()
                 .ok_or("Fusion bonus missing")?;
-            if success != expected_success || bonus != 0 || !observed.body["reason"].is_null() {
+            if success != expected_success || bonus != 0
+                || observed.body["operation"] != "fusion"
+                || observed.body.get("reason") != Some(&serde_json::Value::Null) {
                 return Err(format!("invalid Fusion outcome: {}", observed.body).into());
             }
             let target = u8::from(success);
@@ -358,6 +379,7 @@ async fn fusion_case(
             if super::client_row_p18::dust(&mut client).await? != (100 - dust_paid, 100)
                 || carried_gold(&client, &coins) != gold_before - gold_paid
                 || dagger_tiers(&mut client, pair_ref.get()).await? != expected_tiers
+                || client.inventory().cloned().map(|inventory| unrelated_inventory(inventory, &affected)) .as_ref() != Some(&before)
             {
                 return Err("Fusion exact live gold, dust, or dagger tiers mismatch".into());
             }
@@ -481,20 +503,11 @@ type FixtureDb = sqlx::PgConnection;
 async fn fixture_dust(tx: &mut FixtureDb, character: &str, spend: i64) -> TestResult<(u64, u64)> {
     sqlx::query("INSERT INTO game_character_forge_dust(character_id,balance,dust_limit) VALUES($1::uuid,0,100) ON CONFLICT DO NOTHING")
         .bind(character).execute(&mut *tx).await?;
-    let (mut balance, mut limit): (i64, i16) = sqlx::query_as(
+    let (balance, limit): (i64, i16) = sqlx::query_as(
         "SELECT balance,dust_limit FROM game_character_forge_dust WHERE character_id=$1::uuid FOR UPDATE")
         .bind(character).fetch_one(&mut *tx).await?;
-    // Historical cap prerequisites must follow the deployed ledger's constraint.
-    // The live DustLimit case separately checks Global's +1 transition.
-    while spend > i64::from(limit) {
-        let cost = i64::from(limit) - 75;
-        if balance < cost {
-            append_dust(tx, character, balance, limit, cost - balance, "GAIN").await?;
-            balance = cost;
-        }
-        append_dust(tx, character, balance, limit, cost, "LIMIT_RAISE").await?;
-        balance -= cost;
-        limit += 1;
+    if spend > i64::from(limit) {
+        return Err("Forge funding exceeds the live dust cap".into());
     }
     if balance < spend {
         append_dust(tx, character, balance, limit, spend - balance, "GAIN").await?;
@@ -519,11 +532,10 @@ async fn append_dust(
            amount,lost_amount,balance_before,balance_after,dust_limit_before,dust_limit_after)
         SELECT game_character_uuid_v7(),character_id,last_entry_id,
            $5,
-           CASE $5 WHEN 'LIMIT_RAISE' THEN 'forge_dust_limit'
-                   WHEN 'SPEND' THEN 'proficiency' ELSE 'creature_kill' END,
+           CASE $5 WHEN 'SPEND' THEN 'proficiency' ELSE 'creature_kill' END,
            game_character_uuid_v7(),game_character_uuid_v7(),$4,0,$2,
            CASE WHEN $5='GAIN' THEN $2+$4 ELSE $2-$4 END,$3::smallint,
-           CASE WHEN $5='LIMIT_RAISE' THEN $3::smallint+1 ELSE $3::smallint END
+           $3::smallint
         FROM game_character_forge_dust WHERE character_id=$1::uuid
         RETURNING entry_id,balance_after,dust_limit_after)
         UPDATE game_character_forge_dust SET balance=e.balance_after,dust_limit=e.dust_limit_after,
@@ -550,6 +562,30 @@ pub(super) async fn bank_balance(tx: &mut FixtureDb, clients: &SeamClients<'_>) 
     .await?)
 }
 
+// Apply the rollout switch with the same exclusive fence as the production
+// activation transaction, before entering the offline funding transaction.
+async fn activate_type2_fixture(db: &mut FixtureDb) -> TestResult {
+    use oteryn_gameplay_durability::durability::item_mint_audit::TYPE2_AUDIT_ACTIVATION_FENCE;
+
+    let mut tx = sqlx::Connection::begin(db).await?;
+    sqlx::query("SET LOCAL lock_timeout = '5s'").execute(&mut *tx).await?;
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(TYPE2_AUDIT_ACTIVATION_FENCE)
+        .execute(&mut *tx)
+        .await?;
+    let activated = sqlx::query(
+        "INSERT INTO game_type2_audit_activation VALUES (1,now()) ON CONFLICT DO NOTHING",
+    )
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
+    tx.commit().await?;
+    if activated == 1 {
+        evidence("FIXTURE row=P18.full input=type2_audit_activation fence=exclusive");
+    }
+    Ok(())
+}
+
 async fn fixture_bank(
     tx: &mut FixtureDb,
     clients: &SeamClients<'_>,
@@ -557,9 +593,6 @@ async fn fixture_bank(
     amount: i64,
 ) -> TestResult<i64> {
     let mut before = bank_balance(tx, clients).await?;
-    sqlx::query("INSERT INTO game_type2_audit_activation VALUES (1,now()) ON CONFLICT DO NOTHING")
-        .execute(&mut *tx)
-        .await?;
     let mut remaining = amount;
     while remaining > 0 {
         let chunk = remaining.min(20_000_000);
@@ -591,6 +624,55 @@ async fn fixture_bank(
     Ok(before)
 }
 
+async fn raise_cap_for_funding(
+    clients: &SeamClients<'_>,
+    db: &mut FixtureDb,
+    character: &str,
+    required: u64,
+    tag: u8,
+) -> TestResult {
+    let current: i16 = sqlx::query_scalar(
+        "SELECT dust_limit FROM game_character_forge_dust WHERE character_id=$1::uuid",
+    ).bind(character).fetch_one(&mut *db).await?;
+    if u64::try_from(current)? >= required {
+        return Ok(());
+    }
+    let mut client = connect_character(clients, tag, 0).await?;
+    let session = client.join_snapshot().game_session_id;
+    for limit in u64::try_from(current)?..required {
+        let cost = limit - 75;
+        let mut tx = sqlx::Connection::begin(&mut *db).await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        if fixture_dust(&mut tx, character, i64::try_from(cost)?).await? != (cost, limit) {
+            return Err("Forge cap progression funding mismatch".into());
+        }
+        tx.commit().await?;
+        evidence(&format!("FIXTURE row=P18.full input=dust_for_cap_upgrade dust={cost} cap={limit}"));
+        client.service_liveness(Duration::from_millis(490)).await?;
+        let result = command(
+            &mut client, Operation::DustLimit, occurrence(session, u8::try_from(limit - 100)?),
+            None, 0,
+        ).await?;
+        if result.status != CommandStatus::Accepted
+            || result.body != serde_json::json!({
+                "operation":"dust_limit","succeeded":true,"result":{"dust":0,"dust_limit":limit+1}
+            })
+            || super::client_row_p18::dust(&mut client).await? != (0, limit + 1)
+        {
+            return Err(format!("live Forge cap upgrade {limit} → {} failed: {}", limit+1, result.body).into());
+        }
+    }
+    logout(&mut client).await?;
+    let mut fresh = connect_character(clients, tag.wrapping_add(1), 0).await?;
+    if fresh.join_snapshot().game_session_id == session
+        || super::client_row_p18::dust(&mut fresh).await? != (0, required)
+    {
+        return Err("live Forge cap progression did not persist".into());
+    }
+    logout(&mut fresh).await?;
+    Ok(())
+}
+
 async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestResult {
     let [character] = clients.characters else {
         return Err("Forge case needs the dedicated character".into());
@@ -614,6 +696,10 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
     drop(grant);
 
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    raise_cap_for_funding(clients, &mut db, &character, u64::try_from(case.dust)?, tag - 64).await?;
+    if case.gold > 0 {
+        activate_type2_fixture(&mut db).await?;
+    }
     let mut tx = sqlx::Connection::begin(&mut db).await?;
     if let Some(pair) = case.pair {
         for (item, tier) in pair {
@@ -667,7 +753,10 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
         .map(|(id, value)| Ok((provisioning::item_reference(&definitions, id)?, value)))
         .collect::<TestResult<Vec<_>>>()?;
     // Native fees consume carried coins before the account's bank balance.
-    let gold_before = gold + i64::try_from(carried_gold(&client, &coins))?;
+    let carried_before = i64::try_from(carried_gold(&client, &coins))?;
+    let carried_debit = carried_before.min(case.gold);
+    let expected_carried = carried_before - carried_debit;
+    let expected_bank = gold - (case.gold - carried_debit);
     let sliver = provisioning::item_reference(&definitions, 37109)?;
     let core = provisioning::item_reference(&definitions, 37110)?;
     let counts = |client: &DevClientSession| {
@@ -748,11 +837,29 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
         None
     };
 
+    let mut affected = Vec::new();
+    if carried_debit != 0 {
+        affected.extend(coins.iter().map(|(definition, _)| definition.get()));
+    }
+    if matches!(case.operation, Operation::DustToSlivers | Operation::SliversToCores) {
+        affected.push(sliver.get());
+    }
+    if case.cores != 0 || case.operation == Operation::SliversToCores {
+        affected.push(core.get());
+    }
+    affected.extend(donor_ref);
+    let before = unrelated_inventory(client.inventory().cloned().ok_or("Forge pre-state missing")?, &affected);
     let history_before = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
+    if history_before.status != CommandStatus::Accepted {
+        return Err("starting Forge history command was refused".into());
+    }
     let history_before = history_before
         .body
         .as_array()
         .ok_or("invalid starting Forge history")?;
+    if !valid_history_ordinals(history_before) {
+        return Err("invalid starting Forge history ordinals".into());
+    }
     client.service_liveness(Duration::from_millis(490)).await?;
     let result = command(&mut client, case.operation, occurrence(session, 1), pair, 0).await?;
     let (expected_dust, expected_cap) = (
@@ -793,6 +900,11 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
         .inventory()
         .cloned()
         .ok_or("Forge outcome inventory missing")?;
+    if unrelated_inventory(retained.clone(), &affected) != before
+        || i64::try_from(carried_gold(&client, &coins))? != expected_carried
+        || bank_balance(&mut db, clients).await? != expected_bank {
+        return Err("Forge changed unrelated inventory or debited the wrong gold source".into());
+    }
     logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_character(clients, tag + 2, 0).await?;
@@ -802,8 +914,8 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
         .as_array()
         .ok_or("invalid relog Forge history")?;
     let actual_dust = super::client_row_p18::dust(&mut fresh).await?;
-    let actual_gold =
-        bank_balance(&mut db, clients).await? + i64::try_from(carried_gold(&fresh, &coins))?;
+    let actual_bank = bank_balance(&mut db, clients).await?;
+    let actual_carried = i64::try_from(carried_gold(&fresh, &coins))?;
     let actual_counts = counts(&fresh);
     let inventory_same = fresh.join_snapshot().game_session_id != session
         && fresh.inventory().cloned().map(durable_inventory) == Some(durable_inventory(retained));
@@ -821,17 +933,19 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
         || (case.operation.changes_inventory() && !result.changed)
         || *observed != expected_receipt
         || actual_dust != (expected_dust, expected_cap)
-        || actual_gold != gold_before - case.gold
+        || actual_bank != expected_bank
+        || actual_carried != expected_carried
         || actual_counts != (expected_slivers, expected_cores)
         || !inventory_same
         || !tiers_ok
         || persisted.status != CommandStatus::Accepted
-        || history.len() != history_before.len() + 1
-        || history.get(1..) != Some(history_before.as_slice())
+        || history.len() != (history_before.len() + 1).min(50)
+        || !valid_history_ordinals(history)
+        || history.get(1..) != Some(&history_before[..history_before.len().min(49)])
         || history[0]["receipt"] != expected_receipt
     {
-        return Err(format!("expected {expected_receipt}, observed {observed}; relog dust={actual_dust:?} gold_delta={} materials={actual_counts:?} tiers_ok={tiers_ok} inventory_same={inventory_same}; {}",
-            gold_before - actual_gold, quote_error.unwrap_or_default()).into());
+        return Err(format!("expected {expected_receipt}, observed {observed}; relog dust={actual_dust:?} bank={actual_bank} carried={actual_carried} materials={actual_counts:?} tiers_ok={tiers_ok} inventory_same={inventory_same}; {}",
+            quote_error.unwrap_or_default()).into());
     }
     evidence(&format!(
         "P18_CASE_CHECK operation={:?} status=PASS relog=true",
@@ -968,7 +1082,9 @@ async fn quoted_pair(
                 protect: false,
             };
             match preview(client, selection).await? {
-                preview::Payload::Quote(quote) if quote.selection == selection => {
+                preview::Payload::Quote(quote) if quote.selection == selection
+                    && (quote.cost.gold, quote.cost.dust, quote.cost.cores) == (25_000, 100, 0)
+                    && (quote.target_tier, quote.success_percent, quote.protection_percent) == (1, 50, 0) => {
                     return Ok(Some((first.handle, second.handle)));
                 }
                 preview::Payload::Refused => {
@@ -986,7 +1102,7 @@ async fn quoted_pair(
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let result =
-        verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
+        verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients)))
             .await;
     let result = match result {
         Ok(result) => result,
@@ -1014,6 +1130,41 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn forge_history_rejects_duplicate_missing_and_swapped_ordinals() {
+        use super::valid_history_ordinals;
+        use serde_json::json;
+
+        assert!(valid_history_ordinals(&[json!({"ordinal":2}), json!({"ordinal":1})]));
+        for invalid in [
+            [json!({"ordinal":1}), json!({"ordinal":1})],
+            [json!({}), json!({"ordinal":1})],
+            [json!({"ordinal":1}), json!({"ordinal":2})],
+        ] {
+            assert!(!valid_history_ordinals(&invalid));
+        }
+    }
+
+    #[test]
+    fn forge_inventory_keeps_unrelated_entries_in_the_comparison() {
+        use super::unrelated_inventory;
+        use oteryn_protocol_oteryn::item_view::{CharacterInventory, ItemEntry};
+        use std::num::{NonZeroU32, NonZeroU64};
+
+        let original = CharacterInventory::default();
+        let mut changed = original.clone();
+        changed.entries.push(ItemEntry {
+            appearance_id: 1,
+            handle: NonZeroU64::MIN,
+            item_definition_ref: NonZeroU32::MIN,
+            count: NonZeroU32::MIN,
+            sub_type: 0,
+        });
+        assert_ne!(unrelated_inventory(changed.clone(), &[2]), unrelated_inventory(original.clone(), &[2]));
+        assert_eq!(unrelated_inventory(changed, &[1]), unrelated_inventory(original, &[1]));
+    }
+
+
     #[test]
     fn forge_pair_prerequisites_follow_the_selected_operation() -> TestResult {
         use oteryn_protocol_oteryn::forge_preview::Item;
