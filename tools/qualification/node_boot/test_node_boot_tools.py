@@ -50,6 +50,37 @@ def bash(script, env=None, cwd=None):
 KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
+class C17aReplayTests(unittest.TestCase):
+    def test_live_capture_is_required_and_replayed_once(self):
+        capture = 'SEAM_EVIDENCE e2e_capture scenario=C17a.client status=CAPTURED'
+        marker = 'SEAM_EVIDENCE C17A_CAPTURE session=fixture haste_sequence=19 strong_sequence=26'
+        gate = section('  if [[ -n "$c17a_capture" ]]; then\n    local replay', '}')
+        stage_rows = section('stage_rows()', '# Row ids listed')
+        script = """set -euo pipefail
+cargo() {
+    [[ "$E2E_ALL_CAPTURE_DIR" == "$PWD" ]]
+    echo REPLAY_INVOKED
+    printf '%s\n' 'test result: ok. 1 passed; 0 failed; 0 ignored;'
+}
+replay_gate() {
+    local c17a_capture="$PWD" c17a_log="$PWD/seam.log" c17a_started=$SECONDS
+""" + gate + "}\nreplay_gate\n"
+
+        for lines, passes in (
+            ([capture, marker], True),
+            ([capture.replace('e2e_capture', 'e2e_all'), marker], False),
+            ([capture], False),
+            ([capture, capture, marker], False),
+        ):
+            with self.subTest(lines=lines), tempfile.TemporaryDirectory() as directory:
+                Path(directory, 'seam.log').write_text('\n'.join(lines) + '\n')
+                result = bash(stage_rows + script, cwd=directory)
+                self.assertEqual(result.returncode, 0 if passes else 1, result.stdout + result.stderr)
+                self.assertEqual(result.stdout.count('REPLAY_INVOKED'), int(passes))
+                self.assertIn('evidence=live_capture_replay' if passes else 'evidence=missing_live_capture',
+                              result.stdout)
+
+
 class KnobTests(unittest.TestCase):
     def preflight_bin(self, temporary):
         bin_dir = Path(temporary, 'bin')
