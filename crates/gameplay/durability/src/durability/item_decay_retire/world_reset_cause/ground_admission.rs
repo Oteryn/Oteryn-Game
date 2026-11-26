@@ -55,38 +55,29 @@ pub(in crate::durability::item_decay_retire) async fn admit_ground(
         crate::durability::world_reset::ground_step::validate_root(tx, step.corpse_item_instance_id)
             .await?;
     }
-    let entries = sqlx::query("SELECT item_instance_id::text,placement_ordinal::text FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal LIMIT $2")
-        .bind(step.corpse_item_instance_id.as_slice())
-        .bind((CORPSE_CONTAINER_ENTRIES_MAX + 1) as i64)
-        .fetch_all(&mut **tx).await?;
-    if entries.len() > CORPSE_CONTAINER_ENTRIES_MAX {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    let placement_ordinal = if step.is_corpse_step() {
-        // Arena reset validates and retires the complete tree in this transaction.
-        if !entries.is_empty() && !matches!(step.cause, RetireCause::ArenaReset(_)) {
-            return Ok(Err(DecayRetireError::Refused(
-                DecayRetireRefusal::EntriesRemain,
-            )));
+    let first = sqlx::query(
+        "SELECT item_instance_id::text,parent_item_instance_id::text,
+                corpse_ordinal::text,source_ordinal::text,depth
+         FROM game_corpse_retirement_entries(encode($1,'hex')::uuid)
+         ORDER BY corpse_ordinal,depth DESC,item_instance_id LIMIT 1",
+    )
+    .bind(step.corpse_item_instance_id.as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    let (placement_ordinal, death_entry) = if step.is_corpse_step() {
+        if first.is_some() && !matches!(step.cause, RetireCause::ArenaReset(_)) {
+            return Ok(Err(DecayRetireError::Refused(DecayRetireRefusal::EntriesRemain)));
         }
-        None
+        (None, None)
     } else {
-        let Some(first) = entries.first() else {
-            return Ok(Err(DecayRetireError::Refused(
-                DecayRetireRefusal::NotInCorpse,
-            )));
+        let Some(first) = first else {
+            return Ok(Err(DecayRetireError::Refused(DecayRetireRefusal::NotInCorpse)));
         };
         if uuid_text(first.try_get("item_instance_id")?)? != step.item_instance_id {
-            return Ok(Err(DecayRetireError::Refused(
-                DecayRetireRefusal::EntriesRemain,
-            )));
+            return Ok(Err(DecayRetireError::Refused(DecayRetireRefusal::EntriesRemain)));
         }
-        Some(
-            first
-                .try_get::<String, _>("placement_ordinal")?
-                .parse()
-                .map_err(|_| DurabilityError::InvalidStoredState)?,
-        )
+        let (ordinal, nested) = corpse_entry(&first,step.item_instance_id)?;
+        (Some(ordinal), nested)
     };
     Ok(Ok(Admitted {
         world_id: *scope.world_id().as_bytes(),
@@ -101,7 +92,7 @@ pub(in crate::durability::item_decay_retire) async fn admit_ground(
         key_number: u32::try_from(item.try_get::<i64, _>("key_number")?)
             .map_err(|_| DurabilityError::InvalidStoredState)?,
         placement_ordinal,
-        death_entry: None,
+        death_entry,
         corpse_ground: OneItemGroundV1 {
             world_id: scope.world_id().as_bytes().to_vec(),
             channel_id: scope

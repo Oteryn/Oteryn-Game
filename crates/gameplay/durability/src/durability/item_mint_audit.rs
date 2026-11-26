@@ -690,13 +690,23 @@ pub fn check_mint(value: &OneItemMintV1) -> Result<(), AuditError> {
         }
         _ => return Err(AuditError::InvalidInput),
     }
+    use super::item_mint::player_death::{PLAYER_DEATH_MINT_CAUSE, PLAYER_DEATH_MINT_FAMILY};
+    let player_corpse = source.typed_cause == PLAYER_DEATH_MINT_CAUSE
+        && source.loot_table.as_ref().is_some_and(|definition| definition.family == PLAYER_DEATH_MINT_FAMILY)
+        && death.actor_local_id == 0 && death.actor_local_generation == 1
+        && source.loot_purpose_key == super::item_mint::CORPSE_MATERIALIZATION_PURPOSE_KEY
+        && source.draw_ordinal == 0 && after.quantity == 1
+        && value.destination.as_ref().is_some_and(|ground| {
+            check_uuid_v7(&ground.corpse_ref).is_ok()
+                && ground.corpse_ref == ground.native_room_placement_context
+        });
     // One live item with explicit semantic absence before it; a key is minted only by a
     // RewardClaim (WORLD-INTERACTION-0 §4.4).
     if !value.before_semantically_absent
         || after.key_number != 0
         || after.quantity == 0
         || after.lifecycle != ITEM_LIFECYCLE_LIVE
-        || source.typed_cause != LOOT_MINT_TYPED_CAUSE
+        || (source.typed_cause != LOOT_MINT_TYPED_CAUSE && !player_corpse)
         || death.scope_ownership_generation == 0
         || death.actor_local_generation == 0
     {

@@ -135,8 +135,7 @@ impl DurabilityRoot {
                         {
                             return Ok(Err(PlayerDeathItemError::StaleState));
                         }
-                        let tuple = tx.tuple();
-                        match write(&mut tx, permit, &source, cause, request, burn, tuple).await {
+                        match write(&mut tx, permit, &source, cause, request, burn, node).await {
                             Ok(outcome) => {
                                 tx.commit(deadline).await?;
                                 Ok(Ok(outcome))

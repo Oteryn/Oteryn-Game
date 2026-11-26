@@ -3,13 +3,13 @@
   "owner_contract": "../architecture/reviews/OTERYN_GAME_DEATH_COMPLETE0_PLAYER_DEATH_MODULE_DECISION_2026-10-13.md",
   "resource": "Item instances touched of one player death drop primitive",
   "unit": "per logical transaction",
-  "hard_maximum": 1,
+  "hard_maximum": 2,
   "configurable_range": {
     "minimum": 1,
-    "maximum": 1
+    "maximum": 2
   },
   "failure_category": "CAPACITY_EXCEEDED",
-  "allocation_impact": "Fixed one-item shape; bounds checked before encoding or writes. Contents are re-parented by identity with no expansion; placement depth remains one. No existing shape or limit changes.",
+  "allocation_impact": "One transferred item and at most one fresh empty bag when the main backpack is lost. Contents keep their existing parent identities.",
   "client_visible": false,
   "boundary_tests": [
     "player_death_resource_rows_max_and_max_plus_one: exact maximum accepted, every maximum+1 refused",

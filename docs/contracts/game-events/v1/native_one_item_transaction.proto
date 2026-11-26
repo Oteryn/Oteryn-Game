@@ -824,7 +824,7 @@ message OneItemPlayerDeathItemV1 {
   bytes character_id = 5;
   uint32 source_slot = 6;
   OneItemContainerEntryV1 source_entry = 7;
-  OneItemGroundV1 ground = 8; // drop only; exactly the persisted death cell
+  OneItemGroundV1 ground = 8; // historical loose drop only
   string typed_sink = 9; // amulet only
   string content_revision = 10;
   string ruleset_revision = 11;
@@ -834,6 +834,9 @@ message OneItemPlayerDeathItemV1 {
   uint64 lease_generation = 15;
   // Present exactly for Instance death drops/burns; absent for unchanged Channel events.
   OneItemPlayerDeathInstanceV1 instance_scope = 16;
+  OneItemContainerEntryV1 corpse = 17; // new drop destination
+  optional bytes drop_channel_id = 18; // Channel for a corpse-child drop
+  OneItemStateV1 replacement_bag = 19; // fresh empty bag when the original main slot item is lost
 }
 
 // A burn has no Ground line, so its Instance source still needs the exact scope.

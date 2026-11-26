@@ -101,6 +101,9 @@ fn event(burn: bool) -> audit::OneItemPlayerDeathItemV1 {
         game_session_id: id(50).to_vec(),
         lease_generation: 1,
         instance_scope: None,
+        corpse: None,
+        drop_channel_id: None,
+        replacement_bag: None,
     }
 }
 #[test]

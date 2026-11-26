@@ -147,7 +147,7 @@ impl DurabilityRoot {
             let next = if let Some(root) = root {
                 let root = uuid_text(&root)?;
                 crate::durability::world_reset::ground_step::validate_root(&mut tx, root).await?;
-                let entry: Option<String> = sqlx::query_scalar("SELECT item_instance_id::text FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal LIMIT 1")
+                let entry: Option<String> = sqlx::query_scalar("SELECT item_instance_id::text FROM game_corpse_retirement_entries(encode($1,'hex')::uuid) ORDER BY corpse_ordinal,depth DESC,item_instance_id LIMIT 1")
                     .bind(root.as_slice()).fetch_optional(&mut *tx).await?;
                 let item = entry.as_deref().map(uuid_text).transpose()?.unwrap_or(root);
                 let mut cause = RetireCause::ActivityRetirement(binding);
