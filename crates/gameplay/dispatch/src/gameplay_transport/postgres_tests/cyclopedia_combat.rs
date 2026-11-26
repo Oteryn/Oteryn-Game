@@ -1,10 +1,15 @@
 //! P12c: real attack refresh -> fenced snapshot -> command 388 -> durable read-back.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
+use crate::combat_attack::AttackConstants;
+use crate::durability::DurabilityError;
 use crate::durability::character_authority::CharacterAuthorityError;
 use crate::durability::character_build::DurableBuildState;
 use crate::durability::cyclopedia_character::combat::CombatSnapshot;
-use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, ConnectionGeneration};
+use crate::durability::fresh_admission::FreshAdmissionStore;
+use crate::foundation::{
+    AuthenticatedTransportRefV1, ChannelContentPin, ChannelRuntimeV1, ConnectionGeneration,
+};
 use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -14,6 +19,135 @@ use oteryn_protocol_oteryn::cyclopedia_character::{
     CAPABILITY_CYCLOPEDIA_CHARACTER_V1, COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, CharacterTab,
 };
 use sqlx::Row;
+
+#[test]
+fn first_unarmed_cyclopedia_offence_tab_waits_for_the_holder() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("cyclopedia_unarmed_entry", || {
+        first_combat_tabs(false)
+    })
+}
+
+#[test]
+fn first_armed_cyclopedia_combat_tabs_wait_for_the_holder_and_refuse_stale_fence() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("cyclopedia_armed_entry", || {
+        first_combat_tabs(true)
+    })
+}
+
+fn first_combat_tabs(armed: bool) -> TestResult {
+    run(async |admin| {
+        let tag = if armed {
+            "cyclopedia_armed_entry"
+        } else {
+            "cyclopedia_unarmed_entry"
+        };
+        let h = Harness::create_with_admission_seed(admin, tag, false, false).await?;
+        let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        let (controller, pin) = super::equipment_mods_fixtures::activate(world)?;
+        let generation = controller.active().ok_or("active generation")?;
+        let native = generation.native_gameplay().ok_or("native gameplay")?;
+        super::tutorial_vitals_fixture::publish_native_activation(&h, &pin).await?;
+        if armed {
+            seed(&h, false).await?;
+        }
+        super::tutorial_vitals_fixture::native_asset_revisions(&h, generation).await?;
+        let room = pin.qualified_room().clone();
+        let deps = Dependencies::with_content(
+            pin.into_channel_parts().0,
+            room,
+            native.spell_book().clone(),
+        )?;
+        let request = prepare_current_session(&h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let mut owner = deps.owner(&h, &authority);
+        owner.active_generation = Some(generation);
+        native
+            .install_companion_policies(&mut *owner.runtime.lock().await)
+            .map_err(debug)?;
+        let mut admitted = deps.admitted;
+        let (first_entry, fence, _) = Box::pin(owner.initialize_first_entry(
+            &request,
+            admitted.game_session_id,
+            AuthenticatedTransportRefV1::decode(&[9; 16]).map_err(debug)?,
+            deps.actor,
+        ))
+        .await;
+        assert_eq!(first_entry, FirstEntryOutcome::Positioned);
+        let fence = fence.ok_or("first-entry item fence")?;
+        admitted.first_entry = first_entry;
+        admitted.item_fence = Some(fence);
+        let capability = CAPABILITY_CYCLOPEDIA_CHARACTER_V1;
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            &[OfferedCapability { id: capability, requires: &[] }],
+            &[capability],
+        )
+        .ok_or("Cyclopedia capability")?;
+        assert_eq!(row_count(&h).await?, 0);
+
+        let request = async |admitted, tab: CharacterTab| {
+            owner
+                .cyclopedia_character_wire(
+                    admitted,
+                    1,
+                    COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+                    &[tab as u8, 0, 0, 1],
+                )
+                .await
+        };
+        let bytes = {
+            // Keep the background pass checked out through the first request poll.
+            let held = h.root.try_issue_background_semantic_pass()?;
+            let store = FreshAdmissionStore::from_root(h.root.clone());
+            assert!(matches!(
+                store.current_session_at(admitted.game_session_id).await,
+                Err(DurabilityError::RootUnavailable)
+            ));
+            let mut offence = std::pin::pin!(request(admitted, CharacterTab::Offence));
+            let first = std::future::poll_fn(|cx| {
+                std::task::Poll::Ready(std::future::Future::poll(offence.as_mut(), cx))
+            })
+            .await;
+            assert!(
+                first.is_pending(),
+                "{tag}: the first self-tab returned {first:?} with the session reader's holder busy"
+            );
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            offence.await.map_err(|()| "first Offence tab refused")?
+        };
+        let stats = CombatStats::decode(&bytes).map_err(debug)?;
+        assert_eq!(stats.tab(), CharacterTab::Offence);
+        if armed {
+            assert_eq!(stats.get(Stat::AttackSkillId), Some(8)); // Sword
+            for tab in [CharacterTab::Defence, CharacterTab::Misc] {
+                let bytes = request(admitted, tab).await.map_err(|()| "armed tab refused")?;
+                assert_eq!(CombatStats::decode(&bytes).map_err(debug)?.tab(), tab);
+            }
+        } else {
+            let constants = AttackConstants::checked_in().ok_or("attack constants")?;
+            assert_eq!(stats.get(Stat::AttackEquipment), Some(i64::from(constants.fist.attack)));
+            assert_eq!(stats.get(Stat::AttackSkillId), Some(11));
+        }
+
+        let revision = sample_revision(&h).await?;
+        let mut stale = fence;
+        stale.character_lease_generation -= 1;
+        admitted.item_fence = Some(stale);
+        assert!(request(admitted, CharacterTab::Offence).await.is_err());
+        assert_eq!(sample_revision(&h).await?, revision);
+        eprintln!("POSTGRES_CASE_COMPLETED {tag}");
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
+    })
+}
 
 #[test]
 fn p12c_cyclopedia_combat_postgres_dispatch_snapshot_replay_and_fences() -> TestResult {
