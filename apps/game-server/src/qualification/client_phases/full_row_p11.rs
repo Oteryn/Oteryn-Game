@@ -16,9 +16,10 @@ use oteryn_protocol_oteryn::account_achievements as wire;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, core: &SeamClients<'_>) {
     let started = std::time::Instant::now();
+    let placed_at = std::cell::Cell::new(None);
     let result = verdict::indexed_timeout(
         Duration::from_secs(90),
-        verdict::observe(journey(clients, core)),
+        verdict::observe(journey(clients, core, &placed_at)),
     )
     .await;
     let result = match result {
@@ -32,6 +33,12 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, core: &SeamClients<'_>
         ),
         Err(error) => ("FAIL", sanitize(&error.to_string())),
     };
+    if let Some(placed_at) = placed_at.get() {
+        evidence(&format!(
+            "P11_TIMING placement_to_row_end_ms={} status={status}",
+            placed_at.elapsed().as_millis()
+        ));
+    }
     evidence(&format!("P11_GAP status={status} observed={evidence_text}"));
     evidence(&format!(
         "SEAM_EVIDENCE e2e_all scenario=P11.full status={status} seconds={:.3} evidence={evidence_text}",
@@ -66,126 +73,56 @@ async fn page(client: &mut DevClientSession, number: u32) -> TestResult<AccountA
     }
 }
 
-const APPROACH: TilePos = TilePos {
-    x: 33213,
+const STAGING: TilePos = TilePos {
+    x: 33225,
     y: 31671,
     floor: -13,
 };
 
-pub(super) fn qualification_entry(town: TilePos) -> TilePos {
-    if std::env::var("NODE_BOOT_P11_APPROACH").as_deref() == Ok("1")
-        && matches!(
-            std::env::var("OTERYN_E2E_ROW_BATCH").as_deref(),
-            Ok("54:1" | "166:1")
-        )
-    {
-        APPROACH
-    } else {
-        town
+async fn place_member(clients: &SeamClients<'_>, index: usize, at: TilePos) -> TestResult {
+    wait_character_released(clients, index).await?;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let changed = sqlx::query(
+        "UPDATE game_character_last_positions AS p
+         SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=write_sequence+1
+         WHERE p.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid
+           AND (p.tile_x,p.tile_y,p.tile_floor) IS DISTINCT FROM ($3,$4,$5)
+           AND NOT EXISTS (
+               SELECT 1 FROM game_durability_reconnect_sessions AS s
+               WHERE s.character_id=p.character_id AND s.world_id=p.world_id AND s.session_state<>3
+           )",
+    )
+    .bind(clients.characters[index].as_slice())
+    .bind(clients.world.as_slice())
+    .bind(i32::from(at.x))
+    .bind(i32::from(at.y))
+    .bind(i32::from(-at.floor))
+    .execute(&mut db)
+    .await?;
+    db.close().await?;
+    if changed.rows_affected() != 1 {
+        return Err(
+            format!("P11 fixture requires one different offline position for {at:?}").into(),
+        );
     }
-}
-
-async fn open_approach_gate(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    from: TilePos,
-    name: &str,
-    landings: &[u16],
-) -> TestResult {
-    use oteryn_protocol_oteryn::world_object::UseDisposition;
-    let gate = TilePos {
-        x: from.x + 1,
-        ..from
-    };
-    let observed = tile(client.world_spatial().actor_position)?;
-    if observed != from {
-        return Err(format!("step={name} expected={from:?} actual={observed:?}").into());
-    }
-    let planned = destination(world, from, StepDirection::East);
-    let base_tile = world
-        .base()
-        .tile(gate.x, gate.y, gate.floor)
-        .ok_or_else(|| format!("step={name} blocking_tile={gate:?} reason=missing-from-bundle"))?;
     evidence(&format!(
-        "P11_ROUTE step={name} from={from:?} blocking_tile={gate:?} planned={planned:?} walkable={} enterable={} appearance={:?}",
-        base_tile.walkable(),
-        world.enterable(gate),
-        base_tile.appearance(1),
+        "FIXTURE_PLACEMENT mechanic=P11 character={} x={} y={} floor={}",
+        uuid_text(&clients.characters[index]),
+        at.x,
+        at.y,
+        -at.floor
     ));
-    let key = crate::map::view::placement_key(gate, 1).ok_or("approach gate placement absent")?;
-    let mut target = world.base().digest().to_vec();
-    target.extend_from_slice(&key.to_be_bytes());
-    use oteryn_protocol_oteryn::world_map::MapOrigin;
-    let position = ActorPosition {
-        x: i32::from(gate.x),
-        y: i32::from(gate.y),
-        floor: -i16::from(gate.floor),
-    };
-    let closed = base_tile
-        .appearance(1)
-        .ok_or("P11 authored closed door has no appearance")?;
-    let snapshot = client
-        .session_mut()
-        .world_map_snapshot()
-        .ok_or("P11 live door map view absent")?;
-    let revision = snapshot.tiles.iter()
-        .find(|cell| cell.position == position)
-        .and_then(|cell| cell.items.iter().find_map(|item| match item.origin {
-            MapOrigin::BaseOrdinal { ordinal: 1, object_revision } if item.appearance_id == closed => Some(object_revision),
-            _ => None,
-        }))
-        .ok_or_else(|| format!("step={name} live map did not show the authored closed door tile={gate:?} appearance={closed}"))?;
-    evidence(&format!(
-        "P11_ROUTE step={name} live_closed_appearance={closed} expected_revision={revision}"
-    ));
-    let reply = client.session_mut().use_object(&target, revision).await?;
-    evidence(&format!(
-        "P11_ROUTE step={name} tile={gate:?} wire_reply={reply:?}"
-    ));
-    if reply.disposition != UseDisposition::Committed {
-        return Err(format!("step={name} authored_gate={gate:?} first_reply={reply:?}").into());
-    }
-    walk_east(client, from, name, landings).await
-}
-
-async fn walk_east(
-    client: &mut DevClientSession,
-    from: TilePos,
-    name: &str,
-    landings: &[u16],
-) -> TestResult {
-    for &x in landings {
-        let expected = TilePos { x, ..from };
-        let reply = client.step(StepDirection::East).await?;
-        let actual = tile(client.world_spatial().actor_position)?;
-        if reply.disposition != StepDisposition::Moved || actual != expected {
-            return Err(format!(
-                "step={name} blocking_tile={expected:?} reply={reply:?} actual={actual:?}"
-            )
-            .into());
-        }
-        if reply.step_wait_ms > 0 {
-            tokio::time::sleep(Duration::from_millis(u64::from(reply.step_wait_ms))).await;
-        }
-    }
     Ok(())
 }
 
-async fn stage_member(client: &mut DevClientSession, world: &BundleWorld, x: u16) -> TestResult {
-    open_approach_gate(client, world, APPROACH, "outer-level-door", &[33214, 33215]).await?;
-    open_approach_gate(
-        client,
-        world,
-        TilePos {
-            x: 33215,
-            ..APPROACH
-        },
-        "staging-door",
-        &[33217],
-    )
-    .await?;
-    let landings: Vec<_> = (33218..=x).collect();
-    walk_east(client, APPROACH, "lever-staging", &landings).await
+fn assert_staging(client: &DevClientSession, expected: TilePos) -> TestResult {
+    let actual = tile(client.world_spatial().actor_position)?;
+    if actual != expected {
+        return Err(
+            format!("P11 expected fixture position {expected:?}, admitted at {actual:?}").into(),
+        );
+    }
+    Ok(())
 }
 
 async fn operate_lever(
@@ -194,15 +131,15 @@ async fn operate_lever(
     clients: &SeamClients<'_>,
     core: &SeamClients<'_>,
 ) -> TestResult {
-    stage_member(client, world, 33225).await?;
+    assert_staging(client, STAGING)?;
     let mut companions = Vec::with_capacity(3);
     for (scope, index, x) in [(clients, 0, 33224), (core, 0, 33223), (core, 1, 33222)] {
         let finished = std::cell::Cell::new(false);
         let (member, serviced) = tokio::join!(
             async {
                 let result = async {
-                    let mut member = connect_knight(scope, index).await?;
-                    stage_member(&mut member, world, x).await?;
+                    let member = connect_knight(scope, index).await?;
+                    assert_staging(&member, TilePos { x, ..STAGING })?;
                     Ok::<_, Box<dyn std::error::Error>>(member)
                 }
                 .await;
@@ -224,7 +161,7 @@ async fn operate_lever(
     }
     let lever = TilePos {
         x: 33226,
-        ..APPROACH
+        ..STAGING
     };
     let key =
         crate::map::view::placement_key(lever, 1).ok_or("Annihilator lever placement absent")?;
@@ -283,9 +220,7 @@ async fn authored_granter(
                 .is_some_and(|id| provisioning::item_reference(&items, id).is_ok())
         },
     )?;
-    if qualification_entry(TOWN) == APPROACH {
-        operate_lever(client, world, clients, core).await?;
-    }
+    operate_lever(client, world, clients, core).await?;
     const REWARD_CHEST: TilePos = TilePos {
         x: 33227,
         y: 31656,
@@ -324,7 +259,7 @@ async fn prepare_knight(clients: &SeamClients<'_>, index: usize) -> TestResult {
     character_prep::declare_seeded(
         "P11.full",
         "knight-level-100",
-        "Annihilator outer gate eligibility",
+        "Annihilator party lever eligibility",
     );
     let mut initial = connect_character(clients, 0xc1, index).await?;
     request_fixture_control_at(
@@ -398,13 +333,22 @@ fn expected_grant(page: &AccountAchievementsResult, earliest: i64, latest: i64) 
 pub(super) async fn earn_and_logout(
     clients: &SeamClients<'_>,
     core: &SeamClients<'_>,
+    placed_at: &std::cell::Cell<Option<std::time::Instant>>,
 ) -> TestResult<GrantProof> {
-    if qualification_entry(TOWN) != APPROACH {
-        return Err("P11 needs its isolated authored approach profile".into());
-    }
     // Complete setup with one live session at a time, before staging the party.
     for (scope, index) in [(clients, 1), (clients, 0), (core, 0), (core, 1)] {
         prepare_knight(scope, index).await?;
+    }
+    for (scope, index, x) in [
+        (clients, 1, 33225),
+        (clients, 0, 33224),
+        (core, 0, 33223),
+        (core, 1, 33222),
+    ] {
+        place_member(scope, index, TilePos { x, ..STAGING }).await?;
+        if placed_at.get().is_none() {
+            placed_at.set(Some(std::time::Instant::now()));
+        }
     }
     let mut client = connect_knight(clients, 1).await?;
     let session = *client.join_snapshot().game_session_id.as_bytes();
@@ -537,8 +481,12 @@ pub(super) async fn earn_and_logout(
     })
 }
 
-async fn journey(clients: &SeamClients<'_>, core: &SeamClients<'_>) -> TestResult {
-    let proof = earn_and_logout(clients, core).await?;
+async fn journey(
+    clients: &SeamClients<'_>,
+    core: &SeamClients<'_>,
+    placed_at: &std::cell::Cell<Option<std::time::Instant>>,
+) -> TestResult {
+    let proof = earn_and_logout(clients, core, placed_at).await?;
     let mut fresh = connect_world(clients, 0xc2).await?;
     if fresh.join_snapshot().game_session_id.as_bytes() == &proof.session
         || page(&mut fresh, 0).await? != proof.page
@@ -600,7 +548,10 @@ mod tests {
         let first_admission = earn
             .find("let mut client = connect_knight(")
             .ok_or("first live admission")?;
-        assert!(fixture < first_admission);
+        let placement = earn.find("place_member(").ok_or("fixture placement")?;
+        assert!(fixture < placement && placement < first_admission);
+        assert!(!staging.contains("stage_member("));
+        assert!(staging.contains("assert_staging("));
         Ok(())
     }
 

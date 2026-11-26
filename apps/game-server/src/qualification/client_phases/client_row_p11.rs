@@ -372,7 +372,7 @@ async fn malformed_live(clients: &SeamClients<'_>, index: usize) -> TestResult {
 async fn journey(clients: &SeamClients<'_>, core: &SeamClients<'_>) -> TestResult<String> {
     let index = 1;
     malformed_live(clients, index).await?;
-    let proof = full_row_p11::earn_and_logout(clients, core).await?;
+    let proof = full_row_p11::earn_and_logout(clients, core, &std::cell::Cell::new(None)).await?;
     let token = fresh_token(clients, index).await?;
     let admission = Admission {
         appearance_items: None,

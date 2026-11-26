@@ -409,7 +409,7 @@ fn boot_world(
                 production: false,
             },
             map_revision: format!("sha256:{}", pin["digest"].as_str().ok_or("World digest")?),
-            start: full_row_p11::qualification_entry(TOWN),
+            start: TOWN,
         },
     )?;
     let input = native_input()?;
@@ -1085,10 +1085,9 @@ pub(super) async fn journeys(
     evidence(&format!(
         "world_fixture role=core phase=first_entry position={entered_at:?}"
     ));
-    let expected_entry = full_row_p11::qualification_entry(TOWN);
-    if entered_at != expected_entry {
+    if entered_at != TOWN {
         return Err(format!(
-            "Platform-created character did not enter the configured entry: expected={expected_entry:?} actual={entered_at:?}"
+            "Platform-created character did not enter the configured town: expected={TOWN:?} actual={entered_at:?}"
         )
         .into());
     }
