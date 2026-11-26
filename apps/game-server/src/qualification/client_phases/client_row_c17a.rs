@@ -40,7 +40,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "c17a-client".into(),
     )
     .await?;
-    character_prep::grant_premium(&client).await?;
     logout(&mut client).await?;
     drop(client);
     wait_character_released(clients, 0).await?;
@@ -54,14 +53,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if level != 20
         || vocation != crate::spell::Vocation::Sorcerer
         || vitals.mana != vitals.max_mana
-        || vitals.mana < 160
+        || vitals.mana != 450
         || vitals.health != vitals.max_health
+        || vitals.health != 245
     {
         return Err(format!("C17a seeded build mismatch: {level} {vocation:?} {vitals:?}").into());
     }
     evidence(&format!(
         "C17A_SEEDED_BUILD level={level} vocation={vocation:?} vitals={vitals:?}"
     ));
+    character_prep::grant_premium(&client).await?;
+    let book = native_spell_book()?;
+    let strong_spell = book
+        .spoken("utani gran hur")
+        .ok_or("C17a Strong Haste absent")?
+        .spell;
+    full_e2ef7::require_current_light_premium(&mut client).await?;
+    full_e2ef5::prepare_spell_access(&mut client, strong_spell).await?;
     let (haste, haste_payload) = cast_and_query(&mut client, "utani hur").await?;
     wait_support_cooldown(&mut client).await?;
     let (strong, strong_payload) = cast_and_query(&mut client, "utani gran hur").await?;
