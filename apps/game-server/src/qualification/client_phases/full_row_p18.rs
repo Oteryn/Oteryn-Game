@@ -507,12 +507,7 @@ async fn fixture_bank(
     amount: i64,
 ) -> TestResult<i64> {
     let mut before = bank_balance(tx, clients).await?;
-    // Use the bank PG fixture's seed pattern in this offline fixture transaction.
-    // Every live fee runs in a new session with all triggers active.
-    if amount == 0 {
-        return Ok(before);
-    }
-    sqlx::query("SET LOCAL session_replication_role=replica")
+    sqlx::query("INSERT INTO game_type2_audit_activation VALUES (1,now()) ON CONFLICT DO NOTHING")
         .execute(&mut *tx)
         .await?;
     let mut remaining = amount;
@@ -543,9 +538,6 @@ async fn fixture_bank(
         before += chunk;
         remaining -= chunk;
     }
-    sqlx::query("SET LOCAL session_replication_role=origin")
-        .execute(tx)
-        .await?;
     Ok(before)
 }
 
@@ -590,8 +582,16 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
             }
         }
     }
+    // As in the native Forge PG fixture, seed historical input ledgers offline.
+    // The transaction ends before the live session and cannot alter its writes.
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
     let funded = fixture_dust(&mut tx, &character, case.dust).await?;
     let gold = fixture_bank(&mut tx, clients, &character, case.gold).await?;
+    sqlx::query("SET LOCAL session_replication_role=origin")
+        .execute(&mut *tx)
+        .await?;
     tx.commit().await?;
     evidence(&format!(
         "FIXTURE row=P18.full operation={:?} item_id_tier_count={:?} gold_added={} dust={}/{} cores_added={} slivers_added={}",
