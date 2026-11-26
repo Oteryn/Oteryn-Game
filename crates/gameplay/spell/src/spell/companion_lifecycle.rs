@@ -3055,6 +3055,10 @@ pub fn restore_familiar_cooldown(
 }
 
 #[cfg(test)]
+#[path = "companion_lifecycle/tests/animate_dead.rs"]
+mod animate_dead_tests;
+
+#[cfg(test)]
 #[path = "companion_lifecycle/tests/cooldown_source.rs"]
 mod cooldown_source_tests;
 
