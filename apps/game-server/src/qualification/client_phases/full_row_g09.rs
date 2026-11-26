@@ -2,9 +2,9 @@
 //! Crystal `watch.lua`).
 //! 1. Admit the dedicated character, walk to Lubo and buy one watch (item 2906).
 //! 2. USE it by handle: expect an accepted `Committed` reply and a private "Game" chat line
-//!    `The time is H:MM.` published by the server with an in-range Tibian minute.
+//!    `The time is H:MM.` published by the server matching the World clock during the command.
 //! 3. The watch is not consumed: the carried count is unchanged.
-//! 4. Log out, freshly admit and use again: the line is published again (not a one-shot).
+//! 4. Log out, freshly admit and use again: require a new line with the advanced World time.
 //!
 //! The fixture supplies the 20-gold purchase price from Crystal's `data-global/npc/lubo.lua`.
 use super::*;
@@ -60,15 +60,19 @@ fn time_line_minute(text: &str) -> Option<u32> {
         .then_some(hours * 60 + minutes)
 }
 
-fn game_time_lines(client: &DevClientSession) -> usize {
-    client.chat_log().map_or(0, |log| {
-        log.lines()
-            .filter(|line| {
-                matches!(line, ChatLine::Private { speaker_name, text }
-                    if speaker_name == "Game" && time_line_minute(text).is_some())
-            })
-            .count()
-    })
+fn clock_tick() -> TestResult<u64> {
+    use crate::world_clock::{DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS, TIBIAN_MINUTE_MS, now_utc_ms};
+    let now = now_utc_ms().ok_or("step=clock observed=utc-unavailable")?;
+    Ok(now
+        .checked_sub(DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS)
+        .ok_or("step=clock observed=before-world-epoch")?
+        / TIBIAN_MINUTE_MS)
+}
+
+fn minute_in_command(minute: u32, first: u64, last: u64) -> bool {
+    let day = u64::from(oteryn_protocol_oteryn::world_clock::TIBIAN_MINUTES_PER_DAY);
+    last.checked_sub(first).is_some_and(|span| span <= 3)
+        && (first..=last).any(|tick| tick % day == u64::from(minute))
 }
 
 fn carried(
@@ -106,23 +110,45 @@ async fn use_target(
 async fn read_time(
     client: &mut DevClientSession,
     handle: oteryn_dev_client::ItemHandle,
-) -> TestResult {
-    let before = game_time_lines(client);
+) -> TestResult<u32> {
+    let before = client.last_server_sequence();
+    client.take_events();
+    let first = clock_tick()?;
     let (status, disposition) = use_target(client, UseTarget::Item(handle)).await?;
+    let last = clock_tick()?;
     if status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(
             format!("step=use observed=status:{status:?},disposition:{disposition:?}").into(),
         );
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    while game_time_lines(client) <= before {
+    loop {
+        for event in client.take_events() {
+            if let oteryn_dev_client::SessionEvent::ChatLine(delta) = event
+                && let ChatLine::Private { speaker_name, text } = delta.value
+                && speaker_name == "Game"
+                && text.starts_with("The time is ")
+            {
+                let minute =
+                    time_line_minute(&text).ok_or("step=chat observed=invalid-clock-format")?;
+                if delta.server_sequence <= before || !minute_in_command(minute, first, last) {
+                    return Err(format!(
+                        "step=chat observed=minute:{minute},sequence:{} expected=command-ticks:{first}..={last},sequence-after:{before}",
+                        delta.server_sequence
+                    ).into());
+                }
+                evidence(&format!(
+                    "G09_CHECK step=clock status=PASS minute={minute} sequence={}",
+                    delta.server_sequence
+                ));
+                return Ok(minute);
+            }
+        }
         if tokio::time::Instant::now() >= deadline {
             return Err("step=chat observed=no-server-time-line;needed=The-time-is-H:MM".into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
     }
-    Ok(())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -144,6 +170,40 @@ fn gold_balance(client: &DevClientSession, gold: std::num::NonZeroU32) -> u64 {
         .sum()
 }
 
+async fn npc_command(
+    client: &mut DevClientSession,
+    command: u32,
+    payload: &[u8],
+) -> TestResult<u64> {
+    let reply = client
+        .session_mut()
+        .gated_command(npc::CAPABILITY_NPC_SERVICE_V1, command, payload)
+        .await?;
+    let disposition = npc::decode_npc_intent_result(&reply.payload)
+        .map_err(|error| format!("step=npc command={command} reply-decode={error:?}"))?;
+    if reply.status != CommandStatus::Accepted || disposition != npc::NpcIntentDisposition::Ok {
+        return Err(format!(
+            "step=npc command={command} status={:?} disposition={disposition:?}",
+            reply.status
+        )
+        .into());
+    }
+    Ok(reply.server_sequence)
+}
+
+async fn talk(
+    client: &mut DevClientSession,
+    actor: oteryn_dev_client::EntityRef,
+    text: &str,
+) -> TestResult<u64> {
+    let payload = npc::encode_npc_talk_intent(&npc::NpcTalkIntent {
+        npc_actor: actor,
+        text: text.into(),
+    })
+    .map_err(|error| format!("step=talk-{text} encode={error:?}"))?;
+    npc_command(client, npc::COMMAND_TYPE_NPC_TALK_INTENT, &payload).await
+}
+
 async fn buy_watch(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
@@ -151,7 +211,6 @@ async fn buy_watch(
     gold: std::num::NonZeroU32,
     starter_gold: u64,
 ) -> TestResult {
-    use oteryn_dev_client::client_runtime::npc_shop;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let bundle = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let seller = bundle
@@ -245,22 +304,38 @@ async fn buy_watch(
         client.take_events();
     };
 
-    for text in ["hi", "trade"] {
-        let reply = npc_shop::talk(
-            client.session_mut(),
-            &npc::NpcTalkIntent {
-                npc_actor: actor,
-                text: text.into(),
-            },
-        )
-        .await?;
-        if reply != npc::NpcIntentDisposition::Ok {
-            return Err(format!("step=seller observed=lubo-{text}:{reply:?}").into());
-        }
-    }
+    let conversation = client
+        .session_mut()
+        .gated_snapshot(npc::STATE_DOMAIN_NPC_CONVERSATION)
+        .ok_or("step=seller observed=missing-conversation-snapshot")?;
+    let initial = npc::decode_npc_conversation(&conversation.payload)
+        .map_err(|error| format!("step=seller observed=conversation-snapshot-decode:{error:?}"))?;
     let details = client
         .selected_capabilities()
         .contains(&oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
+    let window = client
+        .session_mut()
+        .gated_snapshot(npc::STATE_DOMAIN_NPC_TRADE_WINDOW)
+        .ok_or("step=seller observed=missing-trade-snapshot")?;
+    let initial_window = npc::decode_npc_trade_window_for(&window.payload, details)
+        .map_err(|error| format!("step=seller observed=trade-snapshot-decode:{error:?}"))?;
+    if initial.open.is_some() || initial_window.open.is_some() {
+        return Err("step=seller observed=conversation-or-trade-already-open".into());
+    }
+    let greeting = talk(client, actor, "hi").await?;
+    let delta = client
+        .session_mut()
+        .read_gated_delta(npc::STATE_DOMAIN_NPC_CONVERSATION, 1)
+        .await?;
+    let conversation = npc::decode_npc_conversation(&delta.payload)
+        .map_err(|error| format!("step=seller observed=conversation-delta-decode:{error:?}"))?;
+    if delta.server_sequence <= greeting
+        || conversation.open.map(|open| open.0) != Some(actor)
+        || conversation.lines.iter().all(|line| line.trim().is_empty())
+    {
+        return Err("step=seller observed=missing-new-lubo-greeting".into());
+    }
+    let trade = talk(client, actor, "trade").await?;
     let delta = client
         .session_mut()
         .read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
@@ -268,7 +343,7 @@ async fn buy_watch(
     let window = npc::decode_npc_trade_window_for(&delta.payload, details)
         .map_err(|error| format!("step=buy observed=window-decode:{error:?}"))?;
     let (seller, revision) = window.open.ok_or("step=buy observed=trade-window-closed")?;
-    if seller != actor {
+    if delta.server_sequence <= trade || seller != actor {
         return Err("step=buy observed=trade-window-for-other-seller".into());
     }
     let (offer_index, offer) = window
@@ -292,27 +367,22 @@ async fn buy_watch(
         return Err("step=buy observed=inventory-changed-before-purchase".into());
     }
     client.take_events();
-    let reply = npc_shop::buy(
-        client.session_mut(),
-        &npc::NpcTradeIntent {
-            npc_actor: actor,
-            catalogue_revision: revision,
-            offer_index: u32::try_from(offer_index)?,
-            side: offer.side,
-            quantity: 1,
-            expected_unit_price: offer.unit_price,
-        },
-    )
-    .await?;
-    if reply != npc::NpcIntentDisposition::Ok {
-        return Err(format!("step=buy observed=lubo-buy:{reply:?}").into());
-    }
+    let payload = npc::encode_npc_trade_intent(&npc::NpcTradeIntent {
+        npc_actor: actor,
+        catalogue_revision: revision,
+        offer_index: u32::try_from(offer_index)?,
+        side: offer.side,
+        quantity: 1,
+        expected_unit_price: offer.unit_price,
+    })
+    .map_err(|error| format!("step=buy encode={error:?}"))?;
+    let purchase = npc_command(client, npc::COMMAND_TYPE_NPC_TRADE_INTENT, &payload).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
         if client
             .take_events()
             .into_iter()
-            .any(|event| matches!(event, oteryn_dev_client::SessionEvent::Inventory(_)))
+            .any(|event| matches!(event, oteryn_dev_client::SessionEvent::Inventory(delta) if delta.server_sequence > purchase))
             && matches!(carried(client, watch).as_slice(), [(_, 1)])
             && gold_balance(client, gold) == starter_gold
         {
@@ -360,18 +430,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=fixture observed=expected-exactly-one-served-watch".into());
     };
     let handle = *handle;
-    read_time(&mut client, handle).await?;
+    let first_minute = read_time(&mut client, handle).await?;
     if carried(&client, definition) != inventory {
         return Err("step=consume observed=watch-consumed;needed=clock-read-keeps-item".into());
     }
     let previous_session = client.join_snapshot().game_session_id;
+    let purchased_at = client.world_spatial().actor_position;
     logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_character(clients, 0xcf, 0).await?;
     if fresh.join_snapshot().game_session_id == previous_session
+        || fresh.world_spatial().actor_position != purchased_at
         || gold_balance(&fresh, gold) != starter_gold
     {
-        return Err("step=fresh observed=stale-session-or-gold-debit-lost".into());
+        return Err("step=fresh observed=stale-session-or-position-or-gold-debit-lost".into());
     }
     let durable_inventory = carried(&fresh, definition);
     let [(again, 1)] = durable_inventory.as_slice() else {
@@ -380,7 +452,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let result = verdict::observe(read_time(&mut fresh, *again)).await;
     let after = carried(&fresh, definition);
     logout(&mut fresh).await?;
-    result?;
+    if result? == first_minute {
+        return Err("step=fresh observed=clock-did-not-advance".into());
+    }
     if after != durable_inventory {
         return Err("step=fresh observed=watch-consumed-on-second-read".into());
     }
@@ -423,6 +497,15 @@ mod tests {
             home,
             wander
         ));
+    }
+
+    #[test]
+    fn clock_match_is_bounded_and_wraps_at_midnight() {
+        assert!(minute_in_command(1439, 1439, 1440));
+        assert!(minute_in_command(0, 1439, 1440));
+        assert!(!minute_in_command(1, 1439, 1440));
+        assert!(!minute_in_command(0, 1439, 1443));
+        assert!(!minute_in_command(0, 1440, 1439));
     }
 
     #[test]
