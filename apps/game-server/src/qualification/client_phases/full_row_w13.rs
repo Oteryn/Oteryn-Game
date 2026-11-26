@@ -349,6 +349,7 @@ async fn prepare_hunter(
         )
         .into());
     }
+    verdict::Harness::global().progress("seeded-hunter");
     evidence(&format!("W13_CHECK seeded-knight level={level} xp={xp}"));
     Ok(client)
 }
@@ -405,8 +406,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    verdict::Harness::global().progress("daily-boost-verified");
     let first = braindeath_at_home(&client)?;
     required_hunt(&mut client, 4, "selected creature").await?;
+    verdict::Harness::global().progress("braindeath-killed-and-looted");
     evidence("W13_CHECK step=4 selected-creature-killed-and-looted");
 
     // Observe a new identity at the same authored home. Do not send a combat
@@ -417,6 +420,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             if respawned == first {
                 return Err("W13 respawn reused the removed actor".into());
             }
+            verdict::Harness::global().progress("braindeath-respawned");
             break;
         }
         if tokio::time::Instant::now() >= deadline {
@@ -425,6 +429,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(100)).await?;
     }
     let step_5_observed = required_hunt(&mut client, 5, "respawned selected creature").await?;
+    verdict::Harness::global().progress("respawned-braindeath-killed-and-looted");
 
     if matches!(selected.boss_key.as_str(), BAELOC | NICTROS) {
         enter_grave(&mut client, world).await?;
