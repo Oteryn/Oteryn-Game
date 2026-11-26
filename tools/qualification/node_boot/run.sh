@@ -18,6 +18,7 @@ readonly SECOND_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
 readonly PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000003
 readonly SECOND_PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000004
 readonly EXIVA_ACCOUNT_ID=01934f10-7c00-7000-8000-00000000000e
+readonly E03_CLIENT_ACCOUNT=01934f10-7c00-7000-8000-000000000022
 readonly G01_ACCOUNT=01934f10-7c00-7000-8000-000000000021
 readonly LIGHT_ACCOUNT_ID=01934f10-7c00-7000-8000-00000000000d
 readonly EXTRA_WORLD_ACCOUNTS=(01934f10-7c00-7000-8000-000000000007 01934f10-7c00-7000-8000-000000000008 01934f10-7c00-7000-8000-000000000009 01934f10-7c00-7000-8000-00000000000a 01934f10-7c00-7000-8000-00000000000b 01934f10-7c00-7000-8000-00000000000c)
@@ -180,7 +181,7 @@ if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Packet journeys may move, loot or kill their Characters before the required core runs.
-  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$G01_ACCOUNT")
+  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$E03_CLIENT_ACCOUNT" "$G01_ACCOUNT")
 fi
 readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
@@ -879,24 +880,6 @@ fi # NODE_BOOT_REUSE_STACK == 0
 start_pg_sampler
 
 ops() { "${as_operator[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
-npc_catalogue_args=()
-if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
-  npc_project_sha256="$(python3 - "$GAME_SOURCE/deploy/synology-game/npc-data.pin.json" <<'PY_NPC_PIN'
-import json
-import re
-import sys
-
-with open(sys.argv[1], encoding="utf-8") as source:
-    pin = json.load(source)
-digest = pin.get("project_sha256")
-if pin.get("schema") != "OTERYN_NPC_DATA_PIN/v1" or not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
-    raise SystemExit("invalid generated NPC project pin")
-print(digest)
-PY_NPC_PIN
-  )" || fail "NPC project pin unavailable"
-  npc_catalogue_args=(--npc-data-project "$GAME_SOURCE/content/world"
-    --npc-data-sha256 "$npc_project_sha256")
-fi
 launch_node() { # PID variable, config, log
   # Detached from the stage's output pipe, so the stage ends while it serves.
   (
@@ -1582,6 +1565,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     test_env+=("NODE_BOOT_C06_CASTER_ACCOUNT=$C06_CASTER_ACCOUNT")
     test_env+=("NODE_BOOT_C06_PEER_ACCOUNT=$C06_PEER_ACCOUNT" "NODE_BOOT_PLATFORM_GRANT_DIR=$WORK"
       "NODE_BOOT_PLATFORM_GRANT_ACCOUNTS=$C12_MONK_ACCOUNT,$C06_CASTER_ACCOUNT,$C06_PEER_ACCOUNT")
+    test_env+=("NODE_BOOT_E03_CLIENT_ACCOUNT=$E03_CLIENT_ACCOUNT")
     test_env+=("NODE_BOOT_G01_ACCOUNT=$G01_ACCOUNT")
     test_env+=("NODE_BOOT_W18_ACCOUNT=$W18_ACCOUNT")
     test_env+=("NODE_BOOT_C01_ACCOUNT=$C01_ACCOUNT")

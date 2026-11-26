@@ -19,7 +19,7 @@ fn named_item(profile: &str) -> Option<(u32, u32)> {
     }
     let id: u32 = id.parse().ok()?;
     let count: u32 = count.parse().ok()?;
-    (id != 0 && (1..=20).contains(&count)).then_some((id, count))
+    (id != 0 && ((1..=20).contains(&count) || (id == 3031 && count == 100))).then_some((id, count))
 }
 
 #[cfg(feature = "qualification-spawn")]
@@ -1167,7 +1167,7 @@ async fn prepare_items(
         #[cfg(not(feature = "qualification-spawn"))]
         let (quantity, additional_items) = (count, Vec::new());
         let offset = named.map_or(ordinal as u64, |(id, count)| {
-            (u64::from(id) << 5) | u64::from(count)
+            (u64::from(id) << 7) | u64::from(count)
         });
         let claim_key = if named.is_some() {
             format!("named-i{id}-{count}")
@@ -2073,6 +2073,7 @@ mod tests {
             "c12-monk",
             "c06-sorcerer",
             "premium",
+            "item-3031-100",
             "item-43895-1",
             "item-6506-2",
         ] {
@@ -2088,6 +2089,8 @@ mod tests {
             format!("qualify {id} item-0-1"),
             format!("qualify {id} item-43895-0"),
             format!("qualify {id} item-43895-21"),
+            format!("qualify {id} item-43895-100"),
+            format!("qualify {id} item-3031-101"),
             format!("qualify {id} item-4294967296-1"),
             format!("qualify {id} item-43895-1-extra"),
             format!("qualify {id} knight extra"),

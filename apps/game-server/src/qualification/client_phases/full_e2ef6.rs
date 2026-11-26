@@ -364,7 +364,6 @@ fn resting_tiles(world: &BundleWorld, start: TilePos) -> TestResult<(TilePos, Ti
         }
     }
     shrines.sort_by_key(|at| (start.x.abs_diff(at.x).max(start.y.abs_diff(at.y)), *at));
-    let landing = |at, direction| destination(world, at, direction);
     let shrine_count = shrines.len();
     for shrine in shrines {
         let Some(path) = bundle_route(world, start, |at| {
