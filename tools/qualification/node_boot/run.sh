@@ -1097,6 +1097,27 @@ stage_rows() { grep -oE "e2e_all scenario=[^ ]+ status=$2( |$)" "$1" | sed -E 's
 # Row ids listed in the known-failure file (first field, comments skipped); a missing file lists none.
 known_rows() { [[ -f $1 ]] && grep -vE '^[[:space:]]*(#|$)' "$1" | awk '{print $1}' || true; }
 
+w19a_rows() {
+  [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_D150_LEGACY:-0}" == 0 ]] || return 0
+  local groups=${NODE_BOOT_E2E_ONLY:-}
+  groups=${groups//[[:space:]]/}
+  [[ -z "$groups" || ",$groups," == *,rows,* ]] || return 0
+  # Same indices and default range as e2e_row_selected in the Rust journeys.
+  local batch=${OTERYN_E2E_ROW_BATCH-0:15} start length index row
+  for row in full client; do
+    case "$row" in full) index=12 ;; client) index=216 ;; esac
+    if [[ "$batch" == all ]]; then
+      echo "W19a.$row"
+    elif [[ "$batch" =~ ^([0-9]+):([0-9]+)$ ]]; then
+      start=${BASH_REMATCH[1]}
+      length=${BASH_REMATCH[2]}
+      if (( index >= 10#$start && index - 10#$start < 10#$length )); then
+        echo "W19a.$row"
+      fi
+    fi
+  done
+}
+
 stage() { # name prerequisite... -- function
   local name=$1; shift
   local prerequisites=()
@@ -1140,6 +1161,16 @@ stage() { # name prerequisite... -- function
     if [[ -n $new_rows ]]; then
       STATUS[$name]="FAIL(rows)"
       echo "NODE_BOOT_STAGE_FAILED $name rows=$new_rows"
+    fi
+    if [[ "$name" == seam_stages ]]; then
+      local row expected
+      for row in $(w19a_rows); do
+        case "$row" in W19a.full) expected=PASS ;; W19a.client) expected=CAPTURED ;; esac
+        if ! stage_rows "$WORK/stage-$name.log" "$expected" | grep -Fx "$row" >/dev/null; then
+          STATUS[$name]="FAIL(rows)"
+          echo "NODE_BOOT_STAGE_FAILED $name row=$row required_status=$expected"
+        fi
+      done
     fi
     if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then
       echo "--- session close events behind failed e2e rows"
@@ -1309,11 +1340,26 @@ node_complete_assignment() {
   node_deployment_grants
   ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
   ops content activate --request content-1.json
+  local w19a
+  w19a="$(w19a_rows)"
+  if [[ -n "$w19a" ]]; then
+    local christmas_epoch
+    christmas_epoch="$({
+      echo 'PREPARE node_boot_christmas(UUID, UUID, TEXT, TEXT) AS'
+      cat "$GAME_SOURCE/tools/qualification/node_boot/christmas_epoch.sql"
+      printf "EXECUTE node_boot_christmas('%s', '%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WORLD_DIGEST" "$MAP_REVISION"
+    } | psql_admin oteryn_node_boot)"
+    [[ "$christmas_epoch" == 1 ]] || { fail "Christmas epoch fixture"; return 1; }
+    evidence "world_epoch=1 source=qualification_fixture seasonal_event=christmas"
+  fi
   local -a report_args=()
   assignment_report_args
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
+  if [[ -n "$w19a" ]]; then
+    await_log 'event=seasonal_calendar reset_epoch=1 active=.*christmas' 60
+  fi
   # The canonical manifest makes each validation substantial. Prove the same
   # stale-predecessor rejection against the now-active sequence 1, without
   # spending the unassigned node's unchanged wait on this independent negative.
@@ -1335,8 +1381,13 @@ node_complete_assignment() {
       printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
       printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
     } | psql_admin oteryn_node_boot)"
-    [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
-    evidence "world_epoch=0 source=control_initializer bundle=$epoch_bundle content=issued replay=idempotent"
+    if [[ -n "${w19a:-}" ]]; then
+      [[ "$epoch_result" == $'f\nf' ]] || fail "Christmas fixture epoch zero replay"
+      evidence "world_epoch_history=0 source=qualification_fixture replay=idempotent"
+    else
+      [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
+      evidence "world_epoch=0 source=control_initializer bundle=$epoch_bundle content=issued replay=idempotent"
+    fi
   fi
   local control_socket_mode="uid${SERVICE_UID}_0600"
   if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
