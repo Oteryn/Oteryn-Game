@@ -2,6 +2,7 @@
 //! the command result plus the inventory snapshot/delta bytes consumed by `oteryn-session`.
 use super::*;
 use oteryn_dev_client::SessionEvent;
+use oteryn_dev_client::native_session::{Admission, Session};
 use oteryn_protocol_oteryn::item_view;
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
@@ -9,6 +10,56 @@ use oteryn_protocol_oteryn::world_object::{
 
 const PICK: u32 = 3456;
 const SHINY_STONE: u32 = 10310;
+
+pub(super) async fn connect_for_capture(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    index: usize,
+    supported_capabilities: &[u32],
+) -> TestResult<Session<tokio_rustls::client::TlsStream<TcpStream>>> {
+    wait_character_released(clients, index).await?;
+    let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
+    let (nonce, attempt) = fresh_grant_material(tag)?;
+    let grant = Grant {
+        signing: clients.signing,
+        key_id: clients.key_id,
+        account_id: &clients.accounts[index],
+        character_id: clients.characters[index],
+        world_id: clients.world,
+        channel_id: clients.channel,
+        security_generation: generation,
+        scope_generation: clients.scope_generation,
+        nonce,
+        attempt,
+    };
+    let token = sign_grant(&grant, now_seconds()?);
+    let deadline = Duration::from_secs(20);
+    let connector = connector(clients.certificate, &EXACT)?;
+    let server_name = ServerName::try_from("localhost")?;
+    let stream = tokio::time::timeout(deadline, async {
+        let tcp = TcpStream::connect(clients.address).await?;
+        connector.connect(server_name, tcp).await
+    })
+    .await??;
+    if stream.get_ref().1.alpn_protocol() != EXACT.alpn {
+        return Err("capture admission ALPN mismatch".into());
+    }
+    let session = Session::admit(
+        stream,
+        Admission {
+            appearance_items: None,
+            schema_revision: 1,
+            character_id: CharacterId::decode(&clients.characters[index])?,
+            admission_material: token.as_bytes(),
+            client_build_id: "oteryn-dev-client/replay-qualification",
+            supported_capabilities,
+            deadline,
+        },
+    )
+    .await?;
+    verdict::Harness::global().progress("admission");
+    Ok(session)
+}
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
