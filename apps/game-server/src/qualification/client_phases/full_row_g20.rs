@@ -97,7 +97,7 @@ async fn preview(
     Ok(reply.payload)
 }
 
-#[derive(Debug, PartialEq, Eq, sqlx::FromRow)]
+#[derive(Clone, Debug, PartialEq, Eq, sqlx::FromRow)]
 struct ForgeCustody {
     backpack: String,
     items: serde_json::Value,
@@ -514,6 +514,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &original_inventory,
     )
     .await?;
+    let mut client = connect_character(&clients, 0x82, 0).await?;
+    let funded_session = client.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(funded_session.as_bytes()),
+        "--profile",
+        "g20-dust-input".into(),
+    )
+    .await?;
     let funded = forge_custody(&mut connection, character).await?;
     let balances = funded.dust.as_ref();
     let dust = balances
@@ -524,12 +532,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .unwrap_or(u64::from(INITIAL_DUST_LIMIT));
     if dust != u64::from(FUNDED_DUST) || limit != u64::from(INITIAL_DUST_LIMIT) {
         return Err(format!(
-            "step=funded-pre-state observed=dust-{dust}-limit-{limit} required=dust-{FUNDED_DUST}-limit-{INITIAL_DUST_LIMIT} prerequisite=live-eligible-creature-dust-credit"
+            "step=funded-pre-state observed=dust-{dust}-limit-{limit} required=dust-{FUNDED_DUST}-limit-{INITIAL_DUST_LIMIT}"
         ).into());
     }
+    let mut expected_funded = custody.clone();
+    expected_funded.dust = funded.dust.clone();
+    let ledger = &funded.other_custody["dust_ledger"];
+    let Some([credit]) = ledger.as_array().map(Vec::as_slice) else {
+        return Err("step=funded-pre-state expected exactly one fixture dust entry".into());
+    };
+    if credit["entry_id"] != funded.dust.as_ref().ok_or("missing fixture balance")?["last_entry_id"]
+        || credit["balance_before"].as_u64() != Some(0)
+        || credit["balance_after"].as_u64() != Some(dust)
+        || credit["dust_limit_before"].as_u64() != Some(limit)
+        || credit["dust_limit_after"].as_u64() != Some(limit)
+    {
+        return Err("step=funded-pre-state fixture ledger does not match its balance".into());
+    }
+    expected_funded.other_custody["dust_ledger"] = ledger.clone();
+    check_custody(&expected_funded, &funded)?;
+    evidence(&format!(
+        "FIXTURE row=G20.full input=forge_dust balance={dust} limit={limit}"
+    ));
 
-    let mut client = connect_character(&clients, 0x82, 0).await?;
-    let funded_session = client.join_snapshot().game_session_id;
     let inventory = client
         .inventory()
         .ok_or("step=funded missing inventory")?
