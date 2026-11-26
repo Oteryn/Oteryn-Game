@@ -180,7 +180,7 @@ async fn fight_fear_caster(
     let target = client
         .world_entities()
         .into_iter()
-        .flatten()
+        .flat_map(|entities| entities.iter())
         .filter(|entity| {
             entity.kind == EntityKind::Creature
                 && entity
