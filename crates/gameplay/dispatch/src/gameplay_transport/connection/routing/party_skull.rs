@@ -1,6 +1,8 @@
 use super::super::{AdmittedSession, FreshAdmissionAuthority};
 use super::Dispatch;
-use oteryn_protocol_oteryn::party_skull::{CAPABILITY_PARTY_SKULL_V1, encode_party_icons};
+use crate::durability::DurabilityError;
+use crate::foundation::CommandStatus;
+use oteryn_protocol_oteryn::party_skull::{CAPABILITY_PARTY_SKULL_V1, PartyIconQueryRefusal, encode_party_icons};
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
@@ -26,15 +28,23 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             None => Dispatch::Unregistered,
         };
     }
-    let Some(mut icons) = authority.observe_party_icons(admitted).await else {
-        return Dispatch::Unregistered;
+    let mut icons = match authority.query_party_icons(admitted).await {
+        Ok(icons) => icons,
+        Err(DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded) => {
+            return refusal(PartyIconQueryRefusal::Busy);
+        }
+        Err(_) => return refusal(PartyIconQueryRefusal::Unavailable),
     };
     icons.retain(|icon| visibility.is_some_and(|view| view.shows(icon.entity)));
     icons.sort_by_key(|icon| icon.entity);
     match encode_party_icons(&icons) {
-        Ok(bytes) => Dispatch::Reply(crate::foundation::CommandStatus::Accepted, bytes),
-        Err(_) => Dispatch::Unregistered,
+        Ok(bytes) => Dispatch::Reply(CommandStatus::Accepted, bytes),
+        Err(_) => refusal(PartyIconQueryRefusal::Unavailable),
     }
+}
+
+fn refusal(reason: PartyIconQueryRefusal) -> Dispatch {
+    Dispatch::Reply(CommandStatus::Rejected, reason.encode().to_vec())
 }
 
 #[cfg(test)]

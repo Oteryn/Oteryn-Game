@@ -75,6 +75,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: AdmittedSession,
     ) -> Option<Vec<PartyIcon>> {
+        self.observe_party_skull_once(admitted, None).await.ok()
+    }
+
+    pub(super) async fn query_party_skull(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Vec<PartyIcon>, DurabilityError> {
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        // Each failed attempt drops its spell and runtime guards before waiting.
+        budget
+            .retry_command_guard(async || {
+                self.observe_party_skull_once(admitted, Some(budget.deadline))
+                    .await
+            })
+            .await
+    }
+
+    async fn observe_party_skull_once(
+        &self,
+        admitted: AdmittedSession,
+        deadline: Option<tokio::time::Instant>,
+    ) -> Result<Vec<PartyIcon>, DurabilityError> {
         use oteryn_protocol_oteryn::party_skull::CAPABILITY_PARTY_SKULL_V1;
         if !admitted
             .continuity
@@ -89,37 +111,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .selected_capabilities
                 .contains(oteryn_protocol_oteryn::party::CAPABILITY_PARTY_LIST_V1)
         {
-            return None;
+            return Err(DurabilityError::Unavailable);
         }
-        let actor = admitted.runtime_actor?;
-        let fence = admitted.item_fence?;
+        let actor = admitted.runtime_actor.ok_or(DurabilityError::Unavailable)?;
+        let fence = admitted.item_fence.ok_or(DurabilityError::Unavailable)?;
         if fence.game_session_id != admitted.game_session_id
             || fence.connection_generation.get() != admitted.continuity.connection_generation
         {
-            return None;
+            return Err(DurabilityError::Unavailable);
         }
-        let permit = self.spell_lane_permit().await?;
+        let permit = self
+            .spell_lane_permit()
+            .await
+            .ok_or(DurabilityError::Unavailable)?;
         let runtime = self.runtime.lock().await;
-        runtime.assert_actor_spell_unreserved(actor).ok()?;
+        runtime
+            .assert_actor_spell_unreserved(actor)
+            .map_err(|_| DurabilityError::Unavailable)?;
         let lease = runtime
             .bound_attacker_lease(actor, admitted.game_session_id)
-            .ok()?;
+            .map_err(|_| DurabilityError::Unavailable)?;
         if lease.character_id().as_bytes() != fence.character_id.as_bytes()
             || lease.generation() != fence.character_lease_generation
         {
-            return None;
+            return Err(DurabilityError::Unavailable);
         }
         if runtime
             .player_control_facts(actor, admitted.game_session_id)
-            .ok()?
+            .map_err(|_| DurabilityError::Unavailable)?
             .control_loss
             .is_some()
         {
-            return None;
+            return Err(DurabilityError::Unavailable);
         }
         let states = self.states.spell_states.lock().await;
         let attack = self.states.attack.lock().await;
-        let pass = self.root.try_issue_semantic_pass().ok()?;
+        let pass = match deadline {
+            Some(deadline) => self.root.try_issue_semantic_pass_by(deadline.into_std())?,
+            None => self.root.try_issue_semantic_pass()?,
+        };
         let mut context = (self, &*runtime, &*states, &*attack, &permit);
         let result = pass.run_with_context(&mut context, move |holder, deadline, ctx| {
             Box::pin(async move {
@@ -173,7 +203,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Err(error) = &result {
             eprintln!("PARTY-SKULL-1 observation unavailable: {error:?}");
         }
-        result.ok()
+        result
     }
 }
 

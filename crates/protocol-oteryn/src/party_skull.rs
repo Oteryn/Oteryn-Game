@@ -8,6 +8,30 @@ pub const COMMAND_TYPE_PARTY_SKULL_QUERY: u32 = 155;
 pub const MAX_PARTY_ICON_BYTES: usize = 12_288;
 pub const MAX_PARTY_ICONS: usize = 256;
 
+/// Payload of a rejected Party icon query. Accepted replies use the existing icon codec.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PartyIconQueryRefusal {
+    Busy,
+    Unavailable,
+}
+
+impl PartyIconQueryRefusal {
+    pub const fn encode(self) -> &'static [u8] {
+        match self {
+            Self::Busy => crate::COMMAND_BUSY_REFUSAL,
+            Self::Unavailable => b"unavailable",
+        }
+    }
+
+    pub fn decode(payload: &[u8]) -> Result<Self, PartyWireError> {
+        match payload {
+            crate::COMMAND_BUSY_REFUSAL => Ok(Self::Busy),
+            b"unavailable" => Ok(Self::Unavailable),
+            _ => Err(PartyWireError::Malformed),
+        }
+    }
+}
+
 /// Shield values match the pinned sources: none, invitation blue/yellow, member,
 /// leader, shared member/leader, inactive blink member/leader, inactive member/leader,
 /// outsider gray. Skull: none/yellow/green/white/red/black/orange.

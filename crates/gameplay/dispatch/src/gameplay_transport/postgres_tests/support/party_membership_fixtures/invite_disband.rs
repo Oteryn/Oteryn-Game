@@ -104,7 +104,6 @@ impl Peer {
     }
 
     async fn command(&mut self, intent: Option<PartyIntent>) -> TestResult<PartyResult> {
-        let generation = self.generation();
         let (command_type, payload) = match intent {
             Some(intent) => (
                 COMMAND_TYPE_PARTY_INTENT,
@@ -112,31 +111,50 @@ impl Peer {
             ),
             None => (COMMAND_TYPE_PARTY_QUERY, Vec::new()),
         };
+        let (status, payload) = self.exchange(command_type, &payload).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        let party = decode_party_result(&payload).map_err(debug)?;
+        assert_eq!(party.disposition, PartyDisposition::Ok);
+        Ok(party)
+    }
+
+    async fn send(&mut self, command_type: u32, payload: &[u8]) -> TestResult<u64> {
         let command_id = self.next_command;
         let frame = encode_client_command(
-            generation,
+            self.generation(),
             &ClientCommandValue {
                 command_id,
                 command_type,
-                payload: &payload,
+                payload,
             },
         )
         .map_err(debug)?;
         write_frame(&mut self.stream, &frame).await?;
         self.next_command += 1;
+        Ok(command_id)
+    }
+
+    async fn receive(&mut self, command_id: u64) -> TestResult<(CommandStatus, Vec<u8>)> {
+        let generation = self.generation();
         loop {
             let frame = read_live_frame(&mut self.stream, generation).await?;
             let envelope = decode_wire_envelope(&frame).map_err(debug)?;
             if envelope.message_type() == MessageType::CommandResult {
                 let result = decode_command_result(envelope.payload()).map_err(debug)?;
                 assert_eq!(result.command_id, command_id);
-                assert_eq!(result.status, CommandStatus::Accepted);
-                let party = decode_party_result(result.payload).map_err(debug)?;
-                assert_eq!(party.disposition, PartyDisposition::Ok);
-                return Ok(party);
+                return Ok((result.status, result.payload.to_vec()));
             }
             self.notices.extend(party_notice(&envelope)?);
         }
+    }
+
+    async fn exchange(
+        &mut self,
+        command_type: u32,
+        payload: &[u8],
+    ) -> TestResult<(CommandStatus, Vec<u8>)> {
+        let command_id = self.send(command_type, payload).await?;
+        self.receive(command_id).await
     }
 
     async fn notice(&mut self, kind: u8, label: &str) -> TestResult<PartyMembershipNotice> {
@@ -329,5 +347,129 @@ async fn wait_for_busy_drain(h: &Harness, member_id: [u8; 16]) -> TestResult {
     })
     .await
     .map_err(|_| "Party delivery did not attempt checkout during the holder outage")?;
+    Ok(())
+}
+
+pub(super) async fn check_joined_eligibility(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut [AdmittedSession],
+    target: EntityRef,
+    [leader_id, member_id]: [[u8; 16]; 2],
+    h: &Harness,
+) -> TestResult {
+    use oteryn_protocol_oteryn::party_skull::{
+        CAPABILITY_PARTY_SKULL_V1, COMMAND_TYPE_PARTY_SKULL_QUERY,
+    };
+    const ITERATIONS: u32 = 20;
+    let selected = SelectedCapabilities::select(
+        owner.offered_capabilities(),
+        &[6, 21, 42, 92, CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1, CAPABILITY_PARTY_SKULL_V1],
+    )
+    .filter(|caps| caps.contains(CAPABILITY_PARTY_SKULL_V1)
+                && caps.contains(CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1))
+    .ok_or("Party icon and notice offer")?;
+    let [leader, member, ..] = admitted else {
+        return Err("expected two live peers".into());
+    };
+    leader.continuity.selected_capabilities = selected;
+    member.continuity.selected_capabilities = selected;
+    let (mut leader_server, mut a) = Peer::new(*leader);
+    let (mut member_server, mut b) = Peer::new(*member);
+    let driving = async move {
+        a.ready().await?;
+        b.ready().await?;
+        for iteration in 0..ITERATIONS {
+            a.command(Some(PartyIntent::Invite(target))).await?;
+            // Set the durable preference while the leader is alone, so the
+            // first command after Joined can be the eligibility read itself.
+            let updated = sqlx::query(
+                "UPDATE game_parties SET shared_xp_enabled = true, revision = revision + 1
+                 WHERE leader_character_id = encode($1, 'hex')::uuid",
+            )
+            .bind(leader_id.as_slice())
+            .execute(&h.pool)
+            .await?;
+            assert_eq!(updated.rows_affected(), 1);
+
+            let invitations = b.command(None).await?.invitations;
+            let [invitation] = invitations.as_slice() else {
+                return Err("expected one invitation".into());
+            };
+            b.command(Some(PartyIntent::Accept(invitation.handle))).await?;
+            assert_notice(&mut b, leader_id, PartyMembershipChange::Invited).await?;
+            assert_notice(&mut b, member_id, PartyMembershipChange::Joined).await?;
+            assert_notice(&mut a, member_id, PartyMembershipChange::Joined).await?;
+
+            if iteration < 2 {
+                // Suppress unrelated background checkouts while deliberately owning
+                // the only holder. Commands and frames still use the production loop.
+                let foreground = h.root.foreground_demand()?;
+                h.root.await_ready().await?;
+                if h.root.has_ready_demand() {
+                    h.root.maintain_ready_once().await?;
+                }
+                let held = h.root.try_issue_semantic_pass()?;
+                let command = a.send(COMMAND_TYPE_PARTY_SKULL_QUERY, &[]).await?;
+                if iteration == 0 {
+                    let (status, payload) = a.receive(command).await?;
+                    assert_eq!(status, CommandStatus::Rejected);
+                    assert_eq!(
+                        payload.as_slice(),
+                        b"busy",
+                        "a Joined eligibility query that exhausts its holder budget must report Busy"
+                    );
+                    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                } else {
+                    // The holder's refusal queues the real command. Wait for its
+                    // request before returning the holder within the same budget.
+                    tokio::time::timeout(crate::gameplay_transport::COMMAND_HOLDER_WINDOW, async {
+                        while !h.root.has_ready_demand() {
+                            tokio::task::yield_now().await;
+                        }
+                    }).await?;
+                    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                    let (status, payload) = a.receive(command).await?;
+                    assert_eq!(status, CommandStatus::Accepted, "transient holder refusal");
+                    assert_blinking_member(target, &payload)?;
+                }
+                drop(foreground);
+            }
+            let (status, payload) = a.exchange(COMMAND_TYPE_PARTY_SKULL_QUERY, &[]).await?;
+            assert_eq!(status, CommandStatus::Accepted, "iteration {iteration}");
+            assert_blinking_member(target, &payload)?;
+
+            b.command(Some(PartyIntent::Leave)).await?;
+            for peer in [&mut a, &mut b] {
+                assert_notice(peer, member_id, PartyMembershipChange::Left).await?;
+                assert_notice(peer, leader_id, PartyMembershipChange::Disbanded).await?;
+            }
+        }
+        Ok::<(), Box<dyn std::error::Error>>(())
+    };
+    let (result, leader_end, member_end) = tokio::time::timeout(
+        Duration::from_secs(5) * ITERATIONS,
+        async {
+            tokio::join!(
+                biased;
+                driving,
+                serve_admitted(&mut leader_server, *leader, owner, notice_policy()),
+                serve_admitted(&mut member_server, *member, owner, notice_policy()),
+            )
+        },
+    ).await?;
+    result?;
+    for end in [leader_end, member_end] {
+        assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+    }
+
+    Ok(())
+}
+
+fn assert_blinking_member(target: EntityRef, payload: &[u8]) -> TestResult {
+    let icons = oteryn_protocol_oteryn::party_skull::decode_party_icons(payload).map_err(debug)?;
+    let icon = icons.iter().find(|icon| icon.entity == target).ok_or("joined peer's shield")?;
+    // The two players have not contributed in combat. Shared XP is
+    // enabled, and the peer must report the existing inactive blink state.
+    assert_eq!(icon.shield, 7);
     Ok(())
 }

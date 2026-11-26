@@ -60,8 +60,13 @@ pub(super) fn run_leader_joined_notice(admin: String) -> TestResult {
     run_with_admin(admin, false, false, false, false, Some(NoticeCase::LeaderJoined), None)
 }
 
+pub(super) fn run_joined_eligibility(admin: String) -> TestResult {
+    run_with_admin(admin, false, false, false, false, Some(NoticeCase::JoinedEligibility), None)
+}
+
 #[derive(Clone, Copy)]
 enum NoticeCase {
+    JoinedEligibility,
     Fanout,
     LeaderJoined,
     JoinLeave,
@@ -535,7 +540,7 @@ async fn scenario(
         runtime: &runtime, door: &door, spells: &spells, achievements: &achievements, imported_charms: &charms, room: &room,
     }.build()
     };
-    if partyskull {
+    if partyskull || matches!(notices, Some(NoticeCase::JoinedEligibility)) {
         sqlx::query("INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'world-policy-1')").bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
         sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'world-policy-1',2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'party-skull-fixture')").bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
     }
@@ -544,6 +549,11 @@ async fn scenario(
         a.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[6, 42])
                 .ok_or("party offer")?;
+    }
+    if matches!(notices, Some(NoticeCase::JoinedEligibility)) {
+        return invite_disband::check_joined_eligibility(
+            &owner, &mut admitted, targets[1], characters, h,
+        ).await;
     }
     if matches!(notices, Some(NoticeCase::Fanout | NoticeCase::LeaderJoined)) {
         return invite_disband::check_fanout(

@@ -1001,6 +1001,9 @@ pub fn encode_liveness_probe(
     Ok(output)
 }
 
+/// Payload on a rejected retryable command whose execution was deferred by a busy guard.
+pub const COMMAND_BUSY_REFUSAL: &[u8] = b"busy";
+
 /// `CommandStatus` values of FND-02 `CommandResult`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]

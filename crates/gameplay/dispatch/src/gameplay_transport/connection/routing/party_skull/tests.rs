@@ -59,12 +59,21 @@ fn own_pvp_route_preserves_legacy_query_and_gates_current_status()
                         &[134],
                     )
                     .ok_or("selection")?;
-                    for payload in [&[8, 0][..], &[8, 2], &[8, 1, 8, 1], &[1], &[]] {
+                    for payload in [&[8, 0][..], &[8, 2], &[8, 1, 8, 1], &[1]] {
                         assert!(matches!(
                             route(&authority, admitted, payload, None).await,
                             Dispatch::Unregistered
                         ));
                     }
+                    let Dispatch::Reply(CommandStatus::Rejected, bytes) =
+                        route(&authority, admitted, &[], None).await
+                    else {
+                        return Err("unavailable Party icon refusal missing".into());
+                    };
+                    assert_eq!(
+                        PartyIconQueryRefusal::decode(&bytes),
+                        Ok(PartyIconQueryRefusal::Unavailable)
+                    );
                     assert_eq!(authority.0.get(), 0);
                     let Dispatch::Reply(crate::foundation::CommandStatus::Accepted, bytes) =
                         route(&authority, admitted, &[8, 1], None).await
