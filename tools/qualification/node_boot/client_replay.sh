@@ -38,6 +38,7 @@ selected_client_replays() {
 190 W04.client oteryn-client e2e_w04_replays_raid_schedule_state_and_refusal
 192 W05c.client oteryn-client-ui w05c_rashid_payloads_replay_into_service_panel
 193 W10.client oteryn-client-ui e2e_w10_replays_hazard_state_selection_and_locked_refusal
+194 W11.client oteryn-client-ui e2e_w11_replays_taint_projection_and_lever_refusal
 196 W13.client oteryn-client-ui e2e_w13_replays_daily_boost_selection_and_refusal
 REPLAYS
 }

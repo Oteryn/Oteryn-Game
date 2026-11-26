@@ -682,6 +682,20 @@ class PgObserveTests(unittest.TestCase):
 
 
 class ClientReplayTests(unittest.TestCase):
+    def test_w11_selects_the_live_reducer_replay_in_its_batch(self):
+        for batch, selected in [('194:1', True), ('193:2', True), ('all', True),
+                                ('193:1', False), ('195:1', False)]:
+            with self.subTest(batch=batch):
+                result = bash('source "$REPLAY_HELPER"; selected_client_replays', {
+                    'REPLAY_HELPER': str(HERE / 'client_replay.sh'),
+                    'OTERYN_E2E_ROW_BATCH': batch,
+                })
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(
+                    'W11.client oteryn-client-ui e2e_w11_replays_taint_projection_and_lever_refusal'
+                    in result.stdout.splitlines(), selected,
+                )
+
     def test_scoped_replay_requires_a_unique_live_capture_and_one_passing_test(self):
         capture = 'SEAM_EVIDENCE e2e_capture scenario=W04.client status=CAPTURED evidence=fresh'
         failure = 'SEAM_EVIDENCE e2e_all scenario=W04.client status=FAIL seconds=0.000'
