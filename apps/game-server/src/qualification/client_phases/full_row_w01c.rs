@@ -14,7 +14,12 @@
 //! 5. Return to the poison spider, observe lethal damage and the granted respawn,
 //!    and verify the new durable death receipt and respawn state after re-admission.
 use super::*;
-use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_dev_client::{DevClientSession, EntityRef, SessionEvent};
+use oteryn_protocol_oteryn::analyser::{
+    AnalyserDamageSource, AnalyserFact, CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1,
+    CAPABILITY_ANALYSER_V1,
+};
+use oteryn_protocol_oteryn::damage_element::DamageElement;
 use oteryn_protocol_oteryn::logout::LogoutResult;
 use std::collections::BTreeSet;
 
@@ -149,7 +154,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("step 1: character did not enter at the configured town".into());
     }
     walk_to(&mut client, world, ENCOUNTER).await?;
-    require_adjacent_spider(&client)?;
+    let spiders = adjacent_spiders(&client)?;
     row.pass(
         "admitted-and-walked-to-spawn",
         client.world_spatial().actor_position,
@@ -169,10 +174,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step 2: attack cancel did not leave an empty target".into());
     }
-    client.take_events();
-    let damaged = wait_for_damage(&mut client, before.health).await?;
-    require_adjacent_spider(&client)?;
-    row.pass("attack-command-and-vitals-delta", (cancel, damaged));
+    let (damaged, attacker, amount) = wait_for_damage(&mut client, before.health, &spiders).await?;
+    row.pass(
+        "attack-command-and-vitals-delta",
+        (cancel, before.health, damaged, attacker, amount),
+    );
 
     let refusal_position = client.world_spatial().actor_position;
     let refusal_vitals = client
@@ -232,7 +238,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let second_session = client.join_snapshot().game_session_id;
     walk_to(&mut client, world, ENCOUNTER).await?;
-    require_adjacent_spider(&client)?;
+    adjacent_spiders(&client)?;
     let encounter_vitals = *client
         .actor_vitals()
         .ok_or("step 6: pre-death vitals absent")?;
@@ -282,22 +288,72 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 async fn wait_for_damage(
     client: &mut DevClientSession,
     before: u32,
-) -> TestResult<oteryn_protocol_oteryn::actor_spell::ActorVitals> {
+    spiders: &[EntityRef],
+) -> TestResult<(
+    oteryn_protocol_oteryn::actor_spell::ActorVitals,
+    EntityRef,
+    u32,
+)> {
+    let capabilities = client.selected_capabilities();
+    if !capabilities.contains(&CAPABILITY_ANALYSER_V1)
+        || !capabilities.contains(&CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1)
+    {
+        return Err("step 2: attributed damage evidence was not negotiated".into());
+    }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
+    let mut damaged = None;
+    let mut hit = None;
     loop {
         client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {
-            if let SessionEvent::ActorVitals(delta) = event
-                && delta.value.health > 0
-                && delta.value.health < before
-            {
-                return Ok(delta.value);
+            match event {
+                SessionEvent::ActorVitals(delta)
+                    if damaged.is_none()
+                        && delta.value.health > 0
+                        && delta.value.health < before =>
+                {
+                    damaged = Some(delta.value);
+                }
+                SessionEvent::AnalyserAttributedFacts(delta) if hit.is_none() => {
+                    for fact in delta.value {
+                        let AnalyserFact::DamageInput {
+                            value,
+                            element,
+                            source,
+                        } = &fact.fact
+                        else {
+                            continue;
+                        };
+                        let attacker = fact.attacker.filter(|attacker| spiders.contains(attacker));
+                        if *element != DamageElement::Physical
+                            || !matches!(source, AnalyserDamageSource::Creature(_))
+                            || attacker.is_none()
+                        {
+                            return Err(format!(
+                                "step 2: damage did not come from adjacent Poison Spider: {fact:?}"
+                            )
+                            .into());
+                        }
+                        hit = attacker.map(|attacker| (attacker, value.get()));
+                        break;
+                    }
+                }
+                _ => {}
             }
+        }
+        if let (Some(damaged), Some((attacker, amount))) = (damaged, hit) {
+            if before.checked_sub(amount) != Some(damaged.health) {
+                return Err(format!(
+                    "step 2: attributed damage {amount} does not explain HP {before} -> {}",
+                    damaged.health
+                )
+                .into());
+            }
+            return Ok((damaged, attacker, amount));
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
-                "step 2: timeout waiting for poison-spider ActorVitals damage delta; initial_health={before} current={:?}; server needs an admitted poison-spider attack source wired through the monster melee owner",
-                client.actor_vitals()
+                "step 2: no matching Poison Spider damage and ActorVitals in 45s: before={before} vitals={damaged:?} hit={hit:?}"
             )
             .into());
         }
@@ -312,9 +368,9 @@ async fn logout_once(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-fn require_adjacent_spider(client: &DevClientSession) -> TestResult {
+fn adjacent_spiders(client: &DevClientSession) -> TestResult<Vec<EntityRef>> {
     let here = client.world_spatial().actor_position;
-    let mut adjacent = client
+    let spiders = client
         .world_entities()
         .ok_or("W01c encounter: entities absent")?
         .iter()
@@ -327,19 +383,21 @@ fn require_adjacent_spider(client: &DevClientSession) -> TestResult {
                     .max(here.y.abs_diff(entity.position.y))
                     <= 1
         })
-        .peekable();
-    if adjacent.peek().is_none()
-        || !adjacent.all(|entity| {
-            entity
+        .map(|entity| {
+            if entity
                 .display_name
                 .is_some_and(|name| name.as_str() == Ok("Poison Spider"))
+            {
+                Ok(entity.entity)
+            } else {
+                Err(format!("W01c encounter: unexpected adjacent creature {entity:?}").into())
+            }
         })
-    {
-        return Err(
-            "W01c encounter: expected adjacent Poison Spider and no other adjacent creature".into(),
-        );
+        .collect::<TestResult<Vec<_>>>()?;
+    if spiders.is_empty() {
+        return Err("W01c encounter: no adjacent Poison Spider".into());
     }
-    Ok(())
+    Ok(spiders)
 }
 
 async fn walk_to(client: &mut DevClientSession, world: &BundleWorld, goal: TilePos) -> TestResult {
