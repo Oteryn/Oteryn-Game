@@ -12,8 +12,11 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{
     chat::ChatLine,
+    item_view::CharacterInventory,
+    logout::LogoutResult,
     npc_service as npc,
     world_object::{self, UseDisposition, UseIntent, UseTarget},
+    world_spatial_entities::{EntityKind, EntityRef, WorldSpatialEntity},
 };
 const GOLD: u32 = 3031;
 const WATCH: u32 = 2906;
@@ -21,6 +24,12 @@ const PRICE: u32 = 20;
 const PURCHASE_FUNDING: u32 = PRICE - 1;
 // Pinned Lubo behavior in content/behaviors/behaviors-02500-02999.json.
 const LUBO_WANDER_RADIUS: u16 = 2;
+// Walkable southeast approach in the pinned Thais/Lubo bundle.
+const LUBO_APPROACH: TilePos = TilePos {
+    x: 32492,
+    y: 32122,
+    floor: -7,
+};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -81,15 +90,22 @@ fn carried(
     client: &DevClientSession,
     definition: std::num::NonZeroU32,
 ) -> Vec<(oteryn_dev_client::ItemHandle, u32)> {
-    client.inventory().map_or_else(Vec::new, |inventory| {
-        inventory
-            .main_backpack
-            .iter()
-            .chain(&inventory.entries)
-            .filter(|entry| entry.item_definition_ref == definition)
-            .map(|entry| (entry.handle, entry.count.get()))
-            .collect()
-    })
+    client
+        .inventory()
+        .map_or_else(Vec::new, |inventory| carried_in(inventory, definition))
+}
+
+fn carried_in(
+    inventory: &CharacterInventory,
+    definition: std::num::NonZeroU32,
+) -> Vec<(oteryn_dev_client::ItemHandle, u32)> {
+    inventory
+        .main_backpack
+        .iter()
+        .chain(&inventory.entries)
+        .filter(|entry| entry.item_definition_ref == definition)
+        .map(|entry| (entry.handle, entry.count.get()))
+        .collect()
 }
 
 async fn use_target(
@@ -153,9 +169,12 @@ async fn read_time(
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let result = client.session_mut().logout().await?.result;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
+    require_first_logout(client.session_mut().logout().await?.result)
+}
+
+fn require_first_logout(result: Option<LogoutResult>) -> TestResult {
+    if result != Some(LogoutResult::Accepted) {
         return Err(format!("step=logout observed={result:?}").into());
     }
     Ok(())
@@ -170,6 +189,80 @@ fn gold_balance(client: &DevClientSession, gold: std::num::NonZeroU32) -> u64 {
         .into_iter()
         .map(|(_, count)| u64::from(count))
         .sum()
+}
+
+fn require_departure(position: TilePos) -> TestResult {
+    if position != TOWN {
+        return Err(format!("step=walk observed=start:{position:?} expected={TOWN:?}").into());
+    }
+    Ok(())
+}
+
+fn is_approach(position: TilePos) -> bool {
+    position == LUBO_APPROACH
+}
+
+fn lubo_identity(
+    table: &oteryn_world_bundle::npc::Table,
+    clients: &SeamClients<'_>,
+) -> TestResult<EntityRef> {
+    use crate::foundation::{
+        ActorLocalGeneration, ActorLocalId, ActorRef, ExactActorRef, ScopeOwnershipGeneration,
+    };
+
+    // NPC-LOAD-1 allocates the canonical admitted placements from the empty
+    // carrier before creature actors. Rashid's rotation sorts after Lubo.
+    let ordinal = table
+        .npcs
+        .iter()
+        .take_while(|npc| npc.key.as_str() < "oteryn:npc.lubo")
+        .map(|npc| npc.placements.len())
+        .sum::<usize>()
+        + 1;
+    let scope = ScopeOwnershipGeneration::new(clients.scope_generation)
+        .map_err(|_| "step=seller observed=invalid-scope-generation")?;
+    let actor = ExactActorRef(ActorRef::from_owner_parts(
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+        scope,
+        ActorLocalId(u32::try_from(ordinal)?),
+        ActorLocalGeneration(1),
+    ));
+    Ok(EntityRef {
+        identity: actor.placement_identity(),
+        generation: actor.actor_local_generation(),
+    })
+}
+
+fn is_lubo(
+    entry: &WorldSpatialEntity,
+    expected: EntityRef,
+    home: TilePos,
+    player: TilePos,
+) -> bool {
+    entry.entity == expected
+        && entry.kind == EntityKind::Npc
+        && entry
+            .display_name
+            .is_some_and(|name| name.as_str() == Ok("Lubo"))
+        && tile(entry.position).is_ok_and(|at| {
+            within(at, home, u32::from(LUBO_WANDER_RADIUS))
+                && within(at, player, npc::TALK_RANGE_TILES)
+        })
+}
+
+fn purchase_inventory_matches(
+    inventory: &CharacterInventory,
+    watch: std::num::NonZeroU32,
+    gold: std::num::NonZeroU32,
+    remaining_gold: u64,
+) -> bool {
+    matches!(carried_in(inventory, watch).as_slice(), [(_, 1)])
+        && carried_in(inventory, gold)
+            .iter()
+            .map(|(_, count)| u64::from(*count))
+            .sum::<u64>()
+            == remaining_gold
 }
 
 async fn npc_command(
@@ -225,6 +318,7 @@ async fn buy_watch(
     let [placement] = seller.placements.as_slice() else {
         return Err("step=seller observed=expected-one-lubo-placement".into());
     };
+    let expected_seller = lubo_identity(&bundle.npcs, clients)?;
     let home = TilePos {
         x: placement.x,
         y: placement.y,
@@ -238,19 +332,23 @@ async fn buy_watch(
         ChannelId::decode(&clients.channel)?,
     )?;
     let here = tile(client.world_spatial().actor_position)?;
-    // Keep the original three-tile approach. The live actor check below uses
-    // Lubo's actual position, which can differ from the authored placement.
-    let path = route(world, here, |at| at != home && within(at, home, 3))
-        .ok_or("step=seller observed=no-route-to-lubo")?;
+    require_departure(here)?;
+    let path =
+        route(world, here, is_approach).ok_or("step=seller observed=no-route-to-lubo-approach")?;
+    if path.is_empty() {
+        return Err("step=walk observed=empty-route".into());
+    }
     evidence(&format!(
-        "G09_ROUTE from={here:?} seller_home={home:?} steps={}",
+        "G09_ROUTE from={here:?} approach={LUBO_APPROACH:?} seller_home={home:?} steps={}",
         path.len()
     ));
     for direction in path {
         let before = tile(client.world_spatial().actor_position)?;
         let outcome = client.step(direction).await?;
         let after = tile(client.world_spatial().actor_position)?;
-        if outcome.disposition != StepDisposition::Moved
+        if outcome.status != CommandStatus::Accepted
+            || outcome.disposition != StepDisposition::Moved
+            || before == after
             || outcome.world_spatial_delta.is_none()
             || destination(world, before, direction) != Some(after)
         {
@@ -269,6 +367,11 @@ async fn buy_watch(
         }
     }
     let here = tile(client.world_spatial().actor_position)?;
+    if !is_approach(here) {
+        return Err(
+            format!("step=walk observed=arrival:{here:?} expected={LUBO_APPROACH:?}").into(),
+        );
+    }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let actor = loop {
         let seller = {
@@ -276,16 +379,7 @@ async fn buy_watch(
                 .world_entities()
                 .into_iter()
                 .flat_map(|entities| entities.others())
-                .filter(|entry| {
-                    entry.kind == oteryn_dev_client::EntityKind::Npc
-                        && entry
-                            .display_name
-                            .is_some_and(|name| name.as_str() == Ok("Lubo"))
-                        && tile(entry.position).is_ok_and(|at| {
-                            within(at, home, u32::from(LUBO_WANDER_RADIUS))
-                                && within(at, here, npc::TALK_RANGE_TILES)
-                        })
-                });
+                .filter(|entry| is_lubo(entry, expected_seller, home, here));
             let first = visible.next();
             if visible.next().is_some() {
                 return Err("step=seller observed=ambiguous-lubo-identity".into());
@@ -380,13 +474,13 @@ async fn buy_watch(
     let purchase = npc_command(client, npc::COMMAND_TYPE_NPC_TRADE_INTENT, &payload).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        if client
-            .take_events()
-            .into_iter()
-            .any(|event| matches!(event, oteryn_dev_client::SessionEvent::Inventory(delta) if delta.server_sequence > purchase))
-            && matches!(carried(client, watch).as_slice(), [(_, 1)])
-            && gold_balance(client, gold) == remaining_gold
-        {
+        if client.take_events().into_iter().any(|event| {
+            matches!(event, oteryn_dev_client::SessionEvent::Inventory(delta)
+                if delta.server_sequence > purchase
+                    && purchase_inventory_matches(&delta.value, watch, gold, remaining_gold))
+        }) && client.inventory().is_some_and(|inventory| {
+            purchase_inventory_matches(inventory, watch, gold, remaining_gold)
+        }) {
             evidence(&format!(
                 "G09_CHECK step=buy status=PASS watch={WATCH} price={PRICE} gold_before={funded_gold} gold_after={remaining_gold}"
             ));
@@ -477,6 +571,99 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn route_requires_town_departure_and_exact_lubo_approach() {
+        assert!(require_departure(TOWN).is_ok());
+        assert!(require_departure(LUBO_APPROACH).is_err());
+        assert!(is_approach(LUBO_APPROACH));
+        assert!(!is_approach(TilePos {
+            x: LUBO_APPROACH.x - 1,
+            ..LUBO_APPROACH
+        }));
+    }
+
+    #[test]
+    fn first_logout_refuses_busy() {
+        assert!(require_first_logout(Some(LogoutResult::Accepted)).is_ok());
+        assert!(require_first_logout(Some(LogoutResult::Busy)).is_err());
+    }
+
+    #[test]
+    fn same_name_and_position_do_not_substitute_for_lubos_identity() -> TestResult {
+        use oteryn_protocol_oteryn::{
+            entity_names::EntityDisplayName, world_spatial_entities::EntityDetail,
+        };
+        let expected = EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        };
+        let home = TilePos {
+            x: 10,
+            y: 10,
+            floor: -7,
+        };
+        let player = TilePos { x: 8, ..home };
+        let mut entry = WorldSpatialEntity {
+            entity: expected,
+            kind: EntityKind::Npc,
+            position: ActorPosition {
+                x: 11,
+                y: 10,
+                floor: 7,
+            },
+            display_name: Some(
+                EntityDisplayName::new("Lubo").map_err(|error| format!("{error:?}"))?,
+            ),
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+            motion: None,
+        };
+        assert!(is_lubo(&entry, expected, home, player));
+        entry.entity.identity = [2; 16];
+        assert!(!is_lubo(&entry, expected, home, player));
+        entry.entity = EntityRef {
+            generation: 2,
+            ..expected
+        };
+        assert!(!is_lubo(&entry, expected, home, player));
+        Ok(())
+    }
+
+    #[test]
+    fn purchase_delta_must_itself_show_watch_credit_and_gold_debit() -> TestResult {
+        use oteryn_protocol_oteryn::item_view::ItemEntry;
+        use std::num::{NonZeroU32, NonZeroU64};
+        let watch = NonZeroU32::new(WATCH).ok_or("watch")?;
+        let gold = NonZeroU32::new(GOLD).ok_or("gold")?;
+        let mut event_value = CharacterInventory {
+            entries: vec![ItemEntry {
+                appearance_id: 0,
+                handle: NonZeroU64::MIN,
+                item_definition_ref: gold,
+                count: NonZeroU32::new(69).ok_or("funded gold")?,
+                sub_type: 0,
+            }],
+            ..Default::default()
+        };
+        assert!(!purchase_inventory_matches(&event_value, watch, gold, 49));
+        event_value.entries.push(ItemEntry {
+            appearance_id: 0,
+            handle: NonZeroU64::new(2).ok_or("watch handle")?,
+            item_definition_ref: watch,
+            count: NonZeroU32::MIN,
+            sub_type: 0,
+        });
+        assert!(!purchase_inventory_matches(&event_value, watch, gold, 49));
+        event_value.entries[0].count = NonZeroU32::new(49).ok_or("remaining gold")?;
+        assert!(purchase_inventory_matches(&event_value, watch, gold, 49));
+        event_value.entries.pop();
+        assert!(!purchase_inventory_matches(&event_value, watch, gold, 49));
+        Ok(())
+    }
 
     #[test]
     fn lubo_wander_and_talk_range_are_independent() {
