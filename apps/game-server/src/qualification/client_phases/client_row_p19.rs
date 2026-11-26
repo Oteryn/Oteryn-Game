@@ -3,7 +3,9 @@ use super::*;
 use oteryn_dev_client::native_session::AppearanceUpdate;
 use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, EntityRef, SessionEvent};
 use oteryn_protocol_oteryn::appearance::CAPABILITY_FORGE_CREATURE_V1;
-use oteryn_protocol_oteryn::{container_tree as containers, item_forge, item_view as items};
+use oteryn_protocol_oteryn::{
+    attack::AttackIntentDisposition, item_forge, item_view as items, world_object::UseDisposition,
+};
 use std::num::NonZeroU32;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
@@ -185,6 +187,11 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             first
         ));
         let corpse = kill_and_observe_clear(&mut client, exact).await?;
+        let stopped = client.session_mut().attack_target(None).await?;
+        require_mechanic_acceptance(stopped.status, "P19 stop attack")?;
+        if stopped.disposition != AttackIntentDisposition::Ok {
+            return Err(format!("P19 first attack stop refused: {stopped:?}").into());
+        }
         let looted = loot_slivers(&mut client, corpse, sliver, stacks == 15).await?;
         let after = rewards(&mut client, sliver).await?;
         // Global dust table: https://tibia.fandom.com/wiki/Fiendish_and_Influenced_Creatures#Dust_and_Slivers
@@ -336,7 +343,6 @@ async fn kill_and_observe_clear(
     client: &mut DevClientSession,
     target: EntityRef,
 ) -> TestResult<items::ItemHandle> {
-    use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
     let entities = client.world_entities().ok_or("P19 spatial view absent")?;
     let mut position = entities
         .get(&target)
@@ -427,32 +433,24 @@ async fn loot_slivers(
     sliver: NonZeroU32,
     fiendish: bool,
 ) -> TestResult<u64> {
-    let outcome = client
-        .session_mut()
-        .container_view(containers::ContainerViewIntent::Open {
-            handle: corpse,
-            replace_view: None,
-        })
-        .await?;
-    if outcome != Some(containers::ContainerViewOutcome::Opened) {
-        return Err(format!("P19 first corpse-open refused: {outcome:?}").into());
+    let reply = client.use_item(corpse).await?;
+    require_mechanic_acceptance(reply.status, "P19 use corpse")?;
+    if reply.disposition != UseDisposition::Committed {
+        return Err(format!("P19 first corpse USE refused: {reply:?}").into());
     }
-    let (view_id, loot) = tokio::time::timeout(Duration::from_secs(5), async {
+    let loot = tokio::time::timeout(Duration::from_secs(5), async {
         loop {
-            if let Some(view) = client.session_mut().container_views().and_then(|views| {
-                views
-                    .views
-                    .iter()
-                    .find(|view| view.container_handle == corpse)
-            }) {
-                return TestResult::Ok((
-                    view.view_id,
+            if let Some(view) = client
+                .open_container()
+                .filter(|view| view.container_handle == Some(corpse))
+            {
+                return TestResult::Ok(
                     view.entries
                         .iter()
                         .copied()
                         .filter(|entry| entry.item_definition_ref == sliver)
                         .collect::<Vec<_>>(),
-                ));
+                );
             }
             client.service_liveness(Duration::from_millis(100)).await?;
         }
@@ -477,13 +475,6 @@ async fn loot_slivers(
         if reply.outcome != items::ItemMoveOutcome::Moved {
             return Err(format!("P19 first sliver move refused: {reply:?}").into());
         }
-    }
-    let outcome = client
-        .session_mut()
-        .container_view(containers::ContainerViewIntent::Close { view_id })
-        .await?;
-    if outcome != Some(containers::ContainerViewOutcome::Closed) {
-        return Err(format!("P19 first corpse-close refused: {outcome:?}").into());
     }
     Ok(count)
 }
