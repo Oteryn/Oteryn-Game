@@ -141,7 +141,13 @@ pub(super) async fn seed(
                         spatial_position:
                             crate::durability::map_item_mint_audit::map_item_spatial_position(
                                 // Item custody uses the runtime floor, which is +7 at the town tile.
-                                32369, 32238, 7,
+                                if death_slot == u32::MAX - 7 {
+                                    32369
+                                } else {
+                                    32370
+                                },
+                                32238,
+                                7,
                             ),
                         corpse_ref: [transaction_id.as_slice(), &death_slot.to_be_bytes()].concat(),
                         map_revision: "qualification-v1".into(),
