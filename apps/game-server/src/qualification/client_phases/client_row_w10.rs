@@ -42,8 +42,9 @@ async fn probe(
             format!("Hazard {name} expected {status:?}/{expected:?}, got {reply:?}").into(),
         );
     }
-    capture(root, &format!("w10-{name}.request.bin"), request)?;
+    capture(root, &format!("w10-{name}-request.bin"), request)?;
     capture(root, &format!("w10-{name}.bin"), &reply.payload)?;
+    capture(root, &format!("w10-{name}-status.bin"), &(reply.status as u32).to_be_bytes())?;
     let binding = serde_json::json!({
         "session_id": uuid_text(session.as_bytes()),
         "command_id": reply.command_id,
@@ -100,6 +101,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             "Primal challenger did not freshly admit at the authored lobby approach".into(),
         );
     }
+    full_row_w10::enter_primal(&mut client, world, true).await?;
+    let instance_session = client.join_snapshot().game_session_id;
     probe(
         &mut client,
         root,
@@ -109,7 +112,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &[1, 1],
     )
     .await?;
-    full_row_w10::defeat_primal(&mut client, world, true).await?;
+    full_row_w10::defeat_primal(&mut client).await?;
     probe(
         &mut client,
         root,
@@ -146,11 +149,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &[2, 2],
     )
     .await?;
-    let session = client.join_snapshot().game_session_id;
+    if client.join_snapshot().game_session_id != instance_session {
+        return Err("Hazard probes crossed an Instance session boundary".into());
+    }
     logout(&mut client).await?;
     drop(client);
     let mut client = connect_character(clients, 0xd2, 0).await?;
-    if client.join_snapshot().game_session_id == session {
+    if client.join_snapshot().game_session_id == instance_session {
         return Err("Hazard durability check reused the original game session".into());
     }
     probe(

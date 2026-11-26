@@ -116,7 +116,7 @@ pub(super) async fn stage_primal_challenger(clients: &SeamClients<'_>) -> TestRe
     Ok(())
 }
 
-async fn enter_primal(
+pub(super) async fn enter_primal(
     client: &mut DevClientSession,
     world: &BundleWorld,
     first_chair_only: bool,
@@ -212,17 +212,10 @@ pub(super) fn primal_world(clients: &SeamClients<'_>) -> StepResult<&'static Bun
 
 pub(super) async fn defeat_primal(
     client: &mut DevClientSession,
-    world: &BundleWorld,
-    first_chair_only: bool,
 ) -> StepResult<(
     ActorPosition,
     oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
 )> {
-    enter_primal(client, world, first_chair_only)
-        .await
-        .map_err(|error| {
-            failed_error(3, error, "the authored Primal lever and instance handoff")
-        })?;
     let at = client.world_spatial().actor_position;
     let spawn_deadline = tokio::time::Instant::now() + Duration::from_secs(20);
     let target = loop {
@@ -374,7 +367,10 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
             .map_err(|error| failed_error(2, error, "a locked-level refusal"))?,
     )?;
 
-    let (at, defeated) = defeat_primal(&mut client, world, false).await?;
+    enter_primal(&mut client, world, false).await.map_err(|error| {
+        failed_error(3, error, "the authored Primal lever and instance handoff")
+    })?;
+    let (at, defeated) = defeat_primal(&mut client).await?;
 
     accepted(
         4,
