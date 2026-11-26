@@ -153,21 +153,22 @@ message ActorCooldownV1 {
   ActorCooldownKind kind = 1;
   // SPELL: the SPELL-D1 index, 1..=2^28 - 1 (a 4-byte id keeps the entry at 16 bytes). GROUP: the S9 catalogue ordinal, 1..=16.
   uint32 id = 2;
-  // Absolute expiry on the channel runtime's monotonic millisecond clock, below 2^42.
+  // Expiry in milliseconds relative to the message clock basis below, below 2^42.
+  // With a zero clock basis this is remaining time. Zero clears the key.
   uint64 expires_at_ms = 3;
 }
 
 // StateDomainSnapshot.payload of domain 20, snapshot type 1 (every running cooldown, at admission,
 // reconnect and channel transfer) and StateDelta.payload of delta type 1 (the entries changed at a
-// PRIMARY COMMIT, or the one corrective delta at the first liveness ack). Own actor only. At most
+// PRIMARY COMMIT). Own actor only. At most
 // one entry per {kind, id}; a repeated key fails closed.
 message ActorCooldownsV1 {
-  // The channel runtime's monotonic clock when the server encoded the message, below 2^42.
+  // Snapshots carry the channel runtime's monotonic clock at encode time. Deltas use zero and
+  // carry remaining time directly. Countdown = max(0, expires_at_ms - server_now_ms) starting at
+  // frame decode. No liveness timing adjusts the countdown.
   uint64 server_now_ms = 1;
-  // The server's smoothed round-trip estimate from FND-02 §17 liveness pairs; 0 before the first
-  // ack of the connection generation.
+  // Legacy fields kept for wire compatibility. The current publisher leaves both unset.
   uint32 rtt_ms = 2;
-  // False before the first ack; then rtt_ms is 0.
   bool rtt_estimated = 3;
   repeated ActorCooldownV1 entries = 4;
 }

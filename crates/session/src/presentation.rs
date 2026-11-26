@@ -5,7 +5,7 @@ use oteryn_protocol_oteryn::presentation::*;
 pub(super) fn validate_join(
     selected: &[u32],
     snapshots: &[GatedSnapshot],
-) -> Result<(), SessionError> {
+) -> Result<Option<ActorCooldownUpdate>, SessionError> {
     if selected.contains(&CAPABILITY_ITEM_EFFECTS_V1) {
         let row = snapshots
             .iter()
@@ -44,8 +44,9 @@ pub(super) fn validate_join(
         }
     }
     if !selected.contains(&CAPABILITY_PRESENTATION_V1) {
-        return Ok(());
+        return Ok(None);
     }
+    let mut cooldowns = None;
     for domain in [
         STATE_DOMAIN_WORLD_PRESENTATION,
         STATE_DOMAIN_ACTOR_COOLDOWNS,
@@ -64,10 +65,20 @@ pub(super) fn validate_join(
             decode_presentation_snapshot(&row.payload)
                 .map_err(|_| SessionError::SessionUnusable)?;
         } else {
-            decode_actor_cooldowns(&row.payload).map_err(|_| SessionError::SessionUnusable)?;
+            cooldowns = Some(decode_update(&row.payload, true)?);
         }
     }
-    Ok(())
+    Ok(cooldowns)
+}
+
+fn decode_update(payload: &[u8], snapshot: bool) -> Result<ActorCooldownUpdate, SessionError> {
+    let received_at = std::time::Instant::now();
+    let value = decode_actor_cooldowns(payload).map_err(|_| SessionError::SessionUnusable)?;
+    Ok(ActorCooldownUpdate {
+        value,
+        received_at,
+        snapshot,
+    })
 }
 
 pub(super) fn apply<S: SessionStream>(
@@ -140,8 +151,7 @@ pub(super) fn apply<S: SessionStream>(
             server_sequence: sequence,
             base_revision: delta.base_revision,
             new_revision: delta.new_revision,
-            value: decode_actor_cooldowns(delta.payload)
-                .map_err(|_| SessionError::SessionUnusable)?,
+            value: decode_update(delta.payload, false)?,
         })
     };
     row.1 = delta.new_revision;

@@ -233,14 +233,18 @@ fn hotkey_use_with_crosshair_arms_mode()
             server_sequence: 1,
             base_revision: 0,
             new_revision: 1,
-            value: oteryn_session::ActorCooldowns {
-                server_now_ms: 100,
-                rtt_ms: None,
-                entries: vec![oteryn_session::ActorCooldown {
-                    kind: oteryn_session::ActorCooldownKind::Group,
-                    id: 1,
-                    expires_at_ms: 500,
-                }],
+            value: oteryn_session::ActorCooldownUpdate {
+                value: oteryn_session::ActorCooldowns {
+                    server_now_ms: 100,
+                    rtt_ms: None,
+                    entries: vec![oteryn_session::ActorCooldown {
+                        kind: oteryn_session::ActorCooldownKind::Group,
+                        id: 1,
+                        expires_at_ms: 500,
+                    }],
+                },
+                received_at: std::time::Instant::now(),
+                snapshot: true,
             },
         },
     )]);

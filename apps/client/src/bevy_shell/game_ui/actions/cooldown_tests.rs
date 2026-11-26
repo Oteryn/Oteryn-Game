@@ -23,10 +23,14 @@ fn replace(
         server_sequence: revision,
         base_revision: revision - 1,
         new_revision: revision,
-        value: ActorCooldowns {
-            server_now_ms: now,
-            rtt_ms: None,
-            entries,
+        value: oteryn_session::ActorCooldownUpdate {
+            value: ActorCooldowns {
+                server_now_ms: now,
+                rtt_ms: None,
+                entries,
+            },
+            received_at: std::time::Instant::now(),
+            snapshot: true,
         },
     })]);
     {

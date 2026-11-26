@@ -27,6 +27,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
             );
         }
+        if !self.prepare_channel_vitals(actor, game_session_id).await {
+            return None;
+        }
+        let runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        actor_spell::observe_vitals(&runtime, &states, actor, game_session_id)
+    }
+
+    pub(in crate::gameplay_transport) async fn observe_actor_join(
+        &self,
+        actor: ExactActorRef,
+        admitted: crate::gameplay_transport::connection::AdmittedSession,
+        house: bool,
+    ) -> crate::gameplay_transport::spell_cooldowns::JoinVitals {
+        let session = admitted.game_session_id;
+        let ready = house || self.prepare_channel_vitals(actor, session).await;
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        let cooldowns = states.subscribe_cooldowns(&runtime, actor, admitted, self.spells);
+        let vitals = if house {
+            admitted
+                .item_fence
+                .filter(|fence| {
+                    fence.connection_generation.get() == admitted.continuity.connection_generation
+                })
+                .and_then(|fence| states.house_vitals(&runtime, actor, session, fence))
+        } else if ready {
+            actor_spell::observe_vitals(&runtime, &states, actor, session)
+        } else {
+            None
+        };
+        (vitals, cooldowns)
+    }
+
+    async fn prepare_channel_vitals(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> bool {
         self.load_wheel_gift(actor, game_session_id).await;
         self.refresh_wheel_vitals(actor, game_session_id).await;
         let restored = pvp_live::tracked(
@@ -34,12 +73,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             actor,
             game_session_id,
         );
-        if !restored && !self.refresh_pvp_locks(actor, game_session_id).await {
-            return None;
-        }
-        let runtime = self.runtime.lock().await;
-        let states = self.states.spell_states.lock().await;
-        actor_spell::observe_vitals(&runtime, &states, actor, game_session_id)
+        restored || self.refresh_pvp_locks(actor, game_session_id).await
     }
 
     async fn prepare_actor_vitals(&self, actor: ExactActorRef, session: GameSessionId) -> bool {

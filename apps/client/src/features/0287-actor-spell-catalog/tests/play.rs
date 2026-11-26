@@ -136,14 +136,18 @@ fn o059_detail_card_consumes_server_cooldown_observation() -> Result<(), Box<dyn
         server_sequence: 3,
         base_revision: 1,
         new_revision: 2,
-        value: oteryn_session::ActorCooldowns {
-            server_now_ms: 100,
-            rtt_ms: None,
-            entries: vec![oteryn_session::ActorCooldown {
-                kind: oteryn_session::ActorCooldownKind::Group,
-                id: 1,
-                expires_at_ms: 350,
-            }],
+        value: oteryn_session::ActorCooldownUpdate {
+            value: oteryn_session::ActorCooldowns {
+                server_now_ms: 100,
+                rtt_ms: None,
+                entries: vec![oteryn_session::ActorCooldown {
+                    kind: oteryn_session::ActorCooldownKind::Group,
+                    id: 1,
+                    expires_at_ms: 350,
+                }],
+            },
+            received_at: std::time::Instant::now(),
+            snapshot: true,
         },
     })]);
     let mailbox = crate::play::mailbox::lock(&link.mailbox);

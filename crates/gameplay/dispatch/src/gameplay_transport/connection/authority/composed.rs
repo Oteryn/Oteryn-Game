@@ -1655,6 +1655,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_actor_vitals(actor, game_session_id).await
     }
 
+    async fn observe_join_vitals(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+        house: bool,
+    ) -> crate::gameplay_transport::spell_cooldowns::JoinVitals {
+        self.observe_actor_join(actor, admitted, house).await
+    }
+
+    fn cooldown_clock_us(&self) -> u64 {
+        self.owner_now().get()
+    }
+
     async fn observe_house_vitals(
         &self,
         actor: ExactActorRef,

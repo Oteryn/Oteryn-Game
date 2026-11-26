@@ -217,14 +217,18 @@ fn full_spell_row_dispatches_last_slot_and_projects_server_cooldown()
         server_sequence: 1,
         base_revision: 1,
         new_revision: 2,
-        value: oteryn_session::ActorCooldowns {
-            server_now_ms: 100,
-            rtt_ms: None,
-            entries: vec![oteryn_session::ActorCooldown {
-                kind: oteryn_session::ActorCooldownKind::Spell,
-                id: 71,
-                expires_at_ms: 600,
-            }],
+        value: oteryn_session::ActorCooldownUpdate {
+            value: oteryn_session::ActorCooldowns {
+                server_now_ms: 100,
+                rtt_ms: None,
+                entries: vec![oteryn_session::ActorCooldown {
+                    kind: oteryn_session::ActorCooldownKind::Spell,
+                    id: 71,
+                    expires_at_ms: 600,
+                }],
+            },
+            received_at: std::time::Instant::now(),
+            snapshot: true,
         },
     })]);
     let mailbox = crate::play::mailbox::lock(&link.mailbox);

@@ -67,7 +67,14 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     eprintln!(
         "PARAM-CAST-WIRE-1 PostgreSQL harness created, case={case}, world_type={world_type:?}"
     );
-    prepare_current_session(&h).await?;
+    let recovery = if matches!(case, 104 | 106) {
+        let source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+        super::house_transfer_fixtures::prepare_owned_session(&h).await?;
+        Some(source)
+    } else {
+        prepare_current_session(&h).await?;
+        None
+    };
     h.seed_pvp_target().await?;
     if !matches!(case, 1 | 5 | 6) {
         observer::admit(&h).await?;
@@ -112,6 +119,9 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     deps.combat_room = Some(room);
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
+    if let Some(recovery) = &recovery {
+        owner.evidence = &recovery.evidence;
+    }
     let mut admitted = deps.admitted;
     let actor = deps.actor;
     let session = admitted.game_session_id;
@@ -346,6 +356,13 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                 .mana,
             before - 20
         );
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
+    if (101..=106).contains(&case) {
+        cooldowns::exercise(&owner, admitted, native.spell_book(), case).await?;
         drop(owner);
         drop(authority);
         drop(seal);
@@ -756,3 +773,6 @@ pub(super) async fn exchange_from(
 
 #[path = "parameter_spell/exiva_settings.rs"]
 pub(super) mod exiva_settings;
+
+#[path = "parameter_spell/cooldowns.rs"]
+mod cooldowns;

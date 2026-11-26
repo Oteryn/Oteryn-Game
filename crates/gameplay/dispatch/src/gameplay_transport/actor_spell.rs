@@ -136,6 +136,7 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) elite_bounties: Vec<(ExactActorRef, GameSessionId, String)>,
     pub(super) hunting_stamina: Vec<super::hunting_stamina::LiveStamina>,
     pub(in crate::gameplay_transport) owner_wake: std::sync::Arc<tokio::sync::Notify>,
+    pub(super) cooldown_subscribers: std::collections::BTreeMap<[u8; 16], super::spell_cooldowns::Subscriber>,
     pub(in crate::gameplay_transport) actors: Vec<(ExactActorRef, GameSessionId, PlayerSpellState)>,
     pub(in crate::gameplay_transport) charm_states: Vec<(
         ExactActorRef,
@@ -345,6 +346,7 @@ impl Default for ChannelSpellStates {
             analyser: Default::default(),
             owner_wake: Default::default(),
             actors: Vec::new(),
+            cooldown_subscribers: Default::default(),
             charm_states: Vec::new(),
             spell_timers: Default::default(),
             pending_familiars: Default::default(),
@@ -1215,11 +1217,17 @@ impl ChannelSpellStates {
         let Some(index) = self.index(actor, game_session_id) else {
             return false;
         };
-        let current = &mut self.actors[index].2;
-        if current.revision().checked_add(1) != Some(next.revision()) {
+        if self.actors[index].2.revision().checked_add(1) != Some(next.revision()) {
             return false;
         }
-        *current = next;
+        let before = std::mem::replace(&mut self.actors[index].2, next);
+        self.committed_cooldowns(
+            runtime,
+            actor,
+            game_session_id,
+            &before,
+            &self.actors[index].2,
+        );
         true
     }
 
@@ -3354,9 +3362,13 @@ impl ChannelSpellStates {
             // The committed step may have started stair-hop exhaustion in the same cooldown
             // owner. Preserve it when publishing the staged field contact.
             if death.is_none() {
-                next.cooldowns = self.actors[index].2.cooldowns.clone();
+                let key = oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY;
+                if let Some(deadline) = self.actors[index].2.cooldowns.group_ready_at(key) {
+                    next.cooldowns.groups.insert(key.into(), deadline);
+                }
             }
-            self.actors[index].2 = next;
+            let before = std::mem::replace(&mut self.actors[index].2, next);
+            self.committed_cooldowns(runtime, actor, session, &before, &self.actors[index].2);
         }
         if let Some(occurrence) = death {
             self.deaths.push((

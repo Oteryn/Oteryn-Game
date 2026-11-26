@@ -90,18 +90,22 @@ fn multiaction_skips_rune_group_cooldown_then_uses_live_item_handle()
             server_sequence: 1,
             base_revision: 0,
             new_revision: 1,
-            value: ActorCooldowns {
-                server_now_ms: 100,
-                rtt_ms: None,
-                entries: if blocked {
-                    vec![ActorCooldown {
-                        kind: ActorCooldownKind::Group,
-                        id: 2,
-                        expires_at_ms: 60100,
-                    }]
-                } else {
-                    vec![]
+            value: oteryn_session::ActorCooldownUpdate {
+                value: ActorCooldowns {
+                    server_now_ms: 100,
+                    rtt_ms: None,
+                    entries: if blocked {
+                        vec![ActorCooldown {
+                            kind: ActorCooldownKind::Group,
+                            id: 2,
+                            expires_at_ms: 60100,
+                        }]
+                    } else {
+                        vec![]
+                    },
                 },
+                received_at: std::time::Instant::now(),
+                snapshot: true,
             },
         })]);
         view.cast(NonZeroU32::MIN);

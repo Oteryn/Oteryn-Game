@@ -57,17 +57,7 @@ pub(super) fn action_ready(mailbox: &Mailbox, action: &BarAction) -> bool {
             return false;
         }
     }
-    let elapsed = mailbox
-        .spell_bar
-        .cooldown_received_at
-        .map_or(0, |received| {
-            u64::try_from(received.elapsed().as_millis()).unwrap_or(u64::MAX)
-        });
     NonZeroU32::new(entry.cast_index).is_some_and(|index| {
-        mailbox
-            .spell_bar
-            .bar
-            .remaining_ms(index, &entry.cooldown_groups)
-            <= elapsed
+        mailbox.spell_bar.remaining_ms_at(index, &entry.cooldown_groups, std::time::Instant::now()) == 0
     })
 }

@@ -1,6 +1,22 @@
 //! Validated pushed domain updates exposed by the client session.
 use super::*;
 
+/// An own-actor cooldown frame and the local monotonic instant it was decoded.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActorCooldownUpdate {
+    pub value: oteryn_protocol_oteryn::presentation::ActorCooldowns,
+    pub received_at: std::time::Instant,
+    pub snapshot: bool,
+}
+
+impl std::ops::Deref for ActorCooldownUpdate {
+    type Target = oteryn_protocol_oteryn::presentation::ActorCooldowns;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
 /// A server-sequenced delta that no command outcome claimed, already validated and applied to the
 /// session's domain store (FND-02 §14, §15), in the order it was applied.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,7 +38,7 @@ pub enum SessionEvent {
     WorldClock(AppliedDelta<world_clock::WorldClock>),
     Presentation(AppliedDelta<Vec<PresentationEvent>>),
     ItemEffects(AppliedDelta<Vec<PresentationEvent>>),
-    ActorCooldowns(AppliedDelta<oteryn_protocol_oteryn::presentation::ActorCooldowns>),
+    ActorCooldowns(AppliedDelta<ActorCooldownUpdate>),
     PlayerTrade(AppliedDelta<player_trade::State>),
     NpcConversation(AppliedDelta<npc_service::NpcConversation>),
     NpcTradeWindow(AppliedDelta<npc_service::NpcTradeWindow>),

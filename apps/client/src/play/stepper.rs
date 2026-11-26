@@ -269,6 +269,9 @@ super::feature_0014_container_tree::protocol::session_trait! {
     {
         async { Err(SessionError::CapabilityNotSelected { capability: 0 }) }
     }
+    fn actor_cooldown_snapshot(&self) -> Option<oteryn_session::ActorCooldownUpdate> {
+        None
+    }
     fn feature_snapshot(&self, _domain: u32) -> Option<Vec<u8>> {
         None
     }

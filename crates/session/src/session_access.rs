@@ -290,6 +290,11 @@ impl<S: SessionStream> Session<S> {
         std::mem::take(&mut self.duplicates)
     }
 
+    /// The cooldown snapshot and the instant it was decoded.
+    pub fn actor_cooldown_snapshot(&self) -> Option<&ActorCooldownUpdate> {
+        self.actor_cooldown_snapshot.as_ref()
+    }
+
     /// Returns (and clears) the pushed deltas applied since the last call, in order.
     pub fn take_events(&mut self) -> Vec<SessionEvent> {
         std::mem::take(&mut self.events)

@@ -75,6 +75,7 @@ where
     let observed = authority
         .observe_vitals(session.actor, session.admitted.game_session_id)
         .await;
+    cooldowns::refresh(stream, authority, session).await?;
     if session.admitted.continuity.vitals_revision != 0
         && let Some((to, value)) = observed
             .filter(|(observed_revision, _)| {
