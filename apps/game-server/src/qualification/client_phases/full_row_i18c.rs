@@ -75,7 +75,8 @@ fn reference(id: u32) -> TestResult<std::num::NonZeroU32> {
     provisioning::item_reference(&index, id)
 }
 
-use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
+use oteryn_dev_client::client_runtime::inventory::MoveRequest;
+use oteryn_dev_client::{ItemMoveDestination, ItemMoveOutcome};
 use oteryn_protocol_oteryn::browse_field as browse;
 use oteryn_protocol_oteryn::container_tree as tree;
 use oteryn_protocol_oteryn::item_view::WorldTilePosition;
@@ -148,15 +149,6 @@ async fn view_intent(
     ))
 }
 
-fn here(client: &DevClientSession) -> WorldTilePosition {
-    let at = client.world_spatial().actor_position;
-    WorldTilePosition {
-        x: at.x,
-        y: at.y,
-        floor: -at.floor,
-    }
-}
-
 fn ground(client: &DevClientSession) -> WorldTilePosition {
     let at = client.world_spatial().actor_position;
     WorldTilePosition {
@@ -166,7 +158,11 @@ fn ground(client: &DevClientSession) -> WorldTilePosition {
     }
 }
 
-async fn drop_bag(client: &mut DevClientSession, bag: std::num::NonZeroU32) -> TestResult {
+async fn drop_bag(
+    client: &mut DevClientSession,
+    bag: std::num::NonZeroU32,
+    at: WorldTilePosition,
+) -> TestResult {
     let item = client
         .inventory()
         .and_then(|inventory| {
@@ -177,12 +173,13 @@ async fn drop_bag(client: &mut DevClientSession, bag: std::num::NonZeroU32) -> T
         })
         .copied()
         .ok_or("step=drop observed=fixture-bag-absent")?;
-    let at = ground(client);
     client.take_events();
     let moved = client
-        .move_item(&ItemMoveIntent {
+        .session_mut()
+        .move_item_counted(MoveRequest {
             source: item.handle,
             destination: ItemMoveDestination::Ground(at),
+            count: None,
         })
         .await?;
     if moved.outcome != ItemMoveOutcome::Moved {
@@ -207,9 +204,11 @@ async fn take_entry(
     let before = quantity(client, entry.item_definition_ref)?;
     client.take_events();
     let moved = client
-        .move_item(&ItemMoveIntent {
+        .session_mut()
+        .move_item_counted(MoveRequest {
             source: entry.handle,
             destination: ItemMoveDestination::MainBackpack,
+            count: None,
         })
         .await?;
     if moved.outcome != ItemMoveOutcome::Moved {
@@ -255,8 +254,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if client.join_snapshot().game_session_id == session || quantity(&client, bag)? != 1 {
         return Err("step=prepare needed=fresh-session-with-exactly-one-bag".into());
     }
-    let at = here(&client);
-    drop_bag(&mut client, bag).await?;
+    let at = ground(&client);
+    drop_bag(&mut client, bag, at).await?;
     let (outcome, view) = browse_open(&mut client, at).await?;
     let browse_view =
         view.ok_or_else(|| format!("step=browse observed={outcome:?};needed=Opened-with-view"))?;
