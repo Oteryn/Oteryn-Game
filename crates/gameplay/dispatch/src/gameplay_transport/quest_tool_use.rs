@@ -24,6 +24,27 @@ impl Drop for CreatureTurn<'_> {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn probe_carried_quest_receipt(
+        &self,
+        character: crate::domain::CharacterId,
+        command: CommandRef,
+        intent: &[u8],
+    ) -> Result<Option<bool>, &'static str> {
+        use crate::durability::PlainUseReceipt;
+        let exists = self
+            .root
+            .plain_use_receipt_exists(PlainUseReceipt::QuestCarried(character), command)
+            .await
+            .map_err(|_| "quest_carried_existence")?;
+        if !exists {
+            return Ok(None);
+        }
+        self.root
+            .reconcile_quest_carried_use(self.character, character, command, intent.to_vec())
+            .await
+            .map_err(|_| "quest_carried_replay")
+    }
+
     /// Ordinary carried quest tools borrow the same fenced quest/value owner as
     /// NPC exchanges. The selected instance and ingress remain in its input proof.
     pub(super) async fn use_carried_quest_item(
@@ -58,22 +79,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             ..UseOutcome::rejected()
         };
-        if let Some(matches) = self
-            .root
-            .reconcile_quest_carried_use(
-                self.character,
-                item_fence.character_id,
-                command_ref,
-                encoded.clone(),
-            )
+        match self
+            .probe_carried_quest_receipt(item_fence.character_id, command_ref, &encoded)
             .await
-            .map_err(|_| ())?
         {
-            return Ok(Some(outcome(if matches {
-                UseDisposition::Committed
-            } else {
-                UseDisposition::Rejected
-            })));
+            Ok(Some(matches)) => {
+                return Ok(Some(outcome(if matches {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Rejected
+                })));
+            }
+            Ok(None) => {}
+            Err(stage) => return Ok(Some(super::use_receipt_refused(command, stage))),
         }
         let Some(ItemKey::Instance(source)) = source else {
             return Ok(None);

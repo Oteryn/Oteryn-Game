@@ -30,11 +30,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             CommandId::new(command.command_id).map_err(|_| ())?,
         );
         let encoded = encode_item_use_intent(intent).map_err(|_| ())?;
-        let historical = self
+        let historical = match self
             .root
-            .read_event_container_command_source(self.character, fence, command_ref)
+            .plain_use_receipt_exists(crate::durability::PlainUseReceipt::Craft, command_ref)
             .await
-            .map_err(|_| ())?;
+        {
+            Ok(false) => None,
+            Ok(true) => match self
+                .root
+                .read_event_container_command_source(self.character, fence, command_ref)
+                .await
+            {
+                Ok(source) => source,
+                Err(_) => {
+                    return Ok(Some(super::use_receipt_refused(
+                        command,
+                        "reward_bag_source",
+                    )));
+                }
+            },
+            Err(_) => {
+                return Ok(Some(super::use_receipt_refused(
+                    command,
+                    "reward_bag_existence",
+                )));
+            }
+        };
         // The existing item-completion route reconciles instance-tagged receipts.
         if matches!(historical, Some(EventContainerReplaySource::InstanceTagged)) {
             return Ok(None);
@@ -54,7 +75,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(crate::durability::item_use::ItemUseError::AuthorityRejected) => {
                     return Ok(Some(UseOutcome::rejected()));
                 }
-                Err(_) => return Err(()),
+                Err(_) => {
+                    return Ok(Some(super::use_receipt_refused(
+                        command,
+                        "reward_bag_inventory",
+                    )));
+                }
             };
             let carried = inventory
                 .backpack
@@ -132,11 +158,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(command_id) = CommandId::new(command.command_id) else {
             return outcome(UseDisposition::Rejected);
         };
+        let reference = CommandRef::new(command.game_session_id, command_id);
+        let historical = match self
+            .root
+            .plain_use_receipt_exists(crate::durability::PlainUseReceipt::Craft, reference)
+            .await
+        {
+            Ok(present) => present,
+            Err(_) => {
+                return Some(Some(super::use_receipt_refused(
+                    command,
+                    "reward_craft_existence",
+                )));
+            }
+        };
         let Some(permit) = self.spell_lane_permit().await else {
-            return Some(None);
+            return Some(Some(super::use_receipt_refused(
+                command,
+                "reward_craft_permit",
+            )));
         };
         let request = ItemCraftRequest {
-            command: CommandRef::new(command.game_session_id, command_id),
+            command: reference,
             source: id,
             tool: None,
             ingredient: None,
@@ -146,23 +189,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent,
         };
         let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
-        match self
-            .root
-            .craft_item(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &content,
-                true,
-            )
-            .await
-        {
-            Ok(Some(result)) => return outcome(result),
-            Ok(None) => {}
-            Err(_) => return Some(None),
+        if historical {
+            match self
+                .root
+                .craft_item(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request.clone(),
+                    native,
+                    &content,
+                    true,
+                )
+                .await
+            {
+                Ok(Some(result)) => return outcome(result),
+                Ok(None) | Err(_) => {
+                    return Some(Some(super::use_receipt_refused(
+                        command,
+                        "reward_craft_replay",
+                    )));
+                }
+            }
         }
         let inventory = match self
             .root

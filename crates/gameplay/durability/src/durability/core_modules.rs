@@ -178,7 +178,7 @@ pub use admission_journal::AdmissionReconnectJournal;
 pub use db::with_stalled_commit_response;
 pub use db::{
     DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig, ForegroundDemand, HolderWaiter,
-    IssuedSemanticPass, ROOT_RECOVERY_WINDOW, with_holder_trace,
+    IssuedSemanticPass, PlainUseReceipt, ROOT_RECOVERY_WINDOW, with_holder_trace,
 };
 pub use schema::{MigrationExecutor, SchemaCompatibility};
 

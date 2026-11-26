@@ -307,14 +307,15 @@ pub struct TaskBoardEffects {
     pub promotion_points: u16,
 }
 
-/// Crystal ioweeklytasks.cpp:1031-1044. Invalid difficulties never silently become Beginner.
+/// Shared Weekly and Bounty difficulty gate. The Global Weekly Tasks source
+/// gives Master at level 400 (https://www.tibiawiki.com.br/wiki/Weekly_Tasks).
 #[must_use]
 pub const fn minimum_level(difficulty: u8) -> Option<u32> {
     match difficulty {
         0 => Some(8),
         1 => Some(30),
         2 => Some(150),
-        3 => Some(300),
+        3 => Some(400),
         _ => None,
     }
 }

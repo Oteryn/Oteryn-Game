@@ -326,14 +326,25 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             Some(view),
             Some(views),
         ) => match view.resolve(*handle) {
-            Some(key) => authority
-                .observe_container_with_house_capacity(
+            Some(key) => match authority
+                .observe_container_for_use(
                     actor,
                     admitted.item_fence,
                     key,
                     views.house_capacity_v2(),
                 )
-                .await,
+                .await
+            {
+                Ok(observation) => observation,
+                Err(crate::durability::DurabilityError::SessionUseAuthorization(_)) => {
+                    return Err("bag_session_fence");
+                }
+                Err(crate::durability::DurabilityError::RootUnavailable
+                    | crate::durability::DurabilityError::RootPassDeadlineExceeded) => {
+                    return Ok(super::refuse_use(command, "bag_read_budget"));
+                }
+                Err(_) => return Ok(super::refuse_use(command, "bag_read_failed")),
+            },
             None => None,
         },
         _ => None,

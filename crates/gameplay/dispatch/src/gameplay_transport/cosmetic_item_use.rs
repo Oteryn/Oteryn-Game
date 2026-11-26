@@ -65,15 +65,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
                 .map(|memo| memo.request.source)
         };
-        let source = pending_source
-            .or(match source {
-                Some(ItemKey::Instance(id)) => Some(id),
-                _ => None,
-            })
-            .unwrap_or([0; 16]);
+        let instance = pending_source.or(match source {
+            Some(ItemKey::Instance(id)) => Some(id),
+            _ => None,
+        });
         let request = ConsumeTransformRequest {
             command: command_ref,
-            source,
+            source: instance.unwrap_or([0; 16]),
             target: None,
             intent: encoded,
         };
@@ -81,22 +79,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             ..UseOutcome::rejected()
         };
-        let permit = self.spell_lane_permit().await.ok_or(())?;
-        let content = NativeItemWeights(native);
-        let replay = self
+        let historical = match self
             .root
-            .consume_transform_detailed(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &content,
-                true,
+            .plain_use_receipt_exists(
+                crate::durability::PlainUseReceipt::ConsumeTransform,
+                command_ref,
             )
             .await
-            .map_err(|_| ())?;
+        {
+            Ok(present) => present,
+            Err(_) => {
+                return Ok(Some(super::use_receipt_refused(
+                    command,
+                    "cosmetic_existence",
+                )));
+            }
+        };
+        if !historical && instance.is_none() {
+            return Ok(None);
+        }
+        let Some(permit) = self.spell_lane_permit().await else {
+            return Ok(Some(super::use_receipt_refused(command, "cosmetic_permit")));
+        };
+        let content = NativeItemWeights(native);
+        let replay = if historical || pending_source.is_some() {
+            match self
+                .root
+                .consume_transform_detailed(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request.clone(),
+                    native,
+                    &content,
+                    true,
+                )
+                .await
+            {
+                Ok(replay) => replay,
+                Err(_) => return Ok(Some(super::use_receipt_refused(command, "cosmetic_replay"))),
+            }
+        } else {
+            None
+        };
+        let source = request.source;
         if let Some(receipt) = replay.as_ref()
             && receipt.effects.get("cosmetic").is_some()
         {
@@ -105,11 +132,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
                 .map(Some);
         }
-        let inventory = self
+        let inventory = match self
             .root
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
-            .map_err(|_| ())?;
+        {
+            Ok(inventory) => inventory,
+            Err(_) => {
+                return Ok(Some(super::use_receipt_refused(
+                    command,
+                    "cosmetic_inventory",
+                )));
+            }
+        };
         let item = inventory
             .backpack
             .iter()
@@ -119,13 +154,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (definition, ground_source) = if let Some(item) = item {
             (item.definition.clone(), None)
         } else {
-            let Some(ground) = self
+            let ground = match self
                 .root
                 .read_ground_action_source(self.character, fence, source)
                 .await
-                .map_err(|_| ())?
-            else {
-                return Ok(None);
+            {
+                Ok(Some(ground)) => ground,
+                Ok(None) => return Ok(None),
+                Err(_) => {
+                    return Ok(Some(super::use_receipt_refused(
+                        command,
+                        "cosmetic_ground_source",
+                    )));
+                }
             };
             (ground.definition().clone(), Some(ground))
         };
@@ -422,22 +463,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             ..UseOutcome::rejected()
         };
-        if let Some(matches) = self
-            .root
-            .reconcile_quest_carried_use(
-                self.character,
-                item_fence.character_id,
-                command_ref,
-                encoded.clone(),
-            )
+        match self
+            .probe_carried_quest_receipt(item_fence.character_id, command_ref, &encoded)
             .await
-            .map_err(|_| ())?
         {
-            return Ok(Some(outcome(if matches {
-                UseDisposition::Committed
-            } else {
-                UseDisposition::Rejected
-            })));
+            Ok(Some(matches)) => {
+                return Ok(Some(outcome(if matches {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Rejected
+                })));
+            }
+            Ok(None) => {}
+            Err(stage) => return Ok(Some(super::use_receipt_refused(command, stage))),
         }
         // Recipe receipts remain replayable after both inventory handles retire.
         // Fresh map tools and unowned World targets belong to their existing owner.

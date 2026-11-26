@@ -482,7 +482,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let native = self.active_generation?.native_gameplay()?;
         let command_id = CommandId::new(command.command_id).ok()?;
         let reference = CommandRef::new(command.game_session_id, command_id);
-        let permit = self.spell_lane_permit().await?;
+        let historical = match self
+            .root
+            .plain_use_receipt_exists(crate::durability::PlainUseReceipt::CoinExchange, reference)
+            .await
+        {
+            Ok(present) => present,
+            Err(_) => return Some(Some(super::use_receipt_refused(command, "coin_existence"))),
+        };
+        let Some(permit) = self.spell_lane_permit().await else {
+            return Some(Some(super::use_receipt_refused(command, "coin_permit")));
+        };
         let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         let outcome = |changed| {
             Some(Some(UseOutcome {
@@ -500,25 +510,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .map(|(gold, platinum, crystal)| [gold, platinum, crystal])
         };
         // Read the retained command before inspecting the possibly retired input stack.
-        match self
-            .root
-            .exchange_carried_coins(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                reference,
-                None,
-                Some(id),
-                Some(&content),
-                coins,
-                None,
-            )
-            .await
-        {
-            Ok(Some(receipt)) => return outcome(receipt.changed),
-            Ok(None) => {}
-            Err(_) => return Some(None),
+        if historical {
+            match self
+                .root
+                .exchange_carried_coins(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    reference,
+                    None,
+                    Some(id),
+                    Some(&content),
+                    coins,
+                    None,
+                )
+                .await
+            {
+                Ok(Some(receipt)) => return outcome(receipt.changed),
+                Ok(None) => {
+                    return Some(Some(super::use_receipt_refused(
+                        command,
+                        "coin_replay_missing",
+                    )));
+                }
+                Err(_) => return Some(None),
+            }
         }
         // A carried non-coin is not ours, whatever its fence; its own owner refuses it.
         if let Ok(Some(backpack)) = self
@@ -538,7 +555,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(inventory) => inventory,
-            Err(_) => return Some(None),
+            Err(_) => return Some(Some(super::use_receipt_refused(command, "coin_inventory"))),
         };
         let entry = inventory
             .backpack

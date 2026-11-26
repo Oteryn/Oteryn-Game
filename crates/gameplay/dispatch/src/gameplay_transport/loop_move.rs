@@ -1598,8 +1598,43 @@ pub(super) async fn observe_container_with_house_capacity(
             fence,
             target,
             house_capacity_v2,
+            None,
         ))
         .await
+        .ok()
+        .flatten()
+}
+
+#[cfg(test)]
+#[derive(Default)]
+pub(super) struct CarriedUseReadBarrier {
+    pub(super) ready: tokio::sync::Notify,
+    pub(super) held: tokio::sync::Notify,
+    pub(super) refused: tokio::sync::Notify,
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static CARRIED_USE_READ_BARRIER: std::sync::Arc<CarriedUseReadBarrier>;
+}
+
+pub(super) async fn observe_container_for_use(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    fence: Option<CurrentCharacterItemFence>,
+    target: ItemKey,
+    house_capacity_v2: bool,
+) -> Result<Option<ContainerObservation>, crate::durability::DurabilityError> {
+    let budget = super::AdmissionRetryBudget::for_command(admission.root);
+    observe_container_with_house_capacity_inner(
+        admission,
+        actor,
+        fence,
+        target,
+        house_capacity_v2,
+        Some(&budget),
+    )
+    .await
 }
 
 async fn observe_container_with_house_capacity_inner(
@@ -1608,7 +1643,10 @@ async fn observe_container_with_house_capacity_inner(
     fence: Option<CurrentCharacterItemFence>,
     target: ItemKey,
     house_capacity_v2: bool,
-) -> Option<ContainerObservation> {
+    budget: Option<&super::AdmissionRetryBudget<'_>>,
+) -> Result<Option<ContainerObservation>, crate::durability::DurabilityError> {
+    use crate::durability::DurabilityError;
+
     let named_house = if let Some(current) = fence.filter(|current| {
         matches!(
             current.runtime_scope,
@@ -1625,48 +1663,115 @@ async fn observe_container_with_house_capacity_inner(
         false
     };
     if named_house {
-        return house_container::observe(admission, actor, fence, target, house_capacity_v2).await;
+        return Ok(
+            house_container::observe(admission, actor, fence, target, house_capacity_v2).await,
+        );
     }
     if matches!(target, ItemKey::BrowseField { .. }) {
-        return super::browse_field::observe(admission, actor, fence, target).await;
+        return Ok(super::browse_field::observe(admission, actor, fence, target).await);
     }
     if matches!(target, ItemKey::MapBase { .. }) {
-        return map_sources::observe(admission, actor, fence, target, house_capacity_v2).await;
+        return Ok(map_sources::observe(admission, actor, fence, target, house_capacity_v2).await);
     }
-    let ItemKey::Instance(container) = target else {
-        return None;
+    let (ItemKey::Instance(container), Some(fence)) = (target, fence) else {
+        return Ok(None);
     };
-    let fence = fence?;
+    let carried_present = if let Some(budget) = budget {
+        admission
+            .root
+            .item_loop_carried_present(fence.character_id, container, budget.deadline)
+            .await?
+    } else {
+        true
+    };
     // Retain the Channel lane across current position and durable custody reads.
     // The resulting view is historical data, never permission for a later write.
-    let _permit = admission.spell_lane_permit().await?;
-    if admission
+    let permit = if let Some(budget) = budget {
+        tokio::time::timeout_at(budget.deadline, admission.spell_lane_permit())
+            .await
+            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?
+    } else {
+        admission.spell_lane_permit().await
+    };
+    let _permit = permit.ok_or(DurabilityError::RootUnavailable)?;
+    if !admission
         .runtime
         .lock()
         .await
         .player_control_facts(actor, fence.game_session_id)
-        .is_err()
+        .is_ok_and(|facts| budget.is_none() || facts.control_loss.is_none())
     {
-        return Some(ContainerObservation::Gone);
+        return Ok(Some(ContainerObservation::Gone));
     }
-    let index = pinned_index(
+    let Some(index) = pinned_index(
         &*admission.runtime.lock().await,
         admission.active_generation,
-    )?;
-    let native = admission.active_generation?.native_gameplay()?;
-    let carried = admission
-        .root
-        .read_item_loop_container(admission.character, fence.character_id, container)
-        .await
-        .ok()?;
+    ) else {
+        return Ok(None);
+    };
+    let Some(native) = admission
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+    else {
+        return Ok(None);
+    };
+    let carried = if !carried_present {
+        None
+    } else if let Some(budget) = budget {
+        #[cfg(test)]
+        let barrier = CARRIED_USE_READ_BARRIER
+            .try_with(std::sync::Arc::clone)
+            .ok();
+        #[cfg(test)]
+        if let Some(barrier) = &barrier {
+            barrier.ready.notify_one();
+            barrier.held.notified().await;
+        }
+        budget
+            .retry_command_guard(async || {
+                let result = admission
+                    .root
+                    .read_current_item_loop_container(
+                        admission.character,
+                        admission.holder,
+                        fence,
+                        container,
+                        budget.deadline,
+                    )
+                    .await;
+                #[cfg(test)]
+                if matches!(result, Err(DurabilityError::RootUnavailable))
+                    && let Some(barrier) = &barrier
+                {
+                    barrier.refused.notify_one();
+                }
+                result
+            })
+            .await?
+    } else {
+        admission
+            .root
+            .read_item_loop_container(admission.character, fence.character_id, container)
+            .await?
+    };
+    Ok(project_container_view(admission, actor, fence, container, index, native, carried).await)
+}
+
+async fn project_container_view(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    fence: CurrentCharacterItemFence,
+    container: [u8; 16],
+    index: &ItemDefinitionIndex,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    carried: Option<crate::durability::item_loop_move::LoopContainer>,
+) -> Option<ContainerObservation> {
     let is_carried = carried.is_some();
     let mut browse_parent = None;
     let (read, reachable) = if let Some(read) = carried {
         (read, true)
     } else {
-        // Carried views use the Character owner's custody read, including for
-        // sessions admitted without a fresh-admission receipt. Only the new
-        // Ground path needs the fresh-session proof for external reach.
+        // External Ground reach needs a fresh-session proof before resolving the map.
         let current = super::FreshAdmissionStore::from_root(admission.root.clone())
             .current_session_at(fence.game_session_id)
             .await
