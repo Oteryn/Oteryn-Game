@@ -20,6 +20,7 @@ readonly SECOND_PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000004
 readonly EXIVA_ACCOUNT_ID=01934f10-7c00-7000-8000-00000000000e
 readonly E03_CLIENT_ACCOUNT=01934f10-7c00-7000-8000-000000000022
 readonly G01_ACCOUNT=01934f10-7c00-7000-8000-000000000021
+readonly I07_ACCOUNT=01934f10-7c00-7000-8000-000000000024
 readonly I17C_ACCOUNT=01934f10-7c00-7000-8000-000000000023
 readonly LIGHT_ACCOUNT_ID=01934f10-7c00-7000-8000-00000000000d
 readonly EXTRA_WORLD_ACCOUNTS=(01934f10-7c00-7000-8000-000000000007 01934f10-7c00-7000-8000-000000000008 01934f10-7c00-7000-8000-000000000009 01934f10-7c00-7000-8000-00000000000a 01934f10-7c00-7000-8000-00000000000b 01934f10-7c00-7000-8000-00000000000c)
@@ -43,9 +44,9 @@ readonly FRESH_KEY_ID=node-boot-fresh-key-1
 readonly RECOVERY_KEY_ID=node-boot-recovery-key-1
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
-readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-700e-805b-3b112233440e 01934f10-7c04-700f-805b-3b112233440f 01934f10-7c04-7010-805b-3b1122334410 01934f10-7c04-7011-805b-3b1122334411 01934f10-7c04-7012-805b-3b1122334412 01934f10-7c04-7013-805b-3b1122334413 01934f10-7c04-7014-805b-3b1122334414 01934f10-7c04-7015-805b-3b1122334415 01934f10-7c04-7016-805b-3b1122334416 01934f10-7c04-7017-805b-3b1122334417 01934f10-7c04-7019-805b-3b1122334419 01934f10-7c04-701a-805b-3b112233441a 01934f10-7c04-701b-805b-3b112233441b 01934f10-7c04-701c-805b-3b112233441c 01934f10-7c04-701d-805b-3b112233441d 01934f10-7c04-701e-805b-3b112233441e 01934f10-7c04-701f-805b-3b112233441f 01934f10-7c04-7021-805b-3b1122334421 01934f10-7c04-7022-805b-3b1122334422 01934f10-7c04-7023-805b-3b1122334423)
+readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-700e-805b-3b112233440e 01934f10-7c04-700f-805b-3b112233440f 01934f10-7c04-7010-805b-3b1122334410 01934f10-7c04-7011-805b-3b1122334411 01934f10-7c04-7012-805b-3b1122334412 01934f10-7c04-7013-805b-3b1122334413 01934f10-7c04-7014-805b-3b1122334414 01934f10-7c04-7015-805b-3b1122334415 01934f10-7c04-7016-805b-3b1122334416 01934f10-7c04-7017-805b-3b1122334417 01934f10-7c04-7019-805b-3b1122334419 01934f10-7c04-701a-805b-3b112233441a 01934f10-7c04-701b-805b-3b112233441b 01934f10-7c04-701c-805b-3b112233441c 01934f10-7c04-701d-805b-3b112233441d 01934f10-7c04-701e-805b-3b112233441e 01934f10-7c04-701f-805b-3b112233441f 01934f10-7c04-7021-805b-3b1122334421 01934f10-7c04-7022-805b-3b1122334422 01934f10-7c04-7023-805b-3b1122334423 01934f10-7c04-7024-805b-3b1122334424)
 # The v4 bootstrap intent explicitly binds name, sex and vocation.
-readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Locate Caster" "Haste Caster" "Illusion Caster" "Summon Caster" "Aim Caster" "Challenge Knight" "Oressa Candidate" "Wheel Knight" "Augment Monk" "Party Caster" "Seasonal Bundle Buyer" "Locate Target" "Party Spell Peer" "Rune Caster" "Rune Refusal Target" "House Transfer Player" "Armored Rat Hunter" "House Control Player" "Coin Conversion Tester" "Equipment Purchase Tester")
+readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Locate Caster" "Haste Caster" "Illusion Caster" "Summon Caster" "Aim Caster" "Challenge Knight" "Oressa Candidate" "Wheel Knight" "Augment Monk" "Party Caster" "Seasonal Bundle Buyer" "Locate Target" "Party Spell Peer" "Rune Caster" "Rune Refusal Target" "House Transfer Player" "Armored Rat Hunter" "House Control Player" "Coin Conversion Tester" "Equipment Purchase Tester" "Quick Loot Tester")
 # Runtime build writers bind to the shipped training formula's content revision,
 # just as the S3-B seam does; progression is initialized from this interpretation.
 # The served readiness.content_revision is this same revision: the quest and Task Board
@@ -182,7 +183,7 @@ if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Packet journeys may move, loot or kill their Characters before the required core runs.
-  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$G01_ACCOUNT" "$E03_CLIENT_ACCOUNT" "$I17C_ACCOUNT")
+  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$G01_ACCOUNT" "$E03_CLIENT_ACCOUNT" "$I17C_ACCOUNT" "$I07_ACCOUNT")
 fi
 readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
@@ -376,7 +377,7 @@ fi
 # Seed only this run's extra synthetic accounts through the same portal binary
 # and disposable environment as the upstream harness and composition.py.
 seed_mp_accounts() {
-  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$G01_ACCOUNT" "$E03_CLIENT_ACCOUNT" "$I17C_ACCOUNT" <<'PY_MP_SEED'
+  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$G01_ACCOUNT" "$E03_CLIENT_ACCOUNT" "$I17C_ACCOUNT" "$I07_ACCOUNT" <<'PY_MP_SEED'
 import json
 from pathlib import Path
 import secrets
@@ -1568,6 +1569,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     test_env+=("NODE_BOOT_C06_PEER_ACCOUNT=$C06_PEER_ACCOUNT" "NODE_BOOT_PLATFORM_GRANT_DIR=$WORK"
       "NODE_BOOT_PLATFORM_GRANT_ACCOUNTS=$C12_MONK_ACCOUNT,$C06_CASTER_ACCOUNT,$C06_PEER_ACCOUNT")
     test_env+=("NODE_BOOT_E03_CLIENT_ACCOUNT=$E03_CLIENT_ACCOUNT")
+    test_env+=("NODE_BOOT_I07_ACCOUNT=$I07_ACCOUNT")
     test_env+=("NODE_BOOT_I17C_ACCOUNT=$I17C_ACCOUNT")
     test_env+=("NODE_BOOT_G01_ACCOUNT=$G01_ACCOUNT")
     test_env+=("NODE_BOOT_W18_ACCOUNT=$W18_ACCOUNT")
@@ -1596,6 +1598,11 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     test_dir="$GAME_SOURCE/apps/game-server"
     test_command=("$NODE_BOOT_LIBTEST" "qualification::$qualification" --ignored --exact --nocapture)
   fi
+  local i07_seam_log=
+  if [[ "${NODE_BOOT_E2E_ONLY:-}" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 118:1 ]]; then
+    [[ -n "${E2E_ALL_CAPTURE_DIR:-}" ]] || { fail "I07 requires fresh capture directory"; return 1; }
+    i07_seam_log="$WORK/i07-seam.log"
+  fi
   (
     cd "$test_dir"
     env "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \
@@ -1613,7 +1620,22 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
       WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
       "${test_command[@]}"
-  )
+  ) | if [[ -n "$i07_seam_log" ]]; then
+    tee "$i07_seam_log"
+  else
+    cat
+  fi
+  if [[ -n "$i07_seam_log" ]]; then
+    local i07_session i07_replay="$WORK/i07-replay.log"
+    i07_session=$(sed -n 's/^SEAM_EVIDENCE I07_LIVE_CAPTURE session=//p' "$i07_seam_log")
+    [[ "$i07_session" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]] ||
+      { fail "I07 live capture session missing or ambiguous"; return 1; }
+    cargo +1.100.0 test --locked -p oteryn-client-ui --lib \
+      quick_loot::e2e_i07::replays_i07_quick_loot_results_and_rejects_invalid_payload \
+      -- --exact --nocapture | tee "$i07_replay"
+    [[ "$(sed -n 's/^I07_NATIVE_REPLAY session=//p' "$i07_replay")" == "$i07_session" ]] ||
+      { fail "I07 native replay session does not match live capture"; return 1; }
+  fi
 }
 
 graceful_shutdown() { # ready=false first, socket removed
