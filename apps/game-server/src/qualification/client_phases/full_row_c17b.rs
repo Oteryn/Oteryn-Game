@@ -285,7 +285,12 @@ impl<'a> Staging<'a> {
             let from = tile(client.world_spatial().actor_position)?;
             let expected =
                 destination(self.world, from, direction).ok_or("C17b planned landing absent")?;
-            let outcome = client.step(direction).await?;
+            let (outcome, replies) =
+                oteryn_dev_client::native_session::test_support::capture_command_results(
+                    client.step(direction),
+                )
+                .await;
+            let outcome = outcome?;
             let actual = tile(client.world_spatial().actor_position)?;
             if outcome.status != oteryn_protocol_oteryn::CommandStatus::Accepted
                 || outcome.disposition != StepDisposition::Moved
@@ -316,6 +321,24 @@ impl<'a> Staging<'a> {
                     ground.as_ref().is_some_and(|tile| tile.no_logout()),
                     ground.as_ref().is_some_and(|tile| tile.protection_zone())
                 ));
+                for reply in replies {
+                    let Some(sequence) = oteryn_protocol_oteryn::decode_wire_envelope(&reply)
+                        .ok()
+                        .map(|frame| frame.server_sequence())
+                    else {
+                        continue;
+                    };
+                    if sequence == outcome.result_server_sequence {
+                        let hex = reply
+                            .iter()
+                            .map(|byte| format!("{byte:02x}"))
+                            .collect::<String>();
+                        evidence(&format!(
+                            "C17B_FIRST_STEP_FRAME sequence={sequence} command={} frame={hex}",
+                            outcome.command_id
+                        ));
+                    }
+                }
                 return Err(format!(
                     "C17b first STEP {direction:?} from={from:?} expected={expected:?} actual={actual:?}: {outcome:?}"
                 ).into());
@@ -404,8 +427,10 @@ pub(super) async fn wait_for_rat_hit(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
     let mut damage = 0;
     let mut saw_adjacent = false;
+    let wire = oteryn_dev_client::native_session::test_support::WireCapture::default();
     loop {
-        caster.service_liveness(Duration::from_millis(100)).await?;
+        wire.observe(caster.service_liveness(Duration::from_millis(100)))
+            .await?;
         let rat_tile = caster
             .world_entities()
             .and_then(|view| view.get(&rat))
@@ -431,6 +456,23 @@ pub(super) async fn wait_for_rat_hit(
             return Ok(damage);
         }
         if tokio::time::Instant::now() >= deadline {
+            let (received, _) = wire.take();
+            if let Some((sequence, bytes)) = received.iter().rev().find_map(|bytes| {
+                let frame = oteryn_protocol_oteryn::decode_wire_envelope(bytes).ok()?;
+                if frame.message_type() != oteryn_protocol_oteryn::MessageType::StateDelta {
+                    return None;
+                }
+                let delta = oteryn_protocol_oteryn::decode_state_delta(frame.payload()).ok()?;
+                (delta.domain_id == 15).then_some((frame.server_sequence(), bytes))
+            }) {
+                let hex = bytes
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>();
+                evidence(&format!(
+                    "C17B_RAT_LAST_ANALYSER_FRAME sequence={sequence} frame={hex}"
+                ));
+            }
             return Err(format!("FIXTURE_PLACEMENT C17b Rat timeout exact_rat={rat:?} last_tile={rat_tile:?} saw_adjacent={saw_adjacent} attributed_hit={damage} health_before={visible_health} health_after={health}").into());
         }
     }
