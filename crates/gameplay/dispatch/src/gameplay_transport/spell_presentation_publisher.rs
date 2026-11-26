@@ -653,15 +653,28 @@ impl SoundPublisher {
         target: ExactActorRef,
         result: oteryn_gameplay_entities::OwnerDamageResult,
     ) {
-        if let Some(amount) = result.committed_health_loss()
-            && let Ok(at) = runtime.read_actor_position(target)
-        {
+        if let Some(amount) = result.committed_health_loss() {
+            self.record_damage_amount(runtime, actor, target, amount);
+        }
+    }
+
+    pub(super) fn record_damage_amount(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        target: ExactActorRef,
+        amount: std::num::NonZeroU64,
+    ) {
+        if let Ok(at) = runtime.read_actor_position(target) {
             let revision = self.revision;
             self.record(runtime, actor, at.position(), 1, 0);
             if self.revision != revision
                 && let Some(entry) = self.sounds.back_mut()
             {
                 entry.kind = JournalCue::Damage { target, amount };
+                entry.private = [actor, target].into_iter().any(|actor| {
+                    runtime.actor_staff_visibility(actor).is_ok_and(|(ghost, _, _)| ghost)
+                });
             }
         }
     }

@@ -26,15 +26,20 @@ use oteryn_protocol_oteryn::zones_nologout::{PlayerPresence, PlayerStatus};
 
 #[test]
 fn a4_invisible_postgres_real_dispatch() -> TestResult {
-    invisibility_case::<false>()
+    invisibility_case::<false, false>()
 }
 
 #[test]
 fn invisible_caster_stays_visible_to_players_hidden_from_monsters() -> TestResult {
-    invisibility_case::<true>()
+    invisibility_case::<true, false>()
 }
 
-fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
+#[test]
+fn invisible_player_swing_publishes_exact_rat_damage() -> TestResult {
+    invisibility_case::<false, true>()
+}
+
+fn invisibility_case<const WITH_OBSERVER: bool, const WITH_ATTACK: bool>() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -113,7 +118,7 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                         cp.clone(),
                         "oteryn:creature.rat",
                         MovementLocalPosition {
-                            x: -2,
+                            x: if WITH_ATTACK { 1 } else { -2 },
                             y: 11,
                             floor: -7,
                         },
@@ -387,6 +392,81 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                         "the guard can target the invisible caster"
                     );
                 }
+            }
+            if let Some(observer) = observer {
+                // Stop the real logout path at the durable commit, before actor retirement.
+                // An observer can refresh in this window while the old incarnation still
+                // has a Channel position.
+                let binding = deps.admitted.controller.ok_or("caster controller")?;
+                let store = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone());
+                let released = store.release_logout_session(
+                    session,
+                    &crate::gameplay_transport::canonical_uuid(&binding.account_id),
+                    binding.transport,
+                ).await?;
+                assert!(matches!(
+                    released,
+                    crate::durability::fresh_admission::ExpiredLossReleaseV1::Released { .. }
+                ));
+                let raw = owner.observe_visible_entities(observer).await.ok_or("raw projection")?;
+                assert!(raw.entities.iter().any(|entity| entity.identity == actor.placement_identity()));
+                let named = owner.named_channel_entities(observer, false).await.map_err(debug)?;
+                assert!(named.entities.iter().all(|entity| entity.identity != actor.placement_identity()));
+                let observer_session = GameSessionId::decode(&id(110)).map_err(debug)?;
+                let retired = EntityRef {
+                    identity: actor.placement_identity(),
+                    generation: actor.actor_local_generation(),
+                };
+                let observation = owner.appearance_observation_projected(
+                    observer,
+                    observer_session,
+                    true,
+                    vec![retired],
+                ).await.ok_or("terminal peer cannot abort the observer's appearance projection")?;
+                assert_eq!(observation.skipped, vec![retired]);
+                eprintln!("PG_EXECUTED invisible_caster_stays_visible_to_players_hidden_from_monsters terminal_gap=verified");
+            }
+            if WITH_ATTACK {
+                let target = EntityRef {
+                    identity: rat.placement_identity(),
+                    generation: rat.actor_local_generation(),
+                };
+                let attacker = EntityRef {
+                    identity: actor.placement_identity(),
+                    generation: actor.actor_local_generation(),
+                };
+                let initial_health = deps.runtime.lock().await.companion_snapshot(rat).map_err(debug)?.health;
+                let cursor = owner.observe_sounds(actor, session, u64::MAX).await.ok_or("presentation cursor")?.0;
+                assert_eq!(
+                    owner.attack_target(actor, session, 2, Some(target)).await,
+                    oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+                );
+                let mut health = initial_health;
+                for _ in 0..16 {
+                    owner.clock_origin -= std::time::Duration::from_secs(2);
+                    owner.refresh_attack_weapon(actor, session).await;
+                    owner.drain_auto_attacks().await;
+                    health = deps.runtime.lock().await.companion_snapshot_including_dead(rat)
+                        .map_or(0, |snapshot| snapshot.health);
+                    if health < initial_health {
+                        break;
+                    }
+                }
+                assert!(health < initial_health, "the invisible caster's swing must damage the exact Rat");
+                let (_, events) = owner.observe_sounds(actor, session, cursor).await.ok_or("damage presentation")?;
+                use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
+                assert!(events.iter().any(|event| matches!(
+                    event.kind,
+                    PresentationEventKind::ValueText {
+                        kind: PresentationValueKind::DamageDealt,
+                        target: victim,
+                        attacker: Some(source),
+                        primary,
+                        ..
+                    } if victim == target && source == attacker
+                        && primary.value == u64::try_from(initial_health - health).unwrap_or_default()
+                )), "committed Rat damage must publish the exact attacker, target and health loss: {events:?}");
+                eprintln!("PG_EXECUTED invisible_player_swing_publishes_exact_rat_damage");
             }
             drop(owner);
             drop(authority);

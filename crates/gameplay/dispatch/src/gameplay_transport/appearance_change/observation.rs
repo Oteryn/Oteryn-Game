@@ -293,12 +293,15 @@ async fn observe_once(
             });
             continue;
         };
-        let fence = read_result(
-            observation_fence(admission, target_session, true)
-                .await,
-            failure,
-            "fence",
-        )?;
+        let fence = match observation_fence(admission, target_session, true).await {
+            Ok(None) if target_session != session => {
+                // Logout commits the terminal row before retiring the positioned actor.
+                // Skip that incarnation while the other players keep their projection.
+                skip_entity(&mut skipped, entity, "peer_session_ended");
+                continue;
+            }
+            result => read_result(result, failure, "fence")?,
+        };
         if target_session == session && fence != own_fence {
             return note_none(None, "revision");
         }

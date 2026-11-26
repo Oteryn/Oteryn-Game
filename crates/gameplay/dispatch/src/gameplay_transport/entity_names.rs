@@ -49,9 +49,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let name = match self.states.chat.speaker_name(session) {
                         Some(name) => name,
                         None => {
-                            Box::pin(self.chat_speaker_name_with_budget(session, &retry))
-                                .await?
-                                .0
+                            match Box::pin(self.chat_speaker_name_with_budget(session, &retry))
+                                .await
+                            {
+                                Ok((name, ..)) => name,
+                                Err(AdmissionRefusal::Rejected)
+                                    if entity.identity != channel.observer =>
+                                {
+                                    // A peer can finish logout between capturing the interest set
+                                    // and resolving its session. Let the next refresh see any new incarnation.
+                                    channel
+                                        .entities
+                                        .retain(|entry| entry.identity != entity.identity);
+                                    continue;
+                                }
+                                Err(error) => return Err(error),
+                            }
                         }
                     };
                     EntityDisplayName::new(&name).map_err(|_| AdmissionRefusal::Rejected)?
@@ -77,7 +90,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         observer: ExactActorRef,
         forecasts: bool,
     ) -> Option<(ChannelEntities, Vec<(EntityRef, Source)>)> {
-        let channel = self
+        let mut channel = self
             .observe_channel_entities_projected(observer, forecasts)
             .await?;
         // Use the same interest owner as the session: at most 256 name reads, and none for
@@ -114,7 +127,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let source = match entity.kind {
                     EntityKind::Player => {
-                        Source::Player(players.iter().find(|(actor, _)| same(*actor))?.1)
+                        let Some((_, session)) = players.iter().find(|(actor, _)| same(*actor))
+                        else {
+                            if entity.entity.identity == channel.observer {
+                                return None;
+                            }
+                            channel
+                                .entities
+                                .retain(|entry| entry.identity != entity.entity.identity);
+                            continue;
+                        };
+                        Source::Player(*session)
                     }
                     EntityKind::Creature => {
                         let actor = visible
