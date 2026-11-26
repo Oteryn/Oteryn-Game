@@ -37,16 +37,19 @@ message PartyResultV1 {
 // A missing or expired invitation returns NOT_INVITED. Unselected action 6 gets
 // common REJECTED with empty payload. Results and all legacy actions retain their wire shape.
 
-// Crystal 201189f8 src/creatures/players/grouping/party.cpp:211-218,296-325.
+// Global reference: https://www.tibiawiki.com.br/wiki/Party
 // Domain 57 delta type 2, only with capability 576 (requires 42 and 92).
-// Each active member at the committed join/leave, including the changed member,
-// receives the change on its own connection, including in an activity or House.
-// Receipts and rejected mutations do
-// not emit it again. A kick is a leave. The existing query 46 refreshes the roster.
-// Field 1 matches the recipient's opaque member handle in that roster; the
-// handle in this message alone does not authorize an action on a member.
+// Each active member at a committed join or leave (including the changed
+// member) and each active former member at disband receives the change on
+// its own connection, including in an activity or House. A kick is a leave.
+// A committed invitation goes only to the active invitee. Receipts and
+// rejected mutations do not emit another notice.
+// Field 1 is the recipient-local opaque handle of the changed member, the
+// inviter for an invitation, or the former leader for a disband. This handle
+// alone does not authorize an action. Query 46 refreshes the roster and
+// returns the accept handle for a pending invitation.
 // Live delivery is bounded to the latest 64 pending changes per connection.
 message PartyMembershipNoticeV1 {
   uint64 member_handle = 1; // Required, nonzero.
-  uint32 change = 2; // Required. 1 joined, 2 left.
+  uint32 change = 2; // Required. 1 joined, 2 left, 3 invited, 4 disbanded.
 }
