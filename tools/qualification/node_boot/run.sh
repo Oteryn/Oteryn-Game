@@ -488,18 +488,8 @@ interrupted() {
   evidence "interrupted signal=$1 stage=$ACTIVE_STAGE world_bundle=$NODE_BOOT_WORLD"
   exit "$2"
 }
-s18_capture_pending() {
-  [[ $1 == 0 ]] &&
-    grep -qE '^SEAM_EVIDENCE e2e_capture scenario=S18\.client status=CAPTURED([[:space:]]|$)' \
-      "$2"/stage-*.log
-}
-
 cleanup() {
   local rc=$?
-  local s18_replay_pending=0
-  if s18_capture_pending "$rc" "$WORK"; then
-    s18_replay_pending=1
-  fi
   trap - EXIT INT TERM
   set +e
   # Flush the independent reader before either the server or its private log is removed.
@@ -548,10 +538,6 @@ cleanup() {
   fi
   evidence "cleanup=complete"
   evidence "result_scope world_bundle=$NODE_BOOT_WORLD spells=$NODE_BOOT_SPELLS stage=$ACTIVE_STAGE exit=$rc"
-  if [[ $s18_replay_pending == 1 ]]; then
-    printf 'NODE_BOOT_CAPTURE_RESULT=S18_REPLAY_PENDING%s\n' "${result_mode:-}"
-    exit "$rc"
-  fi
   echo "NODE_BOOT_RESULT=$result${result_mode:-}"
   exit "$rc"
 }
@@ -1172,6 +1158,13 @@ stage() { # name prerequisite... -- function
       return 0
     fi
   done
+  local groups=",${NODE_BOOT_E2E_ONLY:-}," capture_dir="" capture_output="${E2E_ALL_CAPTURE_DIR:-}"
+  groups=${groups//[[:space:]]/}
+  if [[ "$name" == seam_stages && "$NODE_BOOT_WORLD" == 1 ]] &&
+    [[ "$groups" == *,rows,* || "$groups" == ,, ]]; then
+    capture_dir=$(mktemp -d "$WORK/captures.XXXXXX")
+    local -x E2E_ALL_CAPTURE_DIR="$capture_dir"
+  fi
   ACTIVE_STAGE=$name
   echo "::group::stage $name"
   evidence "stage=$name state=start world_bundle=$NODE_BOOT_WORLD spells=$NODE_BOOT_SPELLS"
@@ -1185,19 +1178,25 @@ stage() { # name prerequisite... -- function
   ( set -Eeuo pipefail; source "$VARS"; "$@" ) 2>&1 | tee "$WORK/stage-$name.log"
   local rc=${PIPESTATUS[0]}
   stop_runtime_diagnostics
+  # The separate e2e_all runner also consumes these captures after node boot.
+  if [[ -n "$capture_dir" && -n "$capture_output" ]] &&
+    ! cp -R -- "$capture_dir/." "$capture_output/"; then
+    rc=1
+  fi
   pg_observability_dump "$name" "$rc"
   set -e
   evidence "stage=$name state=finish world_bundle=$NODE_BOOT_WORLD exit=$rc"
   echo "::endgroup::"
   if [[ $rc == 0 ]]; then
     STATUS[$name]=PASS
-    # Row batches must report every selected row even when Rust exits 0.
-    local groups=",${NODE_BOOT_E2E_ONLY:-},"
-    groups=${groups//[[:space:]]/}
-    if [[ "$name" == seam_stages && "$NODE_BOOT_WORLD" == 1 ]] &&
-      [[ "$groups" == *,rows,* || "$groups" == ,, ]] &&
-      ! python3 "$GAME_SOURCE/tools/qualification/node_boot/client_replay.py" --validate "$WORK/stage-$name.log"; then
-      STATUS[$name]="FAIL(row batch)"
+    if [[ -n "$capture_dir" ]]; then
+      local replay="$GAME_SOURCE/tools/qualification/node_boot/client_replay.py"
+      local stage_log="$WORK/stage-$name.log"
+      if ! python3 "$replay" --validate "$stage_log"; then
+        STATUS[$name]="FAIL(row batch)"
+      elif ! python3 "$replay" "$stage_log"; then
+        STATUS[$name]="FAIL(replay)"
+      fi
     fi
     # A FAIL row fails its stage even when the stage process exits 0, unless the row is
     # listed in known_fail_rows.txt (debt that every run prints).

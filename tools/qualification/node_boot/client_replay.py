@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gate the cloud wrapper's selected client rows on their fresh Rust replays."""
+"""Gate node boot's selected client rows on their fresh Rust replays."""
 
 import hashlib
 import os
