@@ -104,6 +104,32 @@ async fn logout(mut client: DevClientSession) -> TestResult {
     Ok(())
 }
 
+async fn close_catalogue_observer(mut client: DevClientSession) -> TestResult {
+    let (result, detail, _, _) = fixture_logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=catalogue-observer-logout observed={detail}").into());
+    }
+    Ok(())
+}
+
+async fn verify_male_catalogue(
+    clients: &SeamClients<'_>,
+    previous_session: crate::foundation::GameSessionId,
+    expected: &BTreeMap<String, (u32, u8)>,
+    mounts: &[String],
+) -> TestResult<crate::foundation::GameSessionId> {
+    let mut witness = connect_character(clients, 0xd4, 0).await?;
+    let session = witness.join_snapshot().game_session_id;
+    if session == previous_session
+        || &outfits(&mut witness)? != expected
+        || appearance_snapshot(&mut witness)?.catalogue.mounts != mounts
+    {
+        return Err("step=male-outfit-catalogue observed=wrong-outfit-or-mounts".into());
+    }
+    close_catalogue_observer(witness).await?;
+    Ok(session)
+}
+
 fn appearance_snapshot(client: &mut DevClientSession) -> TestResult<appearance::Snapshot> {
     let state = client
         .session_mut()
@@ -312,7 +338,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let male_mounts = appearance_snapshot(&mut witness)?.catalogue.mounts;
     let male_initial_session = witness.join_snapshot().game_session_id;
-    logout(witness).await?;
+    close_catalogue_observer(witness).await?;
     let mut client = connect_character(&clients, 0xd4, 0).await?;
     let initial_inventory = quantities(&client)?;
     let initial_outfits = outfits(&mut client)?;
@@ -449,6 +475,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         );
     }
     evidence("W19D_AFFLICTED_ASSERT consumed=12551,12552,12553,12554,12555,12556 outfit=afflicted");
+    close_catalogue_observer(client).await?;
+    let male_afflicted_session =
+        verify_male_catalogue(&male_clients, male_initial_session, &male_expected, &male_mounts)
+            .await?;
+    evidence("W19D_MALE_AFFLICTED_ASSERT outfit=430 addons=0 mounts=unchanged");
+    let mut client = connect_character(&clients, 0xd4, 0).await?;
     let doll_choice = expected_doll_choice(&client, doll_source(&clients).await?, client.next_command_id())?;
     expect_item_use(
         &mut client,
@@ -465,18 +497,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts {
         return Err("step=outfit-use observed=unexpected-mount-grant".into());
     }
-    logout(client).await?;
-    let mut witness = connect_character(&male_clients, 0xd4, 0).await?;
+    close_catalogue_observer(client).await?;
     let male_after = outfit_grant_projection(&cosmetics, &male_expected, &doll_choice.grants, Sex::Male);
-    if witness.join_snapshot().game_session_id == male_initial_session
-        || male_after == male_expected
-        || outfits(&mut witness)? != male_after
-        || appearance_snapshot(&mut witness)?.catalogue.mounts != male_mounts
-    {
-        return Err("step=male-outfit-catalogue observed=wrong-outfit-or-mounts".into());
+    if male_after == male_expected {
+        return Err("step=male-doll-catalogue observed=non-discriminating-expectation".into());
     }
-    logout(witness).await?;
-    evidence("W19D_MALE_CATALOGUE_ASSERT afflicted=430 addon=expected mounts=unchanged");
+    verify_male_catalogue(&male_clients, male_afflicted_session, &male_after, &male_mounts).await?;
+    evidence("W19D_MALE_DOLL_ASSERT addon=expected mounts=unchanged");
     let client = connect_character(&clients, 0xd4, 0).await?;
     let doll_reference = reference(ADDON_DOLL)?;
     let mut with_duplicate_doll = initial_inventory.clone();
@@ -496,7 +523,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step=doll-duplicate-sequence observed=state-changed".into());
     }
+    let before_duplicate = client.last_server_sequence();
     expect_item_use(&mut client, doll_reference, use_wire::UseDisposition::Committed).await?;
+    tokio::time::timeout(Duration::from_secs(3), async {
+        loop {
+            let events = client.wait_for_events(Duration::from_secs(3)).await?;
+            if events.into_iter().any(|event| {
+                matches!(event, oteryn_dev_client::SessionEvent::ChatLine(delta)
+                    if delta.server_sequence > before_duplicate
+                        && matches!(&delta.value, oteryn_dev_client::ChatLine::System { text }
+                            if text == "You already have this outfit with this addon."))
+            }) {
+                return Ok::<(), oteryn_dev_client::DevClientError>(());
+            }
+        }
+    })
+    .await
+    .map_err(|_| "step=doll-duplicate observed=missing-owned-feedback")??;
     let mut client = relog(client, &clients).await?;
     if quantities(&client)? != with_duplicate_doll
         || outfits(&mut client)? != after_doll
