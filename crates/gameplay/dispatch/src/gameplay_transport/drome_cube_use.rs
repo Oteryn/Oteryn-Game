@@ -12,7 +12,9 @@ use crate::foundation::{CommandId, CommandRef, ExactActorRef, GameSessionId};
 use crate::gameplay_transport::connection::{UseCommand, UseOutcome};
 use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, pinned_index};
 use crate::gameplay_transport::item_view::ItemKey;
-use crate::gameplay_transport::{AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission};
+use crate::gameplay_transport::{
+    AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission, operator_event,
+};
 use oteryn_gameplay_items::drome_cube::{DROME_CUBE_KEY, reward, reward_index};
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
@@ -28,7 +30,7 @@ pub(in crate::gameplay_transport) use ports::{authority_methods, composed_method
 
 #[cfg(test)]
 tokio::task_local! {
-    pub(super) static CUBE_INVENTORY_CHECKOUT_PROBE: std::cell::Cell<Option<std::sync::Arc<super::composed_admission::HolderCheckoutProbe>>>;
+    pub(in crate::gameplay_transport) static CUBE_INVENTORY_CHECKOUT_PROBE: std::cell::Cell<Option<std::sync::Arc<crate::gameplay_transport::composed_admission::HolderCheckoutProbe>>>;
 }
 
 async fn retry_read<T>(
@@ -41,7 +43,7 @@ async fn retry_read<T>(
         match read().await {
             Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
                 if budget
-                    .retries_unavailable(super::AdmissionRefusal::Unavailable)
+                    .retries_unavailable(AdmissionRefusal::Unavailable)
                     .await =>
             {
                 continue;
@@ -51,7 +53,7 @@ async fn retry_read<T>(
                     result,
                     Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
                 ) {
-                    super::operator_event(&format!(
+                    operator_event(&format!(
                         "event=session_durability_failed stage={stage} kind=holder_busy"
                     ));
                 }
