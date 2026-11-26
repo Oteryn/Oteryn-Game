@@ -286,6 +286,18 @@ impl<'a> Staging<'a> {
                 || actual != expected
                 || actual == from
             {
+                let ground = self.world.base().tile(expected.x, expected.y, expected.floor);
+                let occupants = client.world_entities().into_iter().flat_map(|view| view.iter())
+                    .filter(|entity| tile(entity.position).ok() == Some(expected))
+                    .map(|entity| (entity.entity, entity.kind)).collect::<Vec<_>>();
+                evidence(&format!("C17B_STEP_TILE command={} sequence={} at={expected:?} ground={:?} items={:?} walkable={} enterable={} no_logout={} protection_zone={} view_occupants={occupants:?}",
+                    outcome.command_id, outcome.result_server_sequence,
+                    ground.as_ref().and_then(|tile| tile.ground()),
+                    ground.as_ref().map(|tile| tile.ids()),
+                    ground.as_ref().is_some_and(|tile| tile.walkable()),
+                    self.world.enterable(expected),
+                    ground.as_ref().is_some_and(|tile| tile.no_logout()),
+                    ground.as_ref().is_some_and(|tile| tile.protection_zone())));
                 return Err(format!(
                     "C17b first STEP {direction:?} from={from:?} expected={expected:?} actual={actual:?}: {outcome:?}"
                 ).into());
@@ -369,18 +381,29 @@ impl<'a> Staging<'a> {
             })
             .ok_or("C17b no live Rat adjacent to the authored encounter landing")?;
         let rat_tile = tile(rat.position)?;
-        let path = self.path(observer, Some(caster), |at| {
-            adjacent(at, caster_tile) && at != rat_tile
-        })?;
+        // Keep the observer in targeting range on the west approach, two cells
+        // from the caster. The Rat's immediate perimeter is for the caster alone.
+        let observation_tile = TilePos {
+            x: caster_tile.x.checked_sub(2).ok_or("C17b observer x underflow")?,
+            ..caster_tile
+        };
+        if !self.world.enterable(observation_tile)
+            || !self.world.base().tile(observation_tile.x, observation_tile.y, observation_tile.floor)
+                .is_some_and(|tile| tile.walkable() && !tile.protection_zone())
+            || observation_tile == rat_tile
+        {
+            return Err(format!("C17b observer tile unavailable: {observation_tile:?}").into());
+        }
+        let path = self.path(observer, Some(caster), |at| at == observation_tile)?;
         evidence(&format!(
-            "C17B_STAGING caster={caster_tile:?} rat={rat_tile:?} observer_steps={}",
+            "C17B_STAGING caster={caster_tile:?} rat={rat_tile:?} observer={observation_tile:?} observer_steps={}",
             path.len()
         ));
         provisioning::with_peer_liveness(caster, self.walk(observer, &path)).await?;
         let observer_tile = tile(observer.world_spatial().actor_position)?;
-        if !adjacent(observer_tile, caster_tile) {
+        if observer_tile != observation_tile {
             return Err(format!(
-                "C17b observer landed at {observer_tile:?}, expected adjacent to {caster_tile:?}"
+                "C17b observer landed at {observer_tile:?}, expected {observation_tile:?}"
             )
             .into());
         }
