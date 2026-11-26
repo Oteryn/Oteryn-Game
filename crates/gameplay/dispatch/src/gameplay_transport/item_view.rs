@@ -953,9 +953,10 @@ impl SessionItemView {
         open: Option<OpenCorpse>,
         entries: Vec<ViewItem>,
     ) -> Result<ItemViewDelta, ItemViewError> {
-        let payload = self.set_container(open, entries)?;
         let from = self.container_revision;
-        let to = advance(&mut self.container_revision)?;
+        let to = from.checked_add(1).ok_or(ItemViewError::Exhausted)?;
+        let payload = self.set_container(open, entries)?;
+        self.container_revision = to;
         Ok(ItemViewDelta {
             domain_id: STATE_DOMAIN_OPEN_CONTAINER,
             from,
@@ -1020,24 +1021,28 @@ impl SessionItemView {
             .map(|open| open.key)
             .chain(entries.iter().map(|item| item.key))
             .collect();
-        let previous = self.table.keys_of(View::Container);
-        self.table.replace(View::Container, &keys)?;
-        let view = OpenContainer {
-            container_handle: open.and_then(|open| self.table.handle(&open.key)),
-            entries: entries
-                .iter()
-                .map(|item| self.entry(item))
-                .collect::<Result<_, _>>()?,
-        };
-        match encode_open_container_for(&view, self.appearances, self.corpse_48) {
+        let undo = self.table.replace_undoable(View::Container, &keys)?;
+        let payload = entries
+            .iter()
+            .map(|item| self.entry(item))
+            .collect::<Result<Vec<_>, _>>()
+            .and_then(|entries| {
+                let view = OpenContainer {
+                    container_handle: open.and_then(|open| self.table.handle(&open.key)),
+                    entries,
+                };
+                encode_open_container_for(&view, self.appearances, self.corpse_48)
+                    .map_err(|_| ItemViewError::Encode)
+            });
+        match payload {
             Ok(payload) => {
                 self.open = open;
                 self.open_entries = entries;
                 Ok(payload)
             }
-            Err(_) => {
-                let _ = self.table.replace(View::Container, &previous);
-                Err(ItemViewError::Encode)
+            Err(error) => {
+                self.table.rollback(undo);
+                Err(error)
             }
         }
     }

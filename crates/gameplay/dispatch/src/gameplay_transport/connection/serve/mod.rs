@@ -578,3 +578,80 @@ pub(in crate::gameplay_transport) async fn regression_routed_step<A: FreshAdmiss
         }
     }
 }
+
+/// Run the first live command while a background pass holds the PostgreSQL holder.
+#[cfg(test)]
+pub(in crate::gameplay_transport) async fn regression_bag_use_with_busy_holder(
+    authority: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: AdmittedSession,
+    stream: &mut tokio::io::DuplexStream,
+    bag: crate::gameplay_transport::item_view::ItemKey,
+) -> Result<oteryn_protocol_oteryn::item_view::ItemHandle, Box<dyn std::error::Error>> {
+    use oteryn_protocol_oteryn::world_object::{
+        COMMAND_TYPE_USE_INTENT, UseIntent, UseTarget, encode_item_use_intent,
+    };
+    use std::{future::Future, task::Poll};
+
+    let actor = admitted.runtime_actor.ok_or("readmitted actor")?;
+    let baseline = authority
+        .observe(actor)
+        .await
+        .ok_or("readmitted position")?;
+    let mut session = setup::prepare(
+        stream,
+        &mut admitted,
+        authority,
+        IDLE_LIVENESS,
+        actor,
+        baseline,
+        integrity::Integrity::default(),
+    )
+    .await
+    .map_err(|_| "readmitted bag USE setup")?;
+    let handle = session
+        .item_view
+        .as_ref()
+        .and_then(|view| view.table().handle(&bag))
+        .ok_or("current backpack handle")?;
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(handle),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    })
+    .map_err(|error| format!("bag USE payload: {error:?}"))?;
+    let frame = oteryn_protocol_oteryn::encode_client_command(
+        session.generation,
+        &oteryn_protocol_oteryn::ClientCommandValue {
+            command_id: session.commands.next_command_id(),
+            command_type: COMMAND_TYPE_USE_INTENT,
+            payload: &payload,
+        },
+    )?;
+    let input = inbound::receive(
+        stream,
+        authority,
+        &mut session,
+        poll::Next::Held(frame, false, tokio::time::Instant::now()),
+    )
+    .await
+    .map_err(|_| "receive readmitted bag USE")?
+    .ok_or("missing readmitted bag USE")?;
+
+    let held = authority.root.issue_ready_semantic_pass().await?;
+    let work = crate::durability::DurabilityRoot::with_holder_owner(command::execute(
+        stream,
+        authority,
+        &mut session,
+        input,
+    ));
+    let mut work = std::pin::pin!(work);
+    let first = std::future::poll_fn(|cx| Poll::Ready(work.as_mut().poll(cx))).await;
+    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    let outcome = match first {
+        Poll::Ready(outcome) => outcome,
+        Poll::Pending => work.await,
+    };
+    outcome.map_err(|end| format!("first readmitted bag USE: {:?}", end.finish(admitted)))?;
+    Ok(handle)
+}

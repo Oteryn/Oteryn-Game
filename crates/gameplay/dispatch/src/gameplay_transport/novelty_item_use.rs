@@ -101,18 +101,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         // The original bounded USE bytes identify history even when both item and view handle
         // have retired. No current inventory or target read may precede this probe.
-        let replay = self
-            .root
-            .consume_transform_detailed(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &content,
-                true,
-            )
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        let replay = budget
+            .retry_command_guard(async || {
+                self.root
+                    .consume_transform_detailed(
+                        &permit,
+                        self.character,
+                        self.holder,
+                        fence,
+                        request.clone(),
+                        native,
+                        &content,
+                        true,
+                    )
+                    .await
+            })
             .await
             .map_err(|_| ())?;
         if let Some(receipt) = replay.as_ref() {

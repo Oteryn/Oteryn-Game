@@ -14,6 +14,7 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Route {
     Entry,
+    WireEntry,
     Combat,
     Complete,
     ObjectiveAtomicity,
@@ -49,7 +50,7 @@ pub(super) fn elvenbane_source_exploration() -> TestResult {
 }
 
 pub(super) fn run(route: Route) -> TestResult {
-    let combat = route != Route::Entry;
+    let combat = !matches!(route, Route::Entry | Route::WireEntry);
     let start = if matches!(
         route,
         Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
@@ -533,12 +534,38 @@ pub(super) fn run(route: Route) -> TestResult {
                 .await?;
             }
         }
+        if route == Route::WireEntry {
+            for x in 33219..=33222 {
+                let pos = crate::map::overlay::TilePos {
+                    x,
+                    y: 31659,
+                    floor: -13,
+                };
+                let tile = map
+                    .overlay
+                    .base()
+                    .tile(pos.x, pos.y, pos.floor)
+                    .ok_or("authored arrival tile missing from the floor 13 World source")?;
+                assert!(tile.walkable(), "authored arrival is not walkable: {pos:?}");
+                assert!(
+                    !map.facts
+                        .quest_callback_blocked(map.overlay.base(), pos, false),
+                    "authored arrival is blocked: {pos:?}"
+                );
+            }
+        }
         let lever = target(map, 33226, 31671)?;
         if route == Route::Entry {
             lever_moves_party_over_wire(&owner, admitted.as_slice().try_into()?, &lever).await?;
         } else {
             assert_eq!(
-                use_target(&mut owner, &mut admitted[0], &lever).await?,
+                use_target_inner(
+                    &mut owner,
+                    &mut admitted[0],
+                    &lever,
+                    route == Route::WireEntry
+                )
+                .await?,
                 UseDisposition::Committed
             );
         }
@@ -728,6 +755,15 @@ pub(super) async fn use_target(
     member: &mut AdmittedSession,
     target: &WorldObjectTarget,
 ) -> TestResult<UseDisposition> {
+    use_target_inner(owner, member, target, false).await
+}
+
+async fn use_target_inner(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    member: &mut AdmittedSession,
+    target: &WorldObjectTarget,
+    follow_up: bool,
+) -> TestResult<UseDisposition> {
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -741,14 +777,30 @@ pub(super) async fn use_target(
             .item_fence(),
     );
     let command = member.continuity.next_command_id;
-    let reply = super::quest_world_callbacks_fixtures::wire(
-        owner,
-        member,
-        command,
-        2,
-        oteryn_protocol_oteryn::world_object::encode_use_intent(target).map_err(debug)?,
-    )
-    .await?;
+    use oteryn_protocol_oteryn::world_object::{COMMAND_TYPE_USE_INTENT, encode_use_intent};
+    let payload = encode_use_intent(target).map_err(debug)?;
+    let reply = if follow_up {
+        tokio::time::timeout(
+            std::time::Duration::from_secs(30),
+            super::quest_world_callbacks_fixtures::wire_followed_by_command(
+                owner,
+                member,
+                command,
+                COMMAND_TYPE_USE_INTENT,
+                payload,
+            ),
+        )
+        .await??
+    } else {
+        super::quest_world_callbacks_fixtures::wire(
+            owner,
+            member,
+            command,
+            COMMAND_TYPE_USE_INTENT,
+            payload,
+        )
+        .await?
+    };
     oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)
 }
 

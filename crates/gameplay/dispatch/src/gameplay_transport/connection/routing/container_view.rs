@@ -35,7 +35,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             ) else {
                 return Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new()));
             };
-            return seek_page(authority, actor, admitted, views, items, seek).await;
+            return seek_page(authority, actor, admitted, views, items, seek, command).await;
         }
         match (
             container_views.as_mut().filter(|_| admitted_rate),
@@ -54,8 +54,12 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     Err(error) => Err(error),
                 };
                 admitted.continuity.item_view = view.continuity();
-                let Ok((outcome, delta)) = decided else {
-                    return None;
+                let (outcome, delta) = match decided {
+                    Ok(result) => result,
+                    Err(error) => {
+                        log_refusal(command, "view_projection", error);
+                        (super::super::ContainerViewOutcome::Stale, None)
+                    }
                 };
                 Dispatch::ContainerView(outcome, delta)
             }
@@ -71,6 +75,7 @@ async fn seek_page<A: FreshAdmissionAuthority>(
     views: &mut ContainerViewState,
     item_view: &mut SessionItemView,
     seek: wire::ContainerSeek,
+    command: ClientCommandView<'_>,
 ) -> Option<Dispatch> {
     let rejected = || Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new()));
     let Some(key) = views.ordinary_page_container(seek.view_id) else {
@@ -90,10 +95,28 @@ async fn seek_page<A: FreshAdmissionAuthority>(
     else {
         return rejected();
     };
-    let result = views.apply_page(item_view, seek, observation).ok()?;
+    let result = match views.apply_page(item_view, seek, observation) {
+        Ok(result) => result,
+        Err(error) => {
+            log_refusal(command, "page_projection", error);
+            return rejected();
+        }
+    };
     admitted.continuity.item_view = item_view.continuity();
     match result {
         Some((page, delta)) => Some(Dispatch::ContainerPage(page, delta)),
         None => rejected(),
     }
+}
+
+
+fn log_refusal(
+    command: ClientCommandView<'_>,
+    reason: &'static str,
+    error: super::super::super::item_view::ItemViewError,
+) {
+    super::super::super::operator_event(&format!(
+        "event=container_view_refused reason={reason} error={error:?} command_id={}",
+        command.command_id,
+    ));
 }

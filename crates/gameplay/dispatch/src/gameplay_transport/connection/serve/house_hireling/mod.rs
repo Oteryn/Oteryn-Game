@@ -203,6 +203,8 @@ impl State {
                     &self.visibility,
                 )
                 .await
+                .inspect_err(|path| routing::log_unresolved_use(command, path))
+                .ok()
             }
             hireling::COMMAND_TYPE_HIRELING => {
                 routing::hireling::route(authority, admitted, command).await
