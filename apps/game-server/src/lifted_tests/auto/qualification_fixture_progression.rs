@@ -345,6 +345,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         &h.node,
         &current,
         QualificationBuildSpec {
+            magic_seed: None,
             vocation: "knight",
             level: 2,
             context: served.context.clone(),

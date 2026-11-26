@@ -3978,7 +3978,21 @@ async fn animate_corpse(
     corpse: oteryn_dev_client::WorldSpatialEntity,
 ) -> TestResult<(oteryn_dev_client::EntityRef, u64)> {
     spell_ready(client, spell).await?;
-    creature(client, corpse.entity)?;
+    // Wait for the server to publish the first movable Rat corpse appearance.
+    // Global's initial death appearance cannot be used to summon a Skeleton.
+    let index = provisioning::item_index()?;
+    let movable = provisioning::item_reference(&index, 3994)?;
+    let until = tokio::time::Instant::now() + Duration::from_secs(20);
+    let corpse = loop {
+        let current = creature(client, corpse.entity)?;
+        if matches!(current.detail, oteryn_dev_client::EntityDetail::Object { item_definition_ref, .. } if item_definition_ref == movable.get()) {
+            break current;
+        }
+        if tokio::time::Instant::now() >= until {
+            return Err("Rat corpse did not become movable before Animate Dead USE".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    };
     let before = census(client)?;
     let vitals = client
         .actor_vitals()
@@ -3993,9 +4007,16 @@ async fn animate_corpse(
     if client
         .actor_vitals()
         .is_none_or(|after| after.mana != vitals.mana || after.soul != vitals.soul)
-        || creature(client, corpse.entity).is_ok()
     {
-        return Err("Animate Dead did not remove the exact corpse with zero resource cost".into());
+        return Err("Animate Dead changed mana or soul".into());
+    }
+    // The corpse view reconciles from durable custody on the item clock.
+    let until = tokio::time::Instant::now() + Duration::from_secs(5);
+    while creature(client, corpse.entity).is_ok() {
+        if tokio::time::Instant::now() >= until {
+            return Err("Animate Dead did not remove the exact corpse".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
     }
     let (skeleton, _) = companion_spawn(client, &before, "Skeleton", corpse.position).await?;
     Ok((skeleton, sequence))

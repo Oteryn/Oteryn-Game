@@ -31,7 +31,7 @@ impl ChannelRuntimeV1 {
         u64::from_be_bytes(bytes[..8].try_into().unwrap_or_default())
     }
 
-    fn apply_forge_classification(
+    pub(super) fn apply_forge_classification(
         &mut self,
         actor: ExactActorRef,
         kind: ForgeCreature,
