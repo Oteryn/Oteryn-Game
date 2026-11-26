@@ -198,7 +198,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .await
         .map_err(|error| admission_error("initial-admission", error))?;
     let sam = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at.floor == 7 && u32::from(at.x.abs_diff(32361).max(at.y.abs_diff(32198)))
+        at.floor == -7 && u32::from(at.x.abs_diff(32361).max(at.y.abs_diff(32198)))
             <= oteryn_protocol_oteryn::npc_service::TALK_RANGE_TILES
     }).ok_or("step=equipment observed=no-playable-route-to-Sam")?;
     walk(&mut client, world, &sam).await?;
