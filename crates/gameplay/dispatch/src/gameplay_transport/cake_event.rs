@@ -463,7 +463,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let native = self.active_generation?.native_gameplay()?;
         let candidate = self.immutable_cake_candidate(target);
-        let permit = self.spell_lane_permit().await?;
+        let reference = CommandRef::new(
+            command.game_session_id,
+            CommandId::new(command.command_id).ok()?,
+        );
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        if !candidate {
+            match self
+                .root
+                .world_cake_receipt_exists(reference, budget.deadline)
+                .await
+            {
+                Ok(false) => return None,
+                Ok(true) => {}
+                Err(_) => return Some(outcome(UseDisposition::Rejected)),
+            }
+        }
+        let Ok(Some(permit)) =
+            tokio::time::timeout_at(budget.deadline, self.spell_lane_permit()).await
+        else {
+            return Some(outcome(UseDisposition::NotPossible));
+        };
         let (at, generation) = {
             let runtime = self.runtime.lock().await;
             if !runtime
@@ -480,21 +500,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
         };
         let intent = oteryn_protocol_oteryn::world_object::encode_use_intent(target).ok()?;
-        let reference = CommandRef::new(
-            command.game_session_id,
-            CommandId::new(command.command_id).ok()?,
-        );
-        match self
-            .root
-            .replay_world_cake(
-                self.character,
-                self.holder,
-                fence,
-                reference,
-                intent.clone(),
-                native.source_digest(),
-                candidate,
-            )
+        match budget
+            .retry_command_guard(async || {
+                self.root
+                    .replay_world_cake(
+                        self.character,
+                        self.holder,
+                        fence,
+                        reference,
+                        intent.clone(),
+                        native.source_digest(),
+                        budget.deadline,
+                    )
+                    .await
+            })
             .await
         {
             Ok(Some(disposition)) => return Some(outcome(disposition)),

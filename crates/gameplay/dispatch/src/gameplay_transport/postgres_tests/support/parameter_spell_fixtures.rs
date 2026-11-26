@@ -488,6 +488,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>, check_
                         && attacker.identity == actor.placement_identity()
                         && attacker.generation == actor.actor_local_generation()
                         && primary.value == actual_damage
+                        && primary.color == oteryn_protocol_oteryn::presentation::PresentationColor::Purple
             )), "cast did not publish its committed HP loss: {events:?}");
             let refused = actor_spell::encode_spell_cast_intent(&actor_spell::SpellCastIntent {
                 spell: std::num::NonZeroU32::new(u32::try_from(deps.spells.source_len())? + 1).ok_or("unknown spell index")?,

@@ -81,28 +81,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent: encode_item_use_intent(intent).map_err(|_| ())?,
             operand: None,
         };
-        let permit = self.spell_lane_permit().await.ok_or(())?;
-        if let Some(result) = self
+        let budget = super::super::AdmissionRetryBudget::for_command(self.root);
+        if self
             .root
-            .harvest_map_item(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &NativeItemWeights(native),
-            )
+            .map_harvest_receipt_exists(request.command, budget.deadline)
             .await
             .map_err(|_| ())?
         {
-            drop(permit);
-            if result.disposition == UseDisposition::Committed {
-                self.refresh_terrain_tools().await;
+            let permit = tokio::time::timeout_at(budget.deadline, self.spell_lane_permit())
+                .await
+                .map_err(|_| ())?
+                .ok_or(())?;
+            if let Some(result) = tokio::time::timeout_at(
+                budget.deadline,
+                budget.retry_command_guard(async || {
+                    self.root
+                        .harvest_map_item(
+                            &permit,
+                            self.character,
+                            self.holder,
+                            fence,
+                            request.clone(),
+                            native,
+                            &NativeItemWeights(native),
+                        )
+                        .await
+                }),
+            )
+            .await
+            .map_err(|_| ())?
+            .map_err(|_| ())?
+            {
+                drop(permit);
+                if result.disposition == UseDisposition::Committed {
+                    self.refresh_terrain_tools().await;
+                }
+                return Ok(Some(outcome(result.disposition)));
             }
-            return Ok(Some(outcome(result.disposition)));
         }
-        let operand = {
+        let (operand, actor_position) = {
             let runtime = self.runtime.lock().await;
             let facts = map.facts.pinned();
             let source = super::super::world_map::MapViewSource {
@@ -192,10 +209,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
-            let actor_at = runtime
-                .read_actor_position(actor)
-                .map_err(|_| ())?
-                .position();
+            let actor_position = runtime.read_actor_position(actor).map_err(|_| ())?;
+            let actor_at = actor_position.position();
             if actor_at.floor != -i16::from(pos.floor)
                 || actor_at.x.abs_diff(i32::from(pos.x)) > 1
                 || actor_at.y.abs_diff(i32::from(pos.y)) > 1
@@ -230,23 +245,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .checked_neg()
                     .ok_or(())?,
             };
-            MapHarvestOperand {
-                scope: TerrainScope {
-                    map_revision: crate::map::overlay::map_revision(map.overlay.base()),
-                    content_generation: native.source_digest(),
-                    reset_epoch: i64::try_from(self.reset_epoch).map_err(|_| ())?,
+            (
+                MapHarvestOperand {
+                    scope: TerrainScope {
+                        map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+                        content_generation: native.source_digest(),
+                        reset_epoch: i64::try_from(self.reset_epoch).map_err(|_| ())?,
+                    },
+                    mutation: MapMutation {
+                        placement,
+                        expected_revision: i64::try_from(revision).map_err(|_| ())?,
+                        before: u32::from(before.appearance_id),
+                        after: u32::from(plan.after),
+                        decay: plan.decay.into_iter().collect(),
+                    },
+                    actor_position: spatial(actor_pos),
+                    source_position: spatial(pos),
                 },
-                mutation: MapMutation {
-                    placement,
-                    expected_revision: i64::try_from(revision).map_err(|_| ())?,
-                    before: u32::from(before.appearance_id),
-                    after: u32::from(plan.after),
-                    decay: plan.decay.into_iter().collect(),
-                },
-                actor_position: spatial(actor_pos),
-                source_position: spatial(pos),
-            }
+                actor_position,
+            )
         };
+        let permit = tokio::time::timeout_at(budget.deadline, self.spell_lane_permit())
+            .await
+            .map_err(|_| ())?
+            .ok_or(())?;
+        {
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.lock().await;
+            if runtime.read_actor_position(actor).ok() != Some(actor_position)
+                || !runtime
+                    .player_control_facts(actor, command.game_session_id)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+                || !states.spell_idle(&runtime, actor, command.game_session_id)
+                || states.is_dead(actor)
+                || !self
+                    .states
+                    .player_trades
+                    .physical(command.game_session_id, None)
+            {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+        }
         request.operand = Some(operand);
         let result = self
             .root

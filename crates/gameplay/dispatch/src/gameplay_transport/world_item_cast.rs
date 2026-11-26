@@ -1082,7 +1082,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let receipt=install_owner_batch(&mut runtime,&mut states,attempt.physical,Some(attempt.player),checked);
             if receipt.applied { states.analyser.supplies(attempt.actor, attempt.session, &attempt.request.operations); }
             if receipt.applied && let Some(presentations)=states.presentations.as_mut(){
-                presentations.install_preflighted(attempt.presentation,&receipt);
+                presentations.install_preflighted(
+                    attempt.presentation,
+                    &receipt,
+                    oteryn_protocol_oteryn::damage_element::DamageElement::Physical,
+                );
             }
             Ok(NativeCastDispatch::Outcome(SpellCastOutcome{disposition:SpellCastDisposition::Cast,
                 vitals:super::observe_vitals(&runtime,&states,actor,session)}))
