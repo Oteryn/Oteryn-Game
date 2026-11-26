@@ -176,8 +176,11 @@ async fn walk_first_attempt(
             || outcome.world_spatial_delta.is_none()
             || observed != expected
         {
+            let occupant = client.world_entities().and_then(|entities| {
+                entities.iter().find(|entity| tile(entity.position).ok() == Some(expected))
+            });
             return Err(format!(
-                "W01b first STEP {direction:?} from={from:?} expected={expected:?} observed={observed:?} reply={outcome:?}"
+                "W01b first STEP {direction:?} from={from:?} expected={expected:?} observed={observed:?} occupant={occupant:?} reply={outcome:?}"
             )
             .into());
         }
@@ -219,14 +222,34 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     if authored.next().is_some() {
         return Err("W01b authored Rat point is ambiguous".into());
     }
+    // A spawn cell can already be occupied when the map itself permits walking.
+    // Compute each route once with these authored cells excluded before sending STEP.
+    let spawn_cells: std::collections::BTreeSet<_> = metadata
+        .spawns
+        .sources
+        .iter()
+        .flat_map(|source| {
+            source.points.iter().map(|point| TilePos {
+                x: point.x,
+                y: point.y,
+                floor: source.floor,
+            })
+        })
+        .collect();
+    let available = |at| !spawn_cells.contains(&at);
     let entry = tile(client.world_spatial().actor_position)?;
-    let path = route(world, entry, |at| {
-        distance(at, spawn) == 1
-            && world
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|cell| !cell.protection_zone())
-    })
+    let path = route_avoiding(
+        world,
+        entry,
+        |at| {
+            distance(at, spawn) == 1
+                && world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|cell| !cell.protection_zone())
+        },
+        available,
+    )
     .filter(|path| !path.is_empty())
     .ok_or("W01b has no distinct route from admission to its authored point")?;
     walk_first_attempt(&mut client, world, &path).await?;
@@ -336,10 +359,17 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
 
     progress.begin("leave-interest");
     let from = tile(client.world_spatial().actor_position)?;
-    let away = route(world, from, |at| distance(at, spawn) >= 20)
+    if distance(from, spawn) >= 20 {
+        return Err("W01b observer must start inside the leave-interest boundary".into());
+    }
+    let away = route_avoiding(world, from, |at| distance(at, spawn) >= 20, available)
         .ok_or("no legitimate walking route outside spawn interest")?;
     walk_first_attempt(&mut client, world, &away).await?;
-    progress.pass("leave-interest", tile(client.world_spatial().actor_position)?);
+    let outside = tile(client.world_spatial().actor_position)?;
+    if distance(outside, spawn) < 20 {
+        return Err(format!("W01b STEP route never left spawn interest: {outside:?}").into());
+    }
+    progress.pass("leave-interest", outside);
     // Keep answering liveness while the interval runs out; a bare sleep lets
     // the server drop the session as unresponsive.
     let until = tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn_ms) + 1_000);
@@ -348,11 +378,17 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         client.service_liveness(Duration::from_millis(500)).await?;
     }
     progress.begin("return-to-spawn");
-    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        distance(at, spawn) <= 1
-    })
-    .ok_or("no legitimate return route to rat spawn")?;
+    let from = tile(client.world_spatial().actor_position)?;
+    if from != outside {
+        return Err(format!("W01b observer moved while waiting outside: {from:?}").into());
+    }
+    let back = route_avoiding(world, from, |at| distance(at, spawn) == 1, available)
+        .ok_or("no legitimate return route to rat spawn")?;
     walk_first_attempt(&mut client, world, &back).await?;
+    let returned = tile(client.world_spatial().actor_position)?;
+    if distance(returned, spawn) != 1 {
+        return Err(format!("W01b return did not land beside the Rat spawn: {returned:?}").into());
+    }
     progress.begin("replacement-delta");
     wait_until(
         &mut client,
