@@ -202,15 +202,32 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("in-fight-logout-refused", refusal);
 
     walk_to(&mut client, world, TOWN).await?;
+    let health_before_logout = client
+        .actor_vitals()
+        .ok_or("step 4: pre-logout vitals absent")?
+        .health;
+    let saved_position = client.world_spatial().actor_position;
+    // The session can apply pushed vitals before it reads the Accepted result.
+    // Sample the last state on that same wire at the acceptance boundary.
+    logout_once(&mut client).await?;
     let saved = *client.actor_vitals().ok_or("step 4: vitals absent")?;
     if saved.health == 0 || saved.health >= before.health {
         return Err(
             format!("step 4: expected saved damage from {before:?}, observed {saved:?}").into(),
         );
     }
-    let saved_position = client.world_spatial().actor_position;
-    logout_once(&mut client).await?;
-    row.pass("escaped-and-logout-accepted", (saved_position, saved));
+    if client.world_spatial().actor_position != saved_position {
+        return Err("step 4: town position changed while logging out".into());
+    }
+    row.pass(
+        "escaped-and-logout-accepted",
+        (
+            saved_position,
+            health_before_logout,
+            saved,
+            client.last_server_sequence(),
+        ),
+    );
     drop(client);
 
     let mut client = connect_world(clients, 0xc2).await?;
