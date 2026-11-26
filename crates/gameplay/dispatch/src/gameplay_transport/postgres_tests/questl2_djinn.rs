@@ -61,7 +61,8 @@ fn questl2_djinn_marid_full_player_journey() -> TestResult {
         ("nah_bob", 33103, 32520, -2),
         ("rata_mari", 33037, 32626, -7),
         ("the_orc_king", 32983, 31732, -9),
-        ("umar", 33102, 32532, -6),
+        // The placement scope admits Umar on clear ground just north of his Crystal anchor.
+        ("umar", 33102, 32531, -6),
     ] {
         let key = format!("oteryn:npc.{key}");
         let npc = world
@@ -83,7 +84,7 @@ fn questl2_djinn_marid_full_player_journey() -> TestResult {
             "/l2-marid-spy-report",
             "/l2-marid-finish",
             "/marid-maryza-cookbook",
-            "/marid-melchior-greeting",
+            "/djinn-greeting-word",
             "/marid-umar-passage",
         ],
     )

@@ -50,7 +50,6 @@ pub(super) async fn exercise(
         "nah_bob",
         "melchior",
         "ubaid",
-        "melchior",
         "umar",
         "maryza",
     ];
@@ -75,7 +74,6 @@ pub(super) async fn exercise(
             (33295, 31677),
             (33290, 31677),
             (33290, 31676),
-            (33291, 31678),
             (33295, 31678),
             (33296, 31677),
         ]
@@ -89,18 +87,19 @@ pub(super) async fn exercise(
             .find(|c| c.key.ends_with(&format!("/l2-{faction}-{suffix}")))
             .ok_or_else(|| format!("missing Djinn callback {faction}-{suffix}").into())
     };
-    let actor = |callback: &RewardCallback| -> TestResult<EntityRef> {
-        keys.iter()
-            .position(|k| callback.npc == format!("oteryn:npc.{k}"))
-            .map(|n| npcs[n])
-            .ok_or_else(|| "Djinn NPC actor".into())
+    let actor = |key: &str| -> TestResult<EntityRef> {
+        refs.iter()
+            .position(|npc| npc == key)
+            .map(|index| npcs[index])
+            .ok_or_else(|| format!("Djinn NPC actor missing: {key}").into())
     };
+    let melchior = actor("oteryn:npc.melchior")?;
     macro_rules! act {
         ($side:expr, $suffix:expr, $expected:expr) => {{
             let c = callback($side, $suffix)?;
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             assert_eq!(
-                wire_reward(owner, admitted, actor(c)?, c, false).await?.0,
+                wire_reward(owner, admitted, actor(&c.npc)?, c, false).await?.0,
                 $expected,
                 "{side}-{suffix}",
                 side = $side,
@@ -109,19 +108,20 @@ pub(super) async fn exercise(
         }};
     }
     if efreet {
+        let ubaid = actor("oteryn:npc.ubaid")?;
         assert!(!door_is_open(owner, admitted, 40432)?);
         // These direct NPC service calls precede a separate framed connection.
         let first = 19_100;
         assert_eq!(
-            talk(owner, admitted, npcs[13], first, "hi").await?,
+            talk(owner, admitted, ubaid, first, "hi").await?,
             NpcIntentDisposition::NoConversation,
         );
         assert_eq!(
-            talk(owner, admitted, npcs[12], first + 1, "hi").await?,
+            talk(owner, admitted, melchior, first + 1, "hi").await?,
             NpcIntentDisposition::Ok
         );
         assert_eq!(
-            talk(owner, admitted, npcs[12], first + 2, "word of greeting").await?,
+            talk(owner, admitted, melchior, first + 2, "word of greeting").await?,
             NpcIntentDisposition::Ok
         );
         for (offset, word) in ["djanni'hah", "passage", "no", "yes", "yes"]
@@ -132,7 +132,7 @@ pub(super) async fn exercise(
                 talk(
                     owner,
                     admitted,
-                    npcs[13],
+                    ubaid,
                     first + 3 + u64::try_from(offset)?,
                     word
                 )
@@ -185,16 +185,17 @@ pub(super) async fn exercise(
     .await?;
     act!(faction, "finish", NpcIntentDisposition::Rejected);
     if !efreet {
+        let umar = actor("oteryn:npc.umar")?;
         act!(faction, "enlist", NpcIntentDisposition::Rejected);
         for (command, npc, text) in [
-            (18100, npcs[12], "hi"),
-            (18101, npcs[12], "word of greeting"),
-            (18102, npcs[12], "bye"),
-            (18103, npcs[13], "djanni'hah"),
-            (18104, npcs[13], "passage"),
-            (18105, npcs[13], "yes"),
-            (18106, npcs[13], "yes"),
-            (18107, npcs[13], "bye"),
+            (18100, melchior, "hi"),
+            (18101, melchior, "word of greeting"),
+            (18102, melchior, "bye"),
+            (18103, umar, "djanni'hah"),
+            (18104, umar, "passage"),
+            (18105, umar, "yes"),
+            (18106, umar, "yes"),
+            (18107, umar, "bye"),
         ] {
             assert_eq!(
                 talk(owner, admitted, npc, command, text).await?,
@@ -235,18 +236,19 @@ pub(super) async fn exercise(
         act!(faction, "tear-return", NpcIntentDisposition::Ok);
         assert_eq!(quantity(h, 3233).await?, 0);
     } else {
+        let maryza = actor("oteryn:npc.maryza")?;
         act!(faction, "cookbook", NpcIntentDisposition::Rejected);
         let purchase = callbacks.iter().find(|c| c.key.ends_with("/marid-maryza-cookbook"))
             .ok_or("Maryza cookbook purchase")?;
         let buy = || vec!["hi maryza", "cookbook", "yes"];
-        assert_eq!(wire_conversation(owner, admitted, npcs[14], purchase, false, buy()).await?.0,
+        assert_eq!(wire_conversation(owner, admitted, maryza, purchase, false, buy()).await?.0,
                    NpcIntentDisposition::Ok);
         assert_eq!(quantity(h, 3234).await?, 1);
-        assert_eq!(talk(owner, admitted, npcs[14], 18108, "hi maryza").await?,
+        assert_eq!(talk(owner, admitted, maryza, 18108, "hi maryza").await?,
                    NpcIntentDisposition::Ok);
-        assert_eq!(talk(owner, admitted, npcs[14], 18109, "cookbook").await?,
+        assert_eq!(talk(owner, admitted, maryza, 18109, "cookbook").await?,
                    NpcIntentDisposition::Ok);
-        assert_eq!(talk(owner, admitted, npcs[14], 18110, "bye").await?,
+        assert_eq!(talk(owner, admitted, maryza, 18110, "bye").await?,
                    NpcIntentDisposition::Ok);
         assert_eq!(quantity(h, 3234).await?, 1);
         act!(faction, "cookbook", NpcIntentDisposition::Ok);
