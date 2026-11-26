@@ -115,10 +115,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("I15 expected one inactive Energy Ring 3051 and an empty Ring slot".into());
     }
+    let source = ring.handle;
     let moved = client
         .session_mut()
         .move_item_counted(MoveRequest {
-            source: ring.handle,
+            source,
             destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::Ring),
             count: None,
         })
