@@ -433,6 +433,68 @@ class KnownFailRowsTests(unittest.TestCase):
         log = 'SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL seconds=1\n'
         self.assertEqual(self.rows(log, 'FAIL', ''), ('C01.full', ''))
 
+    def test_w19a_actor_failure_fails_the_seam_stage(self):
+        log = (
+            "e2e_all scenario=W19a.full status=FAIL evidence=Messenger_absent\n"
+            "e2e_all scenario=W19a.client status=FAIL evidence=Messenger_absent\n"
+        )
+        known = SOURCE.with_name("known_fail_rows.txt").read_text()
+        self.assertEqual(self.rows(log, "FAIL", known), ("W19a.client,W19a.full", ""))
+
+    def test_w19a_shards_require_the_expected_live_verdict(self):
+        helpers = "\n".join(
+            re.search(rf"(?m)^{name}\(\).*$", TEXT).group(0)
+            for name in ("stage_rows", "known_rows")
+        )
+        script = "\n".join(
+            (
+                "set -Eeuo pipefail",
+                "WORK=$1; VARS=/dev/null; GAME_SOURCE=$2",
+                "OTERYN_E2E_ROW_BATCH=$3; NODE_BOOT_E2E_ONLY=rows",
+                "NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0",
+                "declare -A STATUS=(); ORDER=()",
+                "evidence() { :; }; start_runtime_diagnostics() { :; }",
+                "stop_runtime_diagnostics() { :; }; pg_observability_dump() { :; }",
+                helpers,
+                function("w19a_rows"),
+                function("stage"),
+                "stage seam_stages -- printf '%s\\n' \"$4\"",
+                'echo "verdict=${STATUS[seam_stages]}"',
+            )
+        )
+        full = "e2e_all scenario=W19a.full status=PASS"
+        client = "e2e_all scenario=W19a.client status=CAPTURED"
+        cases = (
+            ("12:1", full, "PASS"),
+            ("12:1", client, "FAIL(rows)"),
+            ("216:1", client, "PASS"),
+            ("216:1", full, "FAIL(rows)"),
+            ("all", full + "\n" + client, "PASS"),
+            ("all", full, "FAIL(rows)"),
+            ("13:1", "", "PASS"),
+        )
+        with tempfile.TemporaryDirectory() as work:
+            for batch, log, verdict in cases:
+                with self.subTest(batch=batch, log=log):
+                    result = subprocess.run(
+                        [
+                            "bash",
+                            "-c",
+                            script,
+                            "w19a",
+                            work,
+                            SOURCE.parents[3],
+                            batch,
+                            log,
+                        ],
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                    )
+                    self.assertEqual(
+                        result.stdout.splitlines()[-1], f"verdict={verdict}"
+                    )
+
     def test_seed_list_has_one_reason_per_row(self):
         listed = SOURCE.with_name('known_fail_rows.txt').read_text().splitlines()
         rows = [line.split(None, 1) for line in listed if line.strip() and not line.startswith('#')]
