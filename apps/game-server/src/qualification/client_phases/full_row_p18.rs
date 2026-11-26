@@ -184,20 +184,73 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_P18_ACCOUNT").await?;
-    let dedicated = dedicated.clients(clients);
-    let mut fixture = connect_character(&dedicated, 0xd7, 0).await?;
-    character_prep::grant_item(&fixture, character_prep::item_id(FUSION_PAIR)?, 2).await?;
+// Match the existing dispatch PostgreSQL occurrence fixture. Selecting an input
+// does not write the decision root or a reservation, or submit a Forge command.
+async fn fusion_occurrence(
+    clients: &SeamClients<'_>,
+    mut occurrence: [u8; 16],
+    success: bool,
+) -> TestResult<[u8; 16]> {
+    use oteryn_simulation_determinism::{
+        DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+    };
+    use sha2::Digest;
+
+    let [character] = clients.characters else {
+        return Err("Fusion fixture requires one dedicated character".into());
+    };
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let seed: Vec<u8> =
+        sqlx::query_scalar("SELECT secret FROM game_forge_decision_root WHERE singleton")
+            .fetch_one(&mut connection)
+            .await?;
+    let root = GameplayDecisionRoot::from_bytes(
+        sha2::Sha256::new().chain_update(seed).chain_update(character).finalize().into(),
+    );
+    for counter in 0_u32..100_000 {
+        occurrence[9..13].copy_from_slice(&counter.to_be_bytes());
+        let candidate = DecisionOccurrenceId::from_bytes(occurrence);
+        let draw = |index| {
+            deterministic_decision_u64(&root, candidate, "forge_fusion", index)
+                .map_err(|error| format!("Forge fixture decision error: {error:?}"))
+        };
+        if (draw(0)? % 100 < 50) == success && draw(2)? % 10_001 < 7400 {
+            let outcome = if success { "success" } else { "failure" };
+            evidence(&format!("FIXTURE row=P18.full forced fusion roll={outcome}"));
+            return Ok(occurrence);
+        }
+    }
+    Err("bounded Forge fixture occurrence search exhausted".into())
+}
+
+async fn fusion_case(
+    dedicated: &SeamClients<'_>,
+    expected_success: bool,
+    expected_prior_history: &[&Observation],
+) -> TestResult<Observation> {
+    let tag = if expected_success { 0xda } else { 0xd7 };
+    let mut fixture = connect_character(dedicated, tag, 0).await?;
+    character_prep::grant_item(&fixture, character_prep::item_id(FUSION_PAIR)?, if expected_success { 1 } else { 2 }).await?;
     character_prep::grant_item(&fixture, 3043, 3).await?;
     logout(&mut fixture).await?;
     drop(fixture);
-    super::client_row_p18::seed_dust("P18.full", &dedicated).await?;
+    if expected_success {
+        let [character] = dedicated.characters else {
+            return Err("Fusion fixture requires one dedicated character".into());
+        };
+        let mut db = sqlx::PgConnection::connect(dedicated.url).await?;
+        let mut tx = sqlx::Connection::begin(&mut db).await?;
+        fixture_dust(&mut tx, &uuid_text(character), 100).await?;
+        tx.commit().await?;
+        evidence("FIXTURE row=P18.full input=forge_dust before=0 after=100 cap=100");
+    } else {
+        super::client_row_p18::seed_dust("P18.full", dedicated).await?;
+    }
 
-    let mut client = connect_character(&dedicated, 0xd8, 0).await?;
+    let mut client = connect_character(dedicated, tag + 1, 0).await?;
     let session = client.join_snapshot().game_session_id;
     let first_history = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
-    validate_history("step-2", &first_history, &[])?;
+    validate_history("step-2", &first_history, expected_prior_history)?;
 
     let definitions = provisioning::item_index()?;
     let revision = definitions
@@ -262,7 +315,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         let observed = command(
             &mut client,
             operation,
-            occurrence(session, u8::try_from(index + 1)?),
+            fusion_occurrence(dedicated, occurrence(session, u8::try_from(index + 1)?), expected_success).await?,
             pair,
             0,
         )
@@ -282,19 +335,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             let bonus = observed.body["bonus"]
                 .as_u64()
                 .ok_or("Fusion bonus missing")?;
-            if (!success && bonus != 0) || bonus > 7 || !observed.body["reason"].is_null() {
+            if success != expected_success || bonus != 0 || !observed.body["reason"].is_null() {
                 return Err(format!("invalid Fusion outcome: {}", observed.body).into());
             }
             let target = u8::from(success);
-            let source = match bonus {
-                4 | 5 => Some(0),
-                6 => Some(1),
-                _ => None,
-            };
-            let (dust_paid, gold_paid) = (
-                if bonus == 1 { 0 } else { 100 },
-                if bonus == 3 { 0 } else { 25_000 },
-            );
+            let source: Option<u8> = None;
+            let (dust_paid, gold_paid) = (100, 25_000);
             let paid = &observed.body["result"];
             let (first, second) = pair.ok_or("Fusion pair missing")?;
             if *paid
@@ -321,9 +367,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     client.service_liveness(Duration::from_millis(490)).await?;
     let history = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
-    let applied_observations = observations
-        .iter()
-        .filter(|observation| observation.body["applied"] == true)
+    let applied_observations = expected_prior_history.iter().copied().chain(observations.iter())
         .collect::<Vec<_>>();
     validate_history("step-6", &history, &applied_observations)?;
     let retained = client
@@ -333,7 +377,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let retained_balance = super::client_row_p18::dust(&mut client).await?;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_character(&dedicated, 0xd9, 0).await?;
+    let mut fresh = connect_character(dedicated, tag + 2, 0).await?;
     if fresh.join_snapshot().game_session_id == session
         || fresh.inventory().cloned().map(durable_inventory) != Some(durable_inventory(retained))
     {
@@ -355,10 +399,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     evidence(&format!(
         "P18_FUSION_CHECK status=PASS succeeded={succeeded} dust_paid={dust_paid} gold_paid={gold_paid} durable_dagger_tiers={expected_tiers:?}"
     ));
+    observations.pop().ok_or_else(|| "missing Fusion observation".into())
+}
+
+async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_P18_ACCOUNT").await?;
+    let dedicated = dedicated.clients(clients);
+    let failure = fusion_case(&dedicated, false, &[]).await?;
+    fusion_case(&dedicated, true, &[&failure]).await?;
+
     let mut failures = Vec::new();
-    if !succeeded {
-        failures.push("Fusion: first attempt rolled a natural failure".to_owned());
-    }
     for (ordinal, case) in CASES.iter().enumerate() {
         if let Err(error) = run_case(&dedicated, case, 0xe0 + u8::try_from(ordinal)? * 3).await {
             let failure = format!("{:?}: {error}", case.operation);
