@@ -867,6 +867,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     evidence("I07_SELECTED_CLICK sibling=retained foreign_item=rejected");
+    // Confirm a pouch route on this session before clicking the native Use gold pouch button.
+    capture.probe(&mut fresh, 20, unassigned_pouch, &[]).await?;
+    capture.probe(&mut fresh, 21, gold_route, &[]).await?;
+    capture.probe(&mut fresh, 22, gold_main, &[]).await?;
+    capture.probe(&mut fresh, 23, unassigned, &[]).await?;
     require_logout(&mut fresh).await?;
     drop(fresh);
     let mut readback = connect_world(clients, 0x07).await?;
