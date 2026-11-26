@@ -627,7 +627,7 @@ async fn authored_granter(
 
 async fn prepare_knight(clients: &SeamClients<'_>, index: usize, leader: bool) -> TestResult {
     let (level, profile) = if leader {
-        ("knight-level-2000", "p11-corridor-knight")
+        ("knight-level-1000", "p11-corridor-knight")
     } else {
         ("knight-level-100", "knight")
     };
@@ -668,7 +668,7 @@ async fn connect_knight(
     index: usize,
     leader: bool,
 ) -> TestResult<DevClientSession> {
-    let level = if leader { 2000 } else { 100 };
+    let level = if leader { 1000 } else { 100 };
     let mut fresh = connect_character(clients, 0xc1, index).await?;
     use oteryn_dev_client::client_ui::cyclopedia_character as panel;
     use oteryn_protocol_oteryn::cyclopedia_character::CharacterTab;
