@@ -372,8 +372,8 @@ fn strict_envelope_rejects_unknown_duplicate_and_missing_keys() {
 
 fn verify_capture_directory(root: &std::path::Path, proof: &Proof) -> Result<(), Error> {
     use std::os::unix::fs::MetadataExt;
-    if crate::qualification_wrapper_identity()? != proof.wrapper {
-        return Err("C18a capture belongs to another wrapper invocation".into());
+    if crate::qualification_runner_identity()? != proof.wrapper {
+        return Err("C18a capture belongs to another node-boot invocation".into());
     }
     let dir = std::fs::metadata(root)?;
     if (dir.dev(), dir.ino()) != (proof.capture_device, proof.capture_inode) {
@@ -389,27 +389,14 @@ fn verify_capture_directory(root: &std::path::Path, proof: &Proof) -> Result<(),
         .ok_or("C18a replay lacks a run directory name")?;
     let parent = root
         .parent()
-        .ok_or("C18a replay lacks a wrapper work directory")?;
+        .ok_or("C18a replay lacks a node-boot work directory")?;
     let binding = format!(
         "SEAM_EVIDENCE c18a_capture_binding directory={name} session={}",
         proof.game_session_id
     );
-    let mut found = false;
-    for entry in std::fs::read_dir(parent)? {
-        let entry = entry?;
-        if !entry.file_name().to_string_lossy().ends_with("-rows.log") {
-            continue;
-        }
-        let log = std::fs::read_to_string(entry.path())?;
-        if log.lines().any(|line| line == binding) {
-            if found || !valid_run_log(&log, &binding) {
-                return Err("C18a wrapper log contains duplicate capture evidence, a fixture retry, or a failed boot".into());
-            }
-            found = true;
-        }
-    }
-    if !found {
-        return Err("C18a replay has no matching live wrapper evidence".into());
+    let log = std::fs::read_to_string(parent.join("stage-seam_stages.log"))?;
+    if !valid_run_log(&log, &binding) {
+        return Err("C18a node-boot seam log lacks one eligible current capture".into());
     }
     Ok(())
 }
@@ -418,8 +405,11 @@ fn valid_run_log(log: &str, binding: &str) -> bool {
     log.lines().filter(|line| *line == binding).count() == 1
         && log
             .lines()
-            .filter(|line| line.starts_with("NODE_BOOT_RESULT="))
-            .eq(["NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged"])
+            .filter(|line| {
+                line.starts_with("SEAM_EVIDENCE e2e_capture scenario=C18a.client status=CAPTURED ")
+            })
+            .count()
+            == 1
         && !log.lines().any(|line| line.contains("FIXTURE_RETRY "))
 }
 
@@ -607,7 +597,7 @@ fn rejects_health_loss_without_the_exact_damage_source() -> Result<(), Error> {
 #[test]
 fn rejects_unbound_or_retried_wrapper_log() {
     let binding = "SEAM_EVIDENCE c18a_capture_binding directory=captures.test session=test";
-    let pass = "NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged";
+    let pass = "SEAM_EVIDENCE e2e_capture scenario=C18a.client status=CAPTURED evidence=live";
     assert!(valid_run_log(&format!("{binding}\n{pass}"), binding));
     assert!(!valid_run_log(pass, binding));
     assert!(!valid_run_log(

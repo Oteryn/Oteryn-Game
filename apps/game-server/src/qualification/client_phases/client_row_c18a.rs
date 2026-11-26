@@ -38,7 +38,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
-    let wrapper = oteryn_dev_client::qualification_wrapper_identity()?;
+    let wrapper = oteryn_dev_client::qualification_runner_identity()?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;

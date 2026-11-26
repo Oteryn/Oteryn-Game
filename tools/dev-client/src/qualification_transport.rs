@@ -94,9 +94,10 @@ impl AsyncWrite for QualificationTransport {
     }
 }
 
-/// Identity of the current Linux cloud runner, including the process start tick.
-pub fn qualification_wrapper_identity() -> io::Result<String> {
+/// Identity of the current Linux node-boot runner, including the process start tick.
+pub fn qualification_runner_identity() -> io::Result<String> {
     let mut pid = std::process::id();
+    let mut runner = None;
     while pid > 1 {
         let stat = std::fs::read_to_string(format!("/proc/{pid}/stat"))?;
         let fields: Vec<_> = stat
@@ -109,21 +110,19 @@ pub fn qualification_wrapper_identity() -> io::Result<String> {
         if args
             .split(|&byte| byte == 0)
             .nth(1)
-            .is_some_and(|script| script.ends_with(b"tools/qualification/node_boot/cloud_run.sh"))
+            .is_some_and(|script| script.ends_with(b"tools/qualification/node_boot/run.sh"))
         {
             let start = fields
                 .get(19)
                 .ok_or_else(|| io::Error::other("missing process start"))?;
-            return Ok(format!("{pid}:{start}"));
+            runner = Some(format!("{pid}:{start}"));
         }
         pid = fields
             .get(1)
             .and_then(|parent| parent.parse().ok())
             .ok_or_else(|| io::Error::other("missing parent process"))?;
     }
-    Err(io::Error::other(
-        "C18a replay requires the current cloud wrapper",
-    ))
+    runner.ok_or_else(|| io::Error::other("C18a replay requires the current node-boot runner"))
 }
 
 /// Verify ordered authoritative publications for the unfed level-one Sorcerer.
