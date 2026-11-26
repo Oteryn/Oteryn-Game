@@ -1605,7 +1605,9 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
     source "$GAME_SOURCE/tools/qualification/node_boot/p04_client_replay.sh"
     if p04_selected "${NODE_BOOT_E2E_ONLY:-}"; then
-      seam_runner=(p04_seam_with_replay "$WORK/p04-captures" "$WORK/p04-seam.log" env)
+      local p04_artifacts="${NODE_BOOT_P04_ARTIFACT_ROOT:-$WORK/p04}"
+      mkdir -- "$p04_artifacts"
+      seam_runner=(p04_seam_with_replay "$p04_artifacts/captures" "$p04_artifacts/seam.log" env)
     fi
   fi
   (

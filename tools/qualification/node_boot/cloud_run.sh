@@ -117,11 +117,12 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
-  NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
+  NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" NODE_BOOT_P04_ARTIFACT_ROOT="$work_dir/$index-p04" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
+  grep -aE '^SEAM_EVIDENCE e2e_all scenario=P04[.]client status=(PASS|FAIL) evidence=(live_client_replay|seam_exit)$' "$log" || true
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1
 done
