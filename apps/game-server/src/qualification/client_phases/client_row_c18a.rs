@@ -36,6 +36,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let world = load_world(
         bytes,
         &pin,
@@ -48,11 +49,23 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if definition.mana != crate::spell::ManaCost::Fixed(SCORCH_MANA) || definition.soul != 0 {
         return Err("C18a Scorch must cost exactly 8 mana and 0 soul".into());
     }
+    let spawn_cells = metadata
+        .spawns
+        .sources
+        .iter()
+        .flat_map(|source| {
+            source.points.iter().map(|point| TilePos {
+                x: point.x,
+                y: point.y,
+                floor: source.floor,
+            })
+        })
+        .collect();
     let mut client = connect_character(clients, 0xca, 1).await?;
     if tile(client.world_spatial().actor_position)? != TOWN {
         return Err("C18a expected the initial town tile".into());
     }
-    walk_once(&mut client, world, CAST_TILE).await?;
+    walk_once(&mut client, world, &spawn_cells, CAST_TILE).await?;
     let here = client.world_spatial().actor_position;
     let rat = {
         let mut rats = client
@@ -262,7 +275,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if !is_logout_rest_tile(world, TOWN) {
         return Err("C18a fixed logout tile must be a protection zone".into());
     }
-    walk_once(&mut client, world, TOWN).await?;
+    walk_once(&mut client, world, &spawn_cells, TOWN).await?;
     let (result, detail, _, _) = logout_once(&mut client).await?;
     if result != Some(LogoutResult::Accepted) {
         return Err(format!("C18a first logout refused: {detail}").into());
@@ -279,7 +292,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if (fresh_vitals.mana, fresh_vitals.soul) != (after.mana, after.soul) {
         return Err(format!("C18a relog vitals differ after Scorch: expected mana={} soul={}, observed mana={} soul={}", after.mana, after.soul, fresh_vitals.mana, fresh_vitals.soul).into());
     }
-    walk_once(&mut fresh, world, CAST_TILE).await?;
+    walk_once(&mut fresh, world, &spawn_cells, CAST_TILE).await?;
     let relogged = fresh
         .world_entities()
         .and_then(|entities| entities.get(&target))
@@ -383,11 +396,18 @@ async fn received_cast_payload(
 async fn walk_once(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
+    spawn_cells: &std::collections::BTreeSet<TilePos>,
     goal: TilePos,
 ) -> TestResult {
     let start = tile(client.world_spatial().actor_position)?;
-    let path = route(world, start, |at| at == goal)
-        .ok_or_else(|| format!("C18a fixed route unavailable: {start:?} -> {goal:?}"))?;
+    // Plan once from the pinned map. Spawn cells are occupied by design.
+    let path = route_avoiding(
+        world,
+        start,
+        |at| at == goal,
+        |at| !spawn_cells.contains(&at),
+    )
+    .ok_or_else(|| format!("C18a fixed route unavailable: {start:?} -> {goal:?}"))?;
     for direction in path {
         let from = tile(client.world_spatial().actor_position)?;
         let expected =
