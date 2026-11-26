@@ -46,29 +46,11 @@ async fn raw(
     Ok((reply.payload, decoded))
 }
 
-fn peer_name(client: &DevClientSession, peer: &DevClientSession) -> TestResult<String> {
-    let identity = peer
-        .world_entities()
-        .ok_or("peer entity domain missing")?
-        .own_identity();
-    client
-        .world_entities()
-        .ok_or("watcher entity domain missing")?
-        .iter()
-        .find(|entity| &entity.entity.identity == identity)
-        .and_then(|entity| entity.display_name)
-        .ok_or("visible peer name missing")?
-        .as_str()
-        .map(str::to_owned)
-        .map_err(|e| format!("invalid peer name: {e:?}").into())
-}
-
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut watcher = connect_character(clients, 0x4b, 0).await?;
     let mut target = connect_character(clients, 0x4c, 1).await?;
-    watcher.service_liveness(Duration::from_millis(100)).await?;
-    target.service_liveness(Duration::from_millis(100)).await?;
-    let name = peer_name(&watcher, &target)?;
+    let name = super::full_row_s04a::peer_name(&mut watcher, &mut target).await?;
+    evidence("S04A_CLIENT_DIAG step=discover-target observed=served-player-name");
 
     let (added_bytes, added) = raw(&mut watcher, &request(wire::Operation::Add, 0, &name)).await?;
     if added.code != 1 || added.number == 0 {

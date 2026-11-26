@@ -163,7 +163,10 @@ fn view(result: &wire::ResultView, step: &str) -> TestResult<serde_json::Value> 
         .map_err(|error| format!("step={step} observed=invalid-view:{error}").into())
 }
 
-async fn peer_name(client: &mut DevClientSession, peer: &mut DevClientSession) -> TestResult<String> {
+pub(super) async fn peer_name(
+    client: &mut DevClientSession,
+    peer: &mut DevClientSession,
+) -> TestResult<String> {
     let identity = *peer
         .world_entities()
         .ok_or("step=discover-target observed=peer-entity-domain-missing")?
@@ -184,7 +187,9 @@ async fn peer_name(client: &mut DevClientSession, peer: &mut DevClientSession) -
         }
         let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
         if remaining.is_zero() {
-            let peer_visible = entities.iter().any(|entity| entity.entity.identity == identity);
+            let peer_visible = entities
+                .iter()
+                .any(|entity| entity.entity.identity == identity);
             return Err(format!(
                 "step=discover-target observed=visible-peer-name-missing need=served-player-name peer_visible={peer_visible} watcher={:?} peer={:?} named_capability={}",
                 client.world_spatial().actor_position,
