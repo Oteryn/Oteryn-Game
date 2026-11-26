@@ -669,10 +669,11 @@ class CloudRunSummaryTests(unittest.TestCase):
             cargo() {
                 touch replay-attempted
                 [[ "$E2E_ALL_CAPTURE_DIR" == "$PWD/captures" ]] || return 2
+                [[ "$E2E_P04_SESSION" == 01890f4c-3b2a-7c01-8d11-9a321b7c0004 ]] || return 2
                 [[ "$*" == *' -- --exact' ]] || return 2
                 printf '%s\n' "$test_output"
             }
-            marker='SEAM_EVIDENCE e2e_capture scenario=P04.client status=CAPTURED evidence=query'
+            marker='SEAM_EVIDENCE e2e_capture scenario=P04.client status=CAPTURED evidence=session=01890f4c-3b2a-7c01-8d11-9a321b7c0004;query'
             : > node.log
             if replay_p04_client node.log "$PWD/captures"; then exit 1; fi
             [[ ! -e replay-attempted ]] || exit 1

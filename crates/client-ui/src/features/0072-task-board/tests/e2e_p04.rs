@@ -7,8 +7,8 @@ use task_board::full::{Bounty, Reply, Weekly, decode_request, encode_reply};
 type Error = Box<dyn std::error::Error>;
 
 struct Captured {
-    query: Vec<u8>,
-    refused: Vec<u8>,
+    query: GatedCommandResult,
+    refused: GatedCommandResult,
     expected: String,
 }
 
@@ -60,8 +60,8 @@ fn fixture() -> Result<Captured, Error> {
     };
     let encode = |reply: &Reply| encode_reply(reply).map_err(|e| format!("{e:?}"));
     Ok(Captured {
-        query: encode(&reply(0))?,
-        refused: encode(&reply(3))?,
+        query: result(CommandStatus::Accepted, &encode(&reply(0))?),
+        refused: result(CommandStatus::Accepted, &encode(&reply(3))?),
         expected: "period=2913\npoints=40\nbounty_points=7\nsoulseals=2\nstarted=false\nkills=0\ndeliveries=0\nshop_count=1\nshop_first=0,1,25\nrefusal=3\n".into(),
     })
 }
@@ -71,10 +71,36 @@ fn captured() -> Result<Captured, Error> {
         return fixture();
     };
     let path = std::path::Path::new(&path);
+    let session = std::env::var("E2E_P04_SESSION")?;
+    let query = read_live_result(&path.join("p04-query.bin"), &session)?;
+    let refused = read_live_result(&path.join("p04-refused.bin"), &session)?;
+    assert_eq!(query.command_id.checked_add(1), Some(refused.command_id));
+    assert!(query.server_sequence > 0 && refused.server_sequence > query.server_sequence);
     Ok(Captured {
-        query: std::fs::read(path.join("p04-query.bin"))?,
-        refused: std::fs::read(path.join("p04-refused.bin"))?,
+        query,
+        refused,
         expected: std::fs::read_to_string(path.join("p04-expected.txt"))?,
+    })
+}
+
+fn read_live_result(path: &std::path::Path, session: &str) -> Result<GatedCommandResult, Error> {
+    let bytes = std::fs::read(path)?;
+    let newline = bytes
+        .iter()
+        .position(|&byte| byte == b'\n')
+        .ok_or("missing result header")?;
+    let mut fields = std::str::from_utf8(&bytes[..newline])?.split(' ');
+    assert_eq!(fields.next(), Some(session));
+    let command_id = fields.next().ok_or("missing command id")?.parse()?;
+    let server_sequence = fields.next().ok_or("missing server sequence")?.parse()?;
+    let status: u8 = fields.next().ok_or("missing command status")?.parse()?;
+    assert_eq!(status, CommandStatus::Accepted as u8);
+    assert_eq!(fields.next(), None);
+    Ok(GatedCommandResult {
+        command_id,
+        status: CommandStatus::Accepted,
+        server_sequence,
+        payload: bytes[newline + 1..].to_vec(),
     })
 }
 
@@ -108,10 +134,7 @@ fn e2e_p04_replays_query_and_refused_start_weekly() -> Result<(), Error> {
         decode_request(&query.payload).map_err(|e| format!("{e:?}"))?,
         task_board::full::Request::query()
     );
-    apply_full_result(
-        &mut panel,
-        &result(CommandStatus::Accepted, &captured.query),
-    );
+    apply_full_result(&mut panel, &captured.query);
     assert!(!panel.pending);
     assert_eq!(panel.feedback, None);
 
@@ -179,10 +202,7 @@ fn e2e_p04_replays_query_and_refused_start_weekly() -> Result<(), Error> {
     let start = full_request(&mut panel, FullIntent::StartWeekly(3)).ok_or("start request")?;
     let sent = decode_request(&start.payload).map_err(|e| format!("{e:?}"))?;
     assert_eq!((sent.action, sent.selection), (5, 3));
-    apply_full_result(
-        &mut panel,
-        &result(CommandStatus::Accepted, &captured.refused),
-    );
+    apply_full_result(&mut panel, &captured.refused);
     assert_eq!(
         panel.feedback,
         Some("The server refused: level too low for this difficulty")
@@ -190,13 +210,23 @@ fn e2e_p04_replays_query_and_refused_start_weekly() -> Result<(), Error> {
     let refused = panel.weekly.clone().ok_or("weekly state")?;
     assert_eq!(value(e, "refusal")?, "3");
     assert_eq!(refused.refusal.to_string(), value(e, "refusal")?);
-    assert_eq!(refused.weekly, weekly.weekly);
-    assert_eq!(refused.points, weekly.points);
-    assert!(
-        panel_text(&panel)
-            .ends_with("The server refused: level too low for this difficulty")
-    );
+    let mut unchanged = refused.clone();
+    unchanged.refusal = 0;
+    assert_eq!(unchanged, weekly);
+    assert!(panel_text(&panel).ends_with("The server refused: level too low for this difficulty"));
 
+    Ok(())
+}
+
+#[test]
+fn p04_invalid_results_preserve_the_confirmed_board() -> Result<(), Error> {
+    let captured = fixture()?;
+    let mut panel = TaskBoardPanel {
+        selected: true,
+        ..TaskBoardPanel::default()
+    };
+    apply_full_result(&mut panel, &captured.refused);
+    let refused = panel.weekly.clone().ok_or("weekly state")?;
     // Undecodable and rejected replies leave the confirmed board untouched.
     full_request(&mut panel, FullIntent::Refresh).ok_or("query request")?;
     apply_full_result(&mut panel, &result(CommandStatus::Accepted, &[0xff, 0x00]));

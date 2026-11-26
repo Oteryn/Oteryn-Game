@@ -1,5 +1,5 @@
 //! P04 client replay capture: real TASK_BOARD replies for the Query and a refused StartWeekly with
-//! a difficulty the board does not offer. The consumer is `apply_full_result` and `panel_text` in
+//! a difficulty above the character’s level. The consumer is `apply_full_result` and `panel_text` in
 //! `crates/client-ui/src/features/0072-task-board`.
 use super::*;
 use oteryn_dev_client::DevClientSession;
@@ -11,7 +11,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P04_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "P04_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -19,7 +21,7 @@ async fn send(
     client: &mut DevClientSession,
     action: u8,
     selection: u16,
-    name: &str,
+    name: Option<&str>,
 ) -> TestResult<Reply> {
     let payload = encode_request(&Request {
         action,
@@ -35,24 +37,35 @@ async fn send(
             &payload,
         )
         .await?;
-    if !matches!(
-        result.status,
-        CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) {
+    if result.status != CommandStatus::Accepted {
         return Err(format!("task-board action={action} status={:?}", result.status).into());
     }
-    capture(name, &result.payload);
+    let session = client.join_snapshot().game_session_id;
+    let mut captured = format!(
+        "{} {} {} {}\n",
+        uuid_text(session.as_bytes()),
+        result.command_id,
+        result.server_sequence,
+        result.status as u8,
+    )
+    .into_bytes();
+    captured.extend_from_slice(&result.payload);
+    if let Some(name) = name {
+        capture(name, &captured);
+    }
     decode_reply(&result.payload).map_err(|error| format!("reply decode: {error:?}").into())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x26).await?;
-    let initial = send(&mut client, 4, 0, "p04-query.bin").await?;
-    if initial.refusal != 0 || initial.shop.is_empty() {
+    let initial = send(&mut client, 4, 0, Some("p04-query.bin")).await?;
+    if initial.refusal != 0 || initial.shop.is_empty() || initial.weekly.started {
         return Err(format!("query refused or without shop: {initial:?}").into());
     }
-    let refused = send(&mut client, 5, 3, "p04-refused.bin").await?;
-    if refused.refusal == 0 || refused.weekly != initial.weekly {
+    let refused = send(&mut client, 5, 3, Some("p04-refused.bin")).await?;
+    let mut unchanged = refused.clone();
+    unchanged.refusal = 0;
+    if refused.refusal != 3 || unchanged != initial {
         return Err(format!("StartWeekly(3) was not refused unchanged: {refused:?}").into());
     }
     let offer = initial.shop.first().ok_or("shop offer")?;
@@ -72,11 +85,32 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         refused.refusal
     );
     capture("p04-expected.txt", expected.as_bytes());
-    Ok(expected.replace('\n', ";"))
+    let admitted = client.join_snapshot().game_session_id;
+    let session = uuid_text(admitted.as_bytes());
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("P04 client capture logout was refused".into());
+    }
+    drop(client);
+    let mut fresh = connect_world(clients, 0x26).await?;
+    if fresh.join_snapshot().game_session_id == admitted
+        || send(&mut fresh, 4, 0, None).await? != initial
+    {
+        return Err("P04 client refusal changed the board after readmission".into());
+    }
+    if fresh.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("P04 client verification logout was refused".into());
+    }
+    Ok(format!("session={session};{}", expected.replace('\n', ";")))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P04.client status=CAPTURED evidence={expected}"
         )),
