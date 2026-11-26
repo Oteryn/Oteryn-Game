@@ -385,7 +385,7 @@ pub(super) fn scenario_with_step(
                 return h.cleanup().await;
             }
             if matches!(extra, Extra::PortalStep) {
-                super::srx3_rotten_portal_step::exercise(&h, &mut owner, &admitted).await?;
+                super::srx3_rotten_portal_step::exercise(&h, &owner, &admitted).await?;
                 drop(owner);
                 drop(authority);
                 drop(seal);

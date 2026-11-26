@@ -1,0 +1,249 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.troll_sabotage_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jerom.lua:67-84"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/troll-sabotage/challenge",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "npc": "oteryn:npc.chief_grarkharok",
+      "trigger": "say",
+      "keywords": [
+        "kill",
+        "hurt",
+        "pain"
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "feather",
+        "swan",
+        "maiden"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "op": "eq",
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Grarkharok fears no human. Say what you came for!"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chief_grarkharok.lua:73-78"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/troll-sabotage/offer-help",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "npc": "oteryn:npc.chief_grarkharok",
+      "trigger": "say",
+      "keywords": [
+        "lady",
+        "queen",
+        "woman",
+        "cave",
+        "house"
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "feather",
+        "swan",
+        "maiden",
+        "kill",
+        "hurt",
+        "pain"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "op": "eq",
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You know a troll lady who might join my tribe?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chief_grarkharok.lua:79-82"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/troll-sabotage/ask-name",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "npc": "oteryn:npc.chief_grarkharok",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "feather",
+        "swan",
+        "maiden",
+        "kill",
+        "hurt",
+        "pain",
+        "lady",
+        "queen",
+        "woman",
+        "cave",
+        "house"
+      ],
+      "topics": [
+        2
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "op": "eq",
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Tell Grarkharok her name."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chief_grarkharok.lua:86-89"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/troll-sabotage/name",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "npc": "oteryn:npc.chief_grarkharok",
+      "trigger": "say",
+      "any_message": true,
+      "exclude_keywords": [
+        "cloak",
+        "feather",
+        "swan",
+        "maiden",
+        "kill",
+        "hurt",
+        "pain",
+        "lady",
+        "queen",
+        "woman",
+        "cave",
+        "house",
+        "yes"
+      ],
+      "topics": [
+        3
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "op": "eq",
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Good! Bring her to Grarkharok. Give her this necklace so she knows you come from me."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "value": 2
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i7754",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chief_grarkharok.lua:105-109"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/troll-sabotage/return-necklace",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "npc": "oteryn:npc.jerom",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "op": "eq",
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "value": 2
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i7754",
+          "op": "ge",
+          "count": 1
+        }
+      ],
+      "completes": true,
+      "reply": [
+        "My family's necklace! Now I can start over. Take this rope I found. You may have more use for it than I do."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i7754",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "value": 3
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i646",
+          "count": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jerom.lua:75-79"
+      ]
+    }
+  ]
+}

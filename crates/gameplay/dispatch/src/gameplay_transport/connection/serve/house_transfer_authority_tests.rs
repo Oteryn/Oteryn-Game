@@ -412,3 +412,180 @@ fn counted_move_checks_trade_reservation_before_reaching_writer() -> Result<(), 
         Ok(())
     })
 }
+
+struct StoreRetryAuthority {
+    inventory: CommandAuthority,
+    map_reads: Cell<usize>,
+}
+
+impl FreshAdmissionAuthority for StoreRetryAuthority {
+    async fn admit(
+        &self,
+        _: FreshAdmissionAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        Err(AdmissionRefusal::Rejected)
+    }
+
+    async fn house_scope_ack(&self, _: AdmittedSession) -> Result<Option<(u64, Vec<u8>)>, ()> {
+        Ok(Some((1, vec![1])))
+    }
+
+    async fn observe_character_inventory(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<crate::gameplay_transport::item_view::InventoryItems> {
+        self.inventory
+            .observe_character_inventory(actor, session)
+            .await
+    }
+
+    async fn observe_house_map(
+        &self,
+        _: AdmittedSession,
+        _: &mut crate::gameplay_transport::world_map::SessionMapView,
+        _: &mut SessionItemView,
+    ) -> Option<
+        Result<
+            Option<crate::gameplay_transport::world_map::MapUpdate>,
+            crate::gameplay_transport::world_map::MapViewError,
+        >,
+    > {
+        use crate::gameplay_transport::{item_view::ItemViewSnapshotDomain, world_map::MapUpdate};
+        let reads = self.map_reads.get();
+        self.map_reads.set(reads + 1);
+        (reads == 0).then(|| {
+            Ok(Some(MapUpdate::Snapshot(ItemViewSnapshotDomain {
+                domain_id: oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+                revision: 1,
+                snapshot_type: 1,
+                payload: vec![1],
+            })))
+        })
+    }
+
+    async fn store_command(
+        &self,
+        _: AdmittedSession,
+        _: u64,
+        kind: u32,
+        payload: Vec<u8>,
+    ) -> (CommandStatus, Vec<u8>) {
+        use oteryn_protocol_oteryn::store as wire;
+        let reply = match kind {
+            wire::COMMAND_TYPE_STORE_INBOX_CLAIM => wire::decode_inbox_claim_request(&payload)
+                .and_then(|claim| {
+                    wire::encode_claim_receipt(&wire::StoreClaimReceipt {
+                        operation_id: [1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16],
+                        fulfilment_unit_id: claim.fulfilment_unit_id,
+                        result: wire::StoreClaimCode::Committed,
+                        recovery_generation: 1,
+                        decided_at_unix_ms: 1000,
+                    })
+                }),
+            wire::COMMAND_TYPE_STORE_HISTORY_PAGE => Ok(vec![1]),
+            _ => return (CommandStatus::Rejected, Vec::new()),
+        };
+        reply.map_or((CommandStatus::Rejected, Vec::new()), |bytes| {
+            (CommandStatus::Accepted, bytes)
+        })
+    }
+}
+
+#[test]
+fn house_store_claim_retry_keeps_serving_during_map_read_failure() -> Result<(), String> {
+    run_command_test(|| async {
+        use oteryn_protocol_oteryn::{
+            ClientCommandValue, decode_command_result, encode_client_command, store as wire,
+        };
+        let (admitted, _) = command_fixture(&[
+            4,
+            oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
+            wire::CAPABILITY_STORE_V1,
+        ])?;
+        let authority = StoreRetryAuthority {
+            inventory: CommandAuthority {
+                reserved: false,
+                move_seen: Cell::new(None),
+            },
+            map_reads: Cell::new(0),
+        };
+        let (mut server, mut client) = tokio::io::duplex(1 << 16);
+        let serving = async {
+            let mut messages = None;
+            let _ = serve(
+                &mut server,
+                admitted,
+                &authority,
+                &authority,
+                &mut messages,
+                IDLE_LIVENESS,
+                &mut integrity::Integrity::default(),
+                false,
+            )
+            .await;
+            drop(server);
+        };
+        let driving = async {
+            let claim = wire::encode_inbox_claim_request(&wire::StoreInboxClaimRequest {
+                fulfilment_unit_id: "00000000-0000-7000-8000-000000000001".into(),
+            })
+            .map_err(|e| format!("{e:?}"))?;
+            let mut received = Vec::new();
+            for (command_id, command_type, payload) in [
+                (1, wire::COMMAND_TYPE_STORE_INBOX_CLAIM, claim.as_slice()),
+                (2, wire::COMMAND_TYPE_STORE_HISTORY_PAGE, &[]),
+            ] {
+                let frame = encode_client_command(
+                    1,
+                    &ClientCommandValue {
+                        command_id,
+                        command_type,
+                        payload,
+                    },
+                )
+                .map_err(|e| format!("{e:?}"))?;
+                // Queue both commands. The committed receipt must not sever House ingress.
+                write_frame(&mut client, &frame)
+                    .await
+                    .map_err(|e| e.to_string())?;
+            }
+            while let Ok(frame) = read_frame(&mut client).await {
+                let envelope = decode_wire_envelope(&frame).map_err(|e| format!("{e:?}"))?;
+                if envelope.message_type() != MessageType::CommandResult {
+                    continue;
+                }
+                let result =
+                    decode_command_result(envelope.payload()).map_err(|e| format!("{e:?}"))?;
+                assert_eq!(result.status, CommandStatus::Accepted);
+                if result.command_id == 1 {
+                    assert_eq!(
+                        wire::decode_claim_receipt(result.payload)
+                            .map_err(|e| format!("{e:?}"))?
+                            .result,
+                        wire::StoreClaimCode::Committed
+                    );
+                }
+                received.push(result.command_id);
+                if received.len() == 2 {
+                    break;
+                }
+            }
+            assert_eq!(
+                received,
+                [1, 2],
+                "the next House command must succeed after the committed retry"
+            );
+            drop(client);
+            Ok::<(), String>(())
+        };
+        let ((), result) = tokio::time::timeout(Duration::from_secs(3), async {
+            tokio::join!(serving, driving)
+        })
+        .await
+        .map_err(|e| e.to_string())?;
+        result?;
+        assert_eq!(authority.map_reads.get(), 1);
+        Ok(())
+    })
+}

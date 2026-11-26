@@ -24,6 +24,10 @@ pub(super) fn apply(position: TilePos, appearance: u16, house: u32, attrs: &mut 
         let key_doors: Capture = serde_json::from_str(include_str!(
             "../../../../../../tools/content-schema/world-authoring/samples/quest-key-door-bindings.json"
         )).ok()?;
+        let classic_quests: Capture = serde_json::from_str(include_str!(
+            "../../../../../../tools/content-schema/world-authoring/samples/classic-quest-startup.json"
+        )).ok()?;
+        capture.bindings.extend(classic_quests.bindings);
         capture.bindings.extend(key_doors.bindings);
         Some(capture)
     }) else {
@@ -84,6 +88,35 @@ mod tests {
             };
             apply(pos, appearance, 0, &mut conflicting);
             assert_eq!(conflicting.action, Some(42));
+        }
+    }
+
+    #[test]
+    fn classic_quest_startup_selectors_bind_only_the_donor_objects() {
+        for (x, y, floor, item, action, unique) in [
+            (31973, 32905, -11, 19387, Some(25018), None),
+            (31973, 32905, -10, 19387, Some(25018), None),
+            (32009, 32928, -9, 19387, Some(25018), None),
+            (32009, 32928, -10, 19387, Some(25018), None),
+            (32017, 32917, -10, 104, Some(25018), None),
+            (32017, 32918, -10, 104, Some(25018), None),
+            (31974, 32907, -8, 4285, Some(40001), None),
+            (32031, 32914, -8, 4285, Some(40001), None),
+            (32022, 32918, -10, 21572, Some(40002), None),
+            (33109, 32530, -3, 1928, Some(12105), None),
+            (33094, 32524, -1, 3263, None, Some(2285)),
+        ] {
+            let position = TilePos { x, y, floor };
+            let mut attrs = Attrs::default();
+            apply(position, item, 0, &mut attrs);
+            assert_eq!(
+                (attrs.action, attrs.unique),
+                (action, unique),
+                "{position:?}"
+            );
+            let mut unrelated = Attrs::default();
+            apply(position, item + 1, 0, &mut unrelated);
+            assert_eq!((unrelated.action, unrelated.unique), (None, None));
         }
     }
 

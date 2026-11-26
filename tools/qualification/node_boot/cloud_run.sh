@@ -41,7 +41,7 @@ summarize() {
 
   rows=$(awk '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=([[:alnum:]_.-]+\.full|P13\.client|P18\.client)$/ && $4 ~ /^status=(PASS|FAIL)$/ {
+      $3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ && $4 ~ /^status=(PASS|FAIL)$/ {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)
@@ -55,8 +55,17 @@ summarize() {
       if (tolower(reason) ~ /password|postgres:\/\/|postgresql:\/\/|secret|token|key=/) reason = ""
       gsub(/\|/, "_", reason)
       printf "%s|%s|%s\n", row, verdict, reason
+    }
+    $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
+      $3 ~ /^scenario=[[:alnum:]_.-]+\.client$/ && $4 ~ /^replay=[[:alnum:]_]+$/ &&
+      $5 ~ /^status=(PASS|FAIL)$/ {
+      reason = ($6 ~ /^cause=(capture-missing|replay-not-run|replay-failed|server-failed)$/ ? substr($6, 7) : "")
+      printf "%s|%s|%s\n", substr($3, 10), substr($5, 8), reason
     }' < "$log") || return 1
 
+  if [[ "$result" == NODE_BOOT_PASS ]] && grep -qE '^[^|]+\.client\|FAIL\|' <<< "$rows"; then
+    result=NODE_BOOT_FAIL
+  fi
   grep -aE '^NODE_BOOT_PORTS ([A-Z_]+=[0-9]+ ?)+$' "$log" | sort -u || true
   printf 'CLOUD_RUN group=%s result=%s seconds=%s\nROWS-BEGIN\n' "$group" "$result" "$seconds"
   [[ -z "$rows" ]] || printf '%s\n' "$rows"
@@ -66,62 +75,6 @@ summarize() {
     grep -aFw -- "$row" "$log" | grep -Ei 'GAP|Error|refus|DIAG' \
       | grep -vEi 'password|postgres://|postgresql://|secret|token|key=' | head -n 6
   done < <(awk -F '|' '$2 == "FAIL" && !seen[$1]++ { print $1 }' <<< "$rows")
-}
-
-selected_loyalty_replay() {
-  [[ "$1" == rows ]] || return 1
-  local batch=${OTERYN_E2E_ROW_BATCH:-} first length
-  [[ "$batch" =~ ^([0-9]{1,7}):([0-9]{1,7})$ ]] || return 1
-  first=$((10#${BASH_REMATCH[1]}))
-  length=$((10#${BASH_REMATCH[2]}))
-  local loyalty_row=169 # client_phases/world.rs, P13.client
-  (( first <= loyalty_row && loyalty_row < first + length ))
-}
-
-replay_loyalty_capture() {
-  local log=$1 capture_dir=$2 replay_log=$3
-  local test=loyalty_skills::e2e_p13::e2e_p13_replays_snapshot_and_malformed_query_rejection
-  local started=$SECONDS
-  if grep -q '^SEAM_EVIDENCE e2e_all scenario=P13\.client status=FAIL ' "$log"; then
-    return 1
-  fi
-  if grep -q '^SEAM_EVIDENCE e2e_capture scenario=P13\.client status=CAPTURED ' "$log" &&
-    E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact >"$replay_log" 2>&1 &&
-    grep -Fqx "test $test ... ok" "$replay_log"; then
-    printf 'SEAM_EVIDENCE e2e_all scenario=P13.client status=PASS seconds=%s evidence=live-capture-replayed\n' "$((SECONDS - started))" >>"$log"
-    return 0
-  fi
-  printf 'SEAM_EVIDENCE e2e_all scenario=P13.client status=FAIL seconds=%s evidence=client-replay-failed\n' "$((SECONDS - started))" >>"$log"
-  return 1
-}
-
-selected_forge_replay() {
-  [[ "$1" == rows ]] || return 1
-  # Match the Rust row selector, including "all" and usize bounds.
-  python3 - "${OTERYN_E2E_ROW_BATCH:-}" <<'PY_FORGE_BATCH'
-import re
-import sys
-
-batch = sys.argv[1]
-if batch == "all":
-    sys.exit(0)
-match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
-if match is None:
-    sys.exit(1)
-values = [value.lstrip("0") or "0" for value in match.groups()]
-limit = str(2 * sys.maxsize + 1)
-if any((len(value), value) > (len(limit), limit) for value in values):
-    sys.exit(1)
-first, length = map(int, values)
-forge_row = 174  # client_phases/world.rs, P18.client
-sys.exit(0 if 0 <= forge_row - first < length else 1)
-PY_FORGE_BATCH
-}
-
-require_forge_verdict() {
-  local log=$1
-  [[ $(grep -c '^SEAM_EVIDENCE e2e_all scenario=P18\.client status=' "$log") == 1 ]] &&
-    grep -Eq '^SEAM_EVIDENCE e2e_all scenario=P18\.client status=PASS (.* )?evidence=live-capture-replayed_session=' "$log"
 }
 
 if [[ ${1:-} == --summarize ]]; then
@@ -173,30 +126,23 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
-  capture_dir=
-  forge_replay=0
-  if selected_loyalty_replay "$group"; then
-    capture_dir=$(mktemp -d "$work_dir/$index-loyalty.XXXXXX") || blocked work_dir_unavailable
+  capture_env=()
+  if [[ "$group" == rows ]]; then
+    capture_dir=$(mktemp -d "$work_dir/captures.XXXXXX") || blocked capture_dir_unavailable
+    capture_env=(E2E_ALL_CAPTURE_DIR="$capture_dir")
   fi
-  if selected_forge_replay "$group"; then
-    forge_replay=1
-    if [[ -z "$capture_dir" ]]; then
-      capture_dir=$(mktemp -d "$work_dir/$index-forge.XXXXXX") || blocked work_dir_unavailable
-    fi
-  fi
-  (
-    [[ -z "$capture_dir" ]] || export E2E_ALL_CAPTURE_DIR="$capture_dir"
-    export NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group"
-    exec bash tools/qualification/node_boot/run.sh
-  ) > "$log" 2>&1 &
+  env "${capture_env[@]}" NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
+    bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
-  if [[ "$forge_replay" == 1 ]] && ! require_forge_verdict "$log"; then
-    status=1
-  fi
-  if selected_loyalty_replay "$group" && ! replay_loyalty_capture "$log" "$capture_dir" "$work_dir/$index-loyalty.log"; then
-    status=1
+  if [[ "$group" == rows ]]; then
+    E2E_ALL_CAPTURE_DIR="$capture_dir" python3 tools/qualification/node_boot/client_replay.py "$log" \
+      | tee -a "$log"
+    replay_pipeline=("${PIPESTATUS[@]}")
+    if (( replay_pipeline[0] != 0 || replay_pipeline[1] != 0 )); then
+      status=1
+    fi
   fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1

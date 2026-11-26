@@ -101,20 +101,20 @@ COIN_ADMISSION = {
 
 
 def refresh_registered_loot(root: Path, generated: dict[str, bytes]) -> None:
+    from build_full_spell_artifact import loot_item_profiles
     from cake_native_successor import loot_successor
-    import questpc7_hot_corpse_loot
-    import questpc7_marsh_loot
-    import questpc7_slug_loot
-    import questpc7_smith_corpse_loot
-    import world_change_loot_inputs
+    from srx1_profile_updates import PATH as item_updates
+    from starting_loadout_profiles import FRAGMENT
 
     item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
     creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
     loot_path = REPOSITORY_PINS["loot_tables"]
     canonical = spell_import.canonical_bytes
     # Build the closure from this registration's Creature and Item candidates.
+    items = loot_item_profiles(generated[item_path], generated.get(item_updates))
+    items["records"].extend(json.loads(generated[FRAGMENT])["records"])
     generated[loot_path] = loot_successor(
-        root, json.loads(generated[creature_path]), json.loads(generated[item_path])
+        root, json.loads(generated[creature_path]), items
     )
     manifest = json.loads(generated[NATIVE_MANIFEST])
     manifest["loot_tables"] = {
@@ -122,6 +122,17 @@ def refresh_registered_loot(root: Path, generated: dict[str, bytes]) -> None:
         "sha256": hashlib.sha256(generated[loot_path]).hexdigest(),
     }
     generated[NATIVE_MANIFEST] = canonical(manifest)
+    refine_loot_inputs(root, generated)
+
+
+def refine_loot_inputs(root: Path, generated: dict[str, bytes]) -> None:
+    import questpc7_hot_corpse_loot
+    import questpc7_marsh_loot
+    import questpc7_slug_loot
+    import questpc7_smith_corpse_loot
+    import world_change_loot_inputs
+
+    item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
     for overlay in (
         world_change_loot_inputs,
         questpc7_marsh_loot,
@@ -129,7 +140,7 @@ def refresh_registered_loot(root: Path, generated: dict[str, bytes]) -> None:
         questpc7_smith_corpse_loot,
         questpc7_hot_corpse_loot,
     ):
-        overlay.apply(root, generated, item_path, NATIVE_MANIFEST, canonical)
+        overlay.apply(root, generated, item_path, NATIVE_MANIFEST, spell_import.canonical_bytes)
 
 
 def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
@@ -831,6 +842,16 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
+    import wayland_boss_corpse_profiles
+
+    wayland_boss_corpse_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     # M25 preserves Crystal Ahau and the independently qualified Canary Mitmah
     # corpse policies; the Crystal room does not select another donor's Items.
     import m25_corpse_items
@@ -1286,6 +1307,16 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
+    import pegasus_feather_item_profile
+
+    pegasus_feather_item_profile.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
 
     import questpc5_parchment_profile
 
@@ -1694,6 +1725,16 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
+    import outfit_reward_item_profiles
+
+    outfit_reward_item_profiles.admit_native(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     # T174: qualify boot slots only after every shop/loot Item cohort is present.
     imbuement_item_profiles.complete_boots(
         root,
@@ -1746,6 +1787,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
     # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
     item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
+    import loot_slice_one
+    loot_slice_one.admit_native(root, generated, item_path, starting_loadout_profiles.FRAGMENT,
+                                provider_order, spell_import.canonical_bytes)
     items = json.loads(generated[item_path])
     energy = next(
         row
@@ -1763,16 +1807,28 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     protected_loot_yields.admit(root, items, provider_order)
     # These late Item admissions belong to the base provider. Apply their
     # verified top-order facts before deriving the separate SRX-1 supplement.
-    hard_items = [
+    robbery_creatures = native_goal_corpse_items.bank_robbery_creatures(root)
+    robbery_corpses, _ = native_goal_corpse_items.policies(root, creatures=robbery_creatures)
+    robbery_item_ids = robbery_corpses.keys() | native_goal_loot_items.selected(
+        root, robbery_creatures
+    )
+    late_item_keys = protected_loot_yields.ARBAZILOTH_HARD_ITEMS | {
+        f"oteryn:item.tibia.i{item_id}"
+        for item_id in robbery_item_ids | outfit_reward_item_profiles.SOURCE_ROWS.keys()
+    }
+    late_items = [
         row
         for row in items["records"]
-        if row["production_definition"]["production_key"]
-        in protected_loot_yields.ARBAZILOTH_HARD_ITEMS
+        if row["production_definition"]["production_key"] in late_item_keys
     ]
     house_top_order = json.loads(
         (root / house_decoration_actions.PROFILES).read_bytes()
     )
-    house_decoration_actions.apply_top_order(hard_items, house_top_order)
+    house_decoration_actions.apply_top_order(late_items, house_top_order)
+    import cloot2_item_admissions
+    cloot2_item_admissions.admit(root, items, provider_order)
+    import cloot3_item_profiles
+    cloot3_item_profiles.complete_records(root, items["records"], provider_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
     import forge_item_profiles
 
