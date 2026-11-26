@@ -296,9 +296,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             in_protection_zone,
         )
     }
-    /// One attempt of the release on the `Abandoned` path, with no retry: the client retries a
-    /// `BUSY`. A failure before the commit reads the durable row and settles the fence
-    /// (`settle_unended`) before `BUSY`, so no character write stays fenced.
+    /// Give pre-commit prerequisites the ordinary command retry window while retaining
+    /// this logout's transition token. Settle the durable row and fence before replying Busy
+    /// if a prerequisite still cannot complete.
     async fn release_logout(
         &self,
         admitted: AdmittedSession,
@@ -331,16 +331,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut hold = FenceHold::new(session, token);
         let mut settled_death = None;
         let mut kills = None;
-        let step = self
-            .release_attempt(
-                &admitted,
-                &store,
-                release,
-                &mut hold,
-                &mut settled_death,
-                &mut kills,
-            )
-            .await;
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        let step = loop {
+            let step = self
+                .release_attempt(
+                    &admitted,
+                    &store,
+                    release,
+                    &mut hold,
+                    &mut settled_death,
+                    &mut kills,
+                )
+                .await;
+            let ReleaseAttempt::Retry(stage) = step else {
+                break step;
+            };
+            operator_event(&format!("event=logout_release_retry stage={stage}"));
+            if !budget
+                .retries_unavailable(AdmissionRefusal::Unavailable)
+                .await
+            {
+                break step;
+            }
+        };
         Ok(match step {
             ReleaseAttempt::Done(GraceExpiryResult::Released) => {
                 LogoutReply::Result(LogoutResult::Accepted)
@@ -356,7 +369,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 operator_event("event=logout_unknown stage=release_attempt kind=unknown");
                 LogoutReply::Unknown
             }
-            ReleaseAttempt::Retry => match self.settle_unended(&store, actor, &mut hold).await {
+            ReleaseAttempt::Retry(_) => match self.settle_unended(&store, actor, &mut hold).await {
                 UnendedSettle::Lifted => {
                     operator_event("event=logout_busy stage=release_retry_lifted");
                     LogoutReply::Result(LogoutResult::Busy)
