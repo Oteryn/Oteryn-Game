@@ -227,6 +227,7 @@ async fn use_portal(
     landing: TilePos,
 ) -> TestResult {
     walk_to(client, world, at).await?;
+    let source = tile(client.world_spatial().actor_position)?;
     let target = object_target(world, at, 49948)?;
     let result = client
         .session_mut()
@@ -235,15 +236,27 @@ async fn use_portal(
     if result.status != CommandStatus::Accepted || result.disposition != UseDisposition::Committed {
         return Err(format!("Blue Valley portal USE at={at:?} result={result:?}").into());
     }
-    client.service_liveness(Duration::from_secs(1)).await?;
-    let observed = tile(client.world_spatial().actor_position)?;
-    if observed != landing {
-        return Err(format!(
-            "Blue Valley portal at={at:?} expected={landing:?} observed={observed:?}"
-        )
-        .into());
+    // USE returns at its command result. The normal visibility stream carries
+    // the committed relocation separately on the same connection.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    loop {
+        let observed = tile(client.world_spatial().actor_position)?;
+        if observed == landing {
+            evidence(&format!("W15D_PORTAL at={at:?} landing={landing:?}"));
+            return Ok(());
+        }
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if observed != source || remaining.is_zero() {
+            return Err(format!(
+                "Blue Valley portal at={at:?} expected={landing:?} observed={observed:?}"
+            )
+            .into());
+        }
+        client
+            .service_liveness(remaining.min(Duration::from_millis(250)))
+            .await?;
+        client.take_events();
     }
-    Ok(())
 }
 
 async fn start_pilgrimage(
