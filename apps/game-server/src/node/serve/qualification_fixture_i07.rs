@@ -132,7 +132,8 @@ pub(super) async fn seed(
                 ground: GroundPlacement {
                     spatial_position:
                         crate::durability::map_item_mint_audit::map_item_spatial_position(
-                            32369, 32238, -7,
+                            // Item custody uses the runtime floor, which is +7 at the town tile.
+                            32369, 32238, 7,
                         ),
                     corpse_ref: transaction_id.to_vec(),
                     map_revision: "qualification-v1".into(),
