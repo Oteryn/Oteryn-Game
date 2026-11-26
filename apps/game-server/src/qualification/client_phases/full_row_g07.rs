@@ -8,16 +8,16 @@
 //! 4. QUERY again: the rotated target must be listed with a newer revision (the state delta).
 //! 5. Log out, freshly admit, QUERY: the durable revision equals the one seen after the rotate.
 //!
-//! The production node-boot world exposes no player route that grants an owned house (ownership
-//! is only settled Control-side), so the catalogue is empty or refused and the row ends FAIL
-//! naming that precondition. It never provisions state.
+//! The shared G01 fixture settles the authored property through its owner. The journey
+//! proves ownership from the served catalogue before entering through the live doorway.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::house_rotation as wire;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(75), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(75), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "rotation-committed-and-durable".to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -85,8 +85,57 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+async fn enter_house(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+    use oteryn_dev_client::client_runtime::house_transfer as transfer;
+    let world = full_e2ef7::qualification_world(clients)?;
+    // Authored Upper Swamp Lane 4 entry is the tile outside its south-adjacent door.
+    let entrance = TilePos {
+        x: 32360,
+        y: 32252,
+        floor: -7,
+    };
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at == entrance
+    })
+    .ok_or("step=house-entry observed=no-route-to-authored-entrance")?;
+    walk(client, world, &path).await?;
+    evidence("G07_CHECK step=authored-house-entrance status=PASS");
+    let request = transfer::encode_house_transfer_intent(&transfer::HouseTransferIntent {
+        exit: false,
+        house: full_row_g01::HOUSE.into(),
+    })
+    .map_err(|error| format!("step=house-entry encoding={error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            transfer::CAPABILITY_HOUSE_TRANSFER_V1,
+            transfer::COMMAND_TYPE_HOUSE_TRANSFER,
+            &request,
+        )
+        .await?;
+    let ack = transfer::decode_house_transfer_ack(&reply.payload).map_err(|error| {
+        format!(
+            "step=house-entry status={:?} decode={error:?}",
+            reply.status
+        )
+    })?;
+    if reply.status != CommandStatus::Accepted || ack.house.as_deref() != Some(full_row_g01::HOUSE)
+    {
+        return Err("step=house-entry observed=missing-authorized-house-scope".into());
+    }
+    evidence("G07_CHECK step=house-transfer status=PASS");
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xc9).await?;
+    character_prep::declare_seeded(
+        "G07",
+        "settled authored house",
+        "furniture scope requires an owner",
+    );
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_G01_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    let mut client = full_row_g01::prepare_owned_house(clients, 0xc9).await?;
     if !client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1)
@@ -98,6 +147,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    enter_house(&mut client, clients).await?;
     let query = first_entry(&mut client).await;
     let entry = match query {
         Ok(Some(entry)) => entry,
@@ -123,7 +173,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xca).await?;
+    let mut fresh = connect_character(clients, 0xca, 0).await?;
+    enter_house(&mut fresh, clients).await?;
     let durable = first_entry_with(&mut fresh, &key).await;
     logout(&mut fresh).await?;
     if durable? != after {

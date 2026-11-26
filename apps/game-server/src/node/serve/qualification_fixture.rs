@@ -67,6 +67,7 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
         "f5-c13" => Some(("sorcerer", 200)),
         "f5-c18a" => Some(("sorcerer", 1)),
         "f5-c17d" => Some(("knight", 20)),
+        "house-g01-build" => Some(("sorcerer", 20)),
         _ => None,
     }
 }
@@ -83,7 +84,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let allowed = allowed
         || spell_build(profile).is_some()
         || named_item(profile).is_some()
-        || profile == "premium";
+        || matches!(profile, "house-g01" | "premium");
     allowed.then_some((session, profile))
 }
 
@@ -743,6 +744,62 @@ async fn prepare_build(
             != super::super::uuid_bytes(&config.scope.channel_id)
     {
         return Err("qualification scope mismatch".into());
+    }
+    #[cfg(feature = "qualification-spawn")]
+    if matches!(profile, "house-g01" | "house-g01-build") {
+        if current.session_state() != crate::foundation::GameSessionState::Active
+            || current.current_transport().is_none()
+            || !config
+                .premium_activation
+                .as_ref()
+                .is_some_and(|activation| activation.activation_id == "node-boot-fixture-premium")
+        {
+            return Err("house fixture requires an active disposable admission".into());
+        }
+        let character = crate::domain::CharacterId::from_bytes(
+            *current.current_character_lease().character_id().as_bytes(),
+        )
+        .map_err(qualification_build::debug)?;
+        let record = qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            qualification_build::authority_busy,
+            async || root.read_current_character(authority, character).await,
+        )
+        .await
+        .map_err(qualification_build::debug)?;
+        let account = *record.account_id.as_bytes();
+        if uuid_text(&account) != "01934f10-7c00-7000-8000-000000000021" {
+            return Err("house fixture account mismatch".into());
+        }
+        if profile == "house-g01" {
+            let gate = premium.ok_or("qualification Premium coordinator absent")?;
+            if gate.premium_gate(account).await.require().is_err() {
+                grant_premium(root, Some(gate), account, deadline).await?;
+            }
+            use crate::durability::house_ownership::{
+                HouseOwnershipOutcome, HouseSettlementRequest,
+            };
+            let auction = super::super::uuid_bytes("01934f10-7c04-7021-805b-3b1122334491")
+                .ok_or("house fixture auction identity")?;
+            let request = HouseSettlementRequest {
+                world: scope.world_id(),
+                house_key: "oteryn:content.house.upper_swamp_lane_4".into(),
+                auction,
+                step: 0,
+            };
+            let outcome = root
+                .house_settlement(authority, proof, gate, request)
+                .await
+                .map_err(|error| format!("house fixture settlement: {error:?}"))?;
+            if !matches!(
+                outcome,
+                HouseOwnershipOutcome::Applied | HouseOwnershipOutcome::Replayed
+            ) {
+                return Err(format!("house fixture settlement: {outcome:?}").into());
+            }
+            return Ok(());
+        }
     }
     #[cfg(feature = "qualification-spawn")]
     if let Some(item) = named_item(profile) {
