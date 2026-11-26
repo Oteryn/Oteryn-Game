@@ -1,7 +1,7 @@
 //! BOOSTED-1: the committed World/server-save choice shared by queries, kills and home spawns.
 use super::{ComposedFreshAdmission, connection::AdmittedSession, guild_intent::GuildReply};
 use crate::content::ProjectV2AuthoringProfileData;
-use crate::durability::daily_boost::DailyBoostBinding;
+use crate::durability::{DurabilityError, daily_boost::DailyBoostBinding};
 use crate::foundation::RuntimeScopeRefV1;
 use oteryn_protocol_oteryn::daily_boost as wire;
 
@@ -72,15 +72,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) async fn initialize_daily_boost(&self) -> Result<(), ()> {
-        self.load_daily_boost(false).await
+        self.load_daily_boost(false).await.map_err(|_| ())
     }
 
-    async fn load_daily_boost(&self, refresh: bool) -> Result<(), ()> {
+    async fn load_daily_boost(&self, refresh: bool) -> Result<(), DurabilityError> {
         let Some(map) = self.bundle_map() else {
             return Ok(());
         };
         let mut runtime = self.runtime.lock().await;
-        runtime.owner_fence().map_err(|_| ())?;
+        runtime.owner_fence().map_err(|_| DurabilityError::Unavailable)?;
         if self
             .active_generation
             .and_then(crate::content::ActiveGeneration::native_gameplay)
@@ -88,7 +88,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 native.source_digest() != runtime.content_pin().server_artifact_digest()
             })
         {
-            return Err(());
+            return Err(DurabilityError::Unavailable);
         }
 
         if !refresh
@@ -104,7 +104,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(());
         }
         drop(runtime);
-        let permit = self.spell_lane_permit().await.ok_or(())?;
+        let permit = self.spell_lane_permit().await.ok_or(DurabilityError::Unavailable)?;
         runtime = self.runtime.lock().await;
         let binding = runtime.binding();
         let selection = self
@@ -121,9 +121,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 pools,
             )
-            .await
-            .map_err(|_| ())?;
-        runtime.install_daily_boost(selection).map_err(|_| ())
+            .await?;
+        runtime.install_daily_boost(selection).map_err(|_| DurabilityError::Unavailable)
     }
 
     pub(super) async fn daily_boost_wire(
@@ -148,8 +147,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GuildReply::Rejected;
         }
-        if self.load_daily_boost(true).await.is_err() {
-            return GuildReply::Unavailable;
+        match self.load_daily_boost(true).await {
+            Ok(()) => {}
+            // The root refused checkout before this query could read or write.
+            Err(DurabilityError::RootUnavailable) => return GuildReply::Rejected,
+            Err(_) => return GuildReply::Unavailable,
         }
         let runtime = self.runtime.lock().await;
         if runtime.owner_fence().is_err()
