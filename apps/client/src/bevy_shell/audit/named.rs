@@ -30,6 +30,7 @@ pub(in crate::bevy_shell) struct NamedControls<'w, 's> {
         ),
     >,
     hierarchy: Hierarchy<'w, 's>,
+    checked: Query<'w, 's, (Entity, &'static Name), With<bevy::ui::Checked>>,
     focus: Option<Res<'w, InputFocus>>,
     full_options: Option<Res<'w, crate::bevy_shell::game_ui::options::Installed>>,
 }
@@ -39,6 +40,13 @@ impl NamedControls<'_, '_> {
     }
     pub(super) fn full_options(&self) -> bool {
         self.full_options.is_some()
+    }
+    pub(super) fn options_page(&self) -> Option<&'static str> {
+        self.checked.iter().find_map(|(entity, name)| {
+            let id = name.as_str().strip_prefix("options.page.")?;
+            let page = OPTION_PAGES.iter().copied().find(|page| *page == id)?;
+            self.shown(entity, "options.dialog").map(|_| page)
+        })
     }
     pub(super) fn bounds(&self, scale: f32) -> Vec<Bounds> {
         let mut controls = BTreeMap::new();
@@ -283,4 +291,25 @@ const IDS: &[&str] = &[
     "ui_sound.raid",
     "ui_sound.system",
     "ui_sound.vip",
+];
+
+// Existing source page IDs from the options navigation projection.
+const OPTION_PAGES: &[&str] = &[
+    "ActionBars",
+    "Basic",
+    "BattleSounds",
+    "Console",
+    "Controls",
+    "Diagnostics",
+    "Effects",
+    "GameWindow",
+    "Gameplay",
+    "GeneralHotkeys",
+    "Graphics",
+    "Hud",
+    "Interface",
+    "Misc",
+    "Screenshots",
+    "Sound",
+    "UiSounds",
 ];
