@@ -216,10 +216,7 @@ async fn rejoin(client: &mut DevClientSession, clients: &SeamClients<'_>) -> Tes
     Ok(())
 }
 
-fn decode_lubo_window(
-    selected: &[u32],
-    payload: &[u8],
-) -> TestResult<npc::NpcTradeWindow> {
+fn decode_lubo_window(selected: &[u32], payload: &[u8]) -> TestResult<npc::NpcTradeWindow> {
     super::super::full_row_i14::decode_trade_window(selected, payload)
 }
 
@@ -228,7 +225,13 @@ fn lubo_accepts_negotiated_trade_details() -> TestResult {
     use oteryn_protocol_oteryn::trade_details::{CAPABILITY_TRADE_DETAILS_V1, NpcQuoteDetails};
 
     let mut window = npc::NpcTradeWindow {
-        open: Some((oteryn_dev_client::EntityRef { identity: [1; 16], generation: 1 }, 9)),
+        open: Some((
+            oteryn_dev_client::EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            9,
+        )),
         offers: vec![npc::NpcOffer {
             item_definition_ref: 42,
             side: npc::NpcTradeSide::Buy,
@@ -240,10 +243,16 @@ fn lubo_accepts_negotiated_trade_details() -> TestResult {
     let legacy = npc::encode_npc_trade_window(&window)
         .map_err(|error| format!("legacy trade fixture: {error:?}"))?;
     assert_eq!(decode_lubo_window(&[], &legacy)?, window);
-    window.details.push(NpcQuoteDetails { name: "pick".into(), maximum_quantity: 2 });
+    window.details.push(NpcQuoteDetails {
+        name: "pick".into(),
+        maximum_quantity: 2,
+    });
     let extended = npc::encode_npc_trade_window_for(&window, true)
         .map_err(|error| format!("extended trade fixture: {error:?}"))?;
-    assert_eq!(decode_lubo_window(&[CAPABILITY_TRADE_DETAILS_V1], &extended)?, window);
+    assert_eq!(
+        decode_lubo_window(&[CAPABILITY_TRADE_DETAILS_V1], &extended)?,
+        window
+    );
     Ok(())
 }
 

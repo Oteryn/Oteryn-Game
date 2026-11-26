@@ -42,10 +42,12 @@ async fn look(
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let identity = character_prep::dedicated_character(clients, "NODE_BOOT_I03_ACCOUNT").await?;
     let clients = &identity.clients(clients);
-    let spellbook = provisioning::item_reference(&provisioning::item_index()?, 3059)?;
+    let items = provisioning::item_index()?;
+    let spellbook = provisioning::item_reference(&items, 3059)?;
+    let parchment = provisioning::item_reference(&items, 2814)?;
     character_prep::declare_seeded(
         "I03.full",
-        "one spellbook (3059)",
+        "one spellbook (3059) and one blank parchment (2814)",
         "precondition for spellbook LOOK",
     );
     let mut setup = connect_character(clients, 0xb3, 0).await?;
@@ -56,11 +58,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "item-3059-1".into(),
     )
     .await?;
-    if setup.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=spellbook-fixture observed=logout-refused".into());
-    }
+    request_fixture_control(
+        uuid_text(setup_session.as_bytes()),
+        "--profile",
+        "item-2814-1".into(),
+    )
+    .await?;
+    require_logout(&mut setup, "fixture").await?;
     drop(setup);
     let mut client = connect_character(clients, 0xb3, 0).await?;
     if client.join_snapshot().game_session_id == setup_session {
@@ -114,7 +118,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(bytes.clone(), &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let world = load_world(
+        bytes.clone(),
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
     let start = tile(client.world_spatial().actor_position)?;
     let mut readable = Vec::new();
     oteryn_world_bundle::bundle::visit(&bytes, |_, sector| {
@@ -125,9 +134,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             if start.x.abs_diff(tile.x) > 160 || start.y.abs_diff(tile.y) > 160 {
                 continue;
             }
-            let at = TilePos { x: tile.x, y: tile.y, floor: sector.floor };
+            let at = TilePos {
+                x: tile.x,
+                y: tile.y,
+                floor: sector.floor,
+            };
             for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
-                if let Some(text) = item.attrs.text.as_ref().filter(|text| !text.is_empty() && text.len() <= 256)
+                if let Some(text) = item
+                    .attrs
+                    .text
+                    .as_ref()
+                    .filter(|text| !text.is_empty() && text.len() <= 256)
                     && let Ok(ordinal) = u8::try_from(ordinal)
                     && let Some(key) = crate::map::view::placement_key(at, ordinal)
                 {
@@ -144,7 +161,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     for (index, (at, _, _)) in readable.iter().enumerate() {
         for x in at.x.saturating_sub(1)..=at.x.saturating_add(1) {
             for y in at.y.saturating_sub(1)..=at.y.saturating_add(1) {
-                let approach = TilePos { x, y, floor: at.floor };
+                let approach = TilePos {
+                    x,
+                    y,
+                    floor: at.floor,
+                };
                 if distance(approach, *at) == Some(1) {
                     approaches.entry(approach).or_insert(index);
                 }
@@ -153,8 +174,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let path = route(world, start, |pos| approaches.contains_key(&pos))
         .ok_or("step=map-reading missing=reachable-authored-text-placement")?;
-    evidence(&format!("I03_CHECK near-map-reading walk_steps={}", path.len()));
-    walk(&mut client, world, &path).await?;
+    evidence(&format!(
+        "I03_CHECK near-map-reading walk_steps={}",
+        path.len()
+    ));
+    walk_once(&mut client, world, &path).await?;
     let arrived = tile(client.world_spatial().actor_position)?;
     let &(at, key, ref text) = approaches
         .get(&arrived)
@@ -162,34 +186,42 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .ok_or("step=map-reading missing=authored-text-at-arrival")?;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    let target = wire::ItemLookTarget::WorldObject(oteryn_protocol_oteryn::world_object::WorldObjectTarget {
-        placement,
-        expected_revision: 0,
-    });
+    let target = wire::ItemLookTarget::WorldObject(
+        oteryn_protocol_oteryn::world_object::WorldObjectTarget {
+            placement,
+            expected_revision: 0,
+        },
+    );
     let near = look(&mut client, target.clone()).await?;
-    if near.0 != CommandStatus::Accepted || !matches!(&near.1, wire::ItemLookResult::Text(value) if reading_matches(value, text)) {
+    if near.0 != CommandStatus::Accepted
+        || !matches!(&near.1, wire::ItemLookResult::Text(value) if reading_matches(value, text))
+    {
         return Err(format!("step=near-map-reading position={at:?} observed={near:?}").into());
     }
     let close = tile(client.world_spatial().actor_position)?;
     let far_path = route(world, close, |pos| distance(pos, at) == Some(5))
         .ok_or("step=far-map-reading missing=route-to-five-tile-reading-distance")?;
-    walk(&mut client, world, &far_path).await?;
+    walk_once(&mut client, world, &far_path).await?;
     let far = look(&mut client, target.clone()).await?;
-    if far.0 != CommandStatus::Accepted || !matches!(&far.1, wire::ItemLookResult::Text(value) if value.contains("\nYou are too far away to read it") && !value.contains("\nYou read: ")) {
+    if far.0 != CommandStatus::Accepted
+        || !matches!(&far.1, wire::ItemLookResult::Text(value) if value.contains("\nYou are too far away to read it") && !value.contains("\nYou read: "))
+    {
         return Err(format!("step=far-map-reading position={at:?} observed={far:?}").into());
     }
     let expected = expected_spellbook(&mut client).await?;
     let book = look(&mut client, wire::ItemLookTarget::Item(handle)).await?;
-    if book.0 != CommandStatus::Accepted || !matches!(&book.1, wire::ItemLookResult::Text(value) if spellbook_matches(value, &expected)) {
+    if book.0 != CommandStatus::Accepted
+        || !matches!(&book.1, wire::ItemLookResult::Text(value) if spellbook_matches(value, &expected))
+    {
         return Err(format!("step=spellbook-look observed={book:?}").into());
     }
+    let document = write_and_look(&mut client, parchment).await?;
     let from = tile(client.world_spatial().actor_position)?;
-    let back = route(world, from, |pos| pos == close).ok_or("step=relog-map-reading missing=return-route")?;
-    walk(&mut client, world, &back).await?;
+    let back = route(world, from, |pos| pos == close)
+        .ok_or("step=relog-map-reading missing=return-route")?;
+    walk_once(&mut client, world, &back).await?;
     let session = client.join_snapshot().game_session_id;
-    if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("step=relog-map-reading observed=logout-refused".into());
-    }
+    require_logout(&mut client, "relog").await?;
     drop(client);
     let mut fresh = connect_character(clients, 0xb4, 0).await?;
     if fresh.join_snapshot().game_session_id == session || look(&mut fresh, target).await? != near {
@@ -199,27 +231,125 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if look(&mut fresh, wire::ItemLookTarget::Item(handle)).await? != book {
         return Err("step=relog-spellbook observed=spell-list-changed".into());
     }
-    evidence(&format!("I03_CHECK map-reading-and-spellbook near-far-relog PASS position={at:?}"));
-    if fresh.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("step=relog-spellbook observed=final-logout-refused".into());
+    evidence(&format!(
+        "I03_CHECK map-reading-and-spellbook near-far-relog PASS position={at:?}"
+    ));
+    let handle = carried_handle(&fresh, parchment)?;
+    if look(&mut fresh, wire::ItemLookTarget::Item(handle)).await? != document {
+        return Err("step=relog-document observed=reading-changed".into());
     }
-    Err("step=carried-document missing=ordinary-written-document-acquisition-and-relog-comparison owner=crates/gameplay/dispatch/src/gameplay_transport/item_look.rs:565".into())
+    evidence("I03_CHECK carried-document blank-write-look-relog PASS");
+    require_logout(&mut fresh, "final").await
 }
 
-fn carried_handle(client: &DevClientSession, definition: std::num::NonZeroU32) -> TestResult<NonZeroU64> {
-    client.inventory()
-        .and_then(|inventory| inventory.entries.iter().find(|entry| entry.item_definition_ref == definition))
+async fn walk_once(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let before = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, before, direction).ok_or("missing route destination")?;
+        let reply = client.step(direction).await?;
+        let after = tile(client.world_spatial().actor_position)?;
+        if reply.disposition != StepDisposition::Moved
+            || reply.world_spatial_delta.is_none()
+            || after != expected
+            || after == before
+        {
+            return Err(format!(
+                "LOOK route {direction:?}: expected={expected:?} observed={after:?} reply={reply:?}"
+            )
+            .into());
+        }
+    }
+    Ok(())
+}
+
+async fn require_logout(client: &mut DevClientSession, step: &str) -> TestResult {
+    let (result, detail, _, _) = logout_once(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step={step} logout-refused: {detail}").into());
+    }
+    Ok(())
+}
+
+async fn write_and_look(
+    client: &mut DevClientSession,
+    parchment: std::num::NonZeroU32,
+) -> TestResult<(CommandStatus, wire::ItemLookResult)> {
+    use oteryn_protocol_oteryn::mail;
+
+    const TEXT: &str = "Meet by the bridge. Bring a torch.";
+    let handle = carried_handle(client, parchment)?;
+    let target = wire::ItemLookTarget::Item(handle);
+    let (status, blank) = look(client, target.clone()).await?;
+    require_mechanic_acceptance(status, "blank-document-look")?;
+    let wire::ItemLookResult::Text(blank) = blank else {
+        return Err("blank-document LOOK refused".into());
+    };
+    if !blank.contains("parchment") || blank.contains(TEXT) || blank.contains("\nYou read: ") {
+        return Err(format!("unexpected blank-document description: {blank:?}").into());
+    }
+
+    let payload = mail::encode_intent(&mail::MailIntent::WriteText {
+        item_handle: handle.get(),
+        text: TEXT.into(),
+    })
+    .map_err(|error| format!("document write encode: {error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            u32::from(mail::CAPABILITY_MAIL_V1),
+            u32::from(mail::COMMAND_TYPE_MAIL),
+            &payload,
+        )
+        .await?;
+    require_mechanic_acceptance(reply.status, "document-write")?;
+    if reply.payload != [mail::MailOutcome::TextWritten as u8] {
+        return Err(format!("document write refused: {:?}", reply.payload).into());
+    }
+
+    let expected = (
+        CommandStatus::Accepted,
+        wire::ItemLookResult::Text(format!("{blank}\nYou read: {TEXT}")),
+    );
+    let observed = look(client, target).await?;
+    if observed != expected {
+        return Err(
+            format!("written document LOOK expected={expected:?} observed={observed:?}").into(),
+        );
+    }
+    Ok(observed)
+}
+
+fn carried_handle(
+    client: &DevClientSession,
+    definition: std::num::NonZeroU32,
+) -> TestResult<NonZeroU64> {
+    client
+        .inventory()
+        .and_then(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .find(|entry| entry.item_definition_ref == definition)
+        })
         .map(|entry| entry.handle)
         .ok_or_else(|| "step=spellbook-look observed=missing-carried-handle".into())
 }
 
 fn reading_matches(value: &str, authored: &str) -> bool {
-    value.split_once("\nYou read: ").is_some_and(|(_, text)| text == authored)
+    value
+        .split_once("\nYou read: ")
+        .is_some_and(|(_, text)| text == authored)
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
+            .await;
     let evidence_text = match result {
         Ok(Ok(())) => None,
         Ok(Err(error)) => Some(error.to_string()),
@@ -243,33 +373,58 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     ));
 }
 
-
 async fn expected_spellbook(client: &mut DevClientSession) -> TestResult<String> {
     use crate::spell::{Carrier, ManaCost, Vocation};
     use oteryn_protocol_oteryn::cyclopedia_character as cyclopedia;
     use std::fmt::Write as _;
 
     let request = [cyclopedia::CharacterTab::GeneralStats as u8, 0, 0, 1];
-    let reply = client.session_mut().gated_command(cyclopedia::CAPABILITY_CYCLOPEDIA_CHARACTER_V1, 388, &request).await?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            cyclopedia::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            388,
+            &request,
+        )
+        .await?;
     if reply.status != CommandStatus::Accepted {
         return Err(format!("step=spellbook-vocation observed={:?}", reply.status).into());
     }
     let vocation_id = general_stats::validate(&reply.payload, general_stats::selected(client))?
         .ok_or("step=spellbook-vocation missing=served-vocation-id")?;
     let vocation = [
-        "none", "druid", "elder_druid", "sorcerer", "master_sorcerer", "knight",
-        "elite_knight", "paladin", "royal_paladin", "monk", "exalted_monk",
-    ].into_iter().find(|key| cyclopedia::vocation_id(key) == Some(vocation_id))
-        .and_then(Vocation::from_key).ok_or("step=spellbook-vocation observed=unknown-vocation-id")?;
+        "none",
+        "druid",
+        "elder_druid",
+        "sorcerer",
+        "master_sorcerer",
+        "knight",
+        "elite_knight",
+        "paladin",
+        "royal_paladin",
+        "monk",
+        "exalted_monk",
+    ]
+    .into_iter()
+    .find(|key| cyclopedia::vocation_id(key) == Some(vocation_id))
+    .and_then(Vocation::from_key)
+    .ok_or("step=spellbook-vocation observed=unknown-vocation-id")?;
 
     let catalogue = native_spell_book()?;
-    let mut entries: Vec<_> = catalogue.spells.iter().enumerate()
-        .filter(|(index, spell)| !catalogue.inactive_aliases.contains(index)
-            && spell.level > 0 && spell.vocations.contains(&vocation))
+    let mut entries: Vec<_> = catalogue
+        .spells
+        .iter()
+        .enumerate()
+        .filter(|(index, spell)| {
+            !catalogue.inactive_aliases.contains(index)
+                && spell.level > 0
+                && spell.vocations.contains(&vocation)
+        })
         .filter_map(|(_, spell)| match &spell.carrier {
             Carrier::Instant { words, .. } => Some((spell, words)),
             Carrier::Rune { .. } => None,
-        }).collect();
+        })
+        .collect();
     entries.sort_by_key(|(spell, _)| spell.level);
     let mut expected = String::new();
     let mut level = None;
@@ -301,16 +456,27 @@ mod tests {
     fn review_second_spellbook_rejects_truncated_wrong_and_incomplete_lists() {
         let expected = "Spells for Level 8\n  alpha - A : 20\n  beta - B : 50%\n\n";
         assert!(spellbook_matches(expected, expected));
-        assert!(!spellbook_matches("Spells for Level 8\n  alpha - A : 20\n\n", expected));
+        assert!(!spellbook_matches(
+            "Spells for Level 8\n  alpha - A : 20\n\n",
+            expected
+        ));
         assert!(!spellbook_matches(&expected.replace("50%", "50"), expected));
-        assert!(!spellbook_matches(&expected.replace("beta", "gamma"), expected));
+        assert!(!spellbook_matches(
+            &expected.replace("beta", "gamma"),
+            expected
+        ));
     }
-
 
     #[test]
     fn authored_reading_requires_complete_text() {
-        assert!(reading_matches("You see a sign.\nYou read: North\nEast", "North\nEast"));
-        assert!(!reading_matches("You see a sign.\nYou read: North", "North\nEast"));
+        assert!(reading_matches(
+            "You see a sign.\nYou read: North\nEast",
+            "North\nEast"
+        ));
+        assert!(!reading_matches(
+            "You see a sign.\nYou read: North",
+            "North\nEast"
+        ));
         assert!(!reading_matches("You see North\nEast", "North\nEast"));
     }
 
