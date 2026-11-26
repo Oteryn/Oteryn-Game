@@ -691,6 +691,7 @@ async fn assign_minted_gold_pouch(
                     action: QuickLootAction::Assign,
                     corpse: None,
                     selected_item: None,
+                    review_filters: false,
                     category: None,
                     recipient: Some(QuickLootRecipient::GoldPouch),
                     recipient_id: Some(pouch),
