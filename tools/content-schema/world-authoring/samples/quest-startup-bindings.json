@@ -204,6 +204,18 @@
     },
     {
       "position": [
+        32234,
+        32140,
+        9
+      ],
+      "item": 6262,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
+    },
+    {
+      "position": [
         32277,
         32420,
         10
@@ -264,6 +276,18 @@
     },
     {
       "position": [
+        32554,
+        32860,
+        9
+      ],
+      "item": 5291,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
+    },
+    {
+      "position": [
         32573,
         32121,
         7
@@ -285,6 +309,54 @@
       "action": 101,
       "source": "data-global/startup/tables/tile_pick.lua",
       "line": 6
+    },
+    {
+      "position": [
+        32874,
+        31974,
+        12
+      ],
+      "item": 5102,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
+    },
+    {
+      "position": [
+        32875,
+        31974,
+        12
+      ],
+      "item": 5102,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
+    },
+    {
+      "position": [
+        32909,
+        31074,
+        7
+      ],
+      "item": 1680,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
+    },
+    {
+      "position": [
+        32910,
+        31088,
+        7
+      ],
+      "item": 1678,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
     },
     {
       "position": [
@@ -813,6 +885,18 @@
       "action": 35020,
       "source": "data-global/startup/tables/teleport.lua",
       "line": 596
+    },
+    {
+      "position": [
+        33775,
+        31699,
+        8
+      ],
+      "item": 9565,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
     }
   ]
 }

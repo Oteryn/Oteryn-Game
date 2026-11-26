@@ -3,10 +3,10 @@ use super::TestResult;
 
 #[test]
 fn questpc6_fibula_keys_3940_unlocks_source_entrance_and_retains_custody() -> TestResult {
-    super::m06_keys_fixtures::source_key_door(32190, 32432, -8, 3940)
+    super::m06_keys_fixtures::source_key_door(32190, 32432, -8, 1631, 3940)
 }
 
 #[test]
 fn questpc6_fibula_keys_3980_unlocks_source_cavern_and_retains_custody() -> TestResult {
-    super::m06_keys_fixtures::source_key_door(32277, 32420, -10, 3980)
+    super::m06_keys_fixtures::source_key_door(32277, 32420, -10, 1631, 3980)
 }
