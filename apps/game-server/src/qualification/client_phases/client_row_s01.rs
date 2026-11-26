@@ -90,6 +90,27 @@ async fn capture_reply(
     Ok((name, reply.payload))
 }
 
+async fn check_peer_shield(
+    observer: &mut DevClientSession,
+    target: EntityRef,
+    expected: u8,
+) -> TestResult {
+    use oteryn_protocol_oteryn::party_skull::{
+        CAPABILITY_PARTY_SKULL_V1, COMMAND_TYPE_PARTY_SKULL_QUERY, decode_party_icons,
+    };
+    let command = runtime::PartyCommand {
+        kind: COMMAND_TYPE_PARTY_SKULL_QUERY,
+        payload: Vec::new(),
+    };
+    let (_, payload) = capture_reply(observer, &command, CAPABILITY_PARTY_SKULL_V1).await?;
+    let icons = decode_party_icons(&payload).map_err(|error| format!("S01 Party icons: {error:?}"))?;
+    let observed = icons.iter().find(|icon| icon.entity == target).map(|icon| icon.shield);
+    if observed != Some(expected) {
+        return Err(format!("S01 Party shield mismatch: expected={expected} observed={observed:?}").into());
+    }
+    Ok(())
+}
+
 async fn exchange(
     client: &mut DevClientSession,
     command: &runtime::PartyCommand,
@@ -268,6 +289,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let leader_shared = send(&mut leader, None).await?;
     check_state_with_xp(&leader_shared, &before_pass, None, true)?;
     check_state_with_xp(&send(&mut peer, None).await?, &before_pass, None, true)?;
+    // Neither fixture character has contributed in combat, so both shared-XP shields blink.
+    check_peer_shield(&mut leader, own(&peer)?, 7).await?;
+    check_peer_shield(&mut peer, own(&leader)?, 8).await?;
     let member = leader_view
         .result
         .members
