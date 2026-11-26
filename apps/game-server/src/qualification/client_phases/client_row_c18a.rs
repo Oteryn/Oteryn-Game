@@ -517,6 +517,9 @@ async fn walk_path(
         let from = tile(client.world_spatial().actor_position)?;
         let expected =
             destination(world, from, direction).ok_or("C18a route lost its planned landing")?;
+        if expected == CAST_TILE {
+            wait_for_cast_tile(client, vitals.as_deref_mut()).await?;
+        }
         let outcome = client.step(direction).await?;
         require_mechanic_acceptance(outcome.status, "C18a first step attempt")?;
         let actual = tile(client.world_spatial().actor_position)?;
@@ -612,5 +615,35 @@ fn collect_vitals(
             }
             _ => None,
         }));
+    }
+}
+
+async fn wait_for_cast_tile(
+    client: &mut oteryn_dev_client::DevClientSession,
+    mut vitals: Option<&mut Vec<(u64, u32, u32)>>,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    loop {
+        let entities = client
+            .world_entities()
+            .ok_or("C18a cast tile occupancy unavailable")?;
+        let occupant = entities.iter().find(|entity| {
+            matches!(
+                entity.kind,
+                oteryn_dev_client::EntityKind::Creature
+                    | oteryn_dev_client::EntityKind::Npc
+                    | oteryn_dev_client::EntityKind::Player
+            ) && tile(entity.position).ok() == Some(CAST_TILE)
+        });
+        let Some(occupant) = occupant else {
+            return Ok(());
+        };
+        if tokio::time::Instant::now() >= deadline {
+            return Err(
+                format!("C18a fixed cast tile is occupied by {:?}", occupant.entity).into(),
+            );
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        collect_vitals(client, vitals.as_deref_mut());
     }
 }
