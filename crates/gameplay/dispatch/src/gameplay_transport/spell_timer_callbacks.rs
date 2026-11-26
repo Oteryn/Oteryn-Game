@@ -633,9 +633,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &native_health_observations,
                 )
                 .await?;
-            self.record_spell_kills(
+            self.record_spell_combat(
                 &mut runtime,
-                &states,
+                &mut states,
                 report.receipts.iter().map(|r| &r.batch),
             )
             .await;
@@ -1027,9 +1027,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| Error::StaleOwner)?;
             if let Some(report) = accepted {
-                self.record_spell_kills(
+                self.record_spell_combat(
                     &mut runtime,
-                    &states,
+                    &mut states,
                     report.receipts.iter().map(|r| &r.batch),
                 )
                 .await;
@@ -1047,9 +1047,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .ok_or(Error::StaleOwner)?,
             self.imported_charms,
         )?;
-        self.record_spell_kills(
+        self.record_spell_combat(
             &mut runtime,
-            &states,
+            &mut states,
             report.receipts.iter().map(|r| &r.batch),
         )
         .await;

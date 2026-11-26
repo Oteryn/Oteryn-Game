@@ -1106,6 +1106,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     continue;
                 };
+                states
+                    .sounds
+                    .record_damage(&runtime, entry.actor, target, result);
                 if !extension && result.applied {
                     publish_hit_sound(
                         &mut states,
