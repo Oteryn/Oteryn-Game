@@ -152,6 +152,11 @@ where
         .await;
     let guard_deferred =
         input_permit.is_some() && !guards(authority, &mut session.admitted, command).await?;
+    #[cfg(test)]
+    if let Ok(barrier) = AFTER_COMMAND_INPUT_GUARDS.try_with(std::sync::Arc::clone) {
+        barrier.0.notify_one();
+        barrier.1.notified().await;
+    }
     if guard_deferred && !session.reconcile_original_bank {
         drop(input_permit.take());
     }
