@@ -6,8 +6,9 @@ use oteryn_dev_client::client_runtime::npc_shop as runtime;
 use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef};
 use oteryn_protocol_oteryn::item_view;
 use oteryn_protocol_oteryn::npc_service as wire;
-use std::collections::BTreeMap;
 
+// Crystal 201189f8 places Kepar at (32193, 32297, 6), by the E02 world start.
+const BANKER: &str = "oteryn:npc.kepar";
 const GOLD_ID: u32 = 3031;
 const PLATINUM_ID: u32 = 3035;
 const CRYSTAL_ID: u32 = 3043;
@@ -120,55 +121,6 @@ pub(super) async fn approach(
     approach_along(client, world, npc, &path).await
 }
 
-async fn nearest_npc<'a>(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    candidates: &[&'a oteryn_world_bundle::npc::Npc],
-) -> TestResult<Option<(&'a oteryn_world_bundle::npc::Npc, Vec<StepDirection>)>> {
-    let mut goals = BTreeMap::new();
-    for (index, npc) in candidates.iter().enumerate() {
-        for placement in &npc.placements {
-            for dx in -3..=3 {
-                for dy in -3..=3 {
-                    if let Some((x, y)) = placement
-                        .x
-                        .checked_add_signed(dx)
-                        .zip(placement.y.checked_add_signed(dy))
-                    {
-                        goals
-                            .entry(TilePos {
-                                x,
-                                y,
-                                floor: placement.floor,
-                            })
-                            .or_insert(index);
-                    }
-                }
-            }
-        }
-    }
-    if goals.is_empty() {
-        return Ok(None);
-    }
-    let start = tile(client.world_spatial().actor_position)?;
-    let world = world.clone();
-    let target = route_work(client, move || {
-        let Some(path) = route(&world, start, |at| goals.contains_key(&at)) else {
-            return Ok(None);
-        };
-        let end = path
-            .iter()
-            .try_fold(start, |at, &direction| destination(&world, at, direction))
-            .ok_or_else(|| "E02 planned route has no served-map landing".to_string())?;
-        let index = *goals
-            .get(&end)
-            .ok_or_else(|| "E02 route ended outside NPC range".to_string())?;
-        Ok(Some((index, path)))
-    })
-    .await?;
-    Ok(target.map(|(index, path)| (candidates[index], path)))
-}
-
 async fn approach_along(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -192,27 +144,25 @@ pub(super) async fn find_exchange_npc(
     npcs: &oteryn_world_bundle::npc::Table,
     book: &crate::gameplay_transport::NpcTalkBook,
 ) -> TestResult<(EntityRef, String)> {
-    let mut attempted = Vec::new();
-    let mut candidates: Vec<_> = npcs
+    let banker = npcs
         .npcs
         .iter()
+        .find(|npc| npc.key == BANKER)
         .filter(|npc| book.get(&npc.key).is_some_and(|entry| entry.bank()))
-        .collect();
-    if candidates.is_empty() {
-        return Err("step=find-exchange-npc observed=no-authored-banker-in-served-npc-table".into());
+        .ok_or_else(|| format!("step=find-exchange-npc observed=missing-authored-banker:{BANKER}"))?;
+    let actor = approach(client, world, banker).await?;
+    let greeting = talk(client, actor, "hi").await?;
+    let reply = talk(client, actor, "change gold").await?;
+    if !reply.lines.iter().any(|line| line == PROMPT) {
+        return Err(
+            format!(
+                "step=find-exchange-npc observed=wrong-live-prompt:{BANKER} hi={:?} change-gold={:?}",
+                greeting.lines, reply.lines
+            )
+            .into(),
+        );
     }
-    while let Some((npc, path)) = nearest_npc(client, world, &candidates).await? {
-        candidates.retain(|candidate| candidate.key != npc.key);
-        let actor = approach_along(client, world, npc, &path).await?;
-        let greeting = talk(client, actor, "hi").await?;
-        attempted.push(format!("{}:hi={:?}", npc.key, greeting.lines));
-        let reply = talk(client, actor, "change gold").await?;
-        attempted.push(format!("{}:change-gold={:?}", npc.key, reply.lines));
-        if reply.lines.iter().any(|line| line == PROMPT) {
-            return Ok((actor, npc.key.clone()));
-        }
-    }
-    Err(format!("step=find-exchange-npc observed=no-live-prompt attempts={attempted:?}; need=compiled-world-reachable-banker").into())
+    Ok((actor, banker.key.clone()))
 }
 
 async fn exchange(
@@ -257,9 +207,9 @@ pub(super) async fn coin_profile<'a>(
     for count in [11, 19, 20] {
         character_prep::grant_item(&client, GOLD_ID, count).await?;
     }
-    let (result, detail, _, _) = logout_retrying_busy(&mut client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("E02 setup logout refused: {detail}").into());
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("E02 setup logout refused: {:?}", logout.result).into());
     }
     drop(client);
     let client = connect_world(&dedicated, tag).await?;

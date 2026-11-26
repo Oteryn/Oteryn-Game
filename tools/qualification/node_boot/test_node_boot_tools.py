@@ -739,6 +739,26 @@ class CloudRunSummaryTests(unittest.TestCase):
 
 
 class E02ClientReplayTests(unittest.TestCase):
+    def test_only_single_e02_rows_select_the_default_e02_profile(self):
+        selection = section(
+            'if [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_E2E_ONLY:-}" == rows && -z',
+            'WORLD_START=(32369 32238 7)',
+        )
+        for group, batch, profile, expected in (
+            ('rows', '87:1', '', 'e02'),
+            ('rows', '147:1', '', 'e02'),
+            ('rows', '147:2', '', 'town'),
+            ('rows', '147:1', 'town', 'town'),
+            ('core', '87:1', '', 'town'),
+        ):
+            with self.subTest(group=group, batch=batch, profile=profile):
+                result = bash(selection + 'printf "%s\\n" "$NODE_BOOT_WORLD_PROFILE"\n', {
+                    'NODE_BOOT_WORLD': '1', 'NODE_BOOT_E2E_ONLY': group,
+                    'OTERYN_E2E_ROW_BATCH': batch, 'NODE_BOOT_WORLD_PROFILE': profile,
+                })
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.strip(), expected)
+
     def test_pass_requires_one_live_capture_and_executed_replay(self):
         helper = section('e02_client_replay() {', 'seam_stages() {')
         capture = 'SEAM_EVIDENCE e2e_all scenario=E02.client status=CAPTURED evidence=live\n'

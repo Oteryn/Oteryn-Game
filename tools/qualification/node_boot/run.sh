@@ -163,6 +163,11 @@ case "$NODE_BOOT_D150_LEGACY" in
     ;;
   *) blocked invalid_d150_mode ;;
 esac
+if [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_E2E_ONLY:-}" == rows && -z "${NODE_BOOT_WORLD_PROFILE:-}" ]]; then
+  case "${OTERYN_E2E_ROW_BATCH:-}" in
+    87:1|147:1) : "${NODE_BOOT_WORLD_PROFILE:=e02}" ;;
+  esac
+fi
 NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"
 WORLD_START=(32369 32238 7)
 case "$NODE_BOOT_WORLD_PROFILE" in
