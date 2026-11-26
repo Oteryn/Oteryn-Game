@@ -7,7 +7,6 @@ producer promotes the requested quest catalogue; it never contacts a donor host.
 from __future__ import annotations
 
 import argparse
-from copy import deepcopy
 import hashlib
 import importlib.util
 import json
@@ -15,19 +14,18 @@ import re
 import sys
 import tarfile
 import xml.etree.ElementTree as ET
+from copy import deepcopy
 from pathlib import Path
 
+import earned_outfit_catalogue
 import engoutfit_m36
 import lua_tables
 import qb_barbarian
 import qb_citizen_warrior
-import wizard_cosmetics
-import earned_outfit_catalogue
-import engoutfit_m36
 import qengine_mounts
 import qmech_m39
-import questpc7_smith_programme
 import questl2_ready
+import questpc7_smith_programme
 import taming_cosmetics
 import wizard_cosmetics
 from jsonschema import Draft202012Validator

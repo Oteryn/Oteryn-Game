@@ -1,6 +1,7 @@
 """Regenerate exact equipment-speed assertions from qualified item sources."""
 
 import hashlib
+
 import qengine_reward_item_profiles as producer
 
 IDS = frozenset({2833, 5805, 5806})

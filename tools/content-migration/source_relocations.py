@@ -189,21 +189,21 @@ RELOCATIONS = {
         "a3c59faa4b6ccab7e0b4029004c0a1bbe22a8e246c6029ae479d63029972d0f9",
     ): (
         "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
-        "924b70da3cbce001310cfc539072897a2be802cdb757189baba6b41980e20338",
+        "fd6f0d451bac28ba61a5dc079bf233d82fde28703987f375e2e6050cf4a4252a",
     ),
     (
         "crates/gameplay/content/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "285e69e0450dc6c254e6af738800e00597a857cb72d035ec9e26b7ce0cc92f70",
+        "cee3ea944c8d2db4f72b16436d4c955b3f6bbb6199d368e87f701e851ef1da0a",
     ),
     (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "285e69e0450dc6c254e6af738800e00597a857cb72d035ec9e26b7ce0cc92f70",
+        "cee3ea944c8d2db4f72b16436d4c955b3f6bbb6199d368e87f701e851ef1da0a",
     ),
     # QMINT3's tree-first reference view changes only the Forge289 compiler and
     # mapper fingerprints. All454 binding rows and289 literal promotions are
@@ -379,7 +379,9 @@ VERBATIM_MOVES = {
     ),
 }
 MOVED = {
-    pinned: current for (pinned, _), (current, _) in RELOCATIONS.items() if pinned != current
+    pinned: current
+    for (pinned, _), (current, _) in RELOCATIONS.items()
+    if pinned != current
 } | VERBATIM_MOVES
 
 
@@ -429,7 +431,9 @@ def historical_wiki_snapshot(data: bytes) -> bytes | None:
         records = historical_wiki_records(snapshot["records"])
         snapshot["records"] = records
         snapshot["snapshot_sha256"] = record_digest(records)
-        return (json.dumps(snapshot, indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode()
+        return (
+            json.dumps(snapshot, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+        ).encode()
     except (KeyError, ValueError):
         return None
 
@@ -476,7 +480,9 @@ def retain_quest_plan_citations(rows: list[dict]) -> list[dict]:
     return [
         {
             **row,
-            "sources": [historical_citations.get(source, source) for source in row["sources"]],
+            "sources": [
+                historical_citations.get(source, source) for source in row["sources"]
+            ],
         }
         for row in rows
     ]

@@ -203,7 +203,16 @@ def source_vector(entry, indexed, pages, cutoff, order):
 
 
 def qualify(
-    entry, definition, binding, obj, members, routed, vector, profile=None, *, current_headers=None
+    entry,
+    definition,
+    binding,
+    obj,
+    members,
+    routed,
+    vector,
+    profile=None,
+    *,
+    current_headers=None,
 ):
     iid, target = entry["item_id"], entry["current_target"]
     official = entry["official_source"]
@@ -420,7 +429,8 @@ def build(root=ROOT):
         if (
             not replay_definition
             or replay_definition["identity"] != row["target"]
-            or {header: replay_definition[header] for header in HEADERS} != row["headers"]
+            or {header: replay_definition[header] for header in HEADERS}
+            != row["headers"]
         ):
             raise ValueError(f"WorldProject replay headers drift: {key}")
         rows.append(row)

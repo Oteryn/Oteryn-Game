@@ -94,17 +94,15 @@ class SourceKnownSpeedTests(unittest.TestCase):
             packet['sources'][source][field] = value
             variants.append(packet)
         for index, packet in enumerate(variants):
-            with self.subTest(variant=index):
-                with self.assertRaisesRegex(ValueError, 'KNOWN_SPEED_SOURCE'):
-                    pin.refresh(self.SOURCE, packet)
+            with self.subTest(variant=index), self.assertRaisesRegex(ValueError, 'KNOWN_SPEED_SOURCE'):
+                pin.refresh(self.SOURCE, packet)
 
     def test_missing_or_duplicated_rust_anchor_refuses_generation(self):
         for source in ('', self.SOURCE + self.SOURCE,
                        self.SOURCE.replace(pin.ANCHOR, ''),
                        self.SOURCE.replace(pin.FILTER_ANCHOR, '')):
-            with self.subTest(source=source):
-                with self.assertRaisesRegex(ValueError, 'KNOWN_SPEED_ANCHOR'):
-                    pin.refresh(source, self.packet)
+            with self.subTest(source=source), self.assertRaisesRegex(ValueError, 'KNOWN_SPEED_ANCHOR'):
+                pin.refresh(source, self.packet)
 
     def test_existing_rust_changes_only_the_generated_speed_qualification(self):
         path = pin.producer.ROOT / ('crates/gameplay/dispatch/src/gameplay_transport/'
@@ -169,9 +167,8 @@ class SourceKnownSpeedTests(unittest.TestCase):
                        result.replace(pin.FILTER_BEGIN, '__FILTER_START__')
                              .replace(pin.FILTER_END, pin.FILTER_BEGIN)
                              .replace('__FILTER_START__', pin.FILTER_END)):
-            with self.subTest(source=source):
-                with self.assertRaisesRegex(ValueError, 'KNOWN_SPEED_ANCHOR'):
-                    pin.refresh(source, self.packet)
+            with self.subTest(source=source), self.assertRaisesRegex(ValueError, 'KNOWN_SPEED_ANCHOR'):
+                pin.refresh(source, self.packet)
 
     def test_modified_generated_assertion_or_exclusion_is_not_silently_replaced(self):
         result = pin.refresh(self.SOURCE, self.packet)
@@ -192,9 +189,8 @@ class SourceKnownSpeedTests(unittest.TestCase):
             'assert_eq!(record.attributes.speed_bonus, None',
             'assert_eq!(record.attributes.speed_bonus, Some(1)') + self.SOURCE
         for source in (bad_assertion, bad_unknown, bad_filter, unmarked_filter, bad_legacy):
-            with self.subTest(source=source):
-                with self.assertRaisesRegex(ValueError, 'KNOWN_SPEED_ANCHOR'):
-                    pin.refresh(source, self.packet)
+            with self.subTest(source=source), self.assertRaisesRegex(ValueError, 'KNOWN_SPEED_ANCHOR'):
+                pin.refresh(source, self.packet)
 
     def test_refresh_keeps_the_complete_captured_packet_unchanged(self):
         packet = copy.deepcopy(self.packet)
@@ -243,9 +239,11 @@ class QualifiedKnownSpeedAdmissionTests(unittest.TestCase):
             item_id = int(row['production_binding']['external_id'])
             self.assertEqual(pin.producer._source_known_speed(item_id, row['attributes']['speed_bonus']), 0)
             for value in (None, False, True, 1, -1, 0.0, '0'):
-                with self.subTest(item_id=item_id, value=repr(value)):
-                    with self.assertRaisesRegex(ValueError, 'KNOWN_SPEED_SOURCE'):
-                        pin.producer._source_known_speed(item_id, value)
+                with (
+                    self.subTest(item_id=item_id, value=repr(value)),
+                    self.assertRaisesRegex(ValueError, 'KNOWN_SPEED_SOURCE'),
+                ):
+                    pin.producer._source_known_speed(item_id, value)
 
     def test_real_closed_profiles_keep_zero_through_portable_and_inert_replay(self):
         for mode in ('absent', 'portable', 'inert', 'null'):
