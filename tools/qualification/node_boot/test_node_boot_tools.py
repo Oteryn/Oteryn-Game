@@ -676,7 +676,7 @@ class CloudRunSummaryTests(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, 0 if selected else 1)
 
-        passed = "SEAM_EVIDENCE e2e_all scenario=P18.client status=PASS seconds=1 evidence=live-capture-replayed session=live\n"
+        passed = "SEAM_EVIDENCE e2e_all scenario=P18.client status=PASS seconds=1 evidence=live-capture-replayed_session=live\n"
         failed = "SEAM_EVIDENCE e2e_all scenario=P18.client status=FAIL evidence=row-error\n"
         for node_log, expected in [(passed, 0), ("", 1), (failed, 1), (passed + failed, 1)]:
             with self.subTest(node_log=node_log), tempfile.TemporaryDirectory() as temp:

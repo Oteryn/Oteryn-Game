@@ -121,7 +121,7 @@ PY_FORGE_BATCH
 require_forge_verdict() {
   local log=$1
   [[ $(grep -c '^SEAM_EVIDENCE e2e_all scenario=P18\.client status=' "$log") == 1 ]] &&
-    grep -Eq '^SEAM_EVIDENCE e2e_all scenario=P18\.client status=PASS (.* )?evidence=live-capture-replayed session=' "$log"
+    grep -Eq '^SEAM_EVIDENCE e2e_all scenario=P18\.client status=PASS (.* )?evidence=live-capture-replayed_session=' "$log"
 }
 
 if [[ ${1:-} == --summarize ]]; then
