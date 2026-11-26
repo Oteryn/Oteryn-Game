@@ -5016,8 +5016,11 @@ dependencies = [
  "oteryn-session-tcp",
  "rcgen",
  "rustls",
+ "serde",
+ "serde_json",
  "tokio",
  "tokio-rustls",
+ "uuid",
 ]
 
 [[package]]

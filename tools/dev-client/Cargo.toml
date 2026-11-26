@@ -23,6 +23,9 @@ tokio-rustls.workspace = true
 
 [dev-dependencies]
 rcgen.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid = "=1.29.3"
 
 [lints]
 workspace = true

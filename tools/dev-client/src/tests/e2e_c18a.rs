@@ -26,9 +26,6 @@ struct Fixture {
 
 fn fixture() -> Result<Fixture, Error> {
     use oteryn_session::SpellCastDisposition;
-    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_some() {
-        return Err("C18a strict replay requires original session-bound wire envelopes; payload-only captures are ineligible".into());
-    }
     let target = oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
         identity: [7; 16],
         generation: 3,
@@ -55,7 +52,10 @@ fn id(marker: u8) -> [u8; 16] {
 }
 
 #[test]
-fn replays_server_payload_and_rejects_invalid_combat_state() -> Result<(), Error> {
+fn e2e_c18a_replays_captured_damage_or_unit_refusal() -> Result<(), Error> {
+    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        return replay_capture(std::path::Path::new(&root));
+    }
     let Fixture {
         combat,
         result,
@@ -179,4 +179,103 @@ fn replays_server_payload_and_rejects_invalid_combat_state() -> Result<(), Error
         })?
         .join()
         .map_err(|_| "C18a replay thread panicked")?
+}
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Envelope {
+    command_id: u64,
+    game_session_id: String,
+    payload: Vec<u8>,
+    server_sequence: u64,
+    status: u32,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Proof {
+    game_session_id: String,
+    relog_session_id: String,
+    command_id: u64,
+    cast_sequence: u64,
+    health_sequence: u64,
+    identity: [u8; 16],
+    generation: u64,
+    before: u8,
+    after: u8,
+    capabilities: Vec<u32>,
+}
+
+fn session_id(text: &str) -> Result<oteryn_protocol_oteryn::GameSessionId, Error> {
+    let uuid = uuid::Uuid::parse_str(text)?;
+    if uuid.to_string() != text {
+        return Err("C18a session must use canonical UUIDv7 text".into());
+    }
+    Ok(oteryn_protocol_oteryn::GameSessionId::decode(
+        uuid.as_bytes(),
+    )?)
+}
+
+fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
+    use oteryn_protocol_oteryn::world_spatial_entities as wire;
+    let cast: Envelope = serde_json::from_slice(&std::fs::read(root.join("c18a-cast.json"))?)?;
+    let health: Envelope = serde_json::from_slice(&std::fs::read(root.join("c18a-health.json"))?)?;
+    let proof: Proof = serde_json::from_slice(&std::fs::read(root.join("c18a-proof.json"))?)?;
+    let session = session_id(&proof.game_session_id)?;
+    if session_id(&cast.game_session_id)? != session
+        || session_id(&health.game_session_id)? != session
+        || session_id(&proof.relog_session_id)? == session
+        || proof.command_id == 0
+        || cast.command_id != proof.command_id
+        || health.command_id != proof.command_id
+        || cast.server_sequence == 0
+        || cast.server_sequence != proof.cast_sequence
+        || health.server_sequence != proof.health_sequence
+        || health.server_sequence <= cast.server_sequence
+        || cast.status != CommandStatus::Accepted as u32
+        || health.status != cast.status
+        || proof.generation == 0
+        || proof.before > 100
+        || proof.after >= proof.before
+    {
+        return Err("C18a capture provenance, sequence, or health proof is invalid".into());
+    }
+    let disposition = actor_spell::decode_spell_cast_result(&cast.payload)
+        .map_err(|error| format!("{error:?}"))?;
+    let mut feedback = SpellFeedback::default();
+    feedback.record(disposition);
+    assert_eq!(disposition, oteryn_session::SpellCastDisposition::Cast);
+    assert_eq!(feedback.text(), Some("Spell cast"));
+
+    let fields = wire::EntityFields::selected(&proof.capabilities);
+    let (delta, _, _) =
+        wire::decode_world_spatial_entities_delta_with_sidecar(&health.payload, fields)
+            .map_err(|error| format!("{error:?}"))?;
+    let target = wire::EntityRef {
+        identity: proof.identity,
+        generation: proof.generation,
+    };
+    let entry = delta
+        .update
+        .iter()
+        .find(|entry| entry.entity == target)
+        .ok_or("C18a health capture lacks the exact Rat generation")?;
+    assert_eq!(entry.kind, wire::EntityKind::Creature);
+    assert!(
+        matches!(entry.detail, wire::EntityDetail::Actor { health_percent, .. }
+        | wire::EntityDetail::ActorWithIcons { health_percent, .. } if health_percent == proof.after)
+    );
+    Ok(())
+}
+
+#[test]
+fn strict_envelope_rejects_unknown_duplicate_and_missing_keys() {
+    let base =
+        r#"{"command_id":1,"game_session_id":"x","payload":[1],"server_sequence":2,"status":1}"#;
+    assert!(serde_json::from_str::<Envelope>(base).is_ok());
+    for extra in [r#","status":1}"#, r#","unexpected":0}"#] {
+        let invalid = format!("{}{extra}", base.strip_suffix('}').unwrap());
+        assert!(serde_json::from_str::<Envelope>(&invalid).is_err());
+    }
+    assert!(serde_json::from_str::<Envelope>(r#"{"payload":[1]}"#).is_err());
 }
