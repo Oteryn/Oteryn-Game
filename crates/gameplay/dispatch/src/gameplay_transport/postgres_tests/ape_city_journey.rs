@@ -112,7 +112,7 @@ fn ape_city_moss_cannot_be_reminted_while_the_issued_copy_is_live() -> TestResul
 }
 
 #[test]
-fn ape_city_moss_can_be_reclaimed_after_hairycles_reports_it_missing() -> TestResult {
+fn ape_city_moss_cannot_be_reclaimed_after_hairycles_reports_a_live_copy_missing() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -844,77 +844,27 @@ impl Journey<'_, '_, '_, '_> {
         ).bind(MOSS_ITEM).fetch_one(&self.h.pool).await?;
         assert_eq!(live, 1, "peer custody must not create a second Whisper Moss");
         if report_missing {
-            let (_, reply) = self.say_then("mission", Some("yes")).await?;
-            self.use_object(MOSS, Committed).await?;
-            assert_eq!(reply, Some(NpcIntentDisposition::Ok));
-            self.use_object(MOSS, NothingToUse).await?;
-            let replacement = self
-                .owner
-                .root
-                .read_character_backpack(self.owner.character, fence.character_id)
-                .await
-                .map_err(debug)?
-                .ok_or("replacement moss backpack")?;
-            let copies: Vec<_> = replacement
-                .entries
-                .iter()
-                .filter(|entry| entry.item.definition.production_key == MOSS_ITEM)
-                .collect();
-            assert_eq!(copies.len(), 1);
-            let recovered = copies[0].item.item_instance_id;
-            assert_ne!(recovered, moss);
-            for (id, destination, pickup_cell) in [
-                (90104, LoopDestination::Ground(ground.clone()), None),
-                (
-                    90105,
-                    LoopDestination::MainBackpack,
-                    Some(ground.spatial_position.clone()),
-                ),
-            ] {
-                let owner = &self.owner;
-                let permit = owner
-                    .spell_lane_permit()
-                    .await
-                    .ok_or("recovery item permit")?;
-                owner
-                    .root
-                    .commit_item_loop_move(
-                        &permit,
-                        owner.character,
-                        owner.holder,
-                        &fence,
-                        CommandRef::new(fence.game_session_id, CommandId::new(id).map_err(debug)?),
-                        &weights,
-                        LoopMoveRequest {
-                            item: recovered,
-                            count: None,
-                            pickup_cell,
-                            destination,
-                        },
-                    )
-                    .await
-                    .map_err(|error| format!("recovery item move transaction: {error:?}"))?
-                    .map_err(|error| format!("recovery item move: {error:?}"))?;
-                drop(permit);
-                // Even after the replacement leaves the claimant, the reset is spent.
+            for _ in 0..2 {
+                let (_, reply) = self.say_then("mission", Some("yes")).await?;
+                assert_eq!(reply, Some(NpcIntentDisposition::Ok));
                 self.use_object(MOSS, NothingToUse).await?;
             }
+            let live: i64 = sqlx::query_scalar(
+                "SELECT COALESCE(sum(quantity), 0)::bigint FROM game_item_instances
+                 WHERE definition_production_key=$1 AND lifecycle=1",
+            )
+            .bind(MOSS_ITEM)
+            .fetch_one(&self.h.pool)
+            .await?;
+            assert_eq!(
+                live, 1,
+                "missing-moss confirmation must not duplicate the peer's moss"
+            );
             let original: bool = sqlx::query_scalar(
                 "SELECT EXISTS (SELECT 1 FROM game_item_container_entries
                  WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid)",
             ).bind(peer.character_id.as_bytes().as_slice()).bind(moss.as_slice()).fetch_one(&self.h.pool).await?;
             assert!(original, "the peer keeps the original Whisper Moss");
-            let (_, reply) = self.say_then("mission", Some("yes")).await?;
-            assert_eq!(reply, Some(NpcIntentDisposition::Ok));
-            let saved = self
-                .owner
-                .root
-                .read_character_quest_state(self.owner.character, fence.character_id)
-                .await
-                .map_err(debug)?;
-            assert_eq!(saved.tracks().get(SOURCE_QUESTLINE), Some(&2));
-            eprintln!("POSTGRES_CASE_COMPLETED ape_city_moss_recovery");
-            return Ok(());
         }
         let owner = &self.owner;
         let permit = owner.spell_lane_permit().await.ok_or("item permit")?;
@@ -933,14 +883,27 @@ impl Journey<'_, '_, '_, '_> {
         ).await.map_err(|error| format!("original moss pickup transaction: {error:?}"))?
             .map_err(|error| format!("original moss pickup: {error:?}"))?;
         drop(permit);
-        self.check(1, [0, 1, 0, 0, 0]).await?;
+        self.check(chosen_stage, [0, 1, 0, 0, 0]).await?;
         let returned = self.owner.root.read_character_backpack(self.owner.character, fence.character_id)
             .await.map_err(debug)?.ok_or("returned moss backpack")?;
         let copies = returned.entries.iter().filter(|entry| entry.item.definition.production_key == MOSS_ITEM);
         assert_eq!(copies.map(|entry| entry.item.item_instance_id).collect::<Vec<_>>(), [moss]);
         self.use_object(MOSS, NothingToUse).await?;
-        self.use_object(BANANA, Committed).await?;
-        self.check(2, [1, 1, 0, 0, 0]).await?;
+        if report_missing {
+            let (_, reply) = self.say_then("mission", Some("yes")).await?;
+            assert_eq!(reply, Some(NpcIntentDisposition::Ok));
+            let saved = self
+                .owner
+                .root
+                .read_character_quest_state(self.owner.character, fence.character_id)
+                .await
+                .map_err(debug)?;
+            assert_eq!(saved.tracks().get(SOURCE_QUESTLINE), Some(&2));
+            eprintln!("POSTGRES_CASE_COMPLETED ape_city_moss_recovery");
+        } else {
+            self.use_object(BANANA, Committed).await?;
+            self.check(2, [1, 1, 0, 0, 0]).await?;
+        }
         Ok(())
     }
 

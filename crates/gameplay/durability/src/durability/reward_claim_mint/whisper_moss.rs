@@ -1,5 +1,5 @@
-//! Mission-one recovery preserves the original claim and grants one replacement
-//! per committed missing-moss dialogue.
+//! Mission-one recovery requires both a committed missing-moss dialogue and
+//! proof that the character's earlier chest issues were destroyed.
 use super::RewardClaimMintRequest;
 use crate::domain::CharacterId;
 use sqlx::{Postgres, Transaction};
@@ -10,6 +10,9 @@ const ITEM: &str = "oteryn:item.tibia.i4827";
 const QUEST: &str = "oteryn:quest.the_ape_city_quest";
 const RECOVERY: &str = "oteryn:quest-progress/quest/u7_6/the_ape_city/whisper_moss_recovery";
 const MISSION: &str = "oteryn:quest-progress/quest/u7_6/the_ape_city/questline";
+
+#[cfg(test)]
+mod tests;
 
 fn is_moss(request: &RewardClaimMintRequest) -> bool {
     request.claim.family == "RewardClaim"
@@ -75,6 +78,7 @@ pub(super) async fn resolve(
 pub(super) async fn permits(
     tx: &mut Transaction<'_, Postgres>,
     character: CharacterId,
+    world: &[u8; 16],
     request: &RewardClaimMintRequest,
 ) -> Result<bool, sqlx::Error> {
     if !is_moss(request)
@@ -83,8 +87,9 @@ pub(super) async fn permits(
     {
         return Ok(false);
     }
-    // Any owned moss counts, including a copy kept in a nested bag or depot.
-    // The item fence holds the Character root for this check and the mint.
+    // A merge or stash deposit can retire an identity while preserving its
+    // value. Require a decay retirement receipt for each earlier chest issue.
+    // Read returnable escrow and inbox together so settlement cannot hide a copy.
     sqlx::query_scalar(
         "WITH RECURSIVE roots(item_instance_id) AS (
            SELECT item_instance_id FROM game_item_container_entries WHERE character_id=encode($1,'hex')::uuid
@@ -92,6 +97,10 @@ pub(super) async fn permits(
            UNION SELECT item_instance_id FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid
            UNION SELECT item_instance_id FROM game_item_character_inbox_locations WHERE character_id=encode($1,'hex')::uuid
            UNION SELECT item_instance_id FROM game_item_character_depot_locations WHERE character_id=encode($1,'hex')::uuid
+           UNION SELECT e.item_instance_id FROM game_market_offers o
+             JOIN game_item_market_escrow_locations e USING (offer_id, world_id)
+             WHERE o.character_id=encode($1,'hex')::uuid AND o.world_id=encode($5,'hex')::uuid
+               AND o.definition_key=$2 AND o.side=2 AND o.state IN (1,5)
          ), custody(item_instance_id, depth) AS (
            SELECT item_instance_id, 0 FROM roots
            UNION ALL
@@ -102,10 +111,26 @@ pub(super) async fn permits(
          SELECT NOT EXISTS (
            SELECT 1 FROM custody c JOIN game_item_instances i USING(item_instance_id)
            WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$2
+         ) AND NOT EXISTS (
+           SELECT 1 FROM game_character_stash_balances
+           WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($5,'hex')::uuid
+             AND definition_key=$2 AND quantity>0
+         ) AND NOT EXISTS (
+           SELECT 1 FROM game_reward_claims c
+           WHERE c.character_id=encode($1,'hex')::uuid AND c.claim_family='RewardClaim'
+             AND (c.claim_production_key=$3 OR starts_with(c.claim_production_key,$4))
+             AND NOT EXISTS (
+               SELECT 1 FROM game_reward_claim_mint_receipts r
+               JOIN game_item_decay_retire_receipts d USING (item_instance_id)
+               WHERE r.transaction_id=c.claimed_transaction_id
+             )
          )",
     )
     .bind(character.as_bytes().as_slice())
     .bind(ITEM)
+    .bind(CLAIM)
+    .bind(REPLACEMENT)
+    .bind(world.as_slice())
     .fetch_one(&mut **tx)
     .await
 }

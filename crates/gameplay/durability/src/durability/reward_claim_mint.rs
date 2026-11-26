@@ -1150,7 +1150,7 @@ async fn admit(
         FencedGrantingCharacter::after_fence(tx, fence.character_id, RewardClaimFenceChecked(()))
             .await?;
     if whisper_moss::is_replacement(&request.claim.production_key)
-        && !whisper_moss::permits(tx, fence.character_id, request).await?
+        && !whisper_moss::permits(tx, fence.character_id, &reservation.world_id, request).await?
     {
         return Ok(Err(RewardClaimMintError::Refused(RewardClaimRefusal::AlreadyClaimed)));
     }
@@ -2010,7 +2010,9 @@ mod tests {
         assert!(plan(&coin, 100, false, &full[..19], 20).is_ok());
     }
 
-    fn request(achievement: Option<(&str, AchievementCatalogueLookup)>) -> RewardClaimMintRequest {
+    pub(super) fn request(
+        achievement: Option<(&str, AchievementCatalogueLookup)>,
+    ) -> RewardClaimMintRequest {
         use crate::foundation::{CommandId, GameSessionId};
         RewardClaimMintRequest {
             backpack_outputs: false,
