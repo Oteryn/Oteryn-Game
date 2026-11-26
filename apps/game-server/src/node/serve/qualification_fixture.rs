@@ -57,6 +57,7 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
         "s08-sorcerer" => Some(("sorcerer", 8)),
         "s13-party" => Some(("sorcerer", 32)),
         "w10-primal" => Some(("knight", 500)),
+        "w11-soul-war" => Some(("knight", 250)),
         "w20b-light" => Some(("sorcerer", 26)),
         "c05-exiva" => Some(("sorcerer", 8)),
         "c11-unassigned" => Some((crate::durability::character_build::NO_VOCATION, 8)),
@@ -772,6 +773,7 @@ async fn prepare_build(
             | "c06-sorcerer"
             | "s13-party"
             | "w10-primal"
+            | "w11-soul-war"
             | "w20b-light"
             | "s08-knight"
             | "s08-sorcerer"
@@ -811,6 +813,7 @@ async fn prepare_build(
             | ("c06-sorcerer", C06_CASTER_ACCOUNT)
             | ("s13-party", PARTY_CASTER_ACCOUNT)
             | ("w10-primal", "01934f10-7c00-7000-8000-000000000020")
+            | ("w11-soul-war", "01934f10-7c00-7000-8000-000000000022")
             | ("w20b-light", LIGHT_ACCOUNT)
             | ("s08-knight", PVP_KNIGHT_ACCOUNT)
             | ("s08-sorcerer", PVP_SORCERER_ACCOUNT) => {}
