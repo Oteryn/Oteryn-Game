@@ -4992,6 +4992,7 @@ dependencies = [
  "oteryn-client-domain",
  "oteryn-client-runtime",
  "oteryn-input-actions",
+ "oteryn-protocol-oteryn",
  "oteryn-renderer",
  "serde_json",
  "sha2 0.11.1",

@@ -24,6 +24,7 @@ sha2.workspace = true
 syn.workspace = true
 
 [dev-dependencies]
+oteryn-protocol-oteryn = { version = "=0.1.0", path = "../protocol-oteryn" }
 serde_json.workspace = true
 sha2.workspace = true
 syn.workspace = true

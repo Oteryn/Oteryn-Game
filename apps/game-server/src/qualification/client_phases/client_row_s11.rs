@@ -1,11 +1,13 @@
 //! S11 client replay capture: query the real ranking snapshot as an ordinary player and capture
-//! the raw page payload the server sent in its `CommandResult` (`Session::gated_command`), which
+//! the original command and result envelopes, which
 //! the native Highscores panel consumes through `apply_result`
 //! (`crates/client-ui/src/features/0009-highscores/protocol.rs`).
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::highscores::{self, wire};
-use oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse;
+use oteryn_protocol_oteryn::{
+    FoundationProtocolError, decode_command_result, decode_wire_envelope,
+};
 
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
     for variable in ["NODE_BOOT_S11_CAPTURE_DIR", "E2E_ALL_CAPTURE_DIR"] {
@@ -18,14 +20,38 @@ fn capture(name: &str, bytes: &[u8]) -> TestResult {
 
 async fn exchange(
     client: &mut DevClientSession,
+    label: &str,
     query: wire::HighscoresQuery,
-) -> TestResult<ServerMechanicResponse> {
+) -> TestResult<(CommandStatus, u32, Vec<u8>)> {
     let command =
         highscores::command(query).map_err(|error| format!("ranking input: {error:?}"))?;
-    Ok(client
+    let exchange = client
         .session_mut()
-        .gated_command(command.capability, command.command_type, &command.payload)
-        .await?)
+        .capture_highscores_exchange(&command.payload)
+        .await?;
+    let request = decode_wire_envelope(&exchange.request_frame)?;
+    let response = decode_wire_envelope(&exchange.result_frame)?;
+    let result = decode_command_result(response.payload())?;
+    let session = uuid_text(exchange.game_session_id.as_bytes());
+    for variable in ["NODE_BOOT_S11_CAPTURE_DIR", "E2E_ALL_CAPTURE_DIR"] {
+        if let Some(root) = std::env::var_os(variable) {
+            let root = Path::new(&root);
+            let capture = serde_json::json!({
+                "run": root.file_name().and_then(|name| name.to_str()).ok_or("S11 capture directory has no run name")?,
+                "session": session,
+                "generation": request.connection_generation(),
+                "command_id": result.command_id,
+                "server_sequence": response.server_sequence(),
+                "request": exchange.request_frame,
+                "result": exchange.result_frame,
+            });
+            std::fs::write(
+                root.join(format!("s11-{label}-exchange.json")),
+                serde_json::to_vec(&capture)?,
+            )?;
+        }
+    }
+    Ok((result.status, exchange.error_code, result.payload.to_vec()))
 }
 
 fn row_text(row: &wire::HighscoreRow) -> String {
@@ -35,43 +61,160 @@ fn row_text(row: &wire::HighscoreRow) -> String {
     )
 }
 
+async fn experience_facts(
+    clients: &SeamClients<'_>,
+) -> TestResult<(Vec<wire::HighscoreRow>, wire::HighscoreRow, u32, bool)> {
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let rows = sqlx::query_as::<_, (String, String, i64, i64, i64, bool)>(
+        r#"WITH scores AS (
+             SELECT r.character_id, r.name, b.vocation, p.level::bigint, p.total_experience::bigint,
+                    rank() OVER (ORDER BY p.total_experience DESC) AS rank
+             FROM game_character_roots r
+             JOIN game_character_build_state b USING (character_id)
+             JOIN game_character_progression_state p USING (character_id)
+             WHERE r.world_id = $1::uuid AND r.lifecycle = 1 AND b.vocation <> 'none'
+               AND NOT game_account_closure_detached(r.character_id)
+           )
+           SELECT name, vocation, level, total_experience, rank, character_id = $2::uuid
+           FROM scores ORDER BY total_experience DESC, name COLLATE "C", character_id
+           LIMIT 51"#,
+    )
+    .bind(uuid_text(&clients.world))
+    .bind(uuid_text(&clients.characters[1]))
+    .fetch_all(&mut connection)
+    .await?;
+    let bound = wire::MAX_HIGHSCORES_PAGE_ROWS;
+    let mut own = None;
+    let mut own_page = None;
+    let mut expected = Vec::new();
+    let has_more = rows.len() > bound;
+    for (position, (name, vocation, level, value, rank, is_own)) in rows.into_iter().enumerate() {
+        let row = wire::HighscoreRow {
+            rank: rank.try_into()?,
+            name,
+            vocation,
+            level: level.try_into()?,
+            value: value.try_into()?,
+        };
+        if is_own {
+            own_page = Some(u32::try_from(position / bound + 1)?);
+            own = Some(row.clone());
+        }
+        if position < bound {
+            expected.push(row);
+        }
+    }
+    Ok((
+        expected,
+        own.ok_or("S11 qualification player lacks persisted ranking inputs")?,
+        own_page.ok_or("S11 qualification player lacks rank position")?,
+        has_more,
+    ))
+}
+
+async fn publish_ranking(clients: &SeamClients<'_>) -> TestResult<u64> {
+    use crate::durability::highscore_snapshot::{CutLimits, SnapshotCatalogues};
+    let root = crate::durability::DurabilityRoot::connect_test_runtime(clients.url)?;
+    root.await_ready().await?;
+    let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
+        .map_err(|error| format!("S11 achievement catalogue: {error:?}"))?;
+    let catalogues = SnapshotCatalogues::activated(std::sync::Arc::new(achievements))
+        .map_err(|error| format!("S11 ranking catalogues: {error:?}"))?;
+    let snapshots = root
+        .refresh_highscore_world_within(
+            wire::WorldId::decode(&clients.world)?,
+            catalogues,
+            CutLimits::REGISTERED,
+        )
+        .await
+        .map_err(|error| format!("S11 ranking cut publication: {error:?}"))?;
+    let snapshot = snapshots
+        .iter()
+        .find(|snapshot| snapshot.category == 1)
+        .ok_or("S11 publication lacks the Experience cut")?;
+    Ok(snapshot.snapshot_id)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x40).await?;
     let query = wire::HighscoresQuery {
         world: None,
-        details: false,
+        details: true,
         category: 1,
         vocation: 0,
         page: 1,
         snapshot_id: 0,
     };
-    let accepted = exchange(&mut client, query).await?;
-    require_mechanic_acceptance(accepted.status, "highscore-query")?;
-    let page = wire::decode_highscores_result(&accepted.payload)
+    let (expected_rows, expected_own, expected_own_page, expected_has_more) =
+        experience_facts(clients).await?;
+    let (status, _, before) = exchange(&mut client, "before", query).await?;
+    require_mechanic_acceptance(status, "highscore-before-query")?;
+    let before = wire::decode_highscores_result(&before)
+        .map_err(|error| format!("step=before-decode observed={error:?}"))?;
+    if before.rows == expected_rows && before.own_row.as_ref() == Some(&expected_own) {
+        return Err("S11 expected ranking already present before publication".into());
+    }
+    let published = publish_ranking(clients).await?;
+    if published <= before.snapshot_id {
+        return Err("S11 publication did not advance the Experience cut".into());
+    }
+    let (status, _, accepted) = exchange(&mut client, "experience", query).await?;
+    require_mechanic_acceptance(status, "highscore-query")?;
+    let page = wire::decode_highscores_result(&accepted)
         .map_err(|error| format!("step=decode observed={error:?}"))?;
     if page.category != 1
         || page.page != 1
-        || page.snapshot_id == 0
-        || page.rows.len() > wire::MAX_HIGHSCORES_PAGE_ROWS
+        || page.snapshot_id != published
+        || page.world != Some(wire::WorldId::decode(&clients.world)?)
+        || page.own_page != Some(expected_own_page)
+        || page.has_more != expected_has_more
+        || page.rows != expected_rows
+        || page.own_row.as_ref() != Some(&expected_own)
     {
-        return Err(format!("step=identity observed={page:?}").into());
+        return Err(format!("step=persisted-ranking expected_rows={} expected_own={} observed_rows={} observed_own={} snapshot={}", expected_rows.len(), row_text(&expected_own), page.rows.len(), page.own_row.is_some(), page.snapshot_id).into());
     }
     // Goshnar's Taint is reserved (15). Loyalty (13) is served with capability 498.
-    let refused = exchange(
+    let (refused, error_code, refusal_payload) = exchange(
         &mut client,
+        "refused",
         wire::HighscoresQuery {
             world: None,
-            details: false,
+            details: true,
             category: 15,
             ..query
         },
     )
     .await?;
-    if refused.status != CommandStatus::Rejected || !refused.payload.is_empty() {
-        return Err(format!("step=refusal observed={refused:?}").into());
+    if refused != CommandStatus::Rejected
+        || !refusal_payload.is_empty()
+        || error_code != FoundationProtocolError::NotSupported.code()
+    {
+        return Err(format!("step=refusal observed={refused:?} code={error_code}").into());
+    }
+    let (status, _, loyalty) = exchange(
+        &mut client,
+        "loyalty",
+        wire::HighscoresQuery {
+            category: 13,
+            ..query
+        },
+    )
+    .await?;
+    require_mechanic_acceptance(status, "highscore-loyalty-query")?;
+    let loyalty = wire::decode_highscores_result(&loyalty)
+        .map_err(|error| format!("step=loyalty-decode observed={error:?}"))?;
+    if loyalty.category != 13
+        || loyalty.world != page.world
+        || loyalty.page != 1
+        || loyalty.snapshot_id == 0
+        || loyalty.rows.len() > wire::MAX_HIGHSCORES_PAGE_ROWS
+    {
+        return Err(format!("step=loyalty-details observed={loyalty:?}").into());
     }
     let mut expected = format!(
-        "category={}\nvocation=0\npage={}\nsnapshot_id={}\ncomputed_at={}\nhas_more={}\nrows={}\n",
+        "world={}\nown_page={}\ncategory={}\nvocation=0\npage={}\nsnapshot_id={}\ncomputed_at={}\nhas_more={}\nrows={}\n",
+        uuid_text(&clients.world),
+        expected_own_page,
         page.category,
         page.page,
         page.snapshot_id,
@@ -79,21 +222,44 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         u8::from(page.has_more),
         page.rows.len()
     );
-    for (index, row) in page.rows.iter().enumerate() {
+    for (index, row) in expected_rows.iter().enumerate() {
         expected.push_str(&format!("row{index}={}\n", row_text(row)));
     }
     expected.push_str(&format!(
         "own={}\nrefused={:?}\n",
-        page.own_row
-            .as_ref()
-            .map_or_else(|| "none".into(), row_text),
-        refused.status
+        row_text(&expected_own),
+        refused
     ));
-    capture("s11-page1.bin", &accepted.payload)?;
+    capture("s11-page1.bin", &accepted)?;
     capture("s11-expected.txt", expected.as_bytes())?;
     let (logout, observed, _, _) = logout_once(&mut client).await?;
     if logout != Some(LogoutResult::Accepted) {
         return Err(format!("step=logout observed={observed}").into());
+    }
+    let session = client.session_mut().join_snapshot().game_session_id;
+    drop(client);
+    let mut rejoined = connect_world(clients, 0x41).await?;
+    if rejoined.session_mut().join_snapshot().game_session_id == session {
+        return Err("S11 relog reused the original session".into());
+    }
+    let (status, _, after) = exchange(
+        &mut rejoined,
+        "relog",
+        wire::HighscoresQuery {
+            snapshot_id: page.snapshot_id,
+            ..query
+        },
+    )
+    .await?;
+    require_mechanic_acceptance(status, "highscore-relog-query")?;
+    let after = wire::decode_highscores_result(&after)
+        .map_err(|error| format!("step=relog-decode observed={error:?}"))?;
+    if after != page {
+        return Err("S11 persisted ranking changed after relog".into());
+    }
+    let (logout, observed, _, _) = logout_once(&mut rejoined).await?;
+    if logout != Some(LogoutResult::Accepted) {
+        return Err(format!("step=relog-logout observed={observed}").into());
     }
     Ok(format!(
         "snapshot={} rows={} own={}",

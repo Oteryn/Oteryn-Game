@@ -3,8 +3,14 @@
 //! decodes the page with `decode_highscores_result`, checks category/page/snapshot against the
 //! pending query and stores it in `HighscoresPanel::reply`.
 use super::*;
-use oteryn_client_runtime::highscores::wire::{self, HighscoreRow, HighscoresResult};
-use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicResponse};
+use oteryn_client_runtime::highscores::wire::{self, HighscoreRow};
+use oteryn_client_runtime::server_mechanic::{
+    CommandStatus, ServerMechanicCommand, ServerMechanicResponse,
+};
+use oteryn_protocol_oteryn::{
+    FoundationProtocolError, MessageType, decode_command_result, decode_wire_envelope,
+};
+use std::path::Path;
 
 type BoxError = Box<dyn std::error::Error>;
 
@@ -39,40 +45,50 @@ fn parse_row(text: &str) -> Result<HighscoreRow, BoxError> {
     ))
 }
 
-struct Capture {
-    payload: Vec<u8>,
-    expected: String,
-}
-
-fn capture() -> Result<Capture, BoxError> {
-    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let root = std::path::Path::new(&root);
-        return Ok(Capture {
-            payload: std::fs::read(root.join("s11-page1.bin"))?,
-            expected: std::fs::read_to_string(root.join("s11-expected.txt"))?,
-        });
-    }
-    let page = HighscoresResult {
-        own_page: None,
-        world: None,
-        category: 1,
-        snapshot_id: 77,
-        computed_at: 1_700_000_000_000,
-        page: 1,
-        has_more: false,
-        rows: vec![
-            row(1, "Ada", "Knight", 120, 9_000_000),
-            row(2, "Bo", "Druid", 95, 4_500_000),
-        ],
-        own_row: Some(row(2, "Bo", "Druid", 95, 4_500_000)),
-    };
-    Ok(Capture {
-        payload: wire::encode_highscores_result(&page).map_err(|error| format!("{error:?}"))?,
-        expected: "category=1\nvocation=0\npage=1\nsnapshot_id=77\ncomputed_at=1700000000000\nhas_more=0\n\
-                   rows=2\nrow0=1|Ada|Knight|120|9000000\nrow1=2|Bo|Druid|95|4500000\n\
-                   own=2|Bo|Druid|95|4500000\nrefused=Rejected\n"
-            .into(),
-    })
+fn live_reply(
+    root: &Path,
+    name: &str,
+    command: &ServerMechanicCommand,
+    expected_error: u32,
+) -> Result<(String, ServerMechanicResponse), BoxError> {
+    let capture: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join(name))?)?;
+    assert_eq!(
+        capture["run"].as_str(),
+        root.file_name().and_then(|name| name.to_str())
+    );
+    let session = capture["session"]
+        .as_str()
+        .filter(|session| !session.is_empty())
+        .ok_or("missing live session")?;
+    let generation = capture["generation"]
+        .as_u64()
+        .ok_or("missing live generation")?;
+    let request: Vec<u8> = serde_json::from_value(capture["request"].clone())?;
+    let request = decode_wire_envelope(&request)?.client_command(generation)?;
+    assert_eq!(request.command_type, command.command_type);
+    assert_eq!(request.payload, command.payload);
+    let result: Vec<u8> = serde_json::from_value(capture["result"].clone())?;
+    let envelope = decode_wire_envelope(&result)?;
+    assert_eq!(envelope.message_type(), MessageType::CommandResult);
+    assert_eq!(envelope.connection_generation(), generation);
+    assert_eq!(
+        Some(envelope.server_sequence()),
+        capture["server_sequence"].as_u64()
+    );
+    assert_ne!(envelope.server_sequence(), 0);
+    let result = decode_command_result(envelope.payload())?;
+    assert_eq!(Some(result.command_id), capture["command_id"].as_u64());
+    assert_eq!(result.command_id, request.command_id);
+    assert_eq!(result.error_code, expected_error);
+    Ok((
+        session.to_owned(),
+        ServerMechanicResponse {
+            command_id: result.command_id,
+            status: result.status,
+            server_sequence: envelope.server_sequence(),
+            payload: result.payload.to_vec(),
+        },
+    ))
 }
 
 fn value<'a>(expected: &'a str, key: &str) -> Result<&'a str, BoxError> {
@@ -92,19 +108,13 @@ fn panel() -> HighscoresPanel {
     }
 }
 
-fn reply(status: CommandStatus, payload: Vec<u8>) -> ServerMechanicResponse {
-    ServerMechanicResponse {
-        command_id: 7,
-        status,
-        server_sequence: 41,
-        payload,
-    }
-}
-
 #[test]
 fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxError> {
-    let capture = capture()?;
-    let expected = capture.expected.as_str();
+    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+        return Ok(());
+    };
+    let root = Path::new(&root);
+    let expected = &std::fs::read_to_string(root.join("s11-expected.txt"))?;
     let mut panel = panel();
     panel.category = value(expected, "category")?.parse()?;
     panel.vocation = value(expected, "vocation")?.parse()?;
@@ -112,12 +122,20 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
     assert_eq!(command.capability, wire::CAPABILITY_HIGHSCORES_V1);
     assert!(panel.pending);
 
-    apply_result(
-        &mut panel,
-        &reply(CommandStatus::Accepted, capture.payload.clone()),
-    );
+    let (session, response) = live_reply(root, "s11-experience-exchange.json", &command, 0)?;
+    assert_eq!(response.status, CommandStatus::Accepted);
+    assert!(panel.reply.is_none());
+    apply_result(&mut panel, &response);
     let page = panel.reply.clone().ok_or("s11 page not stored")?;
     assert!(!panel.pending && panel.feedback.is_none());
+    let world = page.world.ok_or("S11 response lacks World details")?;
+    let world = world
+        .as_bytes()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    assert_eq!(world, value(expected, "world")?.replace('-', ""));
+    assert_eq!(page.own_page, Some(value(expected, "own_page")?.parse()?));
     assert_eq!(page.category, value(expected, "category")?.parse::<u32>()?);
     assert_eq!(page.page, value(expected, "page")?.parse::<u32>()?);
     assert_eq!(
@@ -133,6 +151,7 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
         value(expected, "has_more")?.parse::<u8>()?
     );
     let count: usize = value(expected, "rows")?.parse()?;
+    assert!(count > 0);
     assert_eq!(page.rows.len(), count);
     for (index, row) in page.rows.iter().enumerate() {
         let want = parse_row(value(expected, &format!("row{index}"))?)?;
@@ -150,23 +169,58 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
         own
     );
 
-    // A refused reply and a malformed payload leave the stored page unchanged.
+    // Submit the reserved category to the reducer while retaining the visible page.
     let kept = panel.reply.clone();
-    request(&mut panel, Action::Refresh).ok_or("s11 second query not produced")?;
-    let refused = value(expected, "refused")?;
-    assert_eq!(refused, "Rejected");
-    apply_result(&mut panel, &reply(CommandStatus::Rejected, Vec::new()));
+    panel.category = 15;
+    let refusal = request(&mut panel, Action::Refresh).ok_or("s11 refusal query not produced")?;
+    let (refused_session, refused) = live_reply(
+        root,
+        "s11-refused-exchange.json",
+        &refusal,
+        FoundationProtocolError::NotSupported.code(),
+    )?;
+    assert_eq!(session, refused_session);
+    assert_eq!(response.command_id.checked_add(1), Some(refused.command_id));
+    assert!(response.server_sequence < refused.server_sequence);
+    assert_eq!(refused.status, CommandStatus::Rejected);
+    assert!(refused.payload.is_empty());
+    assert_eq!(value(expected, "refused")?, "Rejected");
+    apply_result(&mut panel, &refused);
     assert_eq!(panel.reply, kept);
     assert_eq!(
         panel.feedback.as_deref(),
         Some("Server refused highscores: Rejected. Refresh to retry with the current snapshot.")
     );
-    request(&mut panel, Action::Refresh).ok_or("s11 third query not produced")?;
+    Ok(())
+}
+
+#[test]
+fn malformed_highscores_reply_keeps_the_visible_page() -> Result<(), BoxError> {
+    let mut panel = panel();
+    panel.category = 1;
+    let kept = wire::HighscoresResult {
+        world: None,
+        own_page: None,
+        category: 1,
+        snapshot_id: 1,
+        computed_at: 0,
+        page: 1,
+        has_more: false,
+        rows: vec![row(1, "Ada", "Knight", 120, 9_000_000)],
+        own_row: None,
+    };
+    panel.reply = Some(kept.clone());
+    request(&mut panel, Action::Refresh).ok_or("highscores query not produced")?;
     apply_result(
         &mut panel,
-        &reply(CommandStatus::Accepted, vec![0xff, 0x01]),
+        &ServerMechanicResponse {
+            command_id: 1,
+            status: CommandStatus::Accepted,
+            server_sequence: 1,
+            payload: vec![0xff, 0x01],
+        },
     );
-    assert_eq!(panel.reply, kept);
+    assert_eq!(panel.reply, Some(kept));
     assert_eq!(
         panel.feedback.as_deref(),
         Some("The server returned invalid highscores")
