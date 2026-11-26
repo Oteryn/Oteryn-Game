@@ -2421,6 +2421,23 @@ pub(super) async fn walk_once(
     Ok(())
 }
 
+/// Plan once using the authored spawn cells as occupied before any STEP is sent.
+pub(super) fn spawn_clear_route(
+    world: &BundleWorld,
+    from: TilePos,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    goal: impl Fn(TilePos) -> bool,
+) -> Option<Vec<StepDirection>> {
+    let occupied: BTreeSet<_> = spawns
+        .sources
+        .iter()
+        .flat_map(|source| source.points.iter().map(|point| (source.floor, point.x, point.y)))
+        .collect();
+    route_avoiding(world, from, goal, |at| {
+        !occupied.contains(&(at.floor, at.x, at.y))
+    })
+}
+
 // Find an ordinary walkable PvP site away from every authored creature spawn.
 // Actual visibility and ATTACK results still decide whether it can be used.
 async fn pvp_meet(
@@ -2432,7 +2449,7 @@ async fn pvp_meet(
 ) -> TestResult<oteryn_dev_client::EntityRef> {
     victim.session_mut().attack_target(None).await?;
     attacker.session_mut().attack_target(None).await?;
-    let path = bundle_route(world, tile(victim.world_spatial().actor_position)?, |at| {
+    let victim_goal = |at: TilePos| {
         world
             .base()
             .tile(at.x, at.y, at.floor)
@@ -2444,7 +2461,13 @@ async fn pvp_meet(
                         .iter()
                         .all(|point| at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) > 10)
             })
-    })
+    };
+    let start = tile(victim.world_spatial().actor_position)?;
+    let path = if strict {
+        spawn_clear_route(world, start, spawns, victim_goal)
+    } else {
+        bundle_route(world, start, victim_goal)
+    }
     .ok_or("PvP player route blocked: no reachable non-PZ tile clear of creature spawns")?;
     if strict {
         walk_once(victim, world, &path).await?;
@@ -2452,18 +2475,20 @@ async fn pvp_meet(
         walk(victim, world, &path).await?;
     }
     let target = tile(victim.world_spatial().actor_position)?;
-    let path = bundle_route(
-        world,
-        tile(attacker.world_spatial().actor_position)?,
-        |at| {
-            at.floor == target.floor
-                && at.x.abs_diff(target.x) + at.y.abs_diff(target.y) == 1
-                && world
-                    .base()
-                    .tile(at.x, at.y, at.floor)
-                    .is_some_and(|tile| !tile.protection_zone())
-        },
-    )
+    let attacker_goal = |at: TilePos| {
+        at.floor == target.floor
+            && at.x.abs_diff(target.x) + at.y.abs_diff(target.y) == 1
+            && world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+    };
+    let start = tile(attacker.world_spatial().actor_position)?;
+    let path = if strict {
+        spawn_clear_route(world, start, spawns, attacker_goal)
+    } else {
+        bundle_route(world, start, attacker_goal)
+    }
     .ok_or("PvP player route blocked: no adjacent non-PZ attacker tile")?;
     if strict {
         walk_once(attacker, world, &path).await?;

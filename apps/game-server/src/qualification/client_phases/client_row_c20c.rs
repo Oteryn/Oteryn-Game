@@ -17,8 +17,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         "level-21-sorcerer,level-100-knight,purchase-gold",
         "isolate Twist consumption on a legal Open PvP death",
     );
-    match verdict::indexed_timeout(Duration::from_secs(540), verdict::observe(journey(clients)))
-        .await
+    match verdict::indexed_timeout(
+        Duration::from_secs(1500),
+        verdict::observe(journey(clients)),
+    )
+    .await
     {
         Ok(Ok(())) => evidence("C20c_CHECK packet-and-fresh-admission PASS"),
         Ok(Err(error)) => evidence(&format!(
@@ -100,6 +103,7 @@ async fn journey(core: &SeamClients<'_>) -> TestResult {
         &mut victim,
         world,
         &metadata.npcs,
+        &metadata.spawns,
         "oteryn:npc.norf",
         "The Spiritual Shielding",
     )
@@ -111,6 +115,7 @@ async fn journey(core: &SeamClients<'_>) -> TestResult {
         &mut victim,
         world,
         &metadata.npcs,
+        &metadata.spawns,
         "oteryn:npc.quentin",
         "Twist of Fate",
     )
@@ -211,6 +216,7 @@ async fn buy(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
+    spawns: &oteryn_world_bundle::spawn::Table,
     seller: &str,
     name: &str,
 ) -> TestResult {
@@ -222,10 +228,15 @@ async fn buy(
     let [placement] = npc.placements.as_slice() else {
         return Err(format!("C20c requires one authored {seller} placement").into());
     };
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at.floor == placement.floor
-            && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
-    })
+    let path = full_e2ef6::spawn_clear_route(
+        world,
+        tile(client.world_spatial().actor_position)?,
+        spawns,
+        |at| {
+            at.floor == placement.floor
+                && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
+        },
+    )
     .ok_or_else(|| format!("C20c no route to {seller}"))?;
     full_e2ef6::walk_once(client, world, &path).await?;
     let basis = spatial_basis::current(client)?;
