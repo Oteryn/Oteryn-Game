@@ -132,7 +132,7 @@ class CurrentSourceImportTests(unittest.TestCase):
                 self.assertNotIn("range_tiles", expected_spell["targeting"])
                 expected_spell["targeting"]["range_tiles"] = 5
             registered_spell = copy.deepcopy(qualified["bundle"]["spell"])
-            module.apply_c18b_spell_header(registered_spell)
+            module.apply_c18b_spell_policy(registered_spell)
             self.assertEqual(registered_spell, expected_spell)
             self.assertEqual(qualified["dependencies"], profile["dependencies"])
         a = json.loads(self.generated[current.SELECTION])

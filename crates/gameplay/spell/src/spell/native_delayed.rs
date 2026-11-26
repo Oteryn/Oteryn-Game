@@ -947,6 +947,48 @@ mod tests {
             "cooldown_ms_by_stage":[32000,28000,24000],"bonus_damage_percent_by_stage":[8,10,12]})
     }
     #[test]
+    fn c18b_death_echo_rolls_crystal_damage_bounds_at_both_occurrences() {
+        let document: Value = serde_json::from_str(include_str!(
+            "../../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+        ))
+        .expect("native profiles");
+        let echo = document["profiles"]
+            .as_array()
+            .expect("profiles")
+            .iter()
+            .find(|profile| profile["name"] == "Death Echo")
+            .expect("Death Echo");
+        let compiled = super::super::native::spell_from_bundle(
+            &json!({"spell": echo["spell"]}),
+            &echo["dependencies"],
+        )
+        .expect("compile Death Echo");
+        let mut f = facts();
+        f.cast.inputs.level = 300;
+        f.cast.inputs.magic_level = 50;
+        f.current = Some(f.cast.clone());
+        for (event, now_ms, expected) in [
+            (Event::Cast, 100, (180, 240)),
+            (Event::DelayedOccurrence, 1100, (90, 120)),
+        ] {
+            f.event = event;
+            f.now_ms = now_ms;
+            let mut rolled = None;
+            compiled
+                .plan(
+                    super::super::native::Facts::Delayed(&f),
+                    &mut |low, high| {
+                        rolled = Some((low, high));
+                        low
+                    },
+                )
+                .expect("plan Death Echo occurrence");
+            assert_eq!(rolled, Some(expected), "{event:?}");
+        }
+        assert_eq!(echo["spell"]["base_power"], 85);
+    }
+
+    #[test]
     fn all_four_canonical_profiles_reach_their_typed_cast_plans() {
         let document: Value = serde_json::from_str(include_str!(
             "../../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
