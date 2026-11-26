@@ -335,7 +335,43 @@ fn verify_capture_directory(root: &std::path::Path, proof: &Proof) -> Result<(),
     if created.elapsed()? > std::time::Duration::from_secs(600) {
         return Err("C18a capture expired before replay".into());
     }
+    let name = root
+        .file_name()
+        .and_then(std::ffi::OsStr::to_str)
+        .ok_or("C18a replay lacks a run directory name")?;
+    let parent = root
+        .parent()
+        .ok_or("C18a replay lacks a wrapper work directory")?;
+    let binding = format!(
+        "SEAM_EVIDENCE c18a_capture_binding directory={name} session={}",
+        proof.game_session_id
+    );
+    let mut found = false;
+    for entry in std::fs::read_dir(parent)? {
+        let entry = entry?;
+        if !entry.file_name().to_string_lossy().ends_with("-rows.log") {
+            continue;
+        }
+        let log = std::fs::read_to_string(entry.path())?;
+        if log.lines().any(|line| line == binding) {
+            if found || !valid_run_log(&log, &binding) {
+                return Err("C18a wrapper log contains duplicate capture evidence, a fixture retry, or a failed boot".into());
+            }
+            found = true;
+        }
+    }
+    if !found {
+        return Err("C18a replay has no matching live wrapper evidence".into());
+    }
     Ok(())
+}
+
+fn valid_run_log(log: &str, binding: &str) -> bool {
+    log.lines().filter(|line| *line == binding).count() == 1
+        && log
+            .lines()
+            .any(|line| line == "NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged")
+        && !log.lines().any(|line| line.contains("FIXTURE_RETRY "))
 }
 
 fn verify_directional_intent(payload: &[u8], spell: u32) -> Result<(), Error> {
@@ -484,4 +520,20 @@ fn rejects_health_loss_without_the_exact_damage_source() -> Result<(), Error> {
     );
     assert!(verify_damage(&[], caster, target, 8).is_err());
     Ok(())
+}
+
+#[test]
+fn rejects_unbound_or_retried_wrapper_log() {
+    let binding = "SEAM_EVIDENCE c18a_capture_binding directory=captures.test session=test";
+    let pass = "NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged";
+    assert!(valid_run_log(&format!("{binding}\n{pass}"), binding));
+    assert!(!valid_run_log(pass, binding));
+    assert!(!valid_run_log(
+        &format!("{binding}\n{binding}\n{pass}"),
+        binding
+    ));
+    assert!(!valid_run_log(
+        &format!("{binding}\nFIXTURE_RETRY step=logout reason=busy attempt=1\n{pass}"),
+        binding
+    ));
 }

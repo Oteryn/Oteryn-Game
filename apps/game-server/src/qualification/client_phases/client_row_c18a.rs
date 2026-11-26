@@ -10,6 +10,7 @@ use oteryn_protocol_oteryn::{actor_spell::SpellCastDisposition, presentation, ta
 
 const SCORCH_MANA: u32 = 8;
 const RAT_MAX_HP: u64 = 20;
+const RETREAT_STEPS: usize = 64;
 const CAST_TILE: TilePos = TilePos {
     x: 32490,
     y: 32169,
@@ -272,10 +273,54 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .clone();
     let damage_payload = received_damage_payload(&exchange.inbound, damage_sequence).await?;
 
-    if !is_logout_rest_tile(world, TOWN) {
-        return Err("C18a fixed logout tile must be a protection zone".into());
+    // Use a fixed prefix of the return route. The temple restores mana, so the
+    // caster must stay outdoors until the ordinary combat lock clears.
+    let retreat = route_avoiding(
+        world,
+        CAST_TILE,
+        |at| at == TOWN,
+        |at| !spawn_cells.contains(&at),
+    )
+    .ok_or("C18a fixed retreat route unavailable")?;
+    let retreat = retreat
+        .get(..RETREAT_STEPS)
+        .ok_or("C18a retreat route too short")?;
+    let rest = retreat
+        .iter()
+        .try_fold(CAST_TILE, |from, &direction| {
+            destination(world, from, direction).filter(|&at| !is_logout_rest_tile(world, at))
+        })
+        .ok_or("C18a fixed retreat crosses a protection tile")?;
+    walk_path(&mut client, world, retreat, rest).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+    loop {
+        let state = client
+            .session_mut()
+            .combat_state()
+            .ok_or("C18a missing outdoor combat state")?;
+        if !state.in_fight {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "C18a combat lock did not clear at the fixed outdoor tile {rest:?}"
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(200)).await?;
+        client.take_events();
+        verdict::Harness::global().progress("wait-for-combat-lock");
     }
-    walk_once(&mut client, world, &spawn_cells, TOWN).await?;
+    let pre_logout = client
+        .actor_vitals()
+        .ok_or("C18a missing pre-logout vitals")?;
+    if (pre_logout.mana, pre_logout.soul) != (after.mana, after.soul) {
+        return Err(format!(
+            "C18a vitals changed before logout: expected mana={} soul={}, observed mana={} soul={}",
+            after.mana, after.soul, pre_logout.mana, pre_logout.soul
+        )
+        .into());
+    }
     let (result, detail, _, _) = logout_once(&mut client).await?;
     if result != Some(LogoutResult::Accepted) {
         return Err(format!("C18a first logout refused: {detail}").into());
@@ -285,8 +330,8 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if fresh.join_snapshot().game_session_id == session {
         return Err("C18a relog reused the cast session".into());
     }
-    if tile(fresh.world_spatial().actor_position)? != TOWN {
-        return Err("C18a relog did not retain the protection tile".into());
+    if tile(fresh.world_spatial().actor_position)? != rest {
+        return Err("C18a relog did not retain the fixed outdoor tile".into());
     }
     let fresh_vitals = *fresh.actor_vitals().ok_or("C18a missing relogged vitals")?;
     if (fresh_vitals.mana, fresh_vitals.soul) != (after.mana, after.soul) {
@@ -367,6 +412,13 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             "capabilities": capabilities,
         }))?,
     )?;
+    let capture_name = root
+        .file_name()
+        .and_then(std::ffi::OsStr::to_str)
+        .ok_or("C18a capture directory lacks a run name")?;
+    evidence(&format!(
+        "SEAM_EVIDENCE c18a_capture_binding directory={capture_name} session={session}"
+    ));
     Ok(())
 }
 
@@ -408,7 +460,16 @@ async fn walk_once(
         |at| !spawn_cells.contains(&at),
     )
     .ok_or_else(|| format!("C18a fixed route unavailable: {start:?} -> {goal:?}"))?;
-    for direction in path {
+    walk_path(client, world, &path, goal).await
+}
+
+async fn walk_path(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+    goal: TilePos,
+) -> TestResult {
+    for &direction in path {
         let from = tile(client.world_spatial().actor_position)?;
         let expected =
             destination(world, from, direction).ok_or("C18a route lost its planned landing")?;
