@@ -212,7 +212,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
             );
         }
         let cells = map
-            .movement_cells(deps.room.movement_cells())
+            .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
         let content_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
@@ -348,6 +348,20 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
                 assert_eq!(result, expected, "source level50 gate at level{level}");
                 admitted = next;
                 assert_eq!(map.enterable(station_pos), level == 50);
+                let position = owner
+                    .runtime
+                    .lock()
+                    .await
+                    .read_actor_position(deps.actor)
+                    .map_err(debug)?;
+                assert_eq!(
+                    position.position(),
+                    MovementLocalPosition {
+                        x: i32::from(if level == 50 { door_x } else { door_x + 1 }),
+                        y: i32::from(door_y),
+                        floor: -i16::from(door_floor),
+                    },
+                );
                 if level == 50 {
                     assert_eq!(map.facts().doors().revision(placement_key), 1);
                     let (next, result, _) =
@@ -356,6 +370,15 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
                     admitted = next;
                     assert_eq!(result, UseDisposition::Committed);
                     assert_eq!(map.facts().doors().revision(placement_key), 1);
+                    assert_eq!(
+                        owner
+                            .runtime
+                            .lock()
+                            .await
+                            .read_actor_position(deps.actor)
+                            .map_err(debug)?,
+                        position,
+                    );
                 }
             }
             eprintln!(

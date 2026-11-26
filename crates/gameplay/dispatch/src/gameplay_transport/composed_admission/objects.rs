@@ -156,11 +156,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseOutcome::rejected();
         }
-        // Missing canonical facts fail closed for a level door. Plain doors do not attach a
-        // required level, so zero remains immaterial to their rule.
-        let actor_level = spell_states
-            .get(&runtime, actor, session)
-            .map_or(0, |state| state.character_facts().level);
         // Quest doors read only this admitted session's copy of the durable quest owner. A
         // missing/failed copy cannot grant access. The action id is authored in the bundle.
         let quest_storage_met = map
@@ -236,19 +231,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ..UseOutcome::rejected()
             };
         }
-        map_door::use_door(
-            &map.overlay,
-            &map.facts,
-            runtime.content_pin().client_artifact_digest(),
+        let outcome = map_door::use_owned_door(
+            map,
+            &self.movement_cells,
+            &mut runtime,
+            actor,
+            session,
+            expected,
             actor_tile,
-            |door| {
-                map.overlay.has_added_item(door)
-                    || map_door::doorway_occupied(&runtime, actor, actor_tile, door)
-            },
-            actor_level,
+            &spell_states,
             quest_storage_met,
+            self.owner_now(),
             target,
-        )
+        );
+        if outcome.disposition == oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+            && runtime
+                .read_actor_position(actor)
+                .is_ok_and(|after| after != expected)
+        {
+            self.states.chat.close_out_of_range(&runtime, session);
+        }
+        outcome
     }
 
     /// C2: one `USE_INTENT` on the entry chest (USE-WIRE-V1 field 1, #162 5914960502). Reach is
