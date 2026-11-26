@@ -14,7 +14,7 @@
 //!    actor generation has not returned. Finish with another accepted LOGOUT.
 use super::*;
 use oteryn_dev_client::{
-    DevClientSession, EntityDetail, EntityKind, EntityRef, WorldSpatialEntity,
+    DevClientSession, EntityDetail, EntityKind, EntityRef, SessionEvent, WorldSpatialEntity,
 };
 
 const ROW: &str = "W01b";
@@ -124,6 +124,15 @@ fn visible_rat_at(client: &DevClientSession, at: TilePos) -> Option<EntityRef> {
     client
         .world_entities()
         .and_then(|entities| rat_at(entities.iter().copied(), at))
+}
+
+fn entered_rat_at(events: Vec<SessionEvent>, at: TilePos) -> Option<EntityRef> {
+    events.into_iter().find_map(|event| {
+        let SessionEvent::WorldSpatialEntities(delta) = event else {
+            return None;
+        };
+        rat_at(delta.value.enter.into_iter(), at)
+    })
 }
 
 async fn pump(client: &mut DevClientSession) -> TestResult<Vec<oteryn_dev_client::SessionEvent>> {
@@ -244,25 +253,40 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     progress.pass("kill-deltas", (target, corpse, last));
 
     progress.begin("no-early-respawn");
+    let nearby = tile(client.world_spatial().actor_position)?;
+    if nearby == spawn {
+        return Err("W01b respawn observer occupies the spawn cell".into());
+    }
     let no_early_respawn_until = tokio::time::Instant::now()
         + Duration::from_millis(u64::from(respawn_ms) + 1_000);
     verdict::Harness::global().bounded_wait(no_early_respawn_until, "bounded-observation");
     while tokio::time::Instant::now() < no_early_respawn_until {
-        pump(&mut client).await?;
-        if visible_rat_at(&client, spawn).is_some() {
+        let events = pump(&mut client).await?;
+        if entered_rat_at(events, spawn).is_some() || visible_rat_at(&client, spawn).is_some() {
             return Err("a replacement appeared before the non-blockable Rat warning elapsed".into());
         }
     }
-    progress.pass("no-early-respawn", (spawn, respawn_ms));
+    progress.pass("no-early-respawn", (spawn, nearby, respawn_ms));
 
     progress.begin("nearby-replacement");
-    wait_until(
-        &mut client,
-        no_early_respawn_until + Duration::from_secs(10),
-        |client| visible_rat_at(client, spawn).is_some_and(|entity| entity != target),
-    )
-    .await?;
-    let nearby_replacement = visible_rat_at(&client, spawn).ok_or("nearby replacement disappeared")?;
+    let deadline = no_early_respawn_until + Duration::from_secs(10);
+    let nearby_replacement = loop {
+        let events = pump(&mut client).await?;
+        if let Some(replacement) = entered_rat_at(events, spawn)
+            && replacement != target
+        {
+            break replacement;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            let observed = client.world_entities().and_then(|entities| {
+                entities.iter().find(|entity| tile(entity.position).ok() == Some(spawn))
+            });
+            return Err(format!(
+                "no replacement entry at non-blockable Rat spawn={spawn:?} observer={nearby:?} authored_ms={respawn_ms} on_spawn={observed:?}"
+            )
+            .into());
+        }
+    };
     progress.pass("nearby-replacement", nearby_replacement);
 
     progress.begin("leave-interest");
