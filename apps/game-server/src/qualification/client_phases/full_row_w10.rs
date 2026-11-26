@@ -56,7 +56,9 @@ async fn command(
 }
 
 fn accepted(step: u8, reply: (CommandStatus, Vec<u8>), expected: [u8; 2]) -> StepResult {
-    if reply.0 != CommandStatus::Accepted || reply.1 != expected {
+    require_mechanic_acceptance(reply.0, "Hazard command")
+        .map_err(|error| failed_error(step, error, "an accepted first Hazard reply"))?;
+    if reply.1 != expected {
         return Err(failed(
             step,
             format!("status={:?},payload={:?}", reply.0, reply.1),
@@ -157,9 +159,7 @@ pub(super) async fn enter_primal(
         )
         .into());
     };
-    if reply.status != CommandStatus::Accepted {
-        return Err(format!("Primal lever handoff had status {:?}", reply.status).into());
-    }
+    require_mechanic_acceptance(reply.status, "Primal lever handoff")?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while client.join_snapshot().game_session_id == source {
         if tokio::time::Instant::now() >= deadline {
@@ -314,15 +314,13 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
     )
     .await
     .map_err(|error| failed_error(1, error, "a seeded level-500 knight build"))?;
-    let logout = admitted
-        .session_mut()
-        .logout()
+    let (result, detail, _, _) = logout_once(&mut admitted)
         .await
         .map_err(|error| failed_error(1, error, "the first staging logout"))?;
-    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(failed(
             1,
-            format!("{:?}", logout.result),
+            detail,
             "an accepted first staging logout",
         ));
     }
@@ -398,6 +396,13 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         command(&mut client, Some(2))
             .await
             .map_err(|error| failed_error(2, error, "a locked-level refusal"))?,
+    )?;
+    accepted(
+        2,
+        command(&mut client, None)
+            .await
+            .map_err(|error| failed_error(2, error, "unchanged Hazard after the refusal"))?,
+        [1, 1],
     )?;
 
     enter_primal(&mut client, world, true)
@@ -504,15 +509,11 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
     evidence("W10_CHECK step=4 status=PASS scaled-combat=kill loot-delta=present");
 
     let old_session = client.join_snapshot().game_session_id;
-    if client
-        .session_mut()
-        .logout()
+    let (result, detail, _, _) = logout_once(&mut client)
         .await
-        .map_err(|error| failed_error(5, error, "an accepted logout reply"))?
-        .result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err(failed(5, "logout_refused", "an accepted logout reply"));
+        .map_err(|error| failed_error(5, error, "an accepted logout reply"))?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(failed(5, detail, "an accepted logout reply"));
     }
     drop(client);
     let mut client = connect_character(clients, 0xd1, 0)

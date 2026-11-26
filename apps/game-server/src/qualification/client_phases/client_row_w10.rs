@@ -34,6 +34,9 @@ async fn probe(
 ) -> TestResult {
     let session = client.join_snapshot().game_session_id;
     let reply = hazard(client, request).await?;
+    if status == CommandStatus::Accepted {
+        require_mechanic_acceptance(reply.status, name)?;
+    }
     if client.join_snapshot().game_session_id != session
         || reply.status != status
         || reply.payload != expected
@@ -63,9 +66,9 @@ async fn probe(
 }
 
 async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
-    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("W10.client first logout refused: {:?}", reply.result).into());
+    let (result, detail, _, _) = logout_once(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("W10.client first logout refused: {detail}").into());
     }
     Ok(())
 }
@@ -185,7 +188,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         .await
     {
         Ok(Ok(observed)) => evidence(&format!(
-            "e2e_all scenario=W10.client status=CAPTURED evidence={observed}"
+            "e2e_all scenario=W10.client status=FAIL evidence=original-command-result-frame-unavailable journey={observed}"
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W10.client status=FAIL evidence={error}"
