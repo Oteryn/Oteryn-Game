@@ -54,8 +54,16 @@ KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 class ServerNoticeTests(unittest.TestCase):
     def test_g14_batch_configures_login_motd_without_a_manual_export(self):
         config = section("# G14's isolated batch", "write_node_config() {")
+        outputs = []
+        for _ in range(2):
+            result = bash(config + 'printf "%s" "$NODE_BOOT_SERVER_MOTD"', {
+                "NODE_BOOT_E2E_ONLY": "rows", "OTERYN_E2E_ROW_BATCH": "246:1",
+            })
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertRegex(result.stdout, r"\AWelcome to the Crystal Server! Qualification [0-9a-f]{24}\Z")
+            outputs.append(result.stdout)
+        self.assertNotEqual(*outputs)
         for batch, group, override, expected in (
-            ("246:1", "rows", None, "Welcome to the Crystal Server!"),
             ("246:1", "rows", "Operator notice", "Operator notice"),
             ("246:1", "rows", "", ""),
             ("245:1", "rows", None, ""),

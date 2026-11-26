@@ -773,8 +773,9 @@ install_owned root -m 0600 "$WORK/ops.toml" "$BASE/ops/ops.toml"
 # revision are refused at boot, as D3 requires.
 DESCRIPTOR_INSTALLED_AT="$(date +%s)"
 # G14's isolated batch configures the ordinary Server login MOTD.
-if [[ "${NODE_BOOT_E2E_ONLY:-}" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 246:1 ]]; then
-  : "${NODE_BOOT_SERVER_MOTD=Welcome to the Crystal Server!}"
+if [[ "${NODE_BOOT_E2E_ONLY:-}" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 246:1 && ! -v NODE_BOOT_SERVER_MOTD ]]; then
+  g14_notice_id=$(openssl rand -hex 12)
+  NODE_BOOT_SERVER_MOTD="Welcome to the Crystal Server! Qualification ${g14_notice_id}"
 fi
 
 write_node_config() { # launch-file

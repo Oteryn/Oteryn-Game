@@ -232,6 +232,20 @@ async fn body(client: &mut DevClientSession, expected_motd: &str) -> TestResult<
     if !matches!(query(client).await?, wire::Reply::None) {
         return Err("step=replay observed=dialog-reopened".into());
     }
+    let changed = answer(selected, dialog.id, CANCEL)?;
+    let (status, payload) = send(
+        client,
+        CAPABILITY,
+        wire::COMMAND_TYPE_SERVER_MODAL_ANSWER,
+        &changed,
+    )
+    .await?;
+    if status != CommandStatus::Rejected || !payload.is_empty() {
+        return Err("step=changed-replay observed=changed-answer-not-rejected".into());
+    }
+    if !matches!(query(client).await?, wire::Reply::None) {
+        return Err("step=changed-replay observed=dialog-reopened".into());
+    }
     Ok(dialog.id)
 }
 
