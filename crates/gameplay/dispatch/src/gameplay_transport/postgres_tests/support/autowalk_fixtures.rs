@@ -194,6 +194,22 @@ pub(super) async fn send(
     Ok(())
 }
 
+pub(super) async fn command_reply(
+    client: &mut DuplexStream,
+    id: u64,
+) -> TestResult<(crate::foundation::CommandStatus, Vec<u8>)> {
+    use oteryn_protocol_oteryn::{MessageType, decode_command_result, decode_wire_envelope};
+    loop {
+        let frame = read(client).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::CommandResult {
+            let result = decode_command_result(envelope.payload())?;
+            assert_eq!(result.command_id, id);
+            return Ok((result.status, result.payload.to_vec()));
+        }
+    }
+}
+
 pub(super) async fn read(client: &mut DuplexStream) -> TestResult<Vec<u8>> {
     let len = tokio::time::timeout(Duration::from_secs(20), client.read_u32()).await??;
     let mut frame = vec![0; usize::try_from(len)?];

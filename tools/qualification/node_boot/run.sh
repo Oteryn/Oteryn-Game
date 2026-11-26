@@ -1888,6 +1888,13 @@ fi
 
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
+source "$GAME_SOURCE/tools/qualification/node_boot/s01_client_replay.sh"
+NODE_BOOT_S01_CAPTURE_DIR=
+if s01_client_selected; then
+  : # The shared seam-stage gate owns the capture and replay.
+else
+  [[ $? == 3 ]] || blocked s01_selector_failed
+fi
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
   stage "$seam_stage_name" -- seam_stages
 else
