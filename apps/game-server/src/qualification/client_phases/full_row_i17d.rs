@@ -249,31 +249,79 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     expect(&mut client, amulet, "equip-amulet", Out::Moved).await?;
     let repeated_at = tokio::time::Instant::now();
     let refused = hotkey(&mut client, amulet).await?;
-    if refused != Out::Rejected {
-        return Err(format!(
-            "step=immediate-repeat observed={refused:?};elapsed_ms={};needed=Rejected-and-still-worn",
-            repeated_at.elapsed().as_millis()
-        ).into());
-    }
-    settle(&mut client, amulet, true).await?;
-    let slot = worn(&client, amulet);
-    if slot != Some(EquipmentSlot::Necklace) || quantity(&client, amulet)? != 0 {
-        return Err(format!(
-            "step=immediate-repeat observed=slot:{slot:?};needed=Necklace-and-no-carried-copy"
-        )
-        .into());
-    }
-    // Crystal 201189f8 configmanager.cpp:377 defaults the necklace clock to 200 ms.
-    wait_for(&mut client, Duration::from_millis(200)).await?;
-    expect(&mut client, amulet, "after-delay", Out::Moved).await?;
+    let cooldown_failure = match refused {
+        Out::Rejected => {
+            settle(&mut client, amulet, true).await?;
+            let slot = worn(&client, amulet);
+            if slot != Some(EquipmentSlot::Necklace) || quantity(&client, amulet)? != 0 {
+                return Err(format!(
+                    "step=immediate-repeat observed=slot:{slot:?};needed=Necklace-and-no-carried-copy"
+                ).into());
+            }
+            // Crystal 201189f8 configmanager.cpp:377 defaults the necklace clock to 200 ms.
+            wait_for(&mut client, Duration::from_millis(200)).await?;
+            expect(&mut client, amulet, "after-delay", Out::Moved).await?;
+            None
+        }
+        Out::Moved => {
+            let failure = format!(
+                "step=immediate-repeat observed=Moved;elapsed_ms={};needed=Rejected-and-still-worn",
+                repeated_at.elapsed().as_millis()
+            );
+            evidence(&format!("I17D_CHECK jewelry-delay FAIL {failure}"));
+            Some(failure)
+        }
+        other => {
+            return Err(format!("step=immediate-repeat observed={other:?};needed=Rejected").into());
+        }
+    };
     settle(&mut client, amulet, false).await?;
     let mut client = relog(client, clients).await?;
     if worn(&client, amulet).is_some() || quantity(&client, amulet)? != 1 {
         return Err("step=durable-reload needed=one-carried-amulet-and-empty-necklace-slot".into());
     }
-    evidence("I17D_CHECK jewelry-delay PASS immediate=Rejected recovery=Moved relog=carried");
-    fight_fear_caster(&mut client, clients, amulet).await?;
-    drop(client);
-    wait_character_released(clients, 0).await?;
+    if cooldown_failure.is_none() {
+        evidence("I17D_CHECK jewelry-delay PASS immediate=Rejected recovery=Moved relog=carried");
+    }
+    let combat = async {
+        character_prep::declare_seeded(
+            "I17d.full",
+            "level 100 knight",
+            "survive authored fear caster attacks",
+        );
+        request_fixture_control(
+            uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+            "--profile",
+            "knight".into(),
+        )
+        .await?;
+        let mut client = relog(client, clients).await?;
+        let vitals = client
+            .actor_vitals()
+            .ok_or("seeded combat vitals missing")?;
+        let (health, mana, _) = oteryn_gameplay_characters::vitals::maxima(
+            "knight",
+            100,
+            oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+            oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+        )
+        .ok_or("missing level 100 knight stat formula")?;
+        if (vitals.max_health, vitals.max_mana) != (health, mana) {
+            return Err(format!("seeded combat vitals mismatch: {vitals:?}").into());
+        }
+        fight_fear_caster(&mut client, clients, amulet).await?;
+        drop(client);
+        wait_character_released(clients, 0).await?;
+        Ok::<(), Box<dyn std::error::Error>>(())
+    }
+    .await;
+    if let Some(failure) = cooldown_failure {
+        return Err(match combat {
+            Ok(()) => failure,
+            Err(error) => format!("{failure};combat={error}"),
+        }
+        .into());
+    }
+    combat?;
     Ok("jewelry-delay-and-live-feared-gate-proven".to_owned())
 }
