@@ -8,7 +8,7 @@ use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent, SpellTarget};
 use oteryn_protocol_oteryn::attack::{self, ActorCombatState, FightModes};
 use oteryn_protocol_oteryn::{
     DomainSnapshot, ServerAcceptedValue, encode_command_result, encode_server_accepted,
-    encode_single_chunk_snapshot, encode_state_delta,
+    encode_single_chunk_snapshot,
 };
 use oteryn_session::{Admission, CharacterId, CommandStatus, Session, read_frame, write_frame};
 use std::num::NonZeroU32;
@@ -19,7 +19,6 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 struct Fixture {
     combat: Vec<u8>,
     result: Vec<u8>,
-    vitals: Option<(Vec<u8>, Vec<u8>)>,
     spell: NonZeroU32,
     expected: oteryn_session::SpellCastDisposition,
     feedback: &'static str,
@@ -27,24 +26,8 @@ struct Fixture {
 
 fn fixture() -> Result<Fixture, Error> {
     use oteryn_session::SpellCastDisposition;
-    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let root = std::path::Path::new(&root);
-        let expected = std::fs::read_to_string(root.join("c18a-expected.txt"))?;
-        let spell = expected
-            .strip_suffix(" Cast\n")
-            .ok_or("C18a live capture must record a successful cast")?
-            .parse()?;
-        return Ok(Fixture {
-            combat: std::fs::read(root.join("c18a-combat.bin"))?,
-            result: std::fs::read(root.join("c18a-result.bin"))?,
-            vitals: Some((
-                std::fs::read(root.join("c18a-vitals-before.bin"))?,
-                std::fs::read(root.join("c18a-vitals.bin"))?,
-            )),
-            spell,
-            expected: SpellCastDisposition::Cast,
-            feedback: "Spell cast",
-        });
+    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_some() {
+        return Err("C18a strict replay requires original session-bound wire envelopes; payload-only captures are ineligible".into());
     }
     let target = oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
         identity: [7; 16],
@@ -58,7 +41,6 @@ fn fixture() -> Result<Fixture, Error> {
         })
         .map_err(|e| format!("{e:?}"))?,
         result: actor_spell::encode_spell_cast_result(SpellCastDisposition::TargetIllegal),
-        vitals: None,
         spell: NonZeroU32::MIN,
         expected: SpellCastDisposition::TargetIllegal,
         feedback: "Illegal target",
@@ -77,16 +59,10 @@ fn replays_server_payload_and_rejects_invalid_combat_state() -> Result<(), Error
     let Fixture {
         combat,
         result,
-        vitals,
         spell,
         expected,
         feedback: expected_feedback,
     } = fixture()?;
-    let expected_vitals = vitals
-        .as_ref()
-        .map(|(_, after)| actor_spell::decode_actor_vitals(after))
-        .transpose()
-        .map_err(|error| format!("{error:?}"))?;
     assert!(attack::decode_actor_combat_state(&[0xff]).is_err());
     std::thread::Builder::new()
         .stack_size(64 << 20)
@@ -137,20 +113,11 @@ fn replays_server_payload_and_rejects_invalid_combat_state() -> Result<(), Error
                         ).map_err(|error| format!("{error:?}"))?;
                         let overlay = oteryn_protocol_oteryn::world_object::encode_world_object_overlay_snapshot(&[])
                             .map_err(|error| format!("{error:?}"))?;
-                        let mut domains = vec![
+                        let domains = [
                                 DomainSnapshot { domain_id: oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, revision: 1, snapshot_type: oteryn_protocol_oteryn::world_spatial_entities::SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2, payload: &spatial },
                                 DomainSnapshot { domain_id: oteryn_protocol_oteryn::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY, revision: 1, snapshot_type: oteryn_protocol_oteryn::world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, payload: &overlay },
                                 DomainSnapshot { domain_id: attack::STATE_DOMAIN_ACTOR_COMBAT_STATE, revision: 1, snapshot_type: attack::SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1, payload: &combat },
                         ];
-                        if let Some((before, _)) = &vitals {
-                            domains.push(DomainSnapshot {
-                                domain_id: actor_spell::STATE_DOMAIN_ACTOR_VITALS,
-                                revision: 1,
-                                snapshot_type: actor_spell::SNAPSHOT_TYPE_ACTOR_VITALS_V1,
-                                payload: before,
-                            });
-                            domains.sort_by_key(|domain| domain.domain_id);
-                        }
                         for frame in encode_single_chunk_snapshot(1, 1, 1, &domains)? {
                             write_frame(&mut peer, &frame).await?;
                         }
@@ -178,15 +145,6 @@ fn replays_server_payload_and_rejects_invalid_combat_state() -> Result<(), Error
                             )?,
                         )
                         .await?;
-                        if let Some((_, vitals)) = vitals {
-                            write_frame(
-                                &mut peer,
-                                &encode_state_delta(
-                                    1, 3, actor_spell::STATE_DOMAIN_ACTOR_VITALS, 1, 2,
-                                    actor_spell::DELTA_TYPE_ACTOR_VITALS_V1, &vitals,
-                                )?,
-                            ).await?;
-                        }
                         Ok::<_, Error>(())
                     });
                     let mut session = Session::admit(
@@ -214,9 +172,6 @@ fn replays_server_payload_and_rejects_invalid_combat_state() -> Result<(), Error
                     let CombatReport::Cast(disposition) = report else { return Err("cast returned a non-cast report".into()); };
                     assert_eq!(disposition, expected);
                     assert_eq!(feedback.text(), Some(expected_feedback));
-                    if let Some(expected_vitals) = expected_vitals {
-                        assert_eq!(session.actor_vitals(), Some(&expected_vitals));
-                    }
                     assert_eq!(session.combat_state(), before.as_ref());
                     server.await??;
                     Ok(())
