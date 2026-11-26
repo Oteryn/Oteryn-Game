@@ -110,16 +110,29 @@ async fn command(
             &payload,
         )
         .await?;
-    if response.status != CommandStatus::Accepted {
-        return Err(format!(
-            "CHARM_PROGRESSION {action:?} status={:?} payload_len={}",
-            response.status,
-            response.payload.len()
-        )
-        .into());
-    }
+    require_mechanic_acceptance(response.status, &format!("CHARM_PROGRESSION {action:?}"))?;
     wire::decode_charm_progression_reply(&response.payload)
         .map_err(|error| format!("decode {action:?}: {error:?}").into())
+}
+
+async fn logout_when_ready(client: &mut DevClientSession) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+    verdict::Harness::global().bounded_wait(deadline, "logout-combat-lock");
+    while client
+        .session_mut()
+        .combat_state()
+        .is_none_or(|state| state.in_fight)
+    {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("combat state did not clear before logout".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+    }
+    let (result, detail, _, _) = logout_once(client).await?;
+    if result != Some(LogoutResult::Accepted) {
+        return Err(format!("logout refused: {detail}").into());
+    }
+    Ok(())
 }
 
 async fn query(client: &mut DevClientSession) -> TestResult<CharmProgressionReply> {
@@ -218,8 +231,16 @@ pub(super) async fn prepare_hunter(
         chase: ChaseMode::Chase,
         secure: true,
     };
+    if client
+        .session_mut()
+        .combat_state()
+        .is_none_or(|state| state.modes == modes)
+    {
+        return Err("P01 requires a distinct initial fight-mode state".into());
+    }
     let reply = client.session_mut().set_fight_modes(&modes).await?;
-    if reply.status != CommandStatus::Accepted || reply.disposition != AttackIntentDisposition::Ok {
+    require_mechanic_acceptance(reply.status, "P01 offensive chase")?;
+    if reply.disposition != AttackIntentDisposition::Ok {
         return Err(format!("P01 offensive chase refused: {reply:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
@@ -314,6 +335,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let refused = command(&mut client, CharmProgressionAction::Assign { charm, race }).await?;
     if refused.outcome != CharmProgressionOutcome::Assign(CharmAssignDisposition::CharmLocked)
         || refused.charms != current.charms
+        || refused.bestiary != current.bestiary
     {
         return Err(format!("locked ASSIGN reply/delta mismatch: {refused:?}").into());
     }
@@ -425,7 +447,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     row.at("logout-fresh-admission");
     let old_session = client.join_snapshot().game_session_id;
-    full_row_p05::logout_after_combat(&mut client).await?;
+    logout_when_ready(&mut client).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0xa3).await?;
     if fresh.join_snapshot().game_session_id == old_session {
@@ -441,7 +463,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             "step=charm-proc no Enflame fire damage observed during bounded unarmed hunts".into(),
         );
     }
-    full_row_p05::logout_after_combat(&mut fresh).await
+    logout_when_ready(&mut fresh).await
 }
 
 #[cfg(test)]

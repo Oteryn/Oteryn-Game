@@ -37,8 +37,9 @@ async fn send(
             &payload,
         )
         .await?;
-    if reply.status != CommandStatus::Accepted || reply.payload.is_empty() {
-        return Err(format!("{action:?} status={:?}", reply.status).into());
+    require_mechanic_acceptance(reply.status, &format!("CHARM_PROGRESSION {action:?}"))?;
+    if reply.payload.is_empty() {
+        return Err(format!("{action:?} returned an empty reply").into());
     }
     if let Some(name) = capture_name {
         capture(name, &reply.payload)?;
@@ -150,7 +151,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     match verdict::indexed_timeout(DEADLINE, verdict::observe(journey(clients))).await {
         Ok(Ok(expected)) => evidence(&format!(
-            "e2e_all scenario=P01.client status=CAPTURED evidence={expected}"
+            "e2e_capture scenario=P01.client status=CAPTURED evidence={expected}"
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=P01.client status=FAIL evidence={error}"
