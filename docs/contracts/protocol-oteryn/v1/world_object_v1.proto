@@ -96,6 +96,8 @@ enum UseDispositionV1 {
   USE_DISPOSITION_BED_OCCUPIED = 21;
   USE_DISPOSITION_BED_WOKEN = 22;
   USE_DISPOSITION_OFFLINE_TRAINING = 23;
+  // Sent only to a session that selected capability 15 ITEM_USE_V1.
+  USE_DISPOSITION_PREMIUM_REQUIRED = 24;
 }
 
 // CommandResult.payload of command type 2. At most 4 bytes without capability 594, otherwise 20.

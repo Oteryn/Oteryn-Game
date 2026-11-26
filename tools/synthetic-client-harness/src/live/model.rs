@@ -396,6 +396,7 @@ impl RenderModel {
             | UseDisposition::Exhausted
             | UseDisposition::Full
             | UseDisposition::NoTarget
+            | UseDisposition::PremiumRequired
             // WORLDINT-WIRE-1: capability 11 dispositions; the harness selects no capability 11.
             | UseDisposition::Locked
             | UseDisposition::KeyMismatch

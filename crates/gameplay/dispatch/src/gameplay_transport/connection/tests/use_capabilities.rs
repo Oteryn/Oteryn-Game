@@ -7,10 +7,16 @@ fn caps(item_use: bool, world_interaction: bool) -> UseCapabilities {
 }
 
 #[test]
-fn use_dispositions_7_to_10_need_capability_15() {
+fn item_use_dispositions_need_capability_15() {
     use UseDisposition as D;
     let neg = |i, w, d| negotiated_use_disposition(caps(i, w), d, None).0;
-    for d in [D::RequirementNotMet, D::Exhausted, D::Full, D::NoTarget] {
+    for d in [
+        D::RequirementNotMet,
+        D::Exhausted,
+        D::Full,
+        D::NoTarget,
+        D::PremiumRequired,
+    ] {
         assert_eq!(neg(false, false, d), D::Rejected);
         assert_eq!(neg(true, false, d), d);
     }

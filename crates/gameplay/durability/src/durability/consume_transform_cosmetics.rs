@@ -170,7 +170,10 @@ async fn prepare_with_custody(
         &progress,
     ) {
         Ok(decision) => decision,
-        Err(rules::Refusal::PremiumRequired | rules::Refusal::OutfitRequired) => {
+        Err(rules::Refusal::PremiumRequired) => {
+            return Ok(Preparation::Refused(UseDisposition::PremiumRequired));
+        }
+        Err(rules::Refusal::OutfitRequired) => {
             return Ok(Preparation::Refused(UseDisposition::RequirementNotMet));
         }
         Err(rules::Refusal::ContentUnavailable | rules::Refusal::InvalidProgress) => {

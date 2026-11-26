@@ -183,6 +183,8 @@ pub enum UseDisposition {
     BedOccupied = 21,
     BedWoken = 22,
     OfflineTraining = 23,
+    /// Sent only under capability 15 (ITEM_USE_V1).
+    PremiumRequired = 24,
 }
 
 impl UseDisposition {
@@ -712,6 +714,7 @@ pub fn decode_use_result_with_gate(
         21 => UseDisposition::BedOccupied,
         22 => UseDisposition::BedWoken,
         23 => UseDisposition::OfflineTraining,
+        24 => UseDisposition::PremiumRequired,
         _ => return Err(WorldObjectError::Malformed),
     };
     let gate_message_id = match (disposition, gate) {
@@ -1174,7 +1177,15 @@ mod tests {
             Ok((UseDisposition::Sealed, Some(5)))
         );
         assert_eq!(
-            decode_use_result(&[0x08, 0x18]),
+            encode_use_result(UseDisposition::PremiumRequired).as_deref(),
+            Ok([0x08, 24].as_slice())
+        );
+        assert_eq!(
+            decode_use_result(&[0x08, 24]),
+            Ok(UseDisposition::PremiumRequired)
+        );
+        assert_eq!(
+            decode_use_result(&[0x08, 25]),
             Err(WorldObjectError::Malformed)
         );
         assert_eq!(
@@ -1738,11 +1749,6 @@ mod tests {
         assert!(!UseDisposition::NotPossible.needs_rune_use());
         assert!(UseDisposition::NotPossible.needs_world_interaction());
         assert!(!UseDisposition::RequirementNotMet.needs_rune_use());
-        // 24 stays unknown and fails closed.
-        assert_eq!(
-            decode_use_result(&[0x08, 24]),
-            Err(WorldObjectError::Malformed)
-        );
     }
 }
 
