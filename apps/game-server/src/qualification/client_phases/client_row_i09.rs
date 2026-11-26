@@ -47,6 +47,46 @@ fn capture(directory: &Path, name: &str, bytes: &[u8]) -> TestResult {
     Ok(())
 }
 
+// A frame with no command or status carries zero. The rotation update is bound
+// to the exact initiating USE result checked by the live client.
+fn capture_envelopes(
+    root: &Path,
+    name: &str,
+    mut transcript: &[u8],
+    session: &str,
+    rotation: Option<(u64, u64)>,
+) -> TestResult {
+    use oteryn_protocol_oteryn::{
+        FrameLength, MessageType, decode_command_result, decode_wire_envelope,
+    };
+
+    let mut envelopes = Vec::new();
+    while !transcript.is_empty() {
+        let length =
+            FrameLength::from_prefix(transcript.get(..4).ok_or("short I09 frame prefix")?)?;
+        let end = 4 + length.get() as usize;
+        let wire = decode_wire_envelope(transcript.get(4..end).ok_or("short I09 frame")?)?;
+        let sequence = wire.server_sequence();
+        let (command_id, status) = if wire.message_type() == MessageType::CommandResult {
+            let reply = decode_command_result(wire.payload())?;
+            (reply.command_id, reply.status as u32)
+        } else if let Some((command, _)) = rotation.filter(|(_, update)| *update == sequence) {
+            (command, CommandStatus::Accepted as u32)
+        } else {
+            (0, 0)
+        };
+        envelopes.push(serde_json::json!({
+            "command_id": command_id,
+            "game_session_id": session,
+            "payload": wire.payload(),
+            "server_sequence": sequence,
+            "status": status,
+        }));
+        transcript = &transcript[end..];
+    }
+    capture(root, name, &serde_json::to_vec(&envelopes)?)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let capture_root = required("E2E_ALL_CAPTURE_DIR")?;
     let capture_root = Path::new(&capture_root);
@@ -246,8 +286,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let transcript = oteryn_dev_client::take_qualification_transcript()
-        .ok_or("I09 original received frames unavailable")?;
     let stale = client.session_mut().world_context_use(&intent(0)?).await?;
     if stale.status != CommandStatus::Accepted
         || decode_use_result(&stale.payload)
@@ -265,22 +303,45 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("I09 first logout refused: {logout:?}").into());
     }
+    let transcript = oteryn_dev_client::take_qualification_transcript()
+        .ok_or("I09 original received frames unavailable")?;
     drop(client);
-    let mut relogged = connect_world(clients, 0xca).await?;
+    let (mut relogged, relog_transcript) =
+        oteryn_dev_client::with_qualification_transcript(async {
+            let client = connect_world(clients, 0xca).await?;
+            let transcript = oteryn_dev_client::take_qualification_transcript()
+                .ok_or("I09 original relog frames unavailable")?;
+            Ok::<_, Box<dyn std::error::Error>>((client, transcript))
+        })
+        .await?;
     if relogged.join_snapshot().game_session_id == session
         || relogged.world_spatial().actor_position != position
     {
         return Err("I09 relog did not open a new session at the saved position".into());
     }
     assert_chair(&mut relogged, target, item)?;
+    let initial_id = uuid_text(session.as_bytes());
+    let relog_id = uuid_text(relogged.join_snapshot().game_session_id.as_bytes());
     let binding = format!(
-        "{} {} {} {}",
-        uuid_text(session.as_bytes()),
-        reply.command_id,
-        reply.server_sequence,
-        delta.server_sequence
+        "{initial_id} {} {} {} {relog_id}",
+        reply.command_id, reply.server_sequence, delta.server_sequence
     );
     capture(capture_root, "i09-original-frames.bin", &transcript)?;
+    capture(capture_root, "i09-relog-frames.bin", &relog_transcript)?;
+    capture_envelopes(
+        capture_root,
+        "i09-envelopes.json",
+        &transcript,
+        &initial_id,
+        Some((reply.command_id, delta.server_sequence)),
+    )?;
+    capture_envelopes(
+        capture_root,
+        "i09-relog-envelopes.json",
+        &relog_transcript,
+        &relog_id,
+        None,
+    )?;
     capture(capture_root, "i09-binding.txt", binding.as_bytes())?;
     capture(capture_root, "i09-map-before.bin", &before.payload)?;
     capture(
@@ -299,7 +360,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         capture_root,
         "i09-expected.txt",
         format!(
-            "{} {} {} {} {} {} {} {} {}\n",
+            "{} {} {} {} {} {} {} {} {} {} {} {} {} {}\n",
             delta.base_revision,
             delta.new_revision,
             delta.server_sequence,
@@ -308,7 +369,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             target.x,
             target.y,
             target.floor,
-            ordinal
+            ordinal,
+            stale.command_id,
+            stale.server_sequence,
+            position.x,
+            position.y,
+            position.floor
         )
         .as_bytes(),
     )?;

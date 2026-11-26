@@ -128,7 +128,8 @@ def replay_targets():
     targets["e2e_i09"] = [(
         "oteryn-session", "furniture_rotation_real_payload_replays_and_malformed_delta_is_atomic",
         {"i09-original-frames.bin", "i09-binding.txt", "i09-map-before.bin",
-         "i09-map-before.txt", "i09-expected.txt"},
+         "i09-map-before.txt", "i09-expected.txt", "i09-envelopes.json",
+         "i09-relog-frames.bin", "i09-relog-envelopes.json"},
     )]
     return targets
 
@@ -146,7 +147,7 @@ def replay_cause(row, package, test, names, captures, server, log):
     replay_env = os.environ.copy()
     if row == "I09":
         bindings = re.findall(
-            r"^(?:SEAM_EVIDENCE )?I09_ORIGINAL_FRAME_BINDING ([0-9a-f-]{36} [0-9]+ [0-9]+ [0-9]+)$",
+            r"^(?:SEAM_EVIDENCE )?I09_ORIGINAL_FRAME_BINDING ([0-9a-f-]{36} [0-9]+ [0-9]+ [0-9]+ [0-9a-f-]{36})$",
             log.read_text(errors="replace"), re.MULTILINE,
         )
         if len(bindings) != 1:
