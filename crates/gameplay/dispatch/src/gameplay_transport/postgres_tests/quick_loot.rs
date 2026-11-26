@@ -20,6 +20,7 @@ fn request(action: QuickLootAction) -> QuickLootRequest {
         action,
         corpse: None,
         selected_item: None,
+        review_filters: false,
         category: None,
         recipient: None,
         recipient_id: None,
@@ -39,11 +40,31 @@ fn quick_loot_selected_item_accepts_and_refuses_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    scenario_thread::run("quick-loot-selected", move || {
+    run_routed_case(admin, Case::SelectedItem)
+}
+
+#[test]
+fn quick_loot_admission_restores_filter_and_lists_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_routed_case(admin, Case::FilterReview)
+}
+
+#[test]
+fn gold_pouch_first_assignment_from_fulfilment_id_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_routed_case(admin, Case::PouchFulfilment)
+}
+
+fn run_routed_case(admin: String, case: Case) -> TestResult {
+    scenario_thread::run("quick-loot", move || {
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()?
-            .block_on(scenario(Case::SelectedItem)(admin))
+            .block_on(scenario(case)(admin))
     })
 }
 
@@ -52,11 +73,13 @@ enum Case {
     Bulk,
     GoldPouch,
     SelectedItem,
+    FilterReview,
+    PouchFulfilment,
 }
 
 fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
     async move |admin| {
-        let pouch = case == Case::GoldPouch;
+        let pouch = matches!(case, Case::GoldPouch | Case::PouchFulfilment);
         let harness = Harness::create_with_admission_seed(admin, "quick_loot", true, false).await?;
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -340,9 +363,43 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
             crate::durability::map_item_mint_audit::map_item_spatial_position(9, 0, 7)
                 .try_into()
                 .map_err(|_| "far cell")?;
-        if case == Case::SelectedItem {
-            selected_item_cases(&owner, &mut admitted, &harness.pool, corpse_id, &items, [near, far])
-                .await?;
+        if !matches!(case, Case::Bulk | Case::GoldPouch) {
+            match case {
+                Case::SelectedItem => {
+                    selected_item_cases(
+                        &owner,
+                        &mut admitted,
+                        &harness.pool,
+                        corpse_id,
+                        &items,
+                        [near, far],
+                    )
+                    .await?
+                }
+                Case::FilterReview => {
+                    let index = generation
+                        .native_gameplay()
+                        .and_then(|n| n.item_index())
+                        .ok_or("item index")?;
+                    let reference = |key| {
+                        index
+                            .definition_ref("Item", key, "definition-r1")
+                            .map(std::num::NonZeroU32::get)
+                            .ok_or("filter item ref")
+                    };
+                    filter_review_cases(
+                        &owner,
+                        &mut admitted,
+                        reference("oteryn:item.tibia.i3031")?,
+                        reference("oteryn:item.tibia.i3577")?,
+                    )
+                    .await?;
+                }
+                Case::PouchFulfilment => {
+                    pouch_fulfilment_cases(&owner, &mut admitted, &harness.pool).await?
+                }
+                Case::Bulk | Case::GoldPouch => return Err("unexpected dedicated case".into()),
+            }
             drop(owner);
             drop(authority);
             drop(seal);
@@ -691,6 +748,156 @@ async fn corpse_items(pool: &sqlx::PgPool, corpse: [u8; 16]) -> TestResult<Vec<[
     rows.into_iter()
         .map(|row| row.try_into().map_err(|_| "corpse entry UUID".into()))
         .collect()
+}
+
+async fn filter_review_cases(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    skip: u32,
+    accept: u32,
+) -> TestResult {
+    let first_id = admitted.continuity.next_command_id;
+    let add = |mode, definition| QuickLootRequest {
+        filter_mode: Some(mode),
+        filter_definition_ref: Some(definition),
+        ..request(QuickLootAction::FilterAdd)
+    };
+    let edits = wire_requests(
+        owner,
+        admitted,
+        &[
+            (first_id, add(QuickLootFilterMode::Skip, skip)),
+            (first_id + 1, add(QuickLootFilterMode::Accept, accept)),
+        ],
+    )
+    .await?;
+    assert_eq!(edits.len(), 2);
+    assert!(edits.iter().all(|reply| reply.0 == CommandStatus::Accepted));
+
+    // A separate serve_admitted call restores the settings from PostgreSQL.
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 98, 607])
+            .ok_or("quick loot destination capability")?;
+    let legacy = request(QuickLootAction::ReviewDestinations);
+    let extended = quick_loot_filter_review_request();
+    let queries = [
+        (
+            COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+            encode_quick_loot_request(&legacy).map_err(debug)?,
+        ),
+        (
+            COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+            encode_quick_loot_request(&extended).map_err(debug)?,
+        ),
+    ];
+    let (replies, _) =
+        super::parameter_spell_fixtures::exchange(owner, admitted, &queries, false, false).await?;
+    let [
+        (CommandStatus::Accepted, legacy),
+        (CommandStatus::Accepted, extended),
+    ] = replies.as_slice()
+    else {
+        return Err(debug(replies).into());
+    };
+    let legacy = decode_quick_loot_destinations(legacy).map_err(debug)?;
+    assert_eq!(legacy.filters, None);
+    assert_eq!(
+        decode_quick_loot_destinations(extended).map_err(debug)?,
+        QuickLootDestinations {
+            filters: Some(QuickLootFilters {
+                mode: QuickLootFilterMode::Accept,
+                skipped: vec![skip],
+                accepted: vec![accept]
+            }),
+            ..legacy
+        }
+    );
+    Ok(())
+}
+
+async fn pouch_fulfilment_cases(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    pool: &sqlx::PgPool,
+) -> TestResult {
+    let uuid = |seed| sqlx::types::Uuid::from_bytes(id(seed));
+    let pouch = uuid(71);
+    let fulfilment = uuid(240);
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    // The row shape matches the Store Inbox projection, with a distinct item and fulfilment ID.
+    sqlx::query(
+        "INSERT INTO store_delivery_receipts
+           (operation_id, account_id, character_id, world_id, fulfilment_unit_id,
+            result, recovery_generation, decided_at, item_instance_id, receipt)
+         SELECT $1, $2, character_id, world_id, $3, 'COMMITTED', 1, 1, $4, decode('01','hex')
+         FROM game_character_roots WHERE character_id=$5",
+    )
+    .bind(uuid(242))
+    .bind(uuid(98))
+    .bind(fulfilment.to_string())
+    .bind(pouch)
+    .bind(uuid(41))
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+
+    let assign = |id| QuickLootRequest {
+        recipient: Some(QuickLootRecipient::GoldPouch),
+        recipient_id: Some(id),
+        ..request(QuickLootAction::Assign)
+    };
+    let command = admitted.continuity.next_command_id;
+    assert_eq!(
+        wire_requests(
+            owner,
+            admitted,
+            &[(command, assign(*fulfilment.as_bytes()))]
+        )
+        .await?[0]
+            .0,
+        CommandStatus::Rejected
+    );
+    // Switch only receipt provenance before exercising the first successful assignment.
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "UPDATE store_delivery_receipts r SET account_id=c.account_id
+         FROM game_character_roots c WHERE r.operation_id=$1 AND c.character_id=r.character_id",
+    )
+    .bind(uuid(242))
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    let command = admitted.continuity.next_command_id;
+    assert_eq!(
+        wire_requests(
+            owner,
+            admitted,
+            &[(command, assign(*fulfilment.as_bytes()))]
+        )
+        .await?[0]
+            .0,
+        CommandStatus::Accepted
+    );
+    let saved: (sqlx::types::Uuid, bool) = sqlx::query_as(
+        "SELECT unassigned_container_id, unassigned_gold_pouch
+         FROM game_character_quick_loot_settings WHERE character_id=$1",
+    )
+    .bind(uuid(41))
+    .fetch_one(pool)
+    .await?;
+    assert_eq!(saved, (pouch, true));
+    let command = admitted.continuity.next_command_id;
+    assert_eq!(
+        wire_requests(owner, admitted, &[(command, assign(*pouch.as_bytes()))]).await?[0].0,
+        CommandStatus::Accepted
+    );
+    Ok(())
 }
 
 async fn quick_loot_destination_management(
