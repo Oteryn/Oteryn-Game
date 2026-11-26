@@ -12,6 +12,9 @@ match routing::use_item::route(
 )
 .await
 {
-    Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    Ok(dispatch) => dispatch,
+    Err(path) => {
+        routing::log_unresolved_use(command, path);
+        return Err(ServeEnd::Disconnected);
+    }
 }

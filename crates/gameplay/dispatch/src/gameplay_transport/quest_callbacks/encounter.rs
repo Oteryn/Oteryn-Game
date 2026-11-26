@@ -415,7 +415,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut players = Vec::new();
         let mut proofs = Vec::new();
-        for member in &encounter.players {
+        for (slot, member) in encounter.players.iter().enumerate() {
             let mut occupants = census
                 .iter()
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
@@ -489,7 +489,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             // Source phase parties can share an arrival tile while still
             // qualifying voluntary movement and protection-zone access.
-            let Ok(proof) = crate::map::floor::prepare_quest_encounter_member(
+            let proof = match crate::map::floor::prepare_quest_encounter_member(
                 runtime,
                 &self.movement_cells,
                 who,
@@ -499,8 +499,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 blocked,
                 &closed,
                 encounter.phase.is_some(),
-            ) else {
-                return UseDisposition::NotPossible;
+            ) {
+                Ok(proof) => proof,
+                Err(error) => {
+                    super::super::operator_event(&format!(
+                        "event=quest_encounter_arrival_refused callback={} member={slot} origin={},{},{} destination={},{},{} error={error:?}",
+                        callback.key,
+                        member.from.x,
+                        member.from.y,
+                        member.from.floor,
+                        member.to.x,
+                        member.to.y,
+                        member.to.floor,
+                    ));
+                    return UseDisposition::NotPossible;
+                }
             };
             players.push((who, member_session, expected));
             proofs.push(proof);

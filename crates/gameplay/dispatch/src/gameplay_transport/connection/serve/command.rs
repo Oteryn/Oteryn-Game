@@ -200,6 +200,7 @@ where
     if input_permit.is_none() && session.reconcile_original_bank {
         // No current input grant: do not run money work, and do not falsely terminate an
         // accepted original command whose retained Bank status has not been classified.
+        log_preflight_use_failure(command, "retained_npc_input_unavailable");
         return Err(ServeEnd::Disconnected);
     }
     let retained_bank = if input_permit.is_some() && session.reconcile_original_bank {
@@ -214,6 +215,7 @@ where
             )
             .await;
         if outcome.as_ref().is_some_and(|outcome| outcome.unknown) {
+            log_preflight_use_failure(command, "retained_npc_unresolved");
             return Err(ServeEnd::Disconnected);
         }
         session.reconcile_original_bank = false;
@@ -243,6 +245,7 @@ where
             .training_activity(session.admitted, command.command_type)
             .await
     {
+        log_preflight_use_failure(command, "training_activity_unresolved");
         return Err(ServeEnd::Disconnected);
     }
     let mut outcome = CommandOutcome {
@@ -289,6 +292,20 @@ where
                 window: outcome.window,
             },
             outcome.inventory_changed,
+        )
+    } else if input_permit.is_none()
+        && command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
+        && session
+            .selected_capabilities
+            .command_selected(command.command_type)
+    {
+        routing::refuse_use(
+            command,
+            if guard_deferred {
+                "input_guard_deferred"
+            } else {
+                "input_unavailable"
+            },
         )
     } else if input_permit.is_none()
         || !session
@@ -403,6 +420,7 @@ where
             .quest_callback_unresolved(session.admitted.game_session_id)
             .await
     {
+        routing::log_unresolved_use(command, "quest_use_callback");
         return Err(ServeEnd::Disconnected);
     }
     dispatch = bank_inventory(authority, session, dispatch).await?;
@@ -458,6 +476,15 @@ where
         .ok_or(ServeEnd::Disconnected)?;
     }
     Ok(())
+}
+
+fn log_preflight_use_failure(
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+    path: &'static str,
+) {
+    if command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT {
+        routing::log_unresolved_use(command, path);
+    }
 }
 
 async fn bank_inventory<A>(

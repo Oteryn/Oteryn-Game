@@ -541,6 +541,26 @@ fn use_opens_a_corpse_in_reach_and_reports_every_disposition() {
 }
 
 #[test]
+fn refused_corpse_open_keeps_the_previous_view_and_handles() {
+    let here = at(10, 10, 7);
+    let mut view = SessionItemView::resume(ItemViewContinuity::default());
+    view.open(corpse(7), observe(here, here, &[5]))
+        .expect("open first corpse");
+    let first_handle = view.table().handle(&corpse(7));
+    let last_handle = view.table().last_issued();
+    view.container_revision = u64::MAX;
+
+    assert_eq!(
+        view.open(corpse(8), observe(here, here, &[6])),
+        Err(ItemViewError::Exhausted)
+    );
+    assert_eq!(view.open.map(|open| open.key), Some(corpse(7)));
+    assert_eq!(view.table().handle(&corpse(7)), first_handle);
+    assert_eq!(view.table().handle(&corpse(8)), None);
+    assert_eq!(view.table().last_issued(), last_handle);
+}
+
+#[test]
 fn opening_another_corpse_closes_the_first() {
     let mut view = SessionItemView::resume(ItemViewContinuity::default());
     view.snapshot(inventory(&[]), None).expect("fixture");

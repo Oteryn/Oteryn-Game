@@ -8,10 +8,10 @@ use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_use::drome_cube::DromeCubeError;
 use crate::durability::item_use::{ItemUseError, ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
 use crate::foundation::{CommandId, CommandRef, ExactActorRef, GameSessionId};
-use crate::gameplay_transport::ComposedFreshAdmission;
-use crate::gameplay_transport::connection::{UseCommand, UseOutcome};
+use crate::gameplay_transport::connection::{AdmissionRefusal, UseCommand, UseOutcome};
 use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, pinned_index};
 use crate::gameplay_transport::item_view::ItemKey;
+use crate::gameplay_transport::{AdmissionRetryBudget, ComposedFreshAdmission};
 use oteryn_gameplay_items::drome_cube::{DROME_CUBE_KEY, reward, reward_index};
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
@@ -37,6 +37,28 @@ fn refusal(error: &DromeCubeError) -> UseDisposition {
         DromeCubeError::Capacity => UseDisposition::Full,
         DromeCubeError::ItemUse(ItemUseError::StaleState) => UseDisposition::StaleState,
         _ => UseDisposition::Rejected,
+    }
+}
+
+async fn retry_owner_read<T>(
+    budget: &AdmissionRetryBudget<'_>,
+    mut read: impl AsyncFnMut() -> Result<T, ItemUseError>,
+) -> Result<T, ItemUseError> {
+    use crate::durability::DurabilityError;
+
+    loop {
+        let result = read().await;
+        if !matches!(
+            result,
+            Err(ItemUseError::Unavailable(
+                DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded
+            ))
+        ) || !budget
+            .retries_unavailable(AdmissionRefusal::Unavailable)
+            .await
+        {
+            return result;
+        }
     }
 }
 
@@ -69,10 +91,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let binding: [u8; 32] =
             Sha256::digest(encode_item_use_intent(&intent).map_err(|_| ())?).into();
         let _permit = self.spell_lane_permit().await.ok_or(())?;
-        match self
-            .root
-            .read_drome_cube_receipt(self.character, fence, command_ref, binding)
-            .await
+        // Every plain item USE probes this receipt, including bags. A background
+        // pass can have the only holder when the input arrives.
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        match retry_owner_read(&budget, async || {
+            self.root
+                .read_drome_cube_receipt(self.character, fence, command_ref, binding)
+                .await
+        })
+        .await
         {
             Ok(Some(receipt)) => {
                 if self
@@ -137,10 +164,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let inventory = match self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
-            .await
+        let inventory = match retry_owner_read(&budget, async || {
+            self.root
+                .read_item_use_inventory(self.character, self.holder, fence)
+                .await
+        })
+        .await
         {
             Ok(inventory) => inventory,
             Err(ItemUseError::Unavailable(_)) => return Err(()),
