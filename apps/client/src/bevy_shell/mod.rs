@@ -8,6 +8,8 @@ mod diagnostics;
 mod exit;
 mod frame_pacing;
 mod game_ui;
+#[cfg(test)]
+pub(crate) use game_ui::quick_loot::tests as quick_loot_replay;
 mod gameplay_dialogs;
 mod health_circle;
 mod hints;

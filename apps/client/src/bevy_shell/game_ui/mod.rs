@@ -48,7 +48,7 @@ mod prey;
 mod proficiency;
 mod projection;
 pub(super) use projection::project;
-mod quick_loot;
+pub(super) mod quick_loot;
 mod reward_wall;
 pub(super) mod rule_violation;
 pub(super) mod satellite_map;

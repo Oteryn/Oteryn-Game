@@ -1,4 +1,5 @@
 use super::*;
+use crate::play::feature_0098_quick_loot::view::quick_loot_pouch_route;
 use bevy::{
     input_focus::tab_navigation::TabGroup, ui::InteractionDisabled, ui_widgets::ScrollArea,
 };
@@ -178,6 +179,27 @@ pub(super) fn render(
                 }),
                 label,
                 102.,
+                panel,
+            );
+        }
+        if category == Some(Category::Gold)
+            && !matches!(
+                confirmed,
+                Some(Action::Destination {
+                    recipient: Recipient::GoldPouch,
+                    ..
+                })
+            )
+            && let Some(assignment) = quick_loot_pouch_route(panel)
+        {
+            button(
+                commands,
+                skins,
+                row,
+                key,
+                Kind::Request(assignment),
+                "Use gold pouch",
+                130.,
                 panel,
             );
         }

@@ -311,9 +311,11 @@ impl crate::play::Outbox {
     }
 }
 
+#[cfg(bevy_shell)]
 #[test]
 #[ignore = "requires this run's I07 node-boot capture"]
 fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::bevy_shell::quick_loot_replay as ui;
     use oteryn_client_ui::chat::NoticeScope;
     use oteryn_client_ui::quick_loot::*;
     use oteryn_session::{CommandStatus, GatedCommandResult};
@@ -372,7 +374,10 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         )
     };
     let main = route(None, QuickLootRecipient::MainContainer, None, false);
-    let click = Action::CorpseItem { corpse: expected.corpse, item: expected.filtered };
+    let click = Action::CorpseItem {
+        corpse: expected.corpse,
+        item: expected.filtered,
+    };
     let skip = QuickLootFilterMode::Skip;
     let accept = QuickLootFilterMode::Accept;
     let gold_main = route(
@@ -381,7 +386,8 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         None,
         false,
     );
-    let steps: [(Action, &[([u8; 16], bool)], Option<&str>); 19] = [
+    type ReplayStep<'a> = (Action, &'a [([u8; 16], bool)], Option<&'a str>);
+    let steps: [ReplayStep<'_>; 23] = [
         (
             Action::Add {
                 mode: skip,
@@ -399,7 +405,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             None,
         ),
         (main.clone(), &[], None),
-        (gold, &[], None),
+        (gold.clone(), &[], None),
         (
             Action::LootAll,
             &[
@@ -463,13 +469,21 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         ),
         (
             Action::LootAll,
-            &[(expected.other, false), (expected.listed, false), (expected.spare, false)],
+            &[
+                (expected.other, false),
+                (expected.listed, false),
+                (expected.spare, false),
+            ],
             Some("Looted 0 of 3 items"),
         ),
         (main.clone(), &[], None),
         (
             Action::LootAll,
-            &[(expected.other, true), (expected.listed, false), (expected.spare, false)],
+            &[
+                (expected.other, true),
+                (expected.listed, false),
+                (expected.spare, false),
+            ],
             Some("Looted 1 of 3 items"),
         ),
         (
@@ -482,14 +496,37 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             &[],
             None,
         ),
-        (Action::CorpseItem { corpse: expected.corpse, item: expected.listed }, &[], None),
+        (
+            Action::CorpseItem {
+                corpse: expected.corpse,
+                item: expected.listed,
+            },
+            &[],
+            None,
+        ),
+        (
+            route(
+                None,
+                QuickLootRecipient::GoldPouch,
+                Some(expected.pouch),
+                false,
+            ),
+            &[],
+            None,
+        ),
+        (gold, &[], None),
+        (gold_main.clone(), &[], None),
+        (main.clone(), &[], None),
     ];
-    let (link, mut commands, outbox) = crate::play::play_channel();
+    let (mut app, mut commands, outbox) = ui::fixture(true)?;
+    app.add_plugins(bevy::ui_widgets::ButtonPlugin);
+    let link = ui::link(&app)?;
     crate::play::mailbox::lock(&link.mailbox)
         .local_preferences
         .game_window
         .loot_messages = true;
     outbox.discovery_initialize(&Selected);
+    ui::open(&mut app)?;
     let mut sessions = [String::new(), String::new()];
     let mut previous = (0, 0);
     for (index, (action, expected_items, notice)) in steps.into_iter().enumerate() {
@@ -498,8 +535,9 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         if key == 11 {
             outbox.discovery_initialize(&Selected);
             previous = (0, 0);
-            let panel = link.discovery_panel().loot;
+            let panel = ui::link(&app)?.discovery_panel().loot;
             assert!(panel.confirmed.is_empty() && panel.destinations.is_empty());
+            ui::open(&mut app)?;
         }
         let reply: Reply =
             serde_json::from_slice(&std::fs::read(directory.join(format!("i07-{key}.json")))?)?;
@@ -522,44 +560,50 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             "I07 probe {key}"
         );
         let mode = |mode| (mode as u8).to_string();
-        let dispatched = match action {
-            Action::LootAll => link.discovery_action(98, 1, &[], 0),
-            Action::Add {
-                mode: filter,
-                definition,
-            } => link.discovery_action(98, 2, &[definition.to_string(), mode(filter)], 0),
-            Action::Select(filter) => {
-                link.discovery_action(98, 5, &[String::new(), mode(filter)], 0)
+        let dispatched = if matches!(key, 3 | 6 | 13 | 21 | 22 | 23) {
+            ui::click_action(&mut app, action)?;
+            true
+        } else {
+            let link = ui::link(&app)?;
+            match action {
+                Action::LootAll => link.discovery_action(98, 1, &[], 0),
+                Action::Add {
+                    mode: filter,
+                    definition,
+                } => link.discovery_action(98, 2, &[definition.to_string(), mode(filter)], 0),
+                Action::Select(filter) => {
+                    link.discovery_action(98, 5, &[String::new(), mode(filter)], 0)
+                }
+                Action::Destination {
+                    category,
+                    recipient,
+                    id,
+                    fallback,
+                } => {
+                    let id = id
+                        .map(|id| {
+                            id.iter()
+                                .map(|byte| format!("{byte:02x}"))
+                                .collect::<String>()
+                        })
+                        .unwrap_or_default();
+                    link.discovery_action(
+                        98,
+                        6,
+                        &[
+                            String::new(),
+                            String::new(),
+                            category.map_or(0, |category| category as u8).to_string(),
+                            u8::from(fallback).to_string(),
+                            (recipient as u8).to_string(),
+                            id,
+                        ],
+                        0,
+                    )
+                }
+                Action::CorpseItem { .. } => link.quick_loot_action(action),
+                _ => return Err("unexpected I07 replay action".into()),
             }
-            Action::Destination {
-                category,
-                recipient,
-                id,
-                fallback,
-            } => {
-                let id = id
-                    .map(|id| {
-                        id.iter()
-                            .map(|byte| format!("{byte:02x}"))
-                            .collect::<String>()
-                    })
-                    .unwrap_or_default();
-                link.discovery_action(
-                    98,
-                    6,
-                    &[
-                        String::new(),
-                        String::new(),
-                        category.map_or(0, |category| category as u8).to_string(),
-                        u8::from(fallback).to_string(),
-                        (recipient as u8).to_string(),
-                        id,
-                    ],
-                    0,
-                )
-            }
-            Action::CorpseItem { .. } => link.quick_loot_action(action),
-            _ => return Err("unexpected I07 replay action".into()),
         };
         assert!(dispatched, "I07 probe {key}");
         let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
@@ -571,6 +615,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             std::fs::read(directory.join(format!("i07-{key}-request.bin")))?,
             "I07 probe {key}"
         );
+        let link = ui::link(&app)?;
         let notices = || {
             let mailbox = crate::play::mailbox::lock(&link.mailbox);
             let console = &mailbox.chat.console;

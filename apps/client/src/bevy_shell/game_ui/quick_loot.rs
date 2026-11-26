@@ -1,6 +1,6 @@
 //! Source-shaped Manage Loot Containers over confirmed capability-98 state.
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 mod widgets;
 use super::{
     super::{owner::HostOwner, ui::Skins},
