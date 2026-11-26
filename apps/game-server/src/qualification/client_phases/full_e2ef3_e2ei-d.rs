@@ -186,7 +186,7 @@ async fn rejoin(client: &mut DevClientSession, clients: &SeamClients<'_>) -> Tes
     verdict::Harness::global().bounded_wait(deadline, "relog-after-combat");
     loop {
         use oteryn_protocol_oteryn::logout::LogoutResult;
-        let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(client).await?;
+        let (result, logout, attempts, busy_timed_out) = logout_once(client).await?;
         match result {
             Some(LogoutResult::Accepted) => break,
             Some(LogoutResult::InFight { .. }) if tokio::time::Instant::now() < deadline => {

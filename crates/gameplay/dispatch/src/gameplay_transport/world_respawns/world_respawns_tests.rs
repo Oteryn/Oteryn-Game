@@ -12,6 +12,7 @@ struct Wake {
     now: AtomicU64,
     stop: CancellationToken,
     until: u64,
+    world_utc_ms: Option<u64>,
 }
 impl OwnerClock for Wake {
     fn now(&self) -> SemanticTimeMicros {
@@ -19,6 +20,9 @@ impl OwnerClock for Wake {
     }
 }
 impl RespawnWake for Wake {
+    fn world_clock_utc_ms(&self) -> Option<u64> {
+        self.world_utc_ms
+    }
     async fn sleep_until(&self, due: SemanticTimeMicros) {
         self.now.store(due.get(), Ordering::SeqCst);
         if due.get() >= self.until {
@@ -39,6 +43,7 @@ fn respawn_job_runs_without_sessions_at_the_due_window() {
                 now: AtomicU64::new(due),
                 stop: stop.clone(),
                 until: due + 4_250_000,
+                world_utc_ms: None,
             };
             let runtime = tokio::sync::Mutex::new(runtime);
             assert_eq!(drive(&runtime, &wake, &stop).await, RespawnExit::Shutdown);
@@ -59,6 +64,7 @@ fn respawn_job_shutdown_before_pass_and_retired_owner_and_clock_exhaustion() {
                 now: AtomicU64::new(u64::MAX),
                 stop: stop.clone(),
                 until: u64::MAX,
+                world_utc_ms: None,
             };
             assert_eq!(drive(&runtime, &wake, &stop).await, RespawnExit::Shutdown);
             assert_eq!(
@@ -76,16 +82,16 @@ fn respawn_job_shutdown_before_pass_and_retired_owner_and_clock_exhaustion() {
 fn respawn_job_regression_and_origin_past_deadline_share_the_carrier_clock() {
     let mut runtime = runtime();
     let mut job = MonsterRespawnJob::new(&runtime).expect("current owner");
-    job.pass(&mut runtime, 150_000).expect("pass");
-    job.pass(&mut runtime, 50_000).expect("regression");
+    job.pass(&mut runtime, 150_000, None).expect("pass");
+    job.pass(&mut runtime, 50_000, None).expect("regression");
     assert_eq!(job.next_owner_window(50_000), Some(200_000));
     let wake = MonotonicRespawnWake::from_origin(
         std::time::Instant::now() - std::time::Duration::from_secs(10),
     );
-    job.pass(&mut runtime, wake.now().get())
+    job.pass(&mut runtime, wake.now().get(), None)
         .expect("late installed pass");
     let same = wake.now().get();
-    job.pass(&mut runtime, same).expect("same window");
+    job.pass(&mut runtime, same, None).expect("same window");
     super::super::monster_ai_cycle::drive_owner_spawns(&mut runtime, same);
 }
 
@@ -194,4 +200,128 @@ fn an_unchanged_boss_point_waits_before_its_next_check() {
             .get("boss")
             .is_some_and(|due| due.is_none_or(|due| due > now))
     );
+}
+
+async fn drive_spawn_window(runtime: &tokio::sync::Mutex<ChannelRuntimeV1>, now: u64, minute: u64) {
+    let stop = CancellationToken::new();
+    let wake = Wake {
+        now: AtomicU64::new(now),
+        stop: stop.clone(),
+        until: now + 1,
+        world_utc_ms: Some(minute * crate::world_clock::TIBIAN_MINUTE_MS),
+    };
+    assert_eq!(drive(runtime, &wake, &stop).await, RespawnExit::Shutdown);
+}
+
+#[test]
+fn bundle_spawn_starts_full_and_respawn_checks_period_before_warnings() {
+    use crate::map::boot::table_activation_spawns_with_eligibility;
+    use oteryn_gameplay_content::content::{ProjectV2SpawnEligibility, ProjectV2SpawnPeriod};
+    use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+
+    const DAY: u64 = 12 * 60;
+    const NIGHT: u64 = 24 * 60 + 5 * 60 + 59;
+    const SUNRISE: u64 = NIGHT + 1;
+    const SUNSET_END: u64 = 18 * 60;
+    const DELAY_MS: u32 = 60_000;
+    const DELAY: u64 = DELAY_MS as u64 * 1_000;
+    const WARNING: u64 = 4_200_000;
+    let table = Table {
+        creatures: vec![Creature {
+            key: "oteryn:creature.night_harpy".into(),
+            period: Period::Night,
+        }],
+        sources: [-7, -8]
+            .into_iter()
+            .map(|floor| Source {
+                key: format!("oteryn:spawn/night_harpy/{}", -floor),
+                floor,
+                x: 33_828,
+                y: 32_242,
+                points: vec![Point {
+                    creature: 0,
+                    x: 33_828,
+                    y: 32_242,
+                    direction: Direction::North,
+                    respawn_ms: DELAY_MS,
+                    boss_policy: None,
+                }],
+            })
+            .collect(),
+    };
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("runtime");
+    executor.block_on(async {
+        for ignore_period_underground in [false, true] {
+            let sources = table_activation_spawns_with_eligibility(
+                &table,
+                |_| Some((14_000, false)),
+                |_| {
+                    Some(ProjectV2SpawnEligibility {
+                        period: ProjectV2SpawnPeriod::Night,
+                        ignore_period_underground,
+                        blocked_by_nearby_players: false,
+                    })
+                },
+            )
+            .expect("spawns");
+            let mut channel = runtime();
+            assert_eq!(channel.begin_activation_spawn_sources(sources), Ok(2));
+            let progress = channel
+                .realize_activation_spawn_window(0)
+                .expect("startup activation");
+            assert_eq!(progress.remaining, 0);
+            assert_eq!(progress.realized, 2, "Crystal initially fills both points");
+            let points = channel.spawn_point_creatures();
+            let surface = points[0].0;
+            for (_, _, actor) in points {
+                assert!(channel.kill_creature_for_test(actor.expect("startup creature")));
+            }
+
+            let channel = tokio::sync::Mutex::new(channel);
+            drive_spawn_window(&channel, 0, DAY).await;
+            drive_spawn_window(&channel, DELAY, SUNSET_END).await;
+            {
+                let owner = channel.lock().await;
+                let pending = owner
+                    .pending_respawn(surface)
+                    .expect("deferred surface point");
+                assert_eq!(
+                    pending.due_micros,
+                    2 * DELAY,
+                    "18:00 is still daytime for Crystal respawns and restarts the full delay"
+                );
+            }
+            drive_spawn_window(&channel, DELAY + WARNING, SUNSET_END).await;
+            assert_eq!(
+                channel.lock().await.spawn_point_creatures()[1].2.is_some(),
+                ignore_period_underground,
+                "daytime respawn also requires the underground flag"
+            );
+
+            drive_spawn_window(&channel, 2 * DELAY, NIGHT).await;
+            let warning_due = 2 * DELAY + WARNING;
+            assert_eq!(
+                channel
+                    .lock()
+                    .await
+                    .pending_respawn(surface)
+                    .expect("night warning")
+                    .due_micros,
+                warning_due
+            );
+            drive_spawn_window(&channel, warning_due, SUNRISE).await;
+            let owner = channel.lock().await;
+            assert!(
+                owner
+                    .spawn_point_creatures()
+                    .iter()
+                    .all(|point| point.2.is_some()),
+                "a warning sequence that started at night finishes even after sunrise"
+            );
+            assert!(owner.pending_respawn(surface).is_none());
+        }
+    });
 }

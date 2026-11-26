@@ -2,6 +2,7 @@
 use super::*;
 use crate::durability::item_decay_retire::DecayRetireStep;
 use crate::durability::item_mint::uuid_text;
+use crate::foundation::loot_data::CORPSE_CONTAINER_ENTRIES_MAX;
 
 pub(super) async fn next(
     tx: &mut Transaction<'_, Postgres>,
@@ -59,6 +60,7 @@ pub(in crate::durability) async fn is_death_container(
 pub(in crate::durability) enum DeathEntryKind {
     Direct,
     Nested,
+    Corpse,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -89,7 +91,6 @@ pub(in crate::durability) async fn death_tree(
     tx: &mut Transaction<'_, Postgres>,
     root: [u8; 16],
 ) -> Result<Vec<DeathTreeEntry>> {
-    use crate::durability::item_loop_move::{ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX};
     let source: Option<(Vec<u8>, i16, String)> = sqlx::query_as(
         "SELECT uuid_send(g.world_id),r.source_slot,i.definition_production_key FROM game_player_death_item_records r \
          JOIN game_item_ground_locations g USING(item_instance_id) \
@@ -104,6 +105,33 @@ pub(in crate::durability) async fn death_tree(
     .await?;
     let (world, source_slot, root_definition) =
         source.ok_or(DurabilityError::InvalidStoredState)?;
+    let entries = ground_tree(tx, root, &world, false).await?;
+    order_death_tree(root, source_slot, &root_definition, entries)
+}
+
+pub(in crate::durability) async fn arena_tree(
+    tx: &mut Transaction<'_, Postgres>,
+    root: [u8; 16],
+    world: &[u8],
+) -> Result<Vec<DeathTreeEntry>> {
+    use crate::durability::item_loop_move::{ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX};
+    let entries = ground_tree(tx, root, world, true).await?;
+    order_ground_tree(root, entries, ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX)
+}
+
+async fn ground_tree(
+    tx: &mut Transaction<'_, Postgres>,
+    root: [u8; 16],
+    world: &[u8],
+    arena: bool,
+) -> Result<Vec<DeathTreeEntry>> {
+    use crate::durability::item_loop_move::{ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX};
+    let container_capacity = crate::durability::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX;
+    let fanout = if arena {
+        container_capacity.max(CORPSE_CONTAINER_ENTRIES_MAX)
+    } else {
+        container_capacity
+    };
     let rows = sqlx::query(
         "WITH RECURSIVE tree(item,parent,ordinal,kind,world,depth,path,cycle) AS ( \
            SELECT encode($1,'hex')::uuid,NULL::uuid,NULL::numeric,0,encode($2,'hex')::uuid,0,ARRAY[encode($1,'hex')::uuid],false \
@@ -114,24 +142,30 @@ pub(in crate::durability) async fn death_tree(
                FROM game_item_container_entries WHERE parent_item_instance_id=t.item \
                UNION ALL SELECT item_instance_id,parent_item_instance_id,placement_ordinal,2,world_id \
                FROM game_item_nested_entries WHERE parent_item_instance_id=t.item \
+               UNION ALL SELECT item_instance_id,parent_item_instance_id,placement_ordinal,3,world_id \
+               FROM game_item_corpse_container_entries WHERE $6 AND parent_item_instance_id=t.item \
              ) edges LIMIT $3 \
            ) e WHERE t.depth<$4 AND NOT t.cycle \
          ), bounded AS MATERIALIZED (SELECT * FROM tree LIMIT $5) \
          SELECT uuid_send(t.item) AS item,uuid_send(t.parent) AS parent,t.ordinal::text,t.kind,t.depth,t.cycle, \
            (i.item_instance_id IS NULL OR i.lifecycle<>1 OR i.quantity<=0 OR i.world_id<>t.world OR t.world<>encode($2,'hex')::uuid \
-            OR EXISTS(SELECT 1 FROM game_item_corpse_container_entries c WHERE c.item_instance_id=t.item OR c.parent_item_instance_id=t.item) \
+            OR (NOT $6 AND EXISTS(SELECT 1 FROM game_item_corpse_container_entries c \
+                WHERE c.item_instance_id=t.item OR c.parent_item_instance_id=t.item)) \
+            OR (t.kind=3 AND t.depth<>1) \
             OR EXISTS(SELECT 1 FROM game_item_ground_locations g WHERE g.item_instance_id=t.item AND t.depth<>0) \
             OR EXISTS(SELECT 1 FROM game_item_container_slots s WHERE s.item_instance_id=t.item) \
             OR EXISTS(SELECT 1 FROM game_character_equipment_slots s WHERE s.item_instance_id=t.item) \
             OR (SELECT count(*) FROM (SELECT 1 FROM game_item_container_entries e WHERE e.item_instance_id=t.item \
-                UNION ALL SELECT 1 FROM game_item_nested_entries e WHERE e.item_instance_id=t.item) custody)<>CASE WHEN t.depth=0 THEN 0 ELSE 1 END) AS invalid \
+                UNION ALL SELECT 1 FROM game_item_nested_entries e WHERE e.item_instance_id=t.item \
+                UNION ALL SELECT 1 FROM game_item_corpse_container_entries e WHERE $6 AND e.item_instance_id=t.item) custody)<>CASE WHEN t.depth=0 THEN 0 ELSE 1 END) AS invalid \
          FROM bounded t LEFT JOIN game_item_instances i ON i.item_instance_id=t.item",
     )
     .bind(root.as_slice())
     .bind(world)
-    .bind(i64::from(crate::durability::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX) + 1)
+    .bind(i64::from(fanout) + 1)
     .bind(ITEM_LOOP_DEPTH_MAX + 1)
     .bind(ITEM_LOOP_TREE_ITEMS_MAX + 2)
+    .bind(arena)
     .fetch_all(&mut **tx)
     .await?;
     let mut entries = Vec::with_capacity(rows.len().saturating_sub(1));
@@ -163,22 +197,22 @@ pub(in crate::durability) async fn death_tree(
             kind: match row.try_get::<i32, _>("kind")? {
                 1 => DeathEntryKind::Direct,
                 2 => DeathEntryKind::Nested,
+                3 => DeathEntryKind::Corpse,
                 _ => return Err(DurabilityError::InvalidStoredState),
             },
             depth,
         });
     }
-    order_death_tree(root, source_slot, &root_definition, entries)
+    Ok(entries)
 }
 
 fn order_death_tree(
     root: [u8; 16],
     source_slot: i16,
     root_definition: &str,
-    mut entries: Vec<DeathTreeEntry>,
+    entries: Vec<DeathTreeEntry>,
 ) -> Result<Vec<DeathTreeEntry>> {
     use crate::durability::item_loop_move::{ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX};
-    use std::collections::{BTreeMap, BTreeSet};
     let (depth_limit, descendants_limit) = match source_slot {
         9 => (ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX),
         0 => (ITEM_LOOP_DEPTH_MAX - 1, ITEM_LOOP_TREE_ITEMS_MAX - 1),
@@ -188,11 +222,21 @@ fn order_death_tree(
         ),
         _ => (0, 0),
     };
+    order_ground_tree(root, entries, depth_limit, descendants_limit)
+}
+
+fn order_ground_tree(
+    root: [u8; 16],
+    mut entries: Vec<DeathTreeEntry>,
+    depth_limit: i32,
+    descendants_limit: i64,
+) -> Result<Vec<DeathTreeEntry>> {
+    use std::collections::{BTreeMap, BTreeSet};
     if entries.len() > descendants_limit as usize {
         return Err(DurabilityError::InvalidStoredState);
     }
     let mut depths = BTreeMap::from([(root, 0)]);
-    let mut children = BTreeMap::<_, BTreeSet<_>>::new();
+    let mut children = BTreeMap::new();
     for entry in &entries {
         if !(1..=depth_limit).contains(&entry.depth)
             || entry.ordinal == 0
@@ -200,10 +244,18 @@ fn order_death_tree(
         {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let ordinals = children.entry(entry.parent).or_default();
-        if !ordinals.insert(entry.ordinal)
-            || ordinals.len()
-                > crate::durability::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX as usize
+        let is_corpse = entry.kind == DeathEntryKind::Corpse;
+        let (corpse, ordinals) = children
+            .entry(entry.parent)
+            .or_insert_with(|| (is_corpse, BTreeSet::new()));
+        let capacity = if is_corpse {
+            CORPSE_CONTAINER_ENTRIES_MAX
+        } else {
+            crate::durability::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX
+        };
+        if *corpse != is_corpse
+            || !ordinals.insert(entry.ordinal)
+            || ordinals.len() > capacity as usize
         {
             return Err(DurabilityError::InvalidStoredState);
         }

@@ -1407,13 +1407,15 @@ async fn release(client: &mut DevClientSession) -> TestResult {
     let mut activity_due = tokio::time::Instant::now();
     loop {
         verdict::Harness::global().progress("creature-sweep-logout");
-        let (result, reply, attempts, busy_timed_out) = logout_retrying_busy(client).await?;
+        let (result, reply, attempts, busy_timed_out) =
+            fixture_logout_retrying_busy(client).await?;
         match result {
             Some(LogoutResult::Accepted) => return Ok(()),
             Some(LogoutResult::InFight { .. }) => {
                 if tokio::time::Instant::now() >= deadline {
                     return Err("logout combat lock outlasted 930s".into());
                 }
+                evidence("FIXTURE_RETRY step=creature-sweep-logout reason=in-fight");
                 client.service_liveness(Duration::from_millis(50)).await?;
                 client.take_events();
                 if tokio::time::Instant::now() >= activity_due {

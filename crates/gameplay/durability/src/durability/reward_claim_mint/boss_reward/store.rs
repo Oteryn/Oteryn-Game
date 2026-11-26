@@ -14,6 +14,7 @@ pub(super) struct Entitlement {
     pub expires: u64,
     pub contribution: RewardParticipation,
     pub item: BossRewardPageItem,
+    pub parent_ordinal: Option<u16>,
 }
 
 pub(super) async fn now(tx: &mut Transaction<'_, Postgres>) -> Result<i64, DurabilityError> {
@@ -112,9 +113,37 @@ pub(super) async fn pending(
     now: i64,
 ) -> Result<Vec<Entitlement>, DurabilityError> {
     let (death, ordinal) = selection(selected);
-    let rows = sqlx::query("SELECT i.death_id::text,p.boss_key,p.minted_at,p.expires_at,c.damage_dealt::text,c.damage_received::text,c.healing_others::text,i.item_ordinal,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity FROM game_boss_reward_items i JOIN game_character_boss_reward_chests p USING(character_id,world_id,death_id) JOIN game_boss_reward_contributors c USING(character_id,world_id,death_id) WHERE i.character_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND ($3::bytea IS NULL OR i.death_id=encode($3,'hex')::uuid) AND ($4::integer IS NULL OR i.item_ordinal=$4) AND p.expires_at>$5 AND NOT i.expired AND i.collected_transaction_id IS NULL ORDER BY p.minted_at,i.death_id,i.item_ordinal LIMIT $6 FOR UPDATE OF i")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice())
-        .bind(death.as_ref().map(|d| d.as_slice())).bind(ordinal).bind(now).bind((BOSS_REWARD_COLLECTION_MAX + 1) as i64).fetch_all(&mut **tx).await?;
+    // Bound the root prefix before expanding each complete tree.
+    let rows = sqlx::query(
+        "WITH roots AS MATERIALIZED (
+            SELECT i.character_id,i.world_id,i.death_id,i.item_ordinal,p.boss_key,p.minted_at,p.expires_at,
+                   c.damage_dealt,c.damage_received,c.healing_others
+            FROM game_boss_reward_items i
+            JOIN game_character_boss_reward_chests p USING(character_id,world_id,death_id)
+            JOIN game_boss_reward_contributors c USING(character_id,world_id,death_id)
+            WHERE i.character_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid
+              AND ($3::bytea IS NULL OR i.death_id=encode($3,'hex')::uuid)
+              AND ($4::integer IS NULL OR i.item_ordinal=$4)
+              AND i.parent_item_ordinal IS NULL AND p.expires_at>$5
+              AND NOT i.expired AND i.collected_transaction_id IS NULL
+            ORDER BY p.minted_at,i.death_id,i.item_ordinal LIMIT $6
+         )
+         SELECT i.death_id::text,r.boss_key,r.minted_at,r.expires_at,r.damage_dealt::text,
+                r.damage_received::text,r.healing_others::text,i.item_ordinal,i.parent_item_ordinal,
+                i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity
+         FROM roots r JOIN game_boss_reward_items i USING(character_id,world_id,death_id)
+         WHERE (i.item_ordinal=r.item_ordinal OR i.parent_item_ordinal=r.item_ordinal)
+           AND NOT i.expired AND i.collected_transaction_id IS NULL
+         ORDER BY r.minted_at,r.death_id,r.item_ordinal,i.item_ordinal FOR UPDATE OF i",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+    .bind(death.as_ref().map(|d| d.as_slice()))
+    .bind(ordinal)
+    .bind(now)
+    .bind(BOSS_REWARD_COLLECTION_MAX as i64)
+    .fetch_all(&mut **tx)
+    .await?;
     rows.iter().map(decode).collect()
 }
 
@@ -136,6 +165,11 @@ pub(super) fn decode(row: &sqlx::postgres::PgRow) -> Result<Entitlement, Durabil
             damage_received: number("damage_received")?,
             healing_others: number("healing_others")?,
         },
+        parent_ordinal: row
+            .try_get::<Option<i32>, _>("parent_item_ordinal")?
+            .map(u16::try_from)
+            .transpose()
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
         item: BossRewardPageItem {
             ordinal: u16::try_from(row.try_get::<i32, _>("item_ordinal")?)
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
@@ -229,10 +263,25 @@ pub(super) async fn remaining(
 ) -> Result<u32, DurabilityError> {
     match selected {
         BossRewardSelection::Item { death, ordinal } => {
-            let present: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_boss_reward_items i JOIN game_character_boss_reward_chests p USING(character_id,world_id,death_id) WHERE i.character_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.death_id=encode($3,'hex')::uuid AND i.item_ordinal=$4 AND p.expires_at>$5 AND NOT i.expired AND i.collected_transaction_id IS NULL)")
-                .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice())
-                .bind(death.as_slice()).bind(i32::from(ordinal)).bind(now).fetch_one(&mut **tx).await?;
-            Ok(u32::from(present))
+            let count: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_boss_reward_items root
+                 JOIN game_character_boss_reward_chests p USING(character_id,world_id,death_id)
+                 JOIN game_boss_reward_items i USING(character_id,world_id,death_id)
+                 WHERE root.character_id=encode($1,'hex')::uuid AND root.world_id=encode($2,'hex')::uuid
+                   AND root.death_id=encode($3,'hex')::uuid AND root.item_ordinal=$4
+                   AND root.parent_item_ordinal IS NULL AND p.expires_at>$5
+                   AND NOT root.expired AND root.collected_transaction_id IS NULL
+                   AND (i.item_ordinal=root.item_ordinal OR i.parent_item_ordinal=root.item_ordinal)
+                   AND NOT i.expired AND i.collected_transaction_id IS NULL",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+            .bind(death.as_slice())
+            .bind(i32::from(ordinal))
+            .bind(now)
+            .fetch_one(&mut **tx)
+            .await?;
+            u32::try_from(count).map_err(|_| DurabilityError::InvalidStoredState)
         }
         BossRewardSelection::Group { death } => {
             let count: Option<i32> = sqlx::query_scalar("SELECT item_count FROM game_character_boss_reward_chests WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND death_id=encode($3,'hex')::uuid AND expires_at>$4")

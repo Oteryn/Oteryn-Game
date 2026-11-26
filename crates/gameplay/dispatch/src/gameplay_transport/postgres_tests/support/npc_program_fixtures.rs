@@ -29,29 +29,31 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     let source = NpcRuleCatalog::load_embedded().map_err(debug)?;
-    // The merged Paradox and citizen Source owners add exactly two programs,
-    // 31 rules and four NPCs. Keep the prior cohort's exact census as well.
+    // Paradox, Citizen and Troll Sabotage are separate source additions.
+    // Keep the inherited cohort's exact census as well.
     let inherited = source
         .programs()
         .iter()
         .filter(|p| {
             p.document.quest != "oteryn:quest.the_paradox_tower_quest"
+                && p.document.quest != "oteryn:quest.troll_sabotage_quest"
                 && p.document.program_key.as_deref()
                     != Some("oteryn:quest-npc-program.citizen-source-sagas")
         })
         .collect::<Vec<_>>();
-    assert_eq!(source.programs().len(), 25);
+    assert_eq!(source.programs().len(), 26);
     assert_eq!(inherited.len(), 23);
     // Quest package 3 (#3290) added seven rules for Gelidrazah's Thirst.
     // Under oteryn:quest-npc/the_first_dragon_quest/gelidrazahs_thirst/:
     // greet, quiz-57-1-1-1, quiz-63-2-1-1, quiz-66-3-1-1,
     // quiz-69-4-1-1, quiz-72-5-1-1, and quiz-77-6-1-1.
+    // Tower Defence moved its offer and accept out of this source program.
     assert_eq!(
         inherited
             .iter()
             .map(|p| p.document.rules.len())
             .sum::<usize>(),
-        1219
+        1217
     );
     let unique = inherited
         .iter()
@@ -70,6 +72,12 @@ pub(super) async fn exercise(
             Some("oteryn:quest-npc-program.citizen-source-sagas"),
             3,
             vec!["oteryn:npc.amber", "oteryn:npc.hanna", "oteryn:npc.lubo"],
+        ),
+        (
+            "oteryn:quest.troll_sabotage_quest",
+            None,
+            5,
+            vec!["oteryn:npc.chief_grarkharok", "oteryn:npc.jerom"],
         ),
     ] {
         let added = source
