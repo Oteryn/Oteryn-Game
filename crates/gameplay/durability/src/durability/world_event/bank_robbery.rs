@@ -563,14 +563,13 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
-            if !player_fenced(&mut tx, &node, &fence).await? {
-                return Ok(Err(ProgressionError::AuthorityRejected));
-            }
             let world = fence.runtime_scope.world_id();
             let current: Option<String> = sqlx::query_scalar(
                 "SELECT reset_epoch::text FROM game_world_reset_read_locked(encode($1,'hex')::uuid)"
             ).bind(world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-            if current.as_deref().unwrap_or("0") != epoch.to_string() {
+            if current.as_deref().unwrap_or("0") != epoch.to_string()
+                || !player_fenced(&mut tx, &node, &fence).await?
+            {
                 return Ok(Err(ProgressionError::AuthorityRejected));
             }
             let announced = announced(&mut tx, world, epoch).await?;

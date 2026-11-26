@@ -377,42 +377,54 @@ impl Bank {
             let mut movement = runtime.borrow_movement_position();
             let mut at = movement.read(self.actor).map_err(debug)?;
             for offset in 1..range {
-                at = movement.commit_cardinal(at, MovementLocalPosition {
-                    x: self.origin.x - offset,
-                    ..self.origin
-                }).map_err(debug)?;
+                at = movement
+                    .commit_cardinal(
+                        at,
+                        MovementLocalPosition {
+                            x: self.origin.x - offset,
+                            ..self.origin
+                        },
+                    )
+                    .map_err(debug)?;
             }
         }
         let observed = Arc::new(tokio::sync::Notify::new());
         let displaced = Arc::new(tokio::sync::Notify::new());
-        let (greeting, movement) = tokio::time::timeout(
-            std::time::Duration::from_secs(5),
-            async {
-                tokio::join!(
-                    ROBBERY_DIALOGUE_OBSERVED.scope(
-                        (Arc::clone(&observed), Arc::clone(&displaced)),
-                        self.talk(owner, fence, self.naji, 20, "hi"),
-                    ),
-                    async {
-                        observed.notified().await;
-                        let mut runtime = self.runtime.lock().await;
-                        let mut movement = runtime.borrow_movement_position();
-                        let before = movement.read(self.actor).map_err(debug)?;
-                        let result = movement.commit_cardinal(before, MovementLocalPosition {
-                            x: self.origin.x - range,
-                            ..self.origin
-                        }).map_err(debug);
-                        displaced.notify_one();
-                        result?;
-                        TestResult::Ok(())
-                    }
-                )
-            },
-        )
+        let (greeting, movement) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            tokio::join!(
+                ROBBERY_DIALOGUE_OBSERVED.scope(
+                    (Arc::clone(&observed), Arc::clone(&displaced)),
+                    self.talk(owner, fence, self.naji, 20, "hi"),
+                ),
+                async {
+                    observed.notified().await;
+                    let mut runtime = self.runtime.lock().await;
+                    let mut movement = runtime.borrow_movement_position();
+                    let before = movement.read(self.actor).map_err(debug)?;
+                    let result = movement
+                        .commit_cardinal(
+                            before,
+                            MovementLocalPosition {
+                                x: self.origin.x - range,
+                                ..self.origin
+                            },
+                        )
+                        .map_err(debug);
+                    displaced.notify_one();
+                    result?;
+                    TestResult::Ok(())
+                }
+            )
+        })
         .await?;
         movement?;
         assert_eq!(greeting.disposition, NpcIntentDisposition::Rejected);
-        assert!(greeting.conversation.and_then(|conversation| conversation.open).is_none());
+        assert!(
+            greeting
+                .conversation
+                .and_then(|conversation| conversation.open)
+                .is_none()
+        );
         Ok(())
     }
 
@@ -510,37 +522,7 @@ impl Bank {
         assert_eq!(state.reset_epoch, 0);
         assert!(!state.active);
         assert!(state.announcement.is_empty());
-        let world = fence.runtime_scope.world_id();
-        let world_id = world.as_bytes().as_slice();
-        sqlx::query("INSERT INTO game_world_reset_epochs
-            (world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month)
-            SELECT world_id,1,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,
-                   '2026-12-13 06:00:00 Europe/Berlin'::timestamptz,'2026-12'
-            FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
-            .bind(world_id).execute(&h.pool).await?;
-        sqlx::query("UPDATE game_world_reset_active SET reset_epoch=1 WHERE world_id=encode($1,'hex')::uuid")
-            .bind(world_id).execute(&h.pool).await?;
-        let base = oteryn_gameplay_world_change::scheduled::announcement_for_epoch(1)
-            .ok_or("odd epoch announcement")?;
-        let seasonal = oteryn_gameplay_foundation::scheduled_events::content_schedule()
-            .seasonal_at(12, 13);
-        sqlx::query("INSERT INTO game_world_event_epochs
-            (world_id,reset_epoch,active,announcement,seasonal_calendar_revision,seasonal_event_keys)
-            VALUES(encode($1,'hex')::uuid,1,true,$2,1,$3)")
-            .bind(world_id).bind(base).bind(&seasonal).execute(&h.pool).await?;
-        assert_eq!(h.root.world_change_calendar(world, 1).await?, (12, 13));
-        // The Dec 13 moon and two independent positive draws can all be active.
-        sqlx::query("UPDATE game_world_change_states SET active=true
-            WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=1
-              AND change_key IN ('fury_gates','grimvale','their_masters_voice')")
-            .bind(world_id).execute(&h.pool).await?;
-        // Seed a live firing in the December epoch.
-        sqlx::query("INSERT INTO game_bank_robbery_occurrences
-            (world_id,reset_epoch,boot_ms,last_checked_hour,state,city,robber,firing_id,channel_id)
-            SELECT world_id,1,boot_ms,last_checked_hour,1,city,robber,uuidv7(),channel_id
-            FROM game_bank_robbery_occurrences WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
-            .bind(world_id).execute(&h.pool).await?;
-        owner.reset_epoch = 1;
+        owner.reset_epoch = seed_december_robbery(h, fence.runtime_scope.world_id()).await?;
         assert!(owner.world_event(command(fence, 19)).await.is_none());
         let map = owner.bundle_map().ok_or("World Board map")?;
         let pos = crate::map::overlay::TilePos {
@@ -613,6 +595,62 @@ impl Bank {
             )
             .await
     }
+}
+
+async fn seed_december_robbery(h: &Harness, world: crate::foundation::WorldId) -> TestResult<u64> {
+    // Use an odd epoch with all three daily changes from the real, independent draws.
+    let epoch = (1..=255)
+        .step_by(2)
+        .find(|&epoch| {
+            let day =
+                oteryn_gameplay_world_change::daily::roll_calendar(world.as_bytes(), epoch, 12, 13);
+            day.fury_gates.is_some() && day.grimvale_full_moon && day.their_masters_voice
+        })
+        .ok_or("December 13 with all three daily changes")?;
+    let epoch_id = epoch.to_string();
+    let world_id = world.as_bytes().as_slice();
+    sqlx::query("INSERT INTO game_world_reset_epochs
+        (world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month)
+        SELECT world_id,$2::text::numeric,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,
+               '2026-12-13 06:00:00 Europe/Berlin'::timestamptz,'2026-12'
+        FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
+        .bind(world_id).bind(&epoch_id).execute(&h.pool).await?;
+    sqlx::query("UPDATE game_world_reset_active SET reset_epoch=$2::text::numeric WHERE world_id=encode($1,'hex')::uuid")
+        .bind(world_id).bind(&epoch_id).execute(&h.pool).await?;
+    let base = oteryn_gameplay_world_change::scheduled::announcement_for_epoch(epoch)
+        .ok_or("odd epoch announcement")?;
+    let seasonal =
+        oteryn_gameplay_foundation::scheduled_events::content_schedule().seasonal_at(12, 13);
+    sqlx::query(
+        "INSERT INTO game_world_event_epochs
+        (world_id,reset_epoch,active,announcement,seasonal_calendar_revision,seasonal_event_keys)
+        VALUES(encode($1,'hex')::uuid,$2::text::numeric,true,$3,1,$4)",
+    )
+    .bind(world_id)
+    .bind(&epoch_id)
+    .bind(base)
+    .bind(&seasonal)
+    .execute(&h.pool)
+    .await?;
+    assert_eq!(h.root.world_change_calendar(world, epoch).await?, (12, 13));
+    let (fury, grimvale, voice) = h
+        .root
+        .world_change_snapshot(world, epoch)
+        .await
+        .map(|day| {
+            (
+                day.fury_gates.is_some(),
+                day.grimvale_full_moon,
+                day.their_masters_voice,
+            )
+        })?;
+    assert!(fury && grimvale && voice);
+    sqlx::query("INSERT INTO game_bank_robbery_occurrences
+        (world_id,reset_epoch,boot_ms,last_checked_hour,state,city,robber,firing_id,channel_id)
+        SELECT world_id,$2::text::numeric,boot_ms,last_checked_hour,1,city,robber,uuidv7(),channel_id
+        FROM game_bank_robbery_occurrences WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
+        .bind(world_id).bind(&epoch_id).execute(&h.pool).await?;
+    Ok(epoch)
 }
 
 async fn assert_other_channel_announcement(

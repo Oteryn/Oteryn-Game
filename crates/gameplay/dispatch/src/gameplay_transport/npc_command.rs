@@ -925,7 +925,7 @@ pub(super) async fn npc_bank_talk(
             actor,
             command,
             &intent,
-            context.clone(),
+            &context,
             _trade_permit.as_ref(),
             native,
         )
