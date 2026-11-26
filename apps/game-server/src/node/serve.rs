@@ -230,7 +230,7 @@ impl From<StartupError> for BootError {
 static BOOT_TRACE: std::sync::OnceLock<String> = std::sync::OnceLock::new();
 static LAST_ERRORS: std::sync::OnceLock<std::sync::Mutex<std::collections::VecDeque<OpsError>>> =
     std::sync::OnceLock::new();
-const PROCESS: &str = "oteryn-game-server";
+pub(super) const PROCESS: &str = "oteryn-game-server";
 
 #[derive(Clone, serde::Serialize)]
 struct OpsError {
@@ -3984,6 +3984,7 @@ async fn boot_and_serve(
     // Claim/restore the World occurrence at native boot after the same
     // readiness fence used by live scheduler ticks becomes current.
     if bundle.is_some() {
+        use oteryn_error_codes::{FieldValue, Level, Line};
         use oteryn_gameplay_world::bank_robbery;
         let scope_generation = runtime.lock().await.binding().scope_generation();
         let projection = match bank_robbery::loaded(&movement_cells) {
@@ -4007,11 +4008,21 @@ async fn boot_and_serve(
                     if let Err(error) =
                         bank_robbery::project(&mut channel, &movement_cells, robbery)
                     {
-                        eprintln!("event=bank_robbery_boot state=retry error={error:?}");
+                        emit(
+                            PROCESS,
+                            &Line::new(Level::Warn, "node", "bank_robbery_boot")
+                                .field("state", FieldValue::Token("retry"))
+                                .field("error", FieldValue::Owned(format!("{error:?}"))),
+                        );
                     }
                 }
             }
-            Err(error) => eprintln!("event=bank_robbery_boot state=retry error={error}"),
+            Err(error) => emit(
+                PROCESS,
+                &Line::new(Level::Warn, "node", "bank_robbery_boot")
+                    .field("state", FieldValue::Token("retry"))
+                    .field("error", FieldValue::Owned(error.to_string())),
+            ),
         }
     }
     // Contract §8.1: report the committed publication; never gates serving.

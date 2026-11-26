@@ -22,7 +22,12 @@ pub(super) async fn observe(
     {
         Ok(projection) => projection,
         Err(error) => {
-            eprintln!("event=bank_robbery_poll state=retry error={error}");
+            emit(
+                PROCESS,
+                &Line::new(Level::Warn, "node", "bank_robbery_poll")
+                    .field("state", FieldValue::Token("retry"))
+                    .field("error", FieldValue::Owned(error.to_string())),
+            );
             return;
         }
     };
@@ -30,6 +35,11 @@ pub(super) async fn observe(
         && let Ok(mut runtime) = scheduler.runtime.try_lock()
         && let Err(error) = project(&mut runtime, scheduler.movement_cells, robbery)
     {
-        eprintln!("event=bank_robbery_projection state=retry error={error:?}");
+        emit(
+            PROCESS,
+            &Line::new(Level::Warn, "node", "bank_robbery_projection")
+                .field("state", FieldValue::Token("retry"))
+                .field("error", FieldValue::Owned(format!("{error:?}"))),
+        );
     }
 }

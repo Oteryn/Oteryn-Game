@@ -2,6 +2,7 @@
 //! are consumed by the existing dispatch/monster owner after durable admission.
 pub(super) mod bank_robbery;
 pub(super) mod world_changes;
+use super::serve::{PROCESS, emit};
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::raid_schedule::{
@@ -10,6 +11,7 @@ use crate::durability::raid_schedule::{
 };
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{ChannelId, ChannelRuntimeV1, ScopeOwnershipGeneration, WorldId};
+use oteryn_error_codes::{FieldValue, Level, Line};
 use oteryn_foundation::CancellationToken;
 use oteryn_gameplay_encounter_rules::raid::{
     CHECK_INTERVAL_MS, CatalogueRaid, CatalogueSchedule, LuaRaidPolicy, RaidCatalogue, RaidError,
@@ -188,7 +190,12 @@ pub(super) async fn run(scheduler: RaidScheduler<'_, '_, '_>, stop: &Cancellatio
     {
         Ok(sites) => Some(sites),
         Err(error) => {
-            eprintln!("event=bank_robbery_config state=refused error={error}");
+            emit(
+                PROCESS,
+                &Line::new(Level::Warn, "node", "bank_robbery_config")
+                    .field("state", FieldValue::Token("refused"))
+                    .field("error", FieldValue::Owned(error.to_string())),
+            );
             None
         }
     };
