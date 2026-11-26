@@ -453,8 +453,6 @@ async fn out_of_range(
         return Err(format!("distant C own inactive shield absent;reply={peer_reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_skull.rs:28").into());
     }
     let (award, after) = solo_hunt_award(bots, activity_started_at_ms).await?;
-    // Returning is ordinary movement, allowing subsequent leader/leave commands nearby.
-    bots::approach(bots, 2, 0, world, false).await?;
     Ok((
         format!(
             "C walked beyond 30;A own inactive shield;reply={reply:?};{award};Crystal party.cpp:562"
