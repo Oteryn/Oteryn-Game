@@ -162,7 +162,7 @@
     {"key": "oteryn:item.tibia.i9378", "pattern_id": 1, "slot": "WEAPON", "item_line": 25345, "level": 0, "vocations": []},
     {"key": "oteryn:item.tibia.i9384", "pattern_id": 1, "slot": "WEAPON", "item_line": 25439, "level": 0, "vocations": []},
     {"key": "oteryn:item.tibia.i9386", "pattern_id": 1, "slot": "WEAPON", "item_line": 25461, "level": 0, "vocations": []},
-    {"key": "oteryn:item.tibia.i9393", "pattern_id": 1, "slot": "RING", "item_line": 25511, "moveevent": "data/scripts/movements/claw_of_the_noxious_spawn.lua:14-18", "vocations": []},
+    {"key": "oteryn:item.tibia.i9393", "pattern_id": 1, "slot": "RING", "item_line": 25511, "moveevent": "data/scripts/movements/claw_of_the_noxious_spawn.lua:14-18", "vocations": [], "level": 100, "additional_reserved_slots": [], "mutually_exclusive_groups": []},
     {"key": "oteryn:item.tibia.i9585", "pattern_id": 1, "slot": "RING", "item_line": 25795, "level": 0, "vocations": []},
     {"key": "oteryn:item.tibia.i9653", "pattern_id": 1, "slot": "HEAD", "item_line": 26073, "level": 0},
     {"key": "oteryn:item.tibia.i10326", "pattern_id": 1, "slot": "CONTAINER", "item_line": 27016, "level": 0, "vocations": []},

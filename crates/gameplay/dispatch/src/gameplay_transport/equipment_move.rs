@@ -722,7 +722,7 @@ async fn move_equipment_inner(
         .await
         .forget_weapon(actor, command.game_session_id);
     match committed {
-        Ok(Ok(_receipt)) => {
+        Ok(Ok(receipt)) => {
             // Keep the lane permit across the checkpoint, fresh read and publication.
             if !retry
                 .retry_until(async || {
@@ -742,6 +742,7 @@ async fn move_equipment_inner(
             {
                 return EquipmentMoveResult::Unknown;
             }
+            apply_noxious_claw_equip(admission, actor, session, &receipt).await;
             EquipmentMoveResult::Committed
         }
         Ok(Err(EquipmentMoveRefusal::Rejected)) => refused(RejectionStage::EquipmentCommit),
@@ -749,6 +750,94 @@ async fn move_equipment_inner(
         Err(_) => EquipmentMoveResult::Unknown,
     }
 }
+
+/// Crystal 201189f8: data/scripts/movements/claw_of_the_noxious_spawn.lua:3-18.
+/// A committed equip has one neutral physical hit and one personal advance message.
+async fn apply_noxious_claw_equip(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    receipt: &character_equipment::EquipmentReceipt,
+) {
+    use oteryn_gameplay_domain::domain::source_normal_draw::source_normal_draw;
+    use oteryn_protocol_oteryn::analyser::AnalyserDamageSource;
+    use oteryn_protocol_oteryn::zones_nologout::ServerMessage;
+    use oteryn_simulation_determinism::{
+        DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+    };
+
+    let Some((slot, definition)) = &receipt.newly_equipped else {
+        return;
+    };
+    if wire_slot(*slot) != Some(EquipmentSlot::Ring)
+        || definition.production_key != "oteryn:item.tibia.i9393"
+    {
+        return;
+    }
+    let mut runtime = admission.runtime.lock().await;
+    if !runtime
+        .player_control_facts(actor, session)
+        .is_ok_and(|facts| facts.control_loss.is_none())
+        || super::actor_spell::qualified_protection_zone(
+            &mut runtime,
+            admission.movement_cells(),
+            actor,
+        ) != Some(false)
+    {
+        return;
+    }
+    let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+    let event = DecisionOccurrenceId::from_bytes(receipt.event_id);
+    let Ok(roll) = deterministic_decision_u64(&root, event, "equipment.noxious-claw", 0) else {
+        return;
+    };
+    let Some(damage) = source_normal_draw(roll, 150, 200) else {
+        return;
+    };
+    let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+        admission.owner_now().get(),
+    );
+    let hit = admission
+        .states
+        .spell_states
+        .lock()
+        .await
+        .apply_creature_damage_kind(
+            &runtime,
+            actor,
+            session,
+            damage,
+            crate::player_lethal::PlayerHitKind::Physical,
+            now,
+            AnalyserDamageSource::None,
+        );
+    let Some(hit) = hit else {
+        return;
+    };
+    if hit.damage.applied > 0
+        && let Some(at) = super::bundle_map_position::bundle_map_position(
+            &mut runtime,
+            admission.movement_cells(),
+            actor,
+        )
+        && let Some(tile) = super::world_map::tile_pos(at.at)
+    {
+        const DRAW_BLOOD: u16 = 1;
+        at.map.facts.emit_movement_effect(tile, DRAW_BLOOD);
+    }
+    let message = if deterministic_decision_u64(&root, event, "equipment.noxious-claw", 1)
+        .is_ok_and(|roll| roll & 1 == 0)
+    {
+        "The claw tightens around your wrist."
+    } else {
+        "The serpent's claw pricks your wrist!"
+    };
+    admission
+        .states
+        .server_messages
+        .send_current(session, ServerMessage::Advance(message.into()));
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
