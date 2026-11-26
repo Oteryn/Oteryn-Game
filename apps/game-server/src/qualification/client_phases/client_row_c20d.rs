@@ -10,7 +10,12 @@ pub(super) async fn run_packet(
     spawns: &oteryn_world_bundle::spawn::Table,
 ) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients, world, spawns))).await;
+    // Budget for the live walk, bounded damage observation and a fresh admission.
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(450),
+        verdict::observe(journey(clients, world, spawns)),
+    )
+    .await;
     let result = result.unwrap_or_else(|_| Err("C20d client capture timed out".into()));
     if let Err(error) = &result {
         evidence(&format!("C20D_CLIENT_GAP {error}"));
@@ -47,6 +52,10 @@ async fn journey(
             return Err("C20d encounter must start away from the temple".into());
         }
         travel_to_spawn(&mut client, world, spawns, "oteryn:creature.poison_spider").await?;
+        let encounter = client.world_spatial().actor_position;
+        if encounter == temple {
+            return Err("C20d lethal encounter reached the temple before death".into());
+        }
         client.session_mut().attack_target(None).await?;
         let mut damaged = false;
         let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
@@ -67,40 +76,51 @@ async fn journey(
                 break;
             }
             if tokio::time::Instant::now() >= deadline {
-                return Err("C20d capture did not observe damage followed by temple respawn".into());
+                return Err(
+                    "C20d capture did not observe damage followed by temple respawn".into(),
+                );
             }
         }
         let vitals = *client.actor_vitals().ok_or("C20d respawn vitals absent")?;
-        capture(
-            world_spatial::encode_world_spatial(client.world_spatial()),
-            actor_spell::encode_actor_vitals(&vitals).map_err(|error| format!("{error:?}"))?,
-            format!(
-                "{} {} {} {} {}\n",
-                temple.x, temple.y, temple.floor, vitals.health, vitals.max_health
-            ),
-        );
-        Ok((temple, vitals.max_health))
+        evidence(&format!(
+            "C20D_TEMPLE_RESPAWN encounter={encounter:?} temple={temple:?} health={} max_health={}",
+            vitals.health, vitals.max_health
+        ));
+        Ok((temple, *client.world_spatial(), vitals))
     }
     .await;
     let prior = client.join_snapshot().game_session_id;
     let released = logout(&mut client).await;
-    let (temple, max_health) = result.and_then(|proof| released.map(|()| proof))?;
+    let (temple, spatial, vitals) = result.and_then(|proof| released.map(|()| proof))?;
     drop(client);
     let mut fresh = connect_character(&scoped, 0xc2, 0).await?;
     if fresh.join_snapshot().game_session_id == prior
         || fresh.world_spatial().actor_position != temple
-        || !fresh.actor_vitals().is_some_and(|vitals| {
-            vitals.health == max_health && vitals.max_health == max_health
+        || !fresh.actor_vitals().is_some_and(|saved| {
+            saved.health == vitals.max_health && saved.max_health == vitals.max_health
         })
     {
         return Err("C20d fresh admission did not preserve the temple and restored health".into());
     }
-    logout(&mut fresh).await
+    evidence(&format!(
+        "C20D_TEMPLE_RELOG temple={temple:?} health={} max_health={}",
+        vitals.health, vitals.max_health
+    ));
+    logout(&mut fresh).await?;
+    capture(
+        world_spatial::encode_world_spatial(&spatial),
+        actor_spell::encode_actor_vitals(&vitals).map_err(|error| format!("{error:?}"))?,
+        format!(
+            "{} {} {} {} {}\n",
+            temple.x, temple.y, temple.floor, vitals.health, vitals.max_health
+        ),
+    )
 }
 
-fn capture(spatial: Vec<u8>, vitals: Vec<u8>, expected: String) {
+fn capture(spatial: Vec<u8>, vitals: Vec<u8>, expected: String) -> TestResult {
+    use std::io::Write;
     let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
     let path = Path::new(&path);
     for (name, bytes) in [
@@ -108,16 +128,17 @@ fn capture(spatial: Vec<u8>, vitals: Vec<u8>, expected: String) {
         ("c20d-vitals.bin", vitals.as_slice()),
         ("c20d-expected.txt", expected.as_bytes()),
     ] {
-        if let Err(error) = std::fs::write(path.join(name), bytes) {
-            evidence(&format!("C20D_CAPTURE_WRITE_ERROR file={name} error={error}"));
-        }
+        std::fs::File::create_new(path.join(name))
+            .and_then(|mut file| file.write_all(bytes))
+            .map_err(|error| format!("C20D_CAPTURE_WRITE_ERROR file={name} error={error}"))?;
     }
+    Ok(())
 }
 
 async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    let (result, detail, _, _) = logout_retrying_busy(client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("C20d capture logout refused: {detail}").into());
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C20d capture logout refused: {reply:?}").into());
     }
     Ok(())
 }
