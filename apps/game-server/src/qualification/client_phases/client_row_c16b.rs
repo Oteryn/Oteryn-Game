@@ -27,11 +27,28 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
 
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     character_prep::declare_seeded("C16b.client", "druid-level-100,magic-level-18,rune-3165", "Paralyze cast and condition reply");
+    let pvp = full_row_s02::pvp_world().await?;
+    let clients = &SeamClients {
+        address: pvp.address,
+        accounts: &pvp.accounts,
+        characters: &pvp.characters,
+        world: pvp.world,
+        channel: pvp.channel,
+        scope_generation: pvp.scope_generation,
+        url: &pvp.url,
+        runtime: None,
+        ..*clients
+    };
     let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_C16B_ACCOUNT").await?;
     let scoped = fixture.clients(clients);
     let mut caster = connect_character(&scoped, 0x16, 0).await?;
     let original = caster.join_snapshot().game_session_id;
-    request_fixture_control(uuid_text(original.as_bytes()), "--profile", "c16b-druid".into()).await?;
+    request_fixture_control_at(
+        "NODE_BOOT_PVP_CONTROL_SOCKET",
+        uuid_text(original.as_bytes()),
+        "--profile",
+        "c16b-druid".into(),
+    ).await?;
     drop(caster);
     caster = connect_character(&scoped, 0x16, 0).await?;
     if caster.join_snapshot().game_session_id == original
@@ -49,7 +66,15 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     if full_e2ef5::rune_quantity(&caster, reference)? != 1 {
         return Err("C16b fixture must supply exactly one Paralyze rune".into());
     }
-    capture(&mut caster, clients, world, reference).await?;
+    full_row_s02::set_open_attack(&mut caster).await?;
+    let target = character_prep::Seeded {
+        profile: "s08-knight",
+        reason: "meet Open PvP protection level for the real Paralyze target",
+    };
+    let target = full_e2ef5::with_observer_liveness(&mut caster,
+        target.connect_at(clients, 0x17, 0, "NODE_BOOT_PVP_CONTROL_SOCKET"),
+    ).await?;
+    capture(&mut caster, target, world, reference).await?;
     let cast_session = caster.join_snapshot().game_session_id;
     drop(caster);
     let fresh = connect_character(&scoped, 0x16, 0).await?;
@@ -63,7 +88,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
 
 async fn capture(
     caster: &mut oteryn_dev_client::DevClientSession,
-    clients: &SeamClients<'_>,
+    mut target: oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
     reference: std::num::NonZeroU32,
 ) -> TestResult {
@@ -71,7 +96,6 @@ async fn capture(
     let spell = book
         .rune(3165)
         .ok_or("C16b Paralyze rune not in pinned spell book")?;
-    let mut target = connect_character(clients, 0x17, 0).await?;
     let result = verdict::indexed_timeout(Duration::from_secs(120), async {
         let path = route(world, tile(target.world_spatial().actor_position)?, |at| {
             full_e2ef5::rune_corridor(world, at).is_some()

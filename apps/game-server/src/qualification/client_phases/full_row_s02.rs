@@ -190,7 +190,7 @@ async fn place_pair(
     Ok(())
 }
 
-async fn set_open_attack(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn set_open_attack(client: &mut DevClientSession) -> TestResult {
     use oteryn_dev_client::client_runtime::pvp_expert as pvp;
     let expected = pvp::ExpertFightModes {
         modes: pvp::attack::FightModes {
@@ -245,17 +245,17 @@ fn invitation_retained(view: &PartyResult, handle: u64) -> bool {
     view.invitations.iter().any(|entry| entry.handle == handle)
 }
 
-struct PvpWorld {
-    address: std::net::SocketAddr,
-    url: String,
-    accounts: [String; 2],
-    characters: Vec<[u8; 16]>,
-    world: [u8; 16],
-    channel: [u8; 16],
-    scope_generation: u64,
+pub(super) struct PvpWorld {
+    pub(super) address: std::net::SocketAddr,
+    pub(super) url: String,
+    pub(super) accounts: [String; 2],
+    pub(super) characters: Vec<[u8; 16]>,
+    pub(super) world: [u8; 16],
+    pub(super) channel: [u8; 16],
+    pub(super) scope_generation: u64,
 }
 
-async fn pvp_world() -> TestResult<PvpWorld> {
+pub(super) async fn pvp_world() -> TestResult<PvpWorld> {
     let url = required("NODE_BOOT_PVP_DATABASE_URL")?;
     let accounts = [
         required("NODE_BOOT_PVP_ACCOUNT_ID")?,
