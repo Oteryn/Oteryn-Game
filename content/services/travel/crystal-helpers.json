@@ -8,7 +8,7 @@
     "y": 31756,
     "floor": 6,
     "postman": false,
-    "held": true,
+    "held": false,
     "carpet": false,
     "native_addition": true,
     "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_jack.lua:53-55:sha256:48732866d24fdd4f5d06f13270c3b234aabd27e8d0d64f7dc2e664e0549b2dcd"
@@ -51,7 +51,7 @@
     "y": 32470,
     "floor": 7,
     "postman": false,
-    "held": true,
+    "held": false,
     "carpet": false,
     "native_addition": true,
     "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ferryman_kamil.lua:54-56:sha256:94436665fe12c52fe067b99efdc4f6a3f0c7afe49b3360229470cb8df6d7f68a"
@@ -65,7 +65,7 @@
     "y": 32457,
     "floor": 7,
     "postman": false,
-    "held": true,
+    "held": false,
     "carpet": false,
     "native_addition": true,
     "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ferryman_kamil_meluna.lua:53-55:sha256:8d9b6467a86adf0a16da177fa4050ab1ed90b821d85fa414e2855ac1577aef24"
@@ -79,7 +79,7 @@
     "y": 31366,
     "floor": 7,
     "postman": false,
-    "held": true,
+    "held": false,
     "carpet": false,
     "native_addition": true,
     "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/harlow_vengoth.lua:53-55:sha256:25ee2a79a96c2df5f803445e7e916aa3a437e32adf9a387d43a4d18442e74ff5"
@@ -93,7 +93,7 @@
     "y": 32602,
     "floor": 6,
     "postman": false,
-    "held": true,
+    "held": false,
     "carpet": false,
     "native_addition": true,
     "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hawkhurst.lua:60-62:sha256:45942cc19d76b88815e6c974a470e854faf963236e819757233136cb21f5625e"
@@ -107,7 +107,7 @@
     "y": 31983,
     "floor": 7,
     "postman": false,
-    "held": true,
+    "held": false,
     "carpet": false,
     "native_addition": true,
     "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hawkhurst_ingol.lua:60-62:sha256:8120bdd53937db6c3af711d1a4406d6f9b3e2bea9e3270e2f8522f14cb227565"
@@ -121,7 +121,7 @@
     "y": 32262,
     "floor": 7,
     "postman": true,
-    "held": true,
+    "held": false,
     "carpet": false,
     "native_addition": true,
     "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kendra.lua:59-70:sha256:13d8d3385affdca7d40dc5d5e55af9bcbb2f72b42f0c4451e2ce4cb46d5ff788"
@@ -135,7 +135,7 @@
     "y": 32916,
     "floor": 7,
     "postman": true,
-    "held": true,
+    "held": false,
     "carpet": false,
     "native_addition": true,
     "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tonar.lua:88-100:sha256:a0d99e88cb4d07a7a48e954172bf0635631c4b48d139dfb13d860cf3c9193b4d"
