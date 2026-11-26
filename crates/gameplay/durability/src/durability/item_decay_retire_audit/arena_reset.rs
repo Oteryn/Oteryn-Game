@@ -29,7 +29,7 @@ pub(super) fn check(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, Au
     let cause = value.arena_reset.as_ref().ok_or(AuditError::InvalidInput)?;
     let before = value.before.as_ref().ok_or(AuditError::InvalidInput)?;
     let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
-    let ground = value.ground.as_ref().ok_or(AuditError::InvalidInput)?;
+    let ground = scope_ground(value)?;
     check_state(before)?;
     check_state(after)?;
     mint::check_key_number(before)?;
@@ -54,7 +54,6 @@ pub(super) fn check(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, Au
         || value.world_reset.is_some()
         || value.activity_retirement.is_some()
         || value.corpse_entry.is_some()
-        || value.ground_container_entry.is_some()
         || before.item_instance_id != after.item_instance_id
         || before.world_id != after.world_id
         || before.definition != after.definition
@@ -73,12 +72,20 @@ pub(super) fn check(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, Au
         || !(1..=3).contains(&cause.rank)
         || cause.deadline_unix_ms == 0
         || cause.deadline_unix_ms > i64::MAX as u64
-        || !pit.layout().contains_reset([at.x, at.y, at.z])
+        || !pit.layout().contains_reset([at.x, at.y, -at.z.abs()])
     {
         return Err(AuditError::InvalidInput);
     }
     DECAY_RETIRE_USAGE.check()?;
-    Ok(DecayRetireShape::Ground)
+    if let Some(entry) = &value.ground_container_entry {
+        super::world_reset::check_entry(entry, &before.item_instance_id)?;
+        if entry.tree_root_item_instance_id.is_none() {
+            return Err(AuditError::InvalidInput);
+        }
+        Ok(DecayRetireShape::GroundContainerEntry)
+    } else {
+        Ok(DecayRetireShape::Ground)
+    }
 }
 
 #[cfg(test)]

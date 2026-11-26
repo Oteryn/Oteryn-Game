@@ -43,11 +43,11 @@ class QuestRewards(unittest.TestCase):
         outfits={r['key']:r for r in doc['outfits']}
         mappings={r['grant_key']:r for r in doc['grant_mappings']}
         nx5=json.loads((q.ROOT/'tools/content-schema/cosmetics-authoring/nx5-authoring.json').read_bytes())['document']
-        self.assertEqual(len(outfits),131+len(nx5['outfits']))
+        self.assertEqual(len(outfits),137+len(nx5['outfits']))
         for row in nx5['outfits']:
             self.assertEqual(outfits[row['key']],row)
         packet=json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
-        self.assertEqual(len(packet['grants']),202)
+        self.assertEqual(len(packet['grants']),210)
         for grant in packet['grants']:
             mapping=mappings[grant['key']]
             self.assertEqual(mapping['compatible_provenance'],[packet['provenance']])
@@ -66,7 +66,9 @@ class QuestRewards(unittest.TestCase):
         capture=(q.ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes()
         self.assertEqual(admission['source_packet_sha256'],q.sha(capture))
         original=json.loads(capture)
-        self.assertEqual([r['item_id'] for r in packet['rules'] if r['item_id']!=21897], [r['item_id'] for r in original['rules']])
+        additions = [21897, 40578, 44753, 44754, 48424, 48514, 48515]
+        self.assertEqual([r['item_id'] for r in packet['rules']],
+                         sorted([r['item_id'] for r in original['rules']] + additions))
         self.assertEqual(sum(r['item_id']==21897 for r in packet['rules']),1)
         old=next(r for r in original['rules'] if r['mode']=='random_outfit')
         native=next(r for r in packet['rules'] if r['mode']=='random_outfit')
@@ -78,6 +80,26 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual((jungle['female']['id'],jungle['male']['id']),(620,621))
         self.assertFalse(jungle['starter_female'] or jungle['starter_male'])
         self.assertTrue(jungle['premium'])
+
+    def test_task_board_mount_offers_bind_exact_admitted_looks(self):
+        doc = self.author['document']
+        mounts = {row['key']: row['look']['id'] for row in doc['mounts']}
+        grants = {row['grant_key']: row for row in doc['grant_mappings']}
+        for offer, look in [(6, 1908), (7, 1909), (8, 1910), (9, 1281)]:
+            with self.subTest(offer=offer):
+                row = grants[f'oteryn:taskboard/shop/offer-{offer}']
+                self.assertEqual(row['compatible_provenance'], ['task-board-shop-v1'])
+                self.assertEqual(row['target']['kind'], 'Mount')
+                self.assertEqual(mounts[row['target']['mount_key']], look)
+
+    def test_pegasus_feather_is_a_direct_mount_source(self):
+        packet = json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
+        rule = next(row for row in packet['rules'] if row['item_id'] == 48424)
+        self.assertEqual(rule['mode'], 'direct')
+        self.assertFalse(rule['premium'])
+        choice, = rule['choices']
+        self.assertEqual(choice['grants'], ['oteryn:item-grant.mount.227'])
+        self.assertEqual(choice['achievements'], ['oteryn:achievement/i_wanna_fly_away'])
 
     def test_complete_glider_recipe_preserves_every_source_taming_row(self):
         original=json.loads((q.ROOT/'content/cosmetics/taming.json').read_bytes())
@@ -504,6 +526,10 @@ class QuestRewards(unittest.TestCase):
 
     def test_l1_handins_preserve_source_crest_identity_and_exclusive_sides(self):
         callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        self.assertEqual(callbacks['l1-yalaharian-sage']['achievement'],
+                         'oteryn:achievement/yalahari_of_wisdom')
+        self.assertEqual(callbacks['l1-yalaharian-villain']['achievement'],
+                         'oteryn:achievement/yalahari_of_power')
         for name,side,bit in [('sage',1,1),('villain',2,2)]:
             c=callbacks['l1-yalaharian-'+name]
             self.assertEqual(c['take'],[])

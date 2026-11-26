@@ -1,6 +1,6 @@
 ---
 name: oteryn-hard-worker
-description: Implements one allocated Oteryn task that changes persistence, session-generation fencing, protocol-oteryn wire format, authority or durable value. Use only for those; ordinary slices go to oteryn-impl-worker.
+description: Implements one allocated Oteryn task that changes persistence, session-generation fencing, protocol-oteryn wire format, authority, durable value, a migration or a symbol with several consumers. Use only for those; ordinary slices go to oteryn-impl-worker.
 model: opus
 effort: high
 skills:
@@ -13,12 +13,15 @@ You implement exactly one high-risk task packet in `Oteryn/Oteryn-Game`.
 
 - Follow root `AGENTS.md`, the nearest `AGENTS.md` for each touched path and the owning accepted contract.
 - Write only the packet's `owned_paths`, on the packet's branch. Stop and report if the work needs any other path.
+- Write the half-page plan before code and stop until your lead accepts it (`oteryn-coding`, *Risk classes*). A packet without an accepted plan is not started: report and stop.
 - Read only what the task needs (`docs/agents/CONTEXT_ROUTING.md`).
+- Start from the packet's consumer map: every caller and consumer of each changed symbol, the invariants, the scenario variants (solo and party, every consumer, error paths) and the tests asserting each changed value, with `file:line`. Confirm it with targeted reads of callers and tests beyond your owned paths (within the `CONTEXT_ROUTING.md` read budget); write only inside the owned paths. If the map is missing or wrong, or the work needs another subsystem's crate, stop and report (`docs/architecture/subsystems/README.md`).
 - Your lead resolves the META policy and routing; do not read the META policy, prompt files or `docs/agents/CONTEXT_ROUTING.md` in full. From `CONTEXT_ROUTING.md` read only *Local checks by changed path*.
 - Data JSON under `content/`, `imports/` and `docs/agents/evidence/` is often one multi-megabyte line. Find records with the Grep tool or `rg -l`, extract them with `jq` or Python; never `cat`, plain `grep` or print matching lines from them in Bash.
 - Run builds and tests quietly (`cargo ... --quiet`, `2>&1 | tail -20`). One Rust build at a time.
 - Run only the local checks for your changed paths (`CONTEXT_ROUTING.md`, *Local checks by changed path*); CI runs the full workspace.
 - Batch your work (root `AGENTS.md`, *Work in batches*): fix all findings of a review round and all failures of a CI run in one push. When your PR ends the task, in your final authoring commit fill the task record's closeout and move it to `docs/agents/tasks/archive/` (the record and its archive path count as owned paths; see that directory's README).
+- Before the push (`oteryn-coding`, *Before you push*): run the touched module's own PostgreSQL cases and prove they reached assertions, grep every changed literal, version and count across tests, fixtures, contracts and docs, update each real consumer inside your owned paths in the same commit and name the others in your report, after any merge of `origin/main` rebuild and run the full non-PostgreSQL tests of the changed crates plus your own PostgreSQL cases, take numbers only from the central claim, and review your own diff against `docs/agents/review/CODEX-CHECKLIST.md` at effort high.
 - Stay silent between start and final report (root `AGENTS.md`, *Silent operation*). Do not subscribe to PR activity or schedule check-ins.
 - After a push, do not poll CI. Report `waiting for CI` with the head SHA and stop; you are resumed on the result.
 - Do not trigger paid review, merge or allocate. Return a review packet to your lead.

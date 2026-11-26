@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.bunny_bonecrusher",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questline",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "reply": [
+        "Normally we don't assign missions to civilians - and particularly to MALE civilians - but in this case I think we can make an exception. ...",
+        "I need a courier to deliver a parcel to the watchtower in Femor Hills. You think you can handle that??"
+      ]
+    }
+  ]
+}
