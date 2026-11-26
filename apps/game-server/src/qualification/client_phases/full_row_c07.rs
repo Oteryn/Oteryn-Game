@@ -32,7 +32,7 @@ const PREPARATION: character_prep::Seeded = character_prep::Seeded {
 };
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    character_prep::declare_seeded("C07.full", "level-15-sorcerer,two-fire-field-runes", PREPARATION.reason);
+    character_prep::declare_seeded("C07.full", "level-15-sorcerer,magic-level-1,two-fire-field-runes", PREPARATION.reason);
     let started = std::time::Instant::now();
     let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await;
     let result = match result {
@@ -80,7 +80,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
         oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
     ).ok_or("step=prepare observed=no-source-vitals")?;
-    if full_e2ef7::player_level(&mut client).await? != LEVEL
+    use oteryn_protocol_oteryn::cyclopedia_character as character;
+    let stats = client.session_mut().gated_command(
+        character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+        character::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+        &[character::CharacterTab::GeneralStats as u8, 0, 0, 50],
+    ).await?;
+    if stats.status != CommandStatus::Accepted
+        || stats.payload.first() != Some(&(character::CharacterTab::GeneralStats as u8))
+        || stats.payload.get(9..13) != Some(LEVEL.to_le_bytes().as_slice())
+        || stats.payload.get(13..15) != Some(1u16.to_le_bytes().as_slice())
         || client.actor_vitals().is_none_or(|v| v.max_health != max_health || v.max_mana != max_mana)
     {
         return Err("step=prepare observed=wrong-level-or-derived-vitals".into());
@@ -100,7 +109,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into_iter().find(|entry| entry.rune_item == Some(RUNE_ID))
         .ok_or("step=rune-eligibility observed=fire-field-absent need=served-fire-field-rune")?;
     if !entry.available {
-        return Err(format!("step=rune-eligibility item={RUNE_ID} observed=unavailable required-level={} need=player-earned-fire-field-level-and-magic-level", entry.level).into());
+        return Err(format!("step=rune-eligibility item={RUNE_ID} observed=unavailable required-level={} need=served-fire-field-level-and-magic-level", entry.level).into());
     }
 
     let pz_path = route(world, tile(client.world_spatial().actor_position)?, |at| {
