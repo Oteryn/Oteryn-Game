@@ -985,7 +985,7 @@ pub async fn with_slot_open_commit_fault<T>(
 
 async fn commit_writer_slot_open(
     tx: Transaction<'_, Postgres>,
-    deadline: std::time::Instant,
+    deadline: tokio::time::Instant,
 ) -> Result<(), DurabilityError> {
     #[cfg(any(test, feature = "test-support"))]
     if let Ok(Some(fault)) = SLOT_OPEN_COMMIT_FAULT.try_with(std::cell::Cell::get) {
