@@ -57,7 +57,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let at = TilePos {
         x: 32355,
         y: 32206,
-        floor: 7,
+        floor: -7,
     };
     if world.facts().house_id(at).is_some() {
         return Err("fixed chair 2358 belongs to a house".into());
