@@ -778,7 +778,7 @@ async fn prepare_build(
         if profile == "house-g01" {
             let gate = premium.ok_or("qualification Premium coordinator absent")?;
             if gate.premium_gate(account).await.require().is_err() {
-                grant_premium(root, Some(gate), account, deadline).await?;
+                grant_premium(root, Some(gate), account, Some(deadline)).await?;
             }
             use crate::durability::house_ownership::{
                 HouseOwnershipOutcome, HouseSettlementRequest,
@@ -824,7 +824,7 @@ async fn prepare_build(
         {
             return Err("I07 fixture requires its active disposable admission".into());
         }
-        grant_premium(root, premium, *record.account_id.as_bytes(), deadline).await?;
+        grant_premium(root, premium, *record.account_id.as_bytes(), None).await?;
         return i07::seed(root, authority, proof, &current, native, character).await;
     }
     #[cfg(feature = "qualification-spawn")]
@@ -884,7 +884,8 @@ async fn prepare_build(
                 {
                     return Err("qualification Premium activation absent".into());
                 }
-                return grant_premium(root, premium, *record.account_id.as_bytes(), deadline).await;
+                return grant_premium(root, premium, *record.account_id.as_bytes(), Some(deadline))
+                    .await;
             }
             ("c11-unassigned", UNASSIGNED_ACCOUNT)
             | ("c11-knight", KNIGHT_ACCOUNT)
@@ -967,7 +968,7 @@ async fn grant_premium(
         &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
     >,
     account: [u8; 16],
-    deadline: tokio::time::Instant,
+    deadline: Option<tokio::time::Instant>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::premium::{
         IngestOutcome, PRODUCER_PROFILE, PRODUCT_ID, PRODUCT_VERSION, SNAPSHOT_SCHEMA,
@@ -1013,7 +1014,9 @@ async fn grant_premium(
         if matches!(outcome, IngestOutcome::Accepted | IngestOutcome::Replayed) {
             break;
         }
-        if outcome != IngestOutcome::FenceUnavailable || tokio::time::Instant::now() >= deadline {
+        if outcome != IngestOutcome::FenceUnavailable
+            || deadline.is_none_or(|deadline| tokio::time::Instant::now() >= deadline)
+        {
             return Err(format!("qualification Premium delivery refused: {outcome:?}").into());
         }
         root.request_ready();
