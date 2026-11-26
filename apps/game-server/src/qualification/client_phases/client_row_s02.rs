@@ -7,13 +7,78 @@ use oteryn_dev_client::{DevClientSession, EntityRef};
 use oteryn_protocol_oteryn::{CommandStatus, party_skull};
 use runtime::party::PartyIntent;
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S02_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+const CAPTURES: [&str; 4] = [
+    "s02-invited.bin",
+    "s02-member.bin",
+    "s02-leader.bin",
+    "s02-expected.txt",
+];
+const REPLAY: &str =
+    "play::feature_0134_party_skull::protocol::e2e_s02::e2e_s02_replays_party_shields_and_skulls";
+
+struct CaptureDirectory(std::path::PathBuf);
+
+impl CaptureDirectory {
+    fn new() -> TestResult<Self> {
+        let output = std::process::Command::new("mktemp").arg("-d").output()?;
+        if !output.status.success() {
+            return Err("S02 could not create a private capture directory".into());
+        }
+        Ok(Self(std::str::from_utf8(&output.stdout)?.trim_end().into()))
     }
+}
+
+impl Drop for CaptureDirectory {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+async fn replay(captures: CaptureDirectory) -> TestResult {
+    let budget = Duration::from_secs(480);
+    verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + budget, "client replay");
+    let output = tokio::task::spawn_blocking(
+        move || -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+            let output = std::process::Command::new("timeout")
+                .args([
+                    "--kill-after=5s",
+                    "470s",
+                    "cargo",
+                    "+1.100.0",
+                    "test",
+                    "--locked",
+                    "-j1",
+                ])
+                .args(["-p", "oteryn-client", "--lib", REPLAY, "--", "--exact"])
+                .current_dir(env!("CARGO_MANIFEST_DIR"))
+                .env("E2E_ALL_CAPTURE_DIR", &captures.0)
+                .output()?;
+            let stdout = std::str::from_utf8(&output.stdout)?;
+            let test_line = format!("test {REPLAY} ... ok");
+            if !output.status.success()
+                || !stdout.lines().any(|line| line == test_line)
+                || !stdout
+                    .lines()
+                    .any(|line| line.starts_with("test result: ok. 1 passed; 0 failed; 0 ignored;"))
+            {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                let last_error = stderr.lines().last().unwrap_or_default();
+                return Err(
+                    format!("S02 replay failed: {} {stdout} {last_error}", output.status).into(),
+                );
+            }
+            if let Some(export) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+                for name in CAPTURES {
+                    std::fs::copy(captures.0.join(name), Path::new(&export).join(name))?;
+                }
+            }
+            Ok(test_line)
+        },
+    )
+    .await?;
+    let line = output.map_err(|error| error.to_string())?;
+    evidence(&format!("S02_CLIENT_REPLAY {line}"));
+    Ok(())
 }
 
 fn own(client: &DevClientSession) -> TestResult<EntityRef> {
@@ -99,7 +164,7 @@ async fn wait_for_pair_visibility(
     Ok(())
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+async fn journey(clients: &SeamClients<'_>, captures: &Path) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -117,16 +182,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             && u32::from(at.x.abs_diff(other.x)) + u32::from(at.y.abs_diff(other.y)) == 1
     })
     .ok_or("peer approach route unavailable")?;
-    walk(&mut leader, world, &path).await?;
+    full_row_s02::walk_s02(&mut leader, world, &path).await?;
     let (leader_ref, peer_ref) = (own(&leader)?, own(&peer)?);
     wait_for_pair_visibility(&mut leader, &mut peer, leader_ref, peer_ref).await?;
 
     party(&mut leader, Some(PartyIntent::Invite(peer_ref))).await?;
     let (invited_bytes, invited_shield, invited_skull) = icon(&mut leader, peer_ref).await?;
-    if !(1..=2).contains(&invited_shield) {
-        return Err(format!("invitation shield {invited_shield} is not blue/yellow").into());
+    if (invited_shield, invited_skull) != (2, 0) {
+        return Err(format!("inviter icons observed={invited_shield}/{invited_skull}").into());
     }
-    capture("s02-invited.bin", &invited_bytes);
+    std::fs::write(captures.join(CAPTURES[0]), invited_bytes)?;
 
     let view = party(&mut peer, None).await?;
     let state = runtime::party::decode_party_result(&view)
@@ -139,14 +204,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     party(&mut peer, Some(PartyIntent::Accept(handle))).await?;
     let (member_bytes, peer_shield, peer_skull) = icon(&mut leader, peer_ref).await?;
     let (leader_bytes, leader_shield, leader_skull) = icon(&mut peer, leader_ref).await?;
-    if peer_shield != 3 && peer_shield != 5 {
-        return Err(format!("member shield {peer_shield} is not member/shared").into());
+    if (peer_shield, peer_skull) != (3, 0) || (leader_shield, leader_skull) != (4, 0) {
+        return Err(format!(
+            "joined icons observed={peer_shield}/{peer_skull} {leader_shield}/{leader_skull}"
+        )
+        .into());
     }
-    if leader_shield != 4 && leader_shield != 6 {
-        return Err(format!("leader shield {leader_shield} is not leader/shared").into());
-    }
-    capture("s02-member.bin", &member_bytes);
-    capture("s02-leader.bin", &leader_bytes);
+    std::fs::write(captures.join(CAPTURES[1]), member_bytes)?;
+    std::fs::write(captures.join(CAPTURES[2]), leader_bytes)?;
     let expected = format!(
         "peer_identity={}\npeer_generation={}\nleader_identity={}\nleader_generation={}\ninvited_shield={invited_shield}\ninvited_skull={invited_skull}\nmember_shield={peer_shield}\nmember_skull={peer_skull}\nleader_shield={leader_shield}\nleader_skull={leader_skull}\n",
         hex(&peer_ref.identity),
@@ -154,21 +219,33 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         hex(&leader_ref.identity),
         leader_ref.generation,
     );
-    capture("s02-expected.txt", expected.as_bytes());
+    std::fs::write(captures.join(CAPTURES[3]), expected)?;
     party(&mut leader, Some(PartyIntent::Leave)).await?;
-    let _ = leader.session_mut().logout().await?;
-    let _ = peer.session_mut().logout().await?;
-    Ok(expected.replace('\n', ";"))
+    for client in [&mut leader, &mut peer] {
+        let reply = client.session_mut().logout().await?;
+        if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("S02 client logout: {reply:?}").into());
+        }
+    }
+    Ok(())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
-        Ok(Ok(expected)) => evidence(&format!(
-            "e2e_all scenario=S02.client status=CAPTURED evidence={expected}"
-        )),
-        Ok(Err(error)) => evidence(&format!(
-            "e2e_all scenario=S02.client status=FAIL evidence={error}"
-        )),
-        Err(_) => evidence("e2e_all scenario=S02.client status=FAIL evidence=timeout"),
-    }
+    let start = std::time::Instant::now();
+    let result = verdict::observe(async {
+        let captures = CaptureDirectory::new()?;
+        verdict::indexed_timeout(Duration::from_secs(120), journey(clients, &captures.0))
+            .await
+            .map_err(|_| "S02 live capture timed out")??;
+        replay(captures).await
+    })
+    .await;
+    let (status, detail) = match result {
+        Ok(()) => ("PASS", "live-party-icons-and-client-reducer".to_owned()),
+        Err(error) => ("FAIL", error.to_string().replace('\n', " ")),
+    };
+    evidence(&format!(
+        "e2e_all scenario=S02.client status={status} seconds={:.3} evidence={detail}",
+        start.elapsed().as_secs_f64()
+    ));
 }

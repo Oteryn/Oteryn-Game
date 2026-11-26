@@ -144,6 +144,29 @@ fn distance(a: TilePos, b: TilePos) -> u16 {
     }
 }
 
+pub(super) async fn walk_s02(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, from, direction).ok_or("S02 step has no landing")?;
+        let reply = client.step(direction).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if reply.disposition != StepDisposition::Moved
+            || reply.world_spatial_delta.is_none()
+            || actual != expected
+        {
+            return Err(format!("S02 step {direction:?} from={from:?} expected={expected:?} actual={actual:?} reply={reply:?}").into());
+        }
+        verdict::Harness::global().progress("walk");
+        client.take_events();
+        tokio::time::sleep(Duration::from_millis(u64::from(reply.step_wait_ms))).await;
+    }
+    Ok(())
+}
+
 async fn place_pair(
     a: &mut DevClientSession,
     b: &mut DevClientSession,
@@ -171,7 +194,7 @@ async fn place_pair(
             })
     })
     .ok_or("step walk-a: no reachable unprotected pair")?;
-    walk(a, world, &path).await?;
+    walk_s02(a, world, &path).await?;
     let target = tile(a.world_spatial().actor_position)?;
     let path = route(world, tile(b.world_spatial().actor_position)?, |at| {
         at != target
@@ -182,7 +205,7 @@ async fn place_pair(
                 .is_some_and(|t| !t.protection_zone())
     })
     .ok_or("step walk-b: no reachable adjacent unprotected tile")?;
-    walk(b, world, &path).await?;
+    walk_s02(b, world, &path).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
     while tokio::time::Instant::now() < deadline {
         pump(a, b).await?;
@@ -222,23 +245,28 @@ async fn set_open_attack(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-async fn logout(client: &mut DevClientSession, budget: Duration) -> TestResult {
-    let deadline = tokio::time::Instant::now() + budget;
-    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    loop {
-        let reply = client.session_mut().logout().await?;
-        match reply.result {
-            Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) => return Ok(()),
-            Some(
-                oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. }
-                | oteryn_protocol_oteryn::logout::LogoutResult::Busy,
-            ) if tokio::time::Instant::now() < deadline => {
-                client.service_liveness(Duration::from_millis(250)).await?;
-                client.take_events();
-            }
-            _ => return Err(format!("step logout observed reply={reply:?}").into()),
-        }
+async fn logout(client: &mut DevClientSession) -> TestResult {
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step logout observed reply={reply:?}").into());
     }
+    Ok(())
+}
+
+async fn pvp_status(client: &mut DevClientSession) -> TestResult<party_skull::PvpStatus> {
+    let reply = client
+        .session_mut()
+        .gated_command(
+            party_skull::CAPABILITY_PARTY_SKULL_V1,
+            party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY,
+            &[8, 1],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("S02 PvP status refused: {:?}", reply.status).into());
+    }
+    party_skull::PvpStatus::decode(&reply.payload)
+        .map_err(|error| format!("S02 PvP status malformed: {error:?}").into())
 }
 
 fn invitation_retained(view: &PartyResult, handle: u64) -> bool {
@@ -307,12 +335,22 @@ async fn prepare_fighter(
 ) -> TestResult<DevClientSession> {
     use oteryn_protocol_oteryn::cyclopedia_character as stats;
 
-    let mut fighter = character_prep::Seeded {
-        profile,
-        reason: "Open PvP level floor",
+    let mut initial = connect_character(clients, tag, index).await?;
+    let session = initial.join_snapshot().game_session_id;
+    request_fixture_control_at(
+        "NODE_BOOT_PVP_CONTROL_SOCKET",
+        uuid_text(session.as_bytes()),
+        "--profile",
+        profile.into(),
+    )
+    .await
+    .map_err(|error| format!("S02 preparation {profile} refused: {error}"))?;
+    logout(&mut initial).await?;
+    drop(initial);
+    let mut fighter = connect_character(clients, tag, index).await?;
+    if fighter.join_snapshot().game_session_id == session {
+        return Err("S02 preparation reused its original session".into());
     }
-    .connect_at(clients, tag, index, "NODE_BOOT_PVP_CONTROL_SOCKET")
-    .await?;
     let reply = fighter
         .session_mut()
         .gated_command(
@@ -322,14 +360,27 @@ async fn prepare_fighter(
         )
         .await?;
     if reply.status != CommandStatus::Accepted {
-        return Err(format!("S02 player {index} GeneralStats refused: {:?}", reply.status).into());
+        return Err(format!(
+            "S02 player {index} GeneralStats refused: {:?}",
+            reply.status
+        )
+        .into());
     }
     general_stats::validate(&reply.payload, general_stats::selected(&fighter))?;
     let level = u32::from_le_bytes(reply.payload[9..13].try_into()?);
     if level != 8 {
         return Err(format!("S02 player {index} served level {level}, expected 8").into());
     }
-    evidence(&format!("S02_CHECK step=seeded-level status=PASS player={index} level={level}"));
+    let vitals = fighter.actor_vitals().ok_or("S02 seeded vitals absent")?;
+    if (vitals.max_health, vitals.max_mana) != (185, 90) {
+        return Err(format!(
+            "S02 player {index} level-eight maxima expected 185/90, observed={vitals:?}"
+        )
+        .into());
+    }
+    evidence(&format!(
+        "S02_CHECK step=seeded-level status=PASS player={index} level={level} vitals={vitals:?}"
+    ));
     Ok(fighter)
 }
 
@@ -434,29 +485,33 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("join-guard-refusal", (refused, retained.invitations.len()));
 
-    // The production aggression/skull lock is intentionally real.  Poll the same Accept command;
-    // every refused reply is an observed negative path, and only server expiry permits progress.
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(920);
-    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    let joined = loop {
+    // Observe the served aggression and skull expiry before sending another Accept.
+    let active = pvp_status(&mut a).await?;
+    if active.skull != 3 || active.situations.len() != 1 || active.situations[0].incoming {
+        return Err(
+            format!("step 5 expected one outgoing white-skull situation: {active:?}").into(),
+        );
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+    verdict::Harness::global().bounded_wait(deadline, "PvP aggression expiry");
+    loop {
         pump(&mut a, &mut b).await?;
-        let (_, state) = party(&mut b, None).await?;
-        let current = state
-            .invitations
-            .first()
-            .map(|entry| entry.handle)
-            .ok_or("step 5 invitation disappeared while guard active")?;
-        let (reply, state) = party(&mut b, Some(PartyIntent::Accept(current))).await?;
-        if reply == PartyDisposition::Ok {
-            break state;
+        let status = pvp_status(&mut a).await?;
+        if status.skull == 0 && status.situations.is_empty() {
+            break;
         }
-        if reply != PartyDisposition::Rejected || tokio::time::Instant::now() >= deadline {
-            return Err(
-                format!("step 5 retry accept observed reply={reply:?} state={state:?}").into(),
-            );
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step 5 PvP aggression did not expire: {status:?}").into());
         }
         tokio::time::sleep(Duration::from_secs(1)).await;
-    };
+    }
+    let (reply, joined) = party(&mut b, Some(PartyIntent::Accept(handle))).await?;
+    if reply != PartyDisposition::Ok {
+        return Err(format!(
+            "step 5 accept after expiry observed reply={reply:?} state={joined:?}"
+        )
+        .into());
+    }
     if joined.members.len() != 2 {
         return Err(format!("step 5 accepted roster={joined:?}").into());
     }
@@ -471,18 +526,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         a.join_snapshot().game_session_id,
         b.join_snapshot().game_session_id,
     );
-    logout(&mut a, Duration::from_secs(920)).await?;
-    logout(&mut b, Duration::from_secs(920)).await?;
+    logout(&mut a).await?;
+    logout(&mut b).await?;
     drop((a, b));
     let mut a = connect_character(clients, 0xb2, 0).await?;
     let mut b = connect_character(clients, 0xb3, 1).await?;
-    if sessions
-        == (
-            a.join_snapshot().game_session_id,
-            b.join_snapshot().game_session_id,
-        )
+    if sessions.0 == a.join_snapshot().game_session_id
+        || sessions.1 == b.join_snapshot().game_session_id
     {
-        return Err("step 6 fresh admission reused sessions".into());
+        return Err("step 6 fresh admission reused a session".into());
     }
     place_pair(&mut a, &mut b, world).await?;
     let (_, durable) = party(&mut a, None).await?;
@@ -494,9 +546,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step 6 durable roster={durable:?} icons={ai:?}/{bi:?}").into());
     }
     row.pass("fresh-admission-durable", (durable.members.len(), ai, bi));
-    let _ = party(&mut b, Some(PartyIntent::Leave)).await?;
-    logout(&mut a, Duration::from_secs(70)).await?;
-    logout(&mut b, Duration::from_secs(70)).await?;
+    let (left, _) = party(&mut b, Some(PartyIntent::Leave)).await?;
+    if left != PartyDisposition::Ok {
+        return Err(format!("step 6 leave observed reply={left:?}").into());
+    }
+    logout(&mut a).await?;
+    logout(&mut b).await?;
     Ok(())
 }
 
@@ -521,8 +576,8 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         let released = release_row_characters(&pvp).await;
         outcome.and(released)
     })
-        .await
-        .unwrap_or_else(|_| Err("step lifecycle timeout observed=no-reply-or-delta".into()));
+    .await
+    .unwrap_or_else(|_| Err("step lifecycle timeout observed=no-reply-or-delta".into()));
     row.finish(&result);
 }
 
