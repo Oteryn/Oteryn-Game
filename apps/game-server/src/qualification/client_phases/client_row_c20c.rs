@@ -73,12 +73,13 @@ async fn journey(core: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
+    let loaded = boot_world(
         bytes,
         &pin,
         WorldId::decode(&world_id)?,
         ChannelId::decode(&channel)?,
     )?;
+    let world = &loaded.bundle;
 
     let socket = "NODE_BOOT_PVP_CONTROL_SOCKET";
     let mut victim = prepare_build(clients, 0xc2, 1, "c20c-sorcerer").await?;
@@ -213,7 +214,35 @@ async fn buy(
     seller: &str,
     name: &str,
 ) -> TestResult {
-    let npc = client_row_p20::approach_npc(client, world, npcs, seller).await?;
+    let npc = npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == seller)
+        .ok_or_else(|| format!("C20c {seller} absent from the compiled world"))?;
+    let [placement] = npc.placements.as_slice() else {
+        return Err(format!("C20c requires one authored {seller} placement").into());
+    };
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at.floor == placement.floor
+            && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
+    })
+    .ok_or_else(|| format!("C20c no route to {seller}"))?;
+    full_e2ef6::walk_once(client, world, &path).await?;
+    let basis = spatial_basis::current(client)?;
+    let npc_position = ActorPosition {
+        x: i32::from(placement.x),
+        y: i32::from(placement.y),
+        floor: basis.floor(placement.floor),
+    };
+    let npc = client
+        .world_entities()
+        .and_then(|entities| {
+            entities.iter().find(|entity| {
+                entity.kind == oteryn_dev_client::EntityKind::Npc && entity.position == npc_position
+            })
+        })
+        .map(|entity| entity.entity)
+        .ok_or_else(|| format!("C20c {seller} is absent at its authored placement"))?;
     client_row_p20::talk(client, npc, "hi").await?;
     let (_, quote) = client_row_p20::talk(client, npc, name).await?;
     if quote

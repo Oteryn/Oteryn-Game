@@ -2394,6 +2394,33 @@ async fn saved_blessings(
     Ok(())
 }
 
+/// Follow the planned path once, pacing each advance by the accepted STEP receipt.
+pub(super) async fn walk_once(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, from, direction).ok_or("C20c planned step has no landing")?;
+        let outcome = client.step(direction).await?;
+        let observed = tile(client.world_spatial().actor_position)?;
+        if outcome.status != CommandStatus::Accepted
+            || outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || observed != expected
+        {
+            return Err(format!(
+                "C20c first step {direction:?} from={from:?} expected={expected:?} observed={observed:?}: {outcome:?}"
+            ).into());
+        }
+        verdict::Harness::global().progress("walk");
+        client.service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms))).await?;
+        client.take_events();
+    }
+    Ok(())
+}
+
 // Find an ordinary walkable PvP site away from every authored creature spawn.
 // Actual visibility and ATTACK results still decide whether it can be used.
 async fn pvp_meet(
@@ -2401,6 +2428,7 @@ async fn pvp_meet(
     attacker: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
+    strict: bool,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
     victim.session_mut().attack_target(None).await?;
     attacker.session_mut().attack_target(None).await?;
@@ -2418,7 +2446,11 @@ async fn pvp_meet(
             })
     })
     .ok_or("PvP player route blocked: no reachable non-PZ tile clear of creature spawns")?;
-    walk(victim, world, &path).await?;
+    if strict {
+        walk_once(victim, world, &path).await?;
+    } else {
+        walk(victim, world, &path).await?;
+    }
     let target = tile(victim.world_spatial().actor_position)?;
     let path = bundle_route(
         world,
@@ -2433,7 +2465,11 @@ async fn pvp_meet(
         },
     )
     .ok_or("PvP player route blocked: no adjacent non-PZ attacker tile")?;
-    walk(attacker, world, &path).await?;
+    if strict {
+        walk_once(attacker, world, &path).await?;
+    } else {
+        walk(attacker, world, &path).await?;
+    }
     let identity = *victim
         .world_entities()
         .ok_or("victim visibility absent")?
@@ -2470,7 +2506,7 @@ pub(super) async fn drive_pvp_death(
     require_first_attack: bool,
 ) -> TestResult<((u64, u32), (u64, u32))> {
     use oteryn_protocol_oteryn::{attack, pvp_expert as wire};
-    let target = pvp_meet(victim, attacker, world, spawns).await?;
+    let target = pvp_meet(victim, attacker, world, spawns, require_first_attack).await?;
     let view = attacker
         .world_entities()
         .ok_or("PvP attacker visibility missing")?;
