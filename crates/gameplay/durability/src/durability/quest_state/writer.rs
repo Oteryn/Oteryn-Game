@@ -120,6 +120,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
             vec![callback],
             Vec::new(),
         )
@@ -166,6 +167,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
             Vec::new(),
             vec![callback],
         )
@@ -201,6 +203,7 @@ impl DurabilityRoot {
             None,
             None,
             gate,
+            None,
             None,
             None,
             None,
@@ -636,10 +639,37 @@ impl DurabilityRoot {
             essence,
             flame,
             source_action,
+            None,
             reward_callbacks,
             world_callbacks,
         )
         .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::durability) async fn commit_character_nomads_ritual(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        command: crate::foundation::CommandRef,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        physical: &super::super::nomads_ritual::NomadsPhysical<'_>,
+    ) -> Result<QuestTransitionOutcome> {
+        let world_callbacks = oteryn_gameplay_quests::quest::world_callbacks::load_for(&catalogue)
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        self.commit_quest_inner_resolved::<_, 0>(
+            authority, node, fence,
+            QuestTransitionRequest {
+                transition_key: physical.gesture().callback().into(),
+                cause: QuestCause::Use(command),
+            },
+            catalogue, Some((permit, context.into(), None)), None, None, None,
+            &grizzly::NoGrizzlyPremium, None, None, None, None, None, None, None, None,
+            Some(physical), Vec::new(), world_callbacks,
+        ).await
     }
 
     #[allow(
@@ -676,6 +706,7 @@ impl DurabilityRoot {
         essence: Option<super::rotten_essence::RottenEssenceUse>,
         flame: Option<super::rotten_flame::RottenFlameUse>,
         source_action: Option<super::QuestSourceAction>,
+        nomads: Option<&super::super::nomads_ritual::NomadsPhysical<'_>>,
         reward_callbacks: Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>,
         world_callbacks: Vec<oteryn_gameplay_quests::quest::world_callbacks::Callback>,
     ) -> Result<QuestTransitionOutcome> {
@@ -1027,6 +1058,9 @@ impl DurabilityRoot {
         } else {
             None
         };
+        if super::super::nomads_ritual::is_callback(&request.transition_key) != nomads.is_some() {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let legacy_world_claim = callback
             .as_ref()
             .map(oteryn_gameplay_quests::quest::world_callbacks::legacy_world_claim)
@@ -1187,9 +1221,7 @@ impl DurabilityRoot {
         {
             // A legacy World claim keeps main's cold-replay identity.
             let bytes = if legacy_world_claim.is_some()
-                || matches!(request.transition_key.as_str(),
-                    oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual::PLACE_SCIMITAR
-                    | oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual::OPEN_ENTRANCE)
+                || nomads.is_some()
             {
                 serde_json::to_vec(&(context.without_actor_movement(), &callback))
             } else {
@@ -1214,11 +1246,12 @@ impl DurabilityRoot {
             grizzly_policy,
             reward_admission,
             benevola,
+            nomads,
         );
         #[cfg(any(test, feature = "test-support"))]
         let test_clock = self.quest_test_clock_handle();
         self.try_issue_semantic_pass()?
-            .run_with_context(&mut context, move |holder, deadline, (context, grizzly_gate, grizzly_boss, grizzly_policy, reward_admission, benevola)| {
+            .run_with_context(&mut context, move |holder, deadline, (context, grizzly_gate, grizzly_boss, grizzly_policy, reward_admission, benevola, nomads)| {
                 Box::pin(async move {
                     let mut request = request;
                     let mut native = native;
@@ -1275,6 +1308,9 @@ impl DurabilityRoot {
                     };
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
+                    if nomads.is_some() && let QuestCause::Use(command) = request.cause {
+                        super::super::nomads_ritual::lock_command(&mut tx, command).await?;
+                    }
                     if arbaziloth_counter {
                         // One death may own either counter receipt. Lock both possible
                         // keys in the same order before testing historical replay.
@@ -1990,6 +2026,17 @@ impl DurabilityRoot {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                     }
+                    if let Some(physical) = nomads {
+                        let (Some(callback), Some((permit, context, _)), QuestCause::Use(command)) =
+                            (&callback, &context, request.cause)
+                        else { return Err(DurabilityError::InvalidStoredState); };
+                        if !super::super::quest_world_callback::context_is_current(&mut tx, permit, fence, context).await?
+                            || !physical.write(&mut tx, permit, &recovery, &node, fence.item_fence(), command, callback, context).await?
+                        {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, &changes, context, (&recovery, &node)).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
@@ -2411,6 +2458,16 @@ impl DurabilityRoot {
                         changes,
                         experience,
                     };
+                    if let Some(physical)=nomads
+                        && physical.gesture()==super::super::nomads_ritual::NomadsRitualGesture::Pour
+                        && let QuestCause::Use(command)=committed.cause
+                    {
+                        sqlx::query("SET CONSTRAINTS ALL IMMEDIATE").execute(&mut *tx).await?;
+                        if !super::super::nomads_ritual::crack_still_primed(&mut tx,command).await? {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(QuestTransitionOutcome::Committed(committed)))
                 })

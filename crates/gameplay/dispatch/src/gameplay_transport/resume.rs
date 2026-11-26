@@ -227,8 +227,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(Rejected);
         };
         if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
-            self.recover_pending_soul_war_source_use(actor, lost.game_session_id)
-                .await
+            self.recover_nomads_ingress(&lost).await
+                && self
+                    .recover_pending_soul_war_source_use(actor, lost.game_session_id)
+                    .await
                 && self.prepare_grizzly_npc_resume(&lost).await
                 && self
                     .reconcile_quest_callback_receipts(lost.game_session_id)

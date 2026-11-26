@@ -1484,7 +1484,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn replay_nomads_pour(
         &self,
-        actor: ExactActorRef,
+        _actor: ExactActorRef,
         command: connection::UseCommand,
         target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> Result<Option<UseOutcome>, ()> {
@@ -1497,7 +1497,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(None);
         }
-        self.resume_nomads_ritual(actor, command, NomadsRitualGesture::Pour)
+        self.resume_nomads_ritual(command, NomadsRitualGesture::Pour)
             .await
             .map(|found| {
                 found.then_some(UseOutcome {

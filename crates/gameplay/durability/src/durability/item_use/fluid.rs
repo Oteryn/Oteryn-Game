@@ -64,7 +64,7 @@ impl ItemFluidRequest {
         std::iter::once(&self.change).chain(&self.other)
     }
 
-    fn validate(&self) -> Result<()> {
+    pub(in crate::durability) fn validate(&self) -> Result<()> {
         // A pour moves the whole fluid: one side empties, the other takes its sub-type.
         let pour = match &self.other {
             None => true,
@@ -166,32 +166,6 @@ impl DurabilityRoot {
         request: ItemFluidRequest,
         splash: Option<ItemFluidSplash>,
     ) -> Result<ItemFluidOutcome> {
-        self.commit_item_fluid_at_with_ritual(authority, node, fence, request, splash, None)
-            .await
-    }
-
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "admit the exact pending gesture with the fenced fluid receipt"
-    )]
-    pub async fn commit_item_fluid_at_with_ritual(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        fence: CurrentCharacterItemFence,
-        request: ItemFluidRequest,
-        splash: Option<ItemFluidSplash>,
-        ritual: Option<crate::durability::nomads_ritual::NomadsRitualTarget>,
-    ) -> Result<ItemFluidOutcome> {
-        use crate::durability::nomads_ritual;
-        if let Some(target) = ritual
-            && !splash.as_ref().is_some_and(|splash| {
-                nomads_ritual::is_water_placement(&splash.placement)
-                    && splash.placement[..32] == target.map_digest
-            })
-        {
-            return Err(ItemUseError::InvalidInput);
-        }
         request.validate()?;
         if splash.as_ref().is_some_and(|s| {
             s.placement.is_empty()
@@ -218,12 +192,6 @@ impl DurabilityRoot {
                     }
                     match write_fluid(&mut tx, &fence, &request, splash.as_ref()).await {
                         Ok(outcome) => {
-                            if outcome == ItemFluidOutcome::Written
-                                && let Some(target) = ritual
-                            {
-                                nomads_ritual::record_pour(&mut tx, request.transaction_id, target)
-                                    .await?;
-                            }
                             tx.commit(deadline).await?;
                             Ok(Ok(outcome))
                         }
@@ -292,7 +260,7 @@ async fn replay(
     }
 }
 
-async fn write_fluid(
+pub(in crate::durability) async fn write_fluid(
     connection: &mut PgConnection,
     fence: &CurrentCharacterItemFence,
     request: &ItemFluidRequest,

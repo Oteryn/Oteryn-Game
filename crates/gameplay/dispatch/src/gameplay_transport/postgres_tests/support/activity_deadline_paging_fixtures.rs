@@ -25,6 +25,15 @@ pub(super) async fn admit_created_member(
     member: u8,
     character: [u8; 16],
 ) -> TestResult<GameSessionId> {
+    admit_created_member_with_operation(h, evidence, member, character).await.map(|(session, _)| session)
+}
+
+pub(super) async fn admit_created_member_with_operation(
+    h: &Harness,
+    evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
+    member: u8,
+    character: [u8; 16],
+) -> TestResult<(GameSessionId, crate::foundation::fresh_admission_durability::FreshAdmissionOperationV1)> {
     let (account,character_text):(String,String)=sqlx::query_as("SELECT account_id::text,character_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
         .bind(character.as_slice()).fetch_one(&h.pool).await?;
     // A published Account guard does not supply the producer-owned security
@@ -135,5 +144,5 @@ pub(super) async fn admit_created_member(
         matches!(outcome, FreshAdmissionDurableOutcomeV1::Committed(_)),
         "real pager source admission: {outcome:?}"
     );
-    Ok(session)
+    Ok((session, request.operation().clone()))
 }

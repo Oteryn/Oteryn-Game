@@ -676,3 +676,34 @@ LANGUAGE sql IMMUTABLE AS $$
  ) p(k,r) WHERE p.k=p_key AND p.r=p_revision)
 $$;
 -- END GENERATED FORGE POLICY
+
+-- Atomic native Nomads Land gestures and their timed Channel placements.
+CREATE TABLE game_nomads_ritual_gestures (
+    game_session_id UUID NOT NULL,
+    command_id NUMERIC(20,0) NOT NULL CHECK (command_id BETWEEN 1 AND 18446744073709551615),
+    character_id UUID NOT NULL,
+    world_id UUID NOT NULL,
+    channel_id UUID NOT NULL,
+    item_instance_id UUID NOT NULL,
+    move_transaction_id UUID,
+    fluid_transaction_id UUID,
+    map_digest BYTEA NOT NULL CHECK (octet_length(map_digest) = 32),
+    reset_epoch NUMERIC(20,0) NOT NULL CHECK (reset_epoch >= 0),
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
+    PRIMARY KEY (game_session_id, command_id),
+    CHECK ((move_transaction_id IS NULL) <> (fluid_transaction_id IS NULL)),
+    FOREIGN KEY (move_transaction_id, item_instance_id)
+        REFERENCES game_item_loop_move_lines (transaction_id, item_instance_id),
+    FOREIGN KEY (fluid_transaction_id, item_instance_id)
+        REFERENCES game_item_fluid_transitions (transaction_id, item_instance_id)
+);
+CREATE UNIQUE INDEX game_nomads_ritual_move ON game_nomads_ritual_gestures(move_transaction_id)
+    WHERE move_transaction_id IS NOT NULL;
+CREATE UNIQUE INDEX game_nomads_ritual_fluid ON game_nomads_ritual_gestures(fluid_transaction_id)
+    WHERE fluid_transaction_id IS NOT NULL;
+CREATE INDEX game_nomads_ritual_scope_expiry
+    ON game_nomads_ritual_gestures (world_id, channel_id, map_digest, reset_epoch, expires_at);
+REVOKE ALL ON game_nomads_ritual_gestures FROM PUBLIC;
+GRANT SELECT, INSERT ON game_nomads_ritual_gestures TO oteryn_game_runtime;
+GRANT SELECT ON game_nomads_ritual_gestures TO oteryn_game_control;

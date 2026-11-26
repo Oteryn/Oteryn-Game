@@ -171,7 +171,6 @@ impl DurabilityRoot {
             Some(access),
             None,
             slot.filter(|_| access.deposit),
-            None,
         )
         .await
     }

@@ -334,7 +334,7 @@ fn local(p: Position) -> MovementLocalPosition {
         floor: -i16::from(p.floor),
     }
 }
-fn native(p: MovementLocalPosition) -> Option<TilePos> {
+pub(super) fn native(p: MovementLocalPosition) -> Option<TilePos> {
     Some(TilePos {
         x: p.x.try_into().ok()?,
         y: p.y.try_into().ok()?,
@@ -1251,19 +1251,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         target: &WorldObjectTarget,
         selected_tool: Option<([u8; 16], Vec<u8>)>,
     ) -> Option<UseOutcome> {
-        self.use_quest_callback_from(actor, command, map, target, selected_tool, None)
-            .await
-    }
-
-    pub(super) async fn use_quest_callback_from(
-        &self,
-        actor: ExactActorRef,
-        command: UseCommand,
-        map: &BundleMap,
-        target: &WorldObjectTarget,
-        selected_tool: Option<([u8; 16], Vec<u8>)>,
-        ritual: Option<&str>,
-    ) -> Option<UseOutcome> {
         if let Some(outcome) = self.use_rafzane_elevator(actor, command, map, target).await {
             return Some(outcome);
         }
@@ -1315,7 +1302,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|c| {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
-                    && super::nomads_ritual::accepts_callback(&c.key, ritual)
+                    && !crate::durability::nomads_ritual::is_callback(&c.key)
                     && !superseded_chest(c, callbacks)
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
@@ -1594,15 +1581,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(at) = native(expected.position()) else {
                 return UseDisposition::Rejected;
             };
-            // The physical owners checked reach before recording the gesture.
-            // In particular the pour reaches the water while this target is the mountain.
-            if ritual.is_none() && !callback.reaches(
+            if !callback.reaches(
                 Position { x: at.x, y: at.y, floor: at.floor },
                 Position { x: resolved.pos.x, y: resolved.pos.y, floor: resolved.pos.floor },
             ) {
                 return UseDisposition::TooFar;
             }
-            if ritual.is_none() && !callback.is_read_only() && !self
+            if !callback.is_read_only() && !self
                 .states
                 .world_gate
                 .lock()
@@ -2098,7 +2083,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-fn hex(bytes: &[u8]) -> String {
+pub(super) fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 

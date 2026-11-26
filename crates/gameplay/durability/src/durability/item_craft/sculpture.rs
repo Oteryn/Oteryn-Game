@@ -108,10 +108,12 @@ pub(super) fn ground_proof(
 
 pub(super) async fn place_ground(
     tx: &mut Type2Transaction<'_>,
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     fence: CurrentCharacterItemFence,
     output: &Value,
     placement: &GroundPlacement,
 ) -> Result<(), DurabilityError> {
+    permit.check_scope(fence.runtime_scope)?;
     let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query(
         "INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,

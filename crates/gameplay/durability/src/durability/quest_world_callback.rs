@@ -520,7 +520,7 @@ pub(super) async fn consume(
                FROM game_nomads_ritual_gestures
               WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric
                 AND character_id=encode($3,'hex')::uuid AND world_id=encode($4,'hex')::uuid
-                AND channel_id=encode($5,'hex')::uuid AND NOT settled
+                AND channel_id=encode($5,'hex')::uuid AND created_xact_id=pg_current_xact_id()
                 AND 'sha256:'||encode(map_digest,'hex')=$6 AND reset_epoch=$7::text::numeric
                 AND (move_transaction_id IS NOT NULL)=$8",
         )

@@ -995,7 +995,7 @@ async fn write<C: ItemLoopContent>(
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,'Item',$1->>'key',$1->>'revision',($1->>'count')::bigint,1,$3::uuid)")
             .bind(&output).bind(world.as_bytes().as_slice()).bind(&transaction).execute(&mut ***tx).await?;
         if let Some(placement) = &ground_output {
-            sculpture::place_ground(tx, fence, &output, placement).await?;
+            sculpture::place_ground(tx, permit, fence, &output, placement).await?;
         } else if drop.is_some() {
             event_containers::place_drop(tx, permit, &output).await?;
         } else if nested_destination.is_some() {

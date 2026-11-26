@@ -386,6 +386,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         #[cfg(test)]
         stage("owner_sql_committed");
+        if self
+            .restore_nomads_rituals(&permit, runtime.binding().runtime_scope())
+            .await
+            .is_err()
+        {
+            return false;
+        }
         // Only a real SQL COMMIT sets this physical owner's readiness. Tile
         // reads still inspect current custody; this never restores moved items.
         states.source_map_initialized = Some(binding);

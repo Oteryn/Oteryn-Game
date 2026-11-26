@@ -45,7 +45,9 @@ use crate::durability::item_use::fluid::{
 use crate::durability::item_use::{
     ItemUseError, ItemUseFlaskPlan, ItemUseInventory, ItemUseKind, ItemUseOutcome, ItemUseRequest,
 };
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeScopeRefV1};
+use crate::foundation::{
+    ChannelRuntimeV1, CommandRef, ExactActorRef, GameSessionId, RuntimeScopeRefV1,
+};
 use crate::interaction_chest_use::entry_chest;
 use crate::spell::Vocation;
 use crate::spell::actor_conditions::eat_food;
@@ -861,6 +863,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
     }
 
+    /// Release a flask fenced while the original commit result was uncertain.
+    pub(super) async fn finish_nomads_fluid(&self, command: CommandRef, item: [u8; 16]) {
+        let mut states = self.states.spell_states.lock().await;
+        if let Some((_, _, gate)) = states
+            .item_uses
+            .0
+            .iter_mut()
+            .find(|(_, session, _)| *session == command.game_session_id())
+        {
+            gate.unspendable.retain(|reserved| *reserved != item);
+            let id = command.command_id().get();
+            if gate.last.is_none_or(|(last, _)| last <= id) {
+                gate.settle(id, UseDisposition::Committed, &[]);
+            }
+        }
+    }
+
     /// I10a production USE_WITH owner for a map fluid source or ordinary ground object.
     pub(super) async fn use_fluid_map(
         &self,
@@ -873,25 +892,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         };
         let fence = command.item_fence?;
-        use crate::durability::nomads_ritual::{NomadsRitualGesture, is_water_placement};
+        use crate::durability::nomads_ritual::is_water_placement;
         use oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual;
-        let gesture = NomadsRitualGesture::Pour;
         let water_target = is_water_placement(&target.placement)
             && self
                 .bundle_map()
                 .is_some_and(|map| target.placement[..32] == map.overlay.base().digest());
-        if water_target {
-            match self.resume_nomads_ritual(actor, command, gesture).await {
-                Ok(true) => {
-                    return Some(Ok(UseOutcome {
-                        disposition: UseDisposition::Committed,
-                        ..UseOutcome::rejected()
-                    }));
-                }
-                Ok(false) => {}
-                Err(()) => return Some(Err(())),
-            }
-        }
         let native = self.active_generation?.native_gameplay()?;
         let inventory = self
             .root
@@ -1012,32 +1018,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             other: None,
         };
-        let ritual = if water_target && i16::from(before) == nomads_ritual::WATER_SUBTYPE {
-            self.bundle_map()
-                .and_then(|map| self.prepare_nomads_ritual(map, gesture))
-        } else {
-            None
-        };
+        let ritual = water_target
+            && i16::from(before) == nomads_ritual::WATER_SUBTYPE
+            && self.bundle_map().is_some_and(|map| {
+                self.prepare_nomads_ritual(
+                    map,
+                    crate::durability::nomads_ritual::NomadsRitualGesture::Pour,
+                )
+                .is_some()
+            });
         let disposition = self
             .commit_fluid_at(actor, &command, fence, request, splash, None, ritual)
             .await
             .unwrap_or_else(|d| d);
-        #[cfg(test)]
-        if ritual.is_some()
-            && disposition == UseDisposition::Committed
-            && super::nomads_ritual::interrupted_after_commit(command)
-        {
-            return Some(Err(()));
-        }
-        if ritual.is_some() && disposition == UseDisposition::Rejected {
-            // Without a terminal item acknowledgement the connection can
-            // replay after either outcome of the physical transaction.
-            return Some(Err(()));
-        }
-        if ritual.is_some()
-            && disposition == UseDisposition::Committed
-            && self.resume_nomads_ritual(actor, command, gesture).await != Ok(true)
-        {
+        if ritual && disposition == UseDisposition::Rejected {
             return Some(Err(()));
         }
         Some(Ok(UseOutcome {
@@ -1138,13 +1132,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         request: ItemFluidRequest,
         restore: Option<ReferencePotionRestore>,
     ) -> Result<UseDisposition, UseDisposition> {
-        self.commit_fluid_at(actor, command, fence, request, None, restore, None)
+        self.commit_fluid_at(actor, command, fence, request, None, restore, false)
             .await
     }
 
     #[allow(
         clippy::too_many_arguments,
-        reason = "a map pour can queue its exact native callback"
+        reason = "a map pour can commit its exact native ritual"
     )]
     async fn commit_fluid_at(
         &self,
@@ -1154,7 +1148,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         request: ItemFluidRequest,
         splash: Option<ItemFluidSplash>,
         restore: Option<ReferencePotionRestore>,
-        ritual: Option<crate::durability::nomads_ritual::NomadsRitualTarget>,
+        ritual: bool,
     ) -> Result<UseDisposition, UseDisposition> {
         let session = command.game_session_id;
         let reserved: Vec<[u8; 16]> = std::iter::once(request.change.item_instance_id)
@@ -1171,19 +1165,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             gate.start_drink(self.owner_ms())?;
         }
         let analyser_supply = restore.as_ref().map(|_| request.change.definition.clone());
-        let commit = self.root.commit_item_fluid_at_with_ritual(
-            self.character,
-            self.holder,
-            fence,
-            request,
-            splash,
-            ritual,
-        );
+        let commit = async {
+            if ritual && let Some(splash) = splash.as_ref() {
+                let permit = self
+                    .spell_lane_permit()
+                    .await
+                    .ok_or(crate::durability::DurabilityError::Unavailable)?;
+                let physical = crate::durability::nomads_ritual::NomadsPhysical::Pour {
+                    request: &request,
+                    splash,
+                };
+                match self
+                    .commit_nomads_ritual(&permit, actor, *command, physical)
+                    .await
+                {
+                    Ok(Some(true)) => return Ok(Some(ItemFluidOutcome::Written)),
+                    Ok(Some(false)) => return Ok(None),
+                    Ok(None) => {}
+                    Err(()) => return Err(crate::durability::DurabilityError::Unavailable.into()),
+                }
+            }
+            self.root
+                .commit_item_fluid_at(self.character, self.holder, fence, request, splash)
+                .await
+                .map(Some)
+        };
         let bound = Duration::from_millis(ITEMUSE0_RL_04_AMBIGUOUS_MS);
         let (disposition, known_commit, ambiguous) = match tokio::time::timeout(bound, commit).await
         {
-            Ok(Ok(ItemFluidOutcome::Written)) => (UseDisposition::Committed, true, false),
-            Ok(Ok(ItemFluidOutcome::AlreadyCommitted)) => (UseDisposition::Committed, false, false),
+            Ok(Ok(None)) => (UseDisposition::NothingToUse, false, false),
+            Ok(Ok(Some(ItemFluidOutcome::Written))) => (UseDisposition::Committed, true, false),
+            Ok(Ok(Some(ItemFluidOutcome::AlreadyCommitted))) => {
+                (UseDisposition::Committed, false, false)
+            }
             Ok(Err(ItemUseError::StaleState)) => (UseDisposition::StaleState, false, false),
             Ok(Err(ItemUseError::Unavailable(_))) | Err(_) => {
                 (UseDisposition::Rejected, false, true)

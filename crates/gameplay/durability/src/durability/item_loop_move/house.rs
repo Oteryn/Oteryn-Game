@@ -99,7 +99,7 @@ pub(super) async fn path(
     }))
 }
 
-pub(super) async fn prepare<C: ItemLoopContent>(
+pub(super) async fn prepare<C: ItemLoopContent + ?Sized>(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
     context: &HouseLoopContext,
@@ -228,7 +228,6 @@ impl DurabilityRoot {
             None,
             Some(HouseLoopContext::new(context.clone(), house_capacity_v2)),
             slot,
-            None,
         )
         .await
     }
