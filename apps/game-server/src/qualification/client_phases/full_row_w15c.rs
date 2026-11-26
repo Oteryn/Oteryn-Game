@@ -169,6 +169,8 @@ async fn walk_to(
         {
             return Err(format!("step=walk npc={key} from={before:?} direction={direction:?} expected={landing:?} observed={outcome:?}").into());
         }
+        // The session already applied these deltas to its view during the exchange.
+        client.take_events();
         verdict::Harness::global().progress("walk");
         tokio::time::sleep(Duration::from_millis(u64::from(outcome.step_wait_ms))).await;
     }
