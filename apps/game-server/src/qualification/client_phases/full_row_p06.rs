@@ -151,6 +151,9 @@ async fn send(
     client: &mut DevClientSession,
     request: &WheelAllocationRequest,
 ) -> TestResult<(WheelResponse, WheelAllocationReply)> {
+    if request.action != 0 {
+        client.take_events();
+    }
     let response = wheel_allocation::send(client.session_mut(), &command(request)?).await?;
     if response.status != CommandStatus::Accepted {
         return Err(format!(
@@ -165,6 +168,10 @@ async fn send(
             request.action, response.payload
         )
     })?;
+    if request.action != 0 {
+        // WHEEL-ALLOCATION-V1 shares its 490 ms owner interval with Atelier mutations.
+        tokio::time::sleep(Duration::from_millis(490)).await;
+    }
     Ok((response, reply))
 }
 
@@ -207,6 +214,40 @@ fn validate_current(response: &WheelResponse, expected: &WheelAllocationReply) -
         .into());
     }
     Ok(())
+}
+
+async fn next_vitals(
+    client: &mut DevClientSession,
+    step: &str,
+) -> TestResult<oteryn_protocol_oteryn::actor_spell::ActorVitals> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    loop {
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err(format!("step={step} first ActorVitals delta absent").into());
+        }
+        let events = client.wait_for_events(remaining).await.map_err(|error| {
+            verdict::context(format!("step={step} first ActorVitals delta absent"), error)
+        })?;
+        if let Some(value) = events.into_iter().find_map(|event| match event {
+            oteryn_dev_client::SessionEvent::ActorVitals(delta) => Some(delta.value),
+            _ => None,
+        }) {
+            return Ok(value);
+        }
+    }
+}
+
+async fn relog_vitals(
+    client: &mut DevClientSession,
+    expected: oteryn_protocol_oteryn::actor_spell::ActorVitals,
+    step: &str,
+) -> TestResult<oteryn_protocol_oteryn::actor_spell::ActorVitals> {
+    if client.actor_vitals() == Some(&expected) {
+        return Ok(expected);
+    }
+    // A freshly delivered fixture entitlement can update the admitted snapshot on the periodic stream.
+    next_vitals(client, step).await
 }
 
 async fn own_level(client: &mut DevClientSession) -> TestResult<u32> {
@@ -520,10 +561,8 @@ async fn journey(
         .into());
     }
     validate_current(&response, &saved_partial)?;
-    let partial_vitals = *client
-        .actor_vitals()
-        .ok_or("step 2 dedication actor-vitals delta missing")?;
-    if partial_vitals.max_mana <= baseline.max_mana {
+    let partial_vitals = next_vitals(&mut client, "dedication-save").await?;
+    if partial_vitals.max_mana != baseline.max_mana + 25 * 6 {
         return Err(format!(
             "step 2 dedication save had no max-mana delta: before={baseline:?} after={partial_vitals:?} reply={saved_partial:?}"
         )
@@ -547,10 +586,8 @@ async fn journey(
         );
     }
     validate_current(&response, &saved_full)?;
-    let full_vitals = *client
-        .actor_vitals()
-        .ok_or("step 3 conviction actor-vitals delta missing")?;
-    if full_vitals.max_mana <= partial_vitals.max_mana {
+    let full_vitals = next_vitals(&mut client, "conviction-save").await?;
+    if full_vitals.max_mana != partial_vitals.max_mana + 25 * 6 {
         return Err(format!(
             "step 3 full-slot dedication/conviction delta absent: partial={partial_vitals:?} full={full_vitals:?}"
         )
@@ -578,14 +615,15 @@ async fn journey(
     drop(client);
     let mut client = connect_eligible(clients, 0xd7).await?;
     let (_, reloaded) = send(&mut client, &query_request()).await?;
-    if reloaded != saved_full || client.actor_vitals().copied() != Some(full_vitals) {
+    let reloaded_vitals = relog_vitals(&mut client, full_vitals, "fresh-admission-save").await?;
+    if reloaded != saved_full || reloaded_vitals != full_vitals {
         return Err(format!(
             "step 5 fresh admission lost durable allocation/vitals: saved={saved_full:?} queried={reloaded:?} vitals={:?}",
             client.actor_vitals()
         )
         .into());
     }
-    row.pass("fresh-admission-save", (&reloaded, client.actor_vitals()));
+    row.pass("fresh-admission-save", (&reloaded, reloaded_vitals));
 
     // The first revelation requires 250 points in one domain. The native server
     // publishes the player's real level, so this is runtime evidence rather than a
@@ -641,13 +679,15 @@ async fn journey(
                 format!("step=revelation-effect stage-one projection missing: {active:?}").into(),
             );
         }
-        row.pass("revelation-save", (&revealed, client.actor_vitals()));
-        let vitals = client.actor_vitals().copied();
+        let vitals = next_vitals(&mut client, "revelation-save").await?;
+        row.pass("revelation-save", (&revealed, vitals));
         logout(&mut client).await?;
         drop(client);
         client = connect_eligible(clients, 0xd9).await?;
         let (_, retained) = send(&mut client, &query_request()).await?;
-        if retained != revealed || client.actor_vitals().copied() != vitals {
+        let retained_vitals =
+            relog_vitals(&mut client, vitals, "fresh-admission-revelation").await?;
+        if retained != revealed || retained_vitals != vitals {
             return Err(format!(
                 "step=revelation-relog lost durable state: saved={revealed:?} queried={retained:?}"
             )
@@ -675,10 +715,10 @@ async fn journey(
         return Err(format!("step 7 reset observed reply={reset:?}").into());
     }
     validate_current(&response, &reset)?;
-    if client.actor_vitals().copied() != Some(baseline) {
+    let reset_vitals = next_vitals(&mut client, "reset").await?;
+    if reset_vitals != baseline {
         return Err(format!(
-            "step 7 reset did not remove Wheel vitals: baseline={baseline:?} observed={:?}",
-            client.actor_vitals()
+            "step 7 reset did not remove Wheel vitals: baseline={baseline:?} observed={reset_vitals:?}"
         )
         .into());
     }
@@ -691,7 +731,7 @@ async fn journey(
             return Err(format!("step=revelation-reset active effect remains: {active:?}").into());
         }
     }
-    row.pass("reset", (&reset, client.actor_vitals()));
+    row.pass("reset", (&reset, reset_vitals));
 
     logout(&mut client).await?;
     drop(client);
