@@ -128,12 +128,11 @@ impl DurabilityRoot {
                 before.daily_reroll_at = reset.claim_at(&before.data);
             }
             let mut view = before.clone();
-            let gold = super::fee::available_gold(&mut tx, fence, &catalogue).await?;
             let has_vocation: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid AND vocation<>$2)")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(super::super::character_build::NO_VOCATION)
                 .fetch_one(&mut **tx).await?;
             let ctx = TaskBoardContext { level: view.level, now_unix_seconds: view.database_now,
-                period: view.period, reset_day: daily_reset.as_ref().map(|reset| reset.day), creatures: &catalogue.creatures, available_gold: gold,
+                period: view.period, reset_day: daily_reset.as_ref().map(|reset| reset.day), creatures: &catalogue.creatures,
                 reroll_tokens: view.reroll_tokens, has_vocation };
             let seed: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(game_character_uuid_v7())")
                 .fetch_one(&mut **tx).await?;
@@ -161,7 +160,7 @@ impl DurabilityRoot {
             state::update_tracks(&mut view);
             let changed = view.data != before.data || view.balances != before.balances
                 || effects.experience != 0 || !effects.consume_items.is_empty()
-                || !effects.grant_items.is_empty() || effects.gold_cost != 0
+                || !effects.grant_items.is_empty()
                 || effects.reroll_tokens_spent != 0 || effects.reroll_tokens_granted != 0;
             let changes = if changed {
                 let changes = state::plan_changes(&before, &mut view)?;

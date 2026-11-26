@@ -18,7 +18,6 @@ pub mod elite;
 
 pub const SOULSEALS: &str = "oteryn:taskboard/weekly/soulseals";
 pub const BOARD_REVISION: &str = "oteryn:taskboard/weekly/board-revision";
-pub const TALISMAN_PURCHASE_GOLD: u64 = 5_000;
 /// Crystal iobountytasks.hpp:143; PR #2764 ANSWER 6543406906 rejects wrapping.
 pub const MAX_BOUNTY_POINTS: u32 = u32::MAX;
 /// Crystal ioweeklytasks.hpp:148; independent of the historical 1e9 track bound.
@@ -210,7 +209,6 @@ pub struct TaskBoardContext<'a> {
     pub period: i64,
     pub reset_day: Option<i64>,
     pub creatures: &'a [TaskBoardCreature],
-    pub available_gold: u64,
     /// Existing durable bounty-reroll resource balance.
     pub reroll_tokens: u64,
 }
@@ -252,7 +250,9 @@ pub enum TaskBoardAction {
     BuyShop {
         offer: u16,
     },
-    BuyTalisman,
+    /// Preserve the action identity for historical purchase receipts.
+    #[serde(rename = "BuyTalisman")]
+    RetiredTalismanPurchase,
     UpgradeTalisman {
         path: u8,
     },
@@ -299,7 +299,6 @@ pub struct TaskBoardEffects {
     pub weekly_completions: u8,
     pub consume_items: Vec<TaskBoardItemQuantity>,
     pub grant_items: Vec<TaskBoardItemQuantity>,
-    pub gold_cost: u64,
     pub reroll_tokens_spent: u32,
     pub reroll_tokens_granted: u32,
     pub outfit: Option<(u16, u8)>,
@@ -478,7 +477,9 @@ fn apply_inner(
             data.bounty.elite = *enabled;
         }
         TaskBoardAction::Query => {}
-        TaskBoardAction::RefuseLegacy { .. } => return Err(TaskBoardRefusal::RetiredAction),
+        TaskBoardAction::RetiredTalismanPurchase | TaskBoardAction::RefuseLegacy { .. } => {
+            return Err(TaskBoardRefusal::RetiredAction);
+        }
         TaskBoardAction::StartWeekly { difficulty } => {
             require_level(context.level, *difficulty)?;
             if data.weekly.as_ref().is_some_and(|board| !board.finished) {
@@ -620,16 +621,6 @@ fn apply_inner(
             slot.unlocked = true;
         }
         TaskBoardAction::BuyShop { offer } => buy_shop(data, balances, *offer, &mut effects)?,
-        TaskBoardAction::BuyTalisman => {
-            if context.available_gold < TALISMAN_PURCHASE_GOLD {
-                return Err(TaskBoardRefusal::InsufficientResources);
-            }
-            effects.gold_cost = TALISMAN_PURCHASE_GOLD;
-            effects.grant_items.push(TaskBoardItemQuantity {
-                item_id: 51_978,
-                amount: 1,
-            });
-        }
         TaskBoardAction::UpgradeTalisman { path } => {
             let level = balances
                 .talisman_levels

@@ -102,7 +102,6 @@ pub(super) async fn run_case(
             period: 0,
             reset_day: None,
             creatures: &creatures,
-            available_gold: 0,
             reroll_tokens: 0,
         },
         &mut |_| 0,

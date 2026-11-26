@@ -44,7 +44,6 @@ impl DurabilityRoot {
                 cause: QuestCause::Command(command),
                 action: TaskBoardAction::GrantExpansion,
                 payload_binding: binding,
-                fee_change: None,
             },
             catalogue,
             None,

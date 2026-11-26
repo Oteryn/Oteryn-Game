@@ -20,7 +20,6 @@ fn context(creatures: &[TaskBoardCreature]) -> TaskBoardContext<'_> {
         period: 42,
         reset_day: Some(42),
         creatures,
-        available_gold: 5_000,
         reroll_tokens: 0,
     }
 }
@@ -1193,26 +1192,11 @@ fn shop_items_cosmetics_and_progressive_promotions_use_sourced_prices()
 }
 
 #[test]
-fn talisman_purchase_upgrade_and_active_gate_are_bounty_specific() -> Result<(), TaskBoardRefusal> {
+fn talisman_upgrade_and_active_gate_are_bounty_specific() -> Result<(), TaskBoardRefusal> {
     let catalogue = creatures();
-    let mut ctx = context(&catalogue);
+    let ctx = context(&catalogue);
     let mut data = TaskBoardData::default();
     let mut balances = TaskBoardBalances::default();
-    ctx.available_gold = 4_999;
-    assert_eq!(
-        apply(&mut data, &mut balances, TaskBoardAction::BuyTalisman, &ctx),
-        Err(TaskBoardRefusal::InsufficientResources)
-    );
-    ctx.available_gold = 5_000;
-    let purchase = apply(&mut data, &mut balances, TaskBoardAction::BuyTalisman, &ctx)?;
-    assert_eq!(purchase.gold_cost, 5_000);
-    assert_eq!(
-        purchase.grant_items,
-        vec![TaskBoardItemQuantity {
-            item_id: 51978,
-            amount: 1
-        }]
-    );
     assert_eq!(
         apply(
             &mut data,

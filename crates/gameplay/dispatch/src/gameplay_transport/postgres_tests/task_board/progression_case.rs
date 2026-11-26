@@ -240,7 +240,6 @@ pub(super) async fn pending_experience_case(
             ),
             action: TaskBoardAction::CreditKill { race },
             payload_binding: Vec::new(),
-            fee_change: None,
         })
     };
     let first_request = request(65_001, first_race)?;

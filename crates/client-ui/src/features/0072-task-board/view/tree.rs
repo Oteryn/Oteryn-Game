@@ -75,18 +75,17 @@ pub fn tree_nodes(panel: &TaskBoardPanel) -> Vec<TreeNode> {
         );
     }
     let talisman = node(&mut rows, None, None, "Bounty Talisman".into());
-    // Accepted task_board_full::TALISMAN_PURCHASE_GOLD profile; the request never sends a price.
     node(
         &mut rows,
         Some(talisman),
         None,
-        "Purchase: 5000 gold; server validates funds".into(),
+        "Jewellers sell Bounty Talismans for 5,000 gold.".into(),
     );
     node(
         &mut rows,
         Some(talisman),
         None,
-        "Upgrade buys the next level of the selected path".into(),
+        "Spend Bounty Points to upgrade a path.".into(),
     );
     for (index, name) in [
         tr!("Damage"),

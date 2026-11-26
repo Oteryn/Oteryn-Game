@@ -174,8 +174,8 @@ fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
             );
             entry(
                 &mut rows,
-                format!("Buy Bounty Talisman ({TALISMAN_PURCHASE_GOLD} gold)"),
-                Some(Kind::BuyTalisman),
+                "Jewellers sell Bounty Talismans for 5,000 gold.".into(),
+                None,
             );
             for (path, (value, name)) in r
                 .talisman

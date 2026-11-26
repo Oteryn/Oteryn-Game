@@ -24,20 +24,12 @@ pub(super) async fn apply(
     {
         return Ok(Some(TaskBoardRefusal::UnavailableItem));
     }
-    let item_effects = effects.gold_cost > 0
-        || !effects.consume_items.is_empty()
-        || !effects.grant_items.is_empty();
+    let item_effects = !effects.consume_items.is_empty() || !effects.grant_items.is_empty();
     if item_effects {
         let Some(permit) = permit else {
             return Err(DurabilityError::InvalidStoredState);
         };
         permit.check_scope(fence.runtime_scope)?;
-    }
-    if effects.gold_cost > 0
-        && let Some(refusal) =
-            super::fee::burn(tx, fence, request, catalogue, effects.gold_cost).await?
-    {
-        return Ok(Some(refusal));
     }
     let (_, cause, ordinal) = state::cause_key(request.cause);
     for input in &effects.consume_items {

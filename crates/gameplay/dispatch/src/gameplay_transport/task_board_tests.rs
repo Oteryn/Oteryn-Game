@@ -143,6 +143,20 @@ fn full_actions_preserve_legacy_reply_and_retire_fixed_task_mutations() {
 }
 
 #[test]
+fn retired_talisman_purchase_preserves_historical_receipt_binding() {
+    let payload = wire::full::encode_request(&wire::full::Request {
+        action: 17,
+        selection: 0,
+        race: String::new(),
+    })
+    .expect("retired request");
+    let (action, legacy) = decode_action(&payload).expect("decoded action");
+    assert!(!legacy);
+    assert_eq!(action, TaskBoardAction::RetiredTalismanPurchase);
+    assert_eq!(serde_json::to_string(&action).expect("action binding"), r#""BuyTalisman""#);
+}
+
+#[test]
 fn unavailable_content_cannot_offer_or_reenable_the_bundle_only_capability() {
     let base = [OfferedCapability {
         id: 72,

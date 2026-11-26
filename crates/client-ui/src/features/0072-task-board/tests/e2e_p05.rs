@@ -1,5 +1,4 @@
-//! P05 replay: server TASK_BOARD replies for a Talisman purchase and the refused repeat, applied
-//! through the production `talisman::request`, `apply_full_result` and `panel_text`.
+//! P05 replay of a Task Board query and a Bounty Point upgrade.
 use super::*;
 use oteryn_client_runtime::raw_feature::{CommandStatus, GatedCommandResult};
 use task_board::full::{Bounty, Reply, TalismanPath, Weekly, decode_request, encode_reply};
@@ -8,8 +7,7 @@ type Error = Box<dyn std::error::Error>;
 
 struct Captured {
     query: Vec<u8>,
-    buy: Vec<u8>,
-    repeat: Vec<u8>,
+    upgrade: Vec<u8>,
     expected: String,
 }
 
@@ -64,14 +62,13 @@ fn fixture() -> Result<Captured, Error> {
     };
     let after = TalismanPath {
         level: 1,
-        bonus: 1,
-        next_cost: 10,
+        bonus: 300,
+        next_cost: 17,
     };
     Ok(Captured {
         query: encode(&reply(0, 30, before))?,
-        buy: encode(&reply(0, 25, after))?,
-        repeat: encode(&reply(2, 25, after))?,
-        expected: "bounty_points_before=30\nbounty_points_after=25\ntalisman_before=0,0,5|0,0,0|0,0,0|0,0,0\ntalisman_after=1,1,10|0,0,0|0,0,0|0,0,0\nrefusal=2\n".into(),
+        upgrade: encode(&reply(0, 25, after))?,
+        expected: "bounty_points_before=30\nbounty_points_after=25\ntalisman_before=0,0,5|0,0,0|0,0,0|0,0,0\ntalisman_after=1,300,17|0,0,0|0,0,0|0,0,0\n".into(),
     })
 }
 
@@ -82,8 +79,7 @@ fn captured() -> Result<Captured, Error> {
     let path = std::path::Path::new(&path);
     Ok(Captured {
         query: std::fs::read(path.join("p05-query.bin"))?,
-        buy: std::fs::read(path.join("p05-buy.bin"))?,
-        repeat: std::fs::read(path.join("p05-repeat.bin"))?,
+        upgrade: std::fs::read(path.join("p05-upgrade.bin"))?,
         expected: std::fs::read_to_string(path.join("p05-expected.txt"))?,
     })
 }
@@ -132,7 +128,7 @@ fn shown(panel: &TaskBoardPanel) -> Vec<String> {
 }
 
 #[test]
-fn e2e_p05_replays_purchase_and_refused_repeat() -> Result<(), Error> {
+fn e2e_p05_replays_bounty_point_upgrade() -> Result<(), Error> {
     let captured = captured()?;
     let e = captured.expected.as_str();
     let mut panel = TaskBoardPanel {
@@ -154,10 +150,14 @@ fn e2e_p05_replays_purchase_and_refused_repeat() -> Result<(), Error> {
         Some(value(e, "bounty_points_before")?)
     );
 
-    let buy = talisman::request(&mut panel, talisman::Intent::Buy).ok_or("buy request")?;
-    let sent = decode_request(&buy.payload).map_err(|e| format!("{e:?}"))?;
-    assert_eq!((sent.action, sent.selection), (17, 0));
-    apply_full_result(&mut panel, &result(CommandStatus::Accepted, &captured.buy));
+    let upgrade =
+        talisman::request(&mut panel, talisman::Intent::Upgrade(0)).ok_or("upgrade request")?;
+    let sent = decode_request(&upgrade.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!((sent.action, sent.selection), (18, 0));
+    apply_full_result(
+        &mut panel,
+        &result(CommandStatus::Accepted, &captured.upgrade),
+    );
     assert_eq!(panel.feedback, None);
     assert_eq!(shown(&panel), talisman_lines(value(e, "talisman_after")?));
     assert_eq!(
@@ -169,26 +169,6 @@ fn e2e_p05_replays_purchase_and_refused_repeat() -> Result<(), Error> {
         Some(value(e, "bounty_points_after")?)
     );
     assert_ne!(value(e, "talisman_before")?, value(e, "talisman_after")?);
-
-    // The repeated purchase is refused: feedback shows and the Talisman lines do not move.
-    let confirmed = panel.weekly.clone();
-    talisman::request(&mut panel, talisman::Intent::Buy).ok_or("buy request")?;
-    apply_full_result(
-        &mut panel,
-        &result(CommandStatus::Accepted, &captured.repeat),
-    );
-    assert_eq!(
-        panel.feedback,
-        Some("The server refused: task or bounty is not in the required state")
-    );
-    assert_eq!(shown(&panel), talisman_lines(value(e, "talisman_after")?));
-    let repeated = panel.weekly.as_ref().ok_or("weekly state")?;
-    assert_eq!(value(e, "refusal")?, "2");
-    assert_eq!(repeated.refusal.to_string(), value(e, "refusal")?);
-    assert_eq!(
-        repeated.talisman,
-        confirmed.ok_or("confirmed board")?.talisman
-    );
 
     // A malformed reply keeps the confirmed board.
     let kept = panel.weekly.clone();

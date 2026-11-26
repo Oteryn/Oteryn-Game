@@ -72,7 +72,6 @@ pub(super) async fn exercise(
                         difficulty: 0,
                     },
                 payload_binding: vec![],
-                fee_change: None,
             },
             std::sync::Arc::new(board),
             None,

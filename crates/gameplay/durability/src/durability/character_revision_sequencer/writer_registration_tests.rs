@@ -63,8 +63,6 @@ const FEE_WRITERS: &[&str] = &[
     // Rotten Blood access burns its fee inside the Quest transaction; the NPC
     // endgame owner holds the revision slot and invalidates its cursor before awaiting.
     "durability/quest_state/rotten_blood_access.rs",
-    // TASKBOARD-P04: talisman purchase participates in the existing fee owner.
-    "durability/task_board/fee.rs",
 ];
 
 /// The non-test part of a source file: from the first `#[cfg(test)]` that, after any other
@@ -206,7 +204,6 @@ fn the_structural_gate_catches_a_bypass_writer() {
         )
         .is_empty()
     );
-    assert!(bypasses("durability/task_board/fee.rs", fee).is_empty());
     assert!(bypasses("durability/bosstiary/slots.rs", fee).is_empty());
     // Test modules and definitions are not writers.
     let tested = "pub async fn commit_charm_command(\n#[cfg(test)]\n#[allow(clippy::expect_used)]\nmod tests { x.commit_charm_command(); }";

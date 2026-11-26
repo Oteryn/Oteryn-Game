@@ -42,8 +42,10 @@ unknown fields, and at most **192 bytes**.
 | 14 | Assign/clear unwanted creature | slot 0..4 | canonical race or empty |
 | 15 | Unlock next preferred/unwanted list slot | 0 | empty |
 | 16 | Buy task-shop offer | offered zero-based index | empty |
-| 17 | Buy Bounty Talisman | 0 | empty |
-| 18 | Upgrade talisman | path 0..3 | empty |
+| 17 | Retired talisman purchase; refused | 0 | empty |
+| 18 | Upgrade talisman using Bounty Points | path 0..3 | empty |
+
+Jewellers sell Bounty Talismans for 5,000 gold through ordinary NPC trade.
 
 A syntactically legal index is not purchase or selection authority. The durable
 owner checks the actual generated board, enabled offers, current resources,

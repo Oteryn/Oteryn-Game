@@ -1092,9 +1092,9 @@ fn scenario_with_bootstrap(
         println!(
             "<TASK_BOARD> POSTGRES_CASE_COMPLETED: second_start_preserves_progress_and_accrued_rewards"
         );
-        let mint_fault = fault == Some(RollbackFault::TalismanMint);
-        item_shop_and_talisman_cases(&owner, &harness, &mut admitted, mint_fault).await?;
-        if mint_fault {
+        item_shop_and_talisman_cases(&owner, &harness, &mut admitted).await?;
+        if fault == Some(RollbackFault::TalismanUpgrade) {
+            rollback_cases::talisman_upgrade_rollback(&owner, &harness, &mut admitted).await?;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -1234,15 +1234,16 @@ fn scenario_with_bootstrap(
             let replay = serve_from(&owner, &mut admitted, upgrade_id, &[request(3, path)]).await?;
             assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
         }
-        let upgraded = board(&owner, &mut admitted, 3, 1).await?;
-        assert!(!upgraded.refused);
+        let upgraded = full_board(&owner, &mut admitted, 18, 0, "").await?;
+        assert_eq!(upgraded.refusal, 0);
         assert_eq!(upgraded.bounty_points, 0);
-        assert_eq!(upgraded.talisman_levels, [2, 1, 1, 1]);
-        assert_eq!(upgraded.talisman_next_costs, [29, 17, 17, 17]);
+        assert_eq!(upgraded.points, settled_points);
+        assert_eq!(upgraded.talisman.map(|path| path.level), [2, 1, 1, 1]);
+        assert_eq!(upgraded.talisman.map(|path| path.next_cost), [29, 17, 17, 17]);
         assert!(board(&owner, &mut admitted, 3, 1).await?.refused);
         owner.refresh_quest_session(session, false).await;
         let reloaded = board(&owner, &mut admitted, 0, 0).await?;
-        assert_eq!(reloaded.talisman_levels, upgraded.talisman_levels);
+        assert_eq!(reloaded.talisman_levels, [2, 1, 1, 1]);
         assert_eq!(reloaded.bounty_points, 0);
         assert_eq!(reloaded.points, settled_points as i64);
 

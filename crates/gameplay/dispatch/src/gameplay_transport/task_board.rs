@@ -71,7 +71,7 @@ fn decode_action(payload: &[u8]) -> Option<(TaskBoardAction, bool)> {
             16 => TaskBoardAction::BuyShop {
                 offer: request.selection,
             },
-            17 => TaskBoardAction::BuyTalisman,
+            17 => TaskBoardAction::RetiredTalismanPurchase,
             18 => TaskBoardAction::UpgradeTalisman { path: slot },
             19 => TaskBoardAction::SetElite { enabled: slot == 1 },
             wire::full::ACTION_CLAIM_DAILY_BOUNTY_TOKEN => TaskBoardAction::ClaimDailyBountyToken,
@@ -212,39 +212,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return TaskBoardReply::Rejected;
         }
-        let fee_change = if action == TaskBoardAction::BuyTalisman {
-            let backpack = match self
-                .root
-                .read_character_backpack(self.character, fence.character_id)
-                .await
-            {
-                Ok(backpack) => backpack,
-                Err(_) => return TaskBoardReply::Rejected,
-            };
-            let runtime = self.runtime.lock().await;
-            super::charm_progression::fee_change(
-                self,
-                &runtime,
-                backpack.as_ref(),
-                [
-                    super::npc_trade_command::derived(
-                        b"taskboard:change:platinum",
-                        admitted.game_session_id,
-                        id,
-                    ),
-                    super::npc_trade_command::derived(
-                        b"taskboard:change:gold",
-                        admitted.game_session_id,
-                        id,
-                    ),
-                ],
-            )
-        } else {
-            None
-        };
         let programme_acceptance = matches!(action, TaskBoardAction::StartWeekly { .. });
         let request = TaskBoardCommand {
-            fee_change,
             cause: QuestCause::Command(CommandRef::new(admitted.game_session_id, command)),
             action,
             payload_binding: payload.to_vec(),
@@ -366,7 +335,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 race: race.to_owned(),
             },
             payload_binding: Vec::new(),
-            fee_change: None,
         };
         if self.commit_task_board(fence, request, None).await.is_ok() {
             self.refresh_quest_session(session, false).await;

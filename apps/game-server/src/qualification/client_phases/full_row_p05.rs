@@ -3,9 +3,8 @@
 //!
 //! Player scenario:
 //! 1. Send the full Task Board query and require an accepted, decodable snapshot.
-//! 2. Send Buy Talisman; require success, a 5,000-gold payment, and item 51978
-//!    appearing in the ordinary inventory delta.
-//! 3. Send Buy Talisman again; require the durable refusal and no second item.
+//! 2. Send the retired board purchase action and require a refusal.
+//! 3. Buy item 51978 from Hanna for 5,000 gold and observe it in carried inventory.
 //! 4. Open the bounty board, select an offered creature, kill it through native
 //!    combat until complete, and claim; require kill progress and bounty points.
 //! 5. Send Upgrade Talisman for the damage path; require the exact point debit,
@@ -616,6 +615,107 @@ fn reachable_offer(
         .min_by_key(|(_, offer)| offer.required)
 }
 
+async fn buy_talisman_from_hanna(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    reference: std::num::NonZeroU32,
+) -> TestResult {
+    use oteryn_dev_client::{EntityKind, client_runtime::npc_shop};
+    use oteryn_protocol_oteryn::npc_service as npc;
+
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let hanna = metadata
+        .npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == "oteryn:npc.hanna")
+        .ok_or("authored Hanna placement missing")?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let near_hanna = |at: TilePos| {
+        hanna.placements.iter().any(|p| {
+            next_to(
+                at,
+                TilePos {
+                    x: p.x,
+                    y: p.y,
+                    floor: p.floor,
+                },
+            )
+        })
+    };
+    let path = route(world, from, near_hanna).ok_or("Hanna has no walking route")?;
+    walk(client, world, &path).await?;
+    let basis = spatial_basis::current(client)?;
+    let actor = client
+        .world_entities()
+        .and_then(|entities| {
+            entities.iter().find(|entry| {
+                entry.kind == EntityKind::Npc
+                    && hanna.placements.iter().any(|p| {
+                        entry.position.x == i32::from(p.x)
+                            && entry.position.y == i32::from(p.y)
+                            && entry.position.floor == basis.floor(p.floor)
+                    })
+            })
+        })
+        .map(|entry| entry.entity)
+        .ok_or("Hanna actor absent at placement")?;
+    for text in ["hi", "trade"] {
+        let response = npc_shop::talk(
+            client.session_mut(),
+            &npc::NpcTalkIntent {
+                npc_actor: actor,
+                text: text.into(),
+            },
+        )
+        .await?;
+        if response != npc::NpcIntentDisposition::Ok {
+            return Err(format!("Hanna {text} returned {response:?}").into());
+        }
+    }
+    let delta = client
+        .session_mut()
+        .read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
+        .await?;
+    let window = npc::decode_npc_trade_window(&delta.payload)
+        .map_err(|error| format!("Hanna trade window: {error:?}"))?;
+    let (index, offer) = window
+        .offers
+        .iter()
+        .enumerate()
+        .find(|(_, offer)| {
+            offer.side == npc::NpcTradeSide::Buy
+                && offer.item_definition_ref == reference.get()
+                && offer.count == 1
+                && offer.unit_price == 5_000
+        })
+        .ok_or("Hanna trade window lacks the 5,000-gold Bounty Talisman offer")?;
+    let response = npc_shop::buy(
+        client.session_mut(),
+        &npc::NpcTradeIntent {
+            npc_actor: actor,
+            catalogue_revision: window.open.ok_or("Hanna trade window closed")?.1,
+            offer_index: u32::try_from(index)?,
+            side: offer.side,
+            quantity: 1,
+            expected_unit_price: offer.unit_price,
+        },
+    )
+    .await?;
+    if response != npc::NpcIntentDisposition::Ok {
+        return Err(format!("Hanna Bounty Talisman purchase returned {response:?}").into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
     let mut client = connect_character(clients, 0xd5, 0).await.map_err(|error| {
         verdict::record_error(verdict::IndexedError::as_error(&error));
@@ -640,10 +740,28 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
             source: Some(error),
         })?;
     let items_before = item_count(&client, reference);
-    let bought = accepted(2, command(&mut client, 17, 0).await?).map_err(|mut failure| {
-        failure.observed.push_str(";need=5000-spendable-gold;source=crates/gameplay/quests/src/quest/task_board_full.rs:604");
-        failure
-    })?;
+    let (status, retired) = command(&mut client, 17, 0).await?;
+    if status != CommandStatus::Accepted
+        || !retired.is_some_and(|reply| {
+            reply.refusal == 12
+                && reply.talisman == before.talisman
+                && reply.bounty_points == before.bounty_points
+        })
+    {
+        return Err(StepFailure {
+            step: 2,
+            observed: "expected retired board purchase refusal with unchanged talisman paths"
+                .into(),
+            source: None,
+        });
+    }
+    buy_talisman_from_hanna(&mut client, clients, reference)
+        .await
+        .map_err(|error| StepFailure {
+            step: 3,
+            observed: error.to_string(),
+            source: Some(error),
+        })?;
     let items_after = items_before.checked_add(1).ok_or_else(|| StepFailure {
         step: 2,
         observed: "talisman-count-overflow".into(),
@@ -658,13 +776,9 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
         observed: error.to_string(),
         source: Some(error),
     })?;
-    evidence("P05_CHECK step=2 status=PASS purchase-and-inventory-delta");
+    evidence("P05_CHECK step=3 status=PASS hanna-purchase-and-carried-inventory-delta");
 
-    // A new command ID can legitimately buy a second talisman. Keep the replay
-    // prerequisite explicit instead of spending another 5,000 gold.
-    evidence("P05_CHECK step=purchase-replay status=UNPROVEN need=exact-original-command-replay");
-
-    let mut claimed = bought.clone();
+    let mut claimed = before;
     for _ in 0..2 {
         if claimed.bounty_points >= u64::from(claimed.talisman[0].next_cost) {
             break;
@@ -741,7 +855,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
     logout(&mut fresh).await?;
     Err(StepFailure {
         step: 6,
-        observed: "need=exact-original-purchase-command-replay-and-wire-equipment-slot-10-for-talisman-combat-and-loot;source=crates/protocol-oteryn/src/item_view.rs:209".into(),
+        observed: "need=wire-equipment-slot-10-for-talisman-combat-and-loot;source=crates/protocol-oteryn/src/item_view.rs:209".into(),
         source: None,
     })
 }
@@ -872,10 +986,10 @@ fn review_p05_guards_the_journey() {
 
 #[cfg(test)]
 #[test]
-fn p05_distinguishes_a_purchase_replay_and_funds_the_upgrade_before_submitting() {
+fn p05_uses_npc_trade_and_funds_the_upgrade_before_submitting() {
     let production = include_str!("full_row_p05.rs").split_once("#[cfg(test)]");
     assert!(production.is_some_and(|(body, _)| {
-        body.contains("step=purchase-replay status=UNPROVEN")
+        body.contains("buy_talisman_from_hanna(&mut client, clients, reference)")
             && body.contains("need=more-completed-bounties")
     }));
 }

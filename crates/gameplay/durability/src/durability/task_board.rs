@@ -18,7 +18,6 @@ mod catalogue;
 mod custody;
 mod entitlements;
 mod expansion;
-mod fee;
 mod mint;
 mod progression;
 mod soulseal_catalogue;
@@ -87,9 +86,6 @@ pub struct TaskBoardCommand {
     /// Original bounded command bytes, not a semantic re-encoding. This distinguishes
     /// legacy/full query representations sharing command 89 and a CommandRef.
     pub payload_binding: Vec<u8>,
-    /// Qualified current coin/backpack facts from the existing item-content owner.
-    /// They are not client input and do not replace the original wire-byte binding.
-    pub fee_change: Option<super::item_fee_burn::FeeChangeFacts>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

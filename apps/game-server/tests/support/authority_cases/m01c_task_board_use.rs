@@ -129,7 +129,6 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
                     cause: cause(id)?,
                     action,
                     payload_binding: vec![id as u8],
-                    fee_change: None,
                 },
                 Arc::clone(&board),
                 None,
@@ -163,7 +162,6 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
                 cause: cause(44003)?,
                 action: TaskBoardAction::StartWeekly { difficulty: 0 },
                 payload_binding: vec![5, 0],
-                fee_change: None,
             },
             board,
             None,
@@ -192,7 +190,6 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
                 cause: cause(44004)?,
                 action: TaskBoardAction::SetElite { enabled: true },
                 payload_binding: vec![19, 1],
-                fee_change: None,
             },
             Arc::new(TaskBoardCatalogue {
                 creatures: Vec::new(),

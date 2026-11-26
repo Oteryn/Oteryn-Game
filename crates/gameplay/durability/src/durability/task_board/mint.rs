@@ -27,30 +27,23 @@ pub(super) struct Preparation {
     pub candidate: Option<RewardClaimInboxMintCandidate>,
 }
 
-fn outputs(action: &TaskBoardAction) -> Option<Vec<TaskBoardItemQuantity>> {
-    match action {
-        TaskBoardAction::BuyTalisman => Some(vec![TaskBoardItemQuantity {
-            item_id: 51_978,
-            amount: 1,
-        }]),
-        TaskBoardAction::BuyShop { offer } => SHOP_OFFERS
-            .iter()
-            .find(|item| item.id == *offer)
-            .filter(|item| {
-                matches!(
-                    item.kind,
-                    TaskBoardShopKind::Item | TaskBoardShopKind::ItemDouble
-                )
-            })
-            .filter(|item| !item.requires_decoration_kit())
-            .map(|item| {
-                vec![TaskBoardItemQuantity {
-                    item_id: item.appearance_or_item,
-                    amount: 1,
-                }]
-            }),
-        _ => None,
-    }
+fn shop_outputs(offer: u16) -> Option<Vec<TaskBoardItemQuantity>> {
+    SHOP_OFFERS
+        .iter()
+        .find(|item| item.id == offer)
+        .filter(|item| {
+            matches!(
+                item.kind,
+                TaskBoardShopKind::Item | TaskBoardShopKind::ItemDouble
+            )
+        })
+        .filter(|item| !item.requires_decoration_kit())
+        .map(|item| {
+            vec![TaskBoardItemQuantity {
+                item_id: item.appearance_or_item,
+                amount: 1,
+            }]
+        })
 }
 
 fn identity(binding: &[u8; 32], purpose: &[u8], ordinal: u32) -> [u8; 16] {
@@ -91,7 +84,11 @@ pub(super) async fn prepare(
     binding: [u8; 32],
     catalogue: &TaskBoardCatalogue,
 ) -> Result<Preparation, CharacterProgressionError> {
-    let Some(requested) = outputs(&request.action) else {
+    let pending_shop_mint = match request.action {
+        TaskBoardAction::BuyShop { offer } => shop_outputs(offer).map(|items| (offer, items)),
+        _ => None,
+    };
+    let Some((offer, requested)) = pending_shop_mint else {
         return Ok(Preparation {
             replay: None,
             candidate: None,
@@ -171,14 +168,10 @@ pub(super) async fn prepare(
             .map(|ordinal| identity(&mint_identity, b"item", ordinal as u32))
             .collect(),
     };
-    let claim_key = match request.action {
-        TaskBoardAction::BuyShop { offer } => format!("oteryn:taskboard/shop/{offer}"),
-        _ => "oteryn:taskboard/talisman".to_owned(),
-    };
     let mint = RewardClaimInboxMintRequest {
         claim: TypedDefinitionRef {
             family: "RewardClaim".to_owned(),
-            production_key: claim_key,
+            production_key: format!("oteryn:taskboard/shop/{offer}"),
             revision_ref: content_revision.clone(),
         },
         content_revision,

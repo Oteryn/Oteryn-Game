@@ -295,7 +295,6 @@ async fn unavailable_catalogue_case(
         )),
         action: TaskBoardAction::BuyShop { offer: 3 },
         payload_binding: full_request(16, 3, ""),
-        fee_change: None,
     };
     let refused = slot
         .commit_task_board(

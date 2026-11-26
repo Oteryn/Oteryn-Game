@@ -55,7 +55,7 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
                 && (value.fee_gold_units + 500000).is_multiple_of(300000) => check_uuid_v7(&cause.occurrence),
         Some(FeeBurnCauseV1::TaskBoardTalisman(cause))
             if cause.service_key == "oteryn:taskboard.talisman"
-                && value.fee_gold_units == oteryn_gameplay_quests::quest::task_board::full::TALISMAN_PURCHASE_GOLD =>
+                && value.fee_gold_units == 5_000 =>
         {
             check_uuid_v7(&cause.occurrence)
         }
@@ -182,7 +182,7 @@ mod task_board_tests {
     use super::*;
 
     #[test]
-    fn task_board_fee_accepts_only_the_donor_talisman_price_and_closed_cause() {
+    fn historical_task_board_fee_accepts_only_the_talisman_price_and_closed_cause() {
         let mut id = vec![1; 16];
         id[6] = 0x71;
         id[8] = 0x81;

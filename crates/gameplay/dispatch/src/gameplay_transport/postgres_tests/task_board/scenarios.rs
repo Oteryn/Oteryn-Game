@@ -42,7 +42,6 @@ pub(super) async fn inactive_death_without_calendar(
                     race: "oteryn:creature.rat".into(),
                 },
                 payload_binding: Vec::new(),
-                fee_change: None,
             },
             Arc::clone(&catalogue),
             None,
@@ -79,7 +78,6 @@ pub(super) async fn inactive_death_without_calendar(
                     )),
                     action: TaskBoardAction::Query,
                     payload_binding: full_request(4, 0, ""),
-                    fee_change: None
                 },
                 catalogue,
                 None
@@ -322,7 +320,6 @@ pub(super) async fn expansion_case(
                 cause: QuestCause::Command(command),
                 action: TaskBoardAction::GrantExpansion,
                 payload_binding: Vec::new(),
-                fee_change: None,
             },
             Arc::clone(&catalogue),
             None,
@@ -361,7 +358,6 @@ pub(super) async fn expansion_case(
         cause: QuestCause::Command(command),
         action: TaskBoardAction::Query,
         payload_binding: full_request(4, 0, ""),
-        fee_change: None,
     };
     assert!(matches!(
         owner
@@ -561,7 +557,6 @@ pub(super) async fn item_shop_and_talisman_cases(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
     admitted: &mut AdmittedSession,
-    inject_mint_failure: bool,
 ) -> TestResult {
     let initial = full_board(owner, admitted, 4, 0, "").await?;
     fixture_track(harness, task_board::POINTS, 200_000).await?;
@@ -601,7 +596,6 @@ pub(super) async fn item_shop_and_talisman_cases(
         "<TASK_BOARD> POSTGRES_CASE_COMPLETED: decoration_kit_offers_refuse_without_debit_or_mint_reservation"
     );
 
-    assert_eq!(full_board(owner, admitted, 17, 0, "").await?.refusal, 4);
     let native = owner
         .active_generation
         .ok_or("active generation")?
@@ -620,106 +614,28 @@ pub(super) async fn item_shop_and_talisman_cases(
     sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT $1::uuid,s.world_id,s.character_id,s.item_instance_id,coalesce((SELECT max(placement_ordinal) FROM game_item_container_entries e WHERE e.parent_item_instance_id=s.item_instance_id),0)+1,game_character_uuid_v7() FROM game_item_container_slots s WHERE s.character_id=encode($2,'hex')::uuid")
         .bind(&coin).bind(id(41).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
-    let before_items =
-        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_character_inbox_locations")
-            .fetch_one(&harness.pool)
-            .await?;
-    if inject_mint_failure {
-        let before_audit = sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_audit_outbox")
-            .fetch_one(&harness.pool)
-            .await?;
-        let before_grants =
-            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_task_board_item_grants")
-                .fetch_one(&harness.pool)
-                .await?;
-        let before_fees =
-            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_task_board_fee_proofs")
-                .fetch_one(&harness.pool)
-                .await?;
-        let before_receipts =
-            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_task_board_receipts")
-                .fetch_one(&harness.pool)
-                .await?;
-        // Fail the final source receipt after the existing gold, Item MINT, Inbox and
-        // DUR-03 participants run. Their value writes must all roll back together.
-        // The existing mint preparation may retain its value-free reservation.
-        rollback_cases::start_fault_witness(harness).await?;
-        sqlx::raw_sql("CREATE FUNCTION task_board_test_refuse_talisman() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM nextval('task_board_test_fault_hits'); RAISE EXCEPTION 'task board test atomicity fault' USING ERRCODE='23514'; END $$; CREATE CONSTRAINT TRIGGER task_board_test_refuse_talisman AFTER INSERT ON game_task_board_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN(NEW.action=to_jsonb('BuyTalisman'::text)) EXECUTE FUNCTION task_board_test_refuse_talisman();")
-            .execute(&harness.pool).await?;
-        let command = admitted.continuity.next_command_id;
-        let failed = serve_attempt(owner, admitted, command, &[full_request(17, 0, "")]).await;
-        sqlx::raw_sql("DROP TRIGGER task_board_test_refuse_talisman ON game_task_board_receipts; DROP FUNCTION task_board_test_refuse_talisman();").execute(&harness.pool).await?;
-        rollback_cases::finish_fault_witness(harness, 1).await?;
-        let (end, replies) = failed?;
-        assert_unavailable(owner, end, &replies, admitted, command);
-        assert_eq!(
-            sqlx::query_scalar::<_, i64>(
-                "SELECT quantity FROM game_item_instances WHERE item_instance_id=$1::uuid"
-            )
-            .bind(&coin)
-            .fetch_one(&harness.pool)
-            .await?,
-            50
-        );
-        assert_eq!(
-            sqlx::query_scalar::<_, i64>(
-                "SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=$1::uuid"
-            )
-            .bind(&coin)
-            .fetch_one(&harness.pool)
-            .await?,
-            1
-        );
-        assert_eq!(
-            sqlx::query_scalar::<_, i64>(
-                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1"
-            )
-            .bind(task_board::POINTS)
-            .fetch_one(&harness.pool)
-            .await?,
-            i64::try_from(initial.points)?
-        );
-        assert_eq!(
-            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_character_inbox_locations")
-                .fetch_one(&harness.pool)
-                .await?,
-            before_items
-        );
-        assert_eq!(
-            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_audit_outbox")
-                .fetch_one(&harness.pool)
-                .await?,
-            before_audit
-        );
-        assert_eq!(
-            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_task_board_item_grants")
-                .fetch_one(&harness.pool)
-                .await?,
-            before_grants
-        );
-        assert_eq!(
-            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_task_board_fee_proofs")
-                .fetch_one(&harness.pool)
-                .await?,
-            before_fees
-        );
-        assert_eq!(
-            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_task_board_receipts")
-                .fetch_one(&harness.pool)
-                .await?,
-            before_receipts
-        );
-        println!(
-            "<TASK_BOARD> POSTGRES_CASE_COMPLETED: talisman_existing_mint_audit_and_gold_atomic_rollback"
-        );
-        return Ok(());
-    }
-
+    let talisman_key = task_board::TALISMAN_ITEM;
+    let before_items = delivery_custody_snapshot(harness, talisman_key).await?;
+    let before_reservations: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_reward_claim_inbox_mint_reservations",
+    )
+    .fetch_one(&harness.pool)
+    .await?;
+    let before_fees: i64 = sqlx::query_scalar("SELECT count(*) FROM game_task_board_fee_proofs")
+        .fetch_one(&harness.pool)
+        .await?;
     let command = admitted.continuity.next_command_id;
-    let original = serve_from(owner, admitted, command, &[full_request(17, 0, "")]).await?;
+    let payload = [full_request(17, 0, "")];
+    let original = serve_from(owner, admitted, command, &payload).await?;
     assert_eq!(original[0].1, CommandStatus::Accepted);
-    let talisman = wire::full::decode_reply(&original[0].2).map_err(debug)?;
-    assert_eq!((talisman.refusal, talisman.points), (0, initial.points));
+    let refused = wire::full::decode_reply(&original[0].2).map_err(debug)?;
+    assert_eq!(refused.refusal, 12);
+    assert_eq!(refused.talisman, initial.talisman);
+    assert_eq!(refused.points, initial.points);
+    assert_eq!(refused.bounty_points, initial.bounty_points);
+    let replay = serve_from(owner, admitted, command, &payload).await?;
+    assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
+    assert_eq!(replay[0].2, original[0].2);
     assert_eq!(
         sqlx::query_scalar::<_, i64>(
             "SELECT quantity FROM game_item_instances WHERE item_instance_id=$1::uuid"
@@ -727,40 +643,22 @@ pub(super) async fn item_shop_and_talisman_cases(
         .bind(&coin)
         .fetch_one(&harness.pool)
         .await?,
-        0
+        50
     );
+    assert_eq!(delivery_custody_snapshot(harness, talisman_key).await?, before_items);
     assert_eq!(
-        sqlx::query_scalar::<_, i64>(
-            "SELECT count(*) FROM game_task_board_fee_proofs WHERE fee_gold_units=5000"
-        )
-        .fetch_one(&harness.pool)
-        .await?,
-        1
-    );
-    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_task_board_item_grants g JOIN game_reward_claim_inbox_mint_lines l USING(item_instance_id,transaction_id) JOIN game_item_audit_outbox a USING(transaction_id) WHERE g.source_item_id=51978 AND l.source_line=51978 AND a.event_type_id=2").fetch_one(&harness.pool).await?,1);
-    assert_eq!(
-        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_character_inbox_locations")
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_task_board_fee_proofs")
             .fetch_one(&harness.pool)
             .await?,
-        before_items + 1
+        before_fees
     );
-    let committed_audit =
-        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_audit_outbox")
-            .fetch_one(&harness.pool)
-            .await?;
-    let replay = serve_from(owner, admitted, command, &[full_request(17, 0, "")]).await?;
-    assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
-    assert_eq!(replay[0].2, original[0].2);
     assert_eq!(
-        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_audit_outbox")
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_reward_claim_inbox_mint_reservations")
             .fetch_one(&harness.pool)
             .await?,
-        committed_audit
+        before_reservations
     );
-    assert_eq!(full_board(owner, admitted, 17, 0, "").await?.refusal, 4);
-    println!(
-        "<TASK_BOARD> POSTGRES_CASE_COMPLETED: talisman_existing_gold_fee_and_inbox_mint_once"
-    );
+    println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: retired_talisman_purchase_refuses_without_fee_or_mint");
     Ok(())
 }
 

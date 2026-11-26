@@ -231,47 +231,47 @@ fn full_task_board_reply_reaches_the_play_panel() -> Result<(), Error> {
 }
 
 #[test]
-fn talisman_purchase_uses_full_owner_and_displays_refusal() -> Result<(), Error> {
+fn talisman_upgrade_uses_full_owner_and_displays_refusal() -> Result<(), Error> {
     use oteryn_client_ui::task_board::{TaskBoardPanel, talisman};
     let mut panel = TaskBoardPanel {
         selected: true,
         ..Default::default()
     };
-    let command = talisman::request(&mut panel, talisman::Intent::Buy).ok_or("purchase command")?;
+    let command = talisman::request(&mut panel, talisman::Intent::Upgrade(0)).ok_or("upgrade command")?;
     assert_eq!((command.capability, command.kind), (72, 89));
     assert_eq!(
         task_board::full::decode_request(&command.payload)
-            .map_err(|_| "purchase decode")?
+            .map_err(|_| "upgrade decode")?
             .action,
-        17
+        18
     );
-    assert!(talisman::request(&mut panel, talisman::Intent::Buy).is_none());
+    assert!(talisman::request(&mut panel, talisman::Intent::Upgrade(0)).is_none());
     let (link, mut incoming, outbox) = play_channel();
     outbox.task_board_initialize(true);
     let command = talisman::request(
         &mut crate::play::mailbox::lock(&link.mailbox).task_board,
-        talisman::Intent::Buy,
+        talisman::Intent::Upgrade(0),
     )
-    .ok_or("native purchase")?;
+    .ok_or("native upgrade")?;
     link.commands
         .send(crate::combat_input::PlayCommand::Feature(command))?;
     let command = match incoming.try_recv()? {
         crate::combat_input::PlayCommand::Feature(value) => value,
-        _ => return Err("purchase did not reach feature command queue".into()),
+        _ => return Err("upgrade did not reach feature command queue".into()),
     };
     assert_eq!(
         task_board::full::decode_request(&command.payload)
-            .map_err(|_| "purchase decode")?
+            .map_err(|_| "upgrade decode")?
             .action,
-        17
+        18
     );
     let mut reply = full_reply();
-    reply.refusal = 14;
+    reply.refusal = 4;
     outbox.task_board_full_result(&oteryn_session::GatedCommandResult {
         command_id: 1,
         status: CommandStatus::Accepted,
         server_sequence: 1,
-        payload: task_board::full::encode_reply(&reply).map_err(|_| "purchase reply")?,
+        payload: task_board::full::encode_reply(&reply).map_err(|_| "upgrade reply")?,
     });
     assert!(!link.task_board_panel().pending);
     assert!(panel_text(&link.task_board_panel()).contains("server refused"));

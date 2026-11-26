@@ -41,13 +41,8 @@ enum Kind {
     Category,
     Buy(u16),
     ConfirmShop(u16),
-    BuyTalisman,
-    ConfirmTalisman,
     UpgradeTalisman(u8),
 }
-/// The server's accepted talisman price (`task_board_full::TALISMAN_PURCHASE_GOLD`); the
-/// request never carries it, so the player confirms this amount before the purchase is sent.
-const TALISMAN_PURCHASE_GOLD: u64 = 5_000;
 struct Entry {
     text: String,
     action: Option<Kind>,
@@ -149,7 +144,6 @@ struct Action {
 struct State {
     tab: Tab,
     confirm: bool,
-    buy_talisman: bool,
     search: String,
     category: Option<u8>,
     fight_cursor: u16,
@@ -198,13 +192,6 @@ fn project(
     if state.seen != panel {
         state.shop_selection = None;
         state.extra = None;
-    }
-    // A talisman confirmation survives a board update; it closes once no purchase is possible.
-    if !panel
-        .as_ref()
-        .is_some_and(|panel| panel.selected && panel.weekly.is_some())
-    {
-        state.buy_talisman = false;
     }
     if state.tab == Tab::Soulseals
         && let (Some(panel), Some(play)) = (&panel, &owner.play)
@@ -307,32 +294,6 @@ fn project(
         );
     }
     extras::shop_confirmation(&mut commands, &skins, frame, &state, panel);
-    if state.buy_talisman && state.tab == Tab::Talisman {
-        widget(
-            &mut commands,
-            &skins,
-            frame,
-            &state,
-            &format!("Buy a Bounty Talisman for {TALISMAN_PURCHASE_GOLD} gold?"),
-            None,
-        );
-        widget(
-            &mut commands,
-            &skins,
-            frame,
-            &state,
-            &format!("Confirm purchase ({TALISMAN_PURCHASE_GOLD} gold)"),
-            Some(Kind::ConfirmTalisman),
-        );
-        widget(
-            &mut commands,
-            &skins,
-            frame,
-            &state,
-            "Cancel",
-            Some(Kind::Cancel),
-        );
-    }
     widget(
         &mut commands,
         &skins,
@@ -520,7 +481,6 @@ fn activate(
             state.fight_cursor = 0;
             state.restart_fights = false;
             state.confirm = false;
-            state.buy_talisman = false;
             state.dirty = true;
         }
         Kind::Extra(ref extra) => {
@@ -539,22 +499,8 @@ fn activate(
             state.fight_cursor = 0;
             play.link.soulseal_catalogue_request(0);
         }
-        Kind::BuyTalisman if panel.selected && !panel.pending && panel.weekly.is_some() => {
-            state.extra = None;
-            state.buy_talisman = true;
-            state.dirty = true;
-        }
-        Kind::ConfirmTalisman => {
-            // While the board waits for the server the confirmation stays open for a retry.
-            if state.buy_talisman && panel.selected && !panel.pending && panel.weekly.is_some() {
-                play.link.task_board_full_request(FullIntent::BuyTalisman);
-                state.buy_talisman = false;
-            }
-            state.dirty = true;
-        }
         _ => {
             state.extra = None;
-            state.buy_talisman = false;
             if let Some(intent) = intent(&panel, &mut state.confirm, &action.kind) {
                 play.link.task_board_full_request(intent);
             }
