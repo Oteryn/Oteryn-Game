@@ -144,7 +144,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("C18a Scorch cast refused: {report:?}").into());
     }
-    let after = client
+    let after = *client
         .actor_vitals()
         .ok_or("C18a post-cast vitals absent")?;
     if before.mana.checked_sub(mana) != Some(after.mana)
@@ -195,7 +195,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         )?;
         std::fs::write(
             root.join("c18a-vitals.bin"),
-            actor_spell::encode_actor_vitals(after).map_err(|error| format!("{error:?}"))?,
+            actor_spell::encode_actor_vitals(&after).map_err(|error| format!("{error:?}"))?,
         )?;
         std::fs::write(root.join("c18a-expected.txt"), format!("{spell} Cast\n"))?;
         Ok(())
