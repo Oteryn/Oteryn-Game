@@ -108,8 +108,17 @@ async fn catalogue_page(
         &offset.to_be_bytes(),
     )
     .await?;
-    catalogue::ProficiencyCataloguePage::decode(&payload)
-        .ok_or_else(|| "step=catalogue observed=decode-failed".into())
+    let page = catalogue::ProficiencyCataloguePage::decode(&payload)
+        .ok_or("step=catalogue observed=decode-failed")?;
+    if page.offset != offset || page.entries.is_empty() {
+        return Err(format!(
+            "step=catalogue observed=page-offset:{};expected:{offset};entries:{}",
+            page.offset,
+            page.entries.len()
+        )
+        .into());
+    }
+    Ok(page)
 }
 
 async fn weapon_entry(
@@ -130,14 +139,19 @@ async fn weapon_entry(
         .ok_or_else(|| format!("step=catalogue observed=no-authored-track-for:{definitions:?}"))?;
     let page_size = catalogue::PROFICIENCY_CATALOGUE_PAGE_SIZE;
     let offset = u32::try_from(position / page_size * page_size)?;
-    let page = catalogue_page(client, offset).await?;
-    if page.offset != offset {
-        return Err(format!(
-            "step=catalogue observed=page-offset:{};expected:{offset}",
-            page.offset
-        )
-        .into());
+    let first = catalogue_page(client, 0).await?;
+    if first.entries.iter().all(|entry| entry.definition == 0) {
+        return Err("step=catalogue observed=no-weapon-definitions-on-page-zero".into());
     }
+    let page = if offset == 0 {
+        first
+    } else {
+        let page = catalogue_page(client, offset).await?;
+        if page.total != first.total {
+            return Err("step=catalogue observed=page-total-changed".into());
+        }
+        page
+    };
     page.entries
         .into_iter()
         .find(|entry| definitions.contains(&entry.definition))
@@ -288,6 +302,16 @@ async fn body(
         )
         .into());
     }
+    let selected = weapon_entry(client, &[entry.definition]).await?;
+    if selected.experience != entry.experience
+        || selected
+            .levels
+            .get(usize::from(level))
+            .map(|slot| slot.selected)
+            != Some(Some(0))
+    {
+        return Err("step=perk observed=live-catalogue-selection-or-experience-mismatch".into());
+    }
     Ok((entry.definition, level, after.revision, entry.experience))
 }
 
@@ -352,9 +376,9 @@ async fn durable_selection(
         .into());
     }
     let after = state(client, definition).await?;
-    if after.revision < revision {
+    if after.revision != revision {
         return Err(format!(
-            "step=relog observed=revision:{} needed=at-least:{revision}",
+            "step=relog observed=revision:{} needed=exactly:{revision}",
             after.revision
         )
         .into());
