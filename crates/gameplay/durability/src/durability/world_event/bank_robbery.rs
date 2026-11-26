@@ -210,6 +210,7 @@ impl DurabilityRoot {
                 "SELECT activated_at_unix_ms FROM game_world_reset_read_locked(encode($1,'hex')::uuid) WHERE reset_epoch=$2::text::numeric"
             ).bind(world_id).bind(&epoch_id).fetch_optional(&mut *tx).await?;
             let Some(activated) = activated else { return Ok(None); };
+            lock_epoch(&mut tx, world, &epoch_id).await?;
             let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
             // Keep the prior boot basis across committed saves. A World with
             // no native robbery poll in any previous epoch starts its clock now.
@@ -325,4 +326,363 @@ pub(crate) async fn bind_bags(
             .execute(&mut **tx).await?;
     }
     Ok(())
+}
+
+pub const BOARD_LINE: &str = "Several banks in major coastal towns are being robbed! The thieves are still on the loose!";
+pub const TOWNCRYER: &str = "oteryn:npc.towncryer";
+pub const TOWNCRYER_LINE: &str = "Hear ye! Hear ye! Stand and deliver!";
+
+pub fn banker_city(npc: &str) -> Option<&'static str> {
+    match npc {
+        "oteryn:npc.naji" | "oteryn:npc.suzy" => Some("thais"),
+        "oteryn:npc.eva" => Some("carlin"),
+        "oteryn:npc.rokyn" => Some("venore"),
+        "oteryn:npc.finarfin" => Some("ab_dendriel"),
+        _ => None,
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Phase {
+    RobberAlive,
+    BagOutstanding,
+    Returned,
+}
+
+impl Phase {
+    pub fn suspended(self) -> bool {
+        matches!(self, Self::RobberAlive | Self::BagOutstanding)
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+struct Occurrence {
+    epoch: u64,
+    city: String,
+    phase: Phase,
+}
+
+async fn lock_epoch(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    epoch: &str,
+) -> Result<(), DurabilityError> {
+    // An epoch may have no row yet when the first native poll starts.
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:bank-robbery:' || encode($1,'hex') || ':' || $2,0))")
+        .bind(world.as_bytes().as_slice()).bind(epoch).execute(&mut **tx).await?;
+    Ok(())
+}
+
+async fn current(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+) -> Result<Option<Occurrence>, DurabilityError> {
+    let epoch: Option<String> = sqlx::query_scalar(
+        "SELECT reset_epoch::text FROM game_world_reset_read_locked(encode($1,'hex')::uuid)",
+    ).bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let Some(epoch) = epoch else { return Ok(None); };
+    lock_epoch(tx, world, &epoch).await?;
+    let state: Option<(i16, String)> = sqlx::query_as(
+        "SELECT state, city FROM game_bank_robbery_occurrences
+         WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric AND state BETWEEN 1 AND 3",
+    ).bind(world.as_bytes().as_slice()).bind(&epoch).fetch_optional(&mut **tx).await?;
+    state.map(|(state, city)| {
+        let phase = match state {
+            1 => Phase::RobberAlive,
+            2 => Phase::BagOutstanding,
+            3 => Phase::Returned,
+            _ => return Err(DurabilityError::InvalidStoredState),
+        };
+        Ok(Occurrence {
+            epoch: epoch.parse().map_err(|_| DurabilityError::InvalidStoredState)?,
+            phase,
+            city,
+        })
+    }).transpose()
+}
+
+pub(super) async fn announced(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    expected_epoch: u64,
+) -> Result<bool, DurabilityError> {
+    Ok(current(tx, world).await?.is_some_and(|o|
+        o.epoch == expected_epoch && o.phase == Phase::BagOutstanding))
+}
+
+pub(in crate::durability) async fn bank_suspended(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    npc: Option<&str>,
+) -> Result<bool, DurabilityError> {
+    let Some(city) = npc.and_then(banker_city) else { return Ok(false); };
+    Ok(current(tx, world).await?.is_some_and(|o| o.city == city && o.phase.suspended()))
+}
+
+/// The exact admitted conversation. The caller resolves it under the Channel owner lock.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Conversation {
+    pub npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    pub key: String,
+    pub generation: u64,
+}
+
+/// Created only by a fenced greeting while the occurrence was outstanding.
+#[derive(Debug)]
+pub struct RecognizedBag {
+    fence: CurrentCharacterItemFence,
+    conversation: Conversation,
+    epoch: u64,
+    bag: [u8; 16],
+}
+
+pub struct Dialogue {
+    pub phase: Phase,
+    pub bag: Option<RecognizedBag>,
+}
+
+pub struct HandIn {
+    pub command: crate::foundation::CommandRef,
+    pub conversation: Conversation,
+    pub text: String,
+    pub bag: RecognizedBag,
+}
+
+#[derive(Debug)]
+pub struct ReturnReceipt {
+    pub npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    pub npc_key: String,
+    pub return_count: i64,
+}
+
+use crate::durability::character_progression::{CharacterProgressionError as ProgressionError, uuid_text};
+use crate::durability::item_loop_move::ItemLoopContent;
+use crate::foundation::CommandRef;
+use oteryn_protocol_oteryn::npc_service::NpcTalkIntent;
+
+async fn player_fenced(
+    tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+) -> Result<bool, DurabilityError> {
+    if fence.runtime_scope.channel_id().is_none()
+        || assert_item_only_fence(tx, fence, node).await?.is_err()
+    {
+        return Ok(false);
+    }
+    sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions
+        WHERE game_session_id=encode($1,'hex')::uuid AND session_state=2 AND current_transport_ref IS NOT NULL)")
+        .bind(fence.game_session_id.as_bytes().as_slice()).fetch_one(&mut **tx).await.map_err(Into::into)
+}
+
+async fn carried_bag(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: &CurrentCharacterItemFence,
+    epoch: u64,
+    bag: Option<[u8; 16]>,
+) -> Result<Option<[u8; 16]>, DurabilityError> {
+    let world = fence.runtime_scope.world_id();
+    let bag: Option<String> = sqlx::query_scalar(
+        "SELECT i.item_instance_id::text FROM game_bank_robbery_bags b
+         JOIN game_item_instances i USING (item_instance_id)
+         JOIN game_quest_callback_carried(encode($3,'hex')::uuid,encode($1,'hex')::uuid) c ON c.item=i.item_instance_id
+         WHERE b.world_id=encode($1,'hex')::uuid AND b.reset_epoch=$2::text::numeric
+           AND ($4::bytea IS NULL OR i.item_instance_id=encode($4,'hex')::uuid)
+           AND b.retired_transaction_id IS NULL AND i.lifecycle=1 AND i.quantity=1
+           AND i.world_id=b.world_id AND i.definition_production_key=$5 AND c.kind IN ('container','nested')
+         ORDER BY b.ordinal LIMIT 1 FOR UPDATE OF i",
+    )
+    .bind(world.as_bytes().as_slice()).bind(epoch.to_string())
+    .bind(fence.character_id.as_bytes().as_slice()).bind(bag.as_ref().map(|id| id.as_slice()))
+    .bind(BAG).fetch_optional(&mut **tx).await?;
+    bag.as_deref().map(uuid_text).transpose()
+}
+
+impl DurabilityRoot {
+    pub async fn bank_robbery_dialogue(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        conversation: Conversation,
+        greeting: bool,
+    ) -> Result<Option<Dialogue>, ProgressionError> {
+        let towncryer = conversation.key == TOWNCRYER;
+        let city = banker_city(&conversation.key);
+        if !towncryer && city.is_none() {
+            return Ok(None);
+        }
+        let recovery = authority.record_for(self).map_err(|_| ProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            let Some(o) = current(&mut tx, fence.runtime_scope.world_id()).await? else { return Ok(Ok(None)); };
+            if !(towncryer && o.phase == Phase::BagOutstanding || city == Some(o.city.as_str())) {
+                return Ok(Ok(None));
+            }
+            if !player_fenced(&mut tx, &node, &fence).await? {
+                return Ok(Err(ProgressionError::AuthorityRejected));
+            }
+            let bag = if greeting && !towncryer && o.phase == Phase::BagOutstanding {
+                carried_bag(&mut tx, &fence, o.epoch, None).await?.map(|bag| RecognizedBag {
+                    fence, conversation, epoch: o.epoch, bag,
+                })
+            } else {
+                None
+            };
+            // The observation linearizes under the occurrence lock, before any first return.
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(Some(Dialogue { phase: o.phase, bag })))
+        })).await?
+    }
+
+    /// Query the immutable outcome for the exact command, optionally matching the original wire intent.
+    pub async fn reconcile_bank_robbery_return(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        intent: Option<NpcTalkIntent>,
+    ) -> Result<Option<ReturnReceipt>, ProgressionError> {
+        let recovery = authority.record_for(self).map_err(|_| ProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            if !player_fenced(&mut tx, &node, &fence).await? {
+                return Ok(Err(ProgressionError::AuthorityRejected));
+            }
+            read_return(&mut tx, &fence, command, intent.as_ref()).await
+        })).await?
+    }
+
+    pub async fn return_bank_robbery_bag<C: ItemLoopContent>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: HandIn,
+        content: &C,
+    ) -> Result<Option<ReturnReceipt>, ProgressionError> {
+        let HandIn { command, conversation, text, bag } = request;
+        if command.game_session_id() != fence.game_session_id || bag.fence != fence
+            || bag.conversation != conversation || !text.trim_matches(' ').eq_ignore_ascii_case("yes")
+        {
+            return Ok(None);
+        }
+        let recovery = authority.record_for(self).map_err(|_| ProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        let mut content = content;
+        self.try_issue_semantic_pass()?.run_with_context(&mut content, move |holder, deadline, content| Box::pin(async move {
+            let mut tx = crate::durability::db::begin_type2_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            let world = fence.runtime_scope.world_id();
+            let occurrence = current(&mut tx, world).await?;
+            if !player_fenced(&mut tx, &node, &fence).await? {
+                return Ok(Err(ProgressionError::AuthorityRejected));
+            }
+            let intent = NpcTalkIntent { npc_actor: conversation.npc, text };
+            match read_return(&mut tx, &fence, command, Some(&intent)).await? {
+                Ok(None) => {}
+                replay => return Ok(replay),
+            }
+            if !occurrence.is_some_and(|o| o.epoch == bag.epoch
+                && banker_city(&conversation.key) == Some(o.city.as_str())
+                && matches!(o.phase, Phase::BagOutstanding | Phase::Returned))
+                || carried_bag(&mut tx, &fence, bag.epoch, Some(bag.bag)).await?.is_none()
+            {
+                return Ok(Ok(None));
+            }
+            let id = fence.character_id.as_bytes().as_slice();
+            let prior: Option<(i64, bool)> = sqlx::query_as(
+                "SELECT return_count, reset_epoch=$2::text::numeric AND world_id=encode($3,'hex')::uuid
+                 FROM game_bank_robbery_returns WHERE character_id=encode($1,'hex')::uuid
+                 ORDER BY return_count DESC LIMIT 1",
+            ).bind(id).bind(bag.epoch.to_string()).bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+            if prior.is_some_and(|(_, same_epoch)| same_epoch) {
+                return Ok(Ok(None));
+            }
+            let return_count = prior.map_or(0, |(count, _)| count).checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
+            // The receipt trigger retires the exact bag before the native reward
+            // owner checks weight and available backpack slots.
+            sqlx::query("INSERT INTO game_bank_robbery_returns
+                (game_session_id,command_id,world_id,reset_epoch,bag_id,character_id,npc_identity,npc_generation,npc_key,prompt_generation,request_text,return_count)
+                VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,
+                    $7,$8::text::numeric,$9,$10::text::numeric,$11,$12)")
+                .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
+                .bind(world.as_bytes().as_slice()).bind(bag.epoch.to_string()).bind(bag.bag.as_slice()).bind(id)
+                .bind(conversation.npc.identity.as_slice()).bind(conversation.npc.generation.to_string())
+                .bind(&conversation.key).bind(conversation.generation.to_string()).bind(&intent.text).bind(return_count)
+                .execute(&mut **tx).await?;
+            match crate::durability::reward_claim_mint::npc_program::claim(
+                &mut tx, &node, fence, command, *content, &payout_plan(bag.bag),
+            ).await? {
+                Ok(_) => {}
+                Err(crate::durability::reward_claim_mint::RewardClaimMintError::Refused(_)) => return Ok(Ok(None)),
+                Err(_) => return Err(DurabilityError::InvalidStoredState),
+            }
+            let achievements: &[&str] = match return_count {
+                1 => &["oteryn:achievement/honest_finder"],
+                5 => &["oteryn:achievement/goldhunter"],
+                _ => &[],
+            };
+            crate::durability::account_achievement::grant_missing(
+                &mut tx, fence.character_id, achievements, "oteryn:bank-robbery", &bag.bag,
+            ).await?;
+            tx.commit(deadline).await?;
+            Ok(Ok(Some(ReturnReceipt { npc: conversation.npc, npc_key: conversation.key, return_count })))
+        })).await?
+    }
+}
+
+async fn read_return(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+    intent: Option<&NpcTalkIntent>,
+) -> Result<Result<Option<ReturnReceipt>, ProgressionError>, DurabilityError> {
+    if fence.game_session_id != command.game_session_id() {
+        return Ok(Err(ProgressionError::AuthorityRejected));
+    }
+    let world = fence.runtime_scope.world_id();
+    let row = sqlx::query("SELECT npc_identity,npc_generation::text,npc_key,request_text,return_count,
+        character_id=encode($3,'hex')::uuid AND world_id=encode($4,'hex')::uuid AS matches
+        FROM game_bank_robbery_returns WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
+        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
+        .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice())
+        .fetch_optional(&mut **tx).await?;
+    let Some(row) = row else { return Ok(Ok(None)); };
+    let npc = oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+        identity: row.try_get::<Vec<u8>, _>("npc_identity")?.try_into().map_err(|_| DurabilityError::InvalidStoredState)?,
+        generation: crate::durability::character_progression::numeric_u64(&row, "npc_generation")?,
+    };
+    let text: &str = row.try_get("request_text")?;
+    if !row.try_get::<bool, _>("matches")? || intent.is_some_and(|i| i.npc_actor != npc || i.text != text) {
+        return Ok(Err(ProgressionError::ConflictingOccurrence));
+    }
+    Ok(Ok(Some(ReturnReceipt { npc, npc_key: row.try_get("npc_key")?, return_count: row.try_get("return_count")? })))
+}
+
+fn payout_plan(bag: [u8; 16]) -> oteryn_gameplay_quests::quest::npc_rules::NpcRulePlan {
+    use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleEffect, NpcRulePlan};
+    let id = bag.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+    NpcRulePlan {
+        quest: "oteryn:world-change.bank-robbery".into(),
+        completes: false,
+        program_digest: Sha256::digest(b"oteryn:bank-robbery:return:v1").into(),
+        selected_rule_keys: vec![format!("oteryn:npc-reward/bank-robbery/{id}")],
+        reply: Vec::new(),
+        next_topic: 0,
+        observed_tracks: Default::default(),
+        track_changes: Vec::new(),
+        effects: vec![NpcRuleEffect::GiveItem { item: "oteryn:item.tibia.i3035".into(), count: 10, subtype: None }],
+        inventory_before: Default::default(),
+        inventory_after: Default::default(),
+        inventory_failure_reply: Vec::new(),
+    }
 }
