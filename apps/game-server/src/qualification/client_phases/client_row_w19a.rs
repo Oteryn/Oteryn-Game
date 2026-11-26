@@ -102,12 +102,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if client.join_snapshot().game_session_id == original_session || units(&before) != expected {
         return Err("step=seed fresh admission did not hold exactly two additional bundles".into());
     }
+    let backpack = before
+        .main_backpack
+        .ok_or("step=carry the Character has no main backpack")?;
+    // CharacterInventory.entries holds only direct children of the main backpack.
     let bag = before
         .entries
         .iter()
         .find(|item| item.item_definition_ref == bag_ref)
         .copied()
-        .ok_or("step=carry the Character holds no red Christmas bundle")?;
+        .ok_or("step=carry the main backpack holds no red Christmas bundle")?;
+    evidence(&format!(
+        "W19A_CLIENT_SOURCE placement=main_backpack backpack_handle={} bundle_handle={} definition={bag_ref}",
+        backpack.handle, bag.handle,
+    ));
     let before_payload = item_view::encode_character_inventory_with_equip_drop(&before, true)
         .map_err(|error| format!("inventory encode: {error:?}"))?;
     let held_before = units(&before);
