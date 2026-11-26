@@ -1211,7 +1211,7 @@ pub(super) async fn journeys(
         )
         .into());
     }
-    if groups.runs("rows") && e2e_row_selected(179) {
+    if groups.runs("rows") && client_row_s01::selected() {
         let logout = client.session_mut().logout().await?;
         if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err(format!("S01 first town entry logout refused: {logout:?}").into());

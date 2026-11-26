@@ -1881,7 +1881,10 @@ seam_stage_name=seam_stages
 source "$GAME_SOURCE/tools/qualification/node_boot/s01_client_replay.sh"
 NODE_BOOT_S01_CAPTURE_DIR=
 if s01_client_selected; then
-  NODE_BOOT_S01_CAPTURE_DIR="$(mktemp -d "$WORK/s01-capture.XXXXXX")" || blocked s01_capture_dir_unavailable
+  # The cloud wrapper owns replay when it supplies the capture directory.
+  if [[ -z ${E2E_ALL_CAPTURE_DIR:-} ]]; then
+    NODE_BOOT_S01_CAPTURE_DIR="$(mktemp -d "$WORK/s01-capture.XXXXXX")" || blocked s01_capture_dir_unavailable
+  fi
 else
   [[ $? == 3 ]] || blocked s01_selector_failed
 fi

@@ -7,6 +7,11 @@ use oteryn_dev_client::{DevClientSession, EntityRef};
 use runtime::party::{PartyDisposition, PartyIntent};
 use std::io::Write as _;
 
+// Keep setup selection separate from the indexed reporter scanned by node boot.
+pub(super) fn selected() -> bool {
+    e2e_row_selected(179)
+}
+
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
     if let Some(root) = std::env::var_os("NODE_BOOT_S01_CAPTURE_DIR") {
         std::fs::OpenOptions::new()
