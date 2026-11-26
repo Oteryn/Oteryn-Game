@@ -1,7 +1,7 @@
 //! MINING-1 reuses the item-use one-unit TRANSFORM and its Type 2 audit.
 //! A separate immutable proof binds the unchanged pick and original USE bytes.
 
-use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::super::db::{begin_semantic_transaction, commit_semantic_read};
 use super::super::item_loop_move::ItemLoopContent;
 use super::super::item_transfer::read_derived_transfer_capacity_centi_oz;
 use super::*;
@@ -87,7 +87,7 @@ impl DurabilityRoot {
                             }
                         }
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })

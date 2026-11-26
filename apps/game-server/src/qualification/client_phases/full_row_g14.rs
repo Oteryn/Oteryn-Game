@@ -68,18 +68,13 @@ async fn accepted(
     payload: &[u8],
 ) -> TestResult<Vec<u8>> {
     let (status, payload) = send(client, capability, command, payload).await?;
-    if status != CommandStatus::Accepted {
-        return Err(format!(
-            "step=command-{command} observed=status:{status:?} needed=accepted-reply"
-        )
-        .into());
-    }
+    require_mechanic_acceptance(status, &format!("G14 command {command}"))?;
     Ok(payload)
 }
 
 async fn finish(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
-    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+    let (result, reply, _, _) = logout_once(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=logout observed={reply:?} needed=first-attempt-accepted").into());
     }
     Ok(())
@@ -145,7 +140,7 @@ fn require_notice(reply: wire::Reply, defaults_selected: bool) -> TestResult<wir
         return Err("step=query observed=no-dialog needed=non-empty-server-motd".into());
     };
     if dialog.title != "Server notice"
-        || dialog.message != "Welcome to the node-boot qualification world."
+        || dialog.message != "Welcome to the Crystal Server!"
     {
         return Err("step=query observed=unexpected-dialog needed=configured-server-motd".into());
     }
@@ -169,11 +164,15 @@ fn require_notice(reply: wire::Reply, defaults_selected: bool) -> TestResult<wir
     Ok(dialog)
 }
 
-async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> TestResult {
-    let defaults_selected = client
-        .selected_capabilities()
-        .contains(&wire::CAPABILITY_SERVER_MODAL_DEFAULTS_V1);
-    let dialog = require_notice(query(client).await?, defaults_selected)?;
+fn require_modal_capabilities(client: &DevClientSession) -> TestResult {
+    gate(client, CAPABILITY)?;
+    gate(client, wire::input::CAPABILITY_SERVER_MODAL_INPUT_V1)?;
+    gate(client, wire::CAPABILITY_SERVER_MODAL_DEFAULTS_V1)
+}
+
+async fn body(client: &mut DevClientSession) -> TestResult<u32> {
+    require_modal_capabilities(client)?;
+    let dialog = require_notice(query(client).await?, true)?;
     match query(client).await? {
         wire::Reply::Dialog(again) if again == dialog => {}
         other => return Err(format!("step=repeat observed={other:?}").into()),
@@ -233,12 +232,40 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
     if !matches!(query(client).await?, wire::Reply::None) {
         return Err("step=replay observed=dialog-reopened".into());
     }
+    Ok(dialog.id)
+}
+
+async fn cancel_after_relogin(client: &mut DevClientSession, prior_id: u32) -> TestResult {
+    require_modal_capabilities(client)?;
+    let stale = answer(true, prior_id, ACKNOWLEDGE)?;
+    let (status, payload) = send(client, CAPABILITY, wire::COMMAND_TYPE_SERVER_MODAL_ANSWER, &stale).await?;
+    if status != CommandStatus::Rejected || !payload.is_empty() {
+        return Err("step=relogin observed=stale-answer-not-rejected".into());
+    }
+    let dialog = require_notice(query(client).await?, true)?;
+    if dialog.id == prior_id {
+        return Err("step=relogin observed=stale-dialog-id".into());
+    }
+    let cancel = answer(true, dialog.id, CANCEL)?;
+    let payload = accepted(client, CAPABILITY, wire::COMMAND_TYPE_SERVER_MODAL_ANSWER, &cancel).await?;
+    let expected = wire::Answer { dialog_id: dialog.id, button_id: CANCEL, choice_id: None };
+    if decode_reply(true, &payload)? != wire::Reply::Answered(expected) {
+        return Err("step=cancel observed=wrong-acknowledgement".into());
+    }
+    if !matches!(query(client).await?, wire::Reply::None) {
+        return Err("step=cancel observed=dialog-still-pending".into());
+    }
     Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0x76).await?;
-    let outcome = verdict::observe(body(&mut client, clients)).await;
+    let outcome = verdict::observe(body(&mut client)).await;
+    let closed = verdict::observe(finish(&mut client)).await;
+    let prior_id = outcome?;
+    closed?;
+    let mut client = connect_world(clients, 0x76).await?;
+    let outcome = verdict::observe(cancel_after_relogin(&mut client, prior_id)).await;
     let closed = verdict::observe(finish(&mut client)).await;
     outcome?;
     closed
@@ -253,7 +280,7 @@ mod tests {
         let notice = wire::Dialog {
             id: 7,
             title: "Server notice".into(),
-            message: "Welcome to the node-boot qualification world.".into(),
+            message: "Welcome to the Crystal Server!".into(),
             choices: Vec::new(),
             buttons: vec![(1, "Acknowledge".into()), (2, "Cancel".into())],
             default_button: Some(1),

@@ -332,6 +332,7 @@ where
         };
         // Keep the join snapshot and its temporary session state out of the
         // connection coroutine, which also carries the live command path.
+        let motd_was_sent = admitted.continuity.server_motd_sent;
         let mut session = match Box::pin(setup::prepare(
             stream,
             &mut admitted,
@@ -372,6 +373,9 @@ where
                 );
             if server_messages.is_none() {
                 return ServeEnd::Disconnected.finish(session.admitted);
+            }
+            if !motd_was_sent {
+                root_authority.server_modal_login_notice(session.admitted);
             }
         }
         let mut live_started = false;

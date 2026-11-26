@@ -481,12 +481,20 @@ async fn value(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     storage: u32,
 ) -> TestResult<i64> {
+    use crate::durability::{DurabilityError, character_progression::CharacterProgressionError};
+
     let character = crate::domain::CharacterId::from_bytes(id(41)).map_err(debug)?;
-    let copy = owner
-        .root
-        .read_character_quest_state(authority, character)
-        .await
-        .map_err(debug)?;
+    let read = async || owner.root.read_character_quest_state(authority, character).await;
+    let copy = match read().await {
+        Err(CharacterProgressionError::Unavailable(
+            DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded,
+        )) => {
+            owner.root.await_ready().await?;
+            read().await
+        }
+        result => result,
+    }
+    .map_err(debug)?;
     Ok(quest::storage_value(copy.tracks(), storage))
 }
 

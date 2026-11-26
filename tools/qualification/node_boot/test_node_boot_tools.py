@@ -52,30 +52,18 @@ KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
 class ServerNoticeTests(unittest.TestCase):
-    def test_notice_is_scoped_to_batches_with_g14_and_without_empty_modal_consumers(self):
-        registry = (HERE.parents[2] / 'apps/game-server/src/qualification/client_phases/world.rs').read_text()
-        indices = {
-            row: int(re.search(r'e2e_row_selected\((\d+)\) \{\s+verdict::indexed\("' + row + r'\.full"', registry)[1])
-            for row in ('P14', 'C10', 'G14')
-        }
-        g14 = indices['G14']
-        for world, batch, expected in (
-            ('1', f'{g14}:1', True),
-            ('1', f'{g14 - 1}:2', True),
-            ('1', f'{g14 - 1}:1', False),
-            ('1', f'{g14}:0', False),
-            ('1', f"{indices['C10']}:{g14 - indices['C10'] + 1}", False),
-            ('1', f"{indices['P14']}:{g14 - indices['P14'] + 1}", False),
-            ('1', 'all', False),
-            ('1', 'invalid', False),
-            ('1', '', False),
-            ('0', f'{g14}:1', False),
-        ):
-            with self.subTest(world=world, batch=batch):
-                result = bash('set -eu\n' + function('node_boot_server_motd') + '\nnode_boot_server_motd',
-                              {'NODE_BOOT_WORLD': world, 'OTERYN_E2E_ROW_BATCH': batch})
-                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                self.assertEqual(result.stdout, 'Welcome to the node-boot qualification world.' if expected else '')
+    def test_notice_config_uses_only_operator_text(self):
+        writer = section("write_node_config() {", '  cat >> "$WORK/node.toml" <<TOML')
+        self.assertNotIn("OTERYN_E2E_ROW_BATCH", writer)
+        with tempfile.TemporaryDirectory() as work:
+            for value in ("", "Welcome to the Crystal Server!"):
+                result = bash(writer + '}\nwrite_node_config', {
+                    "WORK": work, "NODE_BOOT_SERVER_MOTD": value,
+                    "OTERYN_E2E_ROW_BATCH": "246:1",
+                })
+                self.assertEqual(result.returncode, 0, result.stderr)
+                expected = f'server_motd = "{value}"\n' if value else ""
+                self.assertEqual(Path(work, "node.toml").read_text(), expected)
 
 
 class KnobTests(unittest.TestCase):

@@ -485,7 +485,7 @@ impl DurabilityRoot {
                                 DurabilityError::Unavailable
                             }
                         })?;
-                    super::super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(found)
                 })
             })

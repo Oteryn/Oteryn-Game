@@ -3,6 +3,7 @@ use super::super::{
     db::{begin_semantic_transaction, commit_semantic_transaction},
 };
 use super::*;
+use crate::durability::db::commit_semantic_read;
 use oteryn_gameplay_native_admission_source::{
     SourceError,
     journal::{
@@ -54,7 +55,7 @@ impl JournalOutbox for ProducerStore<'_, '_, '_> {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let live = current(&mut tx, &stream, recovery.recovery_generation).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(live)
                 })
             })
@@ -82,7 +83,7 @@ impl JournalOutbox for ProducerStore<'_, '_, '_> {
                 if Sha256::digest(&bytes).as_slice()!=hash {return Err(DurabilityError::InvalidStoredState);}
                 Ok(StoredPublication{bytes,sha256:hash.try_into().map_err(invalid)?})
             }).transpose()?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(publication)
+            commit_semantic_read(tx,deadline).await?;Ok(publication)
         })).await.map_err(transport_error)
     }
     async fn after_cursor(
@@ -182,7 +183,7 @@ impl ProducerStore<'_, '_, '_> {
         self.root.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;assert_recovery_fence(&mut tx,&recovery).await?;
             let live:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_journal_streams WHERE stream_key=$1 AND claim_token=$2::text::uuid AND claim_until>clock_timestamp() AND active AND NOT quarantined)").bind(key).bind(token).fetch_one(&mut *tx).await?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(live)
+            commit_semantic_read(tx,deadline).await?;Ok(live)
         })).await
     }
     pub async fn finish(

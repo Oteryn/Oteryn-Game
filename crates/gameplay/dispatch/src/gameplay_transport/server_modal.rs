@@ -50,6 +50,35 @@ pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<Offere
         .collect()
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn queue_login_notice(&self, admitted: AdmittedSession) {
+        if self.server_motd.is_empty()
+            || !admitted
+                .continuity
+                .selected_capabilities
+                .contains(CAPABILITY_SERVER_MODAL_V1)
+        {
+            return;
+        }
+        if let Some(root) = self.states.server_messages.connection_root(
+            admitted.game_session_id,
+            admitted.continuity.connection_generation,
+        ) {
+            self.states.server_modals.queue_login_notice(
+                root,
+                Dialog {
+                    id: 1,
+                    title: "Server notice".into(),
+                    message: self.server_motd.to_owned(),
+                    choices: Vec::new(),
+                    buttons: vec![(1, "Acknowledge".into()), (2, "Cancel".into())],
+                    default_button: Some(1),
+                    cancel_button: Some(2),
+                    image: None,
+                },
+            );
+        }
+    }
+
     pub(super) async fn server_modal_page(
         &self,
         admitted: AdmittedSession,
@@ -115,19 +144,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return reply;
         }
-        let notice = (!self.server_motd.is_empty()).then(|| Dialog {
-            id: 1,
-            title: "Server notice".into(),
-            message: self.server_motd.to_owned(),
-            choices: Vec::new(),
-            buttons: vec![(1, "Acknowledge".into()), (2, "Cancel".into())],
-            default_button: Some(1),
-            cancel_button: Some(2),
-            image: None,
-        });
         self.states
             .server_modals
-            .execute(root, kind, payload, notice)
+            .execute(root, kind, payload, None)
             .map(ServerModalOutcome::Reply)
     }
 }
@@ -135,6 +154,11 @@ macro_rules! authority_methods {
     () => {
         fn server_modal_available(&self) -> bool {
             false
+        }
+        fn server_modal_login_notice(
+            &self,
+            _admitted: $crate::gameplay_transport::AdmittedSession,
+        ) {
         }
         fn server_modal_execute(
             &self,
@@ -164,6 +188,9 @@ macro_rules! composed_methods {
             self.active_generation
                 .and_then(|active| active.native_gameplay())
                 .is_some()
+        }
+        fn server_modal_login_notice(&self, admitted: connection::AdmittedSession) {
+            self.queue_login_notice(admitted);
         }
         async fn server_modal_execute(
             &self,

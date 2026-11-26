@@ -137,7 +137,7 @@ impl DurabilityRoot {
                     entries.push(EquippedItem {slot,tier:u8::try_from(row.try_get::<i16,_>("tier")?).ok().filter(|tier| *tier <= crate::domain::forge::ItemTier::MAX).ok_or(DurabilityError::InvalidStoredState)?,item_instance_id:uuid(row.try_get("item_instance_id")?).map_err(|_| DurabilityError::InvalidStoredState)?,definition,quantity:u32::try_from(row.try_get::<i64,_>("quantity")?).map_err(|_| DurabilityError::InvalidStoredState)?,state_revision:number(row.try_get("state_revision")?).map_err(|_| DurabilityError::InvalidStoredState)?});
                 }
             }
-            super::db::commit_semantic_transaction(tx,deadline).await?;Ok(entries)
+            super::db::commit_semantic_read(tx,deadline).await?;Ok(entries)
         })).await.map_err(EquipmentError::from)
     }
 }
@@ -1186,7 +1186,7 @@ impl DurabilityRoot {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(facts)
                 })
             })
@@ -1308,7 +1308,7 @@ impl DurabilityRoot {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(MovementEquipmentSnapshot { fence, equipment })
                 })
             })
@@ -1362,7 +1362,7 @@ impl DurabilityRoot {
                     let facts = read_lifecycle_facts_in_transaction(&mut tx, &authority)
                         .await
                         .map_err(|_| DurabilityError::Unavailable)?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(facts)
                 })
             })
@@ -1955,7 +1955,7 @@ impl DurabilityRoot {
                             }
                         }
                     };
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(replay)
                 })
             })

@@ -1,4 +1,5 @@
 //! Identity and profile facts share one transaction and the existing VIP visibility fence.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use oteryn_protocol_oteryn::cyclopedia_character::{Badge, profile::Profile};
 impl DurabilityRoot {
@@ -26,7 +27,7 @@ impl DurabilityRoot {
             let equipment=rows.iter().map(|row| Ok(EquippedItem {slot:narrow(i64::from(row.try_get::<i16,_>("slot")?))?,definition:row.try_get("definition_production_key")?,quantity:narrow(row.try_get("quantity")?)?})).collect::<Result<Vec<_>,sqlx::Error>>()?;
             let profile=Profile {character:*target.as_bytes(),name,badges,equipment};
             if profile.encode().is_err() { return Ok(Err(CharacterAuthorityError::Rejected)); }
-            commit_semantic_transaction(tx,deadline).await?; Ok(Ok(profile))
+            commit_semantic_read(tx,deadline).await?; Ok(Ok(profile))
         })).await?
     }
 }

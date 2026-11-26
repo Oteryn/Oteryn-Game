@@ -2080,7 +2080,7 @@ impl DurabilityRoot {
                     .await;
                     match read {
                         Ok(replay) => {
-                            super::db::commit_semantic_transaction(tx, deadline).await?;
+                            super::db::commit_semantic_read(tx, deadline).await?;
                             Ok(replay)
                         }
                         Err(error) => loop_error(error).map(|refusal| Some(Err(refusal))),
@@ -2127,7 +2127,7 @@ impl DurabilityRoot {
                             }
                         }
                     };
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(replay)
                 })
             })
@@ -2223,7 +2223,7 @@ impl DurabilityRoot {
                         Err(LoopError::Database(error)) => return Err(error.into()),
                         Err(LoopError::Refused(_)) => None,
                     };
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(read)
                 })
             })
@@ -2250,7 +2250,7 @@ impl DurabilityRoot {
                     let root = ground_container_path(&mut tx, world, container)
                         .await?
                         .and_then(|path| path.last().copied());
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(root)
                 })
             })
@@ -2365,7 +2365,7 @@ impl DurabilityRoot {
                         })
                     }
                 };
-                super::db::commit_semantic_transaction(tx, deadline).await?;
+                super::db::commit_semantic_read(tx, deadline).await?;
                 Ok(read)
             })
         }).await
@@ -2495,7 +2495,7 @@ impl DurabilityRoot {
                         return Err(DurabilityError::InvalidStoredState);
                     }
                     let items = rows.into_iter().collect::<Result<Vec<_>, _>>()?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(items)
                 })
             })

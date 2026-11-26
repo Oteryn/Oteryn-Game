@@ -1,6 +1,7 @@
 //! Origin-owner recovery after the native Instance process has disappeared.
 //! Discovery is inert. Every mutation repeats the existing departed-source,
 //! current origin, Character claim and immutable activity lineage checks.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::foundation::{ConnectionGeneration, GameSessionState};
 
@@ -102,7 +103,7 @@ impl ActivityHandoffOwner {
                     activities.push(activity);
                 }
             }
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(DepartedActivityPage { activities, next_after })
         })).await
     }

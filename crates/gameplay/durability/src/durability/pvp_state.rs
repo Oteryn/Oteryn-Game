@@ -16,6 +16,7 @@
 //! The kill block, skull, unjustified points and revenge marks are written by the death
 //! transaction (PVP-DEATH-1), not here.
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_session_fence,
@@ -318,7 +319,7 @@ impl DurabilityRoot {
                         return Ok(Err(error));
                     }
                     let stored = load_pvp_state(&mut tx, fence.character_id).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(stored))
                 })
             })

@@ -29,7 +29,7 @@ impl FreshAdmissionStore {
             if stored.as_deref() != Some(encoded.as_str()) { return Err(DurabilityError::InvalidStoredState); }
             let decided_at: i64 = row.try_get("decided_at")?;
             if decided_at < operation.authorized_at { return Err(DurabilityError::InvalidStoredState); }
-            super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+            super::admission_journal::commit_pass_read(tx, deadline).await?;
             return Ok(ControlLossOutcomeV1::Committed { decided_at });
         }
         if !super::world_reset::loss_binding_current(&mut tx, observation.cause).await? {
@@ -206,7 +206,7 @@ impl FreshAdmissionStore {
         super::db::lock_admission_relations(&mut tx).await?;
         let Some(row) = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
             .bind(&key).fetch_optional(&mut *tx).await? else {
-                super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                super::admission_journal::commit_pass_read(tx, deadline).await?;
                 return Ok(FreshLossReconciliation::Absent);
             };
         let stored: Option<String> = row.try_get("operation_json")?;
@@ -225,7 +225,7 @@ impl FreshAdmissionStore {
             return Err(DurabilityError::InvalidStoredState);
         }
         if stored != encoded {
-            super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+            super::admission_journal::commit_pass_read(tx, deadline).await?;
             return Ok(FreshLossReconciliation::Conflict);
         }
         let FreshReconciliation::Committed(current) =
@@ -280,7 +280,7 @@ impl FreshAdmissionStore {
         {
             return Err(DurabilityError::InvalidStoredState);
         }
-        super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+        super::admission_journal::commit_pass_read(tx, deadline).await?;
         Ok(FreshLossReconciliation::Committed {
             completion: Box::new(ControlLossCompletionV1 {
                 operation,

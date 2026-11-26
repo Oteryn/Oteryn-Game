@@ -772,20 +772,20 @@ install_owned root -m 0600 "$WORK/ops.toml" "$BASE/ops/ops.toml"
 # One descriptor installation time: changed facts under an unchanged
 # revision are refused at boot, as D3 requires.
 DESCRIPTOR_INSTALLED_AT="$(date +%s)"
-node_boot_server_motd() {
-  # Keep the initial modal empty for P14 (50) and C10 (75). The normal
-  # matrix puts G14 (246) in a separate batch. See the row registry in world.rs.
-  [[ "$NODE_BOOT_WORLD" == 1 && "${OTERYN_E2E_ROW_BATCH:-}" =~ ^([0-9]{1,7}):([0-9]{1,7})$ ]] || return 0
-  local first=$((10#${BASH_REMATCH[1]})) length=$((10#${BASH_REMATCH[2]}))
-  if (( first > 75 && first <= 246 && 246 - first < length )); then
-    printf '%s' 'Welcome to the node-boot qualification world.'
-  fi
-}
-
 write_node_config() { # launch-file
-  cat > "$WORK/node.toml" <<TOML
+  # Pass the operator's text through the same root TOML key as a deployed node.
+  : > "$WORK/node.toml"
+  if [[ -n "${NODE_BOOT_SERVER_MOTD:-}" ]]; then
+    python3 - "$NODE_BOOT_SERVER_MOTD" >> "$WORK/node.toml" <<'PY_MOTD'
+import json
+import sys
+
+text = json.dumps(sys.argv[1], ensure_ascii=False).replace(chr(127), r"\u007f")
+print(f"server_motd = {text}")
+PY_MOTD
+  fi
+  cat >> "$WORK/node.toml" <<TOML
 qualification_fixture = true
-server_motd = "$(node_boot_server_motd)"
 [listener]
 address = "127.0.0.1:${NODE_BOOT_GAME_PORT:-17181}"
 entry_deadline_ms = 20000
