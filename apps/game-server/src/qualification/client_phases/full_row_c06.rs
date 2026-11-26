@@ -14,7 +14,6 @@ use std::num::NonZeroU32;
 const DAMAGE_RUNE_ID: u32 = 3174;
 const HEAL_RUNE_ID: u32 = 3152;
 const BLANK_RUNE_ID: u32 = 3147;
-const STARTER_CONJURE: &str = "adori dis min vis";
 const ORDINARY_CONJURE: &str = "adori min vis";
 const CONJURED_CHARGES: u64 = 10;
 const XODET: &str = "oteryn:npc.xodet";
@@ -306,18 +305,13 @@ fn conjure_index(client: &mut DevClientSession) -> TestResult<NonZeroU32> {
         .session_mut()
         .spell_catalog()?
         .ok_or("step=2 observed=no-spell-catalog")?;
-    [ORDINARY_CONJURE, STARTER_CONJURE]
-        .into_iter()
-        .find_map(|words| {
-            catalogue
-                .entries
-                .iter()
-                .find(|e| e.words == words && e.available && e.rune_item.is_none())
-                .and_then(|e| NonZeroU32::new(e.cast_index))
-        })
+    catalogue
+        .entries
+        .iter()
+        .find(|entry| entry.words == ORDINARY_CONJURE && entry.available && entry.rune_item.is_none())
+        .and_then(|entry| NonZeroU32::new(entry.cast_index))
         .ok_or_else(|| {
-            format!("step=2 observed=no-eligible-conjure need={ORDINARY_CONJURE}|{STARTER_CONJURE}")
-                .into()
+            format!("step=2 observed=no-eligible-conjure need={ORDINARY_CONJURE}").into()
         })
 }
 
