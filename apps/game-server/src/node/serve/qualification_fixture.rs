@@ -1,6 +1,9 @@
 //! Disposable node-boot build provisioning. The node retains its incarnation
 //! proof; the root-only control socket supplies only an admitted session id.
 use super::*;
+#[cfg(feature = "qualification-spawn")]
+#[path = "qualification_fixture_i07.rs"]
+mod i07;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::qualification_spell_character as qualification_build;
 #[cfg(any(test, feature = "qualification-spawn"))]
@@ -84,7 +87,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let allowed = allowed
         || spell_build(profile).is_some()
         || named_item(profile).is_some()
-        || matches!(profile, "house-g01" | "premium");
+        || matches!(profile, "house-g01" | "i07-loot" | "premium");
     allowed.then_some((session, profile))
 }
 
@@ -800,6 +803,29 @@ async fn prepare_build(
             }
             return Ok(());
         }
+    }
+    #[cfg(feature = "qualification-spawn")]
+    if profile == "i07-loot" {
+        let character = crate::domain::CharacterId::from_bytes(
+            *current.current_character_lease().character_id().as_bytes(),
+        )
+        .map_err(qualification_build::debug)?;
+        let record = root
+            .read_current_character(authority, character)
+            .await
+            .map_err(qualification_build::debug)?;
+        if uuid_text(record.account_id.as_bytes()) != "01934f10-7c00-7000-8000-000000000024"
+            || current.session_state() != crate::foundation::GameSessionState::Active
+            || current.current_transport().is_none()
+            || !config
+                .premium_activation
+                .as_ref()
+                .is_some_and(|activation| activation.activation_id == "node-boot-fixture-premium")
+        {
+            return Err("I07 fixture requires its active disposable admission".into());
+        }
+        grant_premium(root, premium, *record.account_id.as_bytes(), deadline).await?;
+        return i07::seed(root, authority, proof, &current, native, character).await;
     }
     #[cfg(feature = "qualification-spawn")]
     if let Some(item) = named_item(profile) {
