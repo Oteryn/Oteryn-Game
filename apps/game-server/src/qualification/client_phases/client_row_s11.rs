@@ -44,23 +44,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         page: 1,
         snapshot_id: 0,
     };
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
-    let accepted = loop {
-        let reply = exchange(&mut client, query).await?;
-        if reply.status == CommandStatus::Accepted {
-            break reply;
-        }
-        // The durable root can be briefly busy while the snapshot job publishes: retry only an
-        // explicit empty refusal, within a fixed deadline.
-        if reply.status != CommandStatus::Rejected
-            || !reply.payload.is_empty()
-            || tokio::time::Instant::now() >= deadline
-        {
-            return Err(format!("step=query observed={reply:?}").into());
-        }
-        client.service_liveness(Duration::from_millis(100)).await?;
-        client.take_events();
-    };
+    let accepted = exchange(&mut client, query).await?;
+    require_mechanic_acceptance(accepted.status, "highscore-query")?;
     let page = wire::decode_highscores_result(&accepted.payload)
         .map_err(|error| format!("step=decode observed={error:?}"))?;
     if page.category != 1 || page.page != 1 || page.snapshot_id == 0 || page.rows.len() > wire::MAX_HIGHSCORES_PAGE_ROWS {

@@ -342,7 +342,7 @@ impl MapModel {
     }
 }
 
-fn in_town(at: TilePos, start: TilePos) -> bool {
+pub(super) fn in_town(at: TilePos, start: TilePos) -> bool {
     at.x.abs_diff(start.x) <= RADIUS
         && at.y.abs_diff(start.y) <= RADIUS
         && at.floor.abs_diff(start.floor) <= 2

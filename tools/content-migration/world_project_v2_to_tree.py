@@ -363,6 +363,8 @@ def apply_encounter_corpse_admissions(definitions, root=ROOT):
     import questpc2_rotten_loot_items
 
     questpc2_rotten_loot_items.apply_admissions(definitions, root)
+    from outfit_reward_item_profiles import apply_admissions as apply_outfit_item_admissions
+    apply_outfit_item_admissions(definitions, root)
 
 
 def item_projection_tables(item_records, authoring):
@@ -1033,7 +1035,7 @@ def main(*, items_only: bool = False) -> int:
     dialogue_declarations = [
         row for row in declarations["records"] if row.get("kind") == "Dialogue"
     ]
-    if len(dialogue_declarations) != 836:
+    if len(dialogue_declarations) != 852:
         raise RuntimeError(
             f"DIALOGUE_SOURCE_COUNT_MISMATCH:{len(dialogue_declarations)}"
         )

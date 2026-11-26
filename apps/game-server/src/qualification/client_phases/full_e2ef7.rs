@@ -160,26 +160,12 @@ async fn query(
     client: &mut DevClientSession,
     query: wire::HighscoresQuery,
 ) -> TestResult<wire::HighscoresResult> {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
-    loop {
-        let reply = exchange(client, query).await?;
-        if reply.status == CommandStatus::Accepted {
-            let page = wire::decode_highscores_result(&reply.payload)
-                .map_err(|e| format!("ranking result: {e:?}"))?;
-            validate_page(&page, query)?;
-            return Ok(page);
-        }
-        // The shared durable root can be briefly busy while the snapshot job
-        // publishes. Retry only explicit empty refusals, with a fixed deadline.
-        if reply.status != CommandStatus::Rejected
-            || !reply.payload.is_empty()
-            || tokio::time::Instant::now() >= deadline
-        {
-            return Err(format!("ranking query refused: {reply:?}").into());
-        }
-        client.service_liveness(Duration::from_millis(100)).await?;
-        client.take_events();
-    }
+    let reply = exchange(client, query).await?;
+    super::require_mechanic_acceptance(reply.status, "ranking-query")?;
+    let page = wire::decode_highscores_result(&reply.payload)
+        .map_err(|error| format!("ranking result: {error:?}"))?;
+    validate_page(&page, query)?;
+    Ok(page)
 }
 
 async fn observed_query(
@@ -305,7 +291,7 @@ async fn refused(
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(client).await?;
+    let (result, logout, attempts, busy_timed_out) = super::logout_once(client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("ranking character logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
@@ -3726,6 +3712,7 @@ async fn release_when_unlocked_inner(
             Some(
                 native::logout::LogoutResult::InFight { .. } | native::logout::LogoutResult::Busy,
             ) if tokio::time::Instant::now() < deadline => {
+                evidence("FIXTURE_RETRY step=release-when-unlocked reason=combat-or-busy");
                 // Keep the actor active without resetting its combat lock.
                 player_turn(client).await?;
                 client.service_liveness(Duration::from_millis(250)).await?;
@@ -6743,7 +6730,10 @@ async fn forge_release_inner(client: &mut ForgeClient) -> TestResult {
             Some(native::logout::LogoutResult::Accepted) => return Ok(()),
             Some(
                 native::logout::LogoutResult::InFight { .. } | native::logout::LogoutResult::Busy,
-            ) if tokio::time::Instant::now() < deadline => client.barrier().await?,
+            ) if tokio::time::Instant::now() < deadline => {
+                evidence("FIXTURE_RETRY step=forge-release reason=combat-or-busy");
+                client.barrier().await?;
+            }
             _ => {
                 return Err(format!(
                     "forge ordinary logout: status={:?}; result={:?}",
