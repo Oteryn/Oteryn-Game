@@ -5,10 +5,13 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::death_protection::{
     CAPABILITY_DEATH_PROTECTION_V1, COMMAND_TYPE_DEATH_PROTECTION_QUERY, DeathProtectionReply,
 };
+use sha2::{Digest, Sha256};
 use std::io::Write as _;
 
 const ROW: &str = "C20c.client";
 const SHIELDING: &str = "oteryn:blessing.the_spiritual_shielding";
+const BLESSING_PRICE: u64 = 2_000;
+const CRYSTAL_GOLD: u64 = 10_000;
 const TWIST: &str = "oteryn:blessing.twist_of_fate";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -23,7 +26,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     )
     .await
     {
-        Ok(Ok(())) => evidence("C20c_CHECK packet-and-fresh-admission PASS"),
+        Ok(Ok(binding)) => evidence(&format!(
+            "C20c_CHECK packet-and-fresh-admission PASS {binding}"
+        )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario={ROW} status=FAIL evidence={error}"
         )),
@@ -31,7 +36,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
-async fn journey(core: &SeamClients<'_>) -> TestResult {
+async fn journey(core: &SeamClients<'_>) -> TestResult<String> {
     let url = required("NODE_BOOT_PVP_DATABASE_URL")?;
     let accounts = [
         required("NODE_BOOT_PVP_ACCOUNT_ID")?,
@@ -87,10 +92,20 @@ async fn journey(core: &SeamClients<'_>) -> TestResult {
     let socket = "NODE_BOOT_PVP_CONTROL_SOCKET";
     let mut victim = prepare_build(clients, 0xc2, 1, "c20c-sorcerer").await?;
     assert_build(&mut victim, 21, 250, 480).await?;
-    let (before, _) = protection(&mut victim).await?;
+    let (before, _, _) = protection(&mut victim).await?;
     if before.0.is_some() || !full_e2ef6::blessings(&mut victim).await?.is_empty() {
         return Err("C20c dedicated character already has a death or blessings".into());
     }
+    let item_index = provisioning::item_index()?;
+    let coins = [
+        (provisioning::item_reference(&item_index, 3031)?.get(), 1),
+        (provisioning::item_reference(&item_index, 3035)?.get(), 100),
+        (
+            provisioning::item_reference(&item_index, 3043)?.get(),
+            CRYSTAL_GOLD,
+        ),
+    ];
+    let original_gold = carried_gold(&victim, &coins)?;
     request_fixture_control_at(
         socket,
         uuid_text(victim.join_snapshot().game_session_id.as_bytes()),
@@ -99,6 +114,10 @@ async fn journey(core: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     relog(&mut victim, clients, 0xc3, 1).await?;
+    let funded_gold = original_gold
+        .checked_add(CRYSTAL_GOLD)
+        .ok_or("C20c gold overflow")?;
+    assert_gold(&mut victim, &coins, funded_gold).await?;
     buy(
         &mut victim,
         world,
@@ -108,6 +127,7 @@ async fn journey(core: &SeamClients<'_>) -> TestResult {
         "The Spiritual Shielding",
     )
     .await?;
+    assert_gold(&mut victim, &coins, funded_gold - BLESSING_PRICE).await?;
     if full_e2ef6::blessings(&mut victim).await? != [SHIELDING] {
         return Err("C20c regular blessing purchase did not change ownership exactly".into());
     }
@@ -120,6 +140,7 @@ async fn journey(core: &SeamClients<'_>) -> TestResult {
         "Twist of Fate",
     )
     .await?;
+    assert_gold(&mut victim, &coins, funded_gold - 2 * BLESSING_PRICE).await?;
     if full_e2ef6::blessings(&mut victim).await? != [SHIELDING, TWIST] {
         return Err("C20c must hold both regular and Twist protections before the kill".into());
     }
@@ -137,7 +158,7 @@ async fn journey(core: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let (live, _) = protection(&mut victim).await?;
+    let (live, _, _) = protection(&mut victim).await?;
     let live = live
         .0
         .ok_or("death-protection server returned no latest death")?;
@@ -148,21 +169,37 @@ async fn journey(core: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    let restored_position = victim.world_spatial().actor_position;
+    let restored_health = victim
+        .actor_vitals()
+        .ok_or("C20c respawn vitals missing")?
+        .health;
     relog(&mut victim, clients, 0xc5, 1).await?;
-    let (saved, bytes) = protection(&mut victim).await?;
+    let (saved, bytes, sequence) = protection(&mut victim).await?;
     if saved.0.as_ref() != Some(&live)
         || full_e2ef6::blessings(&mut victim).await? != [SHIELDING]
         || full_e2ef6::progress(&mut victim).await? != after
+        || victim.world_spatial().actor_position != restored_position
+        || victim
+            .actor_vitals()
+            .is_none_or(|vitals| vitals.health != restored_health)
     {
         return Err(
-            "C20c relog did not preserve the exact death receipt, blessings and progression".into(),
+            "C20c relog did not preserve the exact death receipt, blessings, progression and respawn state".into(),
         );
     }
+    let session = uuid_text(victim.join_snapshot().game_session_id.as_bytes());
+    let binding = format!(
+        "session={session} sequence={sequence} payload_sha256={} expected_sha256={}",
+        client_row_p20::hex(&Sha256::digest(&bytes)),
+        client_row_p20::hex(&Sha256::digest(TWIST.as_bytes())),
+    );
     logout(&mut victim).await?;
     let capture = required("NODE_BOOT_C20C_CAPTURE")?;
     for (name, payload) in [
         ("c20c-death-protection.bin", bytes.as_slice()),
         ("c20c-expected.txt", TWIST.as_bytes()),
+        ("c20c-binding.txt", binding.as_bytes()),
     ] {
         std::fs::OpenOptions::new()
             .write(true)
@@ -170,7 +207,41 @@ async fn journey(core: &SeamClients<'_>) -> TestResult {
             .open(Path::new(&capture).join(name))?
             .write_all(payload)?;
     }
-    Ok(())
+    Ok(binding)
+}
+
+fn carried_gold(client: &DevClientSession, coins: &[(u32, u64); 3]) -> TestResult<u64> {
+    let inventory = client.inventory().ok_or("C20c inventory missing")?;
+    Ok(inventory
+        .entries
+        .iter()
+        .map(|entry| {
+            coins
+                .iter()
+                .find(|(id, _)| *id == entry.item_definition_ref.get())
+                .map_or(0, |(_, value)| u64::from(entry.count.get()) * value)
+        })
+        .sum())
+}
+
+async fn assert_gold(
+    client: &mut DevClientSession,
+    coins: &[(u32, u64); 3],
+    expected: u64,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let actual = carried_gold(client, coins)?;
+        if actual == expected {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(
+                format!("C20c carried gold differs: expected={expected} actual={actual}").into(),
+            );
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
 }
 
 async fn prepare_build(
@@ -180,6 +251,10 @@ async fn prepare_build(
     profile: &str,
 ) -> TestResult<DevClientSession> {
     let mut client = connect_character(clients, tag, index).await?;
+    let before = full_e2ef6::progress(&mut client).await?;
+    if before.1 != 1 {
+        return Err(format!("C20c fixture expected a fresh level-1 character: {before:?}").into());
+    }
     request_fixture_control_at(
         "NODE_BOOT_PVP_CONTROL_SOCKET",
         uuid_text(client.join_snapshot().game_session_id.as_bytes()),
@@ -295,7 +370,9 @@ async fn relog(
     Ok(())
 }
 
-async fn protection(client: &mut DevClientSession) -> TestResult<(DeathProtectionReply, Vec<u8>)> {
+async fn protection(
+    client: &mut DevClientSession,
+) -> TestResult<(DeathProtectionReply, Vec<u8>, u64)> {
     let result = client
         .session_mut()
         .gated_command(
@@ -309,5 +386,5 @@ async fn protection(client: &mut DevClientSession) -> TestResult<(DeathProtectio
     }
     let reply = DeathProtectionReply::decode(&result.payload)
         .ok_or("death-protection server payload was not canonical")?;
-    Ok((reply, result.payload))
+    Ok((reply, result.payload, result.server_sequence))
 }

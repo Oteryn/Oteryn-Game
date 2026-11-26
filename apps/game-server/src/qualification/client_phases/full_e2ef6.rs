@@ -2482,8 +2482,10 @@ async fn pvp_meet(
     spawns: &oteryn_world_bundle::spawn::Table,
     strict: bool,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
-    victim.session_mut().attack_target(None).await?;
-    attacker.session_mut().attack_target(None).await?;
+    if !strict {
+        victim.session_mut().attack_target(None).await?;
+        attacker.session_mut().attack_target(None).await?;
+    }
     let victim_goal = |at: TilePos| {
         world
             .base()
@@ -2606,6 +2608,17 @@ pub(super) async fn drive_pvp_death(
         },
         expert: wire::ExpertMode::RedFist,
     };
+    if require_first_attack {
+        let snapshot = attacker
+            .session_mut()
+            .gated_snapshot(wire::STATE_DOMAIN_EXPERT_FIGHT_MODES)
+            .ok_or("C20c initial expert modes snapshot missing")?;
+        let initial = wire::decode_expert_fight_modes(&snapshot.payload)
+            .map_err(|error| format!("C20c initial expert modes malformed: {error:?}"))?;
+        if initial == modes {
+            return Err("C20c requested expert state already held before the command".into());
+        }
+    }
     let reply = attacker
         .session_mut()
         .gated_command(
@@ -2621,27 +2634,46 @@ pub(super) async fn drive_pvp_death(
     {
         return Err(format!("PvP expert controls unavailable/refused: {reply:?}").into());
     }
-    loop {
-        let delta = attacker
-            .session_mut()
-            .read_gated_delta(wire::STATE_DOMAIN_EXPERT_FIGHT_MODES, 1)
-            .await?;
-        if delta.server_sequence <= reply.server_sequence {
-            continue;
+    let observe_modes = async {
+        loop {
+            let delta = attacker
+                .session_mut()
+                .read_gated_delta(wire::STATE_DOMAIN_EXPERT_FIGHT_MODES, 1)
+                .await?;
+            if delta.server_sequence <= reply.server_sequence {
+                continue;
+            }
+            let actual = wire::decode_expert_fight_modes(&delta.payload)
+                .map_err(|error| format!("expert frame: {error:?}"))?;
+            if actual != modes {
+                return Err(format!(
+                    "PvP world prerequisite blocked: RedFist/secure-off not served: {actual:?}"
+                )
+                .into());
+            }
+            break;
         }
-        let actual = wire::decode_expert_fight_modes(&delta.payload)
-            .map_err(|error| format!("expert frame: {error:?}"))?;
-        if actual != modes {
-            return Err(format!(
-                "PvP world prerequisite blocked: RedFist/secure-off not served: {actual:?}"
-            )
-            .into());
-        }
-        break;
+        TestResult::Ok(())
+    };
+    if require_first_attack {
+        while_keeping_alive(victim, async {
+            tokio::time::timeout(Duration::from_secs(12), observe_modes)
+                .await
+                .map_err(|_| "C20c accepted expert modes were never served")?
+        })
+        .await?;
+        verdict::Harness::global().progress("pvp-modes");
+    } else {
+        observe_modes.await?;
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let mut damaged = false;
     let mut player_hit = false;
+    if require_first_attack
+        && attacker.session_mut().combat_state().is_none_or(|state| state.target.is_some())
+    {
+        return Err("C20c attacker must start without a combat target".into());
+    }
     let mut attack = attacker.session_mut().attack_target(Some(&target)).await?;
     if require_first_attack
         && (attack.status != CommandStatus::Accepted
@@ -2649,6 +2681,17 @@ pub(super) async fn drive_pvp_death(
     {
         return Err(format!("first PvP attack refused: {attack:?}").into());
     }
+    if require_first_attack {
+        let target_deadline = tokio::time::Instant::now() + Duration::from_secs(12);
+        while attacker.session_mut().combat_state().is_none_or(|state| state.target != Some(target)) {
+            if tokio::time::Instant::now() >= target_deadline {
+                return Err("C20c accepted first attack did not select the exact victim".into());
+            }
+            attacker.service_liveness(Duration::from_millis(50)).await?;
+        }
+        verdict::Harness::global().progress("pvp-target");
+    }
+    let mut lowest_health = hp;
     loop {
         victim.service_liveness(Duration::from_millis(50)).await?;
         attacker.service_liveness(Duration::from_millis(50)).await?;
@@ -2661,6 +2704,10 @@ pub(super) async fn drive_pvp_death(
         for event in victim.take_events() {
             match event {
                 SessionEvent::ActorVitals(delta) => {
+                    if require_first_attack && delta.value.health < lowest_health {
+                        lowest_health = delta.value.health;
+                        verdict::Harness::global().progress("pvp-damage");
+                    }
                     damaged |= attack.status == CommandStatus::Accepted
                         && attack.disposition == attack::AttackIntentDisposition::Ok
                         && delta.value.health < hp;
@@ -2703,14 +2750,19 @@ pub(super) async fn drive_pvp_death(
         {
             break;
         }
-        if tokio::time::Instant::now() >= deadline {
+        if tokio::time::Instant::now() >= deadline
+            || (require_first_attack && !player_hit
+                && tokio::time::Instant::now() + Duration::from_secs(120) >= deadline)
+        {
             return Err(format!("PvP player prerequisite/encounter blocked: required both level>=8, Open policy, legal damage and lethal hit; incoming_damage={damaged} matching_player_damage_frame={player_hit} last={attack:?} victim_build={before:?}").into());
         }
         if !require_first_attack {
             attack = attacker.session_mut().attack_target(Some(&target)).await?;
         }
     }
-    attacker.session_mut().attack_target(None).await?;
+    if !require_first_attack {
+        attacker.session_mut().attack_target(None).await?;
+    }
     let latest = death_frame(&tab(victim, 2).await?)?;
     if latest.first() == history.first()
         || latest

@@ -18,13 +18,24 @@ c20c_replay() {
   if grep -q '^SEAM_EVIDENCE e2e_all scenario=C20c.client status=FAIL ' "$capture/seam.log"; then
     return 1
   fi
-  if ! grep -qx 'SEAM_EVIDENCE C20c_CHECK packet-and-fresh-admission PASS' "$capture/seam.log"; then
+  local -a files=(c20c-death-protection.bin c20c-expected.txt c20c-binding.txt)
+  local binding payload_hash expected_hash
+  if [[ ! -s "$capture/${files[0]}" || ! -s "$capture/${files[1]}" ]]; then
+    echo 'SEAM_EVIDENCE e2e_all scenario=C20c.client status=FAIL evidence=fresh-capture-missing'
+    return 1
+  fi
+  if [[ ! -s "$capture/${files[2]}" ]]; then
     echo 'SEAM_EVIDENCE e2e_all scenario=C20c.client status=FAIL evidence=selected-packet-verification-missing'
     return 1
   fi
-  local -a files=(c20c-death-protection.bin c20c-expected.txt)
-  if [[ ! -s "$capture/${files[0]}" || ! -s "$capture/${files[1]}" ]]; then
-    echo 'SEAM_EVIDENCE e2e_all scenario=C20c.client status=FAIL evidence=fresh-capture-missing'
+  binding=$(cat "$capture/${files[2]}")
+  payload_hash=$(sha256sum < "$capture/${files[0]}")
+  expected_hash=$(sha256sum < "$capture/${files[1]}")
+  local binding_format='^session=[0-9a-f-]{36} sequence=[1-9][0-9]* payload_sha256=[0-9a-f]{64} expected_sha256=[0-9a-f]{64}$'
+  if [[ ! "$binding" =~ $binding_format
+        || "$binding" != *" payload_sha256=${payload_hash%% *} expected_sha256=${expected_hash%% *}" ]] ||
+     ! grep -Fxq "SEAM_EVIDENCE C20c_CHECK packet-and-fresh-admission PASS $binding" "$capture/seam.log"; then
+    echo 'SEAM_EVIDENCE e2e_all scenario=C20c.client status=FAIL evidence=capture-binding-mismatch'
     return 1
   fi
   local proof
@@ -46,5 +57,5 @@ c20c_replay() {
       (set -o noclobber; cat "$capture/$file" > "$E2E_ALL_CAPTURE_DIR/$file") || return 1
     done
   fi
-  echo 'SEAM_EVIDENCE e2e_all scenario=C20c.client status=PASS evidence=twist-only-pvp-relog-and-native-hud-replay'
+  echo "SEAM_EVIDENCE e2e_all scenario=C20c.client status=PASS evidence=twist-only-pvp-relog-and-native-hud-replay $binding"
 }

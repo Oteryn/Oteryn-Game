@@ -18,9 +18,14 @@ client_status=0
 NODE_BOOT_WORLD=1 NODE_BOOT_SPELLS=0 \
     bash tools/qualification/node_boot/run.sh 2>&1 | tee "$RUN/node.log" || node_status=$?
 
+# C20c verifies its real capture during node boot before emitting its row verdict.
+client_filters=()
+if grep -q '^SEAM_EVIDENCE e2e_all scenario=C20c.client status=PASS evidence=twist-only-pvp-relog-and-native-hud-replay ' "$RUN/node.log"; then
+    client_filters+=(-- --skip death_protection::e2e_c20c::replays_real_death_protection_receipt_and_rejects_invalid_payload_unchanged)
+fi
 # Missing captures are an error. A failed boot cannot silently use unit fixtures.
 "$CARGO" test --offline --locked -p oteryn-client-runtime -p oteryn-client-domain -p oteryn-client-ui \
-    -p oteryn-client -p oteryn-session -p oteryn-dev-client --lib --quiet 2>&1 | tee "$RUN/client.log" || client_status=$?
+    -p oteryn-client -p oteryn-session -p oteryn-dev-client --lib --quiet "${client_filters[@]}" 2>&1 | tee "$RUN/client.log" || client_status=$?
 
 python3 tools/qualification/e2e_all/report.py \
     --matrix apps/game-server/src/qualification/SCENARIO_MATRIX.md \

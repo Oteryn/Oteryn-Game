@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the node boot knobs, stack reuse, PostgreSQL observability, failure summary and timeline."""
 from pathlib import Path
+import hashlib
 import importlib.util
 import json
 import os
@@ -82,9 +83,20 @@ class C20cReplayTests(unittest.TestCase):
             missing = run("111:1", 1)
             self.assertEqual(missing.returncode, 1)
             self.assertIn("selected-packet-verification-missing", missing.stdout)
-            (capture / "seam.log").write_text(
-                "SEAM_EVIDENCE C20c_CHECK packet-and-fresh-admission PASS\n"
+            binding = (
+                "session=01934f10-7c04-7024-805b-3b1122334424 sequence=41 "
+                f"payload_sha256={hashlib.sha256(b'wire').hexdigest()} "
+                f"expected_sha256={hashlib.sha256(b'expected').hexdigest()}"
             )
+            (capture / "c20c-binding.txt").write_text(binding)
+            (capture / "seam.log").write_text(
+                f"SEAM_EVIDENCE C20c_CHECK packet-and-fresh-admission PASS {binding}\n"
+            )
+            (capture / "c20c-death-protection.bin").write_bytes(b"old wire")
+            stale = run("111:1", 1)
+            self.assertEqual(stale.returncode, 1)
+            self.assertIn("capture-binding-mismatch", stale.stdout)
+            (capture / "c20c-death-protection.bin").write_bytes(b"wire")
             skipped = run("110:1", 1)
             self.assertEqual(skipped.returncode, 0)
             self.assertEqual(skipped.stdout, "")
