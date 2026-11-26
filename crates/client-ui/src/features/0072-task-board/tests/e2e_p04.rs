@@ -122,7 +122,10 @@ fn result(status: CommandStatus, payload: &[u8]) -> GatedCommandResult {
 #[test]
 #[ignore = "requires the live node-boot capture"]
 fn e2e_p04_replays_query_and_refused_start_weekly() -> Result<(), Error> {
-    let captured = captured()?;
+    verify_replay(captured()?)
+}
+
+fn verify_replay(captured: Captured) -> Result<(), Error> {
     let e = captured.expected.as_str();
     let mut panel = TaskBoardPanel {
         selected: true,
@@ -219,15 +222,8 @@ fn e2e_p04_replays_query_and_refused_start_weekly() -> Result<(), Error> {
 }
 
 #[test]
-fn p04_invalid_results_preserve_the_confirmed_board() -> Result<(), Error> {
-    let captured = fixture()?;
-    let mut panel = TaskBoardPanel {
-        selected: true,
-        ..TaskBoardPanel::default()
-    };
-    apply_full_result(&mut panel, &captured.refused);
-    let refused = panel.weekly.clone().ok_or("weekly state")?;
-    assert_invalid_results(&mut panel, &refused)
+fn p04_unit_projection_checks_rendering_and_invalid_results() -> Result<(), Error> {
+    verify_replay(fixture()?)
 }
 
 fn assert_invalid_results(panel: &mut TaskBoardPanel, refused: &Reply) -> Result<(), Error> {
