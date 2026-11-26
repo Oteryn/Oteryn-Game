@@ -321,6 +321,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }),
             continuity: SessionContinuity {
                 selected_capabilities: selected,
+                house_input_pending: Some(true),
                 ..SessionContinuity::FRESH
             },
             item_fence: crate::gameplay_transport::item_fence_of(current),

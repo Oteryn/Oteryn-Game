@@ -12,6 +12,42 @@ use std::sync::OnceLock;
 mod native_fields;
 
 const SOURCE: &str = include_str!("../../../../../../content/quests/shared-quest-shops.json");
+const FARMINE: &str = include_str!("../../../../../../content/npcs/farmine-quest-shops.json");
+
+pub const ALBINIUS: &str = "oteryn:npc.albinius";
+pub const BLANK_IMBUEMENT_SCROLL: &str = "oteryn:item.tibia.i51442";
+pub const HEAVY_OLD_TOME: &str = "oteryn:item.tibia.i23986";
+pub const FORGOTTEN_KNOWLEDGE: &str = "oteryn:quest.forgotten_knowledge_quest";
+
+pub const ORDINARY_UNLOCK_VALUE: i64 = 1;
+
+/// Crystal 201189f8: albinius.lua:73-95 and telas.lua:633-679.
+pub const ORDINARY_REQUIREMENTS: [(&str, &str, &str); 2] = [
+    (
+        ALBINIUS,
+        FORGOTTEN_KNOWLEDGE,
+        "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+    ),
+    (
+        "oteryn:npc.telas",
+        "oteryn:quest.shadows_of_yalahar_quest",
+        "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_final",
+    ),
+];
+
+pub fn ordinary_requirement(npc: &str) -> Option<(&'static str, &'static str)> {
+    ORDINARY_REQUIREMENTS
+        .iter()
+        .find_map(|&(key, quest, track)| (npc == key).then_some((quest, track)))
+}
+
+fn ordinary_service(npc: &str) -> Option<&'static str> {
+    match npc {
+        "oteryn:npc.esrik" => Some("oteryn:service.trade.esrik"),
+        "oteryn:npc.pompan" => Some("oteryn:service.trade.pompan"),
+        _ => None,
+    }
+}
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -107,7 +143,11 @@ fn parse(source: &str) -> Result<Vec<Shop>, &'static str> {
 pub fn shops() -> Result<&'static [Shop], &'static str> {
     static SHOPS: OnceLock<Result<Vec<Shop>, &'static str>> = OnceLock::new();
     SHOPS
-        .get_or_init(|| parse(SOURCE))
+        .get_or_init(|| {
+            let mut shops = parse(SOURCE)?;
+            shops.extend(parse(FARMINE)?);
+            Ok(shops)
+        })
         .as_ref()
         .map(Vec::as_slice)
         .map_err(|e| *e)
@@ -125,6 +165,14 @@ pub fn required<'a>(
     let Some(shop) = catalogue.iter().find(|s| s.npc == npc) else {
         return Ok(None);
     };
+    if ordinary_service(npc).is_some()
+        && !shop
+            .offers
+            .iter()
+            .any(|offer| offer.item == *item && offer.direction == direction)
+    {
+        return Ok(None);
+    }
     shop.offers
         .iter()
         .find(|o| {
@@ -148,14 +196,19 @@ pub fn book_digest(previous: &str) -> String {
     if shops().is_ok_and(|shops| shops.is_empty()) {
         return previous.into();
     }
-    Sha256::new()
+    let mut hash = Sha256::new()
         .chain_update(b"oteryn:quest-shops:v1\0")
         .chain_update(previous.as_bytes())
         .chain_update(SOURCE.as_bytes())
-        .finalize()
-        .iter()
-        .map(|b| format!("{b:02x}"))
-        .collect()
+        .chain_update(FARMINE.as_bytes());
+    for (npc, quest, track) in ORDINARY_REQUIREMENTS {
+        for value in [npc, quest, track] {
+            hash.update(value.as_bytes());
+            hash.update([0]);
+        }
+    }
+    hash.update(ORDINARY_UNLOCK_VALUE.to_be_bytes());
+    hash.finalize().iter().map(|b| format!("{b:02x}")).collect()
 }
 
 pub(super) fn declarations(
@@ -177,13 +230,39 @@ pub(super) fn declarations(
             key: shop.service.clone(),
             revision: "definition-r1".into(),
         };
-        if records.iter().any(|(r, _)| **r == service) {
-            continue;
-        }
         let mut npc = (**declaration).clone();
         let ProjectV2Declaration::Npc { services, .. } = &mut npc else {
             continue;
         };
+        if let Some(key) = ordinary_service(&shop.npc)
+            && let Some((reference, declaration)) = records
+                .iter()
+                .find(|(r, _)| r.family == ProjectV2Family::Service && r.key == key)
+        {
+            let mut declaration = (**declaration).clone();
+            if let ProjectV2Declaration::Service { offers, .. } = &mut declaration {
+                offers.retain(|offer| {
+                    !shop
+                        .offers
+                        .iter()
+                        .any(|gated| gated.item == offer.item && gated.direction == offer.direction)
+                });
+                additions.push(((**reference).clone(), declaration));
+            }
+        }
+        let offers = shop.offers.iter().map(Offer::project).collect();
+        if let Some((_, existing)) = records.iter().find(|(r, _)| **r == service) {
+            // A protected merchant may already own this service in the base
+            // catalogue. Publish only the reviewed offers with matching gates.
+            let mut existing = (**existing).clone();
+            if let ProjectV2Declaration::Service { offers: stock, .. } = &mut existing
+                && services.contains(&service)
+            {
+                *stock = offers;
+                additions.push((service, existing));
+            }
+            continue;
+        }
         services.push(service.clone());
         additions.push(((**reference).clone(), npc));
         additions.push((
@@ -194,7 +273,7 @@ pub(super) fn declarations(
                     revision: "definition-r1".into(),
                 },
                 bank: false,
-                offers: shop.offers.iter().map(Offer::project).collect(),
+                offers,
                 recipes: Vec::new(),
                 routes: Vec::new(),
                 fields: Vec::new(),
@@ -207,6 +286,57 @@ pub(super) fn declarations(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn black_bert_retained_stock_requires_the_completed_guild_track()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let model = crate::content::NpcDataCatalogue::load(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?
+        .service_model_for_project()?;
+        let npc_key = "oteryn:npc.black_bert";
+        let (_, npc) = model
+            .npcs()
+            .iter()
+            .find(|(reference, _)| reference.key == npc_key)
+            .ok_or("Black Bert")?;
+        let service = npc
+            .services
+            .iter()
+            .find(|key| key.key == "oteryn:service.trade.black_bert")
+            .and_then(|key| model.services().get(key))
+            .ok_or("Black Bert's shop")?;
+        assert_eq!(service.offers.len(), 127);
+        let arthei = service
+            .offers
+            .iter()
+            .find(|offer| offer.item.key == "oteryn:item.tibia.i8720")
+            .ok_or("Dust of Arthei stock")?;
+        assert_eq!(arthei.unit_price, 4_000, "Dust of Arthei live shop price");
+        for offer in &service.offers {
+            let guard = required(
+                shops()?,
+                npc_key,
+                &offer.item,
+                offer.direction,
+                offer.unit_price,
+                offer.count.unwrap_or(1),
+            )?
+            .ok_or("unguarded Black Bert offer")?;
+            assert!(!eligible(guard, |_| None));
+            assert!(!eligible(guard, |_| Some(8)));
+            assert!(eligible(guard, |requirement| {
+                assert_eq!(
+                    requirement.track,
+                    "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline"
+                );
+                Some(9)
+            }));
+        }
+        Ok(())
+    }
 
     #[test]
     fn alesar_catalogue_matches_crystal_after_efreet_mission03()

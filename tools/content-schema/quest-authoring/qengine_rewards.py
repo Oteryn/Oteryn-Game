@@ -13,11 +13,13 @@ from pathlib import Path
 import sys
 import tarfile
 import xml.etree.ElementTree as ET
+import lua_tables
 import questl2_ready
 import taming_cosmetics
 import qb_barbarian
 import qb_citizen_warrior
 import wizard_cosmetics
+import earned_outfit_catalogue
 import engoutfit_m36
 import qengine_mounts
 import qmech_m39
@@ -103,7 +105,7 @@ def donor_inputs():
               'data-global/scripts/actions/other/others/quest_system2.lua',
               'data-global/scripts/quests/the_djinn_war_quest/action_water_fountain.lua']
     paths += [f'data-global/npc/{name}.lua' for name in (
-        'dermot', 'marina', 'gamon', 'quentin', 'tibra', 'maealil', 'yberius',
+        'black_bert', 'dermot', 'marina', 'gamon', 'quentin', 'tibra', 'maealil', 'yberius',
         'isimov', 'amanda', 'kasmir', 'rahkem', 'brewster', 'tyrias', 'rafzan',
         'jorge', 'the_forgemaster', 'henricus', 'yana', 'ivalisse', 'a_strange_chalice')]
     paths += ['data/XML/imbuements.xml',
@@ -134,6 +136,36 @@ def load_module(name, path):
     sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def cover_legacy_addon_slots(outfits, legacy_outfits, mappings):
+    by_key = {outfit['key']: outfit for outfit in outfits}
+    addon_mappings = {}
+    covered = set()
+    for mapping in mappings:
+        target = mapping['target']
+        if target['kind'] != 'Addon':
+            continue
+        key, addon = target['outfit_key'], target['addon']
+        addon_mappings.setdefault((key, addon), []).append(mapping)
+        covered.add((key, addon))
+        covered.update((alias, addon) for alias in mapping.get('outfit_aliases', []))
+
+    for alias in legacy_outfits:
+        key = alias['key']
+        prefix, suffix = 'oteryn:content.outfit.', '_outfits'
+        if not key.startswith(prefix) or not key.endswith(suffix):
+            continue
+        canonical_key = 'oteryn:outfit.' + key.removeprefix(prefix).removesuffix(suffix)
+        canonical = by_key.get(canonical_key)
+        if canonical is None or any(alias[sex] != canonical[sex] for sex in ('female', 'male')):
+            continue
+        for addon in range(1, alias['addon_count'] + 1):
+            if (key, addon) in covered:
+                continue
+            # Reuse the earned receipt and its existing sex and provenance checks.
+            for mapping in addon_mappings.get((canonical_key, addon), []):
+                mapping['outfit_aliases'] = sorted([*mapping.get('outfit_aliases', []), key])
 
 
 def build():
@@ -182,6 +214,7 @@ def build():
             'starter_male': male['unlocked'] == 'yes', 'starter_addons_female': 0,
             'starter_addons_male': 0, 'premium': female['premium'] == 'yes',
             'unlock_sources': [source], 'source': source})
+    earned_outfit_catalogue.append_wiki_outfits(ROOT, outfits, looks, addon_patterns)
     item_capture_raw=(ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes()
     item_admission=load_module('qengine_item_admission','tools/content-schema/quest-authoring/qengine_item_acquisitions.py')
     table_parser=load_module('qengine_cosmetic_source_tables','tools/content-migration/event_item_actions.py')
@@ -195,6 +228,8 @@ def build():
     construction.append_glider(item_packet, inputs[construction_path].decode(), inputs['data/XML/mounts.xml'],
         table_parser, json.loads((ROOT/'content/presentations/bindings/client-ids.json').read_bytes()),
         {'reference':'crystal:'+construction_path,'revision':PIN,'sha256':sha(inputs[construction_path])})
+    qengine_mounts.append_pegasus_feather(item_packet)
+    earned_outfit_catalogue.append_consumptive_outfit_grants(item_packet, outfits)
     # Retain every source row, but bind construction costs to the existing atomic
     # pieces owner. The ordinary one-item taming path cannot execute these rows.
     native_taming=json.loads((ROOT/'content/cosmetics/taming.json').read_bytes())
@@ -230,6 +265,7 @@ def build():
                 mappings.append({'grant_key':row['key']+f'/quest-grant/{sex}/{addon}',
                         'target':{'kind':'Outfit','outfit_key':row['key']} if addon==0 else {'kind':'Addon','outfit_key':row['key'],'addon':addon},
                         'sex':sex,'compatible_provenance':[PROVENANCE]})
+    earned_outfit_catalogue.append_task_board_outfit_mappings(outfits, mappings)
     mount_source = {'reference': 'crystal:data/XML/mounts.xml', 'revision': PIN,
                     'sha256': sha(inputs['data/XML/mounts.xml'])}
     mounts, mount_mappings = qengine_mounts.populate(ROOT, inputs, looks, mount_source, item_packet)
@@ -293,6 +329,7 @@ def build():
             existing = next(m for m in mappings if m['grant_key'] == row['grant_key'])
             if existing['target'] != row['target']:
                 existing['outfit_aliases'] = [row['target']['outfit_key']]
+    cover_legacy_addon_slots(outfits, nx5_doc['outfits'], mappings)
     # Taming uses the same production cosmetics owner as quest/item grants.
     taming_cosmetics.append(ROOT, doc, looks)
     nx5_promotions = {row['path']: row for row in nx5['promotions']}
@@ -363,7 +400,8 @@ def build():
     # The offer is conversation-only and deliberately excluded from the durable callback list.
     offer=callbacks.pop()
     add('outfox-helmet','tibia_tales','budrik',['mission','quest'],
-        [storage(prefix+'u8_1/to_outfox_afox_quest',1,2)],take=[(139,1)],give=(875,1))
+        [storage(prefix+'u8_1/to_outfox_afox_quest',1,2),
+         storage(prefix+'u8_1/to_outfox_afox_quest/questline',-1,2,1)],take=[(139,1)],give=(875,1))
     add('sam-backpack','sam_s_old_backpack_quest','sam',['yes'],
         [storage(prefix+'u7_5/sams_old_backpack/sams_old_backpack_npc',-1,1,0)],take=[(3244,1)],topic=1)
     # Offers bind confirmation to this NPC and the common conversation topic.
@@ -408,11 +446,15 @@ def build():
         path='data-global/npc/'+npc+'.lua'
         lines='244-259' if npc=='palimuth' else '246-252'
         callbacks[-1]['sources']=[f'crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}']
-    for name,side,bit in [('sage',1,1),('villain',2,2)]:
+    for name,side,bit,achievement,page,revision in [
+        ('sage',1,1,'wisdom',62819,753357),('villain',2,2,'power',62818,753121),
+    ]:
         add('l1-yalaharian-'+name,'in_service_of_yalahar_quest','palimuth',['yes'],
             [storage(yalahar+'questline',54,55),
              storage(yalahar+'side_decision',side,side,preserve=True)],
-            outfit=('yalaharian',bit),topic=6)
+            outfit=('yalaharian',bit),topic=6,
+            achievement='oteryn:achievement/yalahari_of_'+achievement)
+        callbacks[-1]['sources'].append(f'https://tibia.fandom.com/index.php?curid={page}&oldid={revision}')
         # The captured NPC checks possession and retains the original crest.
         callbacks[-1]['present']=[{'item':'oteryn:item.tibia.i9041','count':1}]
         offers.append({'npc':'oteryn:npc.palimuth','keywords':['job','addon'],
@@ -1156,7 +1198,33 @@ def build():
             'rewards':rewards}]})
     greetings = reward_greetings(callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks, inputs)
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
-    generated['content/quests/shared-quest-shops.json']=encoded({'schema':1,'shops':questl2_ready.djinn.shops(inputs,PIN)})
+    shops = questl2_ready.djinn.shops(inputs, PIN)
+    service = 'oteryn:service.trade.black_bert'
+    trade = json.loads((ROOT / 'content/services/trade/trade-00000-00323.json').read_bytes())
+    stock = next(row['declaration']['offers'] for row in trade['records']
+                 if row['declaration']['identity']['key'] == service)
+    bert_source = inputs['data-global/npc/black_bert.lua']
+    # The corpus copy is byte-identical to the chosen 201189f8 shop source.
+    if sha(bert_source) != 'd4e83b34b3f20b62f0e1f06a764c6dadea0010a61f252048300c44eda27e6e0c':
+        raise ValueError('Black Bert shop source changed')
+    bert_shop = lua_tables.as_python(lua_tables.assignments(bert_source.decode(), {'shop'})['shop'])
+    # Keep source stock already admitted by the Item catalogue and the two
+    # previously reviewed Global variants (special flask and lump of clay).
+    prices = {f"oteryn:item.tibia.i{row['clientid']}": row['buy']
+              for row in bert_shop if 'buy' in row}
+    stock_keys = prices.keys() | {'oteryn:item.tibia.i125', 'oteryn:item.tibia.i11329'}
+    retained = [row | {'unit_price': prices.get(row['item']['key'], row['unit_price'])}
+                for row in stock
+                if row['direction'] == 'SellToPlayer' and row['item']['key'] in stock_keys]
+    requirement = {'quest': 'oteryn:quest.the_thieves_guild_quest',
+                   'track': 'oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline',
+                   'initial': 0, 'minimum': 9, 'maximum': 9}
+    shops.append({'npc': 'oteryn:npc.black_bert', 'service': service,
+                  'offers': [row | {'requirements': [requirement]} for row in retained],
+                  'sources': ['crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:211-219',
+                              f'crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/black_bert.lua:23-154:sha256:{sha(bert_source)}']})
+    generated['content/quests/shared-quest-shops.json'] = encoded({
+        'schema': 1, 'shops': shops})
     generated['content/quests/questl2-djinn-world.json']=encoded(questl2_ready.djinn.world_callbacks(inputs,PIN))
     access = load_module('qengine_l1_access', 'tools/content-schema/quest-authoring/qengine_access.py')
     worlds=[]
@@ -1183,8 +1251,16 @@ def build():
     sys.path.insert(0,str(ROOT/'tools/content-migration'))
     import qengine_reward_item_profiles as reward_items
     import register_spell_families as native
+    import srx1_profile_updates
     generated[reward_items.PROFILE]=(ROOT/reward_items.PROFILE).read_bytes()
-    reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,cosmetics.canonical)
+    manifest_path = 'content/spells.manifest.json'
+    reward_items.admit(ROOT,generated,reward_items.PROFILE,manifest_path,native.provider_order,cosmetics.canonical)
+    updates = json.loads((ROOT / srx1_profile_updates.PATH).read_bytes())
+    if updates['base_sha256'] != sha(generated[reward_items.PROFILE]):
+        srx1_profile_updates.generate(
+            ROOT, generated, reward_items.PROFILE, manifest_path,
+            native.provider_order, cosmetics.canonical,
+        )
     generated.update(lane.outputs(ROOT,inputs,PIN,load_module,lane_data))
     # The selected smith port owns these keys and the explicit cache placement.
     # Retain all other authored programmes; do not mount the older native-cache
