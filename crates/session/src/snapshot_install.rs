@@ -7,6 +7,7 @@ impl SnapshotState {
         Self {
             world_spatial_observation: Some(session.world_spatial),
             entities: session.entities.clone(),
+            replay: session.replay.clone(),
             world_object_overlay: Some(session.world_object_overlay.clone()),
             actor_vitals: session.actor_vitals,
             combat_state: session.combat_state,
@@ -21,6 +22,7 @@ impl SnapshotState {
             open_container: session.open_container.clone(),
             inventory_revision: session.inventory_revision,
             container_revision: session.container_revision,
+            admission_snapshots: session.admission_snapshots.clone(),
             gated_snapshots: session.gated_snapshots.clone(),
             gated_revisions: session.gated_revisions.clone(),
             appearance: session.appearance.clone(),
@@ -33,6 +35,7 @@ impl SnapshotState {
             session.world_spatial = value;
         }
         session.entities = self.entities;
+        session.replay = self.replay;
         if let Some(value) = self.world_object_overlay {
             session.world_object_overlay = value;
         }
@@ -49,6 +52,7 @@ impl SnapshotState {
         session.open_container = self.open_container;
         session.inventory_revision = self.inventory_revision;
         session.container_revision = self.container_revision;
+        session.admission_snapshots = self.admission_snapshots;
         session.gated_snapshots = self.gated_snapshots;
         session.gated_revisions = self.gated_revisions;
         session.appearance = self.appearance;
