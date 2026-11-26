@@ -51,6 +51,9 @@ const PARTY_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000017";
 const C06_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-00000000001c";
 
 #[cfg(feature = "qualification-spawn")]
+const Q_G23_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000020";
+
+#[cfg(feature = "qualification-spawn")]
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "s08-knight" => Some(("knight", 8)),
@@ -62,6 +65,7 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
         "c11-knight" => Some(("knight", 625)),
         "c12-monk" => Some(("monk", 20)),
         "c06-sorcerer" => Some(("sorcerer", 15)),
+        "g23-knight" => Some(("knight", 51)),
         "f5-c17a" => Some(("sorcerer", 20)),
         "f5-c17c" => Some(("sorcerer", 23)),
         "f5-c13" => Some(("sorcerer", 200)),
@@ -769,6 +773,7 @@ async fn prepare_build(
             | "c11-knight"
             | "c12-monk"
             | "c06-sorcerer"
+            | "g23-knight"
             | "s13-party"
             | "w20b-light"
             | "s08-knight"
@@ -792,7 +797,7 @@ async fn prepare_build(
             (
                 "premium",
                 KNIGHT_ACCOUNT | MONK_ACCOUNT | HASTE_ACCOUNT | CHALLENGE_ACCOUNT | LIGHT_ACCOUNT
-                | PARTY_CASTER_ACCOUNT,
+                | PARTY_CASTER_ACCOUNT | Q_G23_ACCOUNT,
             ) => {
                 if !config
                     .premium_activation
@@ -807,6 +812,7 @@ async fn prepare_build(
             | ("c11-knight", KNIGHT_ACCOUNT)
             | ("c12-monk", MONK_ACCOUNT)
             | ("c06-sorcerer", C06_CASTER_ACCOUNT)
+            | ("g23-knight", Q_G23_ACCOUNT)
             | ("s13-party", PARTY_CASTER_ACCOUNT)
             | ("w20b-light", LIGHT_ACCOUNT)
             | ("s08-knight", PVP_KNIGHT_ACCOUNT)
@@ -2013,6 +2019,7 @@ mod tests {
             "f5-c17d",
             "c11-unassigned",
             "c11-knight",
+            "g23-knight",
             "c12-monk",
             "c06-sorcerer",
             "premium",
