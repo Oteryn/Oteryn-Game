@@ -299,9 +299,17 @@ impl Capture<'_> {
         let payload = encode_quick_loot_request(&request)
             .map_err(|error| format!("I07 probe {key} cannot encode {request:?}: {error:?}"))?;
         let session = client.join_snapshot().game_session_id;
+        let command = request.action.command_type();
+        let capability = if command
+            == oteryn_protocol_oteryn::quick_loot::COMMAND_TYPE_QUICK_LOOT_DESTINATIONS
+        {
+            oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1
+        } else {
+            oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_V1
+        };
         let reply = client
             .session_mut()
-            .gated_command(98, 114, &payload)
+            .gated_command(capability, command, &payload)
             .await?;
         let expected_status = if matches!(key, 19 | 20) {
             CommandStatus::Rejected
@@ -551,7 +559,16 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         recipient: Some(recipient),
         recipient_id,
         fallback_to_main,
-        ..request(QuickLootAction::Assign)
+        ..request(
+            if matches!(
+                category,
+                Some(QuickLootCategory::Armor | QuickLootCategory::Food)
+            ) {
+                QuickLootAction::AssignLoot
+            } else {
+                QuickLootAction::Assign
+            },
+        )
     };
     let armor_route = |fallback| {
         route(
