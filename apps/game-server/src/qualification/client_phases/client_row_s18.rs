@@ -371,7 +371,6 @@ async fn journey(
         (8, 5, 0, "boundary-diagonal", true),
         // The balcony landing is inside the horizontal window, one native floor above.
         (7, 4, 1, "other-floor", false),
-        (8, -6, -1, "below-floor", false),
     ] {
         let target = TilePos {
             x: origin
@@ -392,6 +391,26 @@ async fn journey(
             move_listener(&mut listener, world, origin, target, &mut listener_receipts),
         )
         .await?;
+        if label == "boundary-diagonal" {
+            let corner_origin = TilePos {
+                y: origin
+                    .y
+                    .checked_sub(1)
+                    .ok_or("S18 corner origin overflow")?,
+                ..origin
+            };
+            service_while(
+                &mut listener,
+                move_listener(
+                    &mut speaker,
+                    world,
+                    target,
+                    corner_origin,
+                    &mut speaker_receipts,
+                ),
+            )
+            .await?;
+        }
         for (mode, suffix) in [
             (ChatSpeechMode::Say, "say"),
             (ChatSpeechMode::Whisper, "whisper"),
@@ -419,9 +438,16 @@ async fn journey(
                 return Err(format!("speech {mode:?} first command refused: {outcome:?}").into());
             }
             speaker_receipts.push((outcome.command_id, outcome.result_server_sequence));
-            speaker_expected.push(line(mode, &text));
+            let mut expected_line = line(mode, &text);
+            if let ChatLine::Local { position, .. } = &mut expected_line {
+                *position = speaker.world_spatial().actor_position;
+            }
+            speaker_expected.push(expected_line.clone());
             if let Some(heard) = heard {
-                listener_expected.push(line(mode, heard));
+                if let ChatLine::Local { text, .. } = &mut expected_line {
+                    *text = heard.into();
+                }
+                listener_expected.push(expected_line);
             }
             let listener_at = listener.world_spatial().actor_position;
             let phase = format!("listener case={label} mode={mode:?} position={listener_at:?}");
@@ -451,10 +477,73 @@ async fn journey(
                 heard.is_some(),
             ));
         }
+        if label == "boundary-diagonal" {
+            service_while(
+                &mut listener,
+                move_listener(&mut speaker, world, target, origin, &mut speaker_receipts),
+            )
+            .await?;
+        }
     }
     let listener_landing = listener.world_spatial().actor_position;
     if listener_start == listener_landing {
         return Err("S18 listener travel did not change its position".into());
+    }
+
+    let listener_entities = listener
+        .world_entities()
+        .ok_or("S18 listener entities absent")?;
+    let listener_actor = listener_entities
+        .iter()
+        .find(|entity| &entity.entity.identity == listener_entities.own_identity())
+        .ok_or("S18 listener actor absent")?
+        .entity;
+    let balcony_speaker = chat::ChatSpeaker {
+        identity: listener_actor.identity,
+        generation: std::num::NonZeroU64::new(listener_actor.generation)
+            .ok_or("S18 balcony speaker generation is zero")?,
+    };
+    for (mode, suffix) in [
+        (ChatSpeechMode::Say, "say"),
+        (ChatSpeechMode::Whisper, "whisper"),
+    ] {
+        let text = format!("s18-below-floor-{suffix}-{run}");
+        let outcome = service_while(&mut speaker, async {
+            Ok(listener
+                .chat(&ChatIntent::Say {
+                    mode,
+                    text: text.clone(),
+                })
+                .await?)
+        })
+        .await?;
+        require_mechanic_acceptance(outcome.status, "S18 balcony speech")?;
+        if outcome.disposition != ChatDisposition::Ok {
+            return Err(format!("S18 balcony speech refused: {outcome:?}").into());
+        }
+        listener_receipts.push((outcome.command_id, outcome.result_server_sequence));
+        listener_expected.push(ChatLine::Local {
+            speaker: balcony_speaker,
+            speaker_name: "Packet One".into(),
+            mode,
+            text,
+            position: listener_landing,
+        });
+        let (below, own) = tokio::join!(
+            observe_delivery(
+                &mut speaker,
+                &speaker_expected,
+                "below-floor must hear no speech"
+            ),
+            observe_delivery(&mut listener, &listener_expected, "balcony speaker echo"),
+        );
+        below?;
+        own?;
+        verdict::Harness::global().progress("speech-delivery");
+        evidence(&format!(
+            "S18_DELIVERY case=below-floor mode={mode:?} x={} y={} floor={} heard=false",
+            position.x, position.y, position.floor
+        ));
     }
 
     let speaker_session = speaker.join_snapshot().game_session_id;
@@ -532,12 +621,17 @@ async fn journey(
     }
 
     let expected = format!(
-        "speaker={}\ngeneration={}\nname={name}\nx={}\ny={}\nfloor={}\n",
+        "speaker={}\ngeneration={}\nname={name}\nx={}\ny={}\nfloor={}\nbalcony_speaker={}\nbalcony_generation={}\nbalcony_x={}\nbalcony_y={}\nbalcony_floor={}\n",
         hex(&attribution.identity),
         attribution.generation,
         position.x,
         position.y,
         position.floor,
+        hex(&balcony_speaker.identity),
+        balcony_speaker.generation,
+        listener_landing.x,
+        listener_landing.y,
+        listener_landing.floor,
     );
     capture(
         root,

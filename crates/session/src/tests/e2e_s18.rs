@@ -318,7 +318,7 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
     };
     let name = value(&metadata, "name")?;
     assert_eq!(name, "Packet Two");
-    let line = |mode, text: String| ChatLine::Local {
+    let line = |mode, text: String, position| ChatLine::Local {
         speaker,
         speaker_name: name.into(),
         mode,
@@ -340,25 +340,65 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
         "outside-east",
         "boundary-diagonal",
         "other-floor",
-        "below-floor",
     ] {
+        let at = if label == "boundary-diagonal" {
+            ActorPosition {
+                y: position.y - 1,
+                ..position
+            }
+        } else {
+            position
+        };
         for (mode, suffix) in [
             (ChatSpeechMode::Say, "say"),
             (ChatSpeechMode::Whisper, "whisper"),
         ] {
             let text = format!("s18-{label}-{suffix}-{run}");
-            speaker_lines.push(line(mode, text.clone()));
+            speaker_lines.push(line(mode, text.clone(), at));
             if label == "near" {
-                listener_lines.push(line(mode, text));
+                listener_lines.push(line(mode, text, at));
             } else if label.starts_with("boundary-") {
                 let heard = if mode == ChatSpeechMode::Whisper {
                     "pspsps".into()
                 } else {
                     text
                 };
-                listener_lines.push(line(mode, heard));
+                listener_lines.push(line(mode, heard, at));
             }
         }
+    }
+    let balcony_identity = value(&metadata, "balcony_speaker")?;
+    if balcony_identity.len() != 32
+        || !balcony_identity
+            .bytes()
+            .all(|byte| byte.is_ascii_hexdigit())
+    {
+        return Err("S18 balcony speaker must be a 16-byte identity".into());
+    }
+    let mut balcony_bytes = [0; 16];
+    for (index, byte) in balcony_bytes.iter_mut().enumerate() {
+        *byte = u8::from_str_radix(&balcony_identity[index * 2..index * 2 + 2], 16)?;
+    }
+    let balcony_speaker = ChatSpeaker {
+        identity: balcony_bytes,
+        generation: value(&metadata, "balcony_generation")?.parse()?,
+    };
+    let balcony_position = ActorPosition {
+        x: value(&metadata, "balcony_x")?.parse()?,
+        y: value(&metadata, "balcony_y")?.parse()?,
+        floor: value(&metadata, "balcony_floor")?.parse()?,
+    };
+    for (mode, suffix) in [
+        (ChatSpeechMode::Say, "say"),
+        (ChatSpeechMode::Whisper, "whisper"),
+    ] {
+        listener_lines.push(ChatLine::Local {
+            speaker: balcony_speaker,
+            speaker_name: "Packet One".into(),
+            mode,
+            text: format!("s18-below-floor-{suffix}-{run}"),
+            position: balcony_position,
+        });
     }
     block_on(async {
         for (role, envelope_file, relog_file, expected) in [
