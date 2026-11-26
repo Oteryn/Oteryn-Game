@@ -86,6 +86,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let allowed = allowed
         || spell_build(profile).is_some()
         || named_item(profile).is_some()
+        || profile == "g24-bank"
         || profile == "premium";
     allowed.then_some((session, profile))
 }
@@ -768,6 +769,7 @@ async fn prepare_build(
     if matches!(
         profile,
         "premium"
+            | "g24-bank"
             | "c11-unassigned"
             | "c11-knight"
             | "c12-monk"
@@ -805,6 +807,9 @@ async fn prepare_build(
                     return Err("qualification Premium activation absent".into());
                 }
                 return grant_premium(root, premium, *record.account_id.as_bytes(), deadline).await;
+            }
+            ("g24-bank", G24_ACCOUNT) => {
+                return prepare_g24_bank(root, authority, proof, &current, native, character).await;
             }
             ("c11-unassigned", UNASSIGNED_ACCOUNT)
             | ("c11-knight", KNIGHT_ACCOUNT)
@@ -961,6 +966,95 @@ fn fixture_occurrence(character: &[u8; 16], vocation: &str, phase: &[u8]) -> [u8
     result[6] = (result[6] & 0x0f) | 0x70;
     result[8] = (result[8] & 0x3f) | 0x80;
     result
+}
+
+#[cfg(feature = "qualification-spawn")]
+async fn prepare_g24_bank(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    current: &crate::foundation::GameSessionAuthoritySnapshot<
+        crate::foundation::AuthenticatedTransportRefV1,
+    >,
+    native: &NativeGameplayState,
+    character: crate::domain::CharacterId,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::durability::bank::{
+        BankCoinFacts, BankDepositRequest, BankOperationIdentity, BankOperationOccurrence,
+        BankOperationOutcome, BankResult,
+    };
+    use crate::durability::item_mint::TypedDefinitionRef;
+    use crate::durability::item_transfer::CurrentCharacterItemFence;
+    use oteryn_gameplay_items::item_ref_admission::generation_item_facts;
+    let fence = CurrentCharacterItemFence {
+        character_id: character,
+        game_session_id: current.current_game_session_id(),
+        connection_generation: current.current_connection_generation(),
+        character_lease_generation: current.current_character_lease().generation(),
+        runtime_scope: current.current_runtime_scope(),
+        scope_ownership_generation: current.current_scope_generation(),
+    };
+    let inventory = root
+        .read_character_backpack(authority, character)
+        .await
+        .map_err(qualification_build::debug)?
+        .ok_or("G24 bank fixture requires a backpack")?;
+    let backpack = generation_item_facts(native, &inventory.backpack.definition)
+        .map_err(qualification_build::debug)?;
+    let index = native
+        .item_index()
+        .ok_or("G24 bank fixture requires Item index")?;
+    let coin = |id| -> Result<TypedDefinitionRef, Box<dyn std::error::Error>> {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let revision = index
+            .revision(&key)
+            .ok_or("G24 fixture coin missing")?
+            .to_owned();
+        Ok(TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: key,
+            revision_ref: revision,
+        })
+    };
+    // The single forced fixture deposit has stable identities within each disposable World.
+    let id = |tag| {
+        let mut bytes = *character.as_bytes();
+        bytes[6] = (bytes[6] & 0x0f) | 0x70;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        bytes[7] ^= tag;
+        bytes
+    };
+    let request = BankDepositRequest {
+        identity: BankOperationIdentity {
+            occurrence: BankOperationOccurrence::from_bytes(id(0xf1))
+                .map_err(qualification_build::debug)?,
+            transaction_id: id(0xf2),
+            event_id: id(0xf3),
+            occurred_at_unix_ms: i64::try_from(oteryn_error_codes::unix_ms())?,
+            server_build_id: "qualification-v1".into(),
+        },
+        amount: 100,
+        coins: BankCoinFacts {
+            gold: coin(3031)?,
+            platinum: coin(3035)?,
+            crystal: coin(3043)?,
+            backpack,
+        },
+        change_item_instance_ids: [id(0xf4), id(0xf5)],
+    };
+    let record = match root
+        .bank_deposit(authority, proof, fence, request)
+        .await
+        .map_err(qualification_build::debug)?
+    {
+        BankOperationOutcome::Committed(record) | BankOperationOutcome::Replayed(record) => record,
+    };
+    if record.result != BankResult::Ok
+        || !matches!(record.entries.as_slice(), [entry] if entry.balance_before == 0 && entry.balance_after == 100)
+    {
+        return Err(format!("G24 bank fixture deposit rejected: {record:?}").into());
+    }
+    Ok(())
 }
 
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item
@@ -2018,6 +2112,7 @@ mod tests {
             "c11-knight",
             "c12-monk",
             "c06-sorcerer",
+            "g24-bank",
             "premium",
             "item-43895-1",
             "item-6506-2",
