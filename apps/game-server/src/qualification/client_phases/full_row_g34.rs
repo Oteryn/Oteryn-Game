@@ -16,6 +16,7 @@ const TRANSITION: &str = "oteryn:quest-reward/qb-citizen-hat-start";
 
 struct Offer {
     keyword: String,
+    prompt: String,
     reply: String,
     tracks: Vec<(String, i64)>,
 }
@@ -73,7 +74,23 @@ fn load_offer() -> TestResult<Offer> {
     if tracks.is_empty() {
         return Err("callback does not write a track".into());
     }
+    let offers: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(root.join("shared-reward-offers.json"))?)?;
+    let prompt = offers["offers"]
+        .as_array()
+        .and_then(|offers| {
+            offers.iter().find(|entry| {
+                entry["npc"] == NPC
+                    && entry["keywords"][0] == "addon"
+                    && entry["topic"] == 0
+                    && entry["next_topic"] == callback["topic"]
+                    && entry["storage"] == callback["storage"]
+            })
+        })
+        .and_then(|entry| entry["reply"][0].as_str())
+        .ok_or("missing authored Hanna addon prompt")?;
     Ok(Offer {
+        prompt: prompt.into(),
         keyword: keyword.into(),
         reply: reply.into(),
         tracks,
@@ -93,26 +110,41 @@ async fn track_value(clients: &SeamClients<'_>, track: &str) -> TestResult<Optio
     Ok(value)
 }
 
-/// Receipts of the character that wrote `track` from another value to `set` at the same
-/// character revision the track row records as its last write (read-only SQL).
-async fn bound_receipts(clients: &SeamClients<'_>, track: &str, set: i64) -> TestResult<i64> {
+/// Identify the single command receipt bound to the track’s exact before and after values.
+async fn bound_receipt(
+    clients: &SeamClients<'_>,
+    track: &str,
+    before: i64,
+    set: i64,
+) -> TestResult<String> {
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let count: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_character_quest_receipts r \
+    let receipts: Vec<String> = sqlx::query_scalar(
+        "SELECT concat_ws(':', r.cause_id, r.cause_ordinal, r.committed_character_revision) \
+         FROM game_character_quest_receipts r \
          JOIN game_character_quest_tracks t ON t.character_id = r.character_id AND t.track_key = $2 \
          WHERE r.character_id = encode($1, 'hex')::uuid \
            AND r.committed_character_revision = t.committed_character_revision \
            AND t.quest_key = r.quest_key AND t.value = $3 \
            AND r.values_after[array_position(r.track_keys, $2)] = $3 \
-           AND r.values_before[array_position(r.track_keys, $2)] IS DISTINCT FROM $3",
+           AND r.values_before[array_position(r.track_keys, $2)] = $4 \
+           AND r.transition_key = $5 AND r.cause_kind = 'command' LIMIT 2",
     )
     .bind(clients.characters[1].as_slice())
     .bind(track)
     .bind(set)
-    .fetch_one(&mut database)
+    .bind(before)
+    .bind(TRANSITION)
+    .fetch_all(&mut database)
     .await?;
     database.close().await?;
-    Ok(count)
+    match receipts.as_slice() {
+        [receipt] => Ok(receipt.clone()),
+        _ => Err(format!(
+            "track={track};expected=one-bound-receipt;observed={}",
+            receipts.len()
+        )
+        .into()),
+    }
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -151,10 +183,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         })
     })
     .ok_or("step=select;needed=walkable-hanna-approach")?;
+    if path.is_empty() {
+        return Err("step=select;observed=already-at-approach".into());
+    }
     let mut before = Vec::new();
     for (track, set) in &offer.tracks {
         let value = track_value(clients, track).await?;
-        if value == Some(*set) {
+        if value.unwrap_or(0) != 0 || value == Some(*set) {
             let _ = logout(&mut client).await;
             return Err(format!("step=initial;track={track};observed=already:{value:?}").into());
         }
@@ -179,6 +214,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                     || tile(delta.value.actor_position).ok() != Some(expected)
             })
             || actual != expected
+            || actual == from
         {
             return Err(format!(
                 "step=walk;from={from:?};direction={direction:?};expected={expected:?};actual={actual:?};disposition={:?}",
@@ -227,8 +263,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         }
         actor
     };
-    let mut confirmation_sequence = 0;
-    for text in ["hi", "addon", offer.keyword.as_str()] {
+    for (text, expected_line) in [
+        ("hi", None),
+        ("addon", Some(offer.prompt.as_str())),
+        (offer.keyword.as_str(), Some(offer.reply.as_str())),
+    ] {
+        if text == offer.keyword {
+            for ((track, _), prior) in offer.tracks.iter().zip(&before) {
+                if track_value(clients, track).await? != *prior {
+                    return Err(format!(
+                        "step=pre-confirmation;track={track};observed=premature-write"
+                    )
+                    .into());
+                }
+            }
+        }
+        client.take_events();
         let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
             npc_actor: actor,
             text: text.into(),
@@ -248,49 +298,47 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         {
             return Err(format!("step=talk;text={text};observed={reply:?}").into());
         }
-        confirmation_sequence = reply.server_sequence;
-    }
-    let head: String = offer.reply.chars().take(24).collect();
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop {
-        if client.take_events().into_iter().any(|event| {
-            matches!(event, SessionEvent::NpcConversation(delta)
-                if delta.server_sequence > confirmation_sequence
-                    && delta.value.open.map(|(npc, _)| npc) == Some(actor)
-                    && delta.value.lines.iter().any(|line| line.contains(&head)))
-        }) {
-            break;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            if client.take_events().into_iter().any(|event| {
+                matches!(event, SessionEvent::NpcConversation(delta)
+                    if delta.server_sequence > reply.server_sequence
+                        && delta.value.open == Some((actor, wire::NpcConversationState::Open))
+                        && expected_line.is_none_or(|expected| delta.value.lines.iter().any(|line| line == expected)))
+            }) {
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("step=reply;npc={NPC};keyword={text};observed=expected-conversation-effect-missing").into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
         }
-        if tokio::time::Instant::now() >= deadline {
-            let _ = logout(&mut client).await;
-            return Err(format!(
-                "step=reply;npc={};keyword={};observed=no-npc-reply-line",
-                NPC, offer.keyword
-            )
-            .into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
     }
-    for ((track, set), before) in offer.tracks.iter().zip(before) {
+    let mut committed_receipts = Vec::new();
+    for ((track, set), prior) in offer.tracks.iter().zip(&before) {
         let value = track_value(clients, track).await?;
-        let bound = bound_receipts(clients, track, *set).await?;
-        if value != Some(*set) || bound == 0 {
-            let _ = logout(&mut client).await;
-            return Err(format!(
-                "step=receipt;track={track};observed=value:{before:?}->{value:?},bound-receipts:{bound};needed=change-to-set:{set}-with-receipt-of-that-revision"
-            ).into());
+        if value != Some(*set) {
+            return Err(
+                format!("step=receipt;track={track};observed={value:?};expected={set}").into(),
+            );
         }
+        committed_receipts.push(bound_receipt(clients, track, prior.unwrap_or(0), *set).await?);
+    }
+    if committed_receipts.windows(2).any(|pair| pair[0] != pair[1]) {
+        return Err("step=receipt;observed=tracks-committed-by-different-commands".into());
     }
     logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0xe5).await?;
-    for (track, set) in &offer.tracks {
+    for (((track, set), prior), committed) in
+        offer.tracks.iter().zip(before).zip(committed_receipts)
+    {
         let value = track_value(clients, track).await?;
-        let bound = bound_receipts(clients, track, *set).await?;
-        if value != Some(*set) || bound == 0 {
-            let _ = logout(&mut fresh).await;
+        let receipt = bound_receipt(clients, track, prior.unwrap_or(0), *set).await?;
+        if value != Some(*set) || receipt != committed {
             return Err(format!(
-                "step=fresh;track={track};observed=value:{value:?},bound-receipts:{bound}"
+                "step=fresh;track={track};observed={value:?};expected={set};same-commit={}",
+                receipt == committed
             )
             .into());
         }
