@@ -2,7 +2,7 @@
 
 use super::*;
 
-const PERIODIC_REFRESHES: u8 = 6;
+const PERIODIC_REFRESHES: u8 = 7;
 
 pub(super) enum Next {
     Frame(std::io::Result<Vec<u8>>),
@@ -11,6 +11,7 @@ pub(super) enum Next {
     StepDue,
     Probe,
     ServerMessage,
+    PartyNotice,
     Serene,
     QuestLog,
     Chat,
@@ -31,6 +32,7 @@ impl Next {
             Self::StepDue => "step_due",
             Self::Probe => "probe",
             Self::ServerMessage => "server_message",
+            Self::PartyNotice => "party_notice",
             Self::Serene => "serene",
             Self::QuestLog => "quest_log",
             Self::Chat => "chat",
@@ -93,6 +95,12 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
         });
         let mut visibility_tick = std::pin::pin!(async {
             match session.visibility_refresh.as_mut() {
+                Some(refresh) => refresh.tick().await,
+                None => std::future::pending().await,
+            }
+        });
+        let mut party_notice_tick = std::pin::pin!(async {
+            match session.party_notice_refresh.as_mut() {
                 Some(refresh) => refresh.tick().await,
                 None => std::future::pending().await,
             }
@@ -161,7 +169,7 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
             }
             // A refresh (or its following input turn) may outlast the timer's period.
             // Rotate only after selecting a refresh: every continuously ready timer gets
-            // a turn within six refresh selections, even when Serene is always overdue.
+            // a turn within one pass of the ring, even when Serene is always overdue.
             // Probe/server-message priority and the one input turn remain above this ring.
             for offset in 0..PERIODIC_REFRESHES {
                 let refresh = (session.next_periodic_refresh + offset) % PERIODIC_REFRESHES;
@@ -171,7 +179,8 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
                     2 => (Next::Chat, chat_tick.as_mut().poll(context)),
                     3 => (Next::Visibility, visibility_tick.as_mut().poll(context)),
                     4 => (Next::Combat, combat_tick.as_mut().poll(context)),
-                    _ => (Next::Npc, npc_tick.as_mut().poll(context)),
+                    5 => (Next::Npc, npc_tick.as_mut().poll(context)),
+                    _ => (Next::PartyNotice, party_notice_tick.as_mut().poll(context)),
                 };
                 if ready.is_ready() {
                     session.next_periodic_refresh = (refresh + 1) % PERIODIC_REFRESHES;
@@ -188,6 +197,7 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
             next,
             Next::Probe
                 | Next::ServerMessage
+                | Next::PartyNotice
                 | Next::Serene
                 | Next::QuestLog
                 | Next::Chat

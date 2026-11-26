@@ -612,15 +612,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn take_party_membership_notices(
         &self,
         admitted: AdmittedSession,
-    ) -> Vec<crate::durability::world_party::MembershipNotice> {
+    ) -> Option<Vec<crate::durability::world_party::MembershipNotice>> {
         let fence = {
             let Ok(runtime) = self.runtime.try_lock() else {
-                return Vec::new();
+                return None;
             };
             party_command::party_notice_fence(&admitted, &runtime)
         };
         let Some((fence, house)) = fence else {
-            return Vec::new();
+            return Some(Vec::new());
         };
         self.root
             .with_periodic_lock_budget(self.root.take_party_membership_notices(
@@ -630,7 +630,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 house,
             ))
             .await
-            .unwrap_or_default()
+            .ok()
     }
 
     fn server_save_countdown(

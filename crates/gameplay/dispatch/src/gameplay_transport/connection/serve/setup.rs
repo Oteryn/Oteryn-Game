@@ -399,6 +399,16 @@ async fn live<A: FreshAdmissionAuthority>(
         refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         refresh
     });
+    let party_notice_refresh = selected_capabilities
+        .contains(oteryn_protocol_oteryn::party::CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1)
+        .then(|| {
+            let mut refresh = tokio::time::interval_at(
+                tokio::time::Instant::now() + party_membership::REFRESH,
+                party_membership::REFRESH,
+            );
+            refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+            refresh
+        });
     // NPC-CMD-1a: a session with domain 7 follows its conversation (chat greeting, walking away).
     let npc_refresh = npc_active.then(|| {
         let mut refresh =
@@ -544,6 +554,7 @@ async fn live<A: FreshAdmissionAuthority>(
         quest_log_refresh,
         chat_refresh,
         npc_refresh,
+        party_notice_refresh,
         npc_shown,
         combat_refresh,
         visibility_refresh,

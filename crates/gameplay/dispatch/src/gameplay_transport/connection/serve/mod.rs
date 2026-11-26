@@ -95,6 +95,7 @@ struct ServeState {
     combat_refresh: Option<tokio::time::Interval>,
     npc_shown: Option<WireEntityRef>,
     npc_refresh: Option<tokio::time::Interval>,
+    party_notice_refresh: Option<tokio::time::Interval>,
     chat_refresh: Option<tokio::time::Interval>,
     quest_log_refresh: Option<tokio::time::Interval>,
     serene: Option<tokio::time::Interval>,
