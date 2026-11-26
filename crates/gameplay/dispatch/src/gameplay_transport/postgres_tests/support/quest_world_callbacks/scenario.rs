@@ -3289,6 +3289,7 @@ fn scenario_case(
                 deps.actor,
                 &callback,
                 trigger,
+                variant == "busy-holder",
             ))
             .await?;
         } else if name == "srv6-schrodinger-island" {
