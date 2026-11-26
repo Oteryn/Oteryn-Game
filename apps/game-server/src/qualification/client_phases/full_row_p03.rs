@@ -85,6 +85,12 @@ fn same_checkpoint(left: &wire::Slot, right: &wire::Slot) -> bool {
         && left.selection_epoch == right.selection_epoch
 }
 
+fn valid_bonus_reroll(before: &wire::Slot, after: &wire::Slot) -> bool {
+    after.selected == before.selected
+        && before.selection_epoch.checked_add(1) == Some(after.selection_epoch)
+        && (after.bonus, after.grade, after.percent) != (before.bonus, before.grade, before.percent)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -175,10 +181,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         let rerolled = slot(&current, number)?.clone();
         if receipt.status != 0
             || receipt.wildcard_balance.checked_add(1) != Some(active.wildcard_balance)
-            || rerolled.selected != selected.selected
-            || rerolled.selection_epoch != selected.selection_epoch
-            || (rerolled.bonus, rerolled.grade, rerolled.percent)
-                == (selected.bonus, selected.grade, selected.percent)
+            || !valid_bonus_reroll(&selected, &rerolled)
         {
             return Err(format!(
                 "P03 step=bonus-reroll observed-receipt={receipt:?}-state={rerolled:?}"
@@ -325,9 +328,8 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 mod tests {
     use super::*;
 
-    #[test]
-    fn checkpoint_comparison_includes_durable_occurrence_and_time() {
-        let mut left = wire::Slot {
+    fn active_slot() -> wire::Slot {
+        wire::Slot {
             slot: 1,
             state: 2,
             creatures: Vec::new(),
@@ -341,7 +343,38 @@ mod tests {
             chosen_tier: 1,
             allowed_tier: 1,
             selection_epoch: 7,
-        };
+        }
+    }
+
+    #[test]
+    fn bonus_reroll_requires_the_next_occurrence() {
+        let before = active_slot();
+        let mut after = before.clone();
+        after.grade += 1;
+        after.percent += 2;
+        after.selection_epoch += 1;
+        assert!(valid_bonus_reroll(&before, &after));
+
+        let mut stale = after.clone();
+        stale.selection_epoch = before.selection_epoch;
+        assert!(!valid_bonus_reroll(&before, &stale));
+
+        let mut skipped = after.clone();
+        skipped.selection_epoch += 1;
+        assert!(!valid_bonus_reroll(&before, &skipped));
+
+        let mut wrong_creature = after.clone();
+        wrong_creature.selected = "oteryn:creature.bear".to_owned();
+        assert!(!valid_bonus_reroll(&before, &wrong_creature));
+
+        let mut unchanged_bonus = before.clone();
+        unchanged_bonus.selection_epoch += 1;
+        assert!(!valid_bonus_reroll(&before, &unchanged_bonus));
+    }
+
+    #[test]
+    fn checkpoint_comparison_includes_durable_occurrence_and_time() {
+        let mut left = active_slot();
         let right = left.clone();
         assert!(same_checkpoint(&left, &right));
         left.selection_epoch += 1;
