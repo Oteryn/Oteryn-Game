@@ -176,13 +176,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         })
         .ok_or("King Tibianus was not visible at his authored placement")?
         .entity;
-    let greeting = talk(&mut client, king, "hi").await?;
-    if greeting.is_empty()
-        || talk(&mut client, king, "promotion").await?
-            != ["Do you want to be promoted for 20000 gold coins?"]
-        || talk(&mut client, king, "yes").await? != ["You are now promoted."]
-    {
-        return Err("King Tibianus did not confirm promotion".into());
+    let (_, greeting) = client_row_p20::talk(&mut client, king, "hi").await?;
+    if greeting.is_empty() {
+        return Err("King Tibianus greeting was empty".into());
+    }
+    let (_, quote) = client_row_p20::talk(&mut client, king, "promotion").await?;
+    if quote != ["Do you want to be promoted for 20000 gold coins?"] {
+        return Err(format!("King Tibianus promotion quote: {quote:?}").into());
+    }
+    let (_, confirmation) = client_row_p20::talk(&mut client, king, "yes").await?;
+    if confirmation != ["You are now promoted."] {
+        return Err(format!("King Tibianus promotion confirmation: {confirmation:?}").into());
     }
     cross_castle_door(&mut client, world, StepDirection::South).await?;
     walk_route(&mut client, world, |at| at == start).await?;
@@ -331,35 +335,6 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
         return Err("N02 logout refused".into());
     }
     Ok(())
-}
-
-async fn talk(
-    client: &mut DevClientSession,
-    actor: oteryn_dev_client::EntityRef,
-    text: &str,
-) -> TestResult<Vec<String>> {
-    use oteryn_protocol_oteryn::npc_service as wire;
-    let disposition = oteryn_dev_client::client_runtime::npc_shop::talk(
-        client.session_mut(),
-        &wire::NpcTalkIntent {
-            npc_actor: actor,
-            text: text.into(),
-        },
-    )
-    .await?;
-    if disposition != wire::NpcIntentDisposition::Ok {
-        return Err(format!("NPC {text} refused: {disposition:?}").into());
-    }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(wire::STATE_DOMAIN_NPC_CONVERSATION, 1)
-        .await?;
-    let conversation = wire::decode_npc_conversation(&delta.payload)
-        .map_err(|error| format!("promotion conversation: {error:?}"))?;
-    if conversation.open.map(|(speaker, _)| speaker) != Some(actor) {
-        return Err("promotion reply from a different NPC".into());
-    }
-    Ok(conversation.lines)
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
