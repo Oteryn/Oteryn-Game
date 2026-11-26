@@ -3,15 +3,25 @@
 
 use super::*;
 use oteryn_protocol_oteryn::{actor_spell_catalog, skill_display};
+use std::io::Write;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    let started = std::time::Instant::now();
     let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+        evidence(&format!(
+            "e2e_all scenario=C14.client status=FAIL seconds={:.3} evidence=capture-directory-missing",
+            started.elapsed().as_secs_f64()
+        ));
         return;
     };
     if let Err(error) = verdict::observe(capture(clients, Path::new(&path))).await {
         evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=C14.client status=CAPTURE-WRITE-ERROR evidence={}",
+            "C14_CLIENT_CAPTURE_ERROR {}",
             error.to_string().replace(['\n', '\r'], " ")
+        ));
+        evidence(&format!(
+            "e2e_all scenario=C14.client status=FAIL seconds={:.3} evidence=capture-error",
+            started.elapsed().as_secs_f64()
         ));
     }
 }
@@ -50,12 +60,18 @@ async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
         .payload
         .clone();
 
-    std::fs::write(path.join("c14-skill-display.bin"), &reply.payload)?;
-    std::fs::write(path.join("c14-spell-catalog.bin"), catalog_payload)?;
-    std::fs::write(
-        path.join("c14-expected.txt"),
-        expected(&display, &catalog.entries),
-    )?;
+    let expected_display = expected(&display, &catalog.entries);
+    for (file, bytes) in [
+        ("c14-skill-display.bin", reply.payload.as_slice()),
+        ("c14-spell-catalog.bin", catalog_payload.as_slice()),
+        ("c14-expected.txt", expected_display.as_bytes()),
+    ] {
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(path.join(file))?
+            .write_all(bytes)?;
+    }
     Ok(())
 }
 

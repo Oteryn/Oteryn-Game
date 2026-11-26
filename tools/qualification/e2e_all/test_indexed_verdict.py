@@ -75,6 +75,14 @@ class IndexedVerdictTests(unittest.TestCase):
         self.assertIn('export E2E_ALL_CAPTURE_DIR=', source)
         self.assertIn('client_status=$?', source)
 
+    def test_c14_reports_missing_live_capture_and_refuses_existing_files(self):
+        source = (PHASES / 'client_row_c14.rs').read_text()
+        body = packet_body(source)
+        self.assertIn('capture-directory-missing', body)
+        self.assertIn('status=FAIL seconds=', body)
+        self.assertIn('.create_new(true)', source)
+        self.assertNotIn('std::fs::write(', source)
+
     def test_real_c16_captures_do_not_write_fabricated_ids_or_repeat_full_packets(self):
         source = (PHASES / 'client_row_c16c.rs').read_text()
         self.assertIn('status=MISSING-CLIENT', source)
