@@ -104,92 +104,136 @@ fn change(action: tr::TrackerAction, key: &str) -> tr::TrackerRequest {
     }
 }
 
-fn has(snapshot: &Option<tr::TrackerSnapshot>, key: &str) -> bool {
-    snapshot
-        .as_ref()
-        .is_some_and(|list| list.entries.iter().any(|entry| entry.creature_key == key))
+fn expected_bestiary(tracked: bool) -> tr::TrackerSnapshot {
+    tr::TrackerSnapshot {
+        boss: false,
+        entries: if tracked {
+            vec![tr::TrackerEntry {
+                creature_key: RAT.to_owned(),
+                kill_count: 0,
+                // Crystal Rat unlocks, also pinned in Oteryn's creature profile.
+                thresholds: [10, 100, 250],
+                completed: false,
+            }]
+        } else {
+            Vec::new()
+        },
+    }
 }
 
-async fn read(
-    client: &mut DevClientSession,
-    command: u32,
-) -> TestResult<Option<tr::TrackerSnapshot>> {
-    let (status, list) = call(client, command, &tr::TrackerRequest::Read).await?;
-    expect(status == CommandStatus::Accepted, "read", status)?;
-    Ok(list)
+fn expect_login_snapshot(
+    frame: Option<(u32, u64, &[u8])>,
+    expected: &tr::TrackerSnapshot,
+) -> TestResult {
+    let Some((kind, revision, payload)) = frame else {
+        return Err("step=login-tracker;observed=missing-domain-98".into());
+    };
+    let decoded = tr::decode_domain_snapshot(payload);
+    expect(
+        kind == tr::SNAPSHOT_TYPE_CYCLOPEDIA_TRACKER_V1
+            && revision == 1
+            && decoded.as_ref().is_some_and(|(bestiary, bosstiary)| {
+                bestiary == expected && bosstiary.entries.is_empty()
+            }),
+        "login-tracker",
+        (kind, revision, decoded),
+    )
 }
 
-async fn durable(clients: &SeamClients<'_>) -> TestResult<i64> {
+fn check_login(client: &mut DevClientSession, expected: &tr::TrackerSnapshot) -> TestResult {
+    let frame = client
+        .session_mut()
+        .gated_snapshot(tr::STATE_DOMAIN_CYCLOPEDIA_TRACKER);
+    expect_login_snapshot(
+        frame.map(|frame| {
+            (
+                frame.snapshot_type,
+                frame.revision,
+                frame.payload.as_slice(),
+            )
+        }),
+        expected,
+    )
+}
+
+fn expect_command_snapshot(
+    reply: (CommandStatus, Option<tr::TrackerSnapshot>),
+    expected: &tr::TrackerSnapshot,
+    step: &str,
+) -> TestResult {
+    expect(
+        reply.0 == CommandStatus::Accepted && reply.1.as_ref() == Some(expected),
+        step,
+        reply,
+    )
+}
+
+fn expect_durable(rows: &[(i16, String)], tracked: bool, step: &str) -> TestResult {
+    let matches = if tracked {
+        matches!(rows, [(1, key)] if key == RAT)
+    } else {
+        rows.is_empty()
+    };
+    expect(matches, step, rows)
+}
+
+async fn durable(clients: &SeamClients<'_>) -> TestResult<Vec<(i16, String)>> {
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
-    let rows: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_character_cyclopedia_tracker \
-         WHERE character_id=encode($1,'hex')::uuid AND tracker_kind=1 AND creature_key=$2",
+    // Two rows suffice to distinguish the only valid outcomes: empty or exactly one Rat.
+    let rows = sqlx::query_as(
+        "SELECT tracker_kind, creature_key FROM game_character_cyclopedia_tracker \
+         WHERE character_id=encode($1,'hex')::uuid ORDER BY tracker_kind, creature_key LIMIT 2",
     )
     .bind(clients.characters[CHARACTER_INDEX].as_slice())
-    .bind(RAT)
-    .fetch_one(&mut connection)
+    .fetch_all(&mut connection)
     .await?;
     Ok(rows)
 }
 
-fn expect_rat_untracked_before_add(
-    snapshot: &Option<tr::TrackerSnapshot>,
-    rows: i64,
-) -> TestResult {
-    expect(
-        !has(snapshot, RAT),
-        "read-before-add",
-        "rat-already-tracked",
-    )?;
-    expect(rows == 0, "durable-before-add", rows)
-}
-
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let best = tr::COMMAND_TYPE_BESTIARY_TRACKER;
+    let read = tr::TrackerRequest::Read;
+    let empty = expected_bestiary(false);
+    let tracked = expected_bestiary(true);
     let mut client = connect_tracker(clients, 0xd3).await?;
-    let before = read(&mut client, best).await?;
-    expect_rat_untracked_before_add(&before, durable(clients).await?)?;
-    let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Add, RAT)).await?;
-    expect(
-        status == CommandStatus::Accepted && has(&list, RAT),
+    check_login(&mut client, &empty)?;
+    expect_command_snapshot(
+        call(&mut client, best, &read).await?,
+        &empty,
+        "read-before-add",
+    )?;
+    expect_durable(&durable(clients).await?, false, "durable-before-add")?;
+    expect_command_snapshot(
+        call(&mut client, best, &change(tr::TrackerAction::Add, RAT)).await?,
+        &tracked,
         "add",
-        status,
     )?;
-    expect(
-        durable(clients).await? == 1,
-        "durable-after-add",
-        "row-count-not-1",
-    )?;
+    expect_durable(&durable(clients).await?, true, "durable-after-add")?;
     logout(&mut client).await?;
 
     let mut client = connect_tracker(clients, 0xd4).await?;
-    let list = read(&mut client, best).await?;
-    expect(has(&list, RAT), "read-after-relog", "race-lost")?;
-    expect(
-        durable(clients).await? == 1,
-        "durable-after-relog",
-        "row-count-not-1",
+    check_login(&mut client, &tracked)?;
+    expect_command_snapshot(
+        call(&mut client, best, &read).await?,
+        &tracked,
+        "read-after-relog",
     )?;
-    let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Remove, RAT)).await?;
-    expect(
-        status == CommandStatus::Accepted && !has(&list, RAT),
+    expect_durable(&durable(clients).await?, true, "durable-after-relog")?;
+    expect_command_snapshot(
+        call(&mut client, best, &change(tr::TrackerAction::Remove, RAT)).await?,
+        &empty,
         "remove",
-        status,
     )?;
     logout(&mut client).await?;
 
     let mut client = connect_tracker(clients, 0xd5).await?;
-    let list = read(&mut client, best).await?;
-    expect(
-        !has(&list, RAT),
+    check_login(&mut client, &empty)?;
+    expect_command_snapshot(
+        call(&mut client, best, &read).await?,
+        &empty,
         "read-after-remove-relog",
-        "race-still-tracked",
     )?;
-    expect(
-        durable(clients).await? == 0,
-        "durable-after-remove",
-        "row-remains",
-    )?;
+    expect_durable(&durable(clients).await?, false, "durable-after-remove")?;
     logout(&mut client).await?;
     Ok((
         "PASS",
@@ -238,13 +282,16 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+fn expect_first_logout(result: Option<oteryn_protocol_oteryn::logout::LogoutResult>) -> TestResult {
     expect(
-        reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
-        "logout",
-        reply.result,
+        result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
+        "logout-first-attempt",
+        result,
     )
+}
+
+pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
+    expect_first_logout(client.session_mut().logout().await?.result)
 }
 
 #[cfg(test)]
@@ -252,23 +299,59 @@ mod tests {
     use super::*;
 
     #[test]
-    fn add_precondition_rejects_existing_rat_in_either_source() {
-        let mut snapshot = Some(tr::TrackerSnapshot {
-            boss: false,
+    fn tracker_checks_reject_missing_stale_and_wrong_lists() {
+        let tracked = expected_bestiary(true);
+        let empty = expected_bestiary(false);
+        let boss = tr::TrackerSnapshot {
+            boss: true,
             entries: Vec::new(),
-        });
-        assert!(expect_rat_untracked_before_add(&snapshot, 0).is_ok());
-        let err = expect_rat_untracked_before_add(&snapshot, 1).unwrap_err();
-        assert!(err.to_string().starts_with("step=durable-before-add;"));
+        };
+        let frame = |list, bosses| tr::encode_domain_snapshot(list, bosses).unwrap();
+        let valid = frame(&tracked, &boss);
+        assert!(expect_login_snapshot(Some((1, 1, &valid)), &tracked).is_ok());
+        assert!(expect_login_snapshot(None, &tracked).is_err());
+        assert!(expect_login_snapshot(Some((1, 2, &valid)), &tracked).is_err());
+        assert!(expect_login_snapshot(Some((1, 1, b"bad")), &tracked).is_err());
 
-        snapshot.as_mut().unwrap().entries.push(tr::TrackerEntry {
-            creature_key: RAT.to_owned(),
-            kill_count: 0,
-            thresholds: [0; 3],
-            completed: false,
-        });
-        let err = expect_rat_untracked_before_add(&snapshot, 0).unwrap_err();
-        assert!(err.to_string().starts_with("step=read-before-add;"));
+        let mut duplicate = tracked.clone();
+        duplicate.entries.push(tracked.entries[0].clone());
+        let mut spurious = duplicate.clone();
+        spurious.entries[1].creature_key = "oteryn:creature.bat".to_owned();
+        let mut wrong_progress = tracked.clone();
+        wrong_progress.entries[0].kill_count = 1;
+        for wrong in [empty.clone(), duplicate, spurious, wrong_progress] {
+            let payload = frame(&wrong, &boss);
+            assert!(expect_login_snapshot(Some((1, 1, &payload)), &tracked).is_err());
+            assert!(
+                expect_command_snapshot((CommandStatus::Accepted, Some(wrong)), &tracked, "test")
+                    .is_err()
+            );
+        }
+        assert!(
+            expect_command_snapshot((CommandStatus::Accepted, Some(tracked)), &empty, "pre-add")
+                .is_err()
+        );
+        assert!(expect_durable(&[(1, RAT.to_owned())], false, "pre-add").is_err());
+        assert!(
+            expect_durable(
+                &[(1, RAT.to_owned()), (2, "unexpected".to_owned())],
+                true,
+                "test"
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn first_logout_busy_is_a_failure() {
+        use oteryn_protocol_oteryn::logout::LogoutResult;
+
+        assert!(expect_first_logout(Some(LogoutResult::Accepted)).is_ok());
+        let error = expect_first_logout(Some(LogoutResult::Busy)).unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            "step=logout-first-attempt;observed=Some(Busy)"
+        );
     }
 
     #[test]
