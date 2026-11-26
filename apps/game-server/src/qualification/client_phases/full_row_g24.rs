@@ -77,10 +77,11 @@ async fn accepted(
 }
 
 async fn finish(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    let outcome = client.session_mut().logout().await?;
+    if outcome.status != CommandStatus::Accepted
+        || outcome.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
-        return Err("step=logout observed=refused".into());
+        return Err(format!("step=logout observed={outcome:?}").into());
     }
     Ok(())
 }
@@ -146,14 +147,16 @@ async fn history(
     side: u8,
 ) -> TestResult {
     let history = market(client, market_request(4, 0, [0; 16], 0, 0)).await?;
-    if !history.rows.iter().any(|row| {
-        row.offer == offer
-            && row.definition == definition
-            && row.amount == 1
-            && row.price == PRICE
-            && row.side == side
-            && row.state == 2
-    }) {
+    if history.rows.len() != 1
+        || !history.rows.iter().any(|row| {
+            row.offer == offer
+                && row.definition == definition
+                && row.amount == 1
+                && row.price == PRICE
+                && row.side == side
+                && row.state == 2
+        })
+    {
         return Err(format!("step=history side={side} observed={history:?}").into());
     }
     Ok(())
@@ -292,11 +295,41 @@ async fn settle(
     let seller_before = bank_balance(seller_scope, 0).await?;
     let buyer_before = bank_balance(buyer_scope, 0).await?;
     let inbox_before = inbox(&depot_search(buyer, id).await?);
+    let fee = oteryn_gameplay_economy::market::placement_fee(1, PRICE)
+        .map_err(|error| format!("step=fee observed={error:?}"))?;
+    let escrow_balance = buyer_before
+        .checked_sub(PRICE + fee)
+        .ok_or("step=buyer-prestate observed=insufficient-gold")?;
+    let seller_paid = seller_before
+        .checked_add(PRICE)
+        .ok_or("step=seller-prestate observed=gold-overflow")?;
+    let book_request = market_request(2, definition, [0; 16], 0, 0);
+    let history_request = market_request(4, 0, [0; 16], 0, 0);
+    if inbox_before != 0
+        || !market(buyer, book_request).await?.rows.is_empty()
+        || !market(buyer, history_request).await?.rows.is_empty()
+    {
+        return Err("step=buyer-prestate observed=existing-item-offer-or-history".into());
+    }
     character_prep::grant_premium(buyer).await?;
     evidence("G24 buyer-premium=fixture-current phase=before-first-placement");
     let offer = market(buyer, market_request(5, definition, [0; 16], 1, PRICE))
         .await?
         .offer;
+    let book = market(buyer, book_request).await?;
+    if book.rows.len() != 1
+        || !book.rows.iter().any(|row| {
+            row.offer == offer
+                && row.definition == definition
+                && row.amount == 1
+                && row.price == PRICE
+                && row.side == 1
+                && row.state == 1
+        })
+        || bank_balance(buyer_scope, 0).await? != escrow_balance
+    {
+        return Err(format!("step=place observed=wrong-open-offer-or-escrow book={book:?}").into());
+    }
     finish(buyer).await?;
 
     let mut seller = connect_character(seller_scope, 0x8b, 0).await?;
@@ -324,7 +357,12 @@ async fn settle(
         },
     )
     .await?;
-    if browse.outcome != DepotOutcome::Opened || browse.town.is_none() {
+    if browse.outcome != DepotOutcome::Opened
+        || browse.town.is_none()
+        || browse.total != 0
+        || !browse.entries.is_empty()
+        || !market(&mut seller, history_request).await?.rows.is_empty()
+    {
         return Err(format!("step=depot observed={browse:?}").into());
     }
     let deposit = depot_intent(
@@ -340,7 +378,24 @@ async fn settle(
     if deposit.outcome != DepotOutcome::Moved {
         return Err(format!("step=deposit observed={deposit:?}").into());
     }
+    let depot = |reply: &oteryn_protocol_oteryn::depot_search::Reply| {
+        reply.results.iter().map(|row| row.depot).sum::<u32>()
+    };
+    if depot(&depot_search(&mut seller, id).await?) != 1
+        || seller
+            .inventory()
+            .is_none_or(|inventory| inventory.entries.iter().any(|entry| entry.handle == handle))
+    {
+        return Err("step=deposit observed=wrong-backpack-or-depot-count".into());
+    }
     market(&mut seller, market_request(8, 0, offer, 1, 0)).await?;
+    history(&mut seller, offer, definition, 1).await?;
+    if bank_balance(seller_scope, 0).await? != seller_paid
+        || depot(&depot_search(&mut seller, id).await?) != 0
+        || !market(&mut seller, book_request).await?.rows.is_empty()
+    {
+        return Err("step=settle observed=wrong-gold-depot-or-book".into());
+    }
     let seller_session = seller.join_snapshot().game_session_id;
     finish(&mut seller).await?;
     drop(seller);
@@ -351,7 +406,9 @@ async fn settle(
     }
     at_depot(&mut fresh_seller, world).await?;
     history(&mut fresh_seller, offer, definition, 1).await?;
-    if seller_before.checked_add(PRICE) != Some(bank_balance(seller_scope, 0).await?) {
+    if bank_balance(seller_scope, 0).await? != seller_paid
+        || depot(&depot_search(&mut fresh_seller, id).await?) != 0
+    {
         return Err("step=relog observed=seller-gold-delta-mismatch".into());
     }
     finish(&mut fresh_seller).await?;
@@ -363,10 +420,8 @@ async fn settle(
     }
     at_depot(&mut fresh_buyer, world).await?;
     history(&mut fresh_buyer, offer, definition, 1).await?;
-    let fee = oteryn_gameplay_economy::market::placement_fee(1, PRICE)
-        .map_err(|error| format!("step=fee observed={error:?}"))?;
-    if inbox_before.checked_add(1) != Some(inbox(&depot_search(&mut fresh_buyer, id).await?))
-        || buyer_before.checked_sub(PRICE + fee) != Some(bank_balance(buyer_scope, 0).await?)
+    if inbox(&depot_search(&mut fresh_buyer, id).await?) != 1
+        || bank_balance(buyer_scope, 0).await? != escrow_balance
     {
         return Err("step=relog observed=buyer-item-or-gold-delta-mismatch".into());
     }
