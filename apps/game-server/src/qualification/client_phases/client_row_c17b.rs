@@ -82,22 +82,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let spell = book.spoken("utana vid").ok_or("C17b.client spell absent")?.spell;
     let mut caster = full_row_c17b::seeded_caster(&caster_clients, "C17b.client", 0xc1, spell).await?;
     let mut observer = connect_character(clients, 0xc2, 0).await?;
-    full_e2ef5::with_observer_liveness(
-        &mut observer,
-        travel_to_spawn(&mut caster, world, &metadata.spawns, "oteryn:creature.rat"),
-    )
-    .await?;
-    let caster_position = tile(caster.world_spatial().actor_position)?;
-    let path = route(
-        world,
-        tile(observer.world_spatial().actor_position)?,
-        |at| {
-            at.floor == caster_position.floor
-                && at.x.abs_diff(caster_position.x).max(at.y.abs_diff(caster_position.y)) <= 1
-        },
-    )
-    .ok_or("C17b.client observer cannot reach caster")?;
-    full_e2ef5::with_observer_liveness(&mut caster, walk(&mut observer, world, &path)).await?;
+    full_row_c17b::Staging::new(world, &metadata.spawns)
+        .encounter(&mut caster, &mut observer)
+        .await?;
     let caster_ref = own(&caster)?;
     let entities = observer
         .world_entities()
