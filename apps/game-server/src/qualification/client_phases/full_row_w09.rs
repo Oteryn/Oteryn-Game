@@ -175,17 +175,9 @@ async fn reconnect_cooldowns(
     let next_command = client.next_command_id();
     let generation = platform_generation(scope.descriptor, &scope.accounts[0]).await?;
     let (nonce, _) = fresh_grant_material(0xd2)?;
-    let credential = sign_recovery(
-        scope.recovery,
-        &scope.accounts[0],
-        &scope.characters[0],
-        &scope.world,
-        generation,
-        now_seconds()?,
-        nonce,
-    );
     let previous = client.disconnect();
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    // Silent closes become reconnectable after the server liveness window.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(40);
     while !matches!(
         session_loss_row(scope.url, *session.as_bytes()).await?,
         Some((1, _, _))
@@ -195,6 +187,15 @@ async fn reconnect_cooldowns(
         }
         tokio::time::sleep(Duration::from_millis(50)).await;
     }
+    let credential = sign_recovery(
+        scope.recovery,
+        &scope.accounts[0],
+        &scope.characters[0],
+        &scope.world,
+        generation,
+        now_seconds()?,
+        nonce,
+    );
     let mut resumed = oteryn_dev_client::resume_session(
         oteryn_dev_client::RecoveryTransport {
             address: scope.address,
