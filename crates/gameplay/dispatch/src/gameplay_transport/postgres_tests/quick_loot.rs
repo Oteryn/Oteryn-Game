@@ -1,6 +1,6 @@
 //! QUICKLOOT: production router, item owner, replay and real PostgreSQL custody.
-use super::fixture::{Harness, debug, id, join_two};
 use super::autowalk_fixtures::{read, send};
+use super::fixture::{Harness, debug, id, join_two};
 use super::kill_reward_e2e_fixtures::scenario_thread;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::item_mint::*;
@@ -16,13 +16,14 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
     EntityDetail, decode_world_spatial_entities_snapshot_with_item_handles,
 };
 use oteryn_protocol_oteryn::{
-    MessageType, decode_command_result, decode_snapshot_chunk, decode_state_delta, decode_wire_envelope,
+    MessageType, decode_command_result, decode_snapshot_chunk, decode_state_delta,
+    decode_wire_envelope,
 };
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
 #[test]
 fn quick_loot_postgres_dispatch_assignment_transfer_replay_and_fences() -> TestResult {
-    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-loot", scenario)
+    scenario_thread::run_async(scenario(Case::Bulk))
 }
 
 fn request(action: QuickLootAction) -> QuickLootRequest {
@@ -107,7 +108,10 @@ enum Case {
 
 fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
     async move |admin| {
-        let pouch = matches!(case, Case::GoldPouch | Case::PouchFulfilment | Case::PouchLogout);
+        let pouch = matches!(
+            case,
+            Case::GoldPouch | Case::PouchFulfilment | Case::PouchLogout
+        );
         let harness = Harness::create_with_admission_seed(admin, "quick_loot", true, false).await?;
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -427,7 +431,9 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                 Case::PouchFulfilment => {
                     pouch_fulfilment_cases(&owner, &mut admitted, &harness.pool).await?
                 }
-                Case::Bulk | Case::GoldPouch | Case::PouchLogout => return Err("unexpected dedicated case".into()),
+                Case::Bulk | Case::GoldPouch | Case::PouchLogout => {
+                    return Err("unexpected dedicated case".into());
+                }
             }
             drop(owner);
             drop(authority);
@@ -1270,7 +1276,11 @@ async fn quick_loot_destination_management(
         super::parameter_spell_fixtures::exchange(owner, admitted, &commands, false, false).await?;
     assert_eq!(replies.len(), commands.len());
     for ((kind, _), (status, _)) in commands.iter().zip(&replies) {
-        assert_eq!(*status, CommandStatus::Accepted, "quick-loot command {kind}");
+        assert_eq!(
+            *status,
+            CommandStatus::Accepted,
+            "quick-loot command {kind}"
+        );
     }
     let first = decode_quick_loot_destinations(&replies[1].1).map_err(debug)?;
     assert_eq!(first.loot.len(), QuickLootCategory::ALL.len() + 1);
@@ -1303,7 +1313,10 @@ async fn quick_loot_destination_management(
         distribution_id,
     )
     .await?;
-    assert_eq!(retry, [(CommandStatus::DuplicateReplay, replies[5].1.clone())]);
+    assert_eq!(
+        retry,
+        [(CommandStatus::DuplicateReplay, replies[5].1.clone())]
+    );
 
     // A cold ingress must recover the same durable result even if the new item view cannot
     // resolve the original handle. An unresolved handle on its own cannot authorize a move.

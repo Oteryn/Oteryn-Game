@@ -5,8 +5,8 @@ use oteryn_protocol_oteryn::logout::{LogoutResult, MAX_LOGOUT_RETRY_AFTER_MS};
 
 use super::connection::{AdmittedSession, ControllerBinding, GraceExpiryResult};
 use super::{
-    AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission, FenceHold, RECONCILE_ATTEMPTS,
-    ReleaseAttempt, TerminalRelease, UnendedSettle, operator_event,
+    AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission, FenceHold, ReleaseAttempt,
+    TerminalRelease, UnendedSettle, operator_event,
 };
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
@@ -346,7 +346,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             operator_event(&format!("event=logout_release_retry stage={stage}"));
             // Retained familiar writes must be reconciled by their original owner.
-            if self.states.spell_states.lock().await.has_retained_familiar_logout(actor, session) {
+            if channel_switch
+                || self
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .has_retained_familiar_logout(actor, session)
+            {
                 break step;
             }
             if !budget
