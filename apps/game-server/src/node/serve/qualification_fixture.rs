@@ -51,6 +51,9 @@ const PARTY_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000017";
 const C06_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-00000000001c";
 
 #[cfg(feature = "qualification-spawn")]
+const G20_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000020";
+
+#[cfg(feature = "qualification-spawn")]
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "s08-knight" => Some(("knight", 8)),
@@ -83,6 +86,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let allowed = allowed
         || spell_build(profile).is_some()
         || named_item(profile).is_some()
+        || profile == "g20-dust-input"
         || profile == "premium";
     allowed.then_some((session, profile))
 }
@@ -765,6 +769,7 @@ async fn prepare_build(
     if matches!(
         profile,
         "premium"
+            | "g20-dust-input"
             | "c11-unassigned"
             | "c11-knight"
             | "c12-monk"
@@ -789,6 +794,9 @@ async fn prepare_build(
         .map_err(qualification_build::debug)?;
         let account = uuid_text(record.account_id.as_bytes());
         match (profile, account.as_str()) {
+            ("g20-dust-input", G20_ACCOUNT) => {
+                return prepare_g20_dust(root, session.as_bytes(), character.as_bytes()).await;
+            }
             (
                 "premium",
                 KNIGHT_ACCOUNT | MONK_ACCOUNT | HASTE_ACCOUNT | CHALLENGE_ACCOUNT | LIGHT_ACCOUNT
@@ -875,6 +883,81 @@ async fn prepare_build(
         None,
     )
     .await
+}
+
+#[cfg(feature = "qualification-spawn")]
+async fn prepare_g20_dust(
+    root: &DurabilityRoot,
+    session: &[u8; 16],
+    character: &[u8; 16],
+) -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_error_codes::{FieldValue, Level, Line};
+
+    let budget = SpawnBudget::new(tokio::time::Instant::now());
+    let mut holder = acquire_spawn_holder(root, budget.work_deadline).await?;
+    let outcome = spawn_transaction(&mut holder, budget, true, async |tx| {
+        // Use the existing dust ledger shape in this disposable fixture. The
+        // qualification log attributes the credit to setup, separately from kills.
+        let balance: Option<i64> = sqlx::query_scalar(
+            "WITH actor AS (
+                SELECT s.character_id
+                FROM game_durability_reconnect_sessions s
+                JOIN game_character_roots c USING (character_id, account_id, world_id)
+                WHERE s.game_session_id = encode($1, 'hex')::uuid
+                  AND s.character_id = encode($2, 'hex')::uuid
+                  AND s.account_id = $3::uuid
+                  AND s.session_state = 1 AND s.current_transport_ref IS NOT NULL
+                FOR UPDATE OF s
+            ), credit AS (
+                INSERT INTO game_character_forge_dust_entries (
+                    entry_id, character_id, kind, cause, cause_occurrence_id, transaction_id,
+                    amount, lost_amount, balance_before, balance_after,
+                    dust_limit_before, dust_limit_after
+                )
+                SELECT game_character_uuid_v7(), actor.character_id, 'GAIN', 'creature_kill',
+                       game_character_uuid_v7(), game_character_uuid_v7(), 30, 0, 0, 30, 100, 100
+                FROM actor
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM game_character_forge_dust d
+                    WHERE d.character_id = actor.character_id
+                )
+                RETURNING character_id, entry_id, balance_after, dust_limit_after
+            )
+            INSERT INTO game_character_forge_dust (character_id, last_entry_id, balance, dust_limit)
+            SELECT character_id, entry_id, balance_after, dust_limit_after FROM credit
+            RETURNING balance",
+        )
+        .bind(session.as_slice())
+        .bind(character.as_slice())
+        .bind(G20_ACCOUNT)
+        .fetch_optional(&mut **tx)
+        .await
+        .map_err(|error| wild_spawn::SpawnRefusal::Fence(error.to_string()))?;
+        if balance != Some(30) {
+            return Err(wild_spawn::SpawnRefusal::Fence(
+                "G20 input requires an active dedicated session and an empty dust ledger".into(),
+            ));
+        }
+        Ok(())
+    })
+    .await;
+    finish_spawn_holder(holder, budget, outcome)
+        .await
+        .map_err(|error| {
+            format!(
+                "G20 fixture input: {}",
+                error.detail().unwrap_or(error.token())
+            )
+        })?;
+    emit(
+        PROCESS,
+        &Line::new(Level::Info, "node", "FIXTURE")
+            .field("row", FieldValue::Token("G20.full"))
+            .field("input", FieldValue::Token("forge_dust"))
+            .field("balance", FieldValue::U64(30))
+            .field("limit", FieldValue::U64(100)),
+    );
+    Ok(())
 }
 
 #[cfg(feature = "qualification-spawn")]
