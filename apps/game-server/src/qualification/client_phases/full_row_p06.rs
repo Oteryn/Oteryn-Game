@@ -356,6 +356,13 @@ async fn use_castle_gate(
     Ok(())
 }
 
+async fn connect_eligible(clients: &SeamClients<'_>, tag: u8) -> TestResult<DevClientSession> {
+    let client = connect_character(clients, tag, 0).await?;
+    // The synthetic account has no Platform refresh route, and logout releases its cached view.
+    character_prep::grant_premium(&client).await?;
+    Ok(client)
+}
+
 async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
     character_prep::declare_seeded(
         "P06.full",
@@ -369,12 +376,11 @@ async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
         PROFILE.into(),
     )
     .await?;
-    character_prep::grant_premium(&client).await?;
     character_prep::grant_item(&client, 3043, 2).await?;
     logout(&mut client).await?;
     drop(client);
 
-    let mut client = connect_character(clients, 0xd6, 0).await?;
+    let mut client = connect_eligible(clients, 0xd6).await?;
     let world = full_e2ef7::qualification_world(clients)?;
     let bundle = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bundle, |_, _| Ok(()))?;
@@ -457,7 +463,7 @@ async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
     .await?;
     logout(&mut client).await?;
     drop(client);
-    connect_character(clients, 0xd6, 0).await
+    connect_eligible(clients, 0xd6).await
 }
 
 async fn journey(
@@ -570,7 +576,7 @@ async fn journey(
 
     logout(&mut client).await?;
     drop(client);
-    let mut client = connect_character(clients, 0xd7, 0).await?;
+    let mut client = connect_eligible(clients, 0xd7).await?;
     let (_, reloaded) = send(&mut client, &query_request()).await?;
     if reloaded != saved_full || client.actor_vitals().copied() != Some(full_vitals) {
         return Err(format!(
@@ -639,7 +645,7 @@ async fn journey(
         let vitals = client.actor_vitals().copied();
         logout(&mut client).await?;
         drop(client);
-        client = connect_character(clients, 0xd9, 0).await?;
+        client = connect_eligible(clients, 0xd9).await?;
         let (_, retained) = send(&mut client, &query_request()).await?;
         if retained != revealed || client.actor_vitals().copied() != vitals {
             return Err(format!(
@@ -689,7 +695,7 @@ async fn journey(
 
     logout(&mut client).await?;
     drop(client);
-    let mut final_client = connect_character(clients, 0xd8, 0).await?;
+    let mut final_client = connect_eligible(clients, 0xd8).await?;
     let (_, final_state) = send(&mut final_client, &query_request()).await?;
     if final_state != reset || final_client.actor_vitals().copied() != Some(baseline) {
         return Err(format!(
