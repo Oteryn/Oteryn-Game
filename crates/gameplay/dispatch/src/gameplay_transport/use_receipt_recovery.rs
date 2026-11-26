@@ -3,7 +3,7 @@ use super::ComposedFreshAdmission;
 use super::connection::{AdmittedSession, UseCommand};
 use super::item_ref_admission::NativeItemWeights;
 use super::session_ingress::UseReceipt;
-use crate::durability::item_craft::ItemCraftRequest;
+use crate::durability::item_craft::{ItemCraftRequest, MapHarvestRequest};
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, decode_use_intent_target, encode_item_use_intent,
@@ -68,6 +68,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .ok()?
                     .unwrap_or(UseDisposition::Rejected)
             }
+            UseReceipt::Harvest => {
+                let native = self.active_generation?.native_gameplay()?;
+                self.root
+                    .harvest_map_item(
+                        &permit,
+                        self.character,
+                        self.holder,
+                        fence,
+                        MapHarvestRequest {
+                            command: reference,
+                            intent: encoded,
+                            operand: None,
+                        },
+                        native,
+                        &NativeItemWeights(native),
+                    )
+                    .await
+                    .ok()?
+                    .map_or(UseDisposition::Rejected, |result| result.disposition)
+            }
             UseReceipt::Terrain => self
                 .root
                 .apply_terrain_tool(
@@ -98,10 +118,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         ingress.complete_item_use(reference, disposition)?;
         if disposition == UseDisposition::Committed
-            && matches!(receipt, UseReceipt::Terrain | UseReceipt::Craft)
+            && matches!(
+                receipt,
+                UseReceipt::Terrain | UseReceipt::Craft | UseReceipt::Harvest
+            )
         {
             if matches!(receipt, UseReceipt::Terrain) {
                 self.states.level_refresh.mark([fence.character_id]);
+            }
+            if matches!(receipt, UseReceipt::Harvest) {
+                self.states.loop_ground.invalidate();
             }
             drop(permit);
             self.refresh_terrain_tools().await;

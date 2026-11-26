@@ -6,6 +6,7 @@ use crate::foundation::{CommandRef, GameSessionId};
 pub(in crate::gameplay_transport) enum UseReceipt {
     Drome,
     Craft,
+    Harvest,
     Terrain,
     Coin,
 }
