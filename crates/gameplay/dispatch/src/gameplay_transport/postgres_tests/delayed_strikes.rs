@@ -37,6 +37,8 @@ const RAT_HEALTH: i64 = 100_000;
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     Echo,
+    EchoCorners,
+    EchoHeldTarget,
     Grenade,
     Pz,
     StageZero,
@@ -48,13 +50,27 @@ enum Case {
 
 #[test]
 fn delayed_strikes_postgres_death_echo_two_hits() -> TestResult {
+    echo(Case::Echo, "delayed_echo")
+}
+
+#[test]
+fn delayed_strikes_postgres_death_echo_hits_all_four_corners_twice() -> TestResult {
+    echo(Case::EchoCorners, "echo_corners")
+}
+
+#[test]
+fn delayed_strikes_postgres_death_echo_centers_on_caster_without_cursor() -> TestResult {
+    echo(Case::EchoHeldTarget, "echo_held")
+}
+
+fn echo(case: Case, tag: &'static str) -> TestResult {
     scenario(Plan {
-        tag: "delayed_echo",
+        tag,
         vocation: "sorcerer",
         experience: 30_000_000,
         weapon: "oteryn:item.tibia.i3277",
         spells: &[("candidate:spell/death_echo", 120, 155)],
-        case: Case::Echo,
+        case,
     })
 }
 
@@ -199,14 +215,23 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         entry
     };
     // Reuse crosshair_spells' open combat tile; the imported entry is a PZ.
-    let start = if plan.case == Case::Pz {
-        room.entry_start()
-    } else {
-        crate::content::NativeEntryStart {
+    let start = match plan.case {
+        Case::Pz => room.entry_start(),
+        Case::EchoCorners => crate::content::NativeEntryStart {
+            x: 1,
+            y: 13,
+            floor: -7,
+        },
+        Case::EchoHeldTarget => crate::content::NativeEntryStart {
+            x: 0,
+            y: 13,
+            floor: -7,
+        },
+        _ => crate::content::NativeEntryStart {
             x: 2,
             y: 11,
             floor: -7,
-        }
+        },
     };
     let cp = ChannelContentPin::from_activation(
         world,
@@ -217,8 +242,18 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         room.map_revision_digest(),
         (start.x, start.y, start.floor),
     );
-    let mut deps =
-        Dependencies::with_content_and_capacity(cp, room.clone(), native.spell_book().clone(), 3)?;
+    // Live spawns reserve half of these small fixtures' slots for players.
+    let capacity = match plan.case {
+        Case::EchoCorners => 12,
+        Case::EchoHeldTarget => 6,
+        _ => 3,
+    };
+    let mut deps = Dependencies::with_content_and_capacity(
+        cp,
+        room.clone(),
+        native.spell_book().clone(),
+        capacity,
+    )?;
     deps.combat_room = Some(room);
     // Every spell here is premium: the account holds a Current Premium.
     let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
@@ -362,6 +397,8 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
     }
     let target;
     let position;
+    let mut corners = Vec::new();
+    let mut held_target = None;
     {
         let mut runtime = deps.runtime.lock().await;
         runtime
@@ -382,11 +419,17 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .read_actor_position(actor)
             .map_err(debug)?
             .position();
-        position = crate::foundation::MovementLocalPosition {
-            x: p.x + 1,
+        let primary = crate::foundation::MovementLocalPosition {
+            x: p.x
+                + if matches!(plan.case, Case::EchoCorners | Case::EchoHeldTarget) {
+                    -1
+                } else {
+                    1
+                },
             y: p.y,
             floor: p.floor,
         };
+        position = primary;
         runtime
             .install_companion_policies(native.policies().clone())
             .map_err(debug)?;
@@ -394,21 +437,45 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .companion_policy("oteryn:creature.rat")
             .map_err(debug)?
             .maximum_health;
+        let mut spawns = vec![(primary.x, primary.y, primary.floor)];
+        if plan.case == Case::EchoCorners {
+            for (dx, dy) in [(-2, -2), (-2, 2), (2, -2), (2, 2)] {
+                spawns.push((position.x + dx, position.y + dy, position.floor));
+            }
+        }
+        if plan.case == Case::EchoHeldTarget {
+            spawns.push((p.x + 3, p.y, p.floor));
+        }
         runtime
             .realize_activation_spawns(vec![(
-                vec![(position.x, position.y, position.floor)],
+                spawns,
                 60_000,
                 5_000,
                 "oteryn:creature.rat".into(),
                 u64::try_from(health)?,
             )])
             .map_err(|error| format!("realize crosshair target spawn: {error:?}"))?;
-        target = runtime
-            .visible_entities()
-            .creatures
-            .first()
-            .ok_or("rat")?
-            .actor;
+        let mut primary_target = None;
+        for row in runtime.visible_entities().creatures {
+            let at = runtime
+                .read_actor_position(row.actor)
+                .map_err(debug)?
+                .position();
+            if at == primary {
+                primary_target = Some(row.actor);
+            } else if plan.case == Case::EchoCorners {
+                corners.push((row.actor, at));
+            } else if plan.case == Case::EchoHeldTarget {
+                held_target = Some((
+                    row.actor,
+                    oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                        identity: row.actor.placement_identity(),
+                        generation: row.generation,
+                    },
+                ));
+            }
+        }
+        target = primary_target.ok_or("rat at primary position")?;
         let mut states = owner.states.spell_states.lock().await;
         assert!(
             states
@@ -474,11 +541,31 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 .checked_sub(Duration::from_secs(7))
                 .ok_or("clock advance")?;
         }
-        deps.runtime
-            .lock()
-            .await
-            .set_test_creature_health(target, RAT_HEALTH)
-            .map_err(debug)?;
+        {
+            let mut runtime = deps.runtime.lock().await;
+            runtime
+                .set_test_creature_health(target, RAT_HEALTH)
+                .map_err(debug)?;
+            for &(corner, _) in &corners {
+                runtime
+                    .set_test_creature_health(corner, RAT_HEALTH)
+                    .map_err(debug)?;
+            }
+            if let Some((held, _)) = held_target {
+                runtime
+                    .set_test_creature_health(held, RAT_HEALTH)
+                    .map_err(debug)?;
+            }
+        }
+        if plan.case == Case::EchoHeldTarget {
+            let (_, entity) = held_target.ok_or("held rat")?;
+            assert_eq!(
+                owner
+                    .select_attack_target(actor, session, 9, Some(entity))
+                    .await,
+                oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok,
+            );
+        }
         let before = owner
             .observe_actor_vitals(actor, session)
             .await
@@ -547,7 +634,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 10 + index as u64,
                 actor_spell::SpellCastIntent {
                     spell,
-                    target: if matches!(plan.case, Case::Outburst(_)) {
+                    target: if matches!(plan.case, Case::Outburst(_) | Case::EchoHeldTarget) {
                         actor_spell::SpellTarget::None
                     } else {
                         actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
@@ -599,6 +686,28 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             actor_spell::SpellCastDisposition::Cast,
             "{key}"
         );
+        if let Some((held, _)) = held_target {
+            assert_eq!(
+                deps.runtime.lock().await.live_creature_health(held),
+                Some(u64::try_from(RAT_HEALTH)?),
+                "the held rat is outside the caster-centered strike",
+            );
+        }
+        let mut corner_health = Vec::new();
+        if plan.case == Case::EchoCorners {
+            assert_eq!(corners.len(), 4);
+            let runtime = deps.runtime.lock().await;
+            for &(corner, at) in &corners {
+                let hp = runtime
+                    .live_creature_health(corner)
+                    .ok_or("corner rat survives")?;
+                assert!(
+                    hp < u64::try_from(RAT_HEALTH)?,
+                    "initial strike missed corner {at:?}"
+                );
+                corner_health.push((corner, at, hp));
+            }
+        }
         let hit = deps
             .runtime
             .lock()
@@ -901,9 +1010,14 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         } else {
             None
         };
+        let advance_ms = if matches!(plan.case, Case::EchoCorners | Case::EchoHeldTarget) {
+            1000
+        } else {
+            1100
+        };
         owner.clock_origin = owner
             .clock_origin
-            .checked_sub(Duration::from_millis(1100))
+            .checked_sub(Duration::from_millis(advance_ms))
             .ok_or("clock")?;
         let report = owner.drain_native_ai_timers().await.map_err(debug)?;
         assert!(
@@ -926,6 +1040,25 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             assert_eq!(echo, hit);
         } else {
             assert!(echo < hit, "delayed strike damages live area");
+        }
+        {
+            let runtime = deps.runtime.lock().await;
+            for (corner, at, hp) in corner_health {
+                assert!(
+                    runtime
+                        .live_creature_health(corner)
+                        .ok_or("corner rat survives")?
+                        < hp,
+                    "echo missed corner {at:?}",
+                );
+            }
+            if let Some((held, _)) = held_target {
+                assert_eq!(
+                    runtime.live_creature_health(held),
+                    Some(u64::try_from(RAT_HEALTH)?),
+                    "the held rat is outside the saved caster-centered echo",
+                );
+            }
         }
         if let Some(expected) = expected_echo {
             assert_eq!(

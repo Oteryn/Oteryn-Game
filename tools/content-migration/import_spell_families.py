@@ -128,7 +128,34 @@ def spell_validator(root: Path):
     return validator
 
 
-def validate_catalog(root: Path, data: bytes) -> dict[str, Any]:
+def project_death_echo_area(root: Path, spell: dict[str, Any]) -> None:
+    """Project the accepted Death Echo profile from the exact historical mask."""
+    if spell["identity"] != {
+        "key": "candidate:spell/death_echo",
+        "revision": "spell-p2-r20",
+    }:
+        return
+    parameters = spell["execution"]["native_behavior"]["parameters"]
+    # The verified r25 pack retains its exact historical mask.
+    historical_area = [
+        [0, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1],
+        [1, 1, 3, 1, 1],
+        [1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 0],
+    ]
+    if canonical_bytes(parameters["area"]) != canonical_bytes(historical_area):
+        raise ValueError("UNEXPECTED_R25_DEATH_ECHO_AREA")
+    profiles = json.loads(
+        (root / SCHEMA_ROOT / "samples/native-spell-profiles.json").read_bytes()
+    )["profiles"]
+    profile = next(
+        row for row in profiles if row["spell"]["identity"] == spell["identity"]
+    )
+    parameters["area"] = profile["execution"]["native_behavior"]["parameters"]["area"]
+
+
+def validate_catalog(root: Path, data: bytes, *, r25_baseline: bool = False) -> dict[str, Any]:
     catalog = json.loads(data)
     if catalog.get("schema") != "OTERYN_EXECUTABLE_SPELL_CATALOG/v1" or len(catalog["bundles"]) != 246:
         raise ValueError("SPELL_CATALOG_COVERAGE")
@@ -140,6 +167,8 @@ def validate_catalog(root: Path, data: bytes) -> dict[str, Any]:
         if identity in identities:
             raise ValueError(f"DUPLICATE_SPELL_IDENTITY:{identity}")
         identities.add(identity)
+        if r25_baseline:
+            project_death_echo_area(root, spell)
         errors = validator.validate(entry["bundle"], entry["dependencies"], entry["catalog"], entry["manifest"])
         if errors:
             raise ValueError(f"INVALID_SPELL:{identity}:{errors}")
@@ -149,7 +178,7 @@ def validate_catalog(root: Path, data: bytes) -> dict[str, Any]:
 def baseline_outputs(root: Path = ROOT) -> dict[str, bytes]:
     """Return every planned byte only after all pinned inputs and bundles validate."""
     runtime, sidecars = verified_inputs(root)
-    catalog = validate_catalog(root, runtime["catalog"])
+    catalog = validate_catalog(root, runtime["catalog"], r25_baseline=True)
     selection = json.loads(runtime["source_selection"])
     if selection["catalog_sha256"] != digest(runtime["catalog"]):
         raise ValueError("SOURCE_SELECTION_CATALOG_MISMATCH")
@@ -190,7 +219,8 @@ def baseline_outputs(root: Path = ROOT) -> dict[str, bytes]:
     registry = validator.REGISTRY.with_resource(schema["$id"], validator.Resource.from_contents(schema))
     collection_validator = validator.Draft202012Validator(schema, registry=registry)
     for path in [CATALOG, *(path for _, path in DEPENDENCIES.values())]:
-        errors = list(collection_validator.iter_errors(json.loads(result[path])))
+        document = catalog if path == CATALOG else json.loads(result[path])
+        errors = list(collection_validator.iter_errors(document))
         if errors:
             raise ValueError(f"INVALID_FAMILY_COLLECTION:{path}:{errors[0].message}")
     return result

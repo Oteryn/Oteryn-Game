@@ -1832,6 +1832,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "base_power": 75,
         "execution": {
           "native_behavior": {
@@ -1848,11 +1851,11 @@
               "target_resolution": "area_creatures_at_each_occurrence",
               "area": [
                 [
-                  0,
                   1,
                   1,
                   1,
-                  0
+                  1,
+                  1
                 ],
                 [
                   1,
@@ -1876,11 +1879,11 @@
                   1
                 ],
                 [
-                  0,
                   1,
                   1,
                   1,
-                  0
+                  1,
+                  1
                 ]
               ],
               "damage_element": "death",
@@ -2023,9 +2026,6 @@
               "schedule_after_successful_immediate_strike": true
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -2043,11 +2043,11 @@
             "target_resolution": "area_creatures_at_each_occurrence",
             "area": [
               [
-                0,
                 1,
                 1,
                 1,
-                0
+                1,
+                1
               ],
               [
                 1,
@@ -2071,11 +2071,11 @@
                 1
               ],
               [
-                0,
                 1,
                 1,
                 1,
-                0
+                1,
+                1
               ]
             ],
             "damage_element": "death",

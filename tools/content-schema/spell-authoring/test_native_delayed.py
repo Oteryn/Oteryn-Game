@@ -110,7 +110,17 @@ class DelayedTests(unittest.TestCase):
 
     def test_online_snapshot_marker_and_harmony_semantics(self):
         death = self.build('death echo')['parameters']
-        self.assertEqual(sum(v > 0 for row in death['area'] for v in row), 21)
+        # Crystal 201189f8, death_echo.lua:11–17.
+        self.assertEqual(
+            death['area'],
+            [
+                [1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1],
+                [1, 1, 3, 1, 1],
+                [1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1],
+            ],
+        )
         self.assertEqual(death['delay_multiplier'], '0.5')
         self.assertTrue(death['requires_caster_online'])
         self.assertTrue(death['ignore_caster_floor'])
