@@ -952,7 +952,14 @@ impl PreparedNativeCombatCast {
                     .presentations
                     .as_mut()
                     .expect("prevalidated real presentation owner")
-                    .install_preflighted(proof, &result);
+                    .install_preflighted(
+                        proof,
+                        &result,
+                        self.magnitude.as_ref().map_or(
+                            oteryn_protocol_oteryn::damage_element::DamageElement::Physical,
+                            |magnitude| magnitude.analyser_element(),
+                        ),
+                    );
             }
             if let Some(proof) = self.timers.take() {
                 // The same exclusive states borrow retains this exact lane across preflight.

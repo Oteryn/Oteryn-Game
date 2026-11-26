@@ -7,9 +7,10 @@
 )]
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
-use crate::spell::Execution;
-use crate::spell::combat_batch::{CombatBatchReceipt, OwnerCombatBatch};
+use crate::spell::combat_batch::{CombatBatchReceipt, OwnerCombatBatch, OwnerCombatChange};
 use crate::spell::native::CompiledNativeSpell;
+use crate::spell::{Carrier, Execution};
+use oteryn_protocol_oteryn::damage_element::DamageElement;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeSet, num::NonZeroU32, sync::OnceLock};
@@ -22,6 +23,11 @@ pub enum Cue {
     Effect(u16),
     Projectile(u16),
     Sound(u16),
+    SpellWords(NonZeroU32),
+    Damage {
+        value: std::num::NonZeroU64,
+        element: DamageElement,
+    },
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CueRequest {
@@ -197,7 +203,7 @@ fn hold_for(prepared: &PreparedPresentation) -> PresentationHold {
         caster: prepared.batch.caster,
         command: prepared.batch.command,
         seal: Sha256::digest(&prepared.batch.binding).into(),
-        count: prepared.events.len(),
+        count: prepared.event_capacity(),
     }
 }
 #[derive(Debug, Clone)]
@@ -207,10 +213,24 @@ pub struct PreparedPresentation {
     generation: crate::foundation::ScopeOwnershipGeneration,
     batch: OwnerCombatBatch,
     events: Vec<Presentation>,
+    damage_targets: Vec<DamageTarget>,
     tiles: Vec<QualifiedCueTile>,
     source_origin: MovementLocalPosition,
     cause: std::sync::Arc<PresentationCause>,
 }
+#[derive(Debug, Clone)]
+struct DamageTarget {
+    actor: ExactActorRef,
+    position: MovementLocalPosition,
+    sub_ordinal: u16,
+}
+
+impl PreparedPresentation {
+    fn event_capacity(&self) -> usize {
+        self.events.len() + self.damage_targets.len()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     StaleOwner,
@@ -331,7 +351,13 @@ impl SpellPresentationOwner {
                 allowed.insert("appearance:effect/teleport");
             }
         }
-        self.prepare_qualified_positions(runtime, batch, requests, allowed)
+        self.prepare_qualified_positions(
+            runtime,
+            batch,
+            requests,
+            allowed,
+            matches!(definition.carrier, Carrier::Instant { .. }).then_some(index),
+        )
     }
     pub fn prepare_source_definition(
         &mut self,
@@ -392,7 +418,13 @@ impl SpellPresentationOwner {
                 .ok_or(Error::UnqualifiedSource)?;
             allowed.insert(binding);
         }
-        self.prepare_qualified_positions(runtime, batch, requests, allowed)
+        self.prepare_qualified_positions(
+            runtime,
+            batch,
+            requests,
+            allowed,
+            matches!(definition.carrier, Carrier::Instant { .. }).then_some(index),
+        )
     }
     fn prepare_qualified_positions(
         &mut self,
@@ -400,6 +432,7 @@ impl SpellPresentationOwner {
         batch: &mut OwnerCombatBatch,
         requests: Vec<LocatedCueRequest>,
         allowed: BTreeSet<&str>,
+        spoken_spell: Option<NonZeroU32>,
     ) -> Result<PreparedPresentation, Error> {
         let source_origin = runtime
             .read_actor_position(batch.caster)
@@ -461,6 +494,36 @@ impl SpellPresentationOwner {
         if binding.len() > 131_072 {
             return Err(Error::Capacity);
         }
+        let mut damage_targets = Vec::new();
+        for effect in &batch.effects {
+            if matches!(
+                effect.change,
+                OwnerCombatChange::Damage { .. } | OwnerCombatChange::DamageWithHealing { .. }
+            ) {
+                let position = runtime
+                    .read_actor_position(effect.target)
+                    .map_err(|_| Error::StaleOwner)?
+                    .position();
+                damage_targets.try_reserve(1).map_err(|_| Error::Capacity)?;
+                damage_targets.push(DamageTarget {
+                    actor: effect.target,
+                    position,
+                    sub_ordinal: effect.sub_ordinal,
+                });
+            }
+        }
+        if let Some(spell) =
+            spoken_spell.filter(|_| batch.deferred.is_none() && batch.anchor.is_some())
+        {
+            events.try_reserve(1).map_err(|_| Error::Capacity)?;
+            events.push(Presentation {
+                source_binding: String::new(),
+                cue: Cue::SpellWords(spell),
+                actor: Some(batch.caster),
+                position: source_origin,
+            });
+        }
+        self.reserve_before_draw(runtime, events.len() + damage_targets.len())?;
         batch.binding = binding;
         let cause = std::sync::Arc::new(PresentationCause::Cast {
             caster: batch.caster,
@@ -473,6 +536,7 @@ impl SpellPresentationOwner {
             generation: self.generation,
             batch: batch.clone(),
             events,
+            damage_targets,
             tiles,
             source_origin,
             cause,
@@ -543,8 +607,9 @@ impl SpellPresentationOwner {
         {
             return Err(Error::StaleOwner);
         }
-        if prepared.events.len() > MAX_PRESENTATIONS.saturating_sub(self.pending.len())
-            || prepared.events.len() > self.pending.capacity().saturating_sub(self.pending.len())
+        if prepared.event_capacity() > MAX_PRESENTATIONS.saturating_sub(self.pending.len())
+            || prepared.event_capacity()
+                > self.pending.capacity().saturating_sub(self.pending.len())
         {
             return Err(Error::Capacity);
         }
@@ -562,6 +627,16 @@ impl SpellPresentationOwner {
                 return Err(Error::StaleOwner);
             }
         }
+        for target in &prepared.damage_targets {
+            if runtime
+                .read_actor_position(target.actor)
+                .map_err(|_| Error::StaleOwner)?
+                .position()
+                != target.position
+            {
+                return Err(Error::StaleOwner);
+            }
+        }
         Ok(())
     }
     /// Only after validation in the same uninterrupted owner turn. The receipt
@@ -574,6 +649,7 @@ impl SpellPresentationOwner {
         &mut self,
         prepared: PreparedPresentation,
         receipt: &CombatBatchReceipt,
+        element: DamageElement,
     ) {
         assert_eq!(receipt.caster, prepared.batch.caster);
         assert_eq!(receipt.command, prepared.batch.command);
@@ -585,8 +661,29 @@ impl SpellPresentationOwner {
             .expect("prevalidated original queue hold");
         self.held.remove(index);
         if receipt.applied {
-            assert!(prepared.events.len() <= self.pending.capacity() - self.pending.len());
-            self.install_committed_events(prepared.cause, prepared.events);
+            assert!(prepared.event_capacity() <= self.pending.capacity() - self.pending.len());
+            let damage = prepared.damage_targets.into_iter().filter_map(|target| {
+                let health = receipt
+                    .effects
+                    .iter()
+                    .find(|effect| {
+                        effect.sub_ordinal == target.sub_ordinal && effect.target == target.actor
+                    })?
+                    .health?;
+                Some(Presentation {
+                    source_binding: String::new(),
+                    cue: Cue::Damage {
+                        value: health.committed_health_loss()?,
+                        element,
+                    },
+                    actor: Some(target.actor),
+                    position: target.position,
+                })
+            });
+            self.install_committed_events(
+                prepared.cause,
+                prepared.events.into_iter().chain(damage),
+            );
         }
     }
     #[allow(
@@ -663,6 +760,7 @@ fn canonical_events(events: &[Presentation]) -> Result<Vec<u8>, Error> {
             Cue::Effect(v) => (1, v),
             Cue::Projectile(v) => (2, v),
             Cue::Sound(v) => (3, v),
+            Cue::SpellWords(_) | Cue::Damage { .. } => return Err(Error::InvalidBatch),
         };
         out.push(kind);
         out.extend_from_slice(&value.to_be_bytes());

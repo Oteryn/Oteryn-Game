@@ -116,6 +116,7 @@ pub fn prepared(
         batch,
         cause,
         events: vec![event; count],
+        damage_targets: Vec::new(),
         tiles: vec![],
         source_origin: runtime.read_actor_position(caster).unwrap().position(),
     }
@@ -142,7 +143,7 @@ fn unrelated_publication_preserves_pending_original_hold_and_replay_emits_nothin
         .unwrap();
     let staged = runtime.stage_spell_batch(&unrelated.batch).unwrap();
     let receipt = runtime.commit_spell_batch(staged).unwrap();
-    owner.install_preflighted(unrelated, &receipt);
+    owner.install_preflighted(unrelated, &receipt, DamageElement::Physical);
     assert_eq!(owner.take_for_current_publisher(&runtime).unwrap().len(), 3);
     owner
         .validate_prepared(&runtime, &original, &original.batch)
@@ -150,7 +151,7 @@ fn unrelated_publication_preserves_pending_original_hold_and_replay_emits_nothin
     let batch = original.batch.clone();
     let staged = runtime.stage_spell_batch(&batch).unwrap();
     let receipt = runtime.commit_spell_batch(staged).unwrap();
-    owner.install_preflighted(original, &receipt);
+    owner.install_preflighted(original, &receipt, DamageElement::Physical);
     assert_eq!(owner.take_for_current_publisher(&runtime).unwrap().len(), 2);
     let replay = prepared(&mut owner, &runtime, caster, session, 1, 2);
     owner
@@ -159,7 +160,7 @@ fn unrelated_publication_preserves_pending_original_hold_and_replay_emits_nothin
     let staged = runtime.stage_spell_batch(&batch).unwrap();
     let receipt = runtime.commit_spell_batch(staged).unwrap();
     assert!(!receipt.applied);
-    owner.install_preflighted(replay, &receipt);
+    owner.install_preflighted(replay, &receipt, DamageElement::Physical);
     assert!(
         owner
             .take_for_current_publisher(&runtime)
@@ -200,6 +201,7 @@ fn unknown_cast_holds_entire_queue_budget_until_known_noncommit() {
         batch: original.batch.clone(),
         cause: original.cause.clone(),
         events: original.events.clone(),
+        damage_targets: Vec::new(),
         tiles: vec![],
         source_origin: original.source_origin,
     };
@@ -229,7 +231,7 @@ pub fn commit_fixture(
         .unwrap();
     let staged = runtime.stage_spell_batch(&prepared.batch).unwrap();
     let receipt = runtime.commit_spell_batch(staged).unwrap();
-    owner.install_preflighted(prepared, &receipt);
+    owner.install_preflighted(prepared, &receipt, DamageElement::Physical);
 }
 
 /// Commit a sound through the same physical cast receipt as the production outbox.
@@ -247,7 +249,7 @@ pub fn commit_sound_fixture(
         .unwrap();
     let staged = runtime.stage_spell_batch(&prepared.batch).unwrap();
     let receipt = runtime.commit_spell_batch(staged).unwrap();
-    owner.install_preflighted(prepared, &receipt);
+    owner.install_preflighted(prepared, &receipt, DamageElement::Physical);
 }
 
 /// Actual source activation/decoder and committed Channel owner; this fixture

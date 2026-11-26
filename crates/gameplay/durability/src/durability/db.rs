@@ -1507,6 +1507,52 @@ impl DurabilityRoot {
             .ok_or(DurabilityError::RootUnavailable)
     }
 
+    /// An immutable receipt existence check is routing advice. Its positive
+    /// result must be re-proved by the fenced owner before publishing a reply.
+    pub(super) async fn retained_receipt_exists(
+        &self,
+        query: &'static str,
+        command: crate::foundation::CommandRef,
+        deadline: TokioInstant,
+    ) -> Result<bool, DurabilityError> {
+        let pool = self.retained_receipt_publisher_pool()?;
+        let read = |pass_deadline| async move {
+            let mut connection = tokio::time::timeout_at(pass_deadline, pool.acquire())
+                .await
+                .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
+            let result = tokio::time::timeout_at(
+                pass_deadline,
+                sqlx::query_scalar::<_, bool>(query)
+                    .bind(command.game_session_id().as_bytes().as_slice())
+                    .bind(command.command_id().get().to_string())
+                    .fetch_one(&mut *connection),
+            ).await;
+            match result {
+                Ok(result) => result.map_err(DurabilityError::from),
+                Err(_) => {
+                    connection.close_on_drop();
+                    Err(DurabilityError::RootPassDeadlineExceeded)
+                }
+            }
+        };
+        let now = TokioInstant::now();
+        if now >= deadline {
+            return Err(DurabilityError::RootPassDeadlineExceeded);
+        }
+        let first = now + (deadline - now) / 2;
+        match read(first).await {
+            Ok(exists) => Ok(exists),
+            Err(error) => {
+                let retry_at = TokioInstant::now() + Duration::from_millis(50);
+                if retry_at >= deadline {
+                    return Err(error);
+                }
+                tokio::time::sleep_until(retry_at).await;
+                read(deadline).await
+            }
+        }
+    }
+
     #[cfg(any(test, feature = "test-support"))]
     #[allow(dead_code)]
     pub fn connect_test_runtime(database_url: &str) -> Result<Self, DurabilityError> {

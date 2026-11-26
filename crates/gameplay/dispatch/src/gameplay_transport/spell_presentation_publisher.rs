@@ -18,7 +18,15 @@ use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, Movement
 use crate::movement::interest::{
     InterestIndex, VisibilityPosition, VisibilitySettings, tibia_floor,
 };
-use oteryn_protocol_oteryn::{spell_presentation_candidate as wire, world_spatial::ActorPosition};
+use oteryn_protocol_oteryn::{
+    damage_element::DamageElement,
+    presentation::{
+        PresentationColor, PresentationEvent, PresentationEventKind, PresentationSource,
+        PresentationValue, PresentationValueKind,
+    },
+    spell_presentation_candidate as wire,
+    world_spatial::ActorPosition,
+};
 use sqlx::{Postgres, Transaction};
 use std::collections::VecDeque;
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -228,6 +236,7 @@ fn selected_events(
                 source,
                 secondary: None,
             },
+            Cue::SpellWords(_) | Cue::Damage { .. } => continue,
         };
         // D87's projected plane distance, then actual owner decision/emission order. Tile events
         // have no entity identity, so no invented identity or container iteration tie-break is used.
@@ -570,13 +579,26 @@ struct SoundEntry {
     revision: u64,
     actor: ExactActorRef,
     position: MovementLocalPosition,
-    cue: u16,
-    secondary: u16,
+    kind: JournalCue,
     creature: bool,
-    effect: bool,
     private: bool,
     house_scope: Option<(crate::foundation::RuntimeScopeRefV1, u64)>,
 }
+
+#[derive(Debug)]
+enum JournalCue {
+    Sound {
+        cue: u16,
+        secondary: u16,
+    },
+    ItemEffect(u16),
+    Cast {
+        cue: Cue,
+        target: ExactActorRef,
+        emission: u32,
+    },
+}
+
 impl SoundPublisher {
     /// Channel outbox ownership does not change when its caster enters a House
     /// before the publisher drains the committed events.
@@ -608,17 +630,12 @@ impl SoundPublisher {
             return;
         };
         self.revision = revision;
-        if self.sounds.len() == oteryn_protocol_oteryn::presentation::MAX_PRESENTATION_EVENTS {
-            self.sounds.pop_front();
-        }
-        self.sounds.push_back(SoundEntry {
+        self.push_entry(SoundEntry {
             revision,
             actor,
             position,
-            cue,
-            secondary,
+            kind: JournalCue::Sound { cue, secondary },
             creature: runtime.companion_snapshot_including_dead(actor).is_ok(),
-            effect: false,
             private: false,
             house_scope: None,
         });
@@ -639,7 +656,7 @@ impl SoundPublisher {
         if self.revision != before
             && let Some(entry) = self.sounds.back_mut()
         {
-            entry.effect = true;
+            entry.kind = JournalCue::ItemEffect(cue);
             entry.private = private;
         }
     }
@@ -675,15 +692,58 @@ impl SoundPublisher {
         owner: &mut SpellPresentationOwner,
         runtime: &ChannelRuntimeV1,
     ) -> Result<(), Error> {
-        for event in owner
+        let binding = context(runtime)?;
+        if self.binding.as_ref() != Some(&binding) {
+            self.sounds.clear();
+            self.ambient.clear();
+            self.binding = Some(binding);
+        }
+        let mut last_decision = None;
+        for committed in owner
             .take_for_current_publisher(runtime)
             .map_err(|_| Error::Stale)?
         {
-            if let Cue::Sound(cue) = event.event.cue {
-                self.record(runtime, event.cause.actor(), event.event.position, cue, 0);
+            let event = committed.event;
+            let actor = committed.cause.actor();
+            let cue = event.cue;
+            if !matches!(cue, Cue::Sound(_) | Cue::SpellWords(_) | Cue::Damage { .. }) {
+                continue;
             }
+            if last_decision != Some(committed.decision_ordinal) {
+                self.revision = self.revision.checked_add(1).ok_or(Error::Bound)?;
+                last_decision = Some(committed.decision_ordinal);
+            }
+            self.push_entry(SoundEntry {
+                revision: self.revision,
+                actor,
+                position: event.position,
+                kind: JournalCue::Cast {
+                    cue,
+                    target: event.actor.unwrap_or(actor),
+                    emission: u32::from(committed.emission_ordinal) + 1,
+                },
+                creature: runtime.companion_snapshot_including_dead(actor).is_ok(),
+                private: false,
+                house_scope: None,
+            });
         }
         Ok(())
+    }
+
+    fn push_entry(&mut self, entry: SoundEntry) {
+        if self.sounds.len() == oteryn_protocol_oteryn::presentation::MAX_PRESENTATION_EVENTS
+            && let Some(oldest) = self.sounds.front()
+        {
+            let revision = oldest.revision;
+            while self
+                .sounds
+                .front()
+                .is_some_and(|item| item.revision == revision)
+            {
+                self.sounds.pop_front();
+            }
+        }
+        self.sounds.push_back(entry);
     }
     /// The two independently negotiated domains retain their own bounds: at most
     /// MAX_PRESENTATION_EVENTS positional sounds plus one private ambient replacement.
@@ -698,9 +758,6 @@ impl SoundPublisher {
         u64,
         Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
     )> {
-        use oteryn_protocol_oteryn::presentation::{
-            PresentationEvent, PresentationEventKind, PresentationSource,
-        };
         if !selected {
             return Some((after, Vec::new()));
         }
@@ -727,6 +784,7 @@ impl SoundPublisher {
             (runtime.read_actor_position(actor).ok()?.position(), None)
         };
         let observer = view(position).ok()?;
+        let observer_position = wire_position(position)?;
         let mut events = Vec::new();
         // The current private loop survives overflow of the transient journal.
         if let Some((subject, _, cue, revision)) = self.ambient.get(&session)
@@ -742,6 +800,8 @@ impl SoundPublisher {
                 },
             });
         }
+        let mut decision = u32::from(!events.is_empty());
+        let mut last_revision = None;
         for sound in self.sounds.iter().filter(|sound| sound.revision > after) {
             if sound.house_scope != house_scope || (sound.private && sound.actor != actor) {
                 continue;
@@ -760,25 +820,113 @@ impl SoundPublisher {
                 PresentationSource::Others
             };
             let position = wire_position(sound.position)?;
-            events.push(PresentationEvent {
-                decision_ordinal: u32::try_from(events.len() + 1).ok()?,
-                emission_ordinal: 1,
-                kind: if sound.effect {
+            let (emission_ordinal, kind) = match sound.kind {
+                JournalCue::ItemEffect(cue) => (
+                    1,
                     PresentationEventKind::MagicEffect {
                         position,
-                        effect_id: u32::from(sound.cue),
+                        effect_id: u32::from(cue),
                         source,
-                    }
-                } else {
+                    },
+                ),
+                JournalCue::Sound { cue, secondary } => (
+                    1,
                     PresentationEventKind::Sound {
                         position,
-                        cue_id: u32::from(sound.cue),
+                        cue_id: u32::from(cue),
                         source,
-                        secondary_cue_id: u32::from(sound.secondary),
-                    }
-                },
+                        secondary_cue_id: u32::from(secondary),
+                    },
+                ),
+                JournalCue::Cast {
+                    cue,
+                    target,
+                    emission,
+                } => {
+                    let kind = match cue {
+                        Cue::Sound(cue) => PresentationEventKind::Sound {
+                            position,
+                            cue_id: u32::from(cue),
+                            source,
+                            secondary_cue_id: 0,
+                        },
+                        Cue::SpellWords(spell) => {
+                            use oteryn_gameplay_foundation::foundation::speech::{
+                                ChatPosition, SpeechMode, hears,
+                            };
+                            let speaker = ChatPosition {
+                                x: position.x,
+                                y: position.y,
+                                floor: u8::try_from(position.floor).ok()?,
+                            };
+                            let listener = ChatPosition {
+                                x: observer_position.x,
+                                y: observer_position.y,
+                                floor: u8::try_from(observer_position.floor).ok()?,
+                            };
+                            if hears(SpeechMode::Say, speaker, listener).is_none() {
+                                continue;
+                            }
+                            PresentationEventKind::SpellWords {
+                                caster: super::analyser::entity_ref(sound.actor),
+                                position,
+                                spell: spell.get(),
+                            }
+                        }
+                        Cue::Damage { value, element }
+                            if position.floor == observer_position.floor =>
+                        {
+                            PresentationEventKind::ValueText {
+                                kind: if actor == sound.actor {
+                                    PresentationValueKind::DamageDealt
+                                } else if actor == target {
+                                    PresentationValueKind::DamageReceived
+                                } else {
+                                    PresentationValueKind::DamageOthers
+                                },
+                                position,
+                                target: super::analyser::entity_ref(target),
+                                attacker: Some(super::analyser::entity_ref(sound.actor)),
+                                primary: PresentationValue {
+                                    value: value.get(),
+                                    color: damage_color(element),
+                                },
+                                secondary: None,
+                            }
+                        }
+                        Cue::Effect(_) | Cue::Projectile(_) | Cue::Damage { .. } => continue,
+                    };
+                    (emission, kind)
+                }
+            };
+            if last_revision != Some(sound.revision) {
+                decision += 1;
+                last_revision = Some(sound.revision);
+            }
+            events.push(PresentationEvent {
+                decision_ordinal: decision,
+                emission_ordinal,
+                kind,
             });
         }
         Some((self.revision, events))
+    }
+}
+
+// Tibia Fandom archive, Damage § Damage Colors, revision 2026-04-29.
+// The protocol uses the existing palette names for ice, earth and drowning.
+fn damage_color(element: DamageElement) -> PresentationColor {
+    match element {
+        DamageElement::Physical | DamageElement::LifeDrain | DamageElement::Untyped => {
+            PresentationColor::Red
+        }
+        DamageElement::Energy => PresentationColor::Purple,
+        DamageElement::Fire => PresentationColor::Orange,
+        DamageElement::Earth => PresentationColor::LightGreen,
+        DamageElement::Ice => PresentationColor::SkyBlue,
+        DamageElement::Holy => PresentationColor::Yellow,
+        DamageElement::Death => PresentationColor::DarkRed,
+        DamageElement::ManaDrain => PresentationColor::Blue,
+        DamageElement::Drowning => PresentationColor::LightBlue,
     }
 }
