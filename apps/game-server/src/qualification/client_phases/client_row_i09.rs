@@ -1,4 +1,4 @@
-//! CLIENT-I09 capture: rotate compiled, fixed chair 2358 through ordinary USE, then capture the
+//! CLIENT-I09: rotate compiled, fixed chair 2358 through ordinary USE and observe the
 //! domain-17 map delta that reports chair 2359. The replay owner is `oteryn-session`:
 //! `crates/session/src/map_transport.rs::apply` decodes and validates the delta and queues the
 //! client-visible `SessionEvent::WorldMap`; `Session::take_events` exposes it to the native client.
@@ -18,7 +18,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             .await;
     match result {
         Ok(Ok(())) => evidence(
-            "SEAM_EVIDENCE e2e_all scenario=I09.client status=PASS evidence=domain-17-furniture-rotation-fresh-capture-replayed",
+            "SEAM_EVIDENCE e2e_all scenario=I09.client status=FAIL evidence=BLOCKED-CLIENT-original-received-I09-frames-unavailable",
         ),
         Ok(Err(error)) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=I09.client status=FAIL evidence={}",
@@ -34,20 +34,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
-fn capture(directory: &Path, name: &str, bytes: &[u8]) -> TestResult {
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(directory.join(name))?;
-    std::io::Write::write_all(&mut file, bytes)?;
-    Ok(())
-}
-
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let capture_root =
-        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("I09 capture directory absent")?;
-    let capture_root = Path::new(&capture_root);
-    let replay = std::env::var_os("OTERYN_I09_REPLAY_BIN").ok_or("I09 replay binary absent")?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -154,8 +141,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     client.take_events();
     let reply = client.session_mut().world_context_use(&intent(0)?).await?;
-    if reply.status != CommandStatus::Accepted
-        || decode_use_result(&reply.payload)
+    require_mechanic_acceptance(reply.status, "I09 chair rotation")?;
+    if decode_use_result(&reply.payload)
             .map_err(|error| format!("I09 result decode: {error:?}"))?
             != UseDisposition::Committed
     {
@@ -201,10 +188,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if delta.base_revision != before.revision {
         return Err("I09 predecessor revision does not match rotation delta".into());
     }
-    let predecessor_sequence = delta
-        .server_sequence
-        .checked_sub(1)
-        .ok_or("I09 rotation delta has no predecessor sequence")?;
     evidence(&format!(
         "I09 rotation_delta_ms={}",
         started.elapsed().as_millis()
@@ -249,11 +232,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let payload = oteryn_protocol_oteryn::world_map::encode_world_map_delta(
-        &delta.value.header,
-        &delta.value,
-    )
-    .map_err(|error| format!("I09 capture encode: {error:?}"))?;
     let stale = client.session_mut().world_context_use(&intent(0)?).await?;
     if stale.status != CommandStatus::Accepted
         || decode_use_result(&stale.payload)
@@ -267,8 +245,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     assert_chair(&mut client, target, item)?;
     let session = client.join_snapshot().game_session_id;
     let position = client.world_spatial().actor_position;
-    let logout = client.session_mut().logout().await?;
-    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+    let (result, logout, _, _) = logout_once(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("I09 first logout refused: {logout:?}").into());
     }
     drop(client);
@@ -279,50 +257,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("I09 relog did not open a new session at the saved position".into());
     }
     assert_chair(&mut relogged, target, item)?;
-    capture(capture_root, "i09-map-before.bin", &before.payload)?;
-    capture(
-        capture_root,
-        "i09-map-before.txt",
-        format!(
-            "{predecessor_sequence} {} {} {}\n",
-            before.domain_id, before.snapshot_type, before.revision
-        )
-        .as_bytes(),
-    )?;
-    capture(capture_root, "i09-result.bin", &reply.payload)?;
-    capture(capture_root, "i09-map-delta.bin", &payload)?;
-    capture(
-        capture_root,
-        "i09-expected.txt",
-        format!(
-            "{} {} {} {} {}\n",
-            delta.base_revision,
-            delta.new_revision,
-            delta.server_sequence,
-            definition,
-            item.appearance_id
-        )
-        .as_bytes(),
-    )?;
-    let output = std::process::Command::new(replay)
-        .args([
-            "tests::e2e_i09::furniture_rotation_real_payload_replays_and_malformed_delta_is_atomic",
-            "--exact",
-            "--nocapture",
-        ])
-        .output()?;
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    if !output.status.success() || !stdout.contains("1 passed; 0 failed; 0 ignored;") {
-        return Err(format!("I09 fresh capture replay failed: {stdout} {stderr}").into());
-    }
-    evidence(&format!(
-        "I09_REPLAY {}",
-        stdout
-            .lines()
-            .find(|line| line.starts_with("test result:"))
-            .ok_or("I09 replay verdict missing")?
-    ));
     Ok(())
 }
 
@@ -355,6 +289,7 @@ async fn walk_once(
         let expected =
             destination(world, from, direction).ok_or("I09 route step has no landing")?;
         let outcome = client.step(direction).await?;
+        require_mechanic_acceptance(outcome.status, "I09 fixed route step")?;
         if outcome.disposition != StepDisposition::Moved
             || outcome.world_spatial_delta.is_none()
             || tile(client.world_spatial().actor_position)? != expected
