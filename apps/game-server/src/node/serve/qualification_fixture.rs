@@ -1145,6 +1145,70 @@ async fn prepare_items(
             quest_transition: None,
             key_number: None,
         };
+        #[cfg(feature = "qualification-spawn")]
+        if named == Some((3244, 1)) {
+            let record = qualification_build::retry_holder(
+                Some(root),
+                deadline,
+                qualification_build::authority_busy,
+                async || {
+                    root.read_current_character(authority, fence.character_id)
+                        .await
+                },
+            )
+            .await
+            .map_err(qualification_build::debug)?;
+            if uuid_text(record.account_id.as_bytes()) == "01934f10-7c00-7000-8000-000000000020" {
+                // Sam's old backpack is a container. Use the same pinned weight
+                // checks as a native chest mint, solely for the W15a fixture.
+                let weights = FixtureItemContent(native);
+                let mut request = request;
+                request.content_revision = format!(
+                    "sha256:{}",
+                    native
+                        .source_digest()
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>()
+                );
+                let mut candidate = qualification_build::retry_holder(
+                    Some(root),
+                    deadline,
+                    |error| {
+                        matches!(
+                            error,
+                            crate::durability::reward_claim_mint::RewardClaimMintError::Unavailable(
+                                DurabilityError::RootUnavailable
+                            )
+                        )
+                    },
+                    async || {
+                        root.freeze_reward_claim_mint_weighted(
+                            authority,
+                            proof,
+                            fence,
+                            request.clone(),
+                            &weights,
+                        )
+                        .await
+                    },
+                )
+                .await
+                .map_err(|error| format!("W15a backpack reserve: {error:?}"))?;
+                let (outcome, _) = root
+                    .commit_reward_claim_mint_weighted_noticed(
+                        authority,
+                        proof,
+                        fence,
+                        &mut candidate,
+                        None,
+                        &weights,
+                    )
+                    .await
+                    .map_err(|error| format!("W15a backpack commit: {error:?}"))?;
+                return fixture_item_committed(outcome, quantity);
+            }
+        }
         // Reservation replay retains the same CommandRef and frozen semantic intent.
         let mut candidate = qualification_build::retry_holder(
             Some(root),
