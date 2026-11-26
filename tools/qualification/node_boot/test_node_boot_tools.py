@@ -488,6 +488,78 @@ class StageDumpTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
+class N07cReplayTests(unittest.TestCase):
+    def test_selects_every_world_batch_containing_n07c(self):
+        for groups, batch, selected in (
+            ("rows", "225:1", True),
+            ("core, rows", "224:2", True),
+            ("", "all", True),
+            ("rows", "224:1", False),
+            ("rows", "226:1", False),
+            ("rows", "0:15", False),
+            ("core", "all", False),
+        ):
+            with self.subTest(groups=groups, batch=batch):
+                result = bash(function('n07c_selected') + '\nn07c_selected', env={
+                    'NODE_BOOT_WORLD': '1',
+                    'NODE_BOOT_D150_LEGACY': '0',
+                    'NODE_BOOT_E2E_ONLY': groups,
+                    'OTERYN_E2E_ROW_BATCH': batch,
+                })
+                self.assertEqual(result.returncode, 0 if selected else 1, result.stderr)
+
+    def test_requires_fresh_capture_and_one_passing_client_test(self):
+        with tempfile.TemporaryDirectory() as work:
+            capture = Path(work, 'fresh')
+            capture.mkdir()
+            Path(work, 'n07c-expected.txt').write_text('stale')
+            script = function('n07c_client_replay') + '''
+fail() { echo "$*"; }
+cargo() {
+    [[ "$E2E_ALL_CAPTURE_DIR" == "$N07C_CAPTURE_DIR" ]] || return 2
+    printf '%s\n' "$REPLAY_TEST_RESULT"
+}
+n07c_client_replay "$WORK/seam.log"
+'''
+            env = {'WORK': work, 'N07C_CAPTURE_DIR': str(capture), 'E2E_ALL_CAPTURE_DIR': ''}
+            missing = bash(script, env=env)
+            self.assertIn('N07c live capture missing', missing.stdout)
+            self.assertNotEqual(missing.returncode, 0)
+            session = '0123456789abcdef0123456789abcdef'
+            (capture / 'n07c-expected.txt').write_text(
+                f'capture_kind=typed-events-v1\nsession={session}\nsequence_before=3\nsequence_after=5\nevent_0=legacy 4 0 1 ff\n'
+            )
+            seam_log = Path(work, 'seam.log')
+            seam_log.write_text(
+                'SEAM_EVIDENCE e2e_all scenario=N07c.client status=CAPTURED '
+                f'evidence=session={session};sequence_before=3;sequence_after=5;\n'
+            )
+            env['REPLAY_TEST_RESULT'] = 'test result: ok. 0 passed; 0 failed; 0 ignored;'
+            empty = bash(script, env=env)
+            self.assertNotEqual(empty.returncode, 0)
+            self.assertNotIn('status=PASS', empty.stdout)
+            env['REPLAY_TEST_RESULT'] = (
+                'test protocol::e2e_n07c_replays_kill_facts_into_the_analyser_selector ... ok\n'
+                'test result: ok. 1 passed; 0 failed; 0 ignored;'
+            )
+            passed = bash(script, env=env)
+            self.assertEqual(passed.returncode, 0, passed.stderr)
+            self.assertIn('scenario=N07c.client status=PASS', passed.stdout)
+            bound = capture / 'n07c-expected.txt'
+            original = bound.read_text()
+            bound.write_text(original.replace('legacy 4', 'legacy 7'))
+            foreign = bash(script, env=env)
+            self.assertNotEqual(foreign.returncode, 0)
+            self.assertIn('outside the live combat sequence', foreign.stderr)
+            self.assertNotIn('status=PASS', foreign.stdout)
+            bound.write_text(original)
+            with seam_log.open('a') as log:
+                log.write('SEAM_EVIDENCE e2e_row_release account=1 error=fixture still held\n')
+            failed_release = bash(script, env=env)
+            self.assertNotEqual(failed_release.returncode, 0)
+            self.assertNotIn('status=PASS', failed_release.stdout)
+
+
 class NodeSignalTests(unittest.TestCase):
     def test_signal_requires_matching_process_birth_time(self):
         signal_node = load('signal_node').signal_node

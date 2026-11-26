@@ -1551,6 +1551,9 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   sleep 6
   local qualification=node_boot_seam_against_running_node
   local test_env=()
+  if [[ -n "${N07C_CAPTURE_DIR:-}" ]]; then
+    test_env+=("NODE_BOOT_N07C_CAPTURE_DIR=$N07C_CAPTURE_DIR")
+  fi
   if [[ "${NODE_BOOT_D150_LEGACY:-0}" == 1 ]]; then
     test_env+=("NODE_BOOT_D150_LEGACY=1")
   fi
@@ -1615,6 +1618,71 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
       "${test_command[@]}"
   )
+}
+
+n07c_selected() {
+  [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]] || return 1
+  python3 - "${NODE_BOOT_E2E_ONLY:-}" "${OTERYN_E2E_ROW_BATCH-0:15}" <<'PY_N07C_SELECTION'
+import re
+import sys
+
+groups, batch = sys.argv[1:]
+if groups.strip() and "rows" not in {group.strip() for group in groups.split(",")}:
+    sys.exit(1)
+if batch == "all":
+    sys.exit(0)
+match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+if match:
+    start, length = map(int, match.groups())
+    if start <= 225 and 225 - start < length <= (1 << 64) - 1:
+        sys.exit(0)
+sys.exit(1)
+PY_N07C_SELECTION
+}
+
+n07c_client_replay() {
+  local capture="$N07C_CAPTURE_DIR" seam_log="$1" started=$SECONDS
+  local replay=e2e_n07c_replays_kill_facts_into_the_analyser_selector
+  [[ -s "$capture/n07c-expected.txt" ]] || { fail "N07c live capture missing"; return 1; }
+  if ! grep -Eq '^SEAM_EVIDENCE e2e_all scenario=N07c[.]client status=CAPTURED ' "$seam_log" ||
+     grep -q '^SEAM_EVIDENCE e2e_row_release .*error=' "$seam_log"; then
+    fail "N07c live capture or character release did not complete"
+    return 1
+  fi
+  python3 - "$capture/n07c-expected.txt" "$seam_log" <<'PY_N07C_BINDING' || return 1
+import re
+import sys
+from pathlib import Path
+
+capture = Path(sys.argv[1]).read_text().splitlines()
+header = dict(line.split("=", 1) for line in capture if not line.startswith("event_"))
+session = header["session"]
+before = int(header["sequence_before"])
+after = int(header["sequence_after"])
+marker = f"session={session};sequence_before={before};sequence_after={after};"
+verdict = [
+    line for line in Path(sys.argv[2]).read_text().splitlines()
+    if line.startswith("SEAM_EVIDENCE e2e_all scenario=N07c.client status=CAPTURED ")
+]
+if (header.get("capture_kind") != "typed-events-v1"
+        or not re.fullmatch(r"[0-9a-f]{32}", session) or len(verdict) != 1
+        or marker not in verdict[0] or not 0 <= before < after):
+    sys.exit("N07c capture is not bound to the live combat session")
+events = [int(line.split()[1]) for line in capture if re.match(r"event_[0-9]+=", line)]
+if not events or events != sorted(set(events)) or not before < events[0] <= events[-1] <= after:
+    sys.exit("N07c capture contains events outside the live combat sequence")
+PY_N07C_BINDING
+  E2E_ALL_CAPTURE_DIR="$capture" cargo +1.100.0 test --locked -p oteryn-client --lib "$replay" -- --nocapture >"$WORK/n07c-replay.log" 2>&1 || {
+    cat "$WORK/n07c-replay.log"
+    return 1
+  }
+  cat "$WORK/n07c-replay.log"
+  grep -Eq "^test .*::${replay} \.\.\. ok$" "$WORK/n07c-replay.log" || return 1
+  grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$WORK/n07c-replay.log" || return 1
+  if [[ -n "${E2E_ALL_CAPTURE_DIR:-}" ]]; then
+    cp "$capture/n07c-expected.txt" "$E2E_ALL_CAPTURE_DIR/n07c-expected.txt"
+  fi
+  printf 'SEAM_EVIDENCE e2e_all scenario=N07c.client status=PASS seconds=%s evidence=live-typed-events-client-replay\n' "$((SECONDS - started))"
 }
 
 graceful_shutdown() { # ready=false first, socket removed
@@ -1845,7 +1913,18 @@ else
     stage pvp_world_ready node_assigned_ready -- pvp_world_ready
     stage pvp_character_bootstrap pvp_world_ready -- pvp_character_bootstrap
   fi
+  N07C_CAPTURE_DIR=""
+  if n07c_selected; then
+    N07C_CAPTURE_DIR="$(mktemp -d "$WORK/n07c-capture.XXXXXX")"
+  fi
   stage "$seam_stage_name" character_bootstrap -- seam_stages
+  if [[ -n "${N07C_CAPTURE_DIR:-}" ]]; then
+    stage n07c_client_replay "$seam_stage_name" -- n07c_client_replay "$WORK/stage-$seam_stage_name.log"
+    if [[ "${STATUS[n07c_client_replay]}" != PASS ]] &&
+       ! stage_rows "$WORK/stage-$seam_stage_name.log" FAIL | grep -Fxq 'N07c.client'; then
+      printf 'SEAM_EVIDENCE e2e_all scenario=N07c.client status=FAIL seconds=0.000 evidence=live-capture-or-client-replay-failed\n'
+    fi
+  fi
 fi
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
