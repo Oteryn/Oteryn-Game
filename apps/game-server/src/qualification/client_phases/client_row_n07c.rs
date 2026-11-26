@@ -26,6 +26,8 @@ fn collect(
     selected: bool,
     facts: &mut Vec<AnalyserFact>,
     events: &mut Vec<String>,
+    target: oteryn_dev_client::EntityRef,
+    target_observed: &mut bool,
 ) -> TestResult {
     use oteryn_protocol_oteryn::analyser::{encode_analyser_fact, encode_attributed_analyser_fact};
     let hex = |bytes: Vec<u8>| {
@@ -77,6 +79,10 @@ fn collect(
                     delta.new_revision,
                     encoded,
                 )
+            }
+            SessionEvent::ActorCombatState(delta) => {
+                *target_observed |= delta.value.target == Some(target);
+                continue;
             }
             _ => continue,
         };
@@ -217,14 +223,10 @@ async fn fight(
         .session_mut()
         .attack_target(Some(&target.entity))
         .await?;
-    if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
-        || client
-            .session_mut()
-            .combat_state()
-            .is_none_or(|state| state.target != Some(target.entity))
-    {
-        return Err(format!("attack refused: {attack:?}").into());
+    if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
+        return Err(format!("Rat attack refused: {attack:?}").into());
     }
+    let mut target_observed = false;
     let mut facts = Vec::new();
     let mut events = Vec::new();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
@@ -237,22 +239,36 @@ async fn fight(
         let loot = facts
             .iter()
             .any(|fact| matches!(fact, AnalyserFact::KillLoot { gold, .. } if *gold > 0));
-        if kill && xp && loot {
+        if target_observed && kill && xp && loot {
             break;
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
-                "Rat analyser settlement deadline kill={kill} xp={xp} loot={loot}"
+                "Rat analyser settlement deadline target={target_observed} kill={kill} xp={xp} loot={loot}"
             )
             .into());
         }
         client.service_liveness(Duration::from_millis(100)).await?;
-        collect(client, selected, &mut facts, &mut events)?;
+        collect(
+            client,
+            selected,
+            &mut facts,
+            &mut events,
+            target.entity,
+            &mut target_observed,
+        )?;
     }
     // Keep the trailing observation to catch duplicate settlement facts.
     for _ in 0..8 {
         client.service_liveness(Duration::from_millis(100)).await?;
-        collect(client, selected, &mut facts, &mut events)?;
+        collect(
+            client,
+            selected,
+            &mut facts,
+            &mut events,
+            target.entity,
+            &mut target_observed,
+        )?;
     }
     let entities = client
         .world_entities()
@@ -333,6 +349,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("analyser capability 10 not selected".into());
     }
     travel_to_rat(&mut client, world, &metadata.spawns).await?;
+    verdict::Harness::global().progress("rat-attack");
     let attribution_selected = client
         .selected_capabilities()
         .contains(&oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1);
@@ -393,10 +410,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .into());
     }
     let saved_position = client.world_spatial().actor_position;
-    // PvE combat prevents an ordinary logout for 60 seconds after the last hit.
-    let combat_expiry = tokio::time::Instant::now() + Duration::from_secs(60);
+    let combat_expiry = tokio::time::Instant::now() + Duration::from_secs(65);
     verdict::Harness::global().bounded_wait(combat_expiry, "pve-logout-lock");
-    client.service_liveness(Duration::from_secs(60)).await?;
+    while client
+        .session_mut()
+        .combat_state()
+        .is_none_or(|state| state.in_fight)
+    {
+        if tokio::time::Instant::now() >= combat_expiry {
+            return Err("Rat combat did not release the observed PvE logout lock".into());
+        }
+        client.service_liveness(Duration::from_millis(200)).await?;
+        client.take_events();
+    }
     logout(&mut client).await?;
     drop(client);
     wait_character_released(clients, 1).await?;
