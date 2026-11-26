@@ -196,7 +196,7 @@ fn level_from_stats(payload: &[u8], vocation_selected: bool) -> TestResult<u32> 
     }
     Ok(u32::from_le_bytes(payload[9..13].try_into()?))
 }
-async fn general_stats_payload(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
+pub(super) async fn general_stats_payload(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
     let request = [wire::CharacterTab::GeneralStats as u8, 0, 0, 1];
     let result = client
@@ -209,7 +209,7 @@ async fn general_stats_payload(client: &mut DevClientSession) -> TestResult<Vec<
     Ok(result.payload)
 }
 
-async fn level(client: &mut DevClientSession) -> TestResult<u32> {
+pub(super) async fn level(client: &mut DevClientSession) -> TestResult<u32> {
     let payload = general_stats_payload(client).await?;
     level_from_stats(&payload, general_stats::selected(client))
 }
@@ -1218,7 +1218,7 @@ pub(super) async fn player_logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
-fn rune_quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
+pub(super) fn rune_quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
     Ok(client
         .inventory()
         .ok_or("native inventory absent")?
@@ -1605,7 +1605,7 @@ pub(super) async fn cast_rune(
     Ok((sequence, remaining))
 }
 
-async fn paid_rune(
+pub(super) async fn paid_rune(
     client: &mut DevClientSession,
     reference: std::num::NonZeroU32,
     remaining: u64,

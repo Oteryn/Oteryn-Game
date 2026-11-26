@@ -26,23 +26,51 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
 }
 
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
-    let mut caster = connect_world(clients, 0x16).await?;
-    let outcome = verdict::observe(capture(&mut caster, clients, world)).await;
-    let cleanup = verdict::observe(full_e2ef5::rune_cleanup(&mut caster, world)).await;
-    outcome?;
-    cleanup
+    character_prep::declare_seeded("C16b.client", "druid-level-100,magic-level-18,rune-3165", "Paralyze cast and condition reply");
+    let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_C16B_ACCOUNT").await?;
+    let scoped = fixture.clients(clients);
+    let mut caster = connect_character(&scoped, 0x16, 0).await?;
+    let original = caster.join_snapshot().game_session_id;
+    request_fixture_control(uuid_text(original.as_bytes()), "--profile", "c16b-druid".into()).await?;
+    drop(caster);
+    caster = connect_character(&scoped, 0x16, 0).await?;
+    if caster.join_snapshot().game_session_id == original
+        || full_e2ef5::level(&mut caster).await? != 100
+        || full_e2ef5::current_vocation(&mut caster).await? != crate::spell::Vocation::Druid
+    {
+        return Err("C16b missing freshly admitted level-100 Druid".into());
+    }
+    let stats = full_e2ef5::general_stats_payload(&mut caster).await?;
+    let magic = stats.get(13..15).ok_or("C16b missing GeneralStats magic level")?;
+    if u16::from_le_bytes(magic.try_into()?) != 18 {
+        return Err("C16b expected magic level 18 on fresh admission".into());
+    }
+    let reference = provisioning::item_reference(&provisioning::item_index()?, 3165)?;
+    if full_e2ef5::rune_quantity(&caster, reference)? != 1 {
+        return Err("C16b fixture must supply exactly one Paralyze rune".into());
+    }
+    capture(&mut caster, clients, world, reference).await?;
+    let cast_session = caster.join_snapshot().game_session_id;
+    drop(caster);
+    let fresh = connect_character(&scoped, 0x16, 0).await?;
+    if fresh.join_snapshot().game_session_id == cast_session
+        || full_e2ef5::rune_quantity(&fresh, reference)? != 0
+    {
+        return Err("C16b rune debit did not survive fresh admission".into());
+    }
+    Ok(())
 }
 
 async fn capture(
     caster: &mut oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
+    reference: std::num::NonZeroU32,
 ) -> TestResult {
     let book = native_spell_book()?;
     let spell = book
         .rune(3165)
         .ok_or("C16b Paralyze rune not in pinned spell book")?;
-    let (reference, _) = full_e2ef5::acquire_rune(caster, world, 3165).await?;
     let mut target = connect_character(clients, 0x17, 0).await?;
     let result = verdict::indexed_timeout(Duration::from_secs(120), async {
         let path = route(world, tile(target.world_spatial().actor_position)?, |at| {
@@ -76,7 +104,11 @@ async fn capture(
         if query(&mut target).await?.1.conditions.iter().any(|c| c.icon == PARALYSED_ICON) {
             return Err("C16b target was paralysed before the cast".into());
         }
-        full_e2ef5::cast_rune(caster, spell, reference, Some(entity), None).await?;
+        let before = *caster.actor_vitals().ok_or("C16b caster vitals absent")?;
+        let (_, remaining) = full_e2ef5::cast_rune(caster, spell, reference, Some(entity), None).await?;
+        full_e2ef5::with_observer_liveness(&mut target, async {
+            full_e2ef5::paid_rune(caster, reference, remaining, before, spell).await
+        }).await?;
         let deadline = tokio::time::Instant::now() + Duration::from_secs(4);
         let (payload, status) = loop {
             let (payload, status) = query(&mut target).await?;
