@@ -93,18 +93,48 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
     Ok((u64::from_le_bytes(reply.payload[1..9].try_into()?), u32::from_le_bytes(reply.payload[9..13].try_into()?)))
 }
 
+// ATTACK replies precede their domain-10 update. Observe the first combat
+// delta after this reply so an older cached value cannot satisfy the check.
+async fn combat_after(
+    client: &mut DevClientSession,
+    result_sequence: u64,
+) -> TestResult<oteryn_protocol_oteryn::attack::ActorCombatState> {
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            for event in client.take_events() {
+                if let SessionEvent::ActorCombatState(delta) = event
+                    && delta.server_sequence > result_sequence
+                {
+                    return Ok(delta.value);
+                }
+            }
+            client.service_liveness(Duration::from_millis(20)).await?;
+        }
+    })
+    .await
+    .map_err(|_| "step=combat-state observed=no-post-result-delta")?
+}
+
 async fn mode_attack(client: &mut DevClientSession, world: &BundleWorld, modes: FightModes) -> TestResult<(u32, u32)> {
     let creature = target(client)?;
     let EntityDetail::Actor { health_percent: before, .. } = client.world_entities()
         .and_then(|entities| entities.get(&creature)).ok_or("step=mode observed=target-vanished")?.detail
     else { return Err("step=mode observed=target-without-health".into()); };
     let reply = client.session_mut().set_fight_modes(&modes).await?;
-    if reply.disposition != AttackIntentDisposition::Ok || client.session_mut().combat_state().is_none_or(|state| state.modes != modes) {
-        return Err(format!("step=mode observed={reply:?}/state={:?} need=accepted-exact-delta", client.session_mut().combat_state()).into());
+    if reply.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("step=mode observed={reply:?} need=accepted").into());
+    }
+    let state = combat_after(client, reply.result_server_sequence).await?;
+    if state.modes != modes {
+        return Err(format!("step=mode observed={state:?} need=accepted-exact-delta").into());
     }
     let selected = client.session_mut().attack_target(Some(&creature)).await?;
-    if selected.disposition != AttackIntentDisposition::Ok || client.session_mut().combat_state().is_none_or(|state| state.target != Some(creature)) {
-        return Err(format!("step=attack observed={selected:?} need=accepted-target-delta").into());
+    if selected.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("step=attack observed={selected:?} need=accepted").into());
+    }
+    let state = combat_after(client, selected.result_server_sequence).await?;
+    if state.target != Some(creature) {
+        return Err(format!("step=attack observed={state:?} need=accepted-target-delta").into());
     }
     let own = own(client)?;
     let starting_hp = client.actor_vitals().ok_or("step=armor observed=no-vitals")?.health;
