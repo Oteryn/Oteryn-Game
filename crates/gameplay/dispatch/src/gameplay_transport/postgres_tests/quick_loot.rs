@@ -594,9 +594,6 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
             },
             "batch conserves and merges both stacks"
         );
-        if case == Case::PouchLogout {
-            pouch_relog_logout(&owner, &harness, admitted).await?;
-        }
         let command = UseCommand {
             game_session_id: admitted.game_session_id,
             command_id: loot_id,
@@ -710,6 +707,9 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
             quick_loot_destination_management(&owner, &mut admitted, &harness.pool).await?;
             equip_quiver_via_wire(&owner, admitted, &harness.pool).await?;
         }
+        if case == Case::PouchLogout {
+            pouch_relog_logout(&owner, &harness, admitted).await?;
+        }
         drop(owner);
         drop(authority);
         drop(seal);
@@ -768,7 +768,7 @@ async fn pouch_relog_logout(
             }
         }
         let id = admitted.continuity.next_command_id;
-        send(&mut client, id, u32::from(COMMAND_TYPE_LOGOUT_INTENT), &[]).await?;
+        send(&mut client, id, COMMAND_TYPE_LOGOUT_INTENT, &[]).await?;
         probe.before_read.notified().await;
         // Another foreground pass briefly wins the real holder after logout preflight.
         let holder = harness.root.try_issue_semantic_pass()?;
@@ -819,54 +819,57 @@ async fn selected_item_cases(
     };
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let drive = async {
-        let corpse_handle = snapshot_corpse_handle(&mut client, corpse_identity).await?;
-        let mut command_id = admitted.continuity.next_command_id;
-        use oteryn_protocol_oteryn::world_object::{COMMAND_TYPE_USE_INTENT, encode_use_item_intent};
-        send(&mut client, command_id, COMMAND_TYPE_USE_INTENT, &encode_use_item_intent(corpse_handle)).await?;
-        let (status, _) = command_reply(&mut client, command_id).await?;
-        assert_eq!(status, CommandStatus::Accepted);
-        let opened = corpse_delta(&mut client).await?;
-        assert_eq!(opened.container_handle, Some(corpse_handle));
-        let [keep, take] = opened.entries.as_slice() else {
-            return Err("open corpse should show both entries".into());
-        };
-        if case == Case::StaleHandle {
-            for handle in [corpse_handle, ItemHandle::MAX] {
+        let result: TestResult = async {
+            let corpse_handle = snapshot_corpse_handle(&mut client, corpse_identity).await?;
+            let mut command_id = admitted.continuity.next_command_id;
+            use oteryn_protocol_oteryn::world_object::{
+                COMMAND_TYPE_USE_INTENT, UseDisposition, decode_use_result, encode_use_item_intent,
+            };
+            send(&mut client, command_id, COMMAND_TYPE_USE_INTENT, &encode_use_item_intent(corpse_handle)).await?;
+            let (status, payload) = command_reply(&mut client, command_id).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(decode_use_result(&payload).map_err(debug)?, UseDisposition::Committed);
+            let opened = corpse_delta(&mut client).await?;
+            assert_eq!(opened.container_handle, Some(corpse_handle));
+            let [keep, take] = opened.entries.as_slice() else {
+                return Err("open corpse should show both entries".into());
+            };
+            if case == Case::StaleHandle {
+                for handle in [corpse_handle, ItemHandle::MAX] {
+                    command_id += 1;
+                    send_click(&mut client, command_id, handle).await?;
+                    assert_eq!(command_reply(&mut client, command_id).await?, (CommandStatus::Rejected, vec![16, 2]));
+                }
+                assert_eq!(corpse_items(pool, corpse).await?, items);
+            } else {
+                for (cell, top, reason) in [
+                    (far, id(41), "corpse out of range"),
+                    (near, id(99), "corpse loot rights"),
+                ] {
+                    fixture_corpse(pool, corpse, cell, top, 0).await?;
+                    command_id += 1;
+                    send_click(&mut client, command_id, take.handle).await?;
+                    assert_eq!(command_reply(&mut client, command_id).await?.0, CommandStatus::Rejected, "{reason}");
+                    assert_eq!(corpse_items(pool, corpse).await?, items, "{reason}");
+                }
+                fixture_corpse(pool, corpse, near, id(41), 0).await?;
                 command_id += 1;
-                send_click(&mut client, command_id, corpse_identity, handle).await?;
+                send_click(&mut client, command_id, take.handle).await?;
+                assert_eq!(command_reply(&mut client, command_id).await?, (CommandStatus::Accepted, vec![16, 1]));
+                assert_eq!(corpse_delta(&mut client).await?, OpenContainer {
+                    container_handle: Some(corpse_handle),
+                    entries: vec![*keep],
+                });
+                command_id += 1;
+                send_click(&mut client, command_id, take.handle).await?;
                 assert_eq!(command_reply(&mut client, command_id).await?, (CommandStatus::Rejected, vec![16, 2]));
             }
-            assert_eq!(corpse_items(pool, corpse).await?, items);
-        } else {
-            for (cell, top, reason) in [
-                (far, id(41), "corpse out of range"),
-                (near, id(99), "corpse loot rights"),
-            ] {
-                fixture_corpse(pool, corpse, cell, top, 0).await?;
-                command_id += 1;
-                send_click(&mut client, command_id, corpse_identity, take.handle).await?;
-                assert_eq!(command_reply(&mut client, command_id).await?.0, CommandStatus::Rejected, "{reason}");
-                assert_eq!(corpse_items(pool, corpse).await?, items, "{reason}");
-            }
-            fixture_corpse(pool, corpse, near, id(41), 0).await?;
-            command_id += 1;
-            send_click(&mut client, command_id, corpse_identity, take.handle).await?;
-            assert_eq!(command_reply(&mut client, command_id).await?, (CommandStatus::Accepted, vec![16, 1]));
-            assert_eq!(corpse_delta(&mut client).await?, OpenContainer {
-                container_handle: Some(corpse_handle),
-                entries: vec![*keep],
-            });
-            command_id += 1;
-            send_click(&mut client, command_id, corpse_identity, take.handle).await?;
-            assert_eq!(command_reply(&mut client, command_id).await?, (CommandStatus::Rejected, vec![16, 2]));
-        }
-        Ok(())
-    };
-    let (end, result) = join_two(serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS), async {
-        let result: TestResult = drive.await;
+            Ok(())
+        }.await;
         client.shutdown().await?;
         result
-    }).await;
+    };
+    let (end, result) = join_two(serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS), drive).await;
     result?;
     assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
     if case == Case::StaleHandle {
@@ -888,10 +891,9 @@ async fn selected_item_cases(
 async fn send_click(
     client: &mut DuplexStream,
     command_id: u64,
-    corpse: [u8; 16],
     handle: ItemHandle,
 ) -> TestResult {
-    let payload = [&[8, 1, 18, 16][..], &corpse, &[74, 8], &handle.get().to_le_bytes()].concat();
+    let payload = [&[8, 1, 74, 8][..], &handle.get().to_le_bytes()].concat();
     send(client, command_id, COMMAND_TYPE_QUICK_LOOT, &payload).await
 }
 
