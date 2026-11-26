@@ -303,6 +303,35 @@ WORK=.
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 
 
+class N02ReplayTests(unittest.TestCase):
+    def test_requires_one_capture_and_one_successful_bound_replay(self):
+        replay = section("n02_client_replay() {", "seam_stages() {")
+        setup = """set -Eeuo pipefail
+WORK=.
+N02_CAPTURE_DIR=/fresh
+cargo() {
+    [[ "$N02_REPLAY_BINDING" == "01934f10-7c00-7000-8000-000000000020 10 20" ]]
+    [[ "$E2E_ALL_CAPTURE_DIR" == /fresh ]]
+    printf '%s\\n' "$REPLAY_OUTPUT"
+}
+"""
+        capture = ("SEAM_EVIDENCE e2e_all scenario=N02.client status=CAPTURED seconds=1.000 "
+                   "live_session=01934f10-7c00-7000-8000-000000000020 "
+                   "query_sequence=10 save_sequence=20 evidence=revision=0->1|core_slot=0->25\n")
+        passed = ("test play::feature_0148_wheel_allocation::view::presets::e2e_n02::e2e_n02_named_build_export_import_and_malformed_code ... ok\n"
+                  "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out")
+        with tempfile.TemporaryDirectory() as work:
+            log = Path(work, "stage-seam_stages.log")
+            for records, output, status in ((capture, passed, 0),
+                                            ("", passed, 1),
+                                            (capture * 2, passed, 1),
+                                            (capture, "", 1)):
+                log.write_text(records)
+                result = bash(setup + replay + "\nn02_client_replay", {"REPLAY_OUTPUT": output}, cwd=work)
+                self.assertEqual(result.returncode, status, result.stdout + result.stderr)
+                self.assertEqual("scenario=N02.client status=PASS" in result.stdout, status == 0)
+
+
 class ReuseTests(unittest.TestCase):
     GUARD = re.search(r'(?ms)^if \[\[ "\$NODE_BOOT_REUSE_STACK" != 0 \]\]; then.*?^fi\n', RUN_TEXT)
 

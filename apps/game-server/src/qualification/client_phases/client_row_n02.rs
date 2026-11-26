@@ -13,7 +13,9 @@ const CORE_SLOT: usize = 20;
 
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
     use std::io::Write;
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+    let Some(root) =
+        std::env::var_os("N02_CAPTURE_DIR").or_else(|| std::env::var_os("E2E_ALL_CAPTURE_DIR"))
+    else {
         return Ok(());
     };
     std::fs::OpenOptions::new()
@@ -46,11 +48,9 @@ async fn send(
     }
     let command = WheelCommand::new(wheel::COMMAND_TYPE_WHEEL_ALLOCATION, payload)
         .ok_or("Wheel runtime rejected the command")?;
+    let before_sequence = client.last_server_sequence();
     let response = wheel_allocation::send(client.session_mut(), &command).await?;
-    if !matches!(
-        response.status,
-        CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) {
+    if response.status != CommandStatus::Accepted {
         return Err(format!("{name} status={:?}", response.status).into());
     }
     let receipt = wheel::decode_wheel_reply(&response.payload)
@@ -65,6 +65,19 @@ async fn send(
         return Err(format!("{name} frames inconsistent: {receipt:?} {current:?}").into());
     }
     if keep {
+        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+        let sequence = client.last_server_sequence();
+        if sequence <= before_sequence {
+            return Err("Wheel response did not advance the server sequence".into());
+        }
+        capture(
+            &format!("n02-{name}-wire.txt"),
+            format!(
+                "{session} {sequence} {} {}\n",
+                response.kind, response.status as u32
+            )
+            .as_bytes(),
+        )?;
         capture(&format!("n02-{name}-receipt.bin"), &response.payload)?;
         for (suffix, frame) in [
             ("wheel", &response.wheel),
@@ -184,9 +197,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if quote != ["Do you want to be promoted for 20000 gold coins?"] {
         return Err(format!("King Tibianus promotion quote: {quote:?}").into());
     }
+    let unpaid = gold(&mut client).await?;
+    if unpaid != 20_000 {
+        return Err(format!("N02 pre-promotion gold was {unpaid}, expected 20000").into());
+    }
     let (_, confirmation) = client_row_p20::talk(&mut client, king, "yes").await?;
     if confirmation != ["You are now promoted."] {
         return Err(format!("King Tibianus promotion confirmation: {confirmation:?}").into());
+    }
+    let paid = gold(&mut client).await?;
+    if paid != unpaid - 20_000 {
+        return Err(format!(
+            "N02 promotion charged {} -> {paid}, expected {unpaid} -> 0",
+            unpaid
+        )
+        .into());
     }
     cross_castle_door(&mut client, world, StepDirection::South).await?;
     walk_route(&mut client, world, |at| at == start).await?;
@@ -197,7 +222,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("admission omitted Wheel capability 148".into());
     }
     let (_, initial) = send(&mut client, vec![8, 0], "query", true).await?;
-    if initial.refused {
+    let query_sequence = client.last_server_sequence();
+    if initial.refused || initial.revision != 0 || initial.points != [0; 36] {
         return Err(format!("query refused: {initial:?}").into());
     }
     let mut target = initial.points;
@@ -216,6 +242,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if saved.refused || saved.revision != initial.revision + 1 || saved.points != target {
         return Err(format!("save was not accepted exactly: {saved:?}").into());
     }
+    let save_sequence = client.last_server_sequence();
     let expected = format!(
         "revision={}\npoints={}\nsaved_revision={}\nsaved_points={}\n",
         initial.revision,
@@ -230,6 +257,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let (_, durable) = send(&mut client, vec![8, 0], "relog", false).await?;
     if client.join_snapshot().game_session_id == session || durable != saved {
         return Err(format!("fresh Wheel differs from saved allocation: {durable:?}").into());
+    }
+    if gold(&mut client).await? != paid {
+        return Err("N02 promotion debit did not survive relog".into());
     }
     // The last session's logout releases the disposable Premium view. Prepare
     // the fresh session only after proving the saved Wheel survived admission.
@@ -250,9 +280,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     logout(&mut client).await?;
     capture("n02-expected.txt", expected.as_bytes())?;
     Ok(format!(
-        "revision={}->{}|core_slot={}->{}",
-        initial.revision, saved.revision, initial.points[CORE_SLOT], saved.points[CORE_SLOT]
+        "live_session={} query_sequence={query_sequence} save_sequence={save_sequence} evidence=revision={}->{}|core_slot={}->{}",
+        uuid_text(session.as_bytes()),
+        initial.revision,
+        saved.revision,
+        initial.points[CORE_SLOT],
+        saved.points[CORE_SLOT]
     ))
+}
+
+async fn gold(client: &mut DevClientSession) -> TestResult<u64> {
+    let balance = oteryn_dev_client::client_runtime::npc_shop::balances(client.session_mut())
+        .await?
+        .ok_or("N02 live gold balance absent")?;
+    balance
+        .bank_gold
+        .checked_add(balance.carried_gold)
+        .ok_or_else(|| "N02 gold balance overflow".into())
 }
 
 async fn step_once(
@@ -344,7 +388,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         .await
     {
         Ok(Ok(observed)) => evidence(&format!(
-            "e2e_all scenario=N02.client status=PASS seconds={:.3} evidence={observed}",
+            "e2e_all scenario=N02.client status=CAPTURED seconds={:.3} {observed}",
             started.elapsed().as_secs_f64()
         )),
         Ok(Err(error)) => evidence(&format!(

@@ -1530,6 +1530,53 @@ SQL
   evidence "d150_starter_history=registered historical=nb-starter-1 current=${INTERPRETATION[3]}"
 }
 
+n02_selected() {
+  [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" != 1 ]] || return 1
+  local groups="${NODE_BOOT_E2E_ONLY:-}" batch="${OTERYN_E2E_ROW_BATCH:-0:15}"
+  groups="${groups//[[:space:]]/}"
+  [[ -z "$groups" || ",$groups," == *,rows,* ]] || return 1
+  python3 - "$batch" <<'PY_N02_BATCH'
+import re
+import sys
+
+batch = sys.argv[1]
+if batch == "all":
+    sys.exit(0)
+match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+if match is None:
+    sys.exit(1)
+start, length = map(int, match.groups())
+sys.exit(not (start <= 141 and 141 - start < length < 2**64))
+PY_N02_BATCH
+}
+
+n02_client_replay() {
+  local capture binding
+  local test_name=play::feature_0148_wheel_allocation::view::presets::e2e_n02::e2e_n02_named_build_export_import_and_malformed_code
+  local output pattern
+  capture="$(grep -E '^SEAM_EVIDENCE e2e_all scenario=N02\.client status=CAPTURED ' "$WORK/stage-seam_stages.log" || true)"
+  pattern='^SEAM_EVIDENCE e2e_all scenario=N02\.client status=CAPTURED seconds=([0-9]+\.[0-9]+) live_session=([a-f0-9-]{36}) query_sequence=([0-9]+) save_sequence=([0-9]+) evidence=(revision=0->1\|core_slot=0->25)$'
+  if [[ "$capture" == *$'\n'* || ! "$capture" =~ $pattern ]]; then
+    echo 'SEAM_EVIDENCE e2e_all scenario=N02.client status=FAIL evidence=invalid-live-capture'
+    return 1
+  fi
+  local elapsed="${BASH_REMATCH[1]}" observed="${BASH_REMATCH[5]}"
+  binding="${BASH_REMATCH[2]} ${BASH_REMATCH[3]} ${BASH_REMATCH[4]}"
+  if ! output="$(N02_REPLAY_BINDING="$binding" E2E_ALL_CAPTURE_DIR="$N02_CAPTURE_DIR" \
+    cargo +1.100.0 test --locked -p oteryn-client --lib "$test_name" -- --exact)"; then
+    printf '%s\n' "$output"
+    echo 'SEAM_EVIDENCE e2e_all scenario=N02.client status=FAIL evidence=client-replay-failed'
+    return 1
+  fi
+  printf '%s\n' "$output"
+  if [[ "$(grep -Fxc "test $test_name ... ok" <<< "$output")" != 1 ]] \
+    || ! grep -Eq '^test result: ok\. 1 passed; 0 failed; 0 ignored;' <<< "$output"; then
+    echo 'SEAM_EVIDENCE e2e_all scenario=N02.client status=FAIL evidence=client-replay-did-not-run-exactly-once'
+    return 1
+  fi
+  printf 'SEAM_EVIDENCE e2e_all scenario=N02.client status=PASS seconds=%s evidence=%s|client-replay\n' "$elapsed" "$observed"
+}
+
 seam_stages() { # §4.6 every #823 stage against the node's own port
   if [[ "${NODE_BOOT_D150_LEGACY:-0}" == 0 ]] &&
     [[ -z "${NODE_BOOT_LIBTEST:-}" || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
@@ -1826,6 +1873,10 @@ if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
   exit "$?"
 fi
 
+if n02_selected; then
+  N02_CAPTURE_DIR="$(mktemp -d "$WORK/n02-captures.XXXXXX")"
+  export N02_CAPTURE_DIR
+fi
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
@@ -1852,6 +1903,9 @@ else
   fi
   stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
+fi
+if n02_selected; then
+  stage n02_client_replay seam_stages -- n02_client_replay
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then

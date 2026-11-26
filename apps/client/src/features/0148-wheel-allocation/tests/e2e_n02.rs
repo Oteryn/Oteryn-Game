@@ -13,6 +13,8 @@ const CORE_SLOT: usize = 20;
 const PRESET_OK: &str = "Preset updated. Loaded points are proposals; Save Wheel submits them.";
 
 struct Frames {
+    kind: u32,
+    status: CommandStatus,
     receipt: Vec<u8>,
     wheel: Vec<u8>,
     atelier: Vec<u8>,
@@ -56,6 +58,8 @@ fn frames(revision: u64, points: [u16; 36]) -> Result<Frames, Error> {
         vessels: None,
     }))?;
     Ok(Frames {
+        kind: 161,
+        status: CommandStatus::Accepted,
         receipt: wheel_frame.clone(),
         wheel: wheel_frame,
         atelier: wire(atelier::encode_reply(&atelier::AtelierReply {
@@ -72,6 +76,9 @@ fn frames(revision: u64, points: [u16; 36]) -> Result<Frames, Error> {
 
 fn captured() -> Result<Captured, Error> {
     let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+        if std::env::var_os("N02_REPLAY_BINDING").is_some() {
+            return Err("bound N02 replay requires live captures".into());
+        }
         let (mut initial, mut saved) = ([0; 36], [0; 36]);
         initial[7] = 10;
         saved[7] = 10;
@@ -86,7 +93,34 @@ fn captured() -> Result<Captured, Error> {
     };
     let path = std::path::Path::new(&path);
     let read = |name: &str| -> Result<Frames, Error> {
+        let metadata = std::fs::read_to_string(path.join(format!("n02-{name}-wire.txt")))?;
+        let fields: Vec<_> = metadata.split_whitespace().collect();
+        let [session, sequence, kind, status] = fields.as_slice() else {
+            return Err("invalid N02 wire metadata".into());
+        };
+        if let Ok(binding) = std::env::var("N02_REPLAY_BINDING") {
+            let expected: Vec<_> = binding.split_whitespace().collect();
+            let [expected_session, query, save] = expected.as_slice() else {
+                return Err("invalid N02 replay binding".into());
+            };
+            let expected_sequence = if name == "query" { query } else { save };
+            if session != expected_session
+                || sequence != expected_sequence
+                || query.parse::<u64>()? >= save.parse::<u64>()?
+            {
+                return Err(
+                    "N02 capture does not match the live session and reply sequence".into(),
+                );
+            }
+        }
+        let kind = kind.parse()?;
+        let status = match status.parse::<u32>()? {
+            value if value == CommandStatus::Accepted as u32 => CommandStatus::Accepted,
+            _ => return Err("N02 capture status was not Accepted".into()),
+        };
         Ok(Frames {
+            kind,
+            status,
             receipt: std::fs::read(path.join(format!("n02-{name}-receipt.bin")))?,
             wheel: std::fs::read(path.join(format!("n02-{name}-wheel.bin")))?,
             atelier: std::fs::read(path.join(format!("n02-{name}-atelier.bin")))?,
@@ -111,8 +145,8 @@ fn captured() -> Result<Captured, Error> {
 
 fn response(frames: &Frames) -> WheelResponse {
     WheelResponse {
-        kind: 161,
-        status: CommandStatus::Accepted,
+        kind: frames.kind,
+        status: frames.status,
         payload: frames.receipt.clone(),
         wheel: Some(frames.wheel.clone()),
         atelier: Some(frames.atelier.clone()),
