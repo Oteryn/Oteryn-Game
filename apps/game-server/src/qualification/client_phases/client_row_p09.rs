@@ -6,17 +6,103 @@ use oteryn_dev_client::client_ui::daily_reward::{
 };
 use oteryn_protocol_oteryn::daily_reward as wire;
 
-fn capture(name: &str, bytes: &[u8]) -> TestResult {
-    use std::io::Write;
+use std::path::PathBuf;
 
-    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        std::fs::File::create_new(Path::new(&root).join(name))?.write_all(bytes)?;
+struct CaptureDirectory(PathBuf);
+
+impl Drop for CaptureDirectory {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
     }
-    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+
     let mut client = connect_world(clients, 0x2b).await?;
+    let session = client.join_snapshot().game_session_id;
+    let query = daily_command(&mut client, wire::COMMAND_TYPE_DAILY_REWARD_QUERY).await?;
+    let claim = daily_command(&mut client, wire::COMMAND_TYPE_DAILY_REWARD_CLAIM).await?;
+    let after = daily_command(&mut client, wire::COMMAND_TYPE_DAILY_REWARD_QUERY).await?;
+    if query.server_sequence >= claim.server_sequence
+        || claim.server_sequence >= after.server_sequence
+    {
+        return Err("daily capture sequences did not advance".into());
+    }
+    if after.status != CommandStatus::Accepted || after.payload != query.payload {
+        return Err("unopened claim changed the server wall".into());
+    }
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(LogoutResult::Accepted) {
+        return Err(format!("daily logout refused: {logout:?}").into());
+    }
+    drop(client);
+    let mut client = connect_world(clients, 0x2c).await?;
+    if client.join_snapshot().game_session_id == session {
+        return Err("daily relog reused the original session".into());
+    }
+    let persisted = daily_command(&mut client, wire::COMMAND_TYPE_DAILY_REWARD_QUERY).await?;
+    if persisted.status != CommandStatus::Accepted || persisted.payload != query.payload {
+        return Err("daily wall differed after relog".into());
+    }
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(LogoutResult::Accepted) {
+        return Err(format!("daily relog cleanup refused: {logout:?}").into());
+    }
+
+    let output = std::process::Command::new("mktemp")
+        .args(["-d", "-t", "oteryn-p09.XXXXXXXXXX"])
+        .output()?;
+    if !output.status.success() {
+        return Err("could not create private daily capture directory".into());
+    }
+    let dir = CaptureDirectory(String::from_utf8(output.stdout)?.trim_end().into());
+    let binding = format!(
+        "{session:?}:{}:{}\n",
+        query.server_sequence, claim.server_sequence
+    );
+    std::fs::write(dir.0.join("binding"), &binding)?;
+    std::fs::write(dir.0.join("p09-wall.bin"), &query.payload)?;
+    std::fs::write(dir.0.join("p09-claim.bin"), &claim.payload)?;
+    if std::fs::read_to_string(dir.0.join("binding"))? != binding {
+        return Err("daily capture belongs to a different session or sequence".into());
+    }
+    let wall = std::fs::read(dir.0.join("p09-wall.bin"))?;
+    let refusal = std::fs::read(dir.0.join("p09-claim.bin"))?;
+    if wall != query.payload || refusal != claim.payload {
+        return Err("daily capture does not match the bound live replies".into());
+    }
+    let expected = replay(query.status, &wall, claim.status, &refusal)?;
+    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        use std::io::Write;
+        let root = Path::new(&root);
+        for (name, bytes) in [
+            ("p09-wall.bin", wall.as_slice()),
+            ("p09-claim.bin", refusal.as_slice()),
+            ("p09-expected.txt", expected.as_bytes()),
+        ] {
+            std::fs::File::create_new(root.join(name))?.write_all(bytes)?;
+        }
+    }
+    Ok(expected.replace('\n', ";"))
+}
+
+async fn daily_command(
+    client: &mut oteryn_dev_client::DevClientSession,
+    command: u32,
+) -> TestResult<oteryn_dev_client::native_session::GatedCommandResult> {
+    Ok(client
+        .session_mut()
+        .gated_command(wire::CAPABILITY_DAILY_REWARD_V2, command, &[])
+        .await?)
+}
+
+fn replay(
+    query_status: CommandStatus,
+    query_payload: &[u8],
+    claim_status: CommandStatus,
+    claim_payload: &[u8],
+) -> TestResult<String> {
     let mut panel = DailyRewardPanel {
         selected: true,
         ..DailyRewardPanel::default()
@@ -24,18 +110,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if request(&mut panel, Intent::Refresh) != Some(DailyRewardCommand::Query) {
         return Err("daily panel did not request a wall refresh".into());
     }
-    let query = client
-        .session_mut()
-        .gated_command(
-            wire::CAPABILITY_DAILY_REWARD_V2,
-            wire::COMMAND_TYPE_DAILY_REWARD_QUERY,
-            &[],
-        )
-        .await?;
-    if query.status != CommandStatus::Accepted {
-        return Err(format!("wall query status={:?}", query.status).into());
+    if query_status != CommandStatus::Accepted {
+        return Err(format!("wall query status={:?}", query_status).into());
     }
-    let DailyRewardReply::Wall(wall) = decode_reply(DailyRewardCommand::Query, &query.payload)?
+    let DailyRewardReply::Wall(wall) = decode_reply(DailyRewardCommand::Query, query_payload)?
     else {
         return Err("wall query did not decode as a wall".into());
     };
@@ -45,7 +123,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if !apply_result(
         &mut panel,
         &DailyRewardResponse {
-            status: query.status,
+            status: query_status,
             reply: Some(DailyRewardReply::Wall(wall)),
         },
     ) || panel.wall != Some(wall)
@@ -68,35 +146,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("daily panel did not disable the unopened claim".into());
     }
-    let claim = client
-        .session_mut()
-        .gated_command(
-            wire::CAPABILITY_DAILY_REWARD_V2,
-            wire::COMMAND_TYPE_DAILY_REWARD_CLAIM,
-            &[],
-        )
-        .await?;
-    if claim.payload.is_empty() {
-        return Err(format!("claim reply without payload status={:?}", claim.status).into());
+    if claim_payload.is_empty() {
+        return Err(format!("claim reply without payload status={:?}", claim_status).into());
     }
-    let DailyRewardReply::Result(result) = decode_reply(DailyRewardCommand::Claim, &claim.payload)?
+    let DailyRewardReply::Result(result) = decode_reply(DailyRewardCommand::Claim, claim_payload)?
     else {
         return Err("claim did not decode as a result".into());
     };
-    if claim.status != CommandStatus::Rejected
+    if claim_status != CommandStatus::Rejected
         || result.disposition != 4
         || result.transaction_id.is_some()
     {
         return Err(format!(
             "expected unopened shrine refusal status={:?} result={result:?}",
-            claim.status
+            claim_status
         )
         .into());
     }
     if apply_result(
         &mut panel,
         &DailyRewardResponse {
-            status: claim.status,
+            status: claim_status,
             reply: Some(DailyRewardReply::Result(result)),
         },
     ) || panel.wall != Some(wall)
@@ -113,10 +183,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         wall.claim_enabled,
         result.disposition
     );
-    capture("p09-wall.bin", &query.payload)?;
-    capture("p09-claim.bin", &claim.payload)?;
-    capture("p09-expected.txt", expected.as_bytes())?;
-    Ok(expected.replace('\n', ";"))
+    Ok(expected)
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
