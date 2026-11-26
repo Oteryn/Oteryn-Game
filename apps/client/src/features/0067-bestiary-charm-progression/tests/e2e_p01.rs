@@ -12,9 +12,10 @@ use wire::{
 };
 
 struct Replies {
-    before: Vec<u8>,
-    refused: Vec<u8>,
-    after: Vec<u8>,
+    before: GatedCommandResult,
+    refused: GatedCommandResult,
+    after: GatedCommandResult,
+    durable: Option<GatedCommandResult>,
     race: u32,
     kills_before: u32,
     kills_after: u32,
@@ -22,7 +23,10 @@ struct Replies {
     charm: u32,
 }
 
-fn view(kills: u32, points: u32) -> Result<wire::CharmProgressionReply, Box<dyn std::error::Error>> {
+fn view(
+    kills: u32,
+    points: u32,
+) -> Result<wire::CharmProgressionReply, Box<dyn std::error::Error>> {
     let nz = |value: u32| NonZeroU32::new(value).ok_or("zero");
     Ok(wire::CharmProgressionReply {
         outcome: wire::CharmProgressionOutcome::Query,
@@ -48,39 +52,104 @@ fn view(kills: u32, points: u32) -> Result<wire::CharmProgressionReply, Box<dyn 
     })
 }
 
+type Error = Box<dyn std::error::Error>;
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Envelope {
+    command_id: u64,
+    game_session_id: String,
+    payload: Vec<u8>,
+    server_sequence: u64,
+    status: u32,
+}
+
+fn captured_reply(
+    path: &std::path::Path,
+    session: &str,
+    previous: &mut (u64, u64),
+) -> Result<GatedCommandResult, Error> {
+    let frame: Envelope = serde_json::from_slice(&std::fs::read(path)?)?;
+    let parts: Vec<_> = session.split('-').collect();
+    let uuid_v7 = parts.len() == 5
+        && parts.iter().zip([8, 4, 4, 4, 12]).all(|(part, width)| {
+            part.len() == width && part.bytes().all(|byte| byte.is_ascii_hexdigit())
+        })
+        && parts[2].starts_with('7')
+        && matches!(
+            parts[3].as_bytes()[0].to_ascii_lowercase(),
+            b'8' | b'9' | b'a' | b'b'
+        );
+    if !uuid_v7 || frame.game_session_id != session {
+        return Err(format!("{}: unexpected game session", path.display()).into());
+    }
+    if frame.command_id <= previous.0 || frame.server_sequence <= previous.1 {
+        return Err(format!("{}: command ID or sequence did not advance", path.display()).into());
+    }
+    if frame.status != CommandStatus::Accepted as u32 || frame.payload.is_empty() {
+        return Err(format!(
+            "{}: expected an accepted reply with payload",
+            path.display()
+        )
+        .into());
+    }
+    *previous = (frame.command_id, frame.server_sequence);
+    Ok(GatedCommandResult {
+        command_id: frame.command_id,
+        status: CommandStatus::Accepted,
+        server_sequence: frame.server_sequence,
+        payload: frame.payload,
+    })
+}
+
 fn replies() -> Result<Replies, Box<dyn std::error::Error>> {
     if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let path = std::path::Path::new(&path);
         let expected = std::fs::read_to_string(path.join("p01-expected.txt"))?;
-        let value = |key: &str| -> Result<u32, Box<dyn std::error::Error>> {
-            Ok(expected
+        let field = |key: &str| -> Result<&str, Error> {
+            expected
                 .lines()
                 .find_map(|line| line.strip_prefix(&format!("{key}=")))
-                .ok_or("expected capture line absent")?
-                .parse()?)
+                .ok_or_else(|| format!("expected capture line {key} absent").into())
         };
+        let session = field("session")?;
+        let durable_session = field("durable_session")?;
+        if session == durable_session {
+            return Err("relog capture reused the original session".into());
+        }
+        let mut previous = (0, 0);
         return Ok(Replies {
-            before: std::fs::read(path.join("p01-before.bin"))?,
-            refused: std::fs::read(path.join("p01-refused.bin"))?,
-            after: std::fs::read(path.join("p01-after.bin"))?,
-            race: value("race")?,
-            kills_before: value("kills_before")?,
-            kills_after: value("kills_after")?,
-            points_before: value("points_before")?,
-            charm: value("locked_charm")?,
+            before: captured_reply(&path.join("p01-before.json"), session, &mut previous)?,
+            refused: captured_reply(&path.join("p01-refused.json"), session, &mut previous)?,
+            after: captured_reply(&path.join("p01-after.json"), session, &mut previous)?,
+            durable: Some(captured_reply(
+                &path.join("p01-durable.json"),
+                durable_session,
+                &mut (0, 0),
+            )?),
+            race: field("race")?.parse()?,
+            kills_before: field("kills_before")?.parse()?,
+            kills_after: field("kills_after")?.parse()?,
+            points_before: field("points_before")?.parse()?,
+            charm: field("locked_charm")?.parse()?,
         });
     }
     let refused = wire::CharmProgressionReply {
-        outcome: wire::CharmProgressionOutcome::Assign(wire::charm::CharmAssignDisposition::CharmLocked),
+        outcome: wire::CharmProgressionOutcome::Assign(
+            wire::charm::CharmAssignDisposition::CharmLocked,
+        ),
         ..view(4, 7)?
     };
+    let fixture_reply = |reply: &wire::CharmProgressionReply| -> Result<_, Error> {
+        let payload =
+            wire::encode_charm_progression_reply(reply).map_err(|error| format!("{error:?}"))?;
+        Ok(result(CommandStatus::Accepted, &payload))
+    };
     Ok(Replies {
-        before: wire::encode_charm_progression_reply(&view(4, 7)?)
-            .map_err(|error| format!("{error:?}"))?,
-        refused: wire::encode_charm_progression_reply(&refused)
-            .map_err(|error| format!("{error:?}"))?,
-        after: wire::encode_charm_progression_reply(&view(5, 7)?)
-            .map_err(|error| format!("{error:?}"))?,
+        before: fixture_reply(&view(4, 7)?)?,
+        refused: fixture_reply(&refused)?,
+        after: fixture_reply(&view(5, 7)?)?,
+        durable: None,
         race: 3,
         kills_before: 4,
         kills_after: 5,
@@ -118,7 +187,7 @@ fn race_line(panel: &Panel, race: u32) -> Result<String, String> {
 #[test]
 fn e2e_p01_replays_query_refusal_and_kill_delta() -> Result<(), Box<dyn std::error::Error>> {
     let replies = replies()?;
-    let before = wire::decode_charm_progression_reply(&replies.before)
+    let before = wire::decode_charm_progression_reply(&replies.before.payload)
         .map_err(|error| format!("{error:?}"))?;
     let entry = before
         .bestiary
@@ -145,20 +214,24 @@ fn e2e_p01_replays_query_refusal_and_kill_delta() -> Result<(), Box<dyn std::err
             wire::COMMAND_TYPE_CHARM_PROGRESSION
         )
     );
-    apply(&mut loading, &query, &result(CommandStatus::Accepted, &replies.before));
+    apply(&mut loading, &query, &replies.before);
     assert!(!loading.pending);
     assert_eq!(loading.feedback, "Completed: Query; fee: 0 gold");
-    assert_eq!(race_line(&loading, replies.race)?, line(replies.kills_before));
-    assert!(loading.summary.starts_with(&format!(
-        "Charm points: {}; ",
-        replies.points_before
-    )));
+    assert_eq!(
+        race_line(&loading, replies.race)?,
+        line(replies.kills_before)
+    );
+    assert!(
+        loading
+            .summary
+            .starts_with(&format!("Charm points: {}; ", replies.points_before))
+    );
     panel = loading;
 
     // A refused ASSIGN reports the refusal and leaves the charm locked.
     panel.fields = [replies.charm.to_string(), replies.race.to_string()];
     let (mut refusing, assign) = pending(&panel, Intent::Assign)?;
-    apply(&mut refusing, &assign, &result(CommandStatus::Accepted, &replies.refused));
+    apply(&mut refusing, &assign, &replies.refused);
     assert_eq!(
         refusing.feedback,
         "Server refused: Assign(CharmLocked); fee: 0 gold"
@@ -171,21 +244,42 @@ fn e2e_p01_replays_query_refusal_and_kill_delta() -> Result<(), Box<dyn std::err
         .find(|state| state.charm.get() == replies.charm)
         .ok_or("locked charm absent")?;
     assert_eq!((state.unlocked_stage, state.assigned_race), (0, None));
-    assert_eq!(race_line(&refusing, replies.race)?, line(replies.kills_before));
+    assert_eq!(
+        race_line(&refusing, replies.race)?,
+        line(replies.kills_before)
+    );
 
     // The QUERY after the credited kill shows exactly one more kill.
     let (mut hunted, query) = pending(&refusing, Intent::Query)?;
-    apply(&mut hunted, &query, &result(CommandStatus::Accepted, &replies.after));
+    apply(&mut hunted, &query, &replies.after);
     assert_eq!(hunted.feedback, "Completed: Query; fee: 0 gold");
     assert_eq!(race_line(&hunted, replies.race)?, line(replies.kills_after));
     assert_eq!(replies.kills_after, replies.kills_before + 1);
 
+    assert_eq!(reply.charms, before.charms);
+    assert_eq!(reply.bestiary, before.bestiary);
+    if let Some(durable) = &replies.durable {
+        let (mut rejoined, query) = pending(&Panel::default(), Intent::Query)?;
+        apply(&mut rejoined, &query, durable);
+        assert_eq!(rejoined.feedback, "Completed: Query; fee: 0 gold");
+        assert_eq!(
+            race_line(&rejoined, replies.race)?,
+            line(replies.kills_after)
+        );
+        assert_eq!(rejoined.reply, hunted.reply);
+        return Ok(());
+    }
+
     // An undecodable payload and a rejected status change neither summary nor reply.
     for (status, payload, message) in [
-        (CommandStatus::Accepted, vec![0xff, 0x00], "Invalid charm reply"),
+        (
+            CommandStatus::Accepted,
+            vec![0xff, 0x00],
+            "Invalid charm reply",
+        ),
         (
             CommandStatus::Rejected,
-            replies.before.clone(),
+            replies.before.payload.clone(),
             "The server refused the charm request",
         ),
     ] {

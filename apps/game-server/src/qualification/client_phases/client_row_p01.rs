@@ -29,6 +29,7 @@ async fn send(
 ) -> TestResult<CharmProgressionReply> {
     let payload = wire::encode_charm_progression_request(&action)
         .map_err(|error| format!("encode {action:?}: {error:?}"))?;
+    let command_id = client.session_mut().next_command_id();
     let reply = client
         .session_mut()
         .gated_command(
@@ -41,8 +42,19 @@ async fn send(
     if reply.payload.is_empty() {
         return Err(format!("{action:?} returned an empty reply").into());
     }
+    if reply.command_id != command_id {
+        return Err(format!("{action:?} returned a different command ID").into());
+    }
     if let Some(name) = capture_name {
-        capture(name, &reply.payload)?;
+        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+        let envelope = serde_json::to_vec(&serde_json::json!({
+            "command_id": reply.command_id,
+            "game_session_id": session,
+            "payload": reply.payload,
+            "server_sequence": reply.server_sequence,
+            "status": reply.status as u32,
+        }))?;
+        capture(name, &envelope)?;
     }
     wire::decode_charm_progression_reply(&reply.payload)
         .map_err(|error| format!("decode {action:?}: {error:?}").into())
@@ -85,7 +97,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let before = send(
         &mut client,
         CharmProgressionAction::Query,
-        Some("p01-before.bin"),
+        Some("p01-before.json"),
     )
     .await?;
     if before.outcome != CharmProgressionOutcome::Query || before.charms.charms.is_empty() {
@@ -105,7 +117,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let refused = send(
         &mut client,
         CharmProgressionAction::Assign { charm, race },
-        Some("p01-refused.bin"),
+        Some("p01-refused.json"),
     )
     .await?;
     if refused.outcome != CharmProgressionOutcome::Assign(CharmAssignDisposition::CharmLocked)
@@ -123,23 +135,44 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let after = send(
         &mut client,
         CharmProgressionAction::Query,
-        Some("p01-after.bin"),
+        Some("p01-after.json"),
     )
     .await?;
     if after.outcome != CharmProgressionOutcome::Query {
         return Err(format!("post-hunt QUERY outcome {:?}", after.outcome).into());
     }
-    let (hunted, count_before, count_after) = after
-        .bestiary
-        .iter()
-        .map(|entry| (entry.race, kills(&before, entry.race), entry.kill_count))
-        .find(|(_, was, now)| now > was)
-        .ok_or("hunt credited no Bestiary kill")?;
-    if hunted != race || count_after != count_before + 1 {
-        return Err(format!("kill delta {count_before}->{count_after}").into());
+    let count_before = kills(&before, race);
+    let count_after = kills(&after, race);
+    let mut expected_bestiary = before.bestiary.clone();
+    let rat = expected_bestiary
+        .iter_mut()
+        .find(|entry| entry.race == race)
+        .ok_or("Rat absent from baseline Bestiary")?;
+    rat.kill_count += 1;
+    if after.bestiary != expected_bestiary {
+        return Err(format!("second Rat hunt changed unexpected Bestiary state: {after:?}").into());
     }
+    let old_session = client.join_snapshot().game_session_id;
+    full_row_p01::logout_when_ready(&mut client).await?;
+    drop(client);
+    let mut fresh = connect_world(clients, 0x22).await?;
+    if fresh.join_snapshot().game_session_id == old_session {
+        return Err("P01.client relog reused the old session".into());
+    }
+    let durable = send(
+        &mut fresh,
+        CharmProgressionAction::Query,
+        Some("p01-durable.json"),
+    )
+    .await?;
+    if durable != after {
+        return Err(format!("P01.client relog lost the changed views: {durable:?}").into());
+    }
+    full_row_p01::logout_when_ready(&mut fresh).await?;
+    let session = uuid_text(old_session.as_bytes());
+    let durable_session = uuid_text(fresh.join_snapshot().game_session_id.as_bytes());
     let expected = format!(
-        "race={hunted}\nkills_before={count_before}\nkills_after={count_after}\npoints_before={}\npoints_after={}\nlocked_charm={charm}\nlocked_stage={}\nrefusal=CharmLocked\n",
+        "session={session}\ndurable_session={durable_session}\nrace={race}\nkills_before={count_before}\nkills_after={count_after}\npoints_before={}\npoints_after={}\nlocked_charm={charm}\nlocked_stage={}\nrefusal=CharmLocked\n",
         before.charms.charm_points_available,
         after.charms.charm_points_available,
         locked.unlocked_stage

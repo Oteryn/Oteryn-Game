@@ -115,7 +115,7 @@ async fn command(
         .map_err(|error| format!("decode {action:?}: {error:?}").into())
 }
 
-async fn logout_when_ready(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn logout_when_ready(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     verdict::Harness::global().bounded_wait(deadline, "logout-combat-lock");
     while client
