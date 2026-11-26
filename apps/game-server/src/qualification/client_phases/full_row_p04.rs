@@ -4,7 +4,7 @@
 //!    bounty, shop, points and soulseal projection.
 //! 2. Send START_WEEKLY with an invalid/locked difficulty; expect a refusal and
 //!    no board delta (the negative path).
-//! 3. Reach level eight only by ordinary hunting, send START_WEEKLY(Beginner),
+//! 3. Admit at seeded level eight, send START_WEEKLY(Beginner),
 //!    and expect an accepted board containing kill and delivery assignments.
 //! 4. Send DELIVER for a real assignment; expect either item consumption plus
 //!    completion/XP deltas, or the explicit insufficient-items refusal.
@@ -151,7 +151,43 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0x9a).await?;
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_Q_P04_ACCOUNT").await?;
+    let scoped_clients = identity.clients(clients);
+    let clients = &scoped_clients;
+    character_prep::declare_seeded(
+        "P04.full",
+        "sorcerer-level-8",
+        "weekly Task Board eligibility",
+    );
+    let mut client = connect_character(clients, 0x9a, 0).await?;
+    let original_session = client.join_snapshot().game_session_id;
+    request_fixture_control_at(
+        "NODE_BOOT_CONTROL_SOCKET",
+        uuid_text(original_session.as_bytes()),
+        "--profile",
+        "p04-task-board".into(),
+    )
+    .await?;
+    logout_once(&mut client).await?;
+    drop(client);
+    let mut client = connect_character(clients, 0x9a, 0).await?;
+    let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        "sorcerer",
+        8,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    )
+    .ok_or("missing level-8 sorcerer maxima")?;
+    if client.join_snapshot().game_session_id == original_session
+        || full_e2ef7::player_level(&mut client).await? != 8
+        || !client
+            .actor_vitals()
+            .is_some_and(|vitals| vitals.max_health == max_health && vitals.max_mana == max_mana)
+    {
+        return Err(
+            "fresh Task Board admission did not serve the seeded level and derived vitals".into(),
+        );
+    }
     let initial = query(&mut client).await?;
     journey.check(
         1,
@@ -166,8 +202,6 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         (&refused.refusal, &refused.weekly),
     );
 
-    // The node-boot character is never advanced by a fixture. Repeated ordinary
-    // hunts provide XP, loot and any delivery goods used below.
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -177,16 +211,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut started = send(&mut client, 5, 0).await?;
-    for _ in 0..96 {
-        if started.refusal != 3 {
-            // LevelTooLow is the only refusal hunting can resolve.
-            break;
-        }
-        full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, "oteryn:creature.rat")
-            .await?;
-        started = send(&mut client, 5, 0).await?;
-    }
+    let started = send(&mut client, 5, 0).await?;
     journey.check(
         3,
         started.refusal == 0
@@ -306,12 +331,24 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         ("next-week-start", &next_week),
     );
     let reset = query(&mut client).await?;
-    full_row_p05::logout_after_combat(&mut client).await?;
+    let prior_session = client.join_snapshot().game_session_id;
+    logout_once(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0x9b).await?;
+    let mut fresh = connect_character(clients, 0x9b, 0).await?;
+    if fresh.join_snapshot().game_session_id == prior_session {
+        return Err("Task Board relog reused its original session".into());
+    }
     let persisted = query(&mut fresh).await?;
     journey.check(8, persisted == reset, (&reset, &persisted));
-    full_row_p05::logout_after_combat(&mut fresh).await?;
+    logout_once(&mut fresh).await?;
+    Ok(())
+}
+
+async fn logout_once(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
+    let result = client.session_mut().logout().await?.result;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("Task Board logout refused: {result:?}").into());
+    }
     Ok(())
 }
 
