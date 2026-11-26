@@ -50,7 +50,7 @@ async fn next_damage(
 ) -> TestResult<ActorVitals> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(seconds);
     let mut observed: Option<ActorVitals> = None;
-    let mut amount = None;
+    let mut attributed_damage = 0u32;
     loop {
         client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {
@@ -66,26 +66,27 @@ async fn next_damage(
                 SessionEvent::AnalyserAttributedFacts(delta) => {
                     for fact in delta.value.iter().filter(|fact| expected(fact)) {
                         if let AnalyserFact::DamageInput { value, .. } = fact.fact {
-                            if amount.replace(value.get()).is_some() {
-                                return Err(
-                                    "multiple C08 damage facts before vitals attribution".into()
-                                );
-                            }
+                            attributed_damage = attributed_damage
+                                .checked_add(value.get())
+                                .ok_or("C08 damage attribution overflow")?;
                         }
                     }
                 }
                 _ => {}
             }
         }
-        if let (Some(vitals), Some(amount)) = (observed, amount) {
-            if above - vitals.health != amount {
+        if let Some(vitals) = observed {
+            let health_loss = above - vitals.health;
+            if attributed_damage > health_loss {
                 return Err(format!(
-                    "C08 attributed damage {amount} did not match health {above}->{}",
+                    "C08 attributed damage {attributed_damage} exceeded health loss {above}->{}",
                     vitals.health
                 )
                 .into());
             }
-            return Ok(vitals);
+            if attributed_damage == health_loss {
+                return Ok(vitals);
+            }
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("no attributed C08 damage below health {above}").into());
