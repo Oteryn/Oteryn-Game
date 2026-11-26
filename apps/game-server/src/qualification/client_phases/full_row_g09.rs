@@ -99,7 +99,10 @@ fn validate_published_minute(minute: u16, from_ms: u64, through_ms: u64) -> Test
 }
 
 fn minute_in_command(minute: u32, first: u64, last: u64) -> bool {
-    first == last && first % GLOBAL_DAY_MINUTES == u64::from(minute)
+    first <= last
+        && [first, last]
+            .iter()
+            .any(|tick| tick % GLOBAL_DAY_MINUTES == u64::from(minute))
 }
 
 fn carried(
@@ -1242,10 +1245,20 @@ mod tests {
     fn clock_match_is_bounded_and_wraps_at_midnight() {
         assert!(minute_in_command(1439, 1439, 1439));
         assert!(minute_in_command(0, 1440, 1440));
-        assert!(!minute_in_command(0, 1439, 1440));
+        assert!(minute_in_command(1439, 1439, 1440));
+        assert!(minute_in_command(0, 1439, 1440));
         assert!(!minute_in_command(1, 1439, 1440));
         assert!(!minute_in_command(0, 1439, 1443));
         assert!(!minute_in_command(0, 1440, 1439));
+    }
+
+    #[test]
+    fn clock_line_accepts_only_sampled_endpoint_minutes() -> TestResult {
+        check_clock_line(&mut None, "The time is 0:05.", 11, 10, 5, 6)?;
+        check_clock_line(&mut None, "The time is 0:06.", 11, 10, 5, 6)?;
+        assert!(check_clock_line(&mut None, "The time is 0:07.", 11, 10, 5, 6).is_err());
+        assert!(check_clock_line(&mut None, "The time is 0:06.", 11, 10, 5, 7).is_err());
+        Ok(())
     }
 
     #[test]
