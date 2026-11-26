@@ -342,7 +342,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let retry = AdmissionRetryBudget::for_command(self.root);
         let current = match retry
             .retry_durability("staff_release", || {
-                store.current_session(admitted.game_session_id)
+                store.try_current_session(admitted.game_session_id)
             })
             .await
         {

@@ -115,7 +115,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<Option<CurrentCharacterGameplayFence>, crate::durability::DurabilityError> {
         use crate::durability::character_authority::CharacterAuthorityError;
         let current = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session(expected.game_session_id)
+            .try_current_session(expected.game_session_id)
             .await?;
         if current.session_state() == crate::foundation::GameSessionState::Terminal
             || super::item_fence_of(current) != Some(expected)

@@ -198,7 +198,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let session = retry
                     .retry_unavailable(async || {
                         FreshAdmissionStore::from_root(self.root.clone())
-                            .current_session(attempt.game_session_id)
+                            .try_current_session(attempt.game_session_id)
                             .await
                             .map_err(resume_read_refusal)
                     })

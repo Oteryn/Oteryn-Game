@@ -253,10 +253,22 @@ impl FreshAdmissionStore {
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
         session: GameSessionId,
     ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>> {
+        self.find_current_session_locked(tx, session)
+            .await?
+            .ok_or(DurabilityError::Unavailable)
+    }
+
+    async fn find_current_session_locked(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        session: GameSessionId,
+    ) -> Result<Option<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>>> {
         let activity_origin: Option<bool> = sqlx::query_scalar("SELECT COALESCE(game_activity_session_origin_valid(s.game_session_id,s.character_id),false) FROM game_durability_reconnect_sessions s WHERE s.game_session_id=encode($1,'hex')::uuid")
             .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-        if activity_origin != Some(true) {
-            return Err(DurabilityError::Unavailable);
+        match activity_origin {
+            None => return Ok(None),
+            Some(false) => return Err(DurabilityError::Unavailable),
+            Some(true) => {}
         }
         use sqlx::Row;
         // The current and initial keys select the same immutable origin used
@@ -281,28 +293,78 @@ impl FreshAdmissionStore {
             self.maximum_operation_bytes,
         )?;
         let mirrors: Option<serde_json::Value> = row.try_get("mirrors")?;
-        let receipt =
-            Self::restore_receipt(original, mirrors.ok_or(DurabilityError::InvalidStoredState)?)?;
-        Ok(self
-            .read_reconciled_session(tx, receipt, session)
-            .await?
-            .current_session)
+        let receipt = Self::restore_receipt(
+            original,
+            mirrors.ok_or(DurabilityError::InvalidStoredState)?,
+        )?;
+        Ok(Some(
+            self.read_reconciled_session(tx, receipt, session)
+                .await?
+                .current_session,
+        ))
     }
 
+    /// Read the canonical session, waiting for a busy holder within one root recovery window.
+    /// An absent session returns `RootUnavailable`. If a live holder stays contended through
+    /// the window, checkout returns `RootPassDeadlineExceeded`.
     pub async fn current_session(
         &self,
         session: GameSessionId,
     ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>> {
+        use super::admission_journal::JournalBackend;
+        use oteryn_error_codes::{FieldValue, Level, Line, emit};
+
+        let issued = match &self.guards.backend {
+            JournalBackend::Root(root) => {
+                let deadline = tokio::time::Instant::now() + super::db::ROOT_RECOVERY_WINDOW;
+                let pass = root
+                    .issue_ready_semantic_pass_by(deadline)
+                    .await
+                    .inspect_err(|_| {
+                        emit(
+                            "oteryn-game-server",
+                            &Line::new(Level::Warn, "durability", "current_session_holder_unavailable")
+                                .field("operation", FieldValue::Token("issue_ready_semantic_pass_by")),
+                        );
+                    })?;
+                Some(pass)
+            }
+            #[cfg(any(test, feature = "test-support"))]
+            JournalBackend::Legacy(_) => None,
+        };
+        self.read_current_session(session, issued, DurabilityError::RootUnavailable)
+            .await
+    }
+
+    /// Make a single checkout attempt for callers that own the retry budget or hold runtime
+    /// guards that must be released before waiting for the holder.
+    pub async fn try_current_session(
+        &self,
+        session: GameSessionId,
+    ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>> {
+        let issued = self.guards.backend.try_issue_root()?;
+        self.read_current_session(session, issued, DurabilityError::Unavailable)
+            .await
+    }
+
+    async fn read_current_session(
+        &self,
+        session: GameSessionId,
+        issued: Option<super::db::IssuedSemanticPass>,
+        missing: DurabilityError,
+    ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>> {
         let store = self.clone();
-        let backend = self.guards.backend.clone();
-        let issued = backend.try_issue_root()?;
-        backend
+        self.guards
+            .backend
             .run_pass(issued, move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx =
                         super::admission_journal::begin_pass_transaction(holder, deadline).await?;
                     super::db::lock_admission_relations(&mut tx).await?;
-                    let current = store.current_session_locked(&mut tx, session).await?;
+                    let current = store
+                        .find_current_session_locked(&mut tx, session)
+                        .await?
+                        .ok_or(missing)?;
                     super::admission_journal::commit_pass_transaction(tx, deadline).await?;
                     Ok(current)
                 })
