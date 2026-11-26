@@ -408,13 +408,16 @@ class N03ReplayTests(unittest.TestCase):
             """) + function('n03_replay') + '\nn03_replay'
         with tempfile.TemporaryDirectory() as temp:
             log = Path(temp, 'stage-seam_stages.log')
-            Path(temp, 'n03-expected.txt').write_text('fixture')
+            session = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+            Path(temp, 'n03-expected.txt').write_text(f'session={session}\n')
             replay = ('test play::feature_0153_depot_search::view::native::e2e_n03::'
                       'e2e_n03_depot_list_retrieve_one_and_refusals ... ok')
+            verified = f'{replay}\nN03_NATIVE_REPLAY session={session}'
             for marker, outcome, expected in (
                 ('', replay, 1),
                 ('SEAM_EVIDENCE e2e_capture scenario=N03.client status=CAPTURED evidence=item=1', '', 1),
-                ('SEAM_EVIDENCE e2e_capture scenario=N03.client status=CAPTURED evidence=item=1', replay, 0),
+                ('SEAM_EVIDENCE e2e_capture scenario=N03.client status=CAPTURED evidence=item=1', replay, 1),
+                ('SEAM_EVIDENCE e2e_capture scenario=N03.client status=CAPTURED evidence=item=1', verified, 0),
             ):
                 log.write_text(marker + '\n')
                 result = bash(script, {'TEST_RESULT': outcome}, temp)

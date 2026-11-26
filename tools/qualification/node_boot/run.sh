@@ -1832,14 +1832,21 @@ n03_replay() {
   local test=play::feature_0153_depot_search::view::native::e2e_n03::e2e_n03_depot_list_retrieve_one_and_refusals
   local log="$WORK/n03-native-replay.log"
   local started=$SECONDS
+  local session
   if [[ $(grep -c '^SEAM_EVIDENCE e2e_capture scenario=N03.client status=CAPTURED ' "$WORK/stage-seam_stages.log") != 1 ||
         ! -s "$NODE_BOOT_N03_CAPTURE_DIR/n03-expected.txt" ]]; then
     echo 'SEAM_EVIDENCE e2e_all scenario=N03.client status=FAIL evidence=missing-current-capture'
     return 1
   fi
+  session=$(sed -n 's/^session=//p' "$NODE_BOOT_N03_CAPTURE_DIR/n03-expected.txt")
+  if [[ ! "$session" =~ ^[[:xdigit:]]{8}(-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12}$ ]]; then
+    echo 'SEAM_EVIDENCE e2e_all scenario=N03.client status=FAIL evidence=missing-capture-session'
+    return 1
+  fi
   if ! (cd "$GAME_SOURCE" && E2E_ALL_CAPTURE_DIR="$NODE_BOOT_N03_CAPTURE_DIR" \
-      cargo +1.100.0 test --locked -p oteryn-client --lib "$test" -- --exact) 2>&1 | tee "$log" ||
-      [[ $(grep -Fxc "test $test ... ok" "$log") != 1 ]]; then
+      cargo +1.100.0 test --locked -p oteryn-client --lib "$test" -- --exact --nocapture) 2>&1 | tee "$log" ||
+      [[ $(grep -Fxc "test $test ... ok" "$log") != 1 ||
+         $(grep -Fxc "N03_NATIVE_REPLAY session=$session" "$log") != 1 ]]; then
     echo 'SEAM_EVIDENCE e2e_all scenario=N03.client status=FAIL evidence=native-replay-failed'
     return 1
   fi

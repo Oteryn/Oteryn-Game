@@ -3,7 +3,7 @@
 //! owner: `activate_shared` in `apps/client/src/features/0153-depot-search/native.rs`.
 use super::*;
 use oteryn_dev_client::DevClientSession;
-use oteryn_protocol_oteryn::item_view::ItemHandle;
+use oteryn_protocol_oteryn::item_view::ItemEntry;
 use oteryn_protocol_oteryn::{CommandStatus, depot, depot_search as wire};
 
 fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
@@ -17,7 +17,7 @@ fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
 async fn search_command(
     client: &mut DevClientSession,
     request: wire::Request,
-) -> TestResult<(wire::Reply, Vec<u8>)> {
+) -> TestResult<(wire::Reply, serde_json::Value)> {
     let payload = wire::encode_request(request).map_err(|error| format!("encode {error:?}"))?;
     let response = client
         .session_mut()
@@ -31,7 +31,14 @@ async fn search_command(
         return Err(format!("depot search status {:?}", response.status).into());
     }
     let reply = wire::decode_reply(&response.payload).map_err(|error| format!("decode {error:?}"))?;
-    Ok((reply, response.payload))
+    let envelope = serde_json::json!({
+        "game_session_id": uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "command_id": response.command_id,
+        "server_sequence": response.server_sequence,
+        "status": response.status as u64,
+        "payload": response.payload,
+    });
+    Ok((reply, envelope))
 }
 
 async fn depot_intent(
@@ -51,25 +58,47 @@ async fn depot_intent(
         .map_err(|error| format!("depot decode {error:?}").into())
 }
 
-fn carried(client: &DevClientSession, handle: ItemHandle) -> bool {
-    client.inventory().is_some_and(|inventory| {
-        inventory
-            .main_backpack
-            .iter()
-            .chain(&inventory.entries)
-            .chain(inventory.equipment.iter().map(|entry| &entry.item))
-            .any(|entry| entry.handle == handle)
-    })
+fn carried_count(client: &DevClientSession, item: ItemEntry) -> TestResult<u64> {
+    let inventory = client.inventory().ok_or("N03 inventory snapshot missing")?;
+    Ok(inventory
+        .main_backpack
+        .iter()
+        .chain(&inventory.entries)
+        .chain(inventory.equipment.iter().map(|entry| &entry.item))
+        .filter(|entry| entry.item_definition_ref == item.item_definition_ref)
+        .map(|entry| u64::from(entry.count.get()))
+        .sum())
 }
 
-async fn wait_carried(client: &mut DevClientSession, handle: ItemHandle, expected: bool) -> TestResult {
+async fn wait_carried(client: &mut DevClientSession, item: ItemEntry, expected: u64) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-    while carried(client, handle) != expected {
+    loop {
+        let actual = carried_count(client, item)?;
+        if actual == expected {
+            return Ok(());
+        }
         if tokio::time::Instant::now() >= deadline {
-            return Err("inventory delta timeout".into());
+            return Err(format!("N03 inventory delta expected={expected} actual={actual}").into());
         }
         client.service_liveness(Duration::from_millis(25)).await?;
         client.take_events();
+    }
+}
+
+async fn assert_no_holdings(client: &mut DevClientSession, client_id: u32) -> TestResult {
+    let (reply, _) = search_command(client, wire::Request::Search { client_id }).await?;
+    if reply.outcome != wire::Outcome::NotFound || !reply.results.is_empty() || reply.retrieved != 0 {
+        return Err(format!("N03 expected absent holdings item={client_id} reply={reply:?}").into());
+    }
+    Ok(())
+}
+
+async fn logout(client: &mut DevClientSession) -> TestResult {
+    let outcome = client.session_mut().logout().await?;
+    if outcome.status != CommandStatus::Accepted
+        || outcome.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err(format!("N03 logout refused: {outcome:?}").into());
     }
     Ok(())
 }
@@ -104,6 +133,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .strip_prefix("oteryn:item.tibia.i")
         .ok_or("carried item has no native client id")?
         .parse()?;
+    if item.count.get() != 1 || carried_count(&client, item)? != 1 {
+        return Err("N03 expected exactly one carried unit before deposit".into());
+    }
+    assert_no_holdings(&mut client, client_id).await?;
     let browse = depot_intent(
         &mut client,
         depot::DepotIntent {
@@ -130,16 +163,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if moved.outcome != depot::DepotOutcome::Moved {
         return Err(format!("deposit outcome {:?}", moved.outcome).into());
     }
-    wait_carried(&mut client, item.handle, false).await?;
+    wait_carried(&mut client, item, 0).await?;
 
     // List the holdings page by page, as the client does (first page, then next page after the
     // last row), until the deposited item is listed.
     let mut pages = Vec::new();
     let mut after = 0;
     let (listed, row) = loop {
-        let (page, page_bytes) = search_command(&mut client, wire::Request::Open { after }).await?;
+        let (page, page_envelope) = search_command(&mut client, wire::Request::Open { after }).await?;
         let found = page.results.iter().find(|row| row.client_id == client_id).cloned();
-        pages.push(page_bytes);
+        pages.push(page_envelope);
         if let Some(row) = found {
             break (page, row);
         }
@@ -148,10 +181,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         }
         after = page.results.last().ok_or("empty More page")?.client_id;
     };
-    if row.depot == 0 {
-        return Err(format!("listed row has no depot count: {row:?}").into());
+    if (row.depot, row.stash, row.inbox) != (1, 0, 0) {
+        return Err(format!("N03 expected one depot unit after deposit: {row:?}").into());
     }
-    let (retrieved, retrieved_bytes) = search_command(
+    let (retrieved, retrieved_envelope) = search_command(
         &mut client,
         wire::Request::Retrieve {
             client_id,
@@ -168,8 +201,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .map(|tier| format!("{}x{}", tier.tier, tier.count))
         .collect::<Vec<_>>()
         .join(",");
+    let original_session = client.join_snapshot().game_session_id;
+    let capture_id = uuid_text(original_session.as_bytes());
     let expected = format!(
-        "item={client_id}\npages={}\nlisted={:?}\nrow={}|{}|{}|{tiers}\nretrieve={:?}|{}\n",
+        "session={capture_id}\nitem={client_id}\npages={}\nlisted={:?}\nrow={}|{}|{}|{tiers}\nretrieve={:?}|{}\n",
         pages.len(),
         listed.outcome,
         row.depot,
@@ -178,25 +213,35 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         retrieved.outcome,
         retrieved.retrieved
     );
-    // Return whatever stays in the depot so later rows find the carried item again.
-    match search_command(
-        &mut client,
-        wire::Request::Retrieve {
-            client_id,
-            all: true,
-        },
-    )
-    .await
+    wait_carried(&mut client, item, 1).await?;
+    assert_no_holdings(&mut client, client_id).await?;
+    let locker_position = client.world_spatial().actor_position;
+    logout(&mut client).await?;
+    drop(client);
+
+    let mut fresh = connect_character(clients, 0xad, 1).await?;
+    if fresh.join_snapshot().game_session_id == original_session
+        || fresh.world_spatial().actor_position != locker_position
+        || carried_count(&fresh, item)? != 1
     {
-        Ok((rest, _))
-            if matches!(rest.outcome, wire::Outcome::Retrieved | wire::Outcome::NotFound) => {}
-        other => evidence(&format!("N03_CLEANUP_UNCONFIRMED {other:?}").replace(' ', "_")),
+        return Err("N03 relog did not restore locker position and exactly one carried unit".into());
     }
-    let _ = client.session_mut().logout().await;
-    for (index, bytes) in pages.iter().enumerate() {
-        capture(capture_root, &format!("n03-list-{index}.bin"), bytes)?;
+    assert_no_holdings(&mut fresh, client_id).await?;
+    logout(&mut fresh).await?;
+    evidence("N03_DURABILITY carried_before=1 carried_after_deposit=0 depot_after_deposit=1 carried_after_retrieve=1 relog_carried=1 relog_depot=0 fresh_session=true");
+
+    for (index, envelope) in pages.iter().enumerate() {
+        capture(
+            capture_root,
+            &format!("n03-list-{index}.json"),
+            &serde_json::to_vec(envelope)?,
+        )?;
     }
-    capture(capture_root, "n03-retrieve.bin", &retrieved_bytes)?;
+    capture(
+        capture_root,
+        "n03-retrieve.json",
+        &serde_json::to_vec(&retrieved_envelope)?,
+    )?;
     capture(capture_root, "n03-expected.txt", expected.as_bytes())?;
     Ok(format!(
         "item={client_id} pages={} depot={} retrieved={}",
