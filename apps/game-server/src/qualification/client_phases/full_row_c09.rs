@@ -129,31 +129,28 @@ async fn wait_quantity(
 // The pinned Frodo behavior wanders two tiles from his authored placement.
 const FRODO_WANDER_RADIUS: u16 = 2;
 
+fn is_frodo(
+    entity: &oteryn_dev_client::WorldSpatialEntity,
+    placements: &[oteryn_world_bundle::npc::Placement],
+) -> bool {
+    entity.kind == oteryn_dev_client::EntityKind::Npc
+        && entity.display_name.is_none_or(|name| name.as_str().is_ok_and(|name| name == "Frodo"))
+        && placements.iter().any(|p| {
+            entity.position.floor == -i16::from(p.floor)
+                && entity.position.x.abs_diff(i32::from(p.x))
+                    .max(entity.position.y.abs_diff(i32::from(p.y))) <= u32::from(FRODO_WANDER_RADIUS)
+        })
+}
+
 fn meat_seller_at(
     entity: &oteryn_dev_client::WorldSpatialEntity,
     placements: &[oteryn_world_bundle::npc::Placement],
     player: ActorPosition,
 ) -> bool {
-    entity.kind == oteryn_dev_client::EntityKind::Npc
-        && entity
-            .display_name
-            .is_none_or(|name| name.as_str().is_ok_and(|name| name == "Frodo"))
+    is_frodo(entity, placements)
         && entity.position.floor == player.floor
-        && entity
-            .position
-            .x
-            .abs_diff(player.x)
-            .max(entity.position.y.abs_diff(player.y))
+        && entity.position.x.abs_diff(player.x).max(entity.position.y.abs_diff(player.y))
             <= oteryn_protocol_oteryn::npc_service::TALK_RANGE_TILES
-        && placements.iter().any(|p| {
-            entity.position.floor == -i16::from(p.floor)
-                && entity
-                    .position
-                    .x
-                    .abs_diff(i32::from(p.x))
-                    .max(entity.position.y.abs_diff(i32::from(p.y)))
-                    <= u32::from(FRODO_WANDER_RADIUS)
-        })
 }
 
 #[test]
@@ -235,10 +232,14 @@ pub(super) async fn buy_meat(
         .iter()
         .find(|npc| npc.key == "oteryn:npc.frodo")
         .ok_or("Frodo absent from compiled World bundle")?;
-    let approach = wire::TALK_RANGE_TILES - u32::from(FRODO_WANDER_RADIUS);
-    let path = route(world, here, |at| {
-        npc.placements.iter().any(|p| {
-            p.floor == at.floor && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= approach
+    let closest = wire::TALK_RANGE_TILES.saturating_sub(u32::from(FRODO_WANDER_RADIUS));
+    let farthest = wire::TALK_RANGE_TILES + u32::from(FRODO_WANDER_RADIUS);
+    let path = (closest..=farthest).find_map(|radius| {
+        route(world, here, |at| {
+            npc.placements.iter().any(|p| {
+                p.floor == at.floor
+                    && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= radius
+            })
         })
     })
     .ok_or("no walk route to Frodo within talk range")?;
@@ -253,6 +254,23 @@ pub(super) async fn buy_meat(
                 "need=unique-visible-Frodo-within-talk-range;observed=none-or-ambiguous;position={:?};last-frame={}",
                 client.world_spatial().actor_position, client.last_server_sequence()
             ).into());
+        }
+        let frodo = client.world_entities().and_then(|view| {
+            let mut matches = view.iter().filter(|entry| is_frodo(entry, &npc.placements));
+            let only = matches.next()?;
+            matches.next().is_none().then_some(only.position)
+        });
+        if let Some(position) = frodo {
+            let target = tile(position)?;
+            let from = tile(client.world_spatial().actor_position)?;
+            let approach = route_avoiding(world, from, |at| {
+                at.floor == target.floor
+                    && u32::from(at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)))
+                        <= wire::TALK_RANGE_TILES
+            }, |at| at != target);
+            if let Some(direction) = approach.and_then(|steps| steps.first().copied()) {
+                walk(client, world, &[direction]).await?;
+            }
         }
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
@@ -274,7 +292,10 @@ pub(super) async fn buy_meat(
         .session_mut()
         .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
         .await?;
-    let window = wire::decode_npc_trade_window(&delta.payload)
+    let details = client.selected_capabilities().contains(
+        &oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1,
+    );
+    let window = wire::decode_npc_trade_window_for(&delta.payload, details)
         .map_err(|e| format!("trade window reply={e:?}"))?;
     let (index, offer) = window
         .offers
