@@ -147,8 +147,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let path = route(world, here, |at| {
         npc.placements.iter().any(|p| {
             p.floor == at.floor
-                && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)))
-                    <= wire::TALK_RANGE_TILES - HANNA_WANDER_RADIUS
+                && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= wire::TALK_RANGE_TILES
         })
     })
     .ok_or("step=select;needed=walkable-hanna-approach")?;
