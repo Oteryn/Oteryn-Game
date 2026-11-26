@@ -16,11 +16,9 @@
 //! holds no codec of its own, only the glue that ties one admission to its join-snapshot decode
 //! and its command/sequence discipline. Every admission or codec error fails closed.
 
-/// Real wire codecs for downstream transport fixtures; no session mutation helpers.
+/// Real wire codecs and passive input capture for downstream transport fixtures.
 #[cfg(feature = "test-support")]
-pub mod test_support {
-    pub use oteryn_protocol_oteryn as wire;
-}
+pub mod test_support;
 
 /// Account achievement query and typed result.
 pub mod account_achievements;

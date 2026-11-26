@@ -272,7 +272,12 @@ impl<'a> Staging<'a> {
         .ok_or_else(|| format!("C17b no eligible route from {from:?}").into())
     }
 
-    async fn walk(&self, client: &mut DevClientSession, path: &[StepDirection]) -> TestResult {
+    async fn walk(
+        &self,
+        client: &mut DevClientSession,
+        path: &[StepDirection],
+        mut observe: impl FnMut(&mut DevClientSession) -> TestResult,
+    ) -> TestResult {
         for &direction in path {
             let from = tile(client.world_spatial().actor_position)?;
             let expected =
@@ -286,18 +291,28 @@ impl<'a> Staging<'a> {
                 || actual != expected
                 || actual == from
             {
-                let ground = self.world.base().tile(expected.x, expected.y, expected.floor);
-                let occupants = client.world_entities().into_iter().flat_map(|view| view.iter())
+                let ground = self
+                    .world
+                    .base()
+                    .tile(expected.x, expected.y, expected.floor);
+                let occupants = client
+                    .world_entities()
+                    .into_iter()
+                    .flat_map(|view| view.iter())
                     .filter(|entity| tile(entity.position).ok() == Some(expected))
-                    .map(|entity| (entity.entity, entity.kind)).collect::<Vec<_>>();
-                evidence(&format!("C17B_STEP_TILE command={} sequence={} at={expected:?} ground={:?} items={:?} walkable={} enterable={} no_logout={} protection_zone={} view_occupants={occupants:?}",
-                    outcome.command_id, outcome.result_server_sequence,
+                    .map(|entity| (entity.entity, entity.kind))
+                    .collect::<Vec<_>>();
+                evidence(&format!(
+                    "C17B_STEP_TILE command={} sequence={} at={expected:?} ground={:?} items={:?} walkable={} enterable={} no_logout={} protection_zone={} view_occupants={occupants:?}",
+                    outcome.command_id,
+                    outcome.result_server_sequence,
                     ground.as_ref().and_then(|tile| tile.ground()),
                     ground.as_ref().map(|tile| tile.ids()),
                     ground.as_ref().is_some_and(|tile| tile.walkable()),
                     self.world.enterable(expected),
                     ground.as_ref().is_some_and(|tile| tile.no_logout()),
-                    ground.as_ref().is_some_and(|tile| tile.protection_zone())));
+                    ground.as_ref().is_some_and(|tile| tile.protection_zone())
+                ));
                 return Err(format!(
                     "C17b first STEP {direction:?} from={from:?} expected={expected:?} actual={actual:?}: {outcome:?}"
                 ).into());
@@ -310,6 +325,7 @@ impl<'a> Staging<'a> {
                     outcome.step_wait_ms,
                 )))
                 .await?;
+            observe(client)?;
         }
         Ok(())
     }
@@ -318,6 +334,7 @@ impl<'a> Staging<'a> {
         &self,
         caster: &mut DevClientSession,
         observer: &mut DevClientSession,
+        mut observe: impl FnMut(&mut DevClientSession) -> TestResult,
     ) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
         let from = tile(caster.world_spatial().actor_position)?;
         let spawn = self
@@ -355,7 +372,18 @@ impl<'a> Staging<'a> {
                     .tile(at.x, at.y, at.floor)
                     .is_some_and(|tile| !tile.protection_zone())
         })?;
-        provisioning::with_peer_liveness(observer, self.walk(caster, &path)).await?;
+        observe(observer)?;
+        super::mp::observations::while_servicing_liveness(
+            self.walk(caster, &path, |_| Ok(())),
+            async || {
+                observer
+                    .session_mut()
+                    .service_liveness_discarding_events(Duration::from_millis(25))
+                    .await?;
+                observe(observer)
+            },
+        )
+        .await??;
         let caster_tile = tile(caster.world_spatial().actor_position)?;
         if !adjacent(caster_tile, spawn) {
             return Err(format!(
@@ -384,11 +412,21 @@ impl<'a> Staging<'a> {
         // Keep the observer in targeting range on the west approach, two cells
         // from the caster. The Rat's immediate perimeter is for the caster alone.
         let observation_tile = TilePos {
-            x: caster_tile.x.checked_sub(2).ok_or("C17b observer x underflow")?,
+            x: caster_tile
+                .x
+                .checked_sub(2)
+                .ok_or("C17b observer x underflow")?,
             ..caster_tile
         };
         if !self.world.enterable(observation_tile)
-            || !self.world.base().tile(observation_tile.x, observation_tile.y, observation_tile.floor)
+            || !self
+                .world
+                .base()
+                .tile(
+                    observation_tile.x,
+                    observation_tile.y,
+                    observation_tile.floor,
+                )
                 .is_some_and(|tile| tile.walkable() && !tile.protection_zone())
             || observation_tile == rat_tile
         {
@@ -399,7 +437,7 @@ impl<'a> Staging<'a> {
             "C17B_STAGING caster={caster_tile:?} rat={rat_tile:?} observer={observation_tile:?} observer_steps={}",
             path.len()
         ));
-        provisioning::with_peer_liveness(caster, self.walk(observer, &path)).await?;
+        provisioning::with_peer_liveness(caster, self.walk(observer, &path, observe)).await?;
         let observer_tile = tile(observer.world_spatial().actor_position)?;
         if observer_tile != observation_tile {
             return Err(format!(
@@ -436,7 +474,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .map_err(|error| format!("step=invisibility-access spell=utana vid: {error}"))?;
     let mut observer = connect_character(clients, 0xb2, 0).await?;
     let staging = Staging::new(world, &metadata.spawns);
-    let rat = staging.encounter(&mut caster, &mut observer).await?.entity;
+    let rat = staging
+        .encounter(&mut caster, &mut observer, |_| Ok(()))
+        .await?
+        .entity;
     let caster_ref = own(&caster)?;
     caster.take_events();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
@@ -589,10 +630,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("fresh-admission-condition", cast.result_server_sequence)?;
     let back = staging.path(&caster, Some(&observer), |at| at == TOWN)?;
-    provisioning::with_peer_liveness(&mut observer, staging.walk(&mut caster, &back)).await?;
+    provisioning::with_peer_liveness(&mut observer, staging.walk(&mut caster, &back, |_| Ok(())))
+        .await?;
     logout(&mut caster).await?;
     let back = staging.path(&observer, None, |at| at == TOWN)?;
-    staging.walk(&mut observer, &back).await?;
+    staging.walk(&mut observer, &back, |_| Ok(())).await?;
     logout(&mut observer).await
 }
 

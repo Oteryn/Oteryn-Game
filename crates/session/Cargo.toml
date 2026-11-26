@@ -19,5 +19,8 @@ test-support = []
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../protocol-oteryn" }
 tokio.workspace = true
 
+[dev-dependencies]
+serde_json.workspace = true
+
 [lints]
 workspace = true
