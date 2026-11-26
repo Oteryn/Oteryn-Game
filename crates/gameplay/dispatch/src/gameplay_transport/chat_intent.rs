@@ -1033,16 +1033,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let retry = super::AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
         Box::pin(self.chat_speaker_name_with_budget(session, &retry))
             .await
-            .ok()
+            .ok()?
     }
 
     /// Named visibility shares one budget across its bounded interest set. Only
-    /// holder contention retries; absent names and invalid authority fail closed.
+    /// holder contention retries. An ended session has no name to project.
+    /// Invalid names and authority still fail closed.
     pub(super) async fn chat_speaker_name_with_budget(
         &self,
         session: GameSessionId,
         retry: &super::AdmissionRetryBudget<'_>,
-    ) -> Result<(String, [u8; 16], u32), super::connection::AdmissionRefusal> {
+    ) -> Result<Option<(String, [u8; 16], u32)>, super::connection::AdmissionRefusal> {
         use super::connection::AdmissionRefusal;
         use crate::durability::DurabilityError;
         use crate::durability::character_authority::CharacterAuthorityError;
@@ -1050,7 +1051,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
         // Entity visibility also uses this name. Resolve its session from an
         // observation snapshot so a reconnect writer cannot stall that tick.
-        let fence = retry
+        let Some(fence) = retry
             .retry_unavailable(async || {
                 self.root
                     .observe_current_gameplay_fence(self.character, session, true)
@@ -1063,7 +1064,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
             })
             .await?
-            .ok_or(AdmissionRefusal::Rejected)?;
+        else {
+            return Ok(None);
+        };
         let character_id = fence.character_id;
         let character = *character_id.as_bytes();
         let name = retry
@@ -1094,7 +1097,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .await?
             .map_or(1, |progression| progression.level);
-        Ok((name.as_str().to_owned(), character, level))
+        Ok(Some((name.as_str().to_owned(), character, level)))
     }
 
     /// Opens (or keeps) the chat state of `session` and answers its open rooms (the snapshot).

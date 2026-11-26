@@ -8,7 +8,8 @@
 //!    exact combat-state target delta, then clear that target.
 //! 3. Cast `utana vid`, verify the mana cost, then verify the caster remains visible and
 //!    targetable by the observer while the Rat stops attacking the caster.
-//! 4. Immediately recast and verify the cooldown refusal consumes no resources.
+//! 4. Immediately recast and verify the cooldown refusal consumes no resources. Require a
+//!    positive, attributed damage event when the invisible caster attacks the same Rat.
 //! 5. Log out and freshly admit the same character. Require a creature-enter delta for the
 //!    new incarnation while the restored invisibility condition is active.
 use super::*;
@@ -24,6 +25,7 @@ const ACTIONS: &[&str] = &[
     "observer-keeps-entity",
     "player-targets-invisible",
     "cooldown-no-cost",
+    "caster-damages-rat",
     "fresh-admission-condition",
 ];
 
@@ -129,9 +131,9 @@ fn damage_sequence(
     attacker: oteryn_dev_client::EntityRef,
     target: oteryn_dev_client::EntityRef,
 ) -> u64 {
-    use oteryn_protocol_oteryn::presentation::PresentationEventKind;
+    use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
     client.take_events().into_iter().filter_map(|event| match event {
-        SessionEvent::Presentation(delta) if delta.value.iter().any(|event| matches!(event.kind, PresentationEventKind::ValueText { attacker: Some(a), target: t, primary, .. } if a == attacker && t == target && primary.value > 0)) => Some(delta.server_sequence),
+        SessionEvent::Presentation(delta) if delta.value.iter().any(|event| matches!(event.kind, PresentationEventKind::ValueText { kind: PresentationValueKind::DamageDealt | PresentationValueKind::DamageReceived, attacker: Some(a), target: t, primary, .. } if a == attacker && t == target && primary.value > 0)) => Some(delta.server_sequence),
         _ => None,
     }).max().unwrap_or(0)
 }
@@ -318,6 +320,34 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("player-targets-invisible", selected.result_server_sequence)?;
     observer.session_mut().attack_target(None).await?;
+    let rat_position = caster.world_entities()
+        .and_then(|entities| entities.get(&rat))
+        .ok_or("step=caster-damages-rat observed=exact-rat-absent")?
+        .position;
+    full_e2ef5::with_observer_liveness(
+        &mut observer,
+        full_e2ef5::approach_melee(&mut caster, world, rat_position),
+    ).await?;
+    caster.take_events();
+    let selected = caster.session_mut().attack_target(Some(&rat)).await?;
+    if selected.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("step=caster-damages-rat observed={selected:?} need=rat-target-accepted").into());
+    }
+    let damage = full_e2ef5::with_observer_liveness(&mut observer, async {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+        loop {
+            let sequence = damage_sequence(&mut caster, caster_ref, rat);
+            if sequence > selected.result_server_sequence {
+                return Ok(sequence);
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err("step=caster-damages-rat need=positive-damage-with-exact-attacker-and-target".into());
+            }
+            caster.service_liveness(Duration::from_millis(100)).await?;
+        }
+    }).await?;
+    row.pass("caster-damages-rat", damage)?;
+    caster.session_mut().attack_target(None).await?;
     let session = caster.join_snapshot().game_session_id;
     let position = caster.world_spatial().actor_position;
     full_e2ef5::with_observer_liveness(&mut observer, full_e2ef5::player_logout(&mut caster)).await?;
