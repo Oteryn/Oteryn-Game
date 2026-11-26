@@ -1,6 +1,6 @@
 //! C02 full-row journey, derived from the matrix, re-audit, and `attack/ranged.rs` owner.
 //!
-//! 1. Admit the provisioned character, earn spendable gold through ordinary rat combat/loot,
+//! 1. Admit the dedicated character and load its qualification purchase funds,
 //!    walk to compiled-world sellers, say `hi` and `trade`, and buy a bow, ten arrows, a Wand of
 //!    Vortex; require every accepted trade reply and exact inventory delta.
 //! 2. Equip the bow and arrows with ITEM_MOVE, send ATTACK against a live rat, and require an Ok
@@ -10,7 +10,7 @@
 //!    inventory change during a complete attack interval (the server's no-ammunition refusal).
 //! 3. Equip the Wand of Vortex, send ATTACK against a live rat, and require the Ok reply, an exact
 //!    one-mana debit, attributed energy-coloured damage without inventory consumption, and kill XP.
-//! 4. Earn and buy a Snakebite Rod on a separate Druid, equip it, and send ATTACK. Require an exact
+//! 4. Buy a Snakebite Rod on a separate Druid, equip it, and send ATTACK. Require an exact
 //!    two-mana debit, attributed earth-coloured damage without inventory consumption, and kill XP.
 //! 5. Check each Character on fresh admission for new session identity and durable custody,
 //!    ammunition, mana, and kill XP.
@@ -58,9 +58,6 @@ impl Row {
                 Err("missing-required-ranged-step".into())
             }
         });
-        let result = result.and(Err::<(), Box<dyn std::error::Error>>(
-            PLATFORM_ADMISSION_GAP.into(),
-        ));
         if let Err(error) = &result {
             evidence(&format!(
                 "C02_GAP step={} observed={error} need=accepted-native-reply-and-required-exact-deltas",
@@ -101,10 +98,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     row.finish(result);
 }
 
-fn reference(id: u32) -> TestResult<NonZeroU32> {
+pub(super) fn reference(id: u32) -> TestResult<NonZeroU32> {
     provisioning::item_reference(&provisioning::item_index()?, id)
 }
-fn count(client: &DevClientSession, key: NonZeroU32) -> TestResult<u64> {
+pub(super) fn count(client: &DevClientSession, key: NonZeroU32) -> TestResult<u64> {
     Ok(inventory_count(
         client.inventory().ok_or("inventory-frame-absent")?,
         key,
@@ -192,6 +189,64 @@ pub(super) async fn earn_gold(
     Ok(())
 }
 
+async fn walk_ranged_route(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, from, direction);
+        let step = client.step(direction).await?;
+        let arrived = tile(client.world_spatial().actor_position)?;
+        if step.disposition != StepDisposition::Moved
+            || step.world_spatial_delta.is_none()
+            || expected != Some(arrived)
+        {
+            return Err(format!(
+                "C02 step refused or misplaced: direction={direction:?} from={from:?} expected={expected:?} actual={arrived:?} reply={step:?}"
+            ).into());
+        }
+        verdict::Harness::global().progress("walk");
+        client
+            .service_liveness(Duration::from_millis(u64::from(step.step_wait_ms)))
+            .await?;
+        client.take_events();
+    }
+    Ok(())
+}
+
+pub(super) async fn approach_rat(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    range: u16,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let rat_points: Vec<_> = spawns
+        .sources
+        .iter()
+        .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
+        .filter(|(_, point)| {
+            spawns
+                .creatures
+                .get(point.creature as usize)
+                .is_some_and(|entry| entry.key == "oteryn:creature.rat")
+        })
+        .collect();
+    let path = route(world, from, |at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|cell| !cell.protection_zone())
+            && rat_points.iter().any(|(floor, point)| {
+                at.floor == *floor && at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) <= range
+            })
+    })
+    .ok_or("C02 no reachable native firing position for an authored Rat spawn")?;
+    walk_ranged_route(client, world, &path).await
+}
+
 async fn buy(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -240,7 +295,7 @@ async fn buy(
         })
         .min_by_key(|(_, p)| p.len())
         .ok_or_else(|| format!("reachable-seller-absent:item={id}"))?;
-    walk(client, world, &path).await?;
+    walk_ranged_route(client, world, &path).await?;
     let player = client.world_spatial().actor_position;
     let actor = client
         .world_entities()
@@ -363,7 +418,7 @@ async fn wait_moved_inventory(
     })?
 }
 
-async fn clear_bow_offhand(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn clear_bow_offhand(client: &mut DevClientSession) -> TestResult {
     let inventory = client.inventory().ok_or("bow-offhand-inventory-absent")?;
     let Some(offhand) = inventory
         .equipment
@@ -390,7 +445,11 @@ async fn clear_bow_offhand(client: &mut DevClientSession) -> TestResult {
     .await
 }
 
-async fn equip(client: &mut DevClientSession, key: NonZeroU32, slot: EquipmentSlot) -> TestResult {
+pub(super) async fn equip(
+    client: &mut DevClientSession,
+    key: NonZeroU32,
+    slot: EquipmentSlot,
+) -> TestResult {
     let source = carried(client, key)?;
     client.take_events();
     let reply = client
@@ -420,7 +479,15 @@ fn target(client: &DevClientSession) -> TestResult<oteryn_dev_client::EntityRef>
         .world_entities()
         .and_then(|v| {
             v.iter()
-                .filter(|e| e.kind == EntityKind::Creature && e.position.floor == here.floor)
+                .filter(|e| {
+                    e.kind == EntityKind::Creature
+                        && e.position.floor == here.floor
+                        && distance(e.position, here) <= 1
+                        && e.display_name.is_some_and(|name| {
+                            name.as_str()
+                                .is_ok_and(|name| name.eq_ignore_ascii_case("rat"))
+                        })
+                })
                 .min_by_key(|e| {
                     e.position
                         .x
@@ -559,12 +626,56 @@ async fn consume_one_arrow(client: &mut DevClientSession, arrows: NonZeroU32) ->
     wait_count(client, arrows, before - 1).await?;
     stop(client).await
 }
-async fn stop(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn stop(client: &mut DevClientSession) -> TestResult {
     let r = client.session_mut().attack_target(None).await?;
     if r.disposition != AttackIntentDisposition::Ok {
         return Err(format!("stop-reply={r:?}").into());
     }
     Ok(())
+}
+
+async fn prepare_ranged_character(
+    clients: &SeamClients<'_>,
+    profile: &'static str,
+    vocation: &str,
+    platinum: u32,
+    tag: u8,
+) -> TestResult<DevClientSession> {
+    if !requires_platform_grant(&clients.accounts[0]) {
+        return Err(PLATFORM_ADMISSION_GAP.into());
+    }
+    let mut client = connect_character(clients, tag, 0).await?;
+    let old_session = client.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(old_session.as_bytes()),
+        "--profile",
+        profile.into(),
+    )
+    .await?;
+    character_prep::grant_item(&client, 3035, platinum).await?;
+    logout(&mut client).await?;
+    drop(client);
+    let mut fresh = connect_character(clients, tag, 0).await?;
+    let stats = general_stats(&mut fresh).await?;
+    let vitals = fresh.actor_vitals().ok_or("seeded ranged vitals absent")?;
+    let experience = crate::qualification_spell_character::source_experience(8)?;
+    if fresh.join_snapshot().game_session_id == old_session
+        || stats.last().copied()
+            != oteryn_protocol_oteryn::cyclopedia_character::vocation_id(vocation)
+        || stats.get(1..9) != Some(experience.to_le_bytes().as_slice())
+        || stats.get(9..13) != Some(8_u32.to_le_bytes().as_slice())
+        || (vitals.max_health, vitals.max_mana) != (185, 90)
+        || count(&fresh, reference(3035)?)? != u64::from(platinum)
+    {
+        return Err(format!(
+            "seeded ranged character mismatch: vocation={vocation} vitals={vitals:?}"
+        )
+        .into());
+    }
+    evidence(&format!(
+        "C02_PREPARED vocation={vocation} level=8 xp={experience} max_health=185 max_mana=90 platinum={platinum}"
+    ));
+    Ok(fresh)
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -577,10 +688,20 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xc2).await?;
-    earn_gold(&mut client, world, &metadata.spawns, 930)
-        .await
-        .map_err(|error| format!("fund-ranged-kit: {error}"))?;
+    character_prep::declare_seeded(
+        "C02.full",
+        "separate level-8 Sorcerer and Druid with NPC purchase funds",
+        "ordinary leveling and funding exceed the ranged row budget",
+    );
+    let sorcerer = character_prep::dedicated_named_character(
+        clients,
+        "NODE_BOOT_C02_ACCOUNT",
+        Some("Ranged Sorcerer"),
+    )
+    .await?;
+    let sorcerer_clients = sorcerer.clients(clients);
+    let mut client =
+        prepare_ranged_character(&sorcerer_clients, "c02-sorcerer", "sorcerer", 10, 0xc2).await?;
     let mut purchase_sequences = Vec::new();
     for (id, n) in [(BOW, 1), (ARROW, 10), (WAND, 1)] {
         purchase_sequences.push(
@@ -597,15 +718,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     clear_bow_offhand(&mut client).await?;
     equip(&mut client, bow, EquipmentSlot::RightHand).await?;
     equip(&mut client, arrow, EquipmentSlot::Ammo).await?;
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    approach_rat(&mut client, world, &metadata.spawns, 1).await?;
     let bow_xp_before = experience(&mut client).await?;
     let damage = bow_shot(&mut client, arrow).await?;
     stop(&mut client).await?;
     while count(&client, arrow)? > 0 {
-        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+        approach_rat(&mut client, world, &metadata.spawns, 1).await?;
         consume_one_arrow(&mut client, arrow).await?;
     }
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    approach_rat(&mut client, world, &metadata.spawns, 1).await?;
     let bow_xp = experience(&mut client).await?;
     if bow_xp <= bow_xp_before {
         return Err(
@@ -640,7 +761,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     stop(&mut client).await?;
     row.pass(2, (damage, refusal.disposition, bow_xp));
     equip(&mut client, wand, EquipmentSlot::RightHand).await?;
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    approach_rat(&mut client, world, &metadata.spawns, 1).await?;
     let wand_count = count(&client, wand)?;
     let wand_xp_before = experience(&mut client).await?;
     let wand_hit = attack_damage(&mut client, Some(PresentationColor::Purple)).await?;
@@ -654,7 +775,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     logout(&mut client).await?;
     let expected_mana = client.actor_vitals().ok_or("logout-vitals-absent")?.mana;
     drop(client);
-    let mut fresh = connect_world(clients, 0xc3).await?;
+    let mut fresh = connect_character(&sorcerer_clients, 0xc3, 0).await?;
     let admitted_xp = experience(&mut fresh).await?;
     if fresh.join_snapshot().game_session_id == old
         || !durable_rewards_match(wand_xp, admitted_xp)
@@ -671,17 +792,24 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     logout(&mut fresh).await?;
     drop(fresh);
 
-    // The rod leg uses a distinct Character and its own earned purchase and XP.
-    let mut client = connect_character(clients, 0xc4, 0).await?;
+    // The rod leg uses a distinct character and proves its own purchase and XP.
+    let druid = character_prep::dedicated_named_character(
+        clients,
+        "NODE_BOOT_C02_ACCOUNT",
+        Some("Ranged Druid"),
+    )
+    .await?;
+    let druid_clients = druid.clients(clients);
+    let mut client =
+        prepare_ranged_character(&druid_clients, "c02-druid", "druid", 5, 0xc4).await?;
     require_eligible_druid(&mut client).await?;
-    earn_gold(&mut client, world, &metadata.spawns, 500).await?;
     buy(&mut client, world, &metadata.npcs, ROD, 1).await?;
     equip(&mut client, rod, EquipmentSlot::RightHand)
         .await
         .map_err(|error| {
             format!("equip-Snakebite-Rod-{ROD}: {error}; need=rod-eligible-druid-level-6")
         })?;
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    approach_rat(&mut client, world, &metadata.spawns, 1).await?;
     let rod_count = count(&client, rod)?;
     let rod_xp_before = experience(&mut client).await?;
     let rod_hit = attack_damage(&mut client, Some(PresentationColor::LightGreen)).await?;
@@ -697,7 +825,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or("rod-logout-vitals-absent")?
         .mana;
     drop(client);
-    let mut fresh = connect_character(clients, 0xc5, 0).await?;
+    let mut fresh = connect_character(&druid_clients, 0xc5, 0).await?;
     let admitted_xp = experience(&mut fresh).await?;
     if fresh.join_snapshot().game_session_id == old
         || !durable_rewards_match(rod_xp, admitted_xp)
@@ -785,18 +913,25 @@ async fn finish_kill(client: &mut DevClientSession, before: u64, weapon: &str) -
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
-    loop {
-        let r = client.session_mut().logout().await?;
-        if r.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Ok(());
+pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    let first = client.session_mut().logout().await?;
+    match first.result {
+        Some(LogoutResult::Accepted) => return Ok(()),
+        Some(LogoutResult::InFight { retry_after_ms }) => {
+            let duration = Duration::from_millis(u64::from(retry_after_ms));
+            evidence(&format!("C02_LOGOUT in_fight_ms={retry_after_ms}"));
+            verdict::Harness::global()
+                .bounded_wait(tokio::time::Instant::now() + duration, "combat-logout-lock");
+            client.service_liveness(duration).await?;
         }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("logout-reply={:?}", r.result).into());
-        }
-        client.service_liveness(Duration::from_millis(250)).await?;
+        observed => return Err(format!("logout-reply={observed:?}").into()),
     }
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(LogoutResult::Accepted) {
+        return Err(format!("logout-after-combat-lock={:?}", reply.result).into());
+    }
+    Ok(())
 }
 
 #[cfg(test)]
