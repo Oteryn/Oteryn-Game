@@ -135,7 +135,7 @@ pub(super) async fn prepare_owned_house(
         .iter()
         .any(|row| row.house == HOUSE && row.owned)
     {
-        let (result, detail, _, _) = logout_retrying_busy(&mut client).await?;
+        let (result, detail, _, _) = fixture_logout_retrying_busy(&mut client).await?;
         if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err(format!("step=fixture-logout observed={detail}").into());
         }
