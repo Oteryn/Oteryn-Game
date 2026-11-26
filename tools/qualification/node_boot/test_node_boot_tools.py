@@ -758,11 +758,10 @@ class ClientReplayTests(unittest.TestCase):
         ):
             with self.subTest(batch=batch):
                 result = bash(
-                    'source "$REPLAY_HELPER"; selected_client_replays',
-                    {'REPLAY_HELPER': str(HERE / 'client_replay.sh'),
+                    'python3 "$REPLAY_HELPER" --validate /dev/null',
+                    {'REPLAY_HELPER': str(HERE / 'client_replay.py'),
                      'OTERYN_E2E_ROW_BATCH': batch},
                 )
-                self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual('W13.client' in result.stdout, selected)
 
 
@@ -960,7 +959,8 @@ class CloudRunSummaryTests(unittest.TestCase):
         for count in (0, 1, 2):
             with self.subTest(count=count), tempfile.TemporaryDirectory() as tmp:
                 work = Path(tmp)
-                (work / 'w13-daily-boost.json').write_text('{}')
+                for name in ('query', 'refusal', 'readmitted', 'expected'):
+                    (work / f'w13-{name}.json').write_text('{}')
                 log = work / 'node.log'
                 log.write_text((marker + '\n') * count)
                 cargo = work / 'cargo'

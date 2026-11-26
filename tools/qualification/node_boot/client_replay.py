@@ -127,7 +127,7 @@ def replay_targets():
     )]
     targets["e2e_w13"] = [(
         "oteryn-game-server", "e2e_w13_replays_daily_boost_selection_and_refusal",
-        {"w13-daily-boost.json"},
+        {"w13-query.json", "w13-refusal.json", "w13-readmitted.json", "w13-expected.json"},
     )]
     return targets
 

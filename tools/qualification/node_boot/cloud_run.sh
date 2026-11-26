@@ -129,7 +129,7 @@ for group in "$@"; do
   capture_env=()
   if [[ "$group" == rows ]]; then
     capture_dir=$(mktemp -d "$work_dir/captures.XXXXXX") || blocked capture_dir_unavailable
-    capture_env=(E2E_ALL_CAPTURE_DIR="$capture_dir" NODE_BOOT_W13_CLOUD_REPLAY=1)
+    capture_env=(E2E_ALL_CAPTURE_DIR="$capture_dir")
   fi
   env "${capture_env[@]}" NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &

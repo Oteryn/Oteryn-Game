@@ -18,27 +18,57 @@ fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
 
 type Reply = oteryn_dev_client::client_runtime::raw_feature::GatedCommandResult;
 
+const FRAME_FILES: [&str; 3] = ["w13-query.json", "w13-refusal.json", "w13-readmitted.json"];
+
 #[derive(serde::Serialize, serde::Deserialize)]
-struct Capture {
-    session: String,
-    fresh_session: String,
-    expected: (String, String, String),
-    replies: Vec<(u64, u64, u32, Vec<u8>)>,
+#[serde(deny_unknown_fields)]
+struct Envelope {
+    command_id: u64,
+    game_session_id: String,
+    payload: Vec<u8>,
+    server_sequence: u64,
+    status: u32,
 }
 
-impl Capture {
-    fn provenance(&self) -> String {
-        let sequence = self
-            .replies
-            .iter()
-            .map(|(id, seq, _, _)| format!("{id}:{seq}"))
-            .collect::<Vec<_>>()
-            .join(",");
-        format!(
-            "session={} fresh_session={} replies={sequence}",
-            self.session, self.fresh_session
-        )
+impl Envelope {
+    fn from_live(game_session_id: String, reply: Reply) -> Self {
+        Self {
+            command_id: reply.command_id,
+            game_session_id,
+            payload: reply.payload,
+            server_sequence: reply.server_sequence,
+            status: reply.status as u32,
+        }
     }
+
+    fn into_reply(self) -> TestResult<Reply> {
+        let status = match self.status {
+            1 => CommandStatus::Accepted,
+            2 => CommandStatus::Rejected,
+            actual => return Err(format!("unexpected captured daily boost status {actual}").into()),
+        };
+        Ok(Reply {
+            command_id: self.command_id,
+            status,
+            server_sequence: self.server_sequence,
+            payload: self.payload,
+        })
+    }
+}
+
+fn provenance(frames: &[Envelope; 3]) -> String {
+    let [query, refusal, readmitted] = frames;
+    format!(
+        "session={} fresh_session={} replies={}:{},{}:{},{}:{}",
+        query.game_session_id,
+        readmitted.game_session_id,
+        query.command_id,
+        query.server_sequence,
+        refusal.command_id,
+        refusal.server_sequence,
+        readmitted.command_id,
+        readmitted.server_sequence,
+    )
 }
 
 async fn query(
@@ -112,22 +142,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if fresh.session_mut().logout().await?.result != Some(LogoutResult::Accepted) {
         return Err("daily boost readmission logout refused".into());
     }
-    let observed = Capture {
-        session: uuid_text(session.as_bytes()),
-        fresh_session: uuid_text(fresh_session.as_bytes()),
-        expected,
-        replies: [reply, refused, readmitted]
-            .into_iter()
-            .map(|r| (r.command_id, r.server_sequence, r.status as u32, r.payload))
-            .collect(),
-    };
+    let observed = [
+        Envelope::from_live(uuid_text(session.as_bytes()), reply),
+        Envelope::from_live(uuid_text(session.as_bytes()), refused),
+        Envelope::from_live(uuid_text(fresh_session.as_bytes()), readmitted),
+    ];
     let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("capture directory missing")?;
-    capture(
-        Path::new(&root),
-        "w13-daily-boost.json",
-        &serde_json::to_vec(&observed)?,
-    )?;
-    Ok(observed.provenance())
+    let root = Path::new(&root);
+    for (name, frame) in FRAME_FILES.into_iter().zip(&observed) {
+        capture(root, name, &serde_json::to_vec(frame)?)?;
+    }
+    capture(root, "w13-expected.json", &serde_json::to_vec(&expected)?)?;
+    Ok(provenance(&observed))
 }
 
 #[test]
@@ -136,17 +162,30 @@ fn e2e_w13_replays_daily_boost_selection_and_refusal() -> TestResult {
     use daily_boost::{Intent, apply_result, panel_text, request, spotlight_cards};
 
     let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("capture directory missing")?;
-    let observed: Capture = serde_json::from_slice(&std::fs::read(
-        Path::new(&root).join("w13-daily-boost.json"),
-    )?)?;
-    assert_eq!(observed.provenance(), required("W13_CAPTURE_PROVENANCE")?);
-    assert_ne!(observed.session, observed.fresh_session);
-    let [accepted, refused, readmitted] = observed.replies.as_slice() else {
-        return Err("expected three live Daily Boost replies".into());
+    let root = Path::new(&root);
+    let read = |file: &str| -> TestResult<Envelope> {
+        Ok(serde_json::from_slice(&std::fs::read(root.join(file))?)?)
     };
-    assert_eq!(accepted.0.checked_add(1), Some(refused.0));
-    assert!(accepted.1 < refused.1);
-    let (epoch, creature, boss) = &observed.expected;
+    let observed = [
+        read(FRAME_FILES[0])?,
+        read(FRAME_FILES[1])?,
+        read(FRAME_FILES[2])?,
+    ];
+    assert_eq!(provenance(&observed), required("W13_CAPTURE_PROVENANCE")?);
+    let [accepted, refused, readmitted] = observed;
+    assert_eq!(accepted.game_session_id, refused.game_session_id);
+    assert_ne!(accepted.game_session_id, readmitted.game_session_id);
+    for session in [&accepted.game_session_id, &readmitted.game_session_id] {
+        assert!(
+            crate::node::uuid_bytes(session)
+                .is_some_and(|id| { id[6] >> 4 == 7 && id[8] >> 6 == 2 })
+        );
+    }
+    assert_eq!(accepted.command_id.checked_add(1), Some(refused.command_id));
+    assert!(accepted.server_sequence < refused.server_sequence);
+    let expected: (String, String, String) =
+        serde_json::from_slice(&std::fs::read(root.join("w13-expected.json"))?)?;
+    let (epoch, creature, boss) = &expected;
     let mut panel = DailyBoostPanel {
         selected: true,
         ..Default::default()
@@ -157,9 +196,10 @@ fn e2e_w13_replays_daily_boost_selection_and_refusal() -> TestResult {
         (refused, CommandStatus::Rejected),
         (readmitted, CommandStatus::Accepted),
     ] {
-        assert_ne!(record.0, 0);
-        assert_ne!(record.1, 0);
-        assert_eq!(record.2, status as u32);
+        let reply = record.into_reply()?;
+        assert_ne!(reply.command_id, 0);
+        assert_ne!(reply.server_sequence, 0);
+        require_reply(&reply, status)?;
         let before = panel.boost.clone();
         request(
             &mut panel,
@@ -170,18 +210,10 @@ fn e2e_w13_replays_daily_boost_selection_and_refusal() -> TestResult {
         )
         .ok_or("query request")?;
         assert_eq!(panel_text(&panel), "Loading daily boost...");
-        apply_result(
-            &mut panel,
-            &Reply {
-                command_id: record.0,
-                server_sequence: record.1,
-                status,
-                payload: record.3.clone(),
-            },
-        );
+        apply_result(&mut panel, &reply);
         assert!(!panel.pending);
         if status == CommandStatus::Rejected {
-            assert!(record.3.is_empty());
+            assert!(reply.payload.is_empty());
             assert_eq!(panel.boost, before);
             assert_eq!(panel.feedback, Some("The server refused the action"));
             panel = DailyBoostPanel {
