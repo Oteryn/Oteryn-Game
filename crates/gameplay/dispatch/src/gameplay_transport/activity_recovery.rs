@@ -34,6 +34,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
             return Err(crate::durability::DurabilityError::Unavailable);
         };
+        if admitted.continuity.non_activity_session == Some(fence.game_session_id)
+            && fence.game_session_id == admitted.game_session_id
+        {
+            return Ok(());
+        }
         // Re-prove the same transport/fences on every idempotent attempt, retaining
         // the distinction between a transient holder failure and a lost fence.
         let budget = super::AdmissionRetryBudget::for_foreground_command(self.root)?;
@@ -51,7 +56,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// a live handoff; initial projection never resets its new stream twice.
     pub(super) async fn project_activity_scope(
         &self,
-        admitted: AdmittedSession,
+        admitted: &mut AdmittedSession,
     ) -> Result<Option<Vec<u8>>, ()> {
         if !admitted
             .continuity
@@ -67,10 +72,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return Ok(None);
         };
-        // House's older virtual custody remains its own accepted protocol path.
-        if actor.runtime_scope() != fence.runtime_scope {
-            return Ok(None);
-        }
         let handoffs = ActivityHandoffOwner::new(self.root.clone());
         let retry =
             super::AdmissionRetryBudget::for_foreground_root(&admitted.game_session_id, self.root)
@@ -86,8 +87,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
         else {
+            // Activity entry and return create new GameSession IDs. Absence of
+            // their durable origin therefore stays true for this exact ID.
+            admitted.continuity.non_activity_session = Some(admitted.game_session_id);
             return Ok(None);
         };
+        // House's older virtual custody remains its own accepted protocol path.
+        if actor.runtime_scope() != fence.runtime_scope {
+            return Ok(None);
+        }
         if candidate.current_session != admitted.game_session_id
             || candidate.runtime_scope != fence.runtime_scope
             || candidate.scope_generation != fence.scope_ownership_generation
@@ -117,7 +125,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(());
         }
-        let scoped = self.resolve_runtime_view(admitted).await?;
+        let scoped = self.resolve_runtime_view(*admitted).await?;
         let owner = scoped.as_ref().unwrap_or(self);
         if !owner.required_capabilities.matches_current(
             fence.runtime_scope,

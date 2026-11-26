@@ -354,7 +354,7 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
 
     async fn activity_scope_snapshot(
         &self,
-        _admitted: AdmittedSession,
+        _admitted: &mut AdmittedSession,
     ) -> Result<Option<Vec<u8>>, ()> {
         if self.scope_fails.get() {
             Err(())

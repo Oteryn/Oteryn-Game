@@ -185,7 +185,7 @@ pub(super) async fn assert_recovery(
     }
     let projected = decode_activity_scope(
         &owner
-            .project_activity_scope(resumed)
+            .project_activity_scope(&mut resumed)
             .await
             .map_err(|_| "project scope")?
             .ok_or("scope99")?,
