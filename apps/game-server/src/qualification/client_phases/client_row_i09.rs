@@ -203,18 +203,32 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .ok_or("I09 predecessor omitted original chair at revision 0")?;
     require_unique_chair(&before_map.tiles, target, before_item)?;
     client.take_events();
-    let before_use_sequence = client.session_mut().last_server_sequence();
     let menu_payload = rotate_menu_payload(capture_root, &before.payload, client.world_spatial().actor_position, target).await?;
     if menu_payload != intent(0)? {
         return Err("I09 Rotate menu did not name the exact public chair placement and revision".into());
     }
+    // Match the production world-context dispatch: service pending frames while
+    // the menu owns input, then validate the live selection before submitting.
+    client.service_liveness(Duration::from_millis(1)).await?;
+    require_actor_tile(tile(client.world_spatial().actor_position)?, approach)?;
+    assert_chair(&mut client, target, before_item)?;
+    if client.take_events().iter().any(|event| matches!(
+        event, SessionEvent::GatedSnapshotReplaced(update) if update.value.domain_id == before.domain_id
+    )) {
+        return Err("I09 map snapshot replaced while the Rotate menu owned input".into());
+    }
+    let before = client.session_mut().gated_snapshot(before.domain_id)
+        .ok_or("I09 map snapshot absent before Rotate dispatch")?.clone();
+    let before_use_sequence = client.session_mut().last_server_sequence();
     evidence("I09_MENU_ASSERTION rotate=clicked-public-chair command=USE_INTENT");
     let reply = client.session_mut().world_context_use(&menu_payload).await?;
     require_mechanic_acceptance(reply.status, "I09 chair rotation")?;
-    if decode_use_result(&reply.payload).map_err(|error| format!("I09 result decode: {error:?}"))?
-        != UseDisposition::Committed
-    {
-        return Err(format!("rotation refused: {:?}", reply.status).into());
+    let (result, detail) = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&reply.payload)
+        .map_err(|error| format!("I09 result detail decode: {error:?}"))?;
+    let disposition = decode_use_result(result)
+        .map_err(|error| format!("I09 result decode: {error:?}; payload={result:?}"))?;
+    if disposition != UseDisposition::Committed || detail.is_some() {
+        return Err(format!("I09 first Rotate refused: {disposition:?} detail={detail:?}").into());
     }
     let rotated = MapOrigin::BaseOrdinal {
         ordinal,
