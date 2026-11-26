@@ -187,13 +187,16 @@ impl PlayView {
             return false;
         }
         // Command 85 is the only imbuement route the server serves: a shrine USE opens the
-        // panel and queries the selected item; the server checks shrine reach on command 85.
+        // panel and queries the selected item. The server answers a Query before its shrine
+        // reach check, so only an adjacent shrine (one tile, as `shrine_in_reach`) opens it;
+        // a farther one stays an ordinary world USE.
         if matches!(action, Action::Use | Action::Open)
             && matches!(
                 menu.target,
                 oteryn_client_runtime::world_interaction::Target::Object(_)
             )
             && let Some(tile) = menu.tile
+            && self.own().x.abs_diff(tile.x).max(self.own().y.abs_diff(tile.y)) <= 1
             && let Some(crate::play::GroundItem::Map { item, .. }) =
                 self.scene.item_target_at(tile)
             && crate::play::feature_0068_imbue::input::is_imbuing_shrine(item.appearance_id)

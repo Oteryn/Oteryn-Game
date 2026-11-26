@@ -627,8 +627,32 @@ fn shrine_use_opens_imbuement_panel_through_command_85() -> Result<(), Box<dyn s
     assert_eq!(panel.item, Some(item));
     assert_eq!(panel.window, Some(window));
 
-    // Any other object still goes to the server as a world USE.
+    // A shrine two tiles away is out of reach: it stays a world USE and opens nothing.
     super::super::mailbox::lock(&outbox.0).imbue.open = false;
+    let mut map = super::feature_local_world_view::live_snapshot(101);
+    let mut far = map.tiles[0].clone();
+    far.position.x += 2;
+    far.items[0].origin = oteryn_session::world_map::MapOrigin::BaseOrdinal {
+        ordinal: 2,
+        object_revision: 7,
+    };
+    far.items[0].appearance_id = 24_964;
+    map.tiles.push(far);
+    view.set_live_map(&map)?;
+    let menu = view
+        .world_context(TileCoord::new(103, 200), &link)
+        .ok_or(BatchError::InvalidView)?;
+    assert!(view.world_context_choose(&link, &menu, Action::Use));
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::WorldContext(
+            oteryn_client_runtime::world_interaction::Command { action: Action::Use, .. }
+        )
+    ));
+    assert!(!link.imbue_panel().open);
+    super::super::mailbox::lock(&outbox.0).world_context.pending = false;
+
+    // Any other object still goes to the server as a world USE.
     let menu = shrine_menu(&mut view, &link, 25_203)?;
     assert!(view.world_context_choose(&link, &menu, Action::Use));
     assert!(matches!(
