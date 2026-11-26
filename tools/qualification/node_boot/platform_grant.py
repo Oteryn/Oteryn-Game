@@ -82,7 +82,7 @@ def challenge_proof(opener, public, cookie, token_form):
                       redirect_uri=redirect, state=state)
         path = public + "/oauth/challenge"
         page, _ = request(opener, path + "?" + form(fields).decode(), headers={"Cookie": cookie})
-        answer = re.search(rb'<strong aria-describedby="challenge-alternative">([0-9]{6})</strong>', page)[1]
+        answer = re.search(rb'<strong aria-describedby="challenge-alternative">([0-9](?: [0-9]){5})</strong>', page)[1].replace(b" ", b"")
         _, headers = request(opener, path, data=form({**fields, "_csrf": csrf(page), "answer": answer}),
                              headers={"Cookie": cookie, "Origin": public}, statuses=(302, 303))
         callback = urllib.parse.urlsplit(headers["Location"])
