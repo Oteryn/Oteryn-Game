@@ -1,12 +1,19 @@
 //! W20a client replay capture: the natural World clock (domain 18). The join snapshot payload and
-//! two consecutive raw clock delta payloads, exactly as the client received them, are written
-//! byte for byte. `crates/session/src/tests/e2e_w20a.rs` replays them through `Session::admit`
-//! and `Session::apply_state_delta` and asserts the server-observed minute, light level and
-//! colour listed in the expected file. No clock override or fixture is used.
+//! two consecutive clock updates from the live session are captured. The join payload is raw,
+//! and the validated clock values use the same canonical encoder as live dispatch.
+//! `crates/session/src/tests/e2e_w20a.rs` replays them through `Session::admit` and
+//! `Session::apply_state_delta` and asserts the server-observed minute, light level and colour.
+//! No clock override or fixture is used.
 use super::*;
+use oteryn_dev_client::SessionEvent;
 use oteryn_protocol_oteryn::world_clock::{
-    CAPABILITY_WORLD_LIGHT_V1, STATE_DOMAIN_WORLD_CLOCK, decode_world_clock,
+    CAPABILITY_WORLD_LIGHT_V1, STATE_DOMAIN_WORLD_CLOCK, decode_world_clock, encode_world_clock,
 };
+
+// At constant light, the pacer only publishes on the next Tibian hour (150 real seconds).
+const CLOCK_DELTA_WAIT: Duration =
+    Duration::from_millis(60 * crate::world_clock::TIBIAN_MINUTE_MS + 15_000);
+const JOURNEY_WAIT: Duration = Duration::from_millis(2 * CLOCK_DELTA_WAIT.as_millis() as u64 + 30_000);
 
 fn capture(name: &str, bytes: &[u8]) {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
@@ -38,18 +45,35 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     );
     let mut previous = snapshot_revision;
     let mut last = first;
+    let mut pending = std::collections::VecDeque::new();
     for step in 1..=2 {
-        let delta = tokio::time::timeout(
-            Duration::from_secs(30),
-            client.session_mut().read_gated_delta(STATE_DOMAIN_WORLD_CLOCK, 1),
-        )
-        .await
-        .map_err(|_| format!("step=delta{step} timeout"))??;
-        let clock = decode_world_clock(&delta.payload).map_err(|error| format!("step=delta{step} decode {error:?}"))?;
+        let deadline = tokio::time::Instant::now() + CLOCK_DELTA_WAIT;
+        verdict::Harness::global().bounded_wait(deadline, "world-clock-delta");
+        let delta = loop {
+            if let Some(delta) = pending.pop_front() {
+                break delta;
+            }
+            let remaining = deadline
+                .checked_duration_since(tokio::time::Instant::now())
+                .ok_or_else(|| format!("step=delta{step} timeout"))?;
+            pending.extend(
+                client
+                    .wait_for_events(remaining)
+                    .await?
+                    .into_iter()
+                    .filter_map(|event| match event {
+                        SessionEvent::WorldClock(delta) => Some(delta),
+                        _ => None,
+                    }),
+            );
+        };
+        let clock = delta.value;
         if !advances_revision(previous, delta.base_revision, delta.new_revision) || clock.light_color != 215 || clock.tibian_minute >= 1_440 {
             return Err(format!("step=delta{step} base={} new={} clock={clock:?}", delta.base_revision, delta.new_revision).into());
         }
-        capture(&format!("w20a-delta{step}.bin"), &delta.payload);
+        let payload = encode_world_clock(clock)
+            .map_err(|error| format!("step=delta{step} encode {error:?}"))?;
+        capture(&format!("w20a-delta{step}.bin"), &payload);
         expected.push_str(&format!(
             "delta{step}={}:{}:{}\ndelta{step}_sequence={}\ndelta{step}_base={}\ndelta{step}_new={}\n",
             clock.tibian_minute, clock.light_level, clock.light_color, delta.server_sequence, delta.base_revision, delta.new_revision
@@ -67,7 +91,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(JOURNEY_WAIT, verdict::observe(journey(clients))).await {
         Ok(Ok(observed)) => evidence(&format!("e2e_all scenario=W20a.client status=CAPTURED evidence={observed}")),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W20a.client status=FAIL evidence={}",
