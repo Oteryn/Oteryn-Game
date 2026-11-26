@@ -29,7 +29,7 @@ async fn assert_first_appearances(mut client: DevClientSession) -> TestResult {
         client.selected_capabilities().contains(&CAPABILITY_FORGE_CREATURE_V1),
         "the observer must negotiate Forge appearance"
     );
-    // The Thalom source stairs lead to the unfenced hunt floor, away from temple PZ.
+    // The Thalom source stairs lead from the temple protection zone to the hunt floor.
     for _ in 0..9 {
         let step = client.step_retrying(StepDirection::South).await?;
         assert_eq!(
@@ -47,7 +47,11 @@ async fn assert_first_appearances(mut client: DevClientSession) -> TestResult {
     let refused = request(format!(
         "canary:creature/druid_familiar {} {} {} fiendish", hunt.x, hunt.y, hunt.floor
     )).await;
-    assert_eq!(refused.as_deref(), Err("ineligible_forge_creature"));
+    assert_eq!(
+        refused.as_ref().err().map(String::as_str),
+        Some("ineligible_forge_creature"),
+        "{refused:?}"
+    );
 
     for (classification, expected_stacks, x) in [
         ("influenced 3", 3, hunt.x),
