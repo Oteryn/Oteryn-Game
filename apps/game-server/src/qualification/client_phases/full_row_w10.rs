@@ -303,19 +303,28 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         .map_err(|error| failed_error(1, error, "a dedicated Primal challenger"))?;
     let clients = &dedicated.clients(clients);
     character_prep::declare_seeded("W10", "level=500", "authored Primal admission minimum");
-    let seed = character_prep::Seeded {
-        profile: "w10-primal",
-        reason: "authored Primal admission minimum",
-    };
-    let mut admitted = seed
-        .connect(clients, 0xd0, 0)
+    let mut admitted = connect_character(clients, 0xd0, 0)
         .await
-        .map_err(|error| failed_error(1, error, "level-500 dedicated admission"))?;
-    let (logout, detail, _, _) = logout_retrying_busy(&mut admitted)
+        .map_err(|error| failed_error(1, error, "dedicated fixture admission"))?;
+    let staged_session = admitted.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(staged_session.as_bytes()),
+        "--profile",
+        "w10-primal".into(),
+    )
+    .await
+    .map_err(|error| failed_error(1, error, "a seeded level-500 knight build"))?;
+    let logout = admitted
+        .session_mut()
+        .logout()
         .await
-        .map_err(|error| failed_error(1, error, "a durable staging logout"))?;
-    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(failed(1, detail, "an accepted staging logout"));
+        .map_err(|error| failed_error(1, error, "the first staging logout"))?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(failed(
+            1,
+            format!("{:?}", logout.result),
+            "an accepted first staging logout",
+        ));
     }
     drop(admitted);
     stage_primal_challenger(clients).await.map_err(|error| {
@@ -328,6 +337,13 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
     let mut client = connect_character(clients, 0xd0, 0)
         .await
         .map_err(|error| failed_error(1, error, "ordinary admission beside the Primal lever"))?;
+    if client.join_snapshot().game_session_id == staged_session {
+        return Err(failed(
+            1,
+            "staging_session_reused",
+            "fresh admission after staging logout",
+        ));
+    }
     if tile(client.world_spatial().actor_position).is_ok_and(|at| {
         at == (TilePos {
             x: 33548,
@@ -367,7 +383,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
             .map_err(|error| failed_error(2, error, "a locked-level refusal"))?,
     )?;
 
-    enter_primal(&mut client, world, false)
+    enter_primal(&mut client, world, true)
         .await
         .map_err(|error| {
             failed_error(3, error, "the authored Primal lever and instance handoff")
@@ -514,6 +530,13 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         command(&mut client, Some(3))
             .await
             .map_err(|error| failed_error(5, error, "the reloaded locked-level refusal"))?,
+    )?;
+    accepted(
+        5,
+        command(&mut client, None)
+            .await
+            .map_err(|error| failed_error(5, error, "unchanged Hazard state after refusal"))?,
+        [2, 2],
     )?;
     Ok(())
 }
