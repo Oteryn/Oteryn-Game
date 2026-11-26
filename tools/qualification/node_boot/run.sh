@@ -1829,7 +1829,7 @@ PY_N03_SELECTION
 }
 
 n03_replay() {
-  local test=play::feature_0153_depot_search::view::native::e2e_n03::e2e_n03_depot_list_retrieve_one_and_refusals
+  local test=play::feature_0153_depot_search::view::native::e2e_n03::e2e_n03_depot_list_and_retrieve_one
   local log="$WORK/n03-native-replay.log"
   local started=$SECONDS
   local session
