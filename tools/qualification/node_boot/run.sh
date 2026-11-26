@@ -1859,22 +1859,13 @@ sys.exit(not (start <= 152 and 152 - start < length < 2**64))
 PY_E08_BATCH
 }
 
-e08_client_replay() {
-  local test=depot_search::e2e_e08::e08_real_server_payloads_replay_into_depot_search_panel
-  if ! grep -q '^SEAM_EVIDENCE e2e_capture scenario=E08\.client status=CAPTURED ' \
-    "$WORK/stage-$seam_stage_name.log"; then
-    echo 'SEAM_EVIDENCE e2e_all scenario=E08.client status=FAIL evidence=missing-live-capture'
+e08_client_verdict() {
+  local verdict='SEAM_EVIDENCE e2e_all scenario=E08.client status=PASS seconds=0.000 evidence=fresh-depot-search-client-replay'
+  if [[ ! -s "$E08_CAPTURE_DIR/e08-command-results.json" ]] \
+    || [[ "$(grep -Fxc "$verdict" "$WORK/stage-$seam_stage_name.log")" != 1 ]]; then
+    echo 'SEAM_EVIDENCE e2e_all scenario=E08.client status=FAIL evidence=missing-or-duplicate-live-replay'
     return 1
   fi
-  if ! E2E_ALL_CAPTURE_DIR="$E08_CAPTURE_DIR" cargo +1.100.0 test --locked \
-    -p oteryn-client-ui --lib "$test" -- --exact > "$WORK/e08-replay.log" 2>&1 \
-    || ! grep -Fxq "test $test ... ok" "$WORK/e08-replay.log"; then
-    cat "$WORK/e08-replay.log"
-    echo 'SEAM_EVIDENCE e2e_all scenario=E08.client status=FAIL evidence=client-replay-failed'
-    return 1
-  fi
-  cat "$WORK/e08-replay.log"
-  echo 'SEAM_EVIDENCE e2e_all scenario=E08.client status=PASS evidence=fresh-depot-search-client-replay'
 }
 
 E08_CAPTURE_DIR=
@@ -1909,7 +1900,7 @@ else
 fi
 fi
 if [[ -n "${E08_CAPTURE_DIR:-}" ]]; then
-  stage e08_client_replay "$seam_stage_name" -- e08_client_replay
+  stage e08_client_verdict "$seam_stage_name" -- e08_client_verdict
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then

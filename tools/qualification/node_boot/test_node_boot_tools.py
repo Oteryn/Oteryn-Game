@@ -60,36 +60,22 @@ class E08ReplayTests(unittest.TestCase):
                                        "OTERYN_E2E_ROW_BATCH": batch})
                 self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
 
-    def test_replay_requires_live_capture_and_executed_test(self):
+    def test_selection_requires_one_live_replay_verdict(self):
         with tempfile.TemporaryDirectory() as work:
             stage_log = Path(work, "stage-seam_stages.log")
-            stage_log.touch()
-            script = function("e08_client_replay") + """
-seam_stage_name=seam_stages
-cargo() {
-  [[ "$E2E_ALL_CAPTURE_DIR" == "$E08_CAPTURE_DIR" ]] || return 1
-  case "$REPLAY_OUTCOME" in
-    fail) return 1 ;;
-    empty) echo 'running 0 tests' ;;
-    pass) printf 'test %s ... ok\\n' "$7" ;;
-  esac
-}
-e08_client_replay
-"""
-            env = {"WORK": work, "E08_CAPTURE_DIR": work, "REPLAY_OUTCOME": "pass"}
-            result = bash(script, env)
-            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-            self.assertIn("evidence=missing-live-capture", result.stdout)
-            stage_log.write_text(
-                "SEAM_EVIDENCE e2e_capture scenario=E08.client status=CAPTURED evidence=live\n"
-            )
-            for outcome in ("fail", "empty", "pass"):
-                with self.subTest(outcome=outcome):
-                    result = bash(script, {**env, "REPLAY_OUTCOME": outcome})
-                    self.assertEqual(result.returncode, int(outcome != "pass"),
-                                     result.stdout + result.stderr)
-                    self.assertEqual("scenario=E08.client status=PASS" in result.stdout,
-                                     outcome == "pass")
+            evidence = Path(work, "e08-command-results.json")
+            verdict = ("SEAM_EVIDENCE e2e_all scenario=E08.client status=PASS seconds=0.000 "
+                       "evidence=fresh-depot-search-client-replay\n")
+            script = function("e08_client_verdict") + "\nseam_stage_name=seam_stages\ne08_client_verdict"
+            env = {"WORK": work, "E08_CAPTURE_DIR": work}
+            stage_log.write_text(verdict)
+            self.assertEqual(bash(script, env).returncode, 1)
+            evidence.write_text("[live capture]")
+            for lines, expected in (("", 1), (verdict * 2, 1), (verdict, 0)):
+                with self.subTest(lines=lines):
+                    stage_log.write_text(lines)
+                    result = bash(script, env)
+                    self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
 
 
 class KnobTests(unittest.TestCase):

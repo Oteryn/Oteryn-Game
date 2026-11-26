@@ -8,11 +8,12 @@
 //!    counted in depot custody and no retrieved count.
 //! 3. Send DETAIL for a tier returned by SEARCH; expect DETAILED with exactly that item/tier
 //!    row and the same depot count.
-//! 4. Send RETRIEVE(all=true) from the result; expect RETRIEVED, the complete count, and an
+//! 4. Relog and prove the deposited count survived in depot custody.
+//! 5. Send RETRIEVE(all=true) from the result; expect RETRIEVED, the complete count, and an
 //!    inventory delta restoring the item.
-//! 5. Repeat RETRIEVE(all=true) as the refusal/negative path; expect NOT_FOUND, zero retrieved,
+//! 6. Repeat RETRIEVE(all=true) as the refusal/negative path; expect NOT_FOUND, zero retrieved,
 //!    and no inventory change (never a duplicate item).
-//! 6. Log out and obtain a fresh admission for the same character; walk back to the locker,
+//! 7. Log out and obtain a fresh admission for the same character; walk back to the locker,
 //!    SEARCH again, and expect NOT_FOUND while the restored inventory item remains durable.
 
 use super::*;
@@ -137,19 +138,33 @@ async fn wait_carried(
     Ok(())
 }
 
-pub(super) fn restored(client: &DevClientSession, deposited: ItemEntry) -> bool {
-    // The deposit took the item out of the item views. Its old session handle is stale.
-    !carried(client, deposited.handle)
-        && client.inventory().is_some_and(|inventory| {
-            inventory.entries.iter().any(|entry| {
-                entry.handle > deposited.handle
-                    && *entry
-                        == ItemEntry {
-                            handle: entry.handle,
-                            ..deposited
-                        }
-            })
+pub(super) fn last_carried_handle(client: &DevClientSession) -> Option<ItemHandle> {
+    client.inventory().and_then(|inventory| {
+        inventory
+            .main_backpack
+            .iter()
+            .chain(&inventory.entries)
+            .chain(inventory.equipment.iter().map(|entry| &entry.item))
+            .map(|entry| entry.handle)
+            .max()
+    })
+}
+
+pub(super) fn restored(
+    client: &DevClientSession,
+    deposited: ItemEntry,
+    previous_handle: Option<ItemHandle>,
+) -> bool {
+    client.inventory().is_some_and(|inventory| {
+        inventory.entries.iter().any(|entry| {
+            previous_handle.is_none_or(|previous| entry.handle > previous)
+                && *entry
+                    == ItemEntry {
+                        handle: entry.handle,
+                        ..deposited
+                    }
         })
+    })
 }
 
 pub(super) async fn depot_intent(
@@ -202,11 +217,10 @@ pub(super) async fn to_locker(client: &mut DevClientSession, world: &BundleWorld
     Ok(())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("logout-refused".into());
+pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
+    let result = client.session_mut().logout().await?.result;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("logout-refused:{result:?}").into());
     }
     Ok(())
 }
@@ -256,6 +270,13 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     journey.saw(&browse);
     if browse.outcome != depot::DepotOutcome::Opened || browse.town.is_none() {
         return Err("browse-did-not-open".into());
+    }
+    let before = command(&mut client, wire::Request::Search { client_id }).await?;
+    if before.outcome != wire::Outcome::NotFound
+        || before.retrieved != 0
+        || !before.results.is_empty()
+    {
+        return Err("depot-search-pre-state-was-not-empty".into());
     }
     let original_count = carried_count(&client, item.item_definition_ref);
     let deposited_units = item.count.get();
@@ -317,7 +338,21 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         return Err("detail-result-mismatch".into());
     }
 
-    journey.at("4-retrieve-all");
+    journey.at("4-relog-with-item-in-depot");
+    let deposited_session = client.join_snapshot().game_session_id;
+    logout(&mut client).await?;
+    drop(client);
+    let mut client = connect_character(clients, 0xe9, 1).await?;
+    if client.join_snapshot().game_session_id == deposited_session {
+        return Err("depot-durability-reused-session".into());
+    }
+    to_locker(&mut client, world).await?;
+    let saved = command(&mut client, wire::Request::Search { client_id }).await?;
+    if saved != found || carried_count(&client, item.item_definition_ref) != deposited_count {
+        return Err("deposit-did-not-survive-fresh-admission".into());
+    }
+    let previous_handle = last_carried_handle(&client);
+    journey.at("5-retrieve-all");
     let retrieved = command(
         &mut client,
         wire::Request::Retrieve {
@@ -332,7 +367,8 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     }
     let durable_count = deposited_count + u64::from(retrieved.retrieved);
     wait_carried(&mut client, |client| {
-        restored(client, item) && carried_count(client, item.item_definition_ref) == durable_count
+        restored(client, item, previous_handle)
+            && carried_count(client, item.item_definition_ref) == durable_count
     })
     .await?;
 
@@ -348,16 +384,17 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     journey.saw(&refused);
     if refused.outcome != wire::Outcome::NotFound
         || refused.retrieved != 0
+        || !refused.results.is_empty()
         || carried_count(&client, item.item_definition_ref) != durable_count
     {
         return Err("empty-retrieve-was-not-stable-not-found".into());
     }
 
-    journey.at("6-logout-fresh-admission-durability");
+    journey.at("7-logout-fresh-admission-durability");
     let old_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_character(clients, 0xe9, 1).await?;
+    let mut fresh = connect_character(clients, 0xea, 1).await?;
     if fresh.join_snapshot().game_session_id == old_session {
         return Err("fresh-admission-reused-session".into());
     }
