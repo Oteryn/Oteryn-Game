@@ -703,7 +703,7 @@ impl AdmissionGuardStore {
                     for key in keys {
                         rows.push(store.load_locked(&mut transaction, &key).await?);
                     }
-                    super::admission_journal::commit_pass_transaction(transaction, deadline)
+                    super::admission_journal::commit_pass_read(transaction, deadline)
                         .await?;
                     Ok(rows)
                 })
@@ -755,7 +755,7 @@ impl AdmissionGuardStore {
                     let row = row.ok_or(DurabilityError::InvalidStoredState)?;
                     let payload: Option<String> = row.try_get("payload")?;
                     let mirrors: Option<serde_json::Value> = row.try_get("mirrors")?;
-                    super::admission_journal::commit_pass_transaction(transaction, deadline)
+                    super::admission_journal::commit_pass_read(transaction, deadline)
                         .await?;
                     Ok((payload.is_some(), mirrors.is_some()))
                 })
@@ -844,7 +844,7 @@ impl AdmissionGuardStore {
                         .zip(request.changes())
                         .all(|(old, new)| old.as_ref() == Some(new))
                     {
-                        super::admission_journal::commit_pass_transaction(transaction, deadline)
+                        super::admission_journal::commit_pass_read(transaction, deadline)
                             .await?;
                         return Ok(GuardPublicationDisposition::Existing);
                     }

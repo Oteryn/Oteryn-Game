@@ -1,6 +1,7 @@
 //! The existing ANL durable outbox seam: registered EventEnvelope bytes, bounded
 //! batches and digest-matched acknowledgements. No new network endpoint.
 use super::*;
+use crate::durability::db::commit_semantic_read;
 
 #[derive(Debug, Clone)]
 pub struct AuditDelivery {
@@ -58,7 +59,7 @@ impl DurabilityRoot {
                 let digest:Vec<u8>=row.try_get("envelope_digest")?;
                 deliveries.push(AuditDelivery{event_id:super::super::character_authority::uuid_text(row.try_get("event_id")?)?,envelope:row.try_get("envelope")?,envelope_digest:digest.try_into().map_err(|_|DurabilityError::InvalidStoredState)?});
             }
-            commit_semantic_transaction(tx,deadline).await?;Ok(deliveries)
+            commit_semantic_read(tx,deadline).await?;Ok(deliveries)
         })).await
     }
 

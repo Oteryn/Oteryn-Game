@@ -33,7 +33,7 @@ impl DurabilityRoot {
                     migration_required: false,
                 })
             }).transpose()?;
-            super::db::commit_semantic_transaction(tx, deadline).await?;
+            super::db::commit_semantic_read(tx, deadline).await?;
             Ok(row)
         })).await
     }
@@ -123,7 +123,7 @@ impl DurabilityRoot {
                 ));
             }
             let results = aggregate_holdings(units)?;
-            super::db::commit_semantic_transaction(tx,deadline).await?;
+            super::db::commit_semantic_read(tx,deadline).await?;
             Ok(results)
         })).await
     }

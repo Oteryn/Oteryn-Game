@@ -1,7 +1,7 @@
 //! Purchase provenance belongs to the existing furniture-wrap owner.
 //! The NPC trade supplies its already minted kit inside that same transaction.
 use super::super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::super::db::{begin_semantic_transaction, commit_semantic_read};
 use super::super::item_mint::TypedDefinitionRef;
 use super::super::{DurabilityError, DurabilityRoot};
 use crate::domain::hireling::catalogue::wrapped_buy;
@@ -46,7 +46,7 @@ impl DurabilityRoot {
             // current form on every wrap, even after rotation or a player trade.
             let target:Option<(String,String)>=sqlx::query_as("WITH latest AS (SELECT before_item,after_key FROM game_house_furniture_wrap_evidence WHERE item_instance_id=encode($1,'hex')::uuid AND action=1 ORDER BY (before_item->>'state_revision')::numeric DESC LIMIT 1), candidates AS (SELECT prior.before_item->>'definition_production_key' AS target_key,prior.before_item->>'definition_revision_ref' AS target_revision,0 AS priority FROM latest prior JOIN game_item_instances i ON i.item_instance_id=encode($1,'hex')::uuid AND i.definition_production_key=prior.after_key WHERE i.lifecycle=1 AND i.quantity=1 AND i.definition_family='Item' UNION ALL SELECT target_key,target_revision,1 FROM game_house_furniture_kit_origins WHERE item_instance_id=encode($1,'hex')::uuid) SELECT target_key,target_revision FROM candidates ORDER BY priority LIMIT 1")
                 .bind(item.as_slice()).fetch_optional(&mut *tx).await?;
-            commit_semantic_transaction(tx,deadline).await?;
+            commit_semantic_read(tx,deadline).await?;
             Ok(target.map(|(production_key,revision_ref)| TypedDefinitionRef {family:"Item".into(),production_key,revision_ref}))
         })).await
     }

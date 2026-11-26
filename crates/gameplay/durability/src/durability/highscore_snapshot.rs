@@ -10,6 +10,7 @@ pub mod job;
 
 pub mod reply;
 
+use crate::durability::db::commit_semantic_read;
 use super::account_achievement::EarnedAchievement;
 use super::character_build::{DurableBuildState, SKILLS};
 use super::charm_state::{BestiaryCharmEntry, BestiaryCharmFacts};
@@ -20,7 +21,8 @@ use ranking::{RankingRow, ranked_lists};
 use sqlx::{Connection, Postgres, Row, Transaction, pool::PoolConnection, postgres::PgRow};
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use tokio::time::Instant;
 
 /// The stored `filter` of `game_world_highscore_rows`: 0 all, otherwise the base vocation by its
 /// public §4.0 id (druid 1, knight 2, monk 3, paladin 4, sorcerer 5), the numbering the public
@@ -274,8 +276,8 @@ pub async fn begin_projection<'a>(
     if remaining.is_zero() {
         return Err(DurabilityError::RootPassDeadlineExceeded);
     }
-    let mut tx = tokio::time::timeout(
-        remaining,
+    let mut tx = tokio::time::timeout_at(
+        deadline,
         (**holder).begin_with("BEGIN ISOLATION LEVEL REPEATABLE READ"),
     )
     .await
@@ -286,7 +288,7 @@ pub async fn begin_projection<'a>(
     }
     let millis = u64::try_from(remaining.as_millis().max(1))
         .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
-    tokio::time::timeout(remaining, sqlx::query(
+    tokio::time::timeout_at(deadline, sqlx::query(
         "SELECT set_config('transaction_timeout',$1,true),set_config('statement_timeout',$1,true),set_config('lock_timeout',$1,true)"
     ).bind(format!("{millis}ms")).execute(&mut *tx))
         .await.map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
@@ -299,7 +301,6 @@ async fn issue_snapshot_pass<T, F: Future<Output = ()>>(
     mut issue: impl FnMut() -> std::result::Result<T, DurabilityError>,
     mut wait: impl FnMut(tokio::time::Instant, tokio::time::Instant) -> F,
 ) -> std::result::Result<T, DurabilityError> {
-    use tokio::time::Instant;
 
     let deadline = Instant::now() + super::db::ROOT_RECOVERY_WINDOW;
     loop {
@@ -435,7 +436,7 @@ impl DurabilityRoot {
                     .await
                     {
                         Ok(value) => {
-                            commit_semantic_transaction(tx, deadline).await?;
+                            commit_semantic_read(tx, deadline).await?;
                             Ok(Ok(value))
                         }
                         Err(SnapshotError::Unavailable(error)) => Err(error),

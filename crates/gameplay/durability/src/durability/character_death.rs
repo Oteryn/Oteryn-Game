@@ -20,6 +20,7 @@
 //! commit and the placement never loses the recorded respawn (Reference first
 //! player death §4.5, DEATH-RESTART-SAFETY-1).
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
@@ -544,7 +545,7 @@ impl DurabilityRoot {
                         .as_ref()
                         .map(decode_receipt)
                         .transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(record))
                 })
             })

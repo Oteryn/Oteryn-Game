@@ -463,7 +463,7 @@ fn no_demand_maintenance_is_a_noop_and_never_connects() -> Result<(), Box<dyn st
 
 #[test]
 fn budgeted_pass_never_outlives_its_outer_budget() -> Result<(), Box<dyn std::error::Error>> {
-    let now = Instant::now();
+    let now = TokioInstant::now();
     let pass = DB_PASS_DEADLINE;
     assert_eq!(
         bounded_pass_deadline(now, pass, now + Duration::from_millis(700)),
@@ -477,7 +477,7 @@ fn budgeted_pass_never_outlives_its_outer_budget() -> Result<(), Box<dyn std::er
     let root = DurabilityRoot::new(config()?)?;
     root.ready_demand.store(false, Ordering::Release);
     assert!(matches!(
-        root.try_issue_semantic_pass_by(Instant::now()),
+        root.try_issue_semantic_pass_by(TokioInstant::now()),
         Err(DurabilityError::RootPassDeadlineExceeded)
     ));
     assert!(!root.ready_demand.load(Ordering::Acquire));
@@ -491,7 +491,7 @@ fn expired_commit_deadline_is_known_uncommitted_and_does_not_send_commit()
         .enable_all()
         .build()?;
     let mut commit_sent = false;
-    let result = runtime.block_on(commit_semantic_transaction_by(Instant::now(), || {
+    let result = runtime.block_on(commit_semantic_transaction_by(TokioInstant::now(), || {
         commit_sent = true;
         std::future::ready(Ok(()))
     }));

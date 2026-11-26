@@ -15,7 +15,7 @@ use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
 use sqlx::{Postgres, Row, Transaction};
 use std::any::Any;
 use std::sync::Arc;
-use std::time::Instant;
+use tokio::time::Instant;
 
 /// The spell lane (ARCH-SPELL-LOCK-2 §1.2): one async mutex per Channel owner, the in-memory
 /// mirror of the Channel item advisory lock (key 33). Every in-process key-33 caller takes it

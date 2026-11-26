@@ -1,4 +1,5 @@
 //! Ordered source NPC storage operations on the existing Character revision and quest receipt owners.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use oteryn_gameplay_quests::quest::npc_rules::{
     NpcInventorySnapshot, NpcRuleCatalog, NpcRuleInput, NpcRulePlan, NpcRuleTrigger,
@@ -321,7 +322,7 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_receipt_key(&mut tx, character, &request.quest_request()).await?;
                     let result = load(&mut tx, character, &request).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })

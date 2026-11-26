@@ -1,6 +1,7 @@
 //! A durable quest entitlement needs no separately committed MINT reservation.
 //! Reservation, existing owner application and entitlement acknowledgement share one
 //! type-2 transaction, so cancellation/restart never strands a session-bound attempt.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 
 impl DurabilityRoot {
@@ -166,7 +167,7 @@ impl DurabilityRoot {
                     } else {
                         None
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(outcome))
                 })
             })

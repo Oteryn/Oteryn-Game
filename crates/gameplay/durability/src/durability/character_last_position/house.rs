@@ -1,5 +1,6 @@
 //! Q16: named-House positions use the existing Character projection and order key.
 //! Origin Channel and its cell are routing history, never substituted for House authority.
+use crate::durability::db::commit_semantic_read;
 use super::super::house_scope_handoff::HouseId;
 use super::*;
 use crate::foundation::ChannelId;
@@ -123,7 +124,7 @@ impl DurabilityRoot {
             let pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns WHERE character_id=encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_character_pending_arrivals WHERE character_id=encode($1,'hex')::uuid)")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             let stored = if pending { None } else { load_scoped_last_position(&mut tx, fence.character_id).await? };
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(stored))
         })).await?
     }
@@ -145,7 +146,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let stored = load_scoped_last_position(&mut tx, character).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(stored.filter(|s| s.house.is_some()))
                 })
             })
