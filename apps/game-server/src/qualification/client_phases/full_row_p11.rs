@@ -125,6 +125,58 @@ fn assert_staging(client: &DevClientSession, expected: TilePos) -> TestResult {
     Ok(())
 }
 
+async fn wait_for_lever_arrival(
+    member: &mut DevClientSession,
+    staged: TilePos,
+    expected: TilePos,
+    after_sequence: u64,
+    deadline: tokio::time::Instant,
+) -> TestResult {
+    loop {
+        let events = member.take_events();
+        let mut arrived = false;
+        for event in events {
+            evidence(&format!("P11_LEVER_FRAME member_x={} {event:?}", staged.x));
+            let (sequence, position) = match event {
+                SessionEvent::WorldSpatial(delta) => {
+                    (delta.server_sequence, delta.value.actor_position)
+                }
+                SessionEvent::WorldSpatialEntities(delta) => {
+                    (delta.server_sequence, delta.value.actor_position)
+                }
+                _ => continue,
+            };
+            if sequence <= after_sequence {
+                continue;
+            }
+            let actual = tile(position)?;
+            if actual == staged && !arrived {
+                continue;
+            }
+            if actual != expected {
+                return Err(format!(
+                    "step=lever wrong_arrival expected={expected:?} actual={actual:?} sequence={sequence}"
+                ).into());
+            }
+            arrived = true;
+        }
+        if arrived {
+            assert_staging(member, expected)?;
+            return Ok(());
+        }
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err(format!(
+                "step=lever missing_arrival expected={expected:?} after_sequence={after_sequence} last_sequence={} actual={:?}",
+                member.last_server_sequence(), tile(member.world_spatial().actor_position)?
+            ).into());
+        }
+        member
+            .service_liveness(remaining.min(Duration::from_millis(200)))
+            .await?;
+    }
+}
+
 async fn operate_lever(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -167,6 +219,15 @@ async fn operate_lever(
         crate::map::view::placement_key(lever, 1).ok_or("Annihilator lever placement absent")?;
     let mut target = world.base().digest().to_vec();
     target.extend_from_slice(&key.to_be_bytes());
+    client.take_events();
+    let [second, third, fourth] = companions.as_mut_slice() else {
+        return Err("P11 requires exactly three lever companions".into());
+    };
+    let [second_sequence, third_sequence, fourth_sequence] =
+        [&mut *second, &mut *third, &mut *fourth].map(|member| {
+            member.take_events();
+            member.last_server_sequence()
+        });
     let reply = client.session_mut().use_object(&target, 0).await?;
     evidence(&format!(
         "P11_ROUTE step=annihilator-lever tile={lever:?} wire_reply={reply:?}"
@@ -177,22 +238,65 @@ async fn operate_lever(
         }
         return Err(format!("step=lever authored_lever={lever:?} first_reply={reply:?}").into());
     }
-    for (member, x) in std::iter::once(&mut *client)
-        .chain(companions.iter_mut())
-        .zip([33222, 33221, 33220, 33219])
-    {
-        let expected = TilePos {
-            x,
-            y: 31659,
-            floor: -13,
-        };
-        let actual = tile(member.world_spatial().actor_position)?;
-        if actual != expected {
-            return Err(
-                format!("step=lever expected_arrival={expected:?} actual={actual:?}").into(),
-            );
-        }
-    }
+    let destination = TilePos {
+        x: 33222,
+        y: 31659,
+        floor: -13,
+    };
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    let (leader, second, third, fourth) = tokio::join!(
+        wait_for_lever_arrival(
+            client,
+            STAGING,
+            destination,
+            reply.result_server_sequence,
+            deadline
+        ),
+        wait_for_lever_arrival(
+            second,
+            TilePos {
+                x: 33224,
+                ..STAGING
+            },
+            TilePos {
+                x: 33221,
+                ..destination
+            },
+            second_sequence,
+            deadline
+        ),
+        wait_for_lever_arrival(
+            third,
+            TilePos {
+                x: 33223,
+                ..STAGING
+            },
+            TilePos {
+                x: 33220,
+                ..destination
+            },
+            third_sequence,
+            deadline
+        ),
+        wait_for_lever_arrival(
+            fourth,
+            TilePos {
+                x: 33222,
+                ..STAGING
+            },
+            TilePos {
+                x: 33219,
+                ..destination
+            },
+            fourth_sequence,
+            deadline
+        ),
+    );
+    leader?;
+    second?;
+    third?;
+    fourth?;
+    evidence("P11_LEVER_ARRIVAL all_four=exact");
     Err("step=annihilator-combat need=source-corridor-clearance".into())
 }
 
