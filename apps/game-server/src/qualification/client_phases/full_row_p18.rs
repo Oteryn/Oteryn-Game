@@ -6,7 +6,7 @@
 //! 1. Admit the provisioned node-boot character and retain its complete native
 //!    inventory snapshot; this is the only source of session item handles.
 //! 2. Send HISTORY and require an accepted JSON history result.
-//! 3. Acquire two class-one daggers from the player economy and send FUSION with their handles and require either an
+//! 3. Provision two class-one daggers on the dedicated account and send FUSION with their handles and require either an
 //!    applied tier/custody/resource delta or an explicit native refusal which
 //!    leaves the complete inventory unchanged.
 //! 4. Send TRANSFER, CONVERGENCE_FUSION, and CONVERGENCE_TRANSFER in the same
@@ -178,23 +178,36 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xd8).await?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_P18_ACCOUNT").await?;
+    let dedicated = dedicated.clients(clients);
+    let mut fixture = connect_character(&dedicated, 0xd7, 0).await?;
+    character_prep::grant_item(&fixture, character_prep::item_id(FUSION_PAIR)?, 2).await?;
+    logout(&mut fixture).await?;
+    drop(fixture);
+
+    let mut client = connect_character(&dedicated, 0xd8, 0).await?;
     let session = client.join_snapshot().game_session_id;
     let first_history = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
     validate_history("step-2", &first_history, &[])?;
 
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
-        bytes,
-        &pin,
-        WorldId::decode(&clients.world)?,
-        ChannelId::decode(&clients.channel)?,
-    )?;
     let definitions = provisioning::item_index()?;
-    let pair_ref = super::full_e2ef7::acquire(&mut client, world, &definitions, FUSION_PAIR, 2)
-        .await
-        .map_err(|error| format!("step=forge-pair-acquisition need=two-class-one-{FUSION_PAIR} observed={error}; source:content/services/trade/trade-00000-00323.json:1"))?;
+    let revision = definitions
+        .revision(FUSION_PAIR)
+        .ok_or("forge dagger definition missing")?;
+    let pair_ref = definitions
+        .definition_ref("Item", FUSION_PAIR, revision)
+        .ok_or("forge dagger reference missing")?;
+    let inventory = client
+        .inventory()
+        .ok_or("forge fixture inventory missing")?;
+    let pair_count = inventory
+        .entries
+        .iter()
+        .filter(|entry| entry.item_definition_ref == pair_ref && entry.count.get() == 1)
+        .count();
+    if pair_count != 2 {
+        return Err(format!("forge fixture expected two single daggers, got {pair_count}").into());
+    }
 
     let mut applied = Vec::new();
     let operations = [
@@ -219,6 +232,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         } else {
             None
         };
+        // The shared Forge cooldown applies after an evaluated refusal too.
+        client.service_liveness(Duration::from_millis(490)).await?;
         let observed = command(
             &mut client,
             operation,
@@ -232,6 +247,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
         observations.push(observed);
     }
+    client.service_liveness(Duration::from_millis(490)).await?;
     let history = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
     let applied_observations = observations
         .iter()
@@ -244,7 +260,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .ok_or("step-6 inventory absent")?;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xd9).await?;
+    let mut fresh = connect_character(&dedicated, 0xd9, 0).await?;
     if fresh.join_snapshot().game_session_id == session
         || fresh.inventory().cloned().map(durable_inventory) != Some(durable_inventory(retained))
     {

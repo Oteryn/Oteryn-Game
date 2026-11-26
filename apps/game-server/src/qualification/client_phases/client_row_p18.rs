@@ -87,7 +87,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture(root, "p18-history.bin", &history_bytes)?;
     expected.push_str(&format!("history_rows={}\n", rows.len()));
     for (ordinal, (name, operation, expected_reason)) in [
-        ("fusion", Operation::Fusion, "WRONG_ITEMS"),
+        // A repeated item handle is rejected before a Forge pair can be reserved.
+        ("fusion", Operation::Fusion, "INVALID_ITEM_HANDLE"),
         (
             "dust_to_slivers",
             Operation::DustToSlivers,
