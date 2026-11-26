@@ -11,6 +11,54 @@ use sqlx::Connection;
 
 const RAT: &str = "oteryn:creature.rat";
 
+// The same character is used for all three admissions and the durable lookup.
+const CHARACTER_INDEX: usize = 1;
+
+async fn connect_tracker(clients: &SeamClients<'_>, tag: u8) -> TestResult<DevClientSession> {
+    let index = CHARACTER_INDEX;
+    wait_character_released(clients, index).await?;
+    let token = if requires_platform_grant(&clients.accounts[index]) {
+        platform_row_grant(clients, index).await?
+    } else {
+        let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
+        let (nonce, attempt) = fresh_grant_material(tag)?;
+        let grant = Grant {
+            signing: clients.signing,
+            key_id: clients.key_id,
+            account_id: &clients.accounts[index],
+            character_id: clients.characters[index],
+            world_id: clients.world,
+            channel_id: clients.channel,
+            security_generation: generation,
+            scope_generation: clients.scope_generation,
+            nonce,
+            attempt,
+        };
+        sign_grant(&grant, now_seconds()?)
+    };
+    let mut capabilities = oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES.to_vec();
+    capabilities.push(tr::CAPABILITY_CYCLOPEDIA_TRACKER_V1);
+    capabilities.sort_unstable();
+    capabilities.dedup();
+    let client = oteryn_dev_client::connect_session_with_capabilities(
+        oteryn_dev_client::JoinRequest {
+            address: clients.address,
+            server_name: "localhost",
+            root_certificate: clients.certificate,
+            schema_revision: 1,
+            character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
+            admission_material: token.as_bytes(),
+            client_build_id: "oteryn-dev-client/world-qualification",
+            deadline: Duration::from_secs(20),
+        },
+        &capabilities,
+    )
+    .await?;
+    verdict::Harness::global().progress("admission");
+    selected(&client)?;
+    Ok(client)
+}
+
 fn selected(client: &DevClientSession) -> TestResult {
     expect(
         client
@@ -41,6 +89,11 @@ async fn call(
                 .ok_or("step=decode;observed=undecodable-tracker-snapshot")?,
         )
     };
+    expect(
+        reply.status != CommandStatus::Accepted || snapshot.as_ref().is_some_and(|list| !list.boss),
+        "bestiary-snapshot",
+        reply.status,
+    )?;
     Ok((reply.status, snapshot))
 }
 
@@ -72,7 +125,7 @@ async fn durable(clients: &SeamClients<'_>) -> TestResult<i64> {
         "SELECT count(*) FROM game_character_cyclopedia_tracker \
          WHERE character_id=encode($1,'hex')::uuid AND tracker_kind=1 AND creature_key=$2",
     )
-    .bind(clients.characters[1].as_slice())
+    .bind(clients.characters[CHARACTER_INDEX].as_slice())
     .bind(RAT)
     .fetch_one(&mut connection)
     .await?;
@@ -81,8 +134,7 @@ async fn durable(clients: &SeamClients<'_>) -> TestResult<i64> {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let best = tr::COMMAND_TYPE_BESTIARY_TRACKER;
-    let mut client = connect_world(clients, 0xd3).await?;
-    selected(&client)?;
+    let mut client = connect_tracker(clients, 0xd3).await?;
     let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Add, RAT)).await?;
     expect(
         status == CommandStatus::Accepted && has(&list, RAT),
@@ -96,8 +148,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     logout(&mut client).await?;
 
-    let mut client = connect_world(clients, 0xd4).await?;
-    selected(&client)?;
+    let mut client = connect_tracker(clients, 0xd4).await?;
     let list = read(&mut client, best).await?;
     expect(has(&list, RAT), "read-after-relog", "race-lost")?;
     expect(
@@ -113,7 +164,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     logout(&mut client).await?;
 
-    let mut client = connect_world(clients, 0xd5).await?;
+    let mut client = connect_tracker(clients, 0xd5).await?;
     let list = read(&mut client, best).await?;
     expect(
         !has(&list, RAT),
@@ -136,7 +187,9 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
