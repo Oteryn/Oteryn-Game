@@ -364,7 +364,8 @@ async fn talk(
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+    // The paced castle round trip exceeds 120 seconds without any refused steps.
+    match verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients)))
         .await
     {
         Ok(Ok(observed)) => evidence(&format!(
