@@ -364,6 +364,13 @@ async fn walk_once(
             )
             .into());
         }
+        // Honor the committed movement cadence before sending the next action.
+        if outcome.step_wait_ms != 0 {
+            client
+                .service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms)))
+                .await?;
+        }
+        client.take_events();
         verdict::Harness::global().progress("walk");
     }
     Ok(())
