@@ -437,14 +437,14 @@ async fn fixture_dust(tx: &mut FixtureDb, character: &str, spend: i64) -> TestRe
     // Historical cap prerequisites must follow the deployed ledger's constraint.
     // The live DustLimit case separately checks Global's +1 transition.
     while spend > i64::from(limit) {
-        let cost = 25 + i64::from((limit - 100) / 20);
+        let cost = i64::from(limit) - 75;
         if balance < cost {
             append_dust(tx, character, balance, limit, cost - balance, "GAIN").await?;
             balance = cost;
         }
         append_dust(tx, character, balance, limit, cost, "LIMIT_RAISE").await?;
         balance -= cost;
-        limit += 20;
+        limit += 1;
     }
     if balance < spend {
         append_dust(tx, character, balance, limit, spend - balance, "GAIN").await?;
@@ -473,7 +473,7 @@ async fn append_dust(
                    WHEN 'SPEND' THEN 'proficiency' ELSE 'creature_kill' END,
            game_character_uuid_v7(),game_character_uuid_v7(),$4,0,$2,
            CASE WHEN $5='GAIN' THEN $2+$4 ELSE $2-$4 END,$3::smallint,
-           CASE WHEN $5='LIMIT_RAISE' THEN $3::smallint+20 ELSE $3::smallint END
+           CASE WHEN $5='LIMIT_RAISE' THEN $3::smallint+1 ELSE $3::smallint END
         FROM game_character_forge_dust WHERE character_id=$1::uuid
         RETURNING entry_id,balance_after,dust_limit_after)
         UPDATE game_character_forge_dust SET balance=e.balance_after,dust_limit=e.dust_limit_after,
