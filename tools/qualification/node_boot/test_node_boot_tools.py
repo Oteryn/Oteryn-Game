@@ -303,6 +303,18 @@ WORK=.
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 
 
+    def test_s10_ankrahmun_has_one_dedicated_account(self):
+        fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
+        fixtures += section('BOOTSTRAP_ACCOUNTS=(', 'source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"')
+        result = bash('set -Eeuo pipefail\nNODE_BOOT_WORLD=1\nNODE_BOOT_WORLD_PROFILE=s10-ankrahmun\n'
+                      + fixtures + 'printf "%s\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        accounts = result.stdout.splitlines()
+        self.assertEqual(len(accounts), 29)
+        self.assertEqual(len(set(accounts)), 29)
+        self.assertEqual(accounts[-1], "01934f10-7c00-7000-8000-000000000020")
+
+
 class ReuseTests(unittest.TestCase):
     GUARD = re.search(r'(?ms)^if \[\[ "\$NODE_BOOT_REUSE_STACK" != 0 \]\]; then.*?^fi\n', RUN_TEXT)
 

@@ -117,11 +117,26 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
+  if [[ "$group" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 208:1 ]]; then
+    E2E_ALL_CAPTURE_DIR="$(mktemp -d "$work_dir/s10-captures.XXXXXX")" || blocked capture_dir_unavailable
+    export E2E_ALL_CAPTURE_DIR
+  fi
   NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
+  if [[ "$group" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 208:1 && "$status" == 0 ]]; then
+    replay_log="$work_dir/$index-s10-replay.log"
+    if [[ "$(grep -c '^SEAM_EVIDENCE e2e_all scenario=S10.client status=CAPTURED ' "$log")" == 1 ]] &&
+      cargo test --locked -p oteryn-session --lib tests::e2e_s10::e2e_s10_rashid_shop_conversation_and_window_replay -- --exact > "$replay_log" 2>&1 &&
+      grep -Fxq 'test tests::e2e_s10::e2e_s10_rashid_shop_conversation_and_window_replay ... ok' "$replay_log"; then
+      printf 'SEAM_EVIDENCE e2e_all scenario=S10.client status=PASS evidence=live_capture_replayed\n' >> "$log"
+    else
+      printf 'SEAM_EVIDENCE e2e_all scenario=S10.client status=FAIL evidence=live_capture_replay_failed\nNODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged\n' >> "$log"
+      status=1
+    fi
+  fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1
 done

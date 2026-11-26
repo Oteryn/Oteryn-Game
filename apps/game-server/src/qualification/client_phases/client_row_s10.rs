@@ -93,6 +93,53 @@ async fn talk(
     ))
 }
 
+const ANKRAHMUN_LANDING: ActorPosition = ActorPosition {
+    x: 33092,
+    y: 32883,
+    floor: 6,
+};
+
+async fn seed_ankrahmun(clients: &SeamClients<'_>) -> TestResult {
+    let mut client = connect_character(clients, 0x42, 0).await?;
+    character_prep::grant_item(&client, 3035, 1).await?;
+    request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        "s10-rashid".into(),
+    )
+    .await
+    .map_err(|error| format!("S10 client fixture: quest preparation refused: {error}"))?;
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("S10 client fixture: initial logout refused".into());
+    }
+    drop(client);
+    wait_character_released(clients, 0).await?;
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let mut transaction = sqlx::Connection::begin(&mut connection).await?;
+    let character = clients.characters[0].as_slice();
+    // The disposable account has a saved position with the live bundle's digests.
+    // Seed before the next admission so its normal position and quest loaders run.
+    let position = sqlx::query(
+        "UPDATE game_character_last_positions SET tile_x=$2, tile_y=$3, tile_floor=$4,
+         write_sequence=write_sequence+1
+         WHERE character_id=encode($1,'hex')::uuid AND house_key IS NULL",
+    )
+    .bind(character)
+    .bind(ANKRAHMUN_LANDING.x)
+    .bind(ANKRAHMUN_LANDING.y)
+    .bind(ANKRAHMUN_LANDING.floor)
+    .execute(&mut *transaction)
+    .await?;
+    if position.rows_affected() != 1 {
+        return Err("S10 client fixture: expected one saved position".into());
+    }
+    transaction.commit().await?;
+    evidence("S10_CLIENT_FIXTURE position_rows=1 quest_receipt=committed");
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -103,7 +150,41 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_character(clients, 0x42, 1).await?;
+    character_prep::declare_seeded(
+        "S10.client",
+        "Ankrahmun landing, Travelling Trader stage 13, one platinum coin",
+        "capture Rashid's weekday shop conversation",
+    );
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_S10_ACCOUNT").await?;
+    let clients = dedicated.clients(clients);
+    seed_ankrahmun(&clients).await?;
+    let mut client = connect_character(&clients, 0x42, 0).await?;
+    if client.world_spatial().actor_position != ANKRAHMUN_LANDING {
+        return Err(format!(
+            "S10 client capture: wrong Ankrahmun admission {:?}",
+            client.world_spatial().actor_position
+        )
+        .into());
+    }
+    let platinum = provisioning::item_reference(&provisioning::item_index()?, 3035)?;
+    if !client.inventory().is_some_and(|inventory| {
+        inventory
+            .entries
+            .iter()
+            .any(|entry| entry.item_definition_ref == platinum && entry.count.get() == 1)
+    }) {
+        return Err("S10 client fixture: one platinum coin missing on re-admission".into());
+    }
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?;
+    let destination =
+        oteryn_gameplay_entities::rashid_schedule::destination_at(i64::try_from(now.as_millis())?);
+    if destination.city != "Thursday" {
+        return Err(format!(
+            "S10 client capture: Ankrahmun requires Thursday, observed {}",
+            destination.city
+        )
+        .into());
+    }
     let rashid = metadata
         .npcs
         .npcs
@@ -112,7 +193,11 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
         .ok_or("S10 client capture: today's Rashid placement absent")?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         rashid.placements.iter().any(|place| {
-            place.floor == at.floor && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
+            place.x == destination.placement.x
+                && place.y == destination.placement.y
+                && place.floor == destination.placement.floor
+                && place.floor == at.floor
+                && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
         })
     })
     .ok_or("S10 client capture: Rashid unreachable")?;
@@ -122,11 +207,23 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
         .and_then(|entities| {
             entities.iter().find(|entity| {
                 entity.kind == EntityKind::Npc
-                    && rashid.placements.iter().any(|place| {
-                        entity.position.x == i32::from(place.x)
-                            && entity.position.y == i32::from(place.y)
-                            && entity.position.floor == -i16::from(place.floor)
-                    })
+                    && entity
+                        .display_name
+                        .as_ref()
+                        .and_then(|name| name.as_str().ok())
+                        == Some("Rashid")
+                    && entity
+                        .position
+                        .x
+                        .abs_diff(i32::from(destination.placement.x))
+                        .max(
+                            entity
+                                .position
+                                .y
+                                .abs_diff(i32::from(destination.placement.y)),
+                        )
+                        <= 3
+                    && entity.position.floor == -i16::from(destination.placement.floor)
             })
         })
         .map(|entity| entity.entity)
@@ -146,7 +243,10 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
                 break delta;
             }
         };
-        let window = wire::decode_npc_trade_window(&window_delta.payload)
+        let details = client
+            .session_mut()
+            .is_selected(oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
+        let window = wire::decode_npc_trade_window_for(&window_delta.payload, details)
             .map_err(|error| format!("step=trade window: {error:?}"))?;
         let revision = match window.open {
             Some((opened, revision)) if opened == actor => revision,
@@ -177,6 +277,11 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
             identity(actor),
             lines.join("\u{1f}")
         ));
+        capture(
+            capture_dir,
+            "s10-trade-details.txt",
+            if details { b"1" } else { b"0" },
+        )?;
         capture(capture_dir, "s10-expected.txt", expected.as_bytes())?;
         Ok(format!("offers={}", window.offers.len()))
     }

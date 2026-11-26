@@ -3,15 +3,23 @@
 //! `Session::apply_state_delta` (`domain_dispatch.rs`) and exposed as
 //! `SessionEvent::NpcConversation` / `SessionEvent::NpcTradeWindow`.
 use super::*;
-use crate::tests::npc_conversation_replay::{built, built_window, captured, replay};
+use crate::tests::npc_conversation_replay::{
+    built, built_window, captured, replay_with_trade_details,
+};
 use oteryn_protocol_oteryn::npc_service;
 
 const NPC: [u8; 16] = [0x10; 16];
 
 #[test]
 fn e2e_s10_rashid_shop_conversation_and_window_replay() -> Result<(), BoxError> {
-    let frames = if let Some(dir) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        captured("s10", std::path::Path::new(&dir))?
+    let (frames, trade_details) = if let Some(dir) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        let dir = std::path::Path::new(&dir);
+        let trade_details = match std::fs::read(dir.join("s10-trade-details.txt"))?.as_slice() {
+            b"0" => false,
+            b"1" => true,
+            _ => return Err("S10 capture has invalid trade details capability".into()),
+        };
+        (captured("s10", dir)?, trade_details)
     } else {
         let open = Some((NPC, 2));
         let window = npc_service::NpcTradeWindow {
@@ -30,11 +38,14 @@ fn e2e_s10_rashid_shop_conversation_and_window_replay() -> Result<(), BoxError> 
                 unit_price: 15,
             }],
         };
-        vec![
-            built("hi", (21, 0), open, &["Welcome. Ask to {trade}."])?,
-            built("trade", (23, 1), open, &["Here are my wares."])?,
-            built_window("trade", (24, 0), (NPC, 2), &window)?,
-        ]
+        (
+            vec![
+                built("hi", (21, 0), open, &["Welcome. Ask to {trade}."])?,
+                built("trade", (23, 1), open, &["Here are my wares."])?,
+                built_window("trade", (24, 0), (NPC, 2), &window)?,
+            ],
+            false,
+        )
     };
     assert!(
         frames
@@ -42,5 +53,5 @@ fn e2e_s10_rashid_shop_conversation_and_window_replay() -> Result<(), BoxError> 
             .any(|frame| frame.domain == npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW),
         "S10 replay lacks the shop window frame"
     );
-    replay("s10", frames)
+    replay_with_trade_details("s10", frames, trade_details)
 }
