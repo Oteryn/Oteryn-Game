@@ -1,5 +1,5 @@
 //! Source-qualified Primal lever admission through the shared W02 handoff owner.
-use super::{ComposedFreshAdmission, connection::AdmittedSession};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission, connection::AdmittedSession};
 use crate::content::bosses::activity_template::{
     PinnedActivitySourceRoom, QualifiedActivityRoomTemplate,
 };
@@ -61,6 +61,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn prepare_primal_catalogue(
         &self,
         admitted: AdmittedSession,
+        budget: &AdmissionRetryBudget<'_>,
     ) -> Result<(), ActivityRefusal> {
         let template = self.primal_template()?;
         let active = self
@@ -84,8 +85,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let fence = admitted
             .item_fence
             .ok_or(ActivityRefusal::AuthorityRejected)?;
-        if !ActivityHandoffOwner::new(self.root.clone())
-            .activate_primal_boss_catalogue(self.character, self.holder, fence, active, &template)
+        let owner = ActivityHandoffOwner::new(self.root.clone());
+        // Both catalogue passes publish the same qualified content on replay.
+        if !budget
+            .retry_command_guard(async || {
+                owner
+                    .activate_primal_boss_catalogue(
+                        self.character,
+                        self.holder,
+                        fence,
+                        active,
+                        &template,
+                    )
+                    .await
+            })
             .await
             .map_err(|_error| {
                 #[cfg(test)]
