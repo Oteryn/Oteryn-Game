@@ -252,6 +252,25 @@ NODE_REQUIRED_CAPABILITIES=[]
             config = tomllib.loads(Path(work, 'node.toml').read_text())
             self.assertIs(config['platform']['world_event_outcomes']['enabled'], False)
 
+    def test_blue_valley_landing_sector_follows_the_c12_full_batch(self):
+        profile = section('NODE_BOOT_WORLD_PROFILE=', 'readonly NODE_BOOT_WORLD_PROFILE')
+        game_source = f'GAME_SOURCE={str(HERE.parents[2])!r}\n'
+        for group, batch, includes_landing in [
+            ('rows', '2:1', True),
+            ('rows', '+0:+3', True),
+            ('rows', 'all', True),
+            ('rows', '0:2', False),
+            ('rows', '97:1', False),
+            ('rows', '2:0', False),
+            ('rows', 'invalid', False),
+            ('world', '2:1', False),
+        ]:
+            with self.subTest(group=group, batch=batch):
+                result = bash(game_source + profile + '\nprintf "%s" "$WORLD_REGIONS"\n',
+                              {'NODE_BOOT_E2E_ONLY': group, 'OTERYN_E2E_ROW_BATCH': batch})
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual('131,123' in result.stdout.split(';'), includes_landing)
+
     def test_spell_manifest_initializes_world_epoch_without_a_bundle(self):
         assignment = function('node_complete_assignment')
         epoch_setup = assignment.split('|| fail "content activation rows"\n', 1)[1].split(
