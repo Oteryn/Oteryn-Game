@@ -1,4 +1,4 @@
-//! Client replay capture for SCENARIO_MATRIX C17b.
+//! Client replay capture of an invisible caster leaving on logout for SCENARIO_MATRIX C17b.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::actor_spell::SpellTarget;
@@ -98,6 +98,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if entities.get(&caster_ref).is_none() {
         return Err("C17b.client caster was not initially visible".into());
     }
+    observer.take_events();
+    let cast = full_e2ef5::with_observer_liveness(&mut observer, async {
+        Ok(caster.cast_spell(spell_index()?, SpellTarget::None, false).await?)
+    }).await?;
+    if cast.status != CommandStatus::Accepted
+        || cast.disposition != oteryn_protocol_oteryn::actor_spell::SpellCastDisposition::Cast
+    {
+        return Err(format!("C17b.client Utana Vid refused: {:?}", cast.disposition).into());
+    }
+    if observer.take_events().iter().any(|event| {
+        matches!(event, SessionEvent::WorldSpatialEntities(delta) if delta.value.leave.contains(&caster_ref))
+    }) {
+        return Err("C17b.client cast removed the invisible caster from the observer".into());
+    }
+    let entities = observer
+        .world_entities()
+        .filter(|entities| entities.get(&caster_ref).is_some())
+        .ok_or("C17b.client invisible caster missing before logout")?;
     let fields = EntityFields::selected(observer.selected_capabilities());
     let snapshot = WorldSpatialEntitiesSnapshot {
         content_generation: observer.world_spatial().content_generation,
@@ -111,9 +129,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &EntityLights::new(),
     )
     .map_err(|error| format!("C17b.client snapshot encode: {error:?}"))?;
-    observer.take_events();
-    let cast = caster
-        .cast_spell(spell_index()?, SpellTarget::None, false)
+    full_e2ef5::with_observer_liveness(&mut observer, full_e2ef5::player_logout(&mut caster))
         .await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let removed = loop {
@@ -130,7 +146,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             break delta;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("C17b.client visibility leave delta absent".into());
+            return Err("C17b.client logout leave delta absent".into());
         }
     };
     let delta_payload = encode_world_spatial_entities_delta_with_fields(
