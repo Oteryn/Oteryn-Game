@@ -120,31 +120,89 @@ pub(super) async fn approach(
     approach_along(client, world, npc, &path).await
 }
 
+async fn nearest_npc<'a>(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    candidates: &[&'a oteryn_world_bundle::npc::Npc],
+) -> TestResult<Option<(&'a oteryn_world_bundle::npc::Npc, Vec<StepDirection>)>> {
+    let mut goals = BTreeMap::new();
+    for (index, npc) in candidates.iter().enumerate() {
+        for placement in &npc.placements {
+            for dx in -3..=3 {
+                for dy in -3..=3 {
+                    if let Some((x, y)) = placement
+                        .x
+                        .checked_add_signed(dx)
+                        .zip(placement.y.checked_add_signed(dy))
+                    {
+                        goals
+                            .entry(TilePos {
+                                x,
+                                y,
+                                floor: placement.floor,
+                            })
+                            .or_insert(index);
+                    }
+                }
+            }
+        }
+    }
+    if goals.is_empty() {
+        return Ok(None);
+    }
+    let start = tile(client.world_spatial().actor_position)?;
+    let world = world.clone();
+    let target = route_work(client, move || {
+        let Some(path) = route(&world, start, |at| goals.contains_key(&at)) else {
+            return Ok(None);
+        };
+        let end = path
+            .iter()
+            .try_fold(start, |at, &direction| destination(&world, at, direction))
+            .ok_or_else(|| "E02 planned route has no served-map landing".to_string())?;
+        let index = *goals
+            .get(&end)
+            .ok_or_else(|| "E02 route ended outside NPC range".to_string())?;
+        Ok(Some((index, path)))
+    })
+    .await?;
+    Ok(target.map(|(index, path)| (candidates[index], path)))
+}
+
 async fn approach_along(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npc: &oteryn_world_bundle::npc::Npc,
     path: &[StepDirection],
 ) -> TestResult<EntityRef> {
+    let from = client.world_spatial().actor_position;
+    evidence(&format!(
+        "E02_ROUTE npc={} from={from:?} steps={}",
+        npc.key,
+        path.len()
+    ));
     walk(client, world, path).await?;
-    visible_npc(client, npc).ok_or_else(|| format!("step=walk-npc observed=actor-not-visible:{}", npc.key).into())
+    visible_npc(client, npc)
+        .ok_or_else(|| format!("step=walk-npc observed=actor-not-visible:{}", npc.key).into())
 }
 
-async fn find_exchange_npc(
+pub(super) async fn find_exchange_npc(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
     book: &crate::gameplay_transport::NpcTalkBook,
 ) -> TestResult<(EntityRef, String)> {
     let mut attempted = Vec::new();
-    for npc in npcs
+    let mut candidates: Vec<_> = npcs
         .npcs
         .iter()
         .filter(|npc| book.get(&npc.key).is_some_and(|entry| entry.bank()))
-    {
-        let Some(path) = npc_approach_path(client, world, npc).await? else {
-            continue;
-        };
+        .collect();
+    if candidates.is_empty() {
+        return Err("step=find-exchange-npc observed=no-authored-banker-in-served-npc-table".into());
+    }
+    while let Some((npc, path)) = nearest_npc(client, world, &candidates).await? {
+        candidates.retain(|candidate| candidate.key != npc.key);
         let actor = approach_along(client, world, npc, &path).await?;
         let greeting = talk(client, actor, "hi").await?;
         attempted.push(format!("{}:hi={:?}", npc.key, greeting.lines));
@@ -169,88 +227,48 @@ async fn exchange(
     last.ok_or_else(|| "step=exchange observed=empty-command-sequence".into())
 }
 
-async fn earn_gold(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    npcs: &oteryn_world_bundle::npc::Table,
-    book: &crate::gameplay_transport::NpcTalkBook,
+pub(super) async fn coin_profile<'a>(
+    clients: &SeamClients<'a>,
+    row: &str,
+    name: &str,
+    tag: u8,
     refs: [std::num::NonZeroU32; 3],
-) -> TestResult<[u64; 3]> {
-    let mut observed = backpack_coins(client, refs)?;
-    let mut attempts = Vec::new();
-    for npc in npcs.npcs.iter().filter(|npc| {
-        book.get(&npc.key).is_some_and(|entry| {
-            entry.offers().iter().any(|offer| {
-                offer.direction == crate::content::ProjectV2ServiceOfferDirection::BuyFromPlayer
-            })
-        })
-    }) {
-        if observed[0] >= 100 {
-            continue;
-        }
-        let Some(path) = npc_approach_path(client, world, npc).await? else {
-            continue;
-        };
-        let actor = approach_along(client, world, npc, &path).await?;
-        let greeting = talk(client, actor, "hi").await?;
-        let trade = talk(client, actor, "trade").await?;
-        attempts.push(format!("{}:hi={:?}:trade={:?}", npc.key, greeting.lines, trade.lines));
-        let delta = match tokio::time::timeout(
-            Duration::from_secs(2),
-            client.session_mut().read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1),
-        ).await {
-            Ok(Ok(delta)) => delta,
-            _ => continue,
-        };
-        let window = wire::decode_npc_trade_window(&delta.payload)
-            .map_err(|error| format!("step=earn-gold observed=malformed-trade-window:{error:?}"))?;
-        let Some((_, revision)) = window.open else { continue };
-        let carried: BTreeMap<_, _> = client.inventory()
-            .ok_or("step=earn-gold observed=inventory-absent")?
-            .entries.iter()
-            .map(|entry| (entry.item_definition_ref.get(), entry.count.get()))
-            .collect();
-        for (index, offer) in window.offers.iter().enumerate() {
-            if observed[0] >= 100 { break; }
-            let Some(available) = carried.get(&offer.item_definition_ref).copied() else { continue };
-            if offer.side != wire::NpcTradeSide::Sell || refs.iter().any(|r| r.get() == offer.item_definition_ref) {
-                continue;
-            }
-            let needed = u32::try_from(100 - observed[0]).unwrap_or(u32::MAX);
-            let quantity = available.min(needed.div_ceil(offer.unit_price.max(1))).max(1);
-            let disposition = runtime::buy(client.session_mut(), &wire::NpcTradeIntent {
-                npc_actor: actor,
-                catalogue_revision: revision,
-                offer_index: u32::try_from(index)?,
-                side: offer.side,
-                quantity,
-                expected_unit_price: offer.unit_price,
-            }).await?;
-            let before = observed;
-            if disposition != wire::NpcIntentDisposition::Ok {
-                attempts.push(format!("{}:sell-ref={}:qty={quantity}:reply={disposition:?}", npc.key, offer.item_definition_ref));
-                continue;
-            }
-            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-            loop {
-                observed = backpack_coins(client, refs)?;
-                if observed[0] > before[0] { break; }
-                if tokio::time::Instant::now() >= deadline {
-                    return Err(format!("step=earn-gold observed=sale-accepted-without-gold-delta npc={} ref={} before={before:?} after={observed:?}", npc.key, offer.item_definition_ref).into());
-                }
-                client.service_liveness(Duration::from_millis(25)).await?;
-                client.take_events();
-            }
-            attempts.push(format!("{}:sold-ref={}:qty={quantity}:price={}:coins={observed:?}", npc.key, offer.item_definition_ref, offer.unit_price));
-        }
+) -> TestResult<(Vec<[u8; 16]>, DevClientSession)> {
+    mod hunt_route {
+        use super::*;
+        include!("qualification_hunt_route.rs");
     }
-    if observed[0] < 100 {
-        return Err(format!("step=legitimate-gold observed=backpack-coins:{observed:?},sale-attempts={attempts:?}; need=reachable-compiled-world-buyer-for-starter-items").into());
-    }
-    evidence(&format!("E2EF20_ACQUISITION legitimate-player-sales={attempts:?}"));
-    Ok(observed)
-}
 
+    let mut characters = clients.characters.to_vec();
+    characters[1] = hunt_route::qualification_character(clients, 1, tag, name, "Knight").await?;
+    let dedicated = SeamClients { characters: &characters, ..*clients };
+    let mut client = connect_world(&dedicated, tag).await?;
+    let before = backpack_coins(&client, refs)?;
+    if before != [50, 0, 0] {
+        return Err(format!("E02 starter gold expected [50, 0, 0], observed {before:?}").into());
+    }
+    character_prep::declare_seeded(
+        row,
+        "100 carried gold coins",
+        "complete the 50-coin starter balance on the dedicated character",
+    );
+    // The fixture accepts at most 20 per ordinary named profile and replays
+    // identical claims in one session, so use three distinct grants totaling 50.
+    for count in [11, 19, 20] {
+        character_prep::grant_item(&client, GOLD_ID, count).await?;
+    }
+    let (result, detail, _, _) = logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("E02 setup logout refused: {detail}").into());
+    }
+    drop(client);
+    let client = connect_world(&dedicated, tag).await?;
+    let after = backpack_coins(&client, refs)?;
+    if after != [100, 0, 0] {
+        return Err(format!("E02 seeded gold expected [100, 0, 0], observed {after:?}").into());
+    }
+    Ok((characters, client))
+}
 
 fn exact_delta(before: [u64; 3], after: [u64; 3], delta: [i64; 3]) -> bool {
     before
@@ -266,9 +284,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let refs = coin_refs()?;
-    let mut client = connect_world(clients, 0x33).await?;
+    let (_characters, mut client) =
+        coin_profile(clients, "E02.client", "Coin Exchange Capture", 0x33, refs).await?;
     let talk_book = full_e2ef20::qualification_npc_talk_book(&mut client).await?;
-    let initial = earn_gold(&mut client, world, &metadata.npcs, &talk_book, refs).await?;
+    let initial = backpack_coins(&client, refs)?;
     let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs, &talk_book).await?;
     let before_pairs = pairs(&client);
     let before_payload = encoded_backpack(&client)?;
