@@ -6,9 +6,9 @@
 //! 3. Before dispelling, require the explicit `InFight` logout refusal during active combat.
 //! 4. With health below maximum, observe a later positive `ActorVitals` health delta from the
 //!    server's ordinary regeneration owner, without changing state through a fixture or database.
-//! 5. Return to the poison spider, acquire another delayed poison delta, wait for combat to
-//!    clear, then make one logout request and a fresh admission; expect a new
-//!    game-session id, an authoritative active poison icon, and resumed damage out of combat.
+//! 5. Return to the poison spider, acquire another delayed poison delta, retreat to
+//!    protection, then make one logout request and a fresh admission; expect a new
+//!    game-session id, the retained poison schedule, and resumed HP loss without an attacker.
 use super::full_row_c01::admission_error;
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
@@ -218,7 +218,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let sampled = tokio::time::Instant::now();
     let remaining = poison_remaining(&mut client).await?
         .ok_or("step=dispel observed=poison-expired-before-cast need=live-poison-at-isolated-site")?;
-    if !poison_survived_window(remaining, sampled.elapsed()) {
+    if remaining <= 0 || !poison_survived_window(remaining, sampled.elapsed()) {
         return Err("step=dispel observed=poison-near-natural-expiry-before-cast".into());
     }
     let mana = client
@@ -290,11 +290,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     walk_c08(&mut client, world, &safe).await?;
     let old_session = client.join_snapshot().game_session_id;
     let saved_position = client.world_spatial().actor_position;
-    wait_until_out_of_combat(&mut client).await?;
+    if tile(saved_position)? == TOWN {
+        return Err("C08 persistence logout position equals the default town entry".into());
+    }
+    // Crystal allows normal logout in protection even while a PvE fight flag is active.
+    let in_fight = client.session_mut().combat_state().ok_or("C08 combat state absent")?.in_fight;
     let sampled = tokio::time::Instant::now();
     let saved_remaining = poison_remaining(&mut client).await?
-        .filter(|remaining| *remaining != 0)
-        .ok_or("step=poison-persistence observed=no-live-poison-at-save")?;
+        .filter(|remaining| *remaining > 0)
+        .ok_or("step=poison-persistence observed=no-finite-live-poison-at-save")?;
+    evidence(&format!("C08_PERSISTENCE_PRELOGOUT position={saved_position:?} remaining_ms={saved_remaining} in_fight={in_fight}"));
     let reply = client.session_mut().logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=poison-persistence first logout refused: {reply:?}").into());
@@ -325,9 +330,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 }
 
 fn retained_duration(before: i64, restored: i64, elapsed: Duration) -> bool {
-    if before == -1 {
-        return restored == -1;
-    }
     restored > 0
         && restored <= before
         && (before - restored) as u128 <= elapsed.as_millis().saturating_add(2)
@@ -578,13 +580,86 @@ async fn walk_to_poison_site(
     Ok(site)
 }
 
-async fn resumed_poison_tick(client: &mut DevClientSession, world: &BundleWorld) -> TestResult<(u64, u64)> {
+async fn resumed_poison_tick(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+) -> TestResult<(u64, u32, u32)> {
     require_poison_attribution(client)?;
     let site = walk_to_poison_site(client, world, "poison-persistence").await?;
     if !poison_status(client).await? {
-        return Err("step=poison-persistence observed=expired-poison need=active-poison-on-bare-ground".into());
+        return Err(
+            "step=poison-persistence observed=expired-poison need=active-poison-on-bare-ground"
+                .into(),
+        );
     }
-    wait_poison_tick(client, "poison-persistence", Some(site)).await
+    let mut health = client
+        .actor_vitals()
+        .ok_or("C08 restored vitals absent")?
+        .health;
+    client.take_events();
+    let after = client.last_server_sequence();
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    let mut damage = None;
+    let mut health_loss = None;
+    loop {
+        require_isolated_poison_site(client, site, "poison-persistence")?;
+        for event in client.take_events() {
+            match event {
+                SessionEvent::ActorVitals(delta) if delta.server_sequence > after => {
+                    if delta.value.health < health
+                        && health_loss.replace((health, delta.value.health)).is_some()
+                    {
+                        return Err(
+                            "C08 multiple HP decreases before restored poison attribution".into(),
+                        );
+                    }
+                    health = delta.value.health;
+                }
+                SessionEvent::AnalyserAttributedFacts(delta) if delta.server_sequence > after => {
+                    for fact in &delta.value {
+                        if let Some(amount) = restored_poison_amount(fact)
+                            && damage.replace((delta.server_sequence, amount)).is_some()
+                        {
+                            return Err(
+                                "C08 multiple restored poison facts before HP verification".into(),
+                            );
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        if let (Some((sequence, amount)), Some((before, after))) = (damage, health_loss) {
+            if before.checked_sub(amount) != Some(after) {
+                return Err(format!(
+                    "C08 restored poison amount {amount} did not match HP {before}->{after}"
+                )
+                .into());
+            }
+            return Ok((sequence, before, after));
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("C08 restored poison did not yield matching unowned Earth damage and HP change: damage={damage:?} health_loss={health_loss:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+}
+
+fn restored_poison_amount(fact: &oteryn_protocol_oteryn::analyser::AttributedFact) -> Option<u32> {
+    use oteryn_protocol_oteryn::{
+        analyser::{AnalyserDamageSource, AnalyserFact},
+        damage_element::DamageElement,
+    };
+    // Crystal serializes the damage list and leaves out ConditionDamage::owner.
+    let AnalyserFact::DamageInput {
+        value,
+        element: DamageElement::Earth,
+        source: AnalyserDamageSource::None,
+    } = fact.fact
+    else {
+        return None;
+    };
+    fact.attacker.is_none().then_some(value.get())
 }
 
 pub(super) fn poison_tick_fact(fact: &oteryn_protocol_oteryn::analyser::AttributedFact) -> bool {
@@ -605,6 +680,23 @@ mod tests {
     use super::*;
 
     #[test]
+    fn restored_poison_requires_earth_and_no_live_source() {
+        use oteryn_protocol_oteryn::{
+            analyser::{AnalyserDamageSource, AnalyserFact, AttributedFact},
+            damage_element::DamageElement,
+        };
+        let fact = |element, source, attacker| AttributedFact {
+            fact: AnalyserFact::DamageInput { value: NonZeroU32::MIN, element, source },
+            attacker,
+        };
+        assert_eq!(restored_poison_amount(&fact(DamageElement::Earth, AnalyserDamageSource::None, None)), Some(1));
+        assert_eq!(restored_poison_amount(&fact(DamageElement::Earth, AnalyserDamageSource::Creature(None), None)), None);
+        assert_eq!(restored_poison_amount(&fact(DamageElement::Physical, AnalyserDamageSource::None, None)), None);
+        let source = oteryn_dev_client::EntityRef { identity: [1; 16], generation: 1 };
+        assert_eq!(restored_poison_amount(&fact(DamageElement::Earth, AnalyserDamageSource::None, Some(source))), None);
+    }
+
+    #[test]
     fn retained_poison_duration_rejects_reset_expiry_and_excess_time_loss() {
         let elapsed = Duration::from_millis(100);
         assert!(retained_duration(1_000, 1_000, elapsed));
@@ -613,7 +705,7 @@ mod tests {
         assert!(!retained_duration(1_000, 800, elapsed));
         assert!(!retained_duration(1_000, 0, elapsed));
         assert!(!retained_duration(1_000, -1, elapsed));
-        assert!(retained_duration(-1, -1, elapsed));
+        assert!(!retained_duration(-1, -1, elapsed));
         assert!(!retained_duration(-1, 1_000, elapsed));
     }
 
