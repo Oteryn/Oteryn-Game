@@ -6,12 +6,12 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::item_view::ItemHandle;
 use oteryn_protocol_oteryn::{CommandStatus, depot, depot_search as wire};
 
-fn capture(name: &str, bytes: &[u8]) -> TestResult {
-    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        std::fs::write(Path::new(&root).join(name), bytes)
-            .map_err(|error| format!("N03_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"))?;
-    }
-    Ok(())
+fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    use std::io::Write as _;
+
+    std::fs::File::create_new(root.join(name))
+        .and_then(|mut file| file.write_all(bytes))
+        .map_err(|error| format!("N03_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}").into())
 }
 
 async fn search_command(
@@ -75,6 +75,8 @@ async fn wait_carried(client: &mut DevClientSession, handle: ItemHandle, expecte
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let capture_root = required("NODE_BOOT_N03_CAPTURE_DIR")?;
+    let capture_root = Path::new(&capture_root);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -157,7 +159,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         },
     )
     .await?;
-    if retrieved.outcome != wire::Outcome::Retrieved || retrieved.retrieved == 0 {
+    if retrieved.outcome != wire::Outcome::Retrieved || retrieved.retrieved != 1 {
         return Err(format!("retrieve-one reply {retrieved:?}").into());
     }
     let tiers = row
@@ -192,10 +194,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let _ = client.session_mut().logout().await;
     for (index, bytes) in pages.iter().enumerate() {
-        capture(&format!("n03-list-{index}.bin"), bytes)?;
+        capture(capture_root, &format!("n03-list-{index}.bin"), bytes)?;
     }
-    capture("n03-retrieve.bin", &retrieved_bytes)?;
-    capture("n03-expected.txt", expected.as_bytes())?;
+    capture(capture_root, "n03-retrieve.bin", &retrieved_bytes)?;
+    capture(capture_root, "n03-expected.txt", expected.as_bytes())?;
     Ok(format!(
         "item={client_id} pages={} depot={} retrieved={}",
         pages.len(),
@@ -210,7 +212,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         .await
     {
         Ok(Ok(observed)) => evidence(&format!(
-            "e2e_all scenario=N03.client status=PASS seconds={:.3} evidence={observed}",
+            "e2e_all scenario=N03.client status=CAPTURED seconds={:.3} evidence={observed}",
             started.elapsed().as_secs_f64()
         )),
         Ok(Err(error)) => evidence(&format!(

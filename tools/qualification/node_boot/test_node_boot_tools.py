@@ -389,6 +389,39 @@ class ReuseTests(unittest.TestCase):
         self.assertIn('"$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then\n  NODE_BOOT_WORLD=0 bash', RUN_TEXT)
 
 
+class N03ReplayTests(unittest.TestCase):
+    def test_selects_only_world_rows_whose_batch_includes_n03(self):
+        script = function('n03_replay_selected') + '\nNODE_BOOT_WORLD=1; n03_replay_selected'
+        for groups, batch, expected in (
+            ('rows', '142:1', 0), ('core, rows', '140:3', 0), ('', 'all', 0),
+            ('rows', '141:1', 1), ('rows', '142:0', 1), ('core', 'all', 1),
+        ):
+            with self.subTest(groups=groups, batch=batch):
+                result = bash(script, {'NODE_BOOT_E2E_ONLY': groups, 'OTERYN_E2E_ROW_BATCH': batch})
+                self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+
+    def test_requires_current_capture_and_an_executed_native_test(self):
+        script = textwrap.dedent("""
+            set -Eeuo pipefail
+            WORK=$PWD; GAME_SOURCE=$PWD; NODE_BOOT_N03_CAPTURE_DIR=$PWD
+            cargo() { printf '%s\\n' "$TEST_RESULT"; }
+            """) + function('n03_replay') + '\nn03_replay'
+        with tempfile.TemporaryDirectory() as temp:
+            log = Path(temp, 'stage-seam_stages.log')
+            Path(temp, 'n03-expected.txt').write_text('fixture')
+            replay = ('test play::feature_0153_depot_search::view::native::e2e_n03::'
+                      'e2e_n03_depot_list_retrieve_one_and_refusals ... ok')
+            for marker, outcome, expected in (
+                ('', replay, 1),
+                ('SEAM_EVIDENCE e2e_capture scenario=N03.client status=CAPTURED evidence=item=1', '', 1),
+                ('SEAM_EVIDENCE e2e_capture scenario=N03.client status=CAPTURED evidence=item=1', replay, 0),
+            ):
+                log.write_text(marker + '\n')
+                result = bash(script, {'TEST_RESULT': outcome}, temp)
+                self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+                self.assertEqual('scenario=N03.client status=PASS' in result.stdout, expected == 0)
+
+
 class SeamPassThroughTests(unittest.TestCase):
     def test_seam_runs_spawn_fence_regression_with_database_url(self):
         seam = function('seam_stages')

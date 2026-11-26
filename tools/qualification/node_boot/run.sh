@@ -1808,6 +1808,44 @@ SQL
   evidence "pvp_characters=2 world=$PVP_WORLD_ID source=platform_intents path=pvp_control_socket retry=idempotent contract=4 starter=${INTERPRETATION[3]} births=knight,sorcerer projection_revision=1"
 }
 
+n03_replay_selected() {
+  [[ "$NODE_BOOT_WORLD" == 1 ]] || return 1
+  python3 - "${NODE_BOOT_E2E_ONLY:-}" "${OTERYN_E2E_ROW_BATCH-0:15}" <<'PY_N03_SELECTION'
+import re
+import sys
+
+groups, batch = sys.argv[1:]
+if groups.strip() and "rows" not in {group.strip() for group in groups.split(",")}:
+    sys.exit(1)
+if batch == "all":
+    sys.exit(0)
+bounds = re.fullmatch(r"([+]?[0-9]+):([+]?[0-9]+)", batch)
+if not bounds:
+    sys.exit(1)
+start, length = map(int, bounds.groups())
+# world.rs registers N03.client at index 142 via e2e_row_selected.
+sys.exit(not (0 <= 142 - start < length))
+PY_N03_SELECTION
+}
+
+n03_replay() {
+  local test=play::feature_0153_depot_search::view::native::e2e_n03::e2e_n03_depot_list_retrieve_one_and_refusals
+  local log="$WORK/n03-native-replay.log"
+  local started=$SECONDS
+  if [[ $(grep -c '^SEAM_EVIDENCE e2e_capture scenario=N03.client status=CAPTURED ' "$WORK/stage-seam_stages.log") != 1 ||
+        ! -s "$NODE_BOOT_N03_CAPTURE_DIR/n03-expected.txt" ]]; then
+    echo 'SEAM_EVIDENCE e2e_all scenario=N03.client status=FAIL evidence=missing-current-capture'
+    return 1
+  fi
+  if ! (cd "$GAME_SOURCE" && E2E_ALL_CAPTURE_DIR="$NODE_BOOT_N03_CAPTURE_DIR" \
+      cargo +1.100.0 test --locked -p oteryn-client --lib "$test" -- --exact) 2>&1 | tee "$log" ||
+      [[ $(grep -Fxc "test $test ... ok" "$log") != 1 ]]; then
+    echo 'SEAM_EVIDENCE e2e_all scenario=N03.client status=FAIL evidence=native-replay-failed'
+    return 1
+  fi
+  printf 'SEAM_EVIDENCE e2e_all scenario=N03.client status=PASS seconds=%s evidence=native-replay-on-current-wire-capture\n' "$((SECONDS - started))"
+}
+
 pvp_world_shutdown() { # the Open PvP World's node ends cleanly before the lifecycle probes
   node_signal -TERM "$PVP_NODE_PID"
   for _ in $(seq 1 30); do node_signal -0 "$PVP_NODE_PID" 2>/dev/null || break; sleep 1; done
@@ -1819,6 +1857,15 @@ pvp_world_shutdown() { # the Open PvP World's node ends cleanly before the lifec
 if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
   game_platform_identity
   exit "$?"
+fi
+
+n03_selected=0
+if n03_replay_selected; then
+  n03_selected=1
+  export NODE_BOOT_N03_CAPTURE_DIR="${E2E_ALL_CAPTURE_DIR:-$WORK/n03-capture}"
+  if [[ -z "${E2E_ALL_CAPTURE_DIR:-}" ]]; then
+    mkdir -- "$NODE_BOOT_N03_CAPTURE_DIR"
+  fi
 fi
 
 seam_stage_name=seam_stages
@@ -1847,6 +1894,9 @@ else
   fi
   stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
+fi
+if [[ "$n03_selected" == 1 ]]; then
+  stage n03_replay "$seam_stage_name" -- n03_replay
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
