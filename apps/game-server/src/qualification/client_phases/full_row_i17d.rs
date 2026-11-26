@@ -186,7 +186,7 @@ async fn fight_fear_caster(
                 && entity
                     .display_name
                     .is_some_and(|name| name.as_str() == Ok("Shrieking Cry-Stal"))
-                && entity.position.floor == i16::from(COMBAT_APPROACH.floor)
+                && tile(entity.position).is_ok_and(|at| at.floor == COMBAT_APPROACH.floor)
         })
         .min_by_key(|entity| {
             entity
