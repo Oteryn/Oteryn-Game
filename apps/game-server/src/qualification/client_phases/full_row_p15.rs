@@ -2,8 +2,8 @@
 //! 1. Admit the provisioned character and send STATUS; expect an accepted, stopped result.
 //! 2. Send START with non-existent player-visible handles; expect the owner's refused result and
 //!    no charge/revision delta (the negative path).
-//! 3. Buy an exercise weapon with player-earned gold when needed, and walk to an authored
-//!    exercise dummy. Verify out-of-range refusal before starting within range.
+//! 3. Walk to an authored exercise dummy with the fixture's exercise sword.
+//!    Verify out-of-range refusal before starting within range.
 //! 4. Wait through a two-second exercise tick, send STATUS, and expect exactly one or more charges
 //!    spent while the durable character revision remains valid.
 //! 5. Send STOP and expect stopped/settled state, the reduced charge count, and a nondecreasing
@@ -14,6 +14,8 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{item_view::ItemHandle, loop_training as wire};
+
+const EXERCISE_SWORD: u32 = 28552;
 
 struct Verdict {
     started: std::time::Instant,
@@ -77,6 +79,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 async fn command(
     client: &mut DevClientSession,
     intent: wire::ExerciseIntent,
+    expected_status: CommandStatus,
 ) -> TestResult<wire::TrainingResult> {
     let mut payload = vec![8];
     match intent {
@@ -97,9 +100,9 @@ async fn command(
             &payload,
         )
         .await?;
-    if reply.status != CommandStatus::Accepted {
+    if reply.status != expected_status {
         return Err(format!(
-            "server command status={:?}; need=accepted exercise reply",
+            "exercise {intent:?} command status={:?}; expected={expected_status:?}",
             reply.status
         )
         .into());
@@ -165,38 +168,15 @@ fn decode_result(bytes: &[u8]) -> Option<wire::TrainingResult> {
 }
 
 fn carried_weapon(client: &DevClientSession) -> TestResult<(ItemHandle, u32, u16)> {
-    const WEAPONS: &[(u32, u32)] = &[
-        (28540, 50),
-        (28541, 50),
-        (28542, 50),
-        (28543, 50),
-        (28544, 50),
-        (28545, 50),
-        (28552, 500),
-        (28553, 500),
-        (28554, 500),
-        (28555, 500),
-        (28556, 500),
-        (28557, 500),
-        (44064, 50),
-        (44065, 500),
-        (50292, 50),
-        (50293, 500),
-    ];
     let index = provisioning::item_index()?;
+    let reference = provisioning::item_reference(&index, EXERCISE_SWORD)?;
     let inventory = client.inventory().ok_or("inventory frame missing")?;
-    for &(id, charges) in WEAPONS {
-        let reference = provisioning::item_reference(&index, id)?;
-        if let Some(item) = inventory
-            .entries
-            .iter()
-            .chain(&inventory.main_backpack)
-            .find(|item| item.item_definition_ref == reference)
-        {
-            return Ok((item.handle, charges, weapon_range(id)));
-        }
-    }
-    Err("no legitimately acquired exercise weapon in inventory after real refusal; need=reachable affordable NPC/store exercise-weapon offer".into())
+    let item = inventory
+        .entries
+        .iter()
+        .find(|item| item.item_definition_ref == reference)
+        .ok_or("fixture exercise sword missing from the main backpack")?;
+    Ok((item.handle, 500, weapon_range(EXERCISE_SWORD)))
 }
 
 fn weapon_range(id: u32) -> u16 {
@@ -263,8 +243,26 @@ fn dummy_positions(bytes: &[u8]) -> TestResult<std::collections::BTreeSet<TilePo
 }
 
 async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult {
+    use CommandStatus::{Accepted, Rejected};
+
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_P15_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    character_prep::declare_seeded(
+        "P15.full",
+        "exercise sword i28552",
+        "exercise range and charge persistence",
+    );
+    let mut setup = connect_character(clients, 0xb4, 0).await?;
+    character_prep::grant_item(&setup, EXERCISE_SWORD, 1).await?;
+    if setup.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("fixture setup logout refused".into());
+    }
+    drop(setup);
+
     let mut client = connect_character(clients, 0xb5, 0).await?;
-    let initial = command(&mut client, wire::ExerciseIntent::Status).await?;
+    let initial = command(&mut client, wire::ExerciseIntent::Status, Accepted).await?;
     if initial.disposition != 2 || initial.revision == 0 {
         return Err(format!("STATUS reply={initial:?}; need=stopped durable state").into());
     }
@@ -277,9 +275,12 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
             weapon: missing,
             dummy: missing,
         },
+        Rejected,
     )
     .await?;
-    if refused != wire::TrainingResult::REFUSED {
+    if refused != wire::TrainingResult::REFUSED
+        || command(&mut client, wire::ExerciseIntent::Status, Accepted).await? != initial
+    {
         return Err(format!("invalid START reply={refused:?}; need=REFUSED without delta").into());
     }
     verdict.pass(2, refused);
@@ -293,18 +294,6 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    if carried_weapon(&client).is_err() {
-        let definitions = provisioning::item_index()?;
-        super::full_e2ef7::acquire(
-            &mut client,
-            world,
-            &definitions,
-            "oteryn:item.tibia.i28552",
-            1,
-        )
-        .await
-        .map_err(|error| format!("step=exercise-weapon-acquisition item=i28552 observed={error}; source:content/services/trade/trade-00000-00323.json:1"))?;
-    }
     let (weapon, full, range) = carried_weapon(&client)?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         positions
@@ -319,10 +308,17 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
         .ok_or("step=exercise-dummy-range need=reachable-tile-just-outside-weapon-range; source:crates/gameplay/dispatch/src/gameplay_transport/loop_training/exercise.rs:454")?;
     walk(&mut client, world, &outside).await?;
     let (dummy, _) = visible_dummy(&mut client, |at| at == target)?;
-    let stopped_before_range_probe = command(&mut client, wire::ExerciseIntent::Status).await?;
-    let refused = command(&mut client, wire::ExerciseIntent::Start { weapon, dummy }).await?;
+    let stopped_before_range_probe =
+        command(&mut client, wire::ExerciseIntent::Status, Accepted).await?;
+    let refused = command(
+        &mut client,
+        wire::ExerciseIntent::Start { weapon, dummy },
+        Rejected,
+    )
+    .await?;
     if refused != wire::TrainingResult::REFUSED
-        || command(&mut client, wire::ExerciseIntent::Status).await? != stopped_before_range_probe
+        || command(&mut client, wire::ExerciseIntent::Status, Accepted).await?
+            != stopped_before_range_probe
     {
         return Err(format!("step=exercise-dummy-range distance={} limit={range} observed={refused:?} need=inert-refusal", range + 1).into());
     }
@@ -332,7 +328,12 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
     .ok_or("step=exercise-dummy-range no route back to the legal use tile")?;
     walk(&mut client, world, &back).await?;
     let (dummy, _) = visible_dummy(&mut client, |at| at == target)?;
-    let running = command(&mut client, wire::ExerciseIntent::Start { weapon, dummy }).await?;
+    let running = command(
+        &mut client,
+        wire::ExerciseIntent::Start { weapon, dummy },
+        Accepted,
+    )
+    .await?;
     if running.disposition != 1 || running.charges != full || running.revision == 0 {
         return Err(format!("START reply={running:?}; need=running charges={full}").into());
     }
@@ -341,7 +342,7 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
     let deadline = tokio::time::Instant::now() + Duration::from_secs(6);
     let ticked = loop {
         client.service_liveness(Duration::from_millis(200)).await?;
-        let status = command(&mut client, wire::ExerciseIntent::Status).await?;
+        let status = command(&mut client, wire::ExerciseIntent::Status, Accepted).await?;
         if status.disposition != 1
             || status.charges < full
             || tokio::time::Instant::now() >= deadline
@@ -356,7 +357,7 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
     }
     verdict.pass(4, ticked);
 
-    let stopped = command(&mut client, wire::ExerciseIntent::Stop).await?;
+    let stopped = command(&mut client, wire::ExerciseIntent::Stop, Accepted).await?;
     if stopped.disposition != 2
         || stopped.charges != ticked.charges
         || stopped.revision < ticked.revision
@@ -374,9 +375,18 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
     }
     drop(client);
     let mut client = connect_character(clients, 0xb6, 0).await?;
+    let relogged = command(&mut client, wire::ExerciseIntent::Status, Accepted).await?;
+    if relogged.disposition != 2 || relogged.charges != 0 || relogged.revision < stopped.revision {
+        return Err(format!("fresh-admission STATUS={relogged:?}; need stopped state").into());
+    }
     let (weapon, _, _) = carried_weapon(&client)?;
     let (dummy, _) = visible_dummy(&mut client, |at| at == target)?;
-    let restored = command(&mut client, wire::ExerciseIntent::Start { weapon, dummy }).await?;
+    let restored = command(
+        &mut client,
+        wire::ExerciseIntent::Start { weapon, dummy },
+        Accepted,
+    )
+    .await?;
     if restored.disposition != 1
         || restored.charges != stopped.charges
         || restored.revision < stopped.revision
@@ -387,7 +397,7 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
         )
         .into());
     }
-    let restored = command(&mut client, wire::ExerciseIntent::Stop).await?;
+    let restored = command(&mut client, wire::ExerciseIntent::Stop, Accepted).await?;
     if restored.disposition != 2 || restored.charges != stopped.charges {
         return Err(
             format!("fresh-admission STOP={restored:?}; need=settled persisted charges").into(),
