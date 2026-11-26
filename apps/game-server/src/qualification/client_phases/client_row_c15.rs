@@ -3,6 +3,7 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{attack::AttackIntentDisposition, cyclopedia_character as character};
+use std::collections::BTreeSet;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct Progress {
@@ -54,27 +55,43 @@ pub(super) async fn reach_rat(
 ) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let rats: Vec<_> = metadata
-        .spawns
-        .sources
-        .iter()
-        .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
-        .filter(|(_, point)| {
-            metadata
+    let mut spawn_cells = BTreeSet::new();
+    let mut rats = Vec::new();
+    for source in &metadata.spawns.sources {
+        for point in &source.points {
+            let cell = TilePos {
+                x: point.x,
+                y: point.y,
+                floor: source.floor,
+            };
+            spawn_cells.insert(cell);
+            if metadata
                 .spawns
                 .creatures
                 .get(point.creature as usize)
                 .is_some_and(|creature| creature.key == "oteryn:creature.rat")
-        })
-        .map(|(floor, point)| TilePos { x: point.x, y: point.y, floor })
-        .collect();
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone())
-            && rats.iter().any(|rat| {
-                rat.floor == at.floor && rat.x.abs_diff(at.x).max(rat.y.abs_diff(at.y)) <= 1
-            })
-    })
-    .ok_or("C15 no route to an unprotected rat")?;
+            {
+                rats.push(cell);
+            }
+        }
+    }
+    // Plan the entire walk before sending STEP. A compiled spawn can put a
+    // creature on walkable ground, so reserve those cells for their occupants.
+    let path = route_avoiding(
+        world,
+        tile(client.world_spatial().actor_position)?,
+        |at| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+                && rats.iter().any(|rat| {
+                    rat.floor == at.floor && rat.x.abs_diff(at.x).max(rat.y.abs_diff(at.y)) == 1
+                })
+        },
+        |at| !spawn_cells.contains(&at),
+    )
+    .ok_or("C15 no route to an unprotected Rat approach outside compiled spawn cells")?;
     for direction in path {
         let before = tile(client.world_spatial().actor_position)?;
         let expected = destination(world, before, direction);
@@ -97,6 +114,7 @@ pub(super) async fn reach_rat(
         if let Some(rat) = client.world_entities().and_then(|entities| {
             entities.iter().find(|entity| full_row_c15::adjacent_hunt_target(entity, at))
         }) {
+            evidence(&format!("C15_RAT_APPROACH player={at:?} rat={:?}", rat.position));
             return Ok(*rat);
         }
         if tokio::time::Instant::now() >= deadline {
