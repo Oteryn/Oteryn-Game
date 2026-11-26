@@ -149,7 +149,7 @@ async fn wait_for_cue(
 
 async fn step(client: &mut DevClientSession, minute: &mut u16, direction: StepDirection) -> TestResult<Vec<TimedCue>> {
     let before = client.world_spatial().actor_position;
-    let reply = client.step_retrying(direction).await?;
+    let reply = client.step(direction).await?;
     if reply.disposition != StepDisposition::Moved || reply.world_spatial_delta.is_none() {
         return Err(format!(
             "step=walking-command observed=disposition:{:?},delta:{} need=Moved+world-spatial-delta",
@@ -262,7 +262,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or("step=blocked-refusal observed=edge-vanished need=blocked-direction")?;
     ambient(&mut client, &mut minute);
     let before = client.world_spatial().actor_position;
-    let refusal = client.step_retrying(direction).await?;
+    let refusal = client.step(direction).await?;
     let refusal_cues = ambient(&mut client, &mut minute);
     if refusal.disposition != StepDisposition::Blocked
         || refusal.world_spatial_delta.is_some()
