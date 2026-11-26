@@ -585,7 +585,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "appearance and taming actions",
     );
     let mut client = connect_character(clients, 0xb6, 0).await?;
-    character_prep::grant_premium(&client).await?;
     for (item, count) in [
         (SLINGSHOT, SLINGSHOTS),
         (OUTFIT_PARTS[0], 1),
@@ -618,6 +617,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let mut state = snapshot(&mut client)?;
     let selected = outfit_and_refusal(row, &mut client, &mut state).await?;
+    // The Premium fixture populates the active account view, which logout releases.
+    character_prep::grant_premium(&client)
+        .await
+        .map_err(|error| format!("step=premium-prerequisite observed={error}"))?;
     let earned_outfit = earn_addon(row, &mut client, &mut state).await?;
     let remaining_slingshots = tame_war_bear(row, &mut client, clients, &mut state).await?;
 
