@@ -546,26 +546,7 @@ where
     let Some(observation) = outcome.moved_to else {
         return Ok(());
     };
-    if moved_step_frames(
-        stream,
-        authority,
-        session.actor,
-        &mut session.admitted,
-        session.visibility.as_mut(),
-        session.item_view.as_mut(),
-        session.container_views.as_mut(),
-        session.world_map.as_mut(),
-        session.generation,
-        &mut session.sequence,
-        &mut session.revision,
-        &mut session.appearances,
-        observation,
-    )
-    .await
-    .is_none()
-    {
-        return Err(ServeEnd::Disconnected);
-    }
+    effects::movement(stream, authority, session, observation).await?;
     let now = tokio::time::Instant::now();
     session.chase_due = Some(session.pacer.wait_until(now).unwrap_or(now));
     Ok(())
@@ -580,6 +561,14 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    if let Some(published) = session.legacy_spatial {
+        if let Some(current) = authority.observe(session.actor).await
+            && current != published
+        {
+            effects::movement(stream, authority, session, current).await?;
+        }
+        return Ok(());
+    }
     let mut step = "sounds";
     let result =
         crate::durability::DurabilityRoot::with_background_holder(authority.background_operation(
@@ -692,13 +681,26 @@ where
         return Ok(());
     };
     *step = "entity_names";
-    let projection = match Box::pin(crate::gameplay_transport::entity_names::observe_result(
+    let mut channel = Box::pin(crate::gameplay_transport::entity_names::observe_result(
         authority,
         session.actor,
         session.admitted.continuity.selected_capabilities,
     ))
-    .await
-    {
+    .await;
+    if matches!(channel, Err(AdmissionRefusal::Unavailable)) {
+        // Movement committed by another actor's command still belongs on this
+        // connection. The published names suffice for already introduced actors.
+        channel = Box::pin(
+            crate::gameplay_transport::entity_names::observe_with_published_names(
+                authority,
+                session.actor,
+                session.admitted.continuity.selected_capabilities,
+                view,
+            ),
+        )
+        .await;
+    }
+    let projection = match channel {
         Ok(channel) => {
             *step = "appearances";
             Box::pin(session.appearances.refresh_result(

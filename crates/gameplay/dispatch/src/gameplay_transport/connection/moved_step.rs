@@ -39,18 +39,14 @@ where
             Err(AdmissionRefusal::Unavailable) => {
                 // The naming read already used its bounded retry. The move's committed
                 // position can still publish with the exact names previously observed.
-                let without_names = admitted
-                    .continuity
-                    .selected_capabilities
-                    .without_projection(
-                        oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
-                    );
-                let mut channel = authority
-                    .observe_projected_entities(actor, without_names)
-                    .await
-                    .ok()?;
-                view.defer_unnamed_actors(&mut channel);
-                channel
+                crate::gameplay_transport::entity_names::observe_with_published_names(
+                    authority,
+                    actor,
+                    admitted.continuity.selected_capabilities,
+                    view,
+                )
+                .await
+                .ok()?
             }
             Err(_) => return None,
         };

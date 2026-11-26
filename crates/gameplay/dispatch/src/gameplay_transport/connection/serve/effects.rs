@@ -12,26 +12,8 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    if let Some(observation) = outcome.moved_to
-        && moved_step_frames(
-            stream,
-            authority,
-            session.actor,
-            &mut session.admitted,
-            session.visibility.as_mut(),
-            session.item_view.as_mut(),
-            session.container_views.as_mut(),
-            session.world_map.as_mut(),
-            session.generation,
-            &mut session.sequence,
-            &mut session.revision,
-            &mut session.appearances,
-            observation,
-        )
-        .await
-        .is_none()
-    {
-        return Err(ServeEnd::Disconnected);
+    if let Some(observation) = outcome.moved_to {
+        movement(stream, authority, session, observation).await?;
     }
     refresh_newhaven_inventory(
         stream,
@@ -54,6 +36,39 @@ where
     .is_none()
     {
         return Err(ServeEnd::Disconnected);
+    }
+    Ok(())
+}
+
+pub(super) async fn movement<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+    observation: WorldSpatialObservation,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    moved_step_frames(
+        stream,
+        authority,
+        session.actor,
+        &mut session.admitted,
+        session.visibility.as_mut(),
+        session.item_view.as_mut(),
+        session.container_views.as_mut(),
+        session.world_map.as_mut(),
+        session.generation,
+        &mut session.sequence,
+        &mut session.revision,
+        &mut session.appearances,
+        observation,
+    )
+    .await
+    .ok_or(ServeEnd::Disconnected)?;
+    if let Some(published) = session.legacy_spatial.as_mut() {
+        *published = observation;
     }
     Ok(())
 }

@@ -49,6 +49,7 @@ struct BundleChannel {
     use_outcome: UseOutcome,
     doors: Option<(ChannelOverlay, crate::map::facts::BundleFacts)>,
     level: u32,
+    harvest_holder_busy: bool,
     next_position: Cell<Option<TilePos>>,
 }
 
@@ -70,6 +71,7 @@ impl BundleChannel {
             use_outcome: UseOutcome::rejected(),
             doors: None,
             level: u32::MAX,
+            harvest_holder_busy: false,
             next_position: Cell::new(None),
         }
     }
@@ -135,6 +137,24 @@ impl FreshAdmissionAuthority for BundleChannel {
                 .insert(key(DOOR_AT, 1), DOOR_REVISION + 1);
         }
         self.use_outcome.clone()
+    }
+
+    fn is_bundle_door_target(&self, target: &WorldObjectTarget) -> bool {
+        self.doors.as_ref().is_some_and(|(overlay, facts)| {
+            crate::gameplay_transport::map_door::owns_target(overlay, facts, target)
+        })
+    }
+
+    async fn use_event_world_object(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _target: WorldObjectTarget,
+    ) -> Result<Option<UseOutcome>, ()> {
+        if self.harvest_holder_busy {
+            return Err(());
+        }
+        Ok(None)
     }
 
     async fn observe_character_inventory(
@@ -725,7 +745,7 @@ fn key_door_channel(appearance: u32, attrs: Attrs, house: u32) -> BundleChannel 
 }
 
 #[test]
-fn level_door_predicate_through_use_dispatch() -> TestResult {
+fn level_door_use_returns_result_and_keeps_connection_during_holder_contention() -> TestResult {
     use oteryn_protocol_oteryn::world_object::decode_use_result;
     run(async {
         for (level, expected) in [
@@ -741,6 +761,7 @@ fn level_door_predicate_through_use_dispatch() -> TestResult {
                 0,
             );
             channel.level = level;
+            channel.harvest_holder_busy = true;
             let (overlay, _) = channel.doors.as_ref().expect("doors");
             let mut placement = overlay.base().digest().to_vec();
             placement.extend_from_slice(&crate::map::boot::tests::door_key().to_be_bytes());
@@ -756,10 +777,18 @@ fn level_door_predicate_through_use_dispatch() -> TestResult {
                     &[4, 6, 11, 15, 18],
                     SessionContinuity::FRESH,
                 ),
-                &[command(1, 1, COMMAND_TYPE_USE_INTENT, &payload)],
+                &[
+                    command(1, 1, COMMAND_TYPE_USE_INTENT, &payload),
+                    command(1, 2, u32::MAX, &[]),
+                ],
                 NO_HOLD,
             )
             .await;
+            assert_eq!(
+                sent.results.len(),
+                2,
+                "level {level}: the server must answer the door USE and the next command"
+            );
             assert_eq!(
                 decode_use_result(&sent.results[0]).expect("use result"),
                 expected

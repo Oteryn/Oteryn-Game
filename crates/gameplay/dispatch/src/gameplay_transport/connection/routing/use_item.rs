@@ -23,15 +23,15 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         admitted.continuity.selected_capabilities.as_slice(),
         command.payload,
     );
-    // W09: a committed Cube may have consumed the last source unit. Its original
-    // command still resolves from a receipt even when the view handle no longer exists.
-    // Preserve the same timeout/unknown close used by receipt-backed Item actions.
+    // A registered door cannot have a harvest receipt. Let it reach the world
+    // handler without taking the durable harvest lane.
     if let Ok(UseIntent {
         target: UseTarget::WorldObject(target),
         use_with: None,
         use_with_map_item: None,
         use_with_position: None,
     }) = &decoded
+        && !authority.is_bundle_door_target(target)
         && let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.use_event_world_object(
@@ -50,6 +50,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     {
         return Some(Dispatch::Use(outcome));
     }
+    // W09: a committed Cube may have consumed the last source unit. Its original
+    // command still resolves from a receipt even when the view handle no longer exists.
     if admitted
         .continuity
         .selected_capabilities
@@ -213,7 +215,9 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             return Some(Dispatch::Use(outcome));
         }
     }
-    if let Ok(intent) = &decoded {
+    if let Ok(intent) = &decoded
+        && !matches!(intent.target, UseTarget::WorldObject(_))
+    {
         let source = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
             _ => None,

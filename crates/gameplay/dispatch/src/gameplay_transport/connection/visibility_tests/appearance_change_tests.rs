@@ -207,6 +207,74 @@ fn busy_names_alone_keep_committed_step_and_defer_new_player() -> TestResult {
     committed_step_during_busy_projection(true, false)
 }
 
+#[test]
+fn externally_committed_movement_reaches_mover_and_viewers_during_busy_projection() -> TestResult {
+    use oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2;
+    use oteryn_protocol_oteryn::world_spatial_entities::{
+        EntityFields, decode_world_spatial_entities_delta_with_fields,
+    };
+    run(async {
+        let mut peer = creature([9; 16], at(102, 100), 1);
+        peer.kind = VisibleKind::Player;
+        let authority = AppearanceChannel {
+            channel: Channel::new(vec![peer]),
+            outcome: None,
+            revision: Cell::new(1),
+            calls: Cell::new(0),
+            defer_input: false,
+            appearance_busy: Cell::new(false),
+            names_busy: Cell::new(false),
+        };
+        let offers = crate::gameplay_transport::appearance_change::offer::offered(
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            true,
+        );
+        let selected = [6, 25, CAPABILITY_WORLD_SPATIAL_ENTITIES_V2];
+        let mut admitted = session(&[6], SessionContinuity::FRESH);
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(&offers, &selected).ok_or("capabilities")?;
+
+        let (mut client, mut server) = tokio::io::duplex(1 << 16);
+        let serving = async {
+            serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS).await;
+            drop(server);
+            TestResult::Ok(())
+        };
+        let observing = async {
+            while decode_wire_envelope(&read_one(&mut client).await?)?.message_type()
+                != MessageType::SnapshotCommit
+            {}
+            authority.names_busy.set(true);
+            authority.appearance_busy.set(true);
+            authority.channel.own.set(at(108, 101));
+            authority.channel.others.borrow_mut()[0] = ChannelEntity {
+                position: at(109, 101),
+                revision: 2,
+                ..peer
+            };
+            let frame = read_one(&mut client).await?;
+            let delta = decode_state_delta(decode_wire_envelope(&frame)?.payload())?;
+            assert_eq!(delta.domain_id, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY);
+            let (spatial, _) = decode_world_spatial_entities_delta_with_fields(
+                delta.payload,
+                EntityFields::selected(&selected),
+            )
+            .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(spatial.actor_position, at(108, 101));
+            assert!(spatial.update.iter().any(|entity| {
+                entity.entity.identity == peer.identity && entity.position == at(109, 101)
+            }));
+            client.shutdown().await?;
+            TestResult::Ok(())
+        };
+        tokio::time::timeout(std::time::Duration::from_secs(3), async {
+            tokio::try_join!(serving, observing)
+        })
+        .await??;
+        Ok(())
+    })
+}
+
 fn committed_step_during_busy_projection(named: bool, appearance_busy: bool) -> TestResult {
     use oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2;
     use oteryn_protocol_oteryn::world_spatial_entities::{

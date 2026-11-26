@@ -649,6 +649,14 @@ pub trait FreshAdmissionAuthority {
         async { true }
     }
 
+    /// Whether this placement belongs to the bundle's door owner.
+    fn is_bundle_door_target(
+        &self,
+        _target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> bool {
+        false
+    }
+
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,
     /// #162 5868482467), applied by the Channel owner.
     ///

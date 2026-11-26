@@ -92,6 +92,7 @@ struct ServeState {
     step_holder: std::sync::Arc<()>,
     pacer: StepPacer,
     visibility_refresh: Option<tokio::time::Interval>,
+    legacy_spatial: Option<WorldSpatialObservation>,
     combat_refresh: Option<tokio::time::Interval>,
     npc_shown: Option<WireEntityRef>,
     npc_refresh: Option<tokio::time::Interval>,
