@@ -1042,7 +1042,7 @@ async fn pvp_journey(
         return Err(format!("MP01 durable frag points={points:?};death={}", death.id).into());
     }
     // B has already proved its temple respawn; bring its new incarnation back into interest.
-    bots::approach(bots, 1, 0, world, true).await?;
+    bots::approach(bots, 1, 0, world, false).await?;
     for bot in bots.iter_mut() {
         let reply = bot
             .client()?
