@@ -1,87 +1,41 @@
-//! N07d replay: the world-map snapshot a real server admitted, taken from an admitted `Session`
-//! (`Session::admit`, then `world_map_snapshot()`), feeds the persisted explored minimap through
-//! `Minimap::observe` (`state.rs`); the marker editor (`edit_marker`, `remove_marker`) then works
-//! at the server-reported position. Markers are client-local: no server command carries them.
-//! `n07d-snapshot.bin` supplies walkable coordinates and `n07d-expected.txt` supplies the
-//! server's metadata and counts. The in-memory fixture uses the same payload format.
+//! Replay the two live admissions and their intervening logout, then verify private minimap memory.
 use super::*;
+use oteryn_platform_client::native_login::parse_uuid_v7;
 use oteryn_protocol_oteryn::world_map::{
-    CAPABILITY_WORLD_MAP_VIEW_V1, MapDefinition, MapItem, MapOrigin, MapTile, MapViewHeader,
-    SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1, STATE_DOMAIN_WORLD_MAP_VIEW, WorldMapViewSnapshot,
-    decode_world_map_snapshot, encode_world_map_snapshot, first_visible_floor_start, in_window,
+    STATE_DOMAIN_WORLD_MAP_VIEW, WorldMapViewSnapshot, decode_world_map_snapshot, in_window,
 };
-use oteryn_protocol_oteryn::world_spatial::{
-    ActorPosition, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, WorldSpatialObservation,
-    encode_world_spatial,
-};
-use oteryn_protocol_oteryn::{
-    ChannelId, DomainSnapshot, GameSessionId, ServerAcceptedValue, WorldId,
-    encode_server_accepted, encode_single_chunk_snapshot,
-};
-use oteryn_session::{Admission, CharacterId, Session, read_frame, write_frame};
+use oteryn_protocol_oteryn::{CommandStatus, decode_server_accepted, decode_wire_envelope};
+use oteryn_session::{Admission, CharacterId, Session, read_frame};
 use std::collections::BTreeSet;
-use std::num::NonZeroU32;
 use std::time::Duration;
+use tokio::io::{AsyncWriteExt, DuplexStream};
 
 #[path = "e2e_n07d_tests.rs"]
 mod replay_tests;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 
-fn id(marker: u8) -> [u8; 16] {
-    [
-        1, 0x93, 0x4f, 0x10, 0x7c, 0, 0x70, marker, 0x80, 0x5b, 0x3b, 0x11, 0x22, 0x33, 0x44,
-        marker,
-    ]
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Envelope {
+    command_id: u64,
+    game_session_id: String,
+    payload: Vec<u8>,
+    server_sequence: u64,
+    status: u32,
 }
 
-/// The admitted map snapshot payload and the values the server reported for it.
-fn captured() -> Result<(Vec<u8>, String), Error> {
-    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let root = std::path::Path::new(&root);
-        return Ok((
-            std::fs::read(root.join("n07d-snapshot.bin"))?,
-            std::fs::read_to_string(root.join("n07d-expected.txt"))?,
-        ));
+impl Envelope {
+    fn check(&self, session: &[u8; 16], command: u64, sequence: u64) -> Result<(), Error> {
+        if parse_uuid_v7(&self.game_session_id).as_ref() != Some(session)
+            || self.command_id != command
+            || self.server_sequence != sequence
+            || self.status != CommandStatus::Accepted as u32
+        {
+            return Err("N07d envelope session, command, sequence or status mismatch".into());
+        }
+        Ok(())
     }
-    let origin = ActorPosition {
-        x: 100,
-        y: 200,
-        floor: 7,
-    };
-    let ground = |x| MapTile {
-        position: ActorPosition { x, ..origin },
-        more: false,
-        ground_speed: 100,
-        items: vec![MapItem {
-            definition: MapDefinition::Item(NonZeroU32::MIN),
-            count: 1,
-            sub_type: 0,
-            origin: MapOrigin::BaseOrdinal {
-                ordinal: 0,
-                object_revision: 1,
-            },
-            appearance_id: 0,
-        }],
-    };
-    let payload = encode_world_map_snapshot(&WorldMapViewSnapshot {
-        header: MapViewHeader {
-            content_generation: [1; 32],
-            bundle_digest: [0x22; 32],
-            reset_epoch: 3,
-            origin,
-            first_visible_floor: first_visible_floor_start(origin.floor),
-        },
-        tiles: vec![ground(99), ground(100), ground(101)],
-    })
-    .map_err(|error| format!("{error:?}"))?;
-    Ok((
-        payload,
-        format!(
-            "revision=4\norigin=100,200,7\nfirst_visible_floor={}\nreset_epoch=3\ntiles=3\nwalkable=3\n",
-            first_visible_floor_start(7)
-        ),
-    ))
 }
 
 fn value<'a>(expected: &'a str, key: &str) -> Result<&'a str, Error> {
@@ -91,127 +45,211 @@ fn value<'a>(expected: &'a str, key: &str) -> Result<&'a str, Error> {
         .ok_or_else(|| format!("expected capture line {key} absent").into())
 }
 
+fn id(value: &str) -> Result<[u8; 16], Error> {
+    parse_uuid_v7(value).ok_or_else(|| "N07d capture identifier is not a UUIDv7".into())
+}
+
 async fn admit(
-    payload: Vec<u8>,
-    revision: u64,
-    header: MapViewHeader,
-) -> Result<WorldMapViewSnapshot, Error> {
-    let spatial = encode_world_spatial(&WorldSpatialObservation {
-        content_generation: header.content_generation,
-        actor_position: header.origin,
-    });
-    let (client, mut server) = tokio::io::duplex(1 << 20);
-    let peer = tokio::spawn(async move {
-        read_frame(&mut server).await?;
-        write_frame(
-            &mut server,
-            &encode_server_accepted(&ServerAcceptedValue {
-                game_session_id: GameSessionId::decode(&id(1))?,
-                world_id: WorldId::decode(&id(2))?,
-                channel_id: ChannelId::decode(&id(3))?,
-                connection_generation: 1,
-                current_server_sequence: 0,
-                next_command_id: 1,
-                schema_revision: 1,
-                selected_capabilities: &[CAPABILITY_WORLD_MAP_VIEW_V1],
-            })?,
-        )
-        .await?;
-        for frame in encode_single_chunk_snapshot(
-            1,
-            1,
-            40,
-            &[
-                DomainSnapshot {
-                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                    revision: 5,
-                    snapshot_type: 1,
-                    payload: &spatial,
-                },
-                DomainSnapshot {
-                    domain_id: STATE_DOMAIN_WORLD_MAP_VIEW,
-                    revision,
-                    snapshot_type: SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1,
-                    payload: &payload,
-                },
-            ],
-        )? {
-            write_frame(&mut server, &frame).await?;
-        }
-        Ok::<(), Error>(())
-    });
+    stream: DuplexStream,
+    envelope: &Envelope,
+    session_id: &[u8; 16],
+    world: &[u8; 16],
+    character: CharacterId,
+) -> Result<Session<DuplexStream>, Error> {
+    let accepted_frame = read_frame(&mut envelope.payload.as_slice()).await?;
+    let raw = decode_wire_envelope(&accepted_frame)?;
+    let accepted = decode_server_accepted(raw.payload())?;
+    if accepted.world_id.as_bytes() != world
+        || accepted.game_session_id.as_bytes() != session_id
+        || accepted.next_command_id != envelope.command_id
+    {
+        return Err("N07d recorded ServerAccepted does not match the live admission".into());
+    }
     let session = Session::admit(
-        client,
+        stream,
         Admission {
             appearance_items: None,
-            schema_revision: 1,
-            character_id: CharacterId::decode(&id(4))?,
-            admission_material: b"grant",
-            client_build_id: "n07d-minimap-test",
-            supported_capabilities: &[CAPABILITY_WORLD_MAP_VIEW_V1],
+            schema_revision: accepted.schema_revision,
+            character_id: character,
+            admission_material: b"local-replay",
+            client_build_id: "n07d-minimap-replay",
+            supported_capabilities: oteryn_session::CLIENT_SUPPORTED_CAPABILITIES,
             deadline: Duration::from_secs(5),
         },
     )
-    .await
-    .map_err(|error| format!("admit: {error:?}"))?;
-    peer.await??;
-    session
-        .world_map_snapshot()
-        .ok_or_else(|| "admitted session exposes no map snapshot".into())
+    .await?;
+    envelope.check(
+        session.join_snapshot().game_session_id.as_bytes(),
+        session.next_command_id(),
+        session.last_server_sequence(),
+    )?;
+    Ok(session)
 }
 
 fn assert_remembered_cells(minimap: &Minimap, walkable: &BTreeSet<CellPosition>) {
     let remembered: BTreeSet<_> = minimap.cells.keys().copied().collect();
     assert_eq!(
-        &remembered, walkable,
+        remembered, *walkable,
         "remembered minimap coordinates differ from captured walkable terrain"
     );
 }
 
+fn binding(map: &WorldMapViewSnapshot) -> ([u8; 32], [u8; 32], u64) {
+    (
+        map.header.content_generation,
+        map.header.bundle_digest,
+        map.header.reset_epoch,
+    )
+}
+
 fn replay() -> Result<(), Error> {
-    let (payload, expected) = captured()?;
-    let revision: u64 = value(&expected, "revision")?.parse()?;
-    let terrain = decode_world_map_snapshot(&payload)
-        .map_err(|error| format!("captured snapshot: {error:?}"))?;
-    let walkable = terrain
+    // The named replay is selected by the qualification wrapper with a fresh capture directory.
+    // The separate coordinate regression below exercises the comparator in ordinary unit runs.
+    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+        return Ok(());
+    };
+    let root = std::path::Path::new(&root);
+    let expected = std::fs::read_to_string(root.join("n07d-expected.txt"))?;
+    if root.as_os_str() != value(&expected, "capture_dir")? {
+        return Err("N07d capture belongs to a different run directory".into());
+    }
+    let first: Envelope =
+        serde_json::from_slice(&std::fs::read(root.join("n07d-admission.json"))?)?;
+    let logout: Envelope = serde_json::from_slice(&std::fs::read(root.join("n07d-logout.json"))?)?;
+    let second: Envelope = serde_json::from_slice(&std::fs::read(root.join("n07d-relog.json"))?)?;
+    let terrain = std::fs::read(root.join("n07d-snapshot.bin"))?;
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(verify(first, logout, second, terrain, &expected))
+}
+
+async fn verify(
+    first: Envelope,
+    logout: Envelope,
+    second: Envelope,
+    terrain: Vec<u8>,
+    expected: &str,
+) -> Result<(), Error> {
+    let first_id = id(value(expected, "first_session")?)?;
+    let second_id = id(value(expected, "second_session")?)?;
+    if first_id == second_id {
+        return Err("N07d relog needs a different game session".into());
+    }
+    let world_text = value(expected, "world")?;
+    let world = id(world_text)?;
+    let character = CharacterId::decode(&id(value(expected, "character")?)?)?;
+    let (client, mut peer) = tokio::io::duplex(
+        first
+            .payload
+            .len()
+            .max(second.payload.len())
+            .max(logout.payload.len()),
+    );
+    let first_wire = first.payload.clone();
+    let logout_wire = logout.payload.clone();
+    let first_peer = tokio::spawn(async move {
+        read_frame(&mut peer).await?;
+        peer.write_all(&first_wire).await?;
+        read_frame(&mut peer).await?;
+        peer.write_all(&logout_wire).await?;
+        Ok::<_, Error>(())
+    });
+    let mut session = admit(client, &first, &first_id, &world, character).await?;
+    let snapshot = session
+        .gated_snapshot(STATE_DOMAIN_WORLD_MAP_VIEW)
+        .ok_or("N07d missing admitted map")?;
+    assert_eq!(snapshot.revision.to_string(), value(expected, "revision")?);
+    assert_eq!(snapshot.payload, terrain);
+    let expected_map = decode_world_map_snapshot(&terrain).map_err(|error| format!("{error:?}"))?;
+    let walkable: BTreeSet<_> = expected_map
         .tiles
         .iter()
         .filter(|tile| {
             tile.ground_speed > 0
-                && tile.position.floor >= terrain.header.first_visible_floor
-                && in_window(terrain.header.origin, tile.position)
+                && tile.position.floor >= expected_map.header.first_visible_floor
+                && in_window(expected_map.header.origin, tile.position)
         })
         .map(|tile| (tile.position.floor, tile.position.x, tile.position.y))
         .collect();
-    let map = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(admit(payload, revision, terrain.header))?;
-    let origin: Vec<i32> = value(&expected, "origin")?
-        .split(',')
-        .map(str::parse)
-        .collect::<Result<_, _>>()?;
-    let [x, y, floor] = origin[..] else {
-        return Err("origin needs x,y,floor".into());
-    };
+    assert!(!walkable.is_empty());
+    let map = session
+        .world_map_snapshot()
+        .ok_or("N07d malformed admitted map")?;
+    let origin = map.header.origin;
     assert_eq!(
-        (map.header.origin.x, map.header.origin.y, i32::from(map.header.origin.floor)),
-        (x, y, floor)
+        format!("{},{},{}", origin.x, origin.y, origin.floor),
+        value(expected, "origin")?
     );
-    assert_eq!(map.header.reset_epoch.to_string(), value(&expected, "reset_epoch")?);
-    assert_eq!(map.tiles.len().to_string(), value(&expected, "tiles")?);
+    assert_eq!(
+        map.header.first_visible_floor.to_string(),
+        value(expected, "first_visible_floor")?
+    );
+    assert_eq!(
+        map.header.reset_epoch.to_string(),
+        value(expected, "reset_epoch")?
+    );
+    assert_eq!(map.tiles.len().to_string(), value(expected, "tiles")?);
 
-    // The server's walkable ground becomes remembered exploration, and only that.
+    let cache = tempfile::tempdir()?;
     let mut minimap = Minimap::default();
+    minimap.root = Some(cache.path().to_path_buf());
+    minimap.bind_world(world_text);
+    assert!(minimap.cells.is_empty());
     minimap.observe(&map);
-    assert_eq!(minimap.cells.len().to_string(), value(&expected, "walkable")?);
+    assert_eq!(
+        minimap.cells.len().to_string(),
+        value(expected, "walkable")?
+    );
     assert_remembered_cells(&minimap, &walkable);
     let remembered = minimap.cells.clone();
     minimap.observe(&map);
     assert_eq!(minimap.cells, remembered);
+    check_markers(&mut minimap, origin.x, origin.y, origin.floor)?;
+    assert_eq!(minimap.cells, remembered);
+    minimap.save()?;
+    drop(minimap);
 
-    // The tracked view is centred on the server-reported position.
-    let floor = i16::try_from(floor)?;
+    let outcome = session.logout().await?;
+    assert_eq!(outcome.status, CommandStatus::Accepted);
+    assert_eq!(
+        outcome.result,
+        Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    );
+    logout.check(
+        &first_id,
+        outcome.command_id,
+        outcome.result_server_sequence,
+    )?;
+    first_peer.await??;
+    drop(session);
+
+    let (client, mut peer) = tokio::io::duplex(second.payload.len());
+    let second_wire = second.payload.clone();
+    let second_peer = tokio::spawn(async move {
+        read_frame(&mut peer).await?;
+        peer.write_all(&second_wire).await?;
+        Ok::<_, Error>(())
+    });
+    let relogged = admit(client, &second, &second_id, &world, character).await?;
+    second_peer.await??;
+    let relogged_map = relogged
+        .world_map_snapshot()
+        .ok_or("N07d missing relogged map")?;
+    assert_eq!(binding(&map), binding(&relogged_map));
+
+    // Read production cache storage before observing a single cell from the new session.
+    let mut reopened = Minimap::default();
+    reopened.root = Some(cache.path().to_path_buf());
+    reopened.bind_world(world_text);
+    reopened.binding = Some(binding(&relogged_map));
+    assert!(reopened.cells.is_empty());
+    reopened.load()?;
+    assert_eq!(reopened.cells, remembered);
+    Ok(())
+}
+
+fn check_markers(minimap: &mut Minimap, x: i32, y: i32, floor: i16) -> Result<(), Error> {
     minimap.follow(x, y, floor);
     assert_eq!(minimap.position(15, 12), Some((x, y, floor)));
 
@@ -236,12 +274,15 @@ fn replay() -> Result<(), Error> {
         }]
     );
     let kept = minimap.markers.clone();
-    assert!(minimap.edit_marker(x, y, -5, "Invalid floor".into(), 0).is_err());
+    assert!(
+        minimap
+            .edit_marker(x, y, -5, "Invalid floor".into(), 0)
+            .is_err()
+    );
     assert!(minimap.edit_marker(x, y, floor, "  ".into(), 0).is_err());
     assert_eq!(minimap.markers, kept);
     minimap.remove_marker(x, y, floor)?;
     assert!(minimap.markers.is_empty());
-    assert_eq!(minimap.cells, remembered);
     Ok(())
 }
 
@@ -256,4 +297,22 @@ fn e2e_n07d_rejects_wrong_coordinates_with_the_right_count() {
     let mut minimap = Minimap::default();
     minimap.cells.insert((7, 100, 200), 1);
     assert_remembered_cells(&minimap, &BTreeSet::from([(7, 99, 200)]));
+}
+
+#[test]
+fn n07d_envelope_rejects_mismatched_session_command_and_sequence() -> Result<(), Error> {
+    let session = "01934f10-7c00-7001-805b-3b1122334401";
+    let other = "01934f10-7c00-7001-805b-3b1122334402";
+    let envelope = Envelope {
+        command_id: 1,
+        game_session_id: session.into(),
+        payload: Vec::new(),
+        server_sequence: 2,
+        status: CommandStatus::Accepted as u32,
+    };
+    envelope.check(&id(session)?, 1, 2)?;
+    assert!(envelope.check(&id(other)?, 1, 2).is_err());
+    assert!(envelope.check(&id(session)?, 2, 2).is_err());
+    assert!(envelope.check(&id(session)?, 1, 3).is_err());
+    Ok(())
 }

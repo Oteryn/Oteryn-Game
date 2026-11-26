@@ -52,7 +52,7 @@ class IndexedVerdictTests(unittest.TestCase):
     def test_n07d_snapshot_does_not_count_as_client_verification(self):
         source = (PHASES / 'client_row_n07d.rs').read_text()
         body = packet_body(source)
-        self.assertIn('scenario=N07d.client status=MISSING-CLIENT', body)
+        self.assertIn('scenario=N07d.client status=CAPTURED', body)
         self.assertNotIn('scenario=N07d.client status=PASS', body)
         self.assertIn('scenario=N07d.client status=FAIL', body)
 
