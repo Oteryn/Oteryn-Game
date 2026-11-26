@@ -12,7 +12,7 @@ pub(super) fn read(p: &ReferencePreferences) -> Value {
 
     // Allowlist the applied Options fields. In particular, the store also contains
     // screenshot paths, conversation names, profile names and arbitrary action text.
-    json!({
+    let mut settings = json!({
         "action_bar": p.action_bar,
         "arcs": p.arcs,
         "audio": p.audio,
@@ -47,6 +47,7 @@ pub(super) fn read(p: &ReferencePreferences) -> Value {
         "gameplay": p.gameplay,
         "graphics": p.graphics,
         "hotkeys": {
+            "action_keys": p.action_keys,
             "chat_on": profiles.chat_on,
             "primary": p.keybindings,
             "profile_count": profiles.presets.len(),
@@ -84,6 +85,7 @@ pub(super) fn read(p: &ReferencePreferences) -> Value {
         },
         "interface": {
             "animated_cursor": p.animated_cursor,
+            "chat_drag_locked": p.chat_drag_locked,
             "confirm_copy_link": p.confirm_copy_link,
             "cursor_crosshair": p.cursor_crosshair,
             "expiry_containers": p.expiry_containers,
@@ -121,5 +123,7 @@ pub(super) fn read(p: &ReferencePreferences) -> Value {
             "on_valuable_loot": p.screenshots.on_valuable_loot,
             "reward_chest": p.screenshots.reward_chest,
         },
-    })
+    });
+    settings["confirm_store_purchase"] = p.confirm_store_purchase.into();
+    settings
 }
