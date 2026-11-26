@@ -10,6 +10,52 @@ use crate::durability::arena_match::donor;
 
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1};
 
+pub(in super::super) async fn publish_restarted_scope_readiness(
+    harness: &super::Harness,
+    replaced: &crate::durability::runtime_scope_assignment::AssignmentReceipt,
+) -> TestResult {
+    use crate::durability::admission_authority_guards::{
+        AdmissionGuardStore, GuardPublicationDisposition,
+    };
+    use crate::foundation::admission_authority_publication::{
+        AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
+        AdmissionAuthorityPublicationV1, AdmissionPublicationPreconditionV1,
+    };
+    let generation = replaced.assignment.ownership_generation;
+    let key = AdmissionAuthorityGuardKeyV1::Runtime(replaced.assignment.scope);
+    let previous = AdmissionGuardStore::from_root(harness.root.clone())
+        .load(std::slice::from_ref(&key))
+        .await
+        .map_err(debug)?
+        .pop()
+        .flatten()
+        .ok_or("restart readiness predecessor")?;
+    assert_eq!(replaced.fenced_publication_revision, Some(previous.publication_revision));
+    let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
+        .fetch_one(&harness.pool)
+        .await?;
+    let mut publisher = super::super::fresh_fixture::fresh::Source::new(now)?;
+    publisher.rows.retain(|row| row.key == key);
+    let [change] = publisher.rows.as_mut_slice() else { return Err("runtime publisher".into()); };
+    let AdmissionAuthorityGuardStateV1::Runtime { ownership_generation, .. } = &mut change.state else {
+        return Err("runtime readiness state".into());
+    };
+    *ownership_generation = generation;
+    change.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+        expected_publication_revision: previous.publication_revision,
+    };
+    change.publication_revision = previous.publication_revision.checked_add(1)
+        .ok_or("readiness publication revision")?;
+    change.source.source_revision = previous.source.source_revision.checked_add(1)
+        .ok_or("readiness source revision")?;
+    change.source.decision_identity = format!("arena-runtime-ready-{generation}");
+    let publication = AdmissionAuthorityPublicationV1::prepare(&publisher, now).map_err(debug)?;
+    let disposition = harness.root.publish_runtime_readiness(&harness.node, &publication)
+        .await.map_err(debug)?;
+    assert_eq!(disposition, GuardPublicationDisposition::Applied);
+    Ok(())
+}
+
 pub(in super::super) fn bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
@@ -159,6 +205,39 @@ fn bundle_layout(
     Ok((bytes, pins))
 }
 
+pub(in super::super) fn boot_world(
+    deps: &Dependencies,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    bytes: &[u8],
+    pins: &crate::map::BundlePins,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let base = crate::map::load(bytes, pins).map_err(debug)?;
+    let (x, y, floor) = donor::KICK;
+    crate::map::boot::boot(
+        bytes,
+        &crate::map::boot::BootPins {
+            bundle: pins.clone(),
+            map_revision: crate::map::overlay::map_revision(&base),
+            start: crate::map::overlay::TilePos {
+                x: x.try_into()?,
+                y: y.try_into()?,
+                floor: (-floor).try_into()?,
+            },
+        },
+        deps.admitted.world_id,
+        deps.admitted.channel_id,
+        |key| {
+            Some(crate::map::facts::ItemDefinition {
+                reference: native.item_index()?.definition_ref("Item", key, "definition-r1")?,
+                solid: Some(key.ends_with(".i1841")),
+                blocks_projectile: false,
+                pickupable: false,
+                door: false,
+            })
+        },
+    ).map_err(debug)
+}
+
 pub(in super::super) fn runtime(
     deps: &mut Dependencies,
     active: &crate::content::ActiveGeneration,
@@ -184,6 +263,17 @@ pub(in super::super) fn runtime_at(
     pin: &crate::content::NativeEntryContentPin,
     map: &crate::map::boot::BundleWorld,
     start: crate::foundation::MovementLocalPosition,
+) -> TestResult {
+    runtime_at_generation(deps, active, pin, map, start, 1)
+}
+
+pub(in super::super) fn runtime_at_generation(
+    deps: &mut Dependencies,
+    active: &crate::content::ActiveGeneration,
+    pin: &crate::content::NativeEntryContentPin,
+    map: &crate::map::boot::BundleWorld,
+    start: crate::foundation::MovementLocalPosition,
+    generation: u64,
 ) -> TestResult {
     deps.room = pin.qualified_room().clone();
     let cells = map
@@ -217,7 +307,7 @@ pub(in super::super) fn runtime_at(
         deps.admitted.channel_id,
         crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
         1,
-        1,
+        generation,
         1,
         "runtime-scope-assignment:1",
         32,

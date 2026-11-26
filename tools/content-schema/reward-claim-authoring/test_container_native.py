@@ -109,7 +109,7 @@ class ContainerNativeTests(unittest.TestCase):
             else: changed['semantics']['fluid']['value']['fluid_type'] = {'state': 'KNOWN', 'value': 1}
             self.assertIs(container_native.native_water_vial(original, changed), original)
 
-    def test_poison_daggers_target_has_two_distinct_nonstackable_children(self):
+    def test_poison_daggers_uses_numeric_crystal_quantities(self):
         definition = next(d for d in self.rows
                           if d['identity']['key'] == 'oteryn:reward-claim.kv.poisondaggers')
         recipe = container_native.derive(definition, self.items, plain.stack_problem)
@@ -117,7 +117,6 @@ class ContainerNativeTests(unittest.TestCase):
         self.assertEqual([(q['item']['key'], q['count'])
                           for q in recipe['placements'][0]['contents']],
                          [('oteryn:item.tibia.i3448', 30),
-                          ('oteryn:item.tibia.i3299', 1),
                           ('oteryn:item.tibia.i3299', 1)])
 
     def test_bear_room_bag_keeps_both_rewards_and_source_storage(self):

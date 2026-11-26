@@ -10,13 +10,8 @@ impl NpcConversations {
         session: GameSessionId,
         intent: &NpcTalkIntent,
     ) -> Option<(u64, u64, String)> {
-        let speaker = speaker_position(runtime, actor, session)?;
-        let npc = live_npc(runtime, actor, session, intent.npc_actor)?;
-        if chat.engaged(session) != Some(npc.actor)
-            || speaker.floor != npc.position.floor
-            || speaker.x.abs_diff(npc.position.x) > TALK_RANGE_TILES
-            || speaker.y.abs_diff(npc.position.y) > TALK_RANGE_TILES
-        {
+        let npc = npc_in_talk_range(runtime, actor, session, intent.npc_actor)?;
+        if chat.engaged(session) != Some(npc.actor) {
             return None;
         }
         let book = chat.npc_talk()?;
@@ -69,6 +64,20 @@ pub(super) fn speaker_position(
             y: entry.position.y,
             floor: entry.position.floor,
         })
+}
+
+pub(super) fn npc_in_talk_range(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    named: EntityRef,
+) -> Option<LiveNpc> {
+    let speaker = speaker_position(runtime, actor, session)?;
+    let npc = live_npc(runtime, actor, session, named)?;
+    (speaker.floor == npc.position.floor
+        && speaker.x.abs_diff(npc.position.x) <= TALK_RANGE_TILES
+        && speaker.y.abs_diff(npc.position.y) <= TALK_RANGE_TILES)
+        .then_some(npc)
 }
 
 /// A House observer sees only its scoped native NPC slots. Channel keys cannot opt into House.

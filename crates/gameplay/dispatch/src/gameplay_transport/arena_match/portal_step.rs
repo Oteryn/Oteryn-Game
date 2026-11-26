@@ -4,32 +4,39 @@ use super::*;
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::MovementPositionSnapshot;
 
+// Retry briefly while STEP owns the spell lane. If the gate is still busy,
+// the next movement can retry from the portal's origin snapshot.
+const PORTAL_GATE_RETRY_DELAY: Duration = Duration::from_millis(5);
+const PORTAL_GATE_RETRIES: usize = 4;
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static ARENA_PORTAL_COMMIT_BARRIER:
+        std::sync::Arc<tokio::sync::Notify>;
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn step_arena_portal(
         &self,
-        _permit: &SpellLanePermit,
+        permit: &SpellLanePermit,
         actor: ExactActorRef,
         session: GameSessionId,
         origin: MovementPositionSnapshot,
         entered: MovementPositionSnapshot,
     ) -> MovementPositionSnapshot {
-        if origin.position() == entered.position() {
-            return entered;
-        }
-        self.try_arena_portal_step(actor, session, entered)
+        self.try_arena_portal_step(permit, actor, session, origin, entered)
             .await
             .unwrap_or(entered)
     }
 
     async fn try_arena_portal_step(
         &self,
+        permit: &SpellLanePermit,
         actor: ExactActorRef,
         session: GameSessionId,
+        origin: MovementPositionSnapshot,
         entered: MovementPositionSnapshot,
     ) -> Option<MovementPositionSnapshot> {
-        // A wire command can hold this gate while waiting for the spell lane.
-        // Native STEP already holds that lane: never await the opposite lock.
-        let _gate = self.states.arena_matches.command.try_lock().ok()?;
         let live = self
             .states
             .arena_matches
@@ -41,14 +48,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if live.actor != actor || live.state.phase != 2 {
             return None;
         }
-        let step = durable::NativeArenaStep::new(
-            actor,
-            session,
-            entered,
-            self.reset_epoch,
-            live.state.run,
-            live.state.pit,
-        )?;
+        let step_at = |at| durable::NativeArenaStep::new(
+            actor, session, at, self.reset_epoch, live.state.run, live.state.pit,
+        );
+        let (step, retrying) = if let Some(step) = step_at(entered) {
+            (step, false)
+        } else {
+            (step_at(origin)?, true)
+        };
+        if !portal_open(self, &live.state) {
+            return None;
+        }
+        if !self.await_arena_portal_gate().await {
+            let (character, retained) = {
+                let mut runtime = self.runtime.lock().await;
+                let character = runtime.bound_attacker_lease(actor, session).ok()?.character_id();
+                if retrying && portal_open(self, &live.state) {
+                    let _ = runtime.relocate_arena_player(actor, session, entered, origin.position());
+                }
+                (character, runtime.read_actor_position(actor).ok())
+            };
+            super::super::operator_event_with_trace(
+                &format!("event=arena_portal_gate_busy character_id={}", super::super::format_connection_trace(*character.as_bytes())),
+                None,
+            );
+            return retained;
+        }
         let mut fence = self.current_quest_fence(session).await.ok()??;
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         fence.expected_character_revision = slot.cursor(self.root, self.character).await.ok()?;
@@ -78,8 +103,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         if read.replay.is_some() {
-            self.restore_arena_projection(actor, session, &read.state, read.now_ms)
+            self.restore_arena_projection(actor, session, &read.state, read.now_ms, permit, fence)
                 .await?;
+            let _ = self.root.acknowledge_arena_relocation(self.character, self.holder, fence, &read.state).await;
             return self.runtime.lock().await.read_actor_position(actor).ok();
         }
         let before = read.state;
@@ -147,10 +173,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .ok()?;
         let result = wire::decode_match_result(&bytes).ok()?;
+        #[cfg(test)]
+        if result.disposition == D::Applied
+            && ARENA_PORTAL_COMMIT_BARRIER.try_with(|ready| ready.notify_one()).is_ok()
+        {
+            std::future::pending::<()>().await;
+        }
         after.reconcile_arena_refusal(&before, result.disposition, &result.state);
-        self.restore_arena_projection(actor, session, &after, read.now_ms)
+        self.restore_arena_projection(actor, session, &after, read.now_ms, permit, fence)
             .await?;
+        if result.disposition == D::Applied {
+            let _ = self.root.acknowledge_arena_relocation(self.character, self.holder, fence, &after).await;
+        }
         self.runtime.lock().await.read_actor_position(actor).ok()
+    }
+
+    async fn await_arena_portal_gate(&self) -> bool {
+        for _ in 0..PORTAL_GATE_RETRIES {
+            if self.states.arena_matches.command.try_lock().is_ok() {
+                return true;
+            }
+            tokio::time::sleep(PORTAL_GATE_RETRY_DELAY).await;
+        }
+        self.states.arena_matches.command.try_lock().is_ok()
     }
 }
 
