@@ -16,6 +16,14 @@ macro_rules! authority_methods {
         > {
             async { Ok(None) }
         }
+
+        fn drome_use_unresolved(
+            &self,
+            _actor: $crate::foundation::ExactActorRef,
+            _command: $crate::gameplay_transport::connection::UseCommand,
+        ) -> impl std::future::Future<Output = bool> {
+            async { false }
+        }
     };
 }
 pub(in crate::gameplay_transport) use authority_methods;
@@ -37,6 +45,14 @@ macro_rules! composed_methods {
             }
             self.use_drome_cube_impl(actor, command, intent, source)
                 .await
+        }
+
+        async fn drome_use_unresolved(
+            &self,
+            actor: $crate::foundation::ExactActorRef,
+            command: $crate::gameplay_transport::connection::UseCommand,
+        ) -> bool {
+            self.drome_use_has_prepared_write(actor, command).await
         }
     };
 }

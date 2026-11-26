@@ -1,10 +1,12 @@
 //! CRAFT-1: existing bounded USE/use-with → current map station → atomic item owner.
-use super::ComposedFreshAdmission;
 use super::connection::{FreshAdmissionAuthority, UseCommand, UseOutcome};
 use super::item_ref_admission::{NativeItemWeights, pinned_index};
 use super::item_view::{ItemKey, SessionItemView};
+use super::{AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission};
+use crate::durability::DurabilityError;
 use crate::durability::item_craft::ItemCraftRequest;
 use crate::durability::item_mint::TypedDefinitionRef;
+use crate::durability::item_use::ItemUseError;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::map::view::{self, MapEntryKey, MapFacts};
 use oteryn_gameplay_progression::hit_training::{FISHING_TRIES_PER_USE, SkillFamily};
@@ -43,6 +45,49 @@ pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
     authority
         .use_craft(actor, command, intent, source, target)
         .await
+}
+
+pub(super) async fn retry_item_use_holder<T>(
+    retry: &AdmissionRetryBudget<'_>,
+    mut step: impl AsyncFnMut() -> Result<T, ItemUseError>,
+) -> Result<T, ItemUseError> {
+    retry_busy(retry, async || match step().await {
+        Err(ItemUseError::Unavailable(error)) => Err(error),
+        result => Ok(result),
+    })
+    .await
+    .unwrap_or_else(|error| Err(ItemUseError::Unavailable(error)))
+}
+
+// These calls acquire the holder before issuing the transaction. Only retry an
+// unavailable checkout here: a deadline on a live pass may interrupt COMMIT.
+async fn retry_busy<T>(
+    retry: &AdmissionRetryBudget<'_>,
+    mut operation: impl AsyncFnMut() -> Result<T, DurabilityError>,
+) -> Result<T, DurabilityError> {
+    loop {
+        let result = operation().await;
+        if !matches!(result, Err(DurabilityError::RootUnavailable))
+            || !retry
+                .retries_unavailable(AdmissionRefusal::Unavailable)
+                .await
+        {
+            return result;
+        }
+    }
+}
+
+fn write_disposition(
+    result: Result<Option<UseDisposition>, DurabilityError>,
+) -> Result<UseDisposition, ()> {
+    match result {
+        Ok(Some(disposition)) => Ok(disposition),
+        Err(DurabilityError::CommitOutcomeUnknown | DurabilityError::RootPassDeadlineExceeded) => {
+            // A sent terrain or fishing COMMIT may lack an acknowledgement. Keep its receipt replayable.
+            Err(())
+        }
+        Ok(None) | Err(_) => Ok(UseDisposition::Rejected),
+    }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -141,7 +186,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             Ok(Some(outcome)) => return Some(outcome),
             Ok(None) => {}
-            Err(()) => return None,
+            // The rope authority errors before the Channel movement is applied.
+            Err(()) => return Some(UseOutcome::rejected()),
         }
         let disposition = |d| {
             Some(UseOutcome {
@@ -149,10 +195,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ..UseOutcome::rejected()
             })
         };
-        let fence = command.item_fence?;
-        let id = CommandId::new(command.command_id).ok()?;
-        let native = self.active_generation?.native_gameplay()?;
-        let _permit = self.spell_lane_permit().await?;
+        let (Some(fence), Ok(id), Some(native)) = (
+            command.item_fence,
+            CommandId::new(command.command_id),
+            self.active_generation
+                .and_then(crate::content::ActiveGeneration::native_gameplay),
+        ) else {
+            return disposition(UseDisposition::Rejected);
+        };
+        let Some(permit) = self.spell_lane_permit().await else {
+            return disposition(UseDisposition::Rejected);
+        };
+        let Ok(encoded) = oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent)
+        else {
+            return disposition(UseDisposition::Rejected);
+        };
+        let retry = AdmissionRetryBudget::for_command(self.root);
+        let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         let mut request = ItemCraftRequest {
             command: CommandRef::new(command.game_session_id, id),
             source: [0; 16],
@@ -161,25 +220,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             gathering: None,
             enchanting: None,
             station: None,
-            intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent).ok()?,
+            intent: encoded,
         };
         // Replay precedes current handles and custody, including input retirement and reconnect.
-        if let Some(result) = self
-            .root
-            .craft_item(
-                &_permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &NativeItemWeights(native).with_wheel(self.premium_coordinator),
-                true,
-            )
+        match retry
+            .retry_command_guard(async || {
+                self.root
+                    .craft_item(
+                        &permit,
+                        self.character,
+                        self.holder,
+                        fence,
+                        request.clone(),
+                        native,
+                        &weights,
+                        true,
+                    )
+                    .await
+            })
             .await
-            .ok()?
         {
-            return disposition(result);
+            Ok(Some(result)) => return disposition(result),
+            Ok(None) => {}
+            Err(_) => return disposition(UseDisposition::Rejected),
         }
         let Some(ItemKey::Instance(source)) = source else {
             return disposition(UseDisposition::StaleState);
@@ -201,17 +264,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             drop(states);
             drop(runtime);
-            let inventory = self
-                .root
-                .read_item_use_inventory(self.character, self.holder, fence)
-                .await
-                .ok()?;
-            let entry = inventory
+            let Ok(inventory) = retry_item_use_holder(&retry, async || {
+                self.root
+                    .read_item_use_inventory(self.character, self.holder, fence)
+                    .await
+            })
+            .await
+            else {
+                return disposition(UseDisposition::Rejected);
+            };
+            let Some(entry) = inventory
                 .backpack
                 .iter()
                 .flat_map(|bag| &bag.entries)
                 .chain(inventory.nested.iter().map(|(_, entry)| entry))
-                .find(|entry| entry.item.item_instance_id == ingredient)?;
+                .find(|entry| entry.item.item_instance_id == ingredient)
+            else {
+                return disposition(UseDisposition::Rejected);
+            };
             request.ingredient = Some(ingredient);
             request.station = Some(entry.item.definition.clone());
         }
@@ -232,8 +302,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
             } else {
                 let mut runtime = self.runtime.lock().await;
-                let index = pinned_index(&runtime, self.active_generation)?;
-                let at = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)?;
+                let (Some(index), Some(at)) = (
+                    pinned_index(&runtime, self.active_generation),
+                    super::bundle_map_position(&mut runtime, self.movement_cells(), actor),
+                ) else {
+                    return disposition(UseDisposition::Rejected);
+                };
                 let facts = at.map.facts.pinned();
                 let map = super::world_map::MapViewSource {
                     overlay: &at.map.overlay,
@@ -266,8 +340,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     return disposition(UseDisposition::TooFar);
                 }
-                let tile = view::compose_tile(&at.map.overlay, &facts, pos).ok()??;
-                let entry = tile.entries.iter().find(|e| e.source.key() == key)?;
+                let Ok(Some(tile)) = view::compose_tile(&at.map.overlay, &facts, pos) else {
+                    return disposition(UseDisposition::Rejected);
+                };
+                let Some(entry) = tile.entries.iter().find(|e| e.source.key() == key) else {
+                    return disposition(UseDisposition::Rejected);
+                };
                 let MapDefinition::Item(reference) = entry.facts.definition else {
                     return disposition(UseDisposition::NothingToUse);
                 };
@@ -275,7 +353,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     key,
                     facts.object_revision(match key {
                         MapEntryKey::Base(k) => k,
-                        _ => return None,
+                        _ => return disposition(UseDisposition::Rejected),
                     }),
                     entry.facts.bound
                         || facts.house_tile(pos)
@@ -283,10 +361,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         || entry.facts.sub_type != 0,
                     pos,
                 );
-                (
-                    super::item_look::typed_definition(index, reference)?,
-                    map_target,
-                )
+                let Some(definition) = super::item_look::typed_definition(index, reference) else {
+                    return disposition(UseDisposition::Rejected);
+                };
+                (definition, map_target)
             }
         };
         request.station = Some(station);
@@ -299,11 +377,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .as_ref()
             .is_some_and(|s| oteryn_gameplay_items::fishing::is_water(&s.production_key))
         {
-            let inventory = self
-                .root
-                .read_item_use_inventory(self.character, self.holder, fence)
-                .await
-                .ok()?;
+            let Ok(inventory) = retry_item_use_holder(&retry, async || {
+                self.root
+                    .read_item_use_inventory(self.character, self.holder, fence)
+                    .await
+            })
+            .await
+            else {
+                return disposition(UseDisposition::Rejected);
+            };
             let entries = inventory
                 .backpack
                 .iter()
@@ -396,11 +478,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             request.tool = Some(rod);
             request.source = consumable?;
         }
-        let inventory = self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
-            .await
-            .ok()?;
+        let Ok(inventory) = retry_item_use_holder(&retry, async || {
+            self.root
+                .read_item_use_inventory(self.character, self.holder, fence)
+                .await
+        })
+        .await
+        else {
+            return disposition(UseDisposition::Rejected);
+        };
         let tool = inventory
             .backpack
             .iter()
@@ -502,21 +588,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return disposition(UseDisposition::Rejected);
         }
-        let result = self
-            .root
-            .craft_item(
-                &_permit,
-                self.character,
-                self.holder,
-                fence,
-                request,
-                native,
-                &NativeItemWeights(native).with_wheel(self.premium_coordinator),
-                false,
-            )
-            .await;
-        let result = result.ok()??;
-        drop(_permit);
+        let result = retry_busy(&retry, async || {
+            self.root
+                .craft_item(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request.clone(),
+                    native,
+                    &weights,
+                    false,
+                )
+                .await
+        })
+        .await;
+        let result = write_disposition(result).ok()?;
+        drop(permit);
         if result == UseDisposition::Committed {
             self.refresh_terrain_tools().await;
         }

@@ -31,17 +31,20 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         }
         _ => return Some(Dispatch::Unregistered),
     };
+    let may_write = matches!(&request, Request::Confirm { quote: Some(_), .. });
     match authority
         .managed_container_move(admitted, command.command_id, request)
         .await
-        .ok()?
     {
-        Some(result) => {
+        Ok(Some(result)) => {
             if let Some(quote) = result.quote {
                 *pending = Some((NonZeroU64::new(command.command_id)?, quote));
             }
             Some(Dispatch::CarriedBatch(result.reply))
         }
-        None => Some(Dispatch::Unregistered),
+        // A confirmation with a quote may have sent COMMIT. The authority
+        // currently erases the error, so preserve replay for that confirmation.
+        Err(()) if may_write => None,
+        Ok(None) | Err(()) => Some(Dispatch::Unregistered),
     }
 }
