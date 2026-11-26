@@ -9,6 +9,7 @@ pub use current::{
     read_current_rotten_blood_taints_in_transaction,
 };
 
+use crate::durability::db::commit_semantic_read;
 use oteryn_gameplay_quests::quest::rotten_blood::{
     ACCESS_TRACK, CleanseMode, RottenBloodBoss, RottenBloodRefusal, RottenBloodState,
 };
@@ -93,7 +94,7 @@ impl DurabilityRoot {
                         Err(error) => return Ok(Err(error)),
                     }
                     let state = read_state(&mut tx, fence.character_id).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(state))
                 })
             })
@@ -200,7 +201,7 @@ impl DurabilityRoot {
                 sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
                     .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
                 let stored = replay(&mut tx, fence.character_id, &occurrence, &binding).await?;
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 Ok(stored.transpose())
             }))
             .await?

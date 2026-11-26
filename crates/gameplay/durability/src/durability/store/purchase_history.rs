@@ -1,5 +1,5 @@
 use super::super::DurabilityRoot;
-use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::super::db::{begin_semantic_transaction, commit_semantic_read};
 use super::codec::StoreValidationError;
 use super::storage::StoreDurabilityError;
 use sqlx::Row;
@@ -75,7 +75,7 @@ impl DurabilityRoot {
                             purchased_at_ms: row.try_get::<i64, _>("purchased_at_ms")? as u64,
                         });
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(result))
                 })
             })

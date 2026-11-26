@@ -1,5 +1,6 @@
 //! Fixed source cues share the existing independently fenced raid outbox.
 use super::*;
+use crate::durability::db::commit_semantic_read;
 use oteryn_gameplay_encounter_rules::raid::source_claustrophobic::{
     Controller, PreparedEvent, Raid,
 };
@@ -76,7 +77,7 @@ impl DurabilityRoot {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             if !effects::world_current(&mut tx,firing).await? || !effects::current(&mut tx,&node,firing,channel,generation).await?{return Err(DurabilityError::Unavailable)}
             let complete:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_channel_runs r JOIN game_world_raid_firings f USING(firing_id) JOIN game_world_raid_schedule_sources s USING(world_id,raid_key) WHERE r.firing_id=encode($1,'hex')::uuid AND r.channel_id=encode($2,'hex')::uuid AND r.owner_generation=$3::text::numeric AND r.state=2 AND s.source_kind=4)").bind(firing.as_slice()).bind(channel.as_bytes().as_slice()).bind(generation.get().to_string()).fetch_one(&mut *tx).await?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(complete)
+            commit_semantic_read(tx,deadline).await?;Ok(complete)
         })).await
     }
 

@@ -257,7 +257,7 @@ async fn client_cast(
                 assert_eq!(
                     owner
                         .set_expert_fight_modes(actor, session, first_id, modes)
-                        .await,
+                        .await.map_err(debug)?,
                     oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
                 );
             }

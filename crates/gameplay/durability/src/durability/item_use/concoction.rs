@@ -7,7 +7,8 @@
 //! and terminal stamps (migration 0596). The 24-hour cooldown stays on the wall clock
 //! (`concoctions.lua:181`).
 
-use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use crate::durability::db::commit_semantic_read;
+use super::super::db::{begin_semantic_transaction};
 use super::*;
 use crate::domain::CharacterId;
 
@@ -94,7 +95,7 @@ impl DurabilityRoot {
                     .bind(WEALTH_DUPLEX_ONLINE_MICROS)
                     .fetch_one(&mut *tx)
                     .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(active))
                 })
             })
@@ -166,7 +167,7 @@ impl DurabilityRoot {
                     });
                 }
             }
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(active))
         })).await?
     }

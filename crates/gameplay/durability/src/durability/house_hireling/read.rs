@@ -1,6 +1,6 @@
 use super::super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, commit_semantic_read, lock_admission_relations,
 };
 use super::super::item_transfer::CurrentCharacterItemFence;
 use super::super::runtime_scope_assignment::NodeIncarnationProof;
@@ -60,7 +60,7 @@ impl DurabilityRoot {
                         return Err(DurabilityError::InvalidStoredState);
                     }
                     let result = read_house_hirelings_in_transaction(&mut tx, &fence).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })
@@ -98,7 +98,7 @@ impl DurabilityRoot {
                         return Err(DurabilityError::InvalidStoredState);
                     }
                     let result = rows.iter().map(decode).collect::<Result<Vec<_>, _>>()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })
@@ -131,7 +131,7 @@ impl DurabilityRoot {
                 AND game_house_effective_owner(h.world_id,h.house_key)=h.owner_character_id")
                 .bind(id.as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let result=row.as_ref().map(decode).transpose()?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(result)
+            commit_semantic_read(tx,deadline).await?;Ok(result)
         })).await
     }
 
@@ -152,7 +152,7 @@ impl DurabilityRoot {
                 WHERE lamp_item_instance_id=encode($1,'hex')::uuid AND owner_character_id=encode($2,'hex')::uuid")
                 .bind(lamp.as_slice()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let id=row.map(|r|r.try_get::<Vec<u8>,_>("id")?.try_into().map_err(|_|DurabilityError::InvalidStoredState)).transpose()?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(id)
+            commit_semantic_read(tx,deadline).await?;Ok(id)
         })).await
     }
 }

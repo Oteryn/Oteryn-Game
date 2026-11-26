@@ -241,7 +241,7 @@ type CustodyRetrievalResult = std::result::Result<CustodyRetrieval, LoopMoveRefu
 
 async fn finish_retrieval(
     mut tx: Transaction<'_, Postgres>,
-    deadline: std::time::Instant,
+    deadline: tokio::time::Instant,
     found: bool,
     retrieved: u32,
     delivery: Option<[u8; 16]>,
