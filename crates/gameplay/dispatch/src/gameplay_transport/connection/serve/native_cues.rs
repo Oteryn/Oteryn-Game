@@ -1,17 +1,35 @@
 //! Existing map callback receipts delivered on the native connection cadence.
 use super::*;
+use oteryn_protocol_oteryn::presentation as cooldown_wire;
+use std::collections::BTreeMap;
+
+type CooldownDeadlines = BTreeMap<(cooldown_wire::ActorCooldownKind, u32), u64>;
+
+pub(super) struct CooldownProjection {
+    revision: u64,
+    deadlines: CooldownDeadlines,
+}
+
+fn deadlines(message: &cooldown_wire::ActorCooldowns) -> CooldownDeadlines {
+    message
+        .entries
+        .iter()
+        .map(|entry| ((entry.kind, entry.id), entry.expires_at_ms))
+        .collect()
+}
 
 /// Presentation observation is independently negotiated from casting. Preserve
 /// any existing producer's rows and cooldown data; fill only absent domains.
 pub(super) fn observation_snapshots(
     selected: &crate::gameplay_transport::capabilities::SelectedCapabilities,
     presentation_revision: u64,
+    cooldowns: Option<cooldown_wire::ActorCooldowns>,
     domains: &mut Vec<crate::gameplay_transport::item_view::ItemViewSnapshotDomain>,
-) -> Result<(), ServeEnd> {
+) -> Result<Option<CooldownProjection>, ServeEnd> {
     use crate::gameplay_transport::item_view::ItemViewSnapshotDomain as Domain;
     use oteryn_protocol_oteryn::presentation as wire;
     if !selected.contains(wire::CAPABILITY_PRESENTATION_V1) {
-        return Ok(());
+        return Ok(None);
     }
     if !domains
         .iter()
@@ -24,25 +42,32 @@ pub(super) fn observation_snapshots(
             payload: wire::encode_presentation_snapshot(),
         });
     }
-    if !domains
+    if let Some(row) = domains
         .iter()
-        .any(|row| row.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS)
+        .find(|row| row.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS)
     {
-        domains.push(Domain {
-            domain_id: wire::STATE_DOMAIN_ACTOR_COOLDOWNS,
-            revision: 0,
-            snapshot_type: wire::SNAPSHOT_TYPE_ACTOR_COOLDOWNS_V1,
-            payload: wire::encode_actor_cooldowns(&wire::ActorCooldowns {
-                // Empty observation has no deadlines or clock debt. A real
-                // cooldown producer retains its own complete clocked row.
-                server_now_ms: 0,
-                rtt_ms: None,
-                entries: Vec::new(),
-            })
-            .map_err(|_| ServeEnd::Disconnected)?,
-        });
+        let cooldowns =
+            wire::decode_actor_cooldowns(&row.payload).map_err(|_| ServeEnd::Disconnected)?;
+        return Ok(Some(CooldownProjection {
+            revision: row.revision,
+            deadlines: deadlines(&cooldowns),
+        }));
     }
-    Ok(())
+    let cooldowns = cooldowns.unwrap_or(wire::ActorCooldowns {
+        server_now_ms: 0,
+        rtt_ms: None,
+        entries: Vec::new(),
+    });
+    domains.push(Domain {
+        domain_id: wire::STATE_DOMAIN_ACTOR_COOLDOWNS,
+        revision: 0,
+        snapshot_type: wire::SNAPSHOT_TYPE_ACTOR_COOLDOWNS_V1,
+        payload: wire::encode_actor_cooldowns(&cooldowns).map_err(|_| ServeEnd::Disconnected)?,
+    });
+    Ok(Some(CooldownProjection {
+        revision: 0,
+        deadlines: deadlines(&cooldowns),
+    }))
 }
 
 pub(super) async fn snapshot_observations<A: FreshAdmissionAuthority>(
@@ -50,10 +75,19 @@ pub(super) async fn snapshot_observations<A: FreshAdmissionAuthority>(
     actor: ExactActorRef,
     admitted: &AdmittedSession,
     domains: &mut Vec<crate::gameplay_transport::item_view::ItemViewSnapshotDomain>,
-) -> Result<(), ServeEnd> {
-    observation_snapshots(
-        &admitted.continuity.selected_capabilities,
+) -> Result<Option<CooldownProjection>, ServeEnd> {
+    let selected = admitted.continuity.selected_capabilities;
+    let cooldowns = if selected.contains(cooldown_wire::CAPABILITY_PRESENTATION_V1) {
+        authority
+            .observe_actor_cooldowns(actor, admitted.game_session_id)
+            .await
+    } else {
+        None
+    };
+    let projection = observation_snapshots(
+        &selected,
         admitted.continuity.presentation_revision,
+        cooldowns,
         domains,
     )?;
     if admitted
@@ -81,6 +115,76 @@ pub(super) async fn snapshot_observations<A: FreshAdmissionAuthority>(
             1
         };
     }
+    Ok(projection)
+}
+
+/// Publish changes to the negotiated own-actor domain after a successful cast.
+pub(super) async fn refresh_cooldowns<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd> {
+    use cooldown_wire as wire;
+    let Some(previous) = session.cooldowns.as_mut() else {
+        return Ok(());
+    };
+    let Some(mut current) = authority
+        .observe_actor_cooldowns(session.actor, session.admitted.game_session_id)
+        .await
+    else {
+        return Ok(());
+    };
+    let next = deadlines(&current);
+    current.entries.retain(|entry| {
+        previous.deadlines.get(&(entry.kind, entry.id)) != Some(&entry.expires_at_ms)
+    });
+    // Natural expiry is already known to the client. An early reset needs a tombstone.
+    current.entries.extend(
+        previous
+            .deadlines
+            .iter()
+            .filter_map(|(&(kind, id), &expiry)| {
+                (expiry > current.server_now_ms && !next.contains_key(&(kind, id))).then_some(
+                    wire::ActorCooldown {
+                        kind,
+                        id,
+                        expires_at_ms: 0,
+                    },
+                )
+            }),
+    );
+    if current.entries.is_empty() {
+        previous.deadlines = next;
+        return Ok(());
+    }
+    let revision = previous
+        .revision
+        .checked_add(1)
+        .ok_or(ServeEnd::Disconnected)?;
+    let sequence = session
+        .sequence
+        .checked_add(1)
+        .ok_or(ServeEnd::Disconnected)?;
+    let payload = wire::encode_actor_cooldowns(&current).map_err(|_| ServeEnd::Disconnected)?;
+    let frame = encode_state_delta(
+        session.generation,
+        sequence,
+        wire::STATE_DOMAIN_ACTOR_COOLDOWNS,
+        previous.revision,
+        revision,
+        wire::DELTA_TYPE_ACTOR_COOLDOWNS_V1,
+        &payload,
+    )
+    .map_err(|_| ServeEnd::Disconnected)?;
+    write_frame(stream, &frame)
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?;
+    session.sequence = sequence;
+    session.admitted.continuity.server_sequence = sequence;
+    *previous = CooldownProjection {
+        revision,
+        deadlines: next,
+    };
     Ok(())
 }
 
@@ -517,9 +621,9 @@ mod observation_tests {
         )
         .ok_or("negotiated observation")?;
         let mut domains = Vec::new();
-        assert!(observation_snapshots(&SelectedCapabilities::NONE, 7, &mut domains).is_ok());
+        assert!(observation_snapshots(&SelectedCapabilities::NONE, 7, None, &mut domains).is_ok());
         assert!(domains.is_empty());
-        assert!(observation_snapshots(&selected, 7, &mut domains).is_ok());
+        assert!(observation_snapshots(&selected, 7, None, &mut domains).is_ok());
         assert_eq!(domains.len(), 2);
         let presentation = domains
             .iter()
@@ -557,14 +661,14 @@ mod observation_tests {
             },
         ];
         let mut preserved = existing.clone();
-        assert!(observation_snapshots(&selected, 99, &mut preserved).is_ok());
+        assert!(observation_snapshots(&selected, 99, None, &mut preserved).is_ok());
         assert_eq!(
             preserved, existing,
             "casting owner rows remain byte-for-byte intact"
         );
         domains.retain(|row| row.domain_id == 20);
         let retained = domains[0].clone();
-        assert!(observation_snapshots(&selected, 17, &mut domains).is_ok());
+        assert!(observation_snapshots(&selected, 17, None, &mut domains).is_ok());
         assert_eq!(
             domains.iter().find(|row| row.domain_id == 20),
             Some(&retained)
