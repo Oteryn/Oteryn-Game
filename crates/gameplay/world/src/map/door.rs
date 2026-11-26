@@ -68,6 +68,11 @@ struct Door {
 }
 
 impl Door {
+    fn meets_level(&self, actor_level: u32) -> bool {
+        self.required_level
+            .is_none_or(|required| actor_level >= required)
+    }
+
     fn solid(&self) -> bool {
         if self.state.load(Ordering::Acquire) & 3 == 1 {
             self.open_solid
@@ -336,10 +341,15 @@ impl DoorBook {
     }
 
     pub(super) fn blocks_except(&self, pos: TilePos, except: Option<u64>) -> bool {
-        self.blocks_unless(pos, |key| Some(key) == except)
+        self.blocks_unless(pos, u32::MAX, |key| Some(key) == except)
     }
 
-    pub(super) fn blocks_unless(&self, pos: TilePos, projected: impl Fn(u64) -> bool) -> bool {
+    pub(super) fn blocks_unless(
+        &self,
+        pos: TilePos,
+        actor_level: u32,
+        projected: impl Fn(u64) -> bool,
+    ) -> bool {
         let Some(tile) = super::view::placement_key(pos, 0) else {
             return false;
         };
@@ -347,7 +357,18 @@ impl DoorBook {
         self.doors[start..]
             .iter()
             .take_while(|door| door.key <= tile | 0xFF)
-            .any(|door| !projected(door.key) && door.solid())
+            .any(|door| !projected(door.key) && (door.solid() || !door.meets_level(actor_level)))
+    }
+
+    /// Whether this exact revision can open as a level gate for the acting player.
+    pub fn can_open_level_gate(&self, key: u64, expected_revision: u64, actor_level: u32) -> bool {
+        self.find(key).is_some_and(|door| {
+            let current = door.state.load(Ordering::Acquire);
+            current >> 2 == expected_revision
+                && current & 3 == 0
+                && door.required_level.is_some()
+                && door.meets_level(actor_level)
+        })
     }
 
     /// Classifies the original placement, independently of channel toggles.
@@ -409,10 +430,7 @@ impl DoorBook {
         {
             return Some(DoorUse::Locked);
         }
-        if door
-            .required_level
-            .is_some_and(|required| actor_level < required)
-        {
+        if !door.meets_level(actor_level) {
             return Some(DoorUse::Locked);
         }
         if door.required_storage.is_some() && !quest_storage_met {
