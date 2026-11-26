@@ -191,7 +191,7 @@ def test_closed_weapon_metadata_admission():
     print("ok test_closed_weapon_metadata_admission")
 
 
-def check_document_roundtrip_negatives(declarations, sources):
+def assert_document_roundtrip_negatives(declarations, sources):
     import validate_world_project_v2_to_tree as validator
 
     docs = [row for row in declarations["records"] if row.get("kind") == "Document"]
@@ -631,7 +631,7 @@ def test_package_tree_contract():
 
 
 def test_document_contract():
-    check_document_roundtrip_negatives(
+    assert_document_roundtrip_negatives(
         json.loads((ROOT / "content/world/definitions/declarations.json").read_text()),
         json.loads((ROOT / "content/world/provenance/sources.json").read_text()),
     )

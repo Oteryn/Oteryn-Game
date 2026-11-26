@@ -19,7 +19,7 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
     )
     goblin_tracks = goblin.append(root, lane_callbacks, inputs, pin, offers)
     selected.append_tokens(root, lane_callbacks, offers, inputs)
-    selected.append_eligibility_starts(root, lane_callbacks, inputs, pin)
+    selected.append_eligibility_starts(root, lane_callbacks, offers, inputs, pin)
     programmes.append(root, lane_callbacks, inputs, pin)
     formal_worlds = programmes.append_formal(root, lane_callbacks, inputs, pin)
     signs = load_module(

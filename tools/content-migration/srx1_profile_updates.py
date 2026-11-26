@@ -32,6 +32,26 @@ def compact_item_provider(document, canonical):
     return canonical(document)
 
 
+OMIT_IF_UNKNOWN = ('field_condition', 'rune_consumption')
+
+
+def omit_unknown_attributes(row):
+    attributes = row['attributes']
+    for name in OMIT_IF_UNKNOWN:
+        if attributes.get(name) is None:
+            attributes.pop(name, None)
+
+
+def exact_source_keys(packet):
+    from floor_assembly_profiles import IDS as floor_assembly_ids
+    from lion_trial_item_profiles import SOURCE_RECORDS as lion_trial_ids
+
+    return {row['production_definition']['production_key']
+            for group in ('records', 'custody_promotions') for row in packet[group]} | {
+                f'oteryn:item.tibia.i{item_id}' for item_id in floor_assembly_ids | lion_trial_ids.keys()
+            }
+
+
 def coalesce_dispenser_top_order(document, source_records, house_overlay):
     """Coalesce only exact dispenser owner facts plus verified source top flags.
 
@@ -60,6 +80,7 @@ def coalesce_dispenser_top_order(document, source_records, house_overlay):
 def generate(root, generated, profile_path, manifest_path, order, canonical):
     import dispenser_item_profiles
     import house_decoration_actions
+    import qengine_reward_item_profiles
     import srx1_potion_variants
     import writing_item_admission
 

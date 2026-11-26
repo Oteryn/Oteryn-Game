@@ -381,7 +381,7 @@ fn i14_crystal_consumables_have_source_qualified_owners() {
     }
 }
 
-/// I03: Crystal `data/scripts/actions/items/spellbook.lua:55` registers these spellbook ids; using
+/// I03: Crystal `data/scripts/actions/items/spellbook.lua:54-55` registers these spellbook ids; using
 /// one opens a text dialog listing the user's vocation instant spells with a level or magic-level
 /// requirement, grouped and sorted by level. Oteryn exposes the same server-authored content on
 /// the existing text-bearing LOOK result for the admitted source spellbook.

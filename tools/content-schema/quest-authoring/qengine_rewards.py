@@ -21,6 +21,9 @@ import engoutfit_m36
 import lua_tables
 import qb_barbarian
 import qb_citizen_warrior
+import wizard_cosmetics
+import earned_outfit_catalogue
+import engoutfit_m36
 import qengine_mounts
 import qmech_m39
 import questpc7_smith_programme
@@ -462,6 +465,7 @@ def build():
                 "source": source,
             }
         )
+    earned_outfit_catalogue.append_wiki_outfits(ROOT, outfits, looks, addon_patterns)
     item_capture_raw = (
         ROOT / "tools/content-schema/native-gameplay/item-cosmetic-actions.json"
     ).read_bytes()
@@ -501,6 +505,8 @@ def build():
             "sha256": sha(inputs[construction_path]),
         },
     )
+    qengine_mounts.append_pegasus_feather(item_packet)
+    earned_outfit_catalogue.append_consumptive_outfit_grants(item_packet, outfits)
     # Retain every source row, but bind construction costs to the existing atomic
     # pieces owner. The ordinary one-item taming path cannot execute these rows.
     native_taming = json.loads((ROOT / "content/cosmetics/taming.json").read_bytes())
@@ -529,24 +535,7 @@ def build():
                     "compatible_provenance": [PROVENANCE],
                 }
             )
-    # Crystal 201189f8 task_board_shop.lua:33-92. Use the admitted male/female
-    # pair, keyed by the same offer ids as the Task Board purchase writer.
-    for first, family in ((0, "feral_trapper"), (3, "falconer")):
-        key = "oteryn:outfit." + family
-        (outfit,) = [outfit for outfit in outfits if outfit["key"] == key]
-        if outfit["addon_count"] != 2:
-            raise ValueError("Task Board outfit lacks its source addons: " + key)
-        for addon in range(3):
-            target = {"kind": "Outfit" if addon == 0 else "Addon", "outfit_key": key}
-            if addon:
-                target["addon"] = addon
-            mappings.append(
-                {
-                    "grant_key": f"oteryn:taskboard/shop/offer-{first + addon}",
-                    "target": target,
-                    "compatible_provenance": ["task-board-shop-v1"],
-                }
-            )
+    earned_outfit_catalogue.append_task_board_outfit_mappings(outfits, mappings)
     # Every native source grant must match the complete admitted sex pair.
     for outfit in outfits:
         outfit_looks = sorted([outfit["female"]["id"], outfit["male"]["id"]])
@@ -613,14 +602,6 @@ def build():
     }
     mounts, mount_mappings = qengine_mounts.populate(ROOT, inputs, looks, mount_source, item_packet)
     mappings.extend(mount_mappings)
-    # The same stock also grants the Antelope mount.
-    mappings.append(
-        {
-            "grant_key": "oteryn:taskboard/shop/offer-9",
-            "target": {"kind": "Mount", "mount_key": "oteryn:content.mount.antelope"},
-            "compatible_provenance": ["task-board-shop-v1"],
-        }
-    )
     lane_programmes = load_module(
         "questpc7_costume_sources",
         "tools/content-schema/quest-authoring/questpc7_outfit_programmes.py",

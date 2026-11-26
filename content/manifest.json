@@ -883,6 +883,9 @@
       "path": "tools/content-schema/native-gameplay/m42-hot-ingredient-profile.json"
     },
     {
+      "path": "tools/content-schema/native-gameplay/pegasus-feather-item-profile.json"
+    },
+    {
       "path": "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
     },
     {
@@ -993,7 +996,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "9fd720b28a2a23ad2b752889c38ced8a7551487f3d1f35785e37708e99610704"
+          "sha256": "c7a37037c51560a97beb2ee6970fd087abe95e8ff89986333c2a4456aa8b3fa0"
         },
         {
           "creates_canonical_identities": false,
@@ -1064,7 +1067,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 7917,
+          "record_count": 8272,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1072,7 +1075,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "9dd1612d8d7510279ff9c116fd77e07c5b06a93b1d42ff6d9276b556177d3af4"
+          "sha256": "31b7b2f082f404183f7fdf32c94e5567833e0ce402b409a2a8f984e5f634aa89"
         },
         {
           "creates_canonical_identities": false,

@@ -103,10 +103,8 @@ def stopped_merge(
 
 
 def resolve_in(root: Path) -> tuple[int, list[str]]:
-    with (
-        patch.object(rc, "ROOT", root),
-        patch.object(rc, "PIN_TEST", root / rc.PIN_PATH),
-        patch.object(rc, "WORLD", root / "content/world"),
+    with patch.multiple(
+        rc, ROOT=root, PIN_TEST=root / rc.PIN_PATH, WORLD=root / "content/world"
     ):
         try:
             return 0, rc.resolve_conflicts()
@@ -243,12 +241,15 @@ def test_git_failure_while_enumerating_conflicts_fails_closed() -> None:
         corrupt.write_bytes(b"not an index")
         commands: list[list[str]] = []
         with (
-            patch.object(rc, "run", commands.append),
+            patch.multiple(
+                rc,
+                ROOT=root,
+                PIN_TEST=root / rc.PIN_PATH,
+                WORLD=root / "content/world",
+                run=commands.append,
+            ),
             patch.object(sys, "argv", ["regenerate_content.py", "--resolve"]),
             patch.dict(os.environ, {"GIT_INDEX_FILE": str(corrupt)}),
-            patch.object(rc, "ROOT", root),
-            patch.object(rc, "PIN_TEST", root / rc.PIN_PATH),
-            patch.object(rc, "WORLD", root / "content/world"),
         ):
             try:
                 rc.main()
@@ -946,6 +947,11 @@ def downstream_quest_commands():
 
 def test_callback_and_w01_witnesses_follow_final_provider_in_dependency_order() -> None:
     native = ("python3", "tools/content-migration/register_spell_families.py")
+    store = (
+        "python3",
+        "tools/content-schema/store-authoring/build_runtime_catalogue.py",
+        "--refresh-owner-offers",
+    )
     callback = (
         "python3",
         "tools/content-schema/native-gameplay/build_native_callback_witness.py",
@@ -960,8 +966,8 @@ def test_callback_and_w01_witnesses_follow_final_provider_in_dependency_order() 
 
     def require_current_callback(command, events):
         if command == callback:
-            assert events[-2] == native, (
-                "callback witness requires the final native provider"
+            assert events[-3:-1] == [native, store], (
+                "callback witness follows the final native provider and Store refresh"
             )
         if command == death:
             assert events[-2] == callback, (
@@ -1294,14 +1300,21 @@ def test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work() -> 
     )
     materializer = ("materialize-world",)
     tree = ("python3", "tools/content-migration/world_project_v2_to_tree.py")
-    ordered = (store, imbuement, bootstrap, materializer, tree)
+    native = ("python3", "tools/content-migration/register_spell_families.py")
+    witness = (
+        "python3",
+        "tools/content-schema/native-gameplay/build_native_callback_witness.py",
+    )
+    check = ("python3", "fixture/final_check.py", "--check")
+    # Store admission reads converter weights from the regenerated native Item profiles.
+    ordered = (imbuement, bootstrap, materializer, tree, native, store, witness, check)
     events = []
-    assert full_generation_trace(events, lambda *_: None) == 0
+    assert full_generation_trace(events, lambda *_: None, checks=True) == 0
     assert all(events.count(step) == 1 for step in ordered)
     assert [events.index(step) for step in ordered] == sorted(
         events.index(step) for step in ordered
     )
-    for refused in ordered[:3]:
+    for refused in (imbuement, bootstrap, tree, native, store):
 
         def refuse(command, _events):
             if command == refused:
@@ -1309,16 +1322,14 @@ def test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work() -> 
 
         events = []
         try:
-            full_generation_trace(events, refuse)
+            full_generation_trace(events, refuse, checks=True)
         except subprocess.CalledProcessError as error:
             assert error.cmd == list(refused)
         else:
-            raise AssertionError(
-                "a failed Item prerequisite must stop before materializing World"
-            )
+            raise AssertionError("a refused Item or Store producer must stop regeneration")
         assert events.count(refused) == 1
-        assert materializer not in events and tree not in events
-        assert not any(command in events for command in downstream_quest_commands())
+        assert events[-1] == refused
+        assert not any(step in events for step in ordered[ordered.index(refused) + 1 :])
 
 
 def item_index_fixture(root: Path) -> tuple[dict, list[str]]:

@@ -134,6 +134,7 @@ class CorpseQualification(unittest.TestCase):
             self.assertTrue(facts[key]["ordinary_corpse_only"], key)
 
     def test_exact_source_capacities_and_complete_decay_chains(self):
+        # Letter 3505 finding: the Dwarfs share the 6007 root and three later stages.
         baseline_roots = {
             4991,
             4992,
@@ -148,6 +149,7 @@ class CorpseQualification(unittest.TestCase):
             5995,
             5999,
             6006,
+            6007,
             6017,
             6025,
             6030,
@@ -320,6 +322,27 @@ class CorpseQualification(unittest.TestCase):
         temporal = self.plan.records[key]["semantics"]["temporal"]["value"]
         self.assertEqual(temporal["duration"], corpse.grizzly.source.K(90_000))
         self.assertEqual(temporal["decay_target"], corpse.grizzly.source.NA)
+
+    def test_dwarf_corpse_keeps_the_complete_source_decay_chain(self):
+        source = corpse.grizzly.source
+        for number, duration, target in (
+            (6007, 10_000, 4141), (4141, 300_000, 4142),
+            (4142, 300_000, 4143), (4143, 60_000, None),
+        ):
+            with self.subTest(item=number):
+                row = self.plan.records[f'oteryn:item.tibia.i{number}']
+                self.assertTrue(row['admission']['materializable'])
+                self.assertEqual(
+                    row['semantics']['container'],
+                    source.K({'capacity': source.K(10)}) if target else source.NA,
+                )
+                temporal = row['semantics']['temporal']['value']
+                self.assertEqual(temporal['duration'], source.K(duration))
+                self.assertEqual(
+                    temporal['decay_target'],
+                    source.K({'key': f'oteryn:item.tibia.i{target}', 'revision': 'definition-r1'})
+                    if target else source.NA,
+                )
 
     def test_queen_corpse_keeps_source40_within_the_corpse48_bound(self):
         # CORPSE48 (owner 2026-11-17): corpses up to 48 keep their source capacity.

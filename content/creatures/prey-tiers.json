@@ -6238,8 +6238,8 @@
       "minimum_level": 1,
       "nonexclusive_count": 90,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 80,
-      "runtime_unsettleable_count": 72,
+      "runtime_available_count": 75,
+      "runtime_unsettleable_count": 67,
       "tier": 1
     },
     {
@@ -6259,8 +6259,8 @@
       "minimum_level": 50,
       "nonexclusive_count": 162,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 131,
-      "runtime_unsettleable_count": 127,
+      "runtime_available_count": 126,
+      "runtime_unsettleable_count": 121,
       "tier": 2
     },
     {
@@ -6280,8 +6280,8 @@
       "minimum_level": 100,
       "nonexclusive_count": 188,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 162,
-      "runtime_unsettleable_count": 162,
+      "runtime_available_count": 157,
+      "runtime_unsettleable_count": 157,
       "tier": 3
     },
     {
@@ -6301,8 +6301,8 @@
       "minimum_level": 250,
       "nonexclusive_count": 154,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 130,
-      "runtime_unsettleable_count": 130,
+      "runtime_available_count": 128,
+      "runtime_unsettleable_count": 128,
       "tier": 4
     },
     {

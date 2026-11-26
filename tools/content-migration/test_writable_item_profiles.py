@@ -6,6 +6,7 @@ import unittest
 
 import register_spell_families as registration
 import writable_item_profiles as writing
+from quest_callback_profiles import EXPLORER_TRACING_SHEETS
 
 
 class WritableProfilesTests(unittest.TestCase):
@@ -101,15 +102,18 @@ class WritableProfilesTests(unittest.TestCase):
                 self.assertEqual(text["write_once_target"], {"state": "UNKNOWN"})
                 self.assertEqual(text["max_text_length"], writing.known(profile["max_characters"]))
         sources = writing.reading.item_rows(writing.ROOT)
+        independently_admitted = {
+            "oteryn:item.tibia.i3505", "oteryn:item.tibia.i3507",
+            "oteryn:item.tibia.i6387", "oteryn:item.tibia.i9204",
+        } | EXPLORER_TRACING_SHEETS
         for profile in self.profiles["records"]:
             key = profile["item"]["key"]
             if key in owned:
                 self.assertEqual(owned[key]["admission"]["materializable"], sources[key]["materializable"])
             qualification = profile["qualification"]
             carried = qualification in {"CRYSTAL_CARRIED_REWRITE", "CRYSTAL_CARRIED_WRITE_ONCE"}
-            # MAIL E09 and the card/poem owners already admit these Items.
-            if carried or key in {"oteryn:item.tibia.i3505", "oteryn:item.tibia.i3507",
-                                  "oteryn:item.tibia.i6387", "oteryn:item.tibia.i9204"}:
+            # Mail, cards, poems and the Explorer quest already admit these Items.
+            if carried or key in independently_admitted:
                 self.assertEqual(rows[key]["admission"], {
                     "materializable": True, "stack_class": "NonStackable",
                     "legal_destinations": ["CharacterInventory", "Ground"],

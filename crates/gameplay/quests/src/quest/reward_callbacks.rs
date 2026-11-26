@@ -3398,7 +3398,18 @@ mod tests {
         let programmes = parse(include_str!(
             "../../../../../content/quests/npc-callbacks/questpc7-programmes.json"
         ))?;
-        assert_eq!(programmes.len(), 168);
+        let wayland_exchanges = BTreeSet::from([
+            "oteryn:quest-reward/questpc7-illuminated-basic",
+            "oteryn:quest-reward/questpc7-illuminated-halo",
+            "oteryn:quest-reward/questpc7-illuminated-insignia",
+        ]);
+        let actual_wayland_exchanges = programmes
+            .iter()
+            .filter(|callback| wayland_exchanges.contains(callback.key.as_str()))
+            .map(|callback| callback.key.as_str())
+            .collect::<BTreeSet<_>>();
+        assert_eq!(actual_wayland_exchanges, wayland_exchanges);
+        assert_eq!(programmes.len() - actual_wayland_exchanges.len(), 168);
         let published = published_markers::keys()?;
         for callback in &programmes {
             assert!(callback.key.starts_with("oteryn:quest-reward/questpc7-"));

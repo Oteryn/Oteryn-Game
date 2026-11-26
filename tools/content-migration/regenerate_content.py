@@ -92,6 +92,7 @@ EXTRA_DERIVED = (
     "tools/world-bundle-compiler/scoped-spawn-ground.json",
     "tools/content-schema/world-authoring/samples/world-base-capture-v1.json",
     "tools/content-schema/native-gameplay/prey-model-results.json",
+    "tools/content-schema/native-gameplay/questpc8-equipment-custody-census.json",
     "tools/content-schema/quest-authoring/samples/binding_packets/index.json",
     "tools/content-schema/quest-authoring/samples/binding_packets/npc/authored68-npc-links.json",
     "tools/content-schema/quest-authoring/samples/binding_packets/npc/quest-npc-dialogue-links.json",
@@ -1134,13 +1135,6 @@ def main() -> int:
     run(
         [
             "python3",
-            "tools/content-schema/store-authoring/build_runtime_catalogue.py",
-            "--refresh-owner-offers",
-        ]
-    )
-    run(
-        [
-            "python3",
             "tools/content-schema/imbuement-authoring/imbuement_authoring.py",
             "build",
         ]
@@ -1230,6 +1224,14 @@ def main() -> int:
     # Claims above may add complete native container recipes. Rebuild their
     # Item closure only after those final claims exist, before census and pins.
     run(["python3", "tools/content-migration/register_spell_families.py"])
+    # Store admission checks the regenerated native Item profiles.
+    run(
+        [
+            "python3",
+            "tools/content-schema/store-authoring/build_runtime_catalogue.py",
+            "--refresh-owner-offers",
+        ]
+    )
     # W01 binds the same final native root as the complete callback witness.
     # Requalify both source bodies before their downstream consumers.
     run(["python3", native + "build_native_callback_witness.py"])

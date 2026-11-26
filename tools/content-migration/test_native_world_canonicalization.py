@@ -407,6 +407,20 @@ class NativeWorldCompletion(unittest.TestCase):
     def test_normal_regeneration_completes_natively_before_refreshing_pins(self):
         world = self.repo / "content/world"
         shutil.copytree(self.world, world)
+        index = self.repo / "content/items/index.json"
+        shard = "content/items/definitions/items-00000-00000.json"
+        self.write(index, encode({
+            "schema": "OTERYN_FAMILY_INDEX/v1", "family": "Item", "record_count": 0,
+        }))
+        self.write(self.repo / shard, encode({
+            "schema": "OTERYN_ITEM_AUTHORING_SHARD/v1",
+            "family": "Item",
+            "source_legacy_role": "content/world/definitions/reference.json",
+            "shard": {"index": 0, "start": 0, "end": 0, "count": 1},
+            "records": [{"definition": {"kind": "Item", "identity": {
+                "family": "Item", "key": "oteryn:item.fixture", "revision": "fixture-r1",
+            }}}],
+        }))
         producer = self.repo / "materialize_content_world_project_v2"
         self.write(producer, b"fixture executable")
         canonical_outputs = []
@@ -431,6 +445,9 @@ class NativeWorldCompletion(unittest.TestCase):
             canonical_outputs.append(output)
 
         def materialize():
+            inventory = json.loads(index.read_bytes())
+            self.assertEqual(inventory["record_count"], 1)
+            self.assertEqual(inventory["shards"], [shard])
             canonical.complete_world_project(
                 self.repo, world, include_world_successors=True,
                 materializer=producer,

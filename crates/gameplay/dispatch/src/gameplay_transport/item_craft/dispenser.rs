@@ -359,12 +359,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if receipt.disposition == UseDisposition::Committed {
             let dispenser = &receipt.effects["dispenser"];
             let remaining = dispenser["after"].as_u64();
-            if remaining == Some(0) && dispenser["source_kind"].as_i64() == Some(3) {
-                self.states.loop_ground.invalidate();
-                super::super::loop_move::reconcile_cask_collision(self)
-                    .await
-                    .ok_or(())?;
-            }
             #[cfg(test)]
             if receipt.fresh
                 && DISPENSER_ACK_BARRIER
@@ -372,6 +366,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .is_ok()
             {
                 std::future::pending::<()>().await;
+            }
+            if remaining == Some(0) && dispenser["source_kind"].as_i64() == Some(3) {
+                self.states.loop_ground.invalidate();
+                super::super::loop_move::reconcile_cask_collision(self)
+                    .await
+                    .ok_or(())?;
             }
             if receipt.fresh
                 && let Some(charges) = remaining

@@ -71,16 +71,17 @@ class MonsterReferenceLevelTests(unittest.TestCase):
         # Record orchestration without executing any generators in this checkout.
         with (
             patch("sys.argv", ["regenerate_content.py", "--resolve", "--skip-checks", "--no-stage"]),
-            patch.object(regeneration, "resolve_conflicts", return_value=[]),
+            patch.object(regeneration, "resolve_conflicts", return_value=[]) as resolve,
             patch.multiple(
                 regeneration,
+                bootstrap_item_index=DEFAULT,
                 refresh_quest_callback_proof=DEFAULT,
                 materialize_world=DEFAULT,
-                canonicalize_world=DEFAULT,
                 refresh_source_cohort_extent=DEFAULT,
                 repin_rust_inventory=DEFAULT,
                 refresh_world_metadata=DEFAULT,
                 refresh_quest_donor_capture=DEFAULT,
+                refresh_nomads_window=DEFAULT,
             ),
             patch("questpc7_thaian_authoring.install"),
             patch("buddel_travel.install_buddel"),
@@ -90,6 +91,7 @@ class MonsterReferenceLevelTests(unittest.TestCase):
             patch.object(regeneration, "run", side_effect=commands.append),
         ):
             self.assertEqual(regeneration.main(), 0)
+        resolve.assert_not_called()
         self.assertTrue(any("pin-refresh" in command for command in commands))
         self.assertFalse(any(command[0] == "git" for command in commands))
 

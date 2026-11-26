@@ -47,7 +47,26 @@ class QuestPc7QuestRewards(unittest.TestCase):
             self.assertEqual((offer["topic"], offer["next_topic"]), (0, 0))
             self.assertEqual(len(offer["storage"]), 1)
             self.assertTrue(offer["storage"][0]["preserve"])
-            self.assertFalse({"give", "take", "fee", "outfit", "transition"} & offer.keys())
+            self.assertFalse(
+                {"give", "take", "fee", "outfit", "transition"} & offer.keys()
+            )
+
+    def test_wayland_outfit_uses_the_full_menu_before_and_after_intro(self):
+        npc = "oteryn:npc.wayland_smythers"
+        intro = next(
+            row for row in self.callbacks["callbacks"]
+            if row["key"] == "oteryn:quest-reward/questpc7-illuminated-intro"
+        )
+        self.assertIn("outfit", intro["keywords"])
+        for option in ("basic", "insignia", "halo"):
+            self.assertIn(option, " ".join(intro["reply"]))
+        offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])["offers"]
+        menu = next(row for row in offers if row["npc"] == npc and row["keywords"] == ["outfit"])
+        self.assertEqual(menu["reply"], intro["reply"])
+        self.assertEqual((menu["topic"], menu["next_topic"]), (0, 0))
+        self.assertEqual(menu["storage"], [{
+            **intro["storage"][0], "minimum": 0, "maximum": 3, "preserve": True,
+        }])
 
     def test_formal_exhibition_requires_current_premium_and_consumed_button(self):
         worlds = [
@@ -550,7 +569,7 @@ class QuestPc7QuestRewards(unittest.TestCase):
             {
                 "min_level": 1000,
                 "premium": True,
-                "completed_quests": ["oteryn:quest.authored.make_believe_quest"],
+                "completed_quests": [],
             },
         )
         for mutation in ("level", "duplicate", "foreign"):
@@ -563,7 +582,9 @@ class QuestPc7QuestRewards(unittest.TestCase):
             if mutation == "level":
                 callback["requirements"]["min_level"] = 1000001
             elif mutation == "duplicate":
-                callback["requirements"]["completed_quests"] *= 2
+                callback["requirements"]["completed_quests"] = [
+                    "oteryn:quest.authored.make_believe_quest"
+                ] * 2
             else:
                 callback["requirements"]["completed_quests"] = ["unscoped:parent"]
             with self.assertRaises((ValueError, ValidationError)):
@@ -628,7 +649,13 @@ class QuestPc7QuestRewards(unittest.TestCase):
         item_aliases = [
             m for m in document["grant_mappings"] if m["grant_key"].startswith("oteryn:item-grant.")
         ]
-        self.assertEqual(len(item_aliases), 202)
+        native = json.loads(
+            self.outputs["tools/content-schema/native-gameplay/item-cosmetic-actions-native.json"]
+        )
+        self.assertEqual(
+            sorted(row["grant_key"] for row in item_aliases),
+            sorted(row["key"] for row in native["grants"]),
+        )
         aliases = [m for m in item_aliases if m["target"].get("outfit_key") in targets]
         self.assertEqual(len(aliases), 9)
         self.assertEqual({m["target"]["outfit_key"] for m in aliases}, targets)
@@ -675,6 +702,101 @@ class QuestPc7QuestRewards(unittest.TestCase):
         callback["requirements"]["owned_cosmetics"][0]["addons"] = 4
         with self.assertRaises((ValueError, ValidationError)):
             q.validate_callbacks(bad)
+
+
+class WaylandProgramme(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        path = q.ROOT / "content/quests/npc-callbacks/questpc7-programmes.json"
+        cls.callbacks = json.loads(path.read_text())
+
+    def test_wayland_exchanges_follow_the_authored_order(self):
+        exchanges = {
+            row["key"].rsplit("-", 1)[-1]: row
+            for row in self.callbacks["callbacks"]
+            if row["npc"] == "oteryn:npc.wayland_smythers" and row["take"]
+        }
+        for stage, name in enumerate(("basic", "insignia", "halo")):
+            with self.subTest(exchange=name):
+                exchange = exchanges[name]
+                self.assertEqual(
+                    exchange["storage"],
+                    [
+                        {
+                            "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+                            "minimum": 0,
+                            "maximum": stage,
+                            "set": stage + 1,
+                        }
+                    ],
+                )
+                self.assertEqual(exchange.get("completes", False), name == "halo")
+
+    def test_wayland_commission_can_continue_with_account_owned_parts(self):
+        offers = json.loads(
+            (q.ROOT / "content/quests/shared-reward-offers.json").read_text()
+        )["offers"]
+        npc = "oteryn:npc.wayland_smythers"
+        intro = next(
+            row
+            for row in self.callbacks["callbacks"]
+            if row["npc"] == npc and not row["take"]
+        )
+        start = intro["storage"][0]["set"]
+        for name in ("insignia", "halo"):
+            with self.subTest(exchange=name):
+                confirm = next(
+                    row
+                    for row in self.callbacks["callbacks"]
+                    if row["npc"] == npc and row["key"].endswith("-" + name)
+                )
+                selection = next(
+                    row
+                    for row in offers
+                    if row["npc"] == npc and row["keywords"] == [name]
+                )
+                self.assertTrue(confirm["requires_outfits"])
+                self.assertTrue(confirm["forbids_addons"])
+                if name == "halo":
+                    self.assertTrue(confirm["requires_addons"])
+                for row in (selection, confirm):
+                    stage = row["storage"][0]
+                    self.assertLessEqual(stage["minimum"], start)
+                    self.assertLessEqual(start, stage["maximum"])
+
+    def test_wayland_selection_only_opens_the_confirmation_topic(self):
+        offers = json.loads(
+            (q.ROOT / "content/quests/shared-reward-offers.json").read_text()
+        )["offers"]
+        npc = "oteryn:npc.wayland_smythers"
+        for name in ("basic", "insignia", "halo"):
+            with self.subTest(exchange=name):
+                exchange = next(
+                    row
+                    for row in self.callbacks["callbacks"]
+                    if row["npc"] == npc and row["key"].endswith("-" + name)
+                )
+                self.assertEqual(exchange["keywords"], ["yes"])
+                self.assertNotEqual(exchange["topic"], 0)
+                self.assertEqual(exchange["next_topic"], 0)
+                self.assertTrue(
+                    any(
+                        row["npc"] == npc
+                        and row["keywords"] == [name]
+                        and row["topic"] == 0
+                        and row["next_topic"] == exchange["topic"]
+                        for row in offers
+                    )
+                )
+                self.assertTrue(
+                    any(
+                        row["npc"] == npc
+                        and row["keywords"] == ["no"]
+                        and row["topic"] == exchange["topic"]
+                        and row["next_topic"] == 0
+                        for row in offers
+                    )
+                )
 
 
 class GrimvaleProgramme(unittest.TestCase):

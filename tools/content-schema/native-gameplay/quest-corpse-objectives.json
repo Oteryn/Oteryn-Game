@@ -19,7 +19,9 @@
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/acolyte_of_the_cult.lua:32,97",
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/adept_of_the_cult.lua:32,98",
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/enlightened_of_the_cult.lua:32,103",
-    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/vermins/cockroach.lua:17-41"
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/vermins/cockroach.lua:17-41",
+    "imports/canary/items-xml/items.xml#16388-16393",
+    "imports/canary/items-xml/items.xml#12686-12703"
   ],
   "capacity_projections": [
     {
@@ -247,9 +249,11 @@
     "oteryn:creature.bonebeast": 6030,
     "oteryn:creature.bride_of_night": 18210,
     "oteryn:creature.crazed_beggar": 18070,
+    "oteryn:creature.crazed_dwarf": 6007,
     "oteryn:creature.crystal_spider": 7344,
     "oteryn:creature.dark_monk": 18281,
     "oteryn:creature.dipthrah": 6031,
+    "oteryn:creature.dwarf": 6007,
     "oteryn:creature.dworc_voodoomaster": 6055,
     "oteryn:creature.enlightened_of_the_cult": 18110,
     "oteryn:creature.execowtioner": 21004,

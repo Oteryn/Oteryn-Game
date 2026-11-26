@@ -1586,7 +1586,7 @@ fn scenario_case(
             new_frontier_journey_fixtures::NAME => Some(8),
             super::super::classic_quest_parity_fixtures::NPC_CASE => Some(8),
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
-            "questpc7-eligibility-high" => Some(1000),
+            "questpc7-eligibility-high" | "questpc7-eligibility-outfit-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
             "questpc7-ferumbras" | "qengine-rewards-heart-story" => Some(150),
             "questpc7-grave" => Some(250),

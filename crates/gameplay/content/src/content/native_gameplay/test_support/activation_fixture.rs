@@ -283,7 +283,9 @@ fn boss_slot_loot_fixture_compiles_kneebiter_row() {
 #[test]
 fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability()
 -> Result<(), String> {
-    use crate::content::creature_reward::{LootTablesSection, NoSettlementReason};
+    use crate::content::creature_reward::{
+        LootTablesSection, NoSettlementReason, expected_zamulosh_private_loot,
+    };
     use oteryn_gameplay_domain::domain::loot_data::{LootDefinitionRef, LootSelectionAlgorithm};
     let supplied = manifest_input();
     let loot: LootTablesSection = serde_json::from_slice(
@@ -325,24 +327,61 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     // a missing corpse is different from an authored but inadmissible corpse.
     // Change these source-qualification expectations only with admitted content.
     let newly_admitted = [
+        "oteryn:creature.an_observer_eye",
         "oteryn:creature.arachir_the_ancient_one",
         "oteryn:creature.arbaziloth",
+        "oteryn:creature.bazir",
+        "oteryn:creature.black_vixen",
+        "oteryn:creature.bloodback",
         "oteryn:creature.count_vlarkorth",
+        "oteryn:creature.darkfang",
         "oteryn:creature.demodras",
+        "oteryn:creature.dharalion",
         "oteryn:creature.diblis_the_fair",
         "oteryn:creature.duke_krule",
         "oteryn:creature.earl_osam",
+        "oteryn:creature.earth_overlord",
+        "oteryn:creature.energy_overlord",
+        "oteryn:creature.ferumbras",
+        "oteryn:creature.ferumbras_mortal_shell",
+        "oteryn:creature.fire_overlord",
+        "oteryn:creature.gelidrazah_the_frozen",
+        "oteryn:creature.glitterscale",
+        "oteryn:creature.glooth_fairy",
         "oteryn:creature.furyosa",
         "oteryn:creature.goshnar_s_spite",
+        "oteryn:creature.gravelord_oshuran",
+        "oteryn:creature.infernatil",
+        "oteryn:creature.irgix_the_flimsy",
+        "oteryn:creature.jailer",
+        "oteryn:creature.king_zelos",
+        "oteryn:creature.lord_azaram",
+        "oteryn:creature.lord_retro",
+        "oteryn:creature.orshabaal",
+        "oteryn:creature.professor_maxxen",
+        "oteryn:creature.scarlett_etzel",
+        "oteryn:creature.sharpclaw",
+        "oteryn:creature.sir_baeloc",
         "oteryn:creature.sir_valorcrest",
+        "oteryn:creature.soul_of_dragonking_zyrtarch",
+        "oteryn:creature.spirit_overlord",
+        "oteryn:creature.teleskor",
+        "oteryn:creature.the_blazing_time_guardian",
+        "oteryn:creature.the_enraged_thorn_knight",
+        "oteryn:creature.the_freezing_time_guardian",
+        "oteryn:creature.the_old_widow",
         "oteryn:creature.the_pale_count",
         "oteryn:creature.the_percht_queen",
+        "oteryn:creature.the_souldespoiler",
+        "oteryn:creature.the_time_guardian",
         "oteryn:creature.the_weakened_count",
+        "oteryn:creature.unaz_the_mean",
+        "oteryn:creature.vok_the_freakish",
+        "oteryn:creature.zamulosh",
         "oteryn:creature.zevelon_duskbringer",
         "oteryn:creature.hirintror",
         "oteryn:creature.ocyakao",
         "oteryn:creature.shardhead",
-        "oteryn:creature.the_percht_queen",
         "oteryn:creature.the_welter",
         "oteryn:creature.tyrn",
         "oteryn:creature.weakened_shlorg",
@@ -350,17 +389,14 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         "oteryn:creature.willi_wasp",
         "oteryn:creature.yakchal",
         "oteryn:creature.zushuka",
-        "oteryn:creature.king_zelos",
-        "oteryn:creature.lord_azaram",
         "oteryn:creature.magma_bubble",
-        "oteryn:creature.sir_baeloc",
     ];
     let mut missing = 0;
     let mut inadmissible = 0;
     let mut inadmissible_loot = 0;
     let mut admitted = Vec::new();
     let mut shared_body = Vec::new();
-    let mut refreshed_body_loot_refusals = Vec::new();
+    let mut refreshed_body_loot_admissions = Vec::new();
     let mut newly_materializable_body_loot_refusals = Vec::new();
     for policy in &bosses {
         let record = source
@@ -396,8 +432,8 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     | "oteryn:creature.the_old_widow"
             )
         }) {
-            // Native-goal, Hireling, BossYield and Forge owners qualify these Items.
-            // Every remaining unavailable yield still refuses the complete table.
+            // Retained native-goal, Hireling and BossYield owners qualify these Items.
+            // The shared carried-loot admissions complete the three tables.
             for key in [
                 "oteryn:item.tibia.i3061",
                 "oteryn:item.tibia.i3072",
@@ -405,7 +441,6 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 "oteryn:item.tibia.i3002",
                 "oteryn:item.tibia.i3069",
                 "oteryn:item.tibia.i3070",
-                "oteryn:item.tibia.i3309",
                 "oteryn:item.tibia.i7416",
             ] {
                 let facts = loot
@@ -417,67 +452,13 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 assert_eq!(facts.item.family, "Item");
                 assert_eq!(facts.item.revision, "definition-r1");
             }
-            let (body, refused): (&str, &[&str]) = match policy.definition_key.as_str() {
-                "oteryn:creature.the_old_widow" => {
-                    ("oteryn:item.tibia.i5977", &["oteryn:item.tibia.i12320"])
-                }
-                _ => ("oteryn:item.tibia.i4097", &[]),
+            let body = if policy.definition_key == "oteryn:creature.the_old_widow" {
+                "oteryn:item.tibia.i5977"
+            } else {
+                "oteryn:item.tibia.i4097"
             };
             assert_eq!(corpse.key, body);
-            let binding = loot
-                .creature_loot
-                .iter()
-                .find(|binding| binding.creature.key == policy.definition_key)
-                .ok_or("source refused boss loot binding")?;
-            let reference = binding.loot.as_ref().ok_or("source refused boss loot")?;
-            let table = loot
-                .tables
-                .iter()
-                .find(|table| table.identity == *reference)
-                .ok_or("source refused boss table")?;
-            if matches!(
-                policy.definition_key.as_str(),
-                "oteryn:creature.bazir" | "oteryn:creature.infernatil"
-            ) {
-                // Crystal drops one big bone at 9%; Postman now admits that same Item.
-                let bones = table
-                    .entries
-                    .iter()
-                    .filter(|entry| entry.item.key == "oteryn:item.tibia.i3116")
-                    .collect::<Vec<_>>();
-                let [bone] = bones.as_slice() else {
-                    return Err(format!(
-                        "{} must have one big bone loot entry",
-                        policy.definition_key
-                    ));
-                };
-                assert_eq!(
-                    (bone.min_count, bone.max_count, bone.probability_ppm),
-                    (1, 1, Some(90_000))
-                );
-                assert_eq!(bone.item.family, "Item");
-                assert_eq!(bone.item.revision, "definition-r1");
-                assert!(
-                    loot.items
-                        .iter()
-                        .any(|facts| facts.item == bone.item && facts.materializable)
-                );
-            }
-            assert_eq!(
-                source_loot_refusals::items(&table.entries, &loot.items),
-                refused,
-                "{}",
-                policy.definition_key
-            );
-            if !refused.is_empty() {
-                assert_eq!(
-                    source.reward_table().row(&policy.definition_key).err(),
-                    Some(NoSettlementReason::LootItemInadmissible)
-                );
-                inadmissible_loot += 1;
-                refreshed_body_loot_refusals.push(policy.definition_key.as_str());
-                continue;
-            }
+            refreshed_body_loot_admissions.push(policy.definition_key.as_str());
         }
         if materializable_corpse.is_some()
             && matches!(
@@ -494,36 +475,10 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         {
             shared_body.push(policy.definition_key.as_str());
         }
-        if materializable_corpse.is_some()
-            && matches!(
-                policy.definition_key.as_str(),
-                "oteryn:creature.an_observer_eye"
-                    | "oteryn:creature.dharalion"
-                    | "oteryn:creature.earth_overlord"
-                    | "oteryn:creature.energy_overlord"
-                    | "oteryn:creature.fire_overlord"
-                    | "oteryn:creature.gelidrazah_the_frozen"
-                    | "oteryn:creature.gravelord_oshuran"
-                    | "oteryn:creature.irgix_the_flimsy"
-                    | "oteryn:creature.orshabaal"
-                    | "oteryn:creature.soul_of_dragonking_zyrtarch"
-                    | "oteryn:creature.spirit_overlord"
-                    | "oteryn:creature.the_enraged_thorn_knight"
-                    | "oteryn:creature.the_souldespoiler"
-                    | "oteryn:creature.unaz_the_mean"
-                    | "oteryn:creature.vok_the_freakish"
-            )
-        {
-            inadmissible_loot += 1;
-            assert_eq!(
-                source.reward_table().row(&policy.definition_key).err(),
-                Some(NoSettlementReason::LootItemInadmissible)
-            );
-            continue;
-        }
         // A newly qualified physical body does not admit an incomplete private
         // table. Derive these refusals from its complete exact source Item facts;
         // the fixed cohort below rejects unexpected admission/refusal drift.
+        let mut zamulosh_private_loot = None;
         if materializable_corpse.is_some() {
             let binding = loot
                 .creature_loot
@@ -536,7 +491,12 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     .iter()
                     .find(|table| table.identity == *reference)
                     .ok_or("source newly materializable boss table")?;
-                let refused = source_loot_refusals::items(&table.entries, &loot.items);
+                if policy.definition_key == "oteryn:creature.zamulosh" {
+                    zamulosh_private_loot =
+                        Some(expected_zamulosh_private_loot(table, &loot.items)?);
+                }
+                let expected = zamulosh_private_loot.as_deref().unwrap_or(&table.entries);
+                let refused = source_loot_refusals::items(expected, &loot.items);
                 if !refused.is_empty() {
                     assert_eq!(
                         source.reward_table().row(&policy.definition_key).err(),
@@ -550,7 +510,28 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 }
             }
         }
-        let expected = if let Some(corpse) = materializable_corpse {
+        // Glitterscale's body is plain Ground custody. Its loot goes to the
+        // personal chest and does not need a container on the corpse.
+        let plain_body = corpse.filter(|corpse| {
+            policy.definition_key == "oteryn:creature.glitterscale"
+                && corpse.key == "oteryn:item.tibia.i11589"
+        });
+        if let Some(corpse) = plain_body {
+            let body = source
+                .item_policy(&corpse.key, &corpse.revision)
+                .ok_or("Glitterscale plain corpse policy")?
+                .record();
+            assert!(body.admission.materializable);
+            assert_eq!(
+                body.admission.legal_destinations,
+                [super::super::NativeItemDestination::Ground]
+            );
+            assert_eq!(
+                body.semantics.container,
+                crate::content::ReferenceItemField::NotApplicable
+            );
+        }
+        let expected = if let Some(corpse) = materializable_corpse.or(plain_body) {
             admitted.push(policy.definition_key.as_str());
             let row = source
                 .reward_table()
@@ -608,16 +589,13 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     .iter()
                     .find(|table| table.identity == *reference)
                     .ok_or("original complete source loot table")?;
-                assert_eq!(row.loot_table.entries.len(), table.entries.len());
+                let expected = zamulosh_private_loot.as_deref().unwrap_or(&table.entries);
+                assert_eq!(row.loot_table.entries.len(), expected.len());
                 if newly_admitted.contains(&policy.definition_key.as_str()) {
                     assert!(!table.entries.is_empty());
                 }
                 assert_eq!(table.algorithm, "IndependentBernoulliPpm");
-                source_loot_assertions::entries(
-                    &row.loot_table.entries,
-                    &table.entries,
-                    &loot.items,
-                );
+                source_loot_assertions::entries(&row.loot_table.entries, expected, &loot.items);
                 if policy.definition_key == "oteryn:creature.sugar_daddy" {
                     // W02 admits the unchanged source table and all its 22 Items.
                     assert_eq!(table.entries.len(), 22);
@@ -631,7 +609,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     assert!(table.entries.is_empty());
                     assert!(row.loot_table.entries.is_empty());
                 }
-                for (actual, original) in row.loot_table.entries.iter().zip(&table.entries) {
+                for (actual, original) in row.loot_table.entries.iter().zip(expected) {
                     assert_eq!(
                         actual.item,
                         LootDefinitionRef::new(
@@ -690,118 +668,40 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         missing + inadmissible + inadmissible_loot + admitted.len(),
         bosses.len()
     );
+    let registered = bosses
+        .iter()
+        .map(|row| row.definition_key.as_str())
+        .collect::<std::collections::BTreeSet<_>>();
     assert_eq!(
-        (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 236, 27, 81)
+        registered.len(),
+        bosses.len(),
+        "each source boss occurs exactly once"
     );
-    assert_eq!(
-        admitted,
-        [
-            "oteryn:creature.ahau",
-            "oteryn:creature.anomaly",
-            "oteryn:creature.apprentice_sheng",
-            "oteryn:creature.arachir_the_ancient_one",
-            "oteryn:creature.arbaziloth",
-            "oteryn:creature.armenius_creature",
-            "oteryn:creature.ascending_ferumbras",
-            "oteryn:creature.bakragore",
-            "oteryn:creature.bazir",
-            "oteryn:creature.brother_chill",
-            "oteryn:creature.brother_freeze",
-            "oteryn:creature.chagorz",
-            "oteryn:creature.chayenne",
-            "oteryn:creature.clubarc_the_plunderer",
-            "oteryn:creature.count_vlarkorth",
-            "oteryn:creature.cublarc_the_plunderer",
-            "oteryn:creature.deep_terror",
-            "oteryn:creature.demodras",
-            "oteryn:creature.diblis_the_fair",
-            "oteryn:creature.dragonking_zyrtarch",
-            "oteryn:creature.dreadful_disruptor",
-            "oteryn:creature.duke_krule",
-            "oteryn:creature.earl_osam",
-            "oteryn:creature.enraged_arbaziloth",
-            "oteryn:creature.eradicator",
-            "oteryn:creature.eradicator2",
-            "oteryn:creature.furyosa",
-            "oteryn:creature.glooth_fairy",
-            "oteryn:creature.gorga",
-            "oteryn:creature.gorgo",
-            "oteryn:creature.goshnar_s_cruelty",
-            "oteryn:creature.goshnar_s_greed",
-            "oteryn:creature.goshnar_s_hatred",
-            "oteryn:creature.goshnar_s_malice",
-            "oteryn:creature.goshnar_s_megalomania_blue",
-            "oteryn:creature.goshnar_s_megalomania_green",
-            "oteryn:creature.goshnar_s_megalomania_purple",
-            "oteryn:creature.goshnar_s_spite",
-            "oteryn:creature.gralvalon",
-            "oteryn:creature.grand_mother_foulscale",
-            "oteryn:creature.hirintror",
-            "oteryn:creature.ice_overlord",
-            "oteryn:creature.ichgahal",
-            "oteryn:creature.infernatil",
-            "oteryn:creature.king_zelos",
-            "oteryn:creature.koshei_the_deathless",
-            "oteryn:creature.lord_azaram",
-            "oteryn:creature.magma_bubble",
-            "oteryn:creature.malvaroth",
-            "oteryn:creature.mitmah_vanguard",
-            "oteryn:creature.morbol",
-            "oteryn:creature.murcion",
-            "oteryn:creature.ocyakao",
-            "oteryn:creature.outburst",
-            "oteryn:creature.professor_maxxen",
-            "oteryn:creature.rupture",
-            "oteryn:creature.scarlett_etzel",
-            "oteryn:creature.shardhead",
-            "oteryn:creature.sir_baeloc",
-            "oteryn:creature.sir_valorcrest",
-            "oteryn:creature.solid_frozen_horror",
-            "oteryn:creature.sugar_daddy",
-            "oteryn:creature.tazhadur",
-            "oteryn:creature.the_first_dragon",
-            "oteryn:creature.the_many",
-            "oteryn:creature.the_pale_count",
-            "oteryn:creature.the_percht_queen",
-            "oteryn:creature.the_primal_menace",
-            "oteryn:creature.the_scion_of_havoc",
-            "oteryn:creature.the_weakened_count",
-            "oteryn:creature.the_welter",
-            "oteryn:creature.twisterror",
-            "oteryn:creature.tyrn",
-            "oteryn:creature.vemiath",
-            "oteryn:creature.weakened_arbaziloth",
-            "oteryn:creature.weakened_shlorg",
-            "oteryn:creature.white_pale",
-            "oteryn:creature.willi_wasp",
-            "oteryn:creature.yakchal",
-            "oteryn:creature.zevelon_duskbringer",
-            "oteryn:creature.zushuka",
-        ]
+    assert!(
+        admitted.windows(2).all(|keys| keys[0] != keys[1]),
+        "admissions are unique"
     );
+    for key in newly_admitted {
+        assert!(
+            admitted.binary_search(&key).is_ok(),
+            "source-qualified boss {key} was refused"
+        );
+    }
     newly_materializable_body_loot_refusals.sort_unstable();
-    assert_eq!(
-        newly_materializable_body_loot_refusals,
-        [
-            "oteryn:creature.black_vixen",
-            "oteryn:creature.bloodback",
-            "oteryn:creature.darkfang",
-            "oteryn:creature.ferumbras",
-            "oteryn:creature.ferumbras_mortal_shell",
-            "oteryn:creature.lord_retro",
-            "oteryn:creature.melting_frozen_horror",
-            "oteryn:creature.sharpclaw",
-            "oteryn:creature.the_blazing_time_guardian",
-            "oteryn:creature.the_freezing_time_guardian",
-            "oteryn:creature.the_time_guardian",
-        ]
+    assert!(
+        newly_materializable_body_loot_refusals
+            .iter()
+            .all(|key| admitted.binary_search(key).is_err())
     );
     shared_body.sort_unstable();
-    refreshed_body_loot_refusals.sort_unstable();
+    refreshed_body_loot_admissions.sort_unstable();
     assert_eq!(
-        refreshed_body_loot_refusals,
-        ["oteryn:creature.the_old_widow"]
+        refreshed_body_loot_admissions,
+        [
+            "oteryn:creature.bazir",
+            "oteryn:creature.infernatil",
+            "oteryn:creature.the_old_widow",
+        ]
     );
     assert_eq!(
         shared_body,

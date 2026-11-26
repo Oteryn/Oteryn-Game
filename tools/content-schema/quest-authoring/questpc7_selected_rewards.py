@@ -378,7 +378,7 @@ def append_friends(root, callbacks, offers, inputs, pin):
     )
 
 
-def append_eligibility_starts(root, callbacks, inputs, pin):
+def append_eligibility_starts(root, callbacks, offers, inputs, pin):
     """Own quest starts; subsequent native routes follow the shared eligibility owner."""
     wanted = [
         ("oteryn:quest.hunter_outfits_quest", "hunter", "elane", "hunter commission"),
@@ -401,9 +401,16 @@ def append_eligibility_starts(root, callbacks, inputs, pin):
                     raw,
                     definition,
                 )
+    wayland_menu = [
+        "If you have collected enough radiant attire scraps, I can arrange the creation of an Illuminated Warrior for you.",
+        "The full outfit requires 2500 scraps. Each addon requires 1250 more. "
+        "Are you interested in the {basic} outfit, the {insignia}, or the {halo} helmet?",
+    ]
     for quest, slug, npc, words in wanted:
         path, index, raw, definition = definitions[quest]
-        recipe = definition.get("recipe") or definition["oteryn_recipe"]["payload"]["recipe"]
+        recipe = (
+            definition.get("recipe") or definition["oteryn_recipe"]["payload"]["recipe"]
+        )
         requirements = recipe["requirements"]
         source_path = f"data-global/npc/{npc}.lua"
         source_pin = (
@@ -411,12 +418,15 @@ def append_eligibility_starts(root, callbacks, inputs, pin):
             if npc == "wayland_smythers"
             else f"crystal:{pin}"
         )
+        # Crystal 201189f8, wayland_smythers.lua:112-115 offers the outfit
+        # independently of Wayland's Make Believe dialogue.
+        keywords = [words, "outfit"] if slug == "illuminated" else [words]
         callbacks.append(
             {
                 "key": f"oteryn:quest-reward/questpc7-{slug}-intro",
                 "quest": quest,
                 "npc": "oteryn:npc." + npc,
-                "keywords": [words],
+                "keywords": keywords,
                 "topic": 0,
                 "next_topic": 0,
                 "storage": [
@@ -430,25 +440,101 @@ def append_eligibility_starts(root, callbacks, inputs, pin):
                 "requirements": {
                     "min_level": requirements["min_level"],
                     "premium": requirements["premium"],
-                    "completed_quests": ["oteryn:quest.authored.make_believe_quest"]
-                    if slug == "illuminated"
-                    else [],
+                    "completed_quests": [],
                 },
                 "take": [],
                 "give": None,
                 "outfit": None,
                 "achievement": None,
-                "reply": [
-                    "Bring back my crossbow from the cultist cache."
+                "reply": (
+                    ["Bring back my crossbow from the cultist cache."]
                     if slug == "hunter"
-                    else "Collect 2500 radiant attire scraps for the basic outfit."
-                ],
+                    else wayland_menu
+                ),
                 "sources": [
                     f"canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}",
                     f"{source_pin}:{source_path}:1-{len(inputs[source_path].splitlines())}:sha256:{hashlib.sha256(inputs[source_path]).hexdigest()}",
                 ],
             }
         )
+
+        if slug == "illuminated":
+            intro = callbacks[-1]
+            outfit = "oteryn:outfit.illuminated_warrior"
+            track = intro["storage"][0]["track"]
+            offers.append(
+                {
+                    "npc": intro["npc"],
+                    "keywords": ["outfit"],
+                    "topic": 0,
+                    "next_topic": 0,
+                    "storage": [
+                        {"track": track, "minimum": 0, "maximum": 3, "set": 0, "preserve": True}
+                    ],
+                    "reply": wayland_menu,
+                }
+            )
+            for keyword, addon, count in [
+                ("basic", 0, 2500),
+                ("insignia", 1, 1250),
+                ("halo", 2, 1250),
+            ]:
+                reward = {"outfit": outfit, "addons": addon}
+                topic = 101 + addon
+                stage = {
+                    "track": track,
+                    # Ownership guards on confirmation order the account-wide rewards.
+                    # Another character on the account may be at the start of this commission.
+                    "minimum": 0,
+                    "maximum": addon,
+                    "set": addon + 1,
+                }
+                offers.extend(
+                    [
+                        {
+                            "npc": intro["npc"],
+                            "keywords": [keyword],
+                            "topic": 0,
+                            "next_topic": topic,
+                            "storage": [{**stage, "set": addon, "preserve": True}],
+                            "reply": [
+                                f"The {keyword} exchange costs {count} radiant attire scraps. Do you agree?"
+                            ],
+                        },
+                        {
+                            "npc": intro["npc"],
+                            "keywords": ["no"],
+                            "topic": topic,
+                            "next_topic": 0,
+                            "storage": [{**stage, "set": addon, "preserve": True}],
+                            "reply": ["Come back when you are ready."],
+                        },
+                    ]
+                )
+                exchange = {
+                    **intro,
+                    "key": f"oteryn:quest-reward/questpc7-illuminated-{keyword}",
+                    "keywords": ["yes"],
+                    "topic": topic,
+                    "storage": [stage],
+                    "take": [{"item": "oteryn:item.tibia.i54640", "count": count}],
+                    "outfit": reward,
+                    "reply": ["Your Illuminated Warrior commission is ready."],
+                    "sources": intro["sources"] + ["wiki:111141:1196354"],
+                }
+                if addon:
+                    exchange.update(
+                        requires_outfits=[outfit],
+                        forbids_addons=[reward],
+                    )
+                else:
+                    exchange.update(forbids_outfits=[outfit])
+                if addon == 2:
+                    exchange.update(
+                        requires_addons=[{"outfit": outfit, "addons": 1}],
+                        completes=True,
+                    )
+                callbacks.append(exchange)
 
 
 def append_tokens(root, callbacks, offers, inputs):

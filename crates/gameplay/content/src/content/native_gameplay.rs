@@ -92,10 +92,10 @@ const MAX_ITEM_PROFILES: usize = 16 * 1024 * 1024;
 // serving Creature provider. Keep this bound separate from all other profiles.
 const MAX_CREATURE_PROFILES: usize = 32 * 1024 * 1024;
 const MAX_RECORDS: usize = 4096;
-/// W18's admitted furniture and bed cohorts bring the native Item provider to
-/// 4,956 records. Keep the existing 16 MiB Item byte bound and the other families'
-/// 4,096-record bound; only this source-backed Item cohort needs more entries.
-const MAX_ITEM_RECORDS: usize = 8192;
+/// The merged loot and equipment providers have 8,272 base Items and 8,285
+/// after the starter and SRX updates. The Item byte and other record bounds
+/// still apply independently.
+const MAX_ITEM_RECORDS: usize = 8_384;
 const LIMITS: [usize; 5] = [
     super::production::FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES,
     MAX_CATALOG,
@@ -367,8 +367,10 @@ pub struct NativeItemAttributes {
     pub blocks_projectile: Option<bool>,
     pub immovable_block_solid: Option<bool>,
     /// Missing is Unknown; only a source-qualified recipe may assert a non-damaging field.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub field_condition: Option<crate::content::field_condition::QualifiedFieldCondition>,
     /// Explicit activated source/config policy; absence stays Unknown.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rune_consumption: Option<NativeRuneConsumption>,
     pub field_replaceable: Option<bool>,
     pub has_height: Option<bool>,
@@ -513,6 +515,50 @@ fn qualified_item_policy<'a>(
                 && p.production_definition.revision_ref == revision)
     })?;
     Some(QualifiedItemPolicy { digest, record })
+}
+
+/// Resolve stack facts for every loot route from the same exact native Item policy.
+/// Older sections may omit these fields. Keep their facts for definitions that have
+/// no matching materializable native profile.
+fn apply_loot_item_stack_policies(
+    loot: &mut super::creature_reward::LootTablesSection,
+    profiles: &ItemProfilesDocument,
+) {
+    use super::ReferenceItemField as Field;
+    let native: BTreeMap<_, _> = profiles
+        .records
+        .iter()
+        .filter(|record| record.admission.materializable)
+        .map(|record| {
+            let definition = &record.production_definition;
+            (
+                (
+                    definition.family.as_str(),
+                    definition.production_key.as_str(),
+                    definition.revision_ref.as_str(),
+                ),
+                record,
+            )
+        })
+        .collect();
+    for facts in loot.items.iter_mut().filter(|facts| facts.materializable) {
+        let item = &facts.item;
+        let Some(record) = native.get(&(
+            item.family.as_str(),
+            item.key.as_str(),
+            item.revision.as_str(),
+        )) else {
+            continue;
+        };
+        facts.stackable = record.admission.stack_class == NativeItemStackClass::StackCapable;
+        facts.stack_maximum = match &record.semantics.stack {
+            Field::Known(stack) if facts.stackable => match stack.stack_max {
+                Field::Known(maximum) => std::num::NonZeroU32::new(u32::from(maximum)),
+                _ => None,
+            },
+            _ => None,
+        };
+    }
 }
 
 impl PartialEq for NativeGameplayState {
@@ -1362,6 +1408,19 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("ITEMHOLD-Q Wiki identity collision"));
         }
+        let loot_bindings: Vec<super::project::ProjectV2SourceIdentityBinding> =
+            serde_json::from_slice(include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/cloot2-wiki-item-bindings.json"
+            ))
+            .map_err(|_| invalid("creature loot Wiki identity"))?;
+        for binding in loot_bindings {
+            if admitted
+                .insert(binding.external_id.clone(), binding)
+                .is_some()
+            {
+                return Err(invalid("creature loot Wiki identity collision"));
+            }
+        }
         // W02: Crystal201189f items.cpp:163-174 indexes ItemType by the exact
         // appearance.id. Appearance48416 is independently captured by
         // boss_reward_item_profiles.py; the existing canonical identity is reused.
@@ -1379,6 +1438,21 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("W02 Sugar corpse identity collision"));
         }
+        // Crystal's retained Lua and appearance IDs bind these carried Items
+        // and discharge targets outside the older binding inventory.
+        let cloot3_bindings: Vec<super::project::ProjectV2SourceIdentityBinding> =
+            serde_json::from_slice(include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/cloot3-item-bindings.json"
+            ))
+            .map_err(|_| invalid("CLOOT3 exact Item binding"))?;
+        for binding in cloot3_bindings {
+            if admitted
+                .insert(binding.external_id.clone(), binding)
+                .is_some()
+            {
+                return Err(invalid("CLOOT3 Item binding collision"));
+            }
+        }
         // Crystal 201189f8 appearances.dat and arbaziloth_fight.lua bind the
         // purple-fire projection to this exact Ground-only item identity.
         let arbaziloth_fire = serde_json::from_value(serde_json::json!({
@@ -1393,6 +1467,16 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             .is_some()
         {
             return Err(invalid("Arbaziloth fire identity collision"));
+        }
+        // The first and third loot slices independently qualify Spirited Soil.
+        // Register it once above and require the two exact bindings to agree.
+        let spirited_soil: super::project::ProjectV2SourceIdentityBinding =
+            serde_json::from_slice(include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/loot-slice-1-spirited-soil-binding.json"
+            ))
+            .map_err(|_| invalid("native gameplay Spirited Soil identity"))?;
+        if admitted.get(&spirited_soil.external_id) != Some(&spirited_soil) {
+            return Err(invalid("native gameplay Spirited Soil binding conflict"));
         }
         // Crystal 201189f items.xml binds the written 8747 to the exact 8748
         // appearance. The fixed variant has no separate XML override.
@@ -1899,9 +1983,12 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         None
     };
     // An older pin carries no loot section: every creature then has no loot binding.
-    let loot = is_v8
+    let mut loot = is_v8
         .then(|| super::creature_reward::LootTablesSection::decode(sections[11], &creatures))
         .transpose()?;
+    if let (Some(loot), Some(items)) = (&mut loot, &items) {
+        apply_loot_item_stack_policies(loot, items);
+    }
     let reward_table = Arc::new(
         super::creature_reward::CreatureRewardTable::from_pin_with_native_corpses(
             &creatures,
@@ -2523,7 +2610,9 @@ mod tests {
 
     #[test]
     fn crystal_equipment_first_quarter_loads_weapon_and_armor_claims() -> Result<(), ContentError> {
-        use crate::content::ReferenceItemField as F;
+        use crate::content::{
+            ProjectV2RangedElement, ProjectV2RangedWeapon, ReferenceItemField as F,
+        };
         use oteryn_gameplay_domain::domain::equipment_policy_abi::{
             EquipmentBaseVocation, EquipmentPolicyLookup,
         };
@@ -2550,6 +2639,38 @@ mod tests {
             let key = format!("oteryn:item.tibia.i{id}");
             let equipment = native.equipment_policy(&key, "definition-r1");
             if row.get("held").is_some() {
+                if id == 3347 {
+                    // The loot source independently supplies the hunting spear's
+                    // custody and throwing facts. This audit still holds its break chance.
+                    assert_eq!(row["held"], "throwing_break_chance");
+                    let equipment = equipment.expect("loot-qualified hunting spear");
+                    let claims = equipment
+                        .claims()
+                        .iter()
+                        .filter_map(|(slot, claim)| claim.as_ref().ok().map(|claim| (*slot, claim)))
+                        .collect::<Vec<_>>();
+                    let [(slot, claim)] = claims.as_slice() else {
+                        panic!("hunting spear must have one equipment claim");
+                    };
+                    assert_eq!((*slot, claim.level), (5, 20));
+                    assert_eq!(claim.slots, [5]);
+                    assert!(claim.groups.is_empty() && claim.vocations.is_empty());
+                    let item = native
+                        .item_policy_for_source_id(3347)
+                        .expect("hunting spear");
+                    assert!(matches!(
+                        item.record().authoring.ranged,
+                        Some(ProjectV2RangedWeapon::Throwing {
+                            attack: 32,
+                            range_cells: 3,
+                            hit_chance: 0,
+                            max_hit_chance: 80,
+                            element: ProjectV2RangedElement::Physical,
+                            elemental_attack: 0,
+                        })
+                    ));
+                    continue;
+                }
                 assert!(
                     equipment.is_none_or(|policy| policy
                         .claims()
@@ -3966,7 +4087,9 @@ mod tests {
         let mut qualified = 0;
         for row in source {
             let id = u32::try_from(row["id"].as_u64().ok_or("Crystal Item id")?)?;
-            if held.contains(&id) {
+            // These two held audit inputs are already admitted by the loot source.
+            let separately_admitted = matches!(id, 22759 | 22760);
+            if held.contains(&id) && !separately_admitted {
                 assert!(state.item_policy_for_source_id(id).is_none(), "Item {id}");
                 continue;
             }
@@ -4108,7 +4231,17 @@ mod tests {
                     "Item {id} {field}"
                 );
             }
-            if row["paired_dependency"] != true {
+            if separately_admitted {
+                assert!(held.contains(&id));
+                assert_eq!(
+                    record
+                        .authoring
+                        .forge
+                        .map(|forge| (forge.classification, forge.max_tier)),
+                    Some((4, 10)),
+                    "loot-qualified Forge Item {id}"
+                );
+            } else if row["paired_dependency"] != true {
                 qualified += 1;
             }
         }
@@ -5179,17 +5312,105 @@ mod tests {
         );
         assert!(!rat.loot_table.entries.is_empty());
         assert!(rat.boss.is_none());
-        assert!(
-            native
-                .reward_table()
-                .row("oteryn:creature.ferumbras")
-                .is_err()
+        let ferumbras = native
+            .reward_table()
+            .row("oteryn:creature.ferumbras")
+            .unwrap();
+        assert_eq!(ferumbras.loot_table.entries.len(), 53);
+        assert_eq!(
+            ferumbras.loot_table_ref.as_ref().unwrap().production_key,
+            "oteryn:loot.creature.ferumbras"
         );
         let boss = native
             .reward_table()
             .boss("oteryn:creature.ferumbras")
             .unwrap();
         assert_eq!(boss.category.as_str(), "nemesis");
+    }
+    #[test]
+    fn legacy_loot_facts_use_active_item_stack_policy() -> Result<(), Box<dyn std::error::Error>> {
+        // The predecessor loot section omitted stackable for these admitted Items.
+        let mut loot: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/loot-tables.json"
+        ))?;
+        let legacy_keys = [
+            "oteryn:item.tibia.i37109",
+            "oteryn:item.tibia.i3577",
+            "oteryn:item.tibia.i3032",
+        ];
+        for facts in loot["items"].as_array_mut().ok_or("loot Item facts")? {
+            if legacy_keys.iter().any(|key| facts["item"]["key"] == *key) {
+                facts
+                    .as_object_mut()
+                    .ok_or("loot Item fact")?
+                    .remove("stackable");
+            }
+        }
+        let world = test_source(1)?.world_id;
+        let (controller, _) =
+            activated_with_custom_loot_tables(world, None, Some(&serde_json::to_vec(&loot)?));
+        let native = controller
+            .active()
+            .ok_or("active generation")?
+            .native_gameplay()
+            .ok_or("native gameplay")?;
+        let rewards = native.reward_table();
+        let wolf = rewards
+            .row("oteryn:creature.wolf")
+            .map_err(|reason| reason.as_str())?;
+        let boss = rewards
+            .row("oteryn:creature.glooth_fairy")
+            .map_err(|reason| reason.as_str())?;
+        let sliver = rewards.forge_sliver().ok_or("admitted Fiendish sliver")?;
+        let find_stack = |table: &crate::content::creature_reward::CreatureRewardRow, key| {
+            table.loot_table.entries.iter().any(|entry| {
+                entry.item.production_key == key && entry.max_count > 1 && entry.details.stackable
+            })
+        };
+        assert_eq!(
+            (
+                sliver.details.stackable,
+                find_stack(&wolf, legacy_keys[1]),
+                find_stack(&boss, legacy_keys[2])
+            ),
+            (true, true, true),
+            "Fiendish, ordinary, and private loot must all use the qualified Item stack class",
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn slice_three_manifest_activates_carried_rewards() {
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller.active().unwrap().native_gameplay().unwrap();
+        let row = native
+            .reward_table()
+            .row("oteryn:creature.spirit_overlord")
+            .unwrap();
+        assert!(row.loot_table.entries.iter().any(|entry| {
+            entry.item.production_key == "oteryn:item.tibia.i51276"
+                && entry.probability_ppm == Some(70_000)
+                && entry.details.stackable
+                && (entry.min_count, entry.max_count) == (1, 1)
+        }));
+        let source: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/cloot3-item-profiles.json"
+        ))
+        .unwrap();
+        for entry in source["records"].as_array().unwrap() {
+            let key = entry["production_definition"]["production_key"]
+                .as_str()
+                .unwrap();
+            let item = native.item_policy(key, "definition-r1").unwrap().record();
+            assert!(item.admission.materializable, "{key}");
+            assert!(
+                item.admission
+                    .legal_destinations
+                    .contains(&NativeItemDestination::CharacterInventory),
+                "{key}"
+            );
+        }
     }
     #[test]
     fn crystal_spawn_delta_creatures_and_gorga_corpse_load_from_native_manifest()
