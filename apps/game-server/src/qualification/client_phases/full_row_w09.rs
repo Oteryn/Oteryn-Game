@@ -68,15 +68,29 @@ fn cube_reward(
     (expected == *actual).then_some(reward)
 }
 
-async fn cast_light(client: &mut DevClientSession, spell: NonZeroU32) -> TestResult {
+async fn wait_inventory(
+    client: &mut DevClientSession,
+    expected: &BTreeMap<NonZeroU32, u64>,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while quantities(client)? != *expected {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("W09 first cast did not conjure exactly one wand".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+    Ok(())
+}
+
+async fn cast_wand(client: &mut DevClientSession, spell: NonZeroU32) -> TestResult {
     let before = client
         .actor_vitals()
         .copied()
         .ok_or("W09 caster vitals missing")?;
     let expected_mana = before
         .mana
-        .checked_sub(20)
-        .ok_or("W09 insufficient mana for Light")?;
+        .checked_sub(250)
+        .ok_or("W09 insufficient mana for Conjure Wand of Darkness")?;
     let cast = client.cast_spell(spell, SpellTarget::None, false).await?;
     if cast.status != CommandStatus::Accepted
         || cast.disposition != SpellCastDisposition::Cast
@@ -86,9 +100,10 @@ async fn cast_light(client: &mut DevClientSession, spell: NonZeroU32) -> TestRes
             .map(|delta| delta.value.mana)
             != Some(expected_mana)
     {
-        return Err(
-            format!("W09 Light did not spend 20 mana: before={before:?} cast={cast:?}").into(),
-        );
+        return Err(format!(
+            "W09 Conjure Wand of Darkness did not spend 250 mana: before={before:?} cast={cast:?}"
+        )
+        .into());
     }
     Ok(())
 }
@@ -113,7 +128,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let preparation_session = client.join_snapshot().game_session_id;
     character_prep::declare_seeded(
         "W09.full",
-        "level-8 sorcerer, one Drome Cube and two Kooldown Aids",
+        "level-41 Premium sorcerer, one Drome Cube and two Kooldown Aids",
         "ordinary leveling exceeds the row budget and the inputs have no authored acquisition route",
     );
     request_fixture_control(
@@ -122,6 +137,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "w09-kooldown".into(),
     )
     .await?;
+    character_prep::grant_premium(&client).await?;
     character_prep::grant_item(&client, cube_id, 1).await?;
     character_prep::grant_item(&client, aid_id, 2).await?;
     logout(&mut client).await?;
@@ -131,10 +147,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let level = full_e2ef7::player_level(&mut client).await?;
     let vitals = client.actor_vitals().ok_or("W09 seeded vitals missing")?;
-    if (level, vitals.max_health, vitals.max_mana) != (8, 185, 90) {
-        return Err(
-            format!("W09 expected level-8 vitals 185/90: level={level} vitals={vitals:?}").into(),
-        );
+    if (level, vitals.max_health, vitals.max_mana) != (41, 350, 1080) {
+        return Err(format!(
+            "W09 expected level-41 vitals 350/1080: level={level} vitals={vitals:?}"
+        )
+        .into());
     }
     expected.extend([(cube, 1), (aid, 2)]);
     if quantities(&client)? != expected {
@@ -144,36 +161,47 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let committed = (CommandStatus::Accepted, wire::UseDisposition::Committed);
     let missing = (CommandStatus::Accepted, wire::UseDisposition::NothingToUse);
     let book = native_spell_book()?;
-    let light = crate::qualification::client_spell_journey::spell_index(book, "utevo lux")?;
+    let spell = crate::qualification::client_spell_journey::spell_index(book, "exevo gran mort")?;
     let natural_cooldown = Duration::from_micros(
-        book.indexed(light)
-            .ok_or("W09 Light missing from native book")?
+        book.indexed(spell)
+            .ok_or("W09 Conjure Wand of Darkness missing from native book")?
             .cooldown_micros,
     );
+    // Crystal 201189f8, data/scripts/spells/conjuring/conjure_wand_of_darkness.lua:12.
+    if natural_cooldown != Duration::from_secs(1800) {
+        return Err(format!("W09 unexpected donor spell cooldown: {natural_cooldown:?}").into());
+    }
+    let wand = provisioning::item_reference(&index, 25760)?;
     let first_cast = tokio::time::Instant::now();
-    cast_light(&mut client, light).await?;
+    cast_wand(&mut client, spell).await?;
+    *expected.entry(wand).or_default() += 1;
+    wait_inventory(&mut client, &expected).await?;
     let before = client
         .actor_vitals()
         .copied()
         .ok_or("W09 caster vitals missing")?;
-    let blocked = client.cast_spell(light, SpellTarget::None, false).await?;
+    let blocked = client.cast_spell(spell, SpellTarget::None, false).await?;
     if blocked.status != CommandStatus::Accepted
         || blocked.disposition != SpellCastDisposition::CoolingDown
         || blocked.actor_vitals_delta.is_some()
         || client.actor_vitals().copied() != Some(before)
+        || quantities(&client)? != expected
     {
         return Err(format!(
-            "W09 Light pre-state was not a resource-free cooldown refusal: {blocked:?}"
+            "W09 Conjure Wand of Darkness pre-state was not a resource-free cooldown refusal: {blocked:?}"
         )
         .into());
     }
     client.take_events();
     use_item(&mut client, aid, committed).await?;
-    cast_light(&mut client, light).await?;
+    cast_wand(&mut client, spell).await?;
     if first_cast.elapsed() >= natural_cooldown {
-        return Err("W09 Light recast did not precede natural cooldown expiry".into());
+        return Err(
+            "W09 Conjure Wand of Darkness recast did not precede natural cooldown expiry".into(),
+        );
     }
     expected.insert(aid, 1);
+    *expected.entry(wand).or_default() += 1;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let mut saw_reset = false;
     loop {
