@@ -1,9 +1,14 @@
 use super::{HostOwner, named::NamedControls};
-use crate::play::{BarAction, ItemUseMode, PassiveAbility, PlayLink, SpecialAction, SpellAim};
+use crate::play::{
+    BarAction, ItemUseMode, PassiveAbility, PlayLink, PlayView, SpecialAction, SpellAim,
+};
 use oteryn_client_runtime::spell::ACTION_BAR_SLOTS;
 use serde::Serialize;
 use serde_json::Value;
-use std::{collections::BTreeMap, num::NonZeroU32};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    num::NonZeroU32,
+};
 
 mod settings;
 
@@ -52,17 +57,7 @@ impl LocalState {
                     ),
                 };
             }
-            let (x, y, floor, zoom, following) = play.view.minimap_camera();
-            let (remembered_tiles, marked_tiles) = play
-                .view
-                .satellite_map(|cells, marks| (cells.len(), marks.len()));
-            snapshot.minimap = Some(Minimap {
-                center: (x, y, floor),
-                zoom,
-                following,
-                remembered_tiles,
-                marked_tiles,
-            });
+            snapshot.minimap = Some(Minimap::read(&play.view));
             snapshot.action_bar = Some(ActionBar::read(&play.link, preferences.action_bar.visible));
         }
         snapshot
@@ -106,6 +101,43 @@ struct Minimap {
     following: bool,
     remembered_tiles: usize,
     marked_tiles: usize,
+}
+
+impl Minimap {
+    fn read(view: &PlayView) -> Self {
+        use oteryn_session::{ActorPosition, world_map::in_window};
+
+        let (x, y, floor, zoom, following) = view.minimap_camera();
+        let scene = view.scene();
+        let memory = &scene.minimap_memory;
+        let (remembered_tiles, marked_tiles) = view.satellite_map(|cells, marks| {
+            // As in the renderer, live observations take precedence within the server window.
+            let additional_tiles = memory
+                .tiles
+                .iter()
+                .filter(|&&(x, y, floor, _)| {
+                    !cells.contains_key(&(floor, x, y))
+                        && !scene
+                            .minimap_origin
+                            .is_some_and(|origin| in_window(origin, ActorPosition { x, y, floor }))
+                })
+                .count();
+            let marked_tiles = marks
+                .iter()
+                .map(|mark| (mark.x, mark.y, mark.floor))
+                .chain(memory.marks.iter().map(|mark| (mark.x, mark.y, mark.floor)))
+                .collect::<BTreeSet<_>>()
+                .len();
+            (cells.len() + additional_tiles, marked_tiles)
+        });
+        Self {
+            center: (x, y, floor),
+            zoom,
+            following,
+            remembered_tiles,
+            marked_tiles,
+        }
+    }
 }
 
 #[derive(Serialize)]
