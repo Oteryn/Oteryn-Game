@@ -1,6 +1,7 @@
 //! The Grizzly holy-icon entitlement needs no separately committed MINT reservation.
 //! Reservation, existing owner application and entitlement acknowledgement share one
 //! type-2 transaction, so cancellation/restart never strands a session-bound attempt.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 
 impl DurabilityRoot {
@@ -24,14 +25,14 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_cause(&mut tx, request.command).await?;
                     let Some(row) = load_receipt(&mut tx, request.command).await? else {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
                     if row.try_get::<Vec<u8>, _>("intent_binding")? != binding {
                         return Ok(Err(RewardClaimMintError::ConflictingCause));
                     }
                     let committed = decode_receipt(&row)?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(Some(committed)))
                 })
             })

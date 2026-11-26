@@ -1243,7 +1243,7 @@ async fn resync_projection(
         .map_err(ResyncError::Durability)?
         .run(move |holder, deadline| {
             Box::pin(async move {
-                let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+                let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
                 let millis = u64::try_from(remaining.as_millis().max(1))
                     .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
                 let mut tx = sqlx::Connection::begin(&mut **holder).await?;

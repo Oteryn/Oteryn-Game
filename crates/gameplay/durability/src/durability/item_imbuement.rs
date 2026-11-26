@@ -5,6 +5,7 @@
 //! record's trigger writes or removes. A refusal writes nothing and is not replayed; a replay of
 //! the same `(session, command)` with the same binding answers OK, another binding
 //! `REVISION_CHANGED`.
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence, uuid_text};
 use super::character_progression::{
     CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
@@ -518,7 +519,7 @@ impl DurabilityRoot {
         use super::bank::fee_payer_is_junior;
         use super::character_authority::observe_recovery_fence;
         use super::character_progression::observe_item_only_fence;
-        use super::db::{begin_observation_transaction, commit_semantic_transaction};
+        use super::db::{begin_observation_transaction};
         use crate::domain::currency::{BACKPACK_ENTRIES_MAX, COIN_DEFINITION_FAMILY, COIN_STACK_MAXIMUM, Coin};
         let recovery = authority.record_for(self).map_err(|_| DurabilityError::InvalidStoredState)?;
         let node = node.clone();
@@ -569,7 +570,7 @@ impl DurabilityRoot {
                 gold = gold.checked_add(u64::from(quantity) * Coin::ALL[index].worth())
                     .ok_or(DurabilityError::InvalidStoredState)?;
             }
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Some(gold))
         })).await
     }

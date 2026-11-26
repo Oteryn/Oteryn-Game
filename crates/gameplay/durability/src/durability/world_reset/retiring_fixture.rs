@@ -143,13 +143,14 @@ impl RetirementProbe {
         self.finish_phase();
     }
 
-    pub(crate) fn begin_commit(&mut self, deadline: Instant) {
+    pub(crate) fn begin_commit(&mut self, deadline: tokio::time::Instant) {
         self.enter(RetirementPhase::Commit);
         if let Some(started) = self.phase_started {
             self.report.pre_commit_us =
                 Some(micros(started.saturating_duration_since(self.started)));
-            self.report.commit_budget_us =
-                Some(micros(deadline.saturating_duration_since(started)));
+            self.report.commit_budget_us = Some(micros(
+                deadline.saturating_duration_since(tokio::time::Instant::now()),
+            ));
         }
     }
 

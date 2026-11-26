@@ -1,5 +1,6 @@
 //! Recovery proof for the existing death-item owner. A lost runtime does not
 //! forgive selected item losses or move their Ground to the origin Channel.
+use crate::durability::db::commit_semantic_read;
 use super::super::spell_owner_commit::SpellLanePermit;
 use super::*;
 
@@ -54,7 +55,7 @@ impl ActivityHandoffOwner {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     let proof = read_in_transaction(&mut tx, &root, &node, source).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(proof)
                 })
             })

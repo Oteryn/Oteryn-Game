@@ -602,7 +602,7 @@ async fn begin_spawn_transaction(
     // cutoff. A slower setup may have armed the timer late, so take no locks.
     let tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
         holder,
-        (backend_deadline - setup).into_std(),
+        backend_deadline - setup,
     )
     .await
     .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;

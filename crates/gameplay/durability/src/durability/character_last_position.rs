@@ -32,6 +32,7 @@
 //! an actor at its maxima, or a row written before migration 0084) restores the next actor at its
 //! maxima (SPELL-D2).
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_session_fence, numeric_u64,
@@ -260,7 +261,7 @@ impl DurabilityRoot {
                         return Ok(Err(error));
                     }
                     let stored = load_last_position(&mut tx, fence.character_id).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(stored))
                 })
             })
