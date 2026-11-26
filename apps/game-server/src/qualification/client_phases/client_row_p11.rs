@@ -146,7 +146,7 @@ fn provenance(transcript: &[u8], live: &Observation, character: &[u8; 16]) -> Te
         return Err("P11 capture command results do not match the four live commands".into());
     }
     Ok(serde_json::json!({
-        "frames_sha256": format!("{:x}", Sha256::digest(transcript)),
+        "frames_sha256": Sha256::digest(transcript).as_slice(),
         "character": character,
         "session": uuid_text(&live.session),
         "results": results,
