@@ -143,6 +143,41 @@ async fn walk_castle(
     Ok(())
 }
 
+async fn verify_open_door(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    door: TilePos,
+    after_sequence: u64,
+    revision: u64,
+) -> TestResult {
+    use oteryn_dev_client::SessionEvent;
+    use oteryn_protocol_oteryn::world_map::MapOrigin;
+
+    let position = spatial_basis::current(client)?.position(door);
+    let result = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            for event in client.wait_for_events(Duration::from_secs(5)).await? {
+                let SessionEvent::WorldMap(delta) = event else {
+                    continue;
+                };
+                if delta.server_sequence > after_sequence
+                    && delta.value.header.bundle_digest == world.base().digest()
+                    && let Some(tile) = delta.value.tiles.iter().find(|tile| tile.position == position)
+                {
+                    if tile.items.iter().any(|item| {
+                        item.appearance_id == 1633
+                            && item.origin == MapOrigin::BaseOrdinal { ordinal: 1, object_revision: revision }
+                    }) {
+                        return Ok(());
+                    }
+                    return Err(format!("P20 castle door map tile did not show the open appearance and revision {revision}: {tile:?}").into());
+                }
+            }
+        }
+    }).await;
+    result.map_err(|_| "P20 castle door opening did not publish its map delta")?
+}
+
 async fn approach_king(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -184,18 +219,21 @@ async fn approach_king(
     placement.extend_from_slice(&key.to_be_bytes());
     let revision = doors.revision(key);
     let used = client.use_object(&placement, revision).await?;
-    if used.status != CommandStatus::Accepted
-        || used.disposition != UseDisposition::Committed
-        || !used.world_object_overlay_delta.is_some_and(|delta| {
-            delta.value.placement == placement && delta.value.revision == revision + 1
-        })
-    {
+    if used.status != CommandStatus::Accepted || used.disposition != UseDisposition::Committed {
         return Err(format!(
-            "P20 castle door did not open on its first use: {:?}",
-            used.disposition
+            "P20 castle door did not open on its first use: {:?}/{:?}",
+            used.status, used.disposition
         )
         .into());
     }
+    verify_open_door(
+        client,
+        world,
+        DOOR,
+        used.result_server_sequence,
+        revision + 1,
+    )
+    .await?;
     step_to(client, StepDirection::North, DOOR).await?;
     walk_castle(client, world, &stairs).await?;
     client
