@@ -484,8 +484,6 @@ async fn live<A: FreshAdmissionAuthority>(
         next_periodic_refresh: 0,
         activity_ack: None,
         cast_chat_revision: u64::from(cast_chat_active),
-        cooldown_revision: 0,
-        cooldowns: SpellCooldownPublisher::default(),
         require_session_binding: false,
         spell_catalog,
         integrity,

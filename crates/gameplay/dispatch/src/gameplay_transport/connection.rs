@@ -3,7 +3,6 @@
 //! decides admission itself and fails closed for every message it does not own.
 
 pub(super) mod appearance_change;
-pub use super::spell_presentation_publisher::cooldowns::CandidateCooldownPublisher as SpellCooldownPublisher;
 mod authority;
 pub use authority::{AchievementNoticeObservation, DepotObservation, FreshAdmissionAuthority};
 mod gameplay_idle;
