@@ -34,7 +34,8 @@ def value(fact, default=None):
 
 def kind(name, attributes, flags, worn):
     if (flags.get('flags.corpse') or flags.get('flags.player_corpse')
-            or 'corpsetype' in attributes or name.startswith(('dead ', 'slain '))):
+            or 'corpsetype' in attributes or name.startswith(('dead ', 'slain '))
+            or name in ('unknown corpse', 'remains of a ghost')):
         return 'corpses'
     if any(word in name for word in ('magic wall', 'wild growth', 'energy wall', 'magic barrier')):
         return 'magic walls and similar'
@@ -388,10 +389,10 @@ def project(root, document):
 def gap(row, rows):
     if row['kind'] == 'corpses':
         return 'separate corpse owner'
-    if row.get('container'):
-        return 'decaying container requires atomic descendant retirement or successor custody'
     if row['decayTo'] is None or int(row['decayTo']) < 0 or not duration(row):
         return 'Crystal has no runnable ItemType deadline'
+    if row.get('container'):
+        return 'decaying container requires atomic descendant retirement or successor custody'
     if row['kind'] in ('rings and amulets with duration', 'other worn items'):
         return 'worn-duration pair or equipment effect is unqualified'
     if row.get('tile'):

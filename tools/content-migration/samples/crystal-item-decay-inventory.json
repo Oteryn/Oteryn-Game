@@ -4,11 +4,11 @@
     "corpses": {
       "before": {
         "qualified and runnable": 519,
-        "present but unqualified": 2846
+        "present but unqualified": 2848
       },
       "after": {
         "qualified and runnable": 519,
-        "present but unqualified": 2846
+        "present but unqualified": 2848
       }
     },
     "fields": {
@@ -49,12 +49,12 @@
     },
     "other": {
       "before": {
-        "present but unqualified": 343,
+        "present but unqualified": 341,
         "qualified and runnable": 105
       },
       "after": {
         "qualified and runnable": 334,
-        "present but unqualified": 114
+        "present but unqualified": 112
       }
     },
     "other worn items": {
@@ -155,6 +155,7 @@
     {"id":4020,"name":"dead dog","kind":"corpses","duration":"300","decayTo":"4021","showduration":null,"stopduration":null,"before":"present but unqualified","after":"present but unqualified","gap":"separate corpse owner","projected":false},
     {"id":4021,"name":"dead dog","kind":"corpses","duration":"300","decayTo":"4022","showduration":null,"stopduration":null,"before":"present but unqualified","after":"present but unqualified","gap":"separate corpse owner","projected":false},
     {"id":4022,"name":"dead dog","kind":"corpses","duration":"60","decayTo":"0","showduration":null,"stopduration":null,"before":"present but unqualified","after":"present but unqualified","gap":"separate corpse owner","projected":false},
+    {"id":4023,"name":"unknown corpse","kind":"corpses","duration":"600","decayTo":"0","showduration":null,"stopduration":null,"before":"present but unqualified","after":"present but unqualified","gap":"separate corpse owner","projected":false},
     {"id":4024,"name":"slain skeleton","kind":"corpses","duration":"300","decayTo":"4156","showduration":null,"stopduration":null,"before":"qualified and runnable","after":"qualified and runnable","projected":false},
     {"id":4025,"name":"dead dragon","kind":"corpses","duration":"300","decayTo":"4026","showduration":null,"stopduration":null,"before":"qualified and runnable","after":"qualified and runnable","projected":false},
     {"id":4026,"name":"dead dragon","kind":"corpses","duration":"300","decayTo":"4027","showduration":null,"stopduration":null,"before":"qualified and runnable","after":"qualified and runnable","projected":false},
@@ -384,6 +385,7 @@
     {"id":4287,"name":"dead dragon","kind":"corpses","duration":"300","decayTo":"4288","showduration":null,"stopduration":null,"before":"present but unqualified","after":"present but unqualified","gap":"separate corpse owner","projected":false},
     {"id":4288,"name":"dead dragon","kind":"corpses","duration":"60","decayTo":"0","showduration":null,"stopduration":null,"before":"present but unqualified","after":"present but unqualified","gap":"separate corpse owner","projected":false},
     {"id":4289,"name":"dead dragon","kind":"corpses","duration":"60","decayTo":"0","showduration":null,"stopduration":null,"before":"present but unqualified","after":"present but unqualified","gap":"separate corpse owner","projected":false},
+    {"id":4290,"name":"remains of a ghost","kind":"corpses","duration":"300","decayTo":"4158","showduration":null,"stopduration":null,"before":"present but unqualified","after":"present but unqualified","gap":"separate corpse owner","projected":false},
     {"id":4291,"name":"dead bear","kind":"corpses","duration":"300","decayTo":"4292","showduration":null,"stopduration":null,"before":"qualified and runnable","after":"qualified and runnable","projected":false},
     {"id":4292,"name":"dead bear","kind":"corpses","duration":"300","decayTo":"4293","showduration":null,"stopduration":null,"before":"qualified and runnable","after":"qualified and runnable","projected":false},
     {"id":4293,"name":"dead bear","kind":"corpses","duration":"60","decayTo":"0","showduration":null,"stopduration":null,"before":"qualified and runnable","after":"qualified and runnable","projected":false},
@@ -3573,12 +3575,10 @@
     {"id":3700,"name":"blueberry bush","kind":"other","duration":"300","decayTo":"3699","showduration":null,"stopduration":null,"before":"qualified and runnable","after":"qualified and runnable","projected":false},
     {"id":3701,"name":"jungle grass","kind":"other","duration":"300","decayTo":"3702","showduration":null,"stopduration":null,"before":"qualified and runnable","after":"qualified and runnable","projected":false},
     {"id":4010,"name":"Tibiora's box","kind":"other","duration":"2","decayTo":"3997","showduration":null,"stopduration":null,"before":"present but unqualified","after":"qualified and runnable","projected":true},
-    {"id":4023,"name":"unknown corpse","kind":"other","duration":"600","decayTo":"0","showduration":null,"stopduration":null,"before":"present but unqualified","after":"present but unqualified","gap":"decaying container requires atomic descendant retirement or successor custody","projected":false},
     {"id":4254,"name":"pile of bones","kind":"other","duration":"60","decayTo":"0","showduration":null,"stopduration":null,"before":"present but unqualified","after":"qualified and runnable","projected":true},
     {"id":4271,"name":"pile of bones","kind":"other","duration":"60","decayTo":"0","showduration":null,"stopduration":null,"before":"present but unqualified","after":"qualified and runnable","projected":true},
     {"id":4276,"name":"pile of bones","kind":"other","duration":"60","decayTo":"0","showduration":null,"stopduration":null,"before":"present but unqualified","after":"qualified and runnable","projected":true},
     {"id":4280,"name":"pile of bones","kind":"other","duration":"60","decayTo":"0","showduration":null,"stopduration":null,"before":"present but unqualified","after":"qualified and runnable","projected":true},
-    {"id":4290,"name":"remains of a ghost","kind":"other","duration":"300","decayTo":"4158","showduration":null,"stopduration":null,"before":"present but unqualified","after":"present but unqualified","gap":"decaying container requires atomic descendant retirement or successor custody","projected":false},
     {"id":4298,"name":"pile of bones","kind":"other","duration":"60","decayTo":"0","showduration":null,"stopduration":null,"before":"present but unqualified","after":"qualified and runnable","projected":true},
     {"id":4609,"name":"shallow water","kind":"other","duration":"1200","decayTo":"4597","showduration":null,"stopduration":null,"before":"qualified and runnable","after":"qualified and runnable","projected":false},
     {"id":4610,"name":"shallow water","kind":"other","duration":"1200","decayTo":"4598","showduration":null,"stopduration":null,"before":"present but unqualified","after":"present but unqualified","gap":"terrain replacement uses a separate owner","projected":false},
@@ -3944,7 +3944,7 @@
     {"id":43811,"name":"large seashell","kind":"other","duration":"300","decayTo":"43810","showduration":null,"stopduration":null,"before":"present but unqualified","after":"qualified and runnable","projected":true},
     {"id":44529,"name":"slits","kind":"other","duration":"10","decayTo":"44530","showduration":null,"stopduration":null,"before":"present but unqualified","after":"present but unqualified","gap":"cyclic source chain cannot use the finite stage receipt owner","projected":false},
     {"id":44530,"name":"blades","kind":"other","duration":"10","decayTo":"44529","showduration":null,"stopduration":null,"before":"present but unqualified","after":"present but unqualified","gap":"cyclic source chain cannot use the finite stage receipt owner","projected":false},
-    {"id":50096,"name":"ticket forge","kind":"other","duration":"20","decayTo":null,"showduration":null,"stopduration":null,"before":"present but unqualified","after":"present but unqualified","gap":"decaying container requires atomic descendant retirement or successor custody","projected":false},
+    {"id":50096,"name":"ticket forge","kind":"other","duration":"20","decayTo":null,"showduration":null,"stopduration":null,"before":"present but unqualified","after":"present but unqualified","gap":"Crystal has no runnable ItemType deadline","projected":false},
     {"id":50192,"name":"enchanted werewolf helmet","kind":"other","duration":"3600","decayTo":"22114","showduration":"1","stopduration":null,"before":"present but unqualified","after":"qualified and runnable","projected":true},
     {"id":50244,"name":"ancient shrine","kind":"other","duration":"30","decayTo":"50242","showduration":null,"stopduration":null,"before":"present but unqualified","after":"qualified and runnable","projected":true},
     {"id":54267,"name":"moonsilver crystals","kind":"other","duration":"30","decayTo":"0","showduration":null,"stopduration":null,"before":"qualified and runnable","after":"qualified and runnable","projected":false},

@@ -493,8 +493,13 @@ fn xdecay_chain(
 ) -> TestResult<crate::durability::spell_items_abi::QualifiedItemDefinition> {
     use crate::durability::native_world_items::{qualify_source_field_chain, qualify_source_item_chain};
     use crate::durability::spell_items_abi::QualifiedItemDefinition;
+    let key = format!("oteryn:item.tibia.i{id}");
+    let revision = native
+        .item_index()
+        .and_then(|index| index.revision(&key))
+        .ok_or_else(|| format!("missing native decay reference {id}"))?;
     let policy = native
-        .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+        .item_policy(&key, revision)
         .ok_or_else(|| format!("missing qualified native decay source {id}"))?;
     let item = QualifiedItemDefinition::from_native_policy(policy)?;
     let chain = if field {
@@ -537,7 +542,7 @@ fn xdecay_inventory_qualifies_every_reported_world_chain() -> TestResult {
 
 #[test]
 fn xdecay_postgres_fire_field_advances_a_source_stage() -> TestResult {
-    xdecay_postgres_stage(2118, 200_000, Some(2119), true)
+    xdecay_postgres_stage(2131, 120_000, Some(2132), true)
 }
 
 #[test]
