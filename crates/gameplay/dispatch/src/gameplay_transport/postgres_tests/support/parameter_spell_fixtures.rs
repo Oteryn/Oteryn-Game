@@ -42,13 +42,21 @@ pub(super) fn scenario(case: u8) -> TestResult {
 }
 
 pub(super) fn scenario_in_world(case: u8, world_type: Option<i16>) -> TestResult {
+    run_scenario(case, world_type, false)
+}
+
+pub(super) fn cast_cues_scenario() -> TestResult {
+    run_scenario(5, None, true)
+}
+
+fn run_scenario(case: u8, world_type: Option<i16>, check_cues: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(move || {
-            run(async move |admin| scenario_inner(admin, case, world_type).await)
+            run(async move |admin| scenario_inner(admin, case, world_type, check_cues).await)
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -56,7 +64,7 @@ pub(super) fn scenario_in_world(case: u8, world_type: Option<i16>) -> TestResult
         .map_err(Into::into)
 }
 
-async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> TestResult {
+async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>, check_cues: bool) -> TestResult {
     let h = Harness::create_with_admission_seed(
         admin,
         &format!("parameter_spell_{case}"),
@@ -413,6 +421,11 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             ),
         ];
     }
+    let cue_baseline = if check_cues {
+        Some(owner.observe_sounds(actor, session, u64::MAX).await.ok_or("presentation cursor")?.0)
+    } else {
+        None
+    };
     let (results, feedback) = exchange(
         &owner,
         &mut admitted,
@@ -450,6 +463,51 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             (i64::from(before) - 20 + real).min(i64::from(vitals.max_mana))
         );
         drop(runtime);
+        if let Some(after) = cue_baseline {
+            let (cursor, events) = owner.observe_sounds(actor, session, after).await.ok_or("cast cues")?;
+            use oteryn_protocol_oteryn::presentation::{PresentationEventKind as Kind, PresentationValueKind};
+            let (decision, spell) = events.iter().find_map(|event| match event.kind {
+                Kind::SpellWords { caster, spell, .. }
+                    if caster.identity == actor.placement_identity()
+                        && caster.generation == actor.actor_local_generation() =>
+                {
+                    Some((event.decision_ordinal, spell))
+                }
+                _ => None,
+            }).ok_or_else(|| format!("committed cast did not publish the caster's SpellWords: {events:?}"))?;
+            assert!(matches!(
+                &deps.spells.indexed(std::num::NonZeroU32::new(spell).ok_or("spell index")?).ok_or("spell definition")?.carrier,
+                crate::spell::Carrier::Instant { words, .. } if words == "exori vis"
+            ));
+            let actual_damage = u64::try_from(real)?;
+            assert!(events.iter().any(|event| event.decision_ordinal == decision && matches!(
+                event.kind,
+                Kind::ValueText { kind: PresentationValueKind::DamageDealt, target: entity, attacker: Some(attacker), primary, .. }
+                    if entity.identity == target.placement_identity()
+                        && entity.generation == target.actor_local_generation()
+                        && attacker.identity == actor.placement_identity()
+                        && attacker.generation == actor.actor_local_generation()
+                        && primary.value == actual_damage
+            )), "cast did not publish its committed HP loss: {events:?}");
+            let refused = actor_spell::encode_spell_cast_intent(&actor_spell::SpellCastIntent {
+                spell: std::num::NonZeroU32::new(u32::try_from(deps.spells.source_len())? + 1).ok_or("unknown spell index")?,
+                target: actor_spell::SpellTarget::None,
+                aim_at_target: false,
+            });
+            let (results, _) = exchange(
+                &owner,
+                &mut admitted,
+                &[(actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT, refused)],
+                false,
+                false,
+            ).await?;
+            assert_ne!(
+                actor_spell::decode_spell_cast_result(&results[0].1).map_err(debug)?,
+                actor_spell::SpellCastDisposition::Cast
+            );
+            let (_, events) = owner.observe_sounds(actor, session, cursor).await.ok_or("refused cast cues")?;
+            assert!(!events.iter().any(|event| matches!(event.kind, Kind::SpellWords { .. } | Kind::ValueText { .. })));
+        }
         if case == 6 {
             // Mana training checkpoints below its advance threshold; flush through the
             // production save owner, then prove the duplicate did not train twice.
