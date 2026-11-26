@@ -258,8 +258,8 @@ struct PvpWorld {
 async fn pvp_world() -> TestResult<PvpWorld> {
     let url = required("NODE_BOOT_PVP_DATABASE_URL")?;
     let accounts = [
-        required("NODE_BOOT_PVP_ACCOUNT_ID")?,
-        required("NODE_BOOT_PVP_SECOND_ACCOUNT_ID")?,
+        required("NODE_BOOT_S02_KNIGHT_ACCOUNT")?,
+        required("NODE_BOOT_S02_SORCERER_ACCOUNT")?,
     ];
     let world = crate::node::uuid_bytes(&required("NODE_BOOT_PVP_WORLD_ID")?)
         .ok_or("invalid NODE_BOOT_PVP_WORLD_ID")?;
@@ -299,9 +299,42 @@ async fn pvp_world() -> TestResult<PvpWorld> {
     })
 }
 
+async fn prepare_fighter(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    index: usize,
+    profile: &'static str,
+) -> TestResult<DevClientSession> {
+    use oteryn_protocol_oteryn::cyclopedia_character as stats;
+
+    let mut fighter = character_prep::Seeded {
+        profile,
+        reason: "Open PvP level floor",
+    }
+    .connect_at(clients, tag, index, "NODE_BOOT_PVP_CONTROL_SOCKET")
+    .await?;
+    let reply = fighter
+        .session_mut()
+        .gated_command(
+            stats::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            stats::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[stats::CharacterTab::GeneralStats as u8, 0, 0, 1],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("S02 player {index} GeneralStats refused: {:?}", reply.status).into());
+    }
+    general_stats::validate(&reply.payload, general_stats::selected(&fighter))?;
+    let level = u32::from_le_bytes(reply.payload[9..13].try_into()?);
+    if level != 8 {
+        return Err(format!("S02 player {index} served level {level}, expected 8").into());
+    }
+    evidence(&format!("S02_CHECK step=seeded-level status=PASS player={index} level={level}"));
+    Ok(fighter)
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let spawns = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?.spawns;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let loaded = boot_world(
         bytes,
@@ -310,17 +343,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let world = &loaded.bundle;
-    for index in 0..2 {
-        let mut fighter = connect_character(clients, 0xb4, index).await?;
-        let earned = full_row_s16b::earn_level_eight(&mut fighter, world, &spawns).await;
-        let released = logout(&mut fighter, Duration::from_secs(70)).await;
-        earned.map_err(|error| {
-            format!("step=earned-open-pvp-level-eight player={index} observed={error}")
-        })?;
-        released?;
-    }
-    let mut a = connect_character(clients, 0xb0, 0).await?;
-    let mut b = connect_character(clients, 0xb1, 1).await?;
+    character_prep::declare_seeded(
+        "S02",
+        "two-dedicated-open-pvp-characters-at-level-8",
+        "Open PvP requires level 8 before exercising the party aggression guard",
+    );
+    let mut a = prepare_fighter(clients, 0xb0, 0, "s02-knight").await?;
+    let mut b = prepare_fighter(clients, 0xb1, 1, "s02-sorcerer").await?;
     place_pair(&mut a, &mut b, world).await?;
     let (ar, av) = party(&mut a, None).await?;
     let (br, bv) = party(&mut b, None).await?;

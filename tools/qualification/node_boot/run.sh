@@ -28,6 +28,8 @@ readonly F5_C17D_ACCOUNT=01934f10-7c00-7000-8000-000000000013
 readonly C11_UNASSIGNED_ACCOUNT=01934f10-7c00-7000-8000-000000000014
 readonly C11_KNIGHT_ACCOUNT=01934f10-7c00-7000-8000-000000000015
 readonly C12_MONK_ACCOUNT=01934f10-7c00-7000-8000-000000000016
+readonly S02_KNIGHT_ACCOUNT=01934f10-7c00-7000-8000-0000000000b1
+readonly S02_SORCERER_ACCOUNT=01934f10-7c00-7000-8000-0000000000b2
 readonly S13_ACCOUNT=01934f10-7c00-7000-8000-000000000017
 readonly W19A_ACCOUNT=01934f10-7c00-7000-8000-000000000019
 readonly C05_TARGET_ACCOUNT=01934f10-7c00-7000-8000-00000000001a
@@ -1573,6 +1575,10 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       "NODE_BOOT_PVP_DATABASE_URL=${ADMIN_URL%/*}/$PVP_DATABASE" "NODE_BOOT_PVP_WORLD_ID=$PVP_WORLD_ID"
       "NODE_BOOT_PVP_CHANNEL_ID=$PVP_CHANNEL_ID" "NODE_BOOT_PVP_ACCOUNT_ID=${PVP_ACCOUNT_IDS[0]}"
       "NODE_BOOT_PVP_SECOND_ACCOUNT_ID=${PVP_ACCOUNT_IDS[1]}")
+    if [[ ${STATUS[pvp_s02_character_bootstrap]:-} == PASS ]]; then
+      test_env+=("NODE_BOOT_S02_KNIGHT_ACCOUNT=$S02_KNIGHT_ACCOUNT"
+        "NODE_BOOT_S02_SORCERER_ACCOUNT=$S02_SORCERER_ACCOUNT")
+    fi
   fi
   # Row selection, fail-fast and the no-progress watchdog belong to the seam harness.
   local knob
@@ -1800,6 +1806,49 @@ SQL
   evidence "pvp_characters=2 world=$PVP_WORLD_ID source=platform_intents path=pvp_control_socket retry=idempotent contract=4 starter=${INTERPRETATION[3]} births=knight,sorcerer projection_revision=1"
 }
 
+pvp_s02_character_bootstrap() {
+  python3 - "$WORK" "$S02_KNIGHT_ACCOUNT" "$S02_SORCERER_ACCOUNT" <<'PY_S02_SEED'
+import json
+from pathlib import Path
+import secrets
+import subprocess
+import sys
+
+work = Path(sys.argv[1])
+binary = json.loads((work / "identity.json").read_text())["portal_binary"]
+env = json.loads((work / "portal/secrets/env.json").read_text())
+for account in sys.argv[2:]:
+    payload = {"accountId": account, "email": f"nb-{account}@example.invalid",
+               "password": secrets.token_urlsafe(48)}
+    try:
+        subprocess.run([binary, "seed", "account", json.dumps(payload)], env=env,
+                       capture_output=True, timeout=20, check=True)
+    except (OSError, subprocess.SubprocessError):
+        raise SystemExit("S02 dedicated Platform account seed failed") from None
+PY_S02_SEED
+  local index
+  local accounts=("$S02_KNIGHT_ACCOUNT" "$S02_SORCERER_ACCOUNT")
+  local names=("Arena Guard" "Arena Sage")
+  local vocations=(Knight Sorcerer)
+  local operations=(01934f10-7c00-7000-8000-0000000000c1 01934f10-7c00-7000-8000-0000000000c2)
+  for index in 0 1; do
+    python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
+      "$WORK" "${accounts[$index]}" "$PVP_WORLD_ID" "${operations[$index]}" "${INTERPRETATION[@]}" \
+      "${names[$index]}" "${vocations[$index]}"
+    pvp_ops character bootstrap --socket "$PVP_BASE/run/control.sock" --operation-id "${operations[$index]}"
+  done
+}
+
+pvp_s02_selected() {
+  local groups=${NODE_BOOT_E2E_ONLY:-}
+  [[ -z "$groups" || ",${groups//[[:space:]]/}," == *,rows,* ]] || return 1
+  local batch=${OTERYN_E2E_ROW_BATCH:-0:15}
+  [[ "$batch" == all ]] && return 0
+  [[ "$batch" =~ ^([0-9]{1,7}):([0-9]{1,7})$ ]] || return 1
+  local first=$((10#${BASH_REMATCH[1]})) count=$((10#${BASH_REMATCH[2]}))
+  (( first <= 44 && 44 - first < count ))
+}
+
 pvp_world_shutdown() { # the Open PvP World's node ends cleanly before the lifecycle probes
   node_signal -TERM "$PVP_NODE_PID"
   for _ in $(seq 1 30); do node_signal -0 "$PVP_NODE_PID" 2>/dev/null || break; sleep 1; done
@@ -1836,6 +1885,9 @@ else
     # MP01's PvP rows report this World's absence themselves, so the seam stage does not need it.
     stage pvp_world_ready node_assigned_ready -- pvp_world_ready
     stage pvp_character_bootstrap pvp_world_ready -- pvp_character_bootstrap
+    if pvp_s02_selected; then
+      stage pvp_s02_character_bootstrap pvp_character_bootstrap -- pvp_s02_character_bootstrap
+    fi
   fi
   stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
