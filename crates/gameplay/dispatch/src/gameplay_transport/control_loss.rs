@@ -175,7 +175,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // acknowledgement was lost; the lifecycle reconciles it (`reconcile_terminal`).
         match budget
             .retry_durability("loss_session", async || {
-                store.current_session(game_session_id).await
+                store.try_current_session(game_session_id).await
             })
             .await
         {
@@ -455,7 +455,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(FreshLossReconciliation::Absent) | Err(_) => {
                     // A failed receipt read cannot retain stale authority forever:
                     // independently proven terminality or supersession still ends it.
-                    store.current_session(game_session_id).await.ok()
+                    store.try_current_session(game_session_id).await.ok()
                 }
             };
             if let Some(current) = current {

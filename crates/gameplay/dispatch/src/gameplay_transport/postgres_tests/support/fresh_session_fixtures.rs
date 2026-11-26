@@ -26,7 +26,35 @@ pub(super) async fn prepare_after_runtime_observation(
     prepare_after_runtime_observation_for_account(harness, now, id(40)).await
 }
 
+pub(super) async fn commit_current_session(
+    harness: &Harness,
+) -> TestResult<crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1> {
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&harness.pool)
+            .await?;
+    commit_after_runtime_observation_for_account(harness, now, id(40)).await
+}
+
 async fn prepare_after_runtime_observation_for_account(
+    harness: &Harness,
+    now: i64,
+    account: [u8; 16],
+) -> TestResult<crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1> {
+    let request = commit_after_runtime_observation_for_account(harness, now, account).await?;
+    let store = FreshAdmissionStore::from_root(harness.root.clone());
+    let (current, _) = store
+        .current_session_at(request.binding().candidate_session)
+        .await?;
+    assert_eq!(
+        current.session_state(),
+        crate::foundation::GameSessionState::Active
+    );
+    assert_eq!(current.current_character_lease().generation(), 2);
+    Ok(request)
+}
+
+async fn commit_after_runtime_observation_for_account(
     harness: &Harness,
     now: i64,
     account: [u8; 16],
@@ -101,13 +129,5 @@ async fn prepare_after_runtime_observation_for_account(
         matches!(outcome, FreshAdmissionDurableOutcomeV1::Committed(_)),
         "fresh fixture outcome={outcome:?}"
     );
-    let (current, _) = store
-        .current_session_at(GameSessionId::decode(&id(50)).map_err(debug)?)
-        .await?;
-    assert_eq!(
-        current.session_state(),
-        crate::foundation::GameSessionState::Active
-    );
-    assert_eq!(current.current_character_lease().generation(), 2);
     Ok(request)
 }

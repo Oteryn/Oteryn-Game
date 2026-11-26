@@ -246,7 +246,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let Ok(current) = budget
             .retry_durability("stamina_session", async || {
-                store.current_session(session).await
+                store.try_current_session(session).await
             })
             .await
         else {
@@ -378,7 +378,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let Ok(current) = budget
             .retry_durability("stamina_session", async || {
-                store.current_session(session).await
+                store.try_current_session(session).await
             })
             .await
         else {
@@ -516,7 +516,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // This attempt never repeats a write. A busy read returns through both
         // guards before the outer budget waits, then re-proves this exact pending tuple.
         let fresh = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session(session)
+            .try_current_session(session)
             .await?;
         if fresh.session_state() == GameSessionState::Terminal
             || super::item_fence_of(fresh) != Some(item)

@@ -26,6 +26,16 @@
       "note": "First row the character revision-chain integrity check finds in violation (LOGDBG-C): receipt family table or receipt_chain, violation gap|fork|latest_mismatch|missing_typed_state|orphan_state, revision numbers (gap/fork over receipt_chain: receipts counted, root revision); no identities."
     },
     {
+      "event": "current_session_holder_unavailable",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "operation"
+      ],
+      "codes": [],
+      "note": "Canonical session lookup could not acquire a semantic pass within the root recovery budget. Backend operation only."
+    },
+    {
       "event": "db_pool",
       "level": "info",
       "span": false,
