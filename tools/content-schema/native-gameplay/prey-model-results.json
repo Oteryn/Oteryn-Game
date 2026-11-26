@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "7be30c38edfcf18849459a2902cee64dcc39c06d0a51cfbe0f8d568631423eb2",
+  "input_sha256": "6c4705a4e1428a3c92e616f03e92aa8a8d8772849ccc3c5a03ab02ebfd70347d",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -1923,7 +1923,6 @@
     "oteryn:creature.boar",
     "oteryn:creature.boar_man",
     "oteryn:creature.bog_raider",
-    "oteryn:creature.bonelord",
     "oteryn:creature.boogy",
     "oteryn:creature.brain_squid",
     "oteryn:creature.braindeath",
@@ -2560,7 +2559,6 @@
     "oteryn:creature.boar",
     "oteryn:creature.boar_man",
     "oteryn:creature.bog_raider",
-    "oteryn:creature.bonelord",
     "oteryn:creature.boogy",
     "oteryn:creature.brain_squid",
     "oteryn:creature.braindeath",

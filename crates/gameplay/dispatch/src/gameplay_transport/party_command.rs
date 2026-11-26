@@ -492,7 +492,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         entities,
                     )
                     .await;
-                    let icons = self.observe_party_skull(admitted).await;
+                    let icons = self.observe_party_skull(admitted).await.ok();
                     for row in projected.members.iter_mut().flat_map(|m| &mut m.list) {
                         if row.distance <= 30 {
                             row.skull = icons

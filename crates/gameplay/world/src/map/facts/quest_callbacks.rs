@@ -2210,7 +2210,8 @@ impl BundleFacts {
         let creates = !states
             .scene_items
             .contains_key(&(position, owner, facts.appearance_id));
-        if states.position_reserved(position) || !states.has_capacity(1 + 2 * usize::from(creates)) {
+        if states.position_reserved(position) || !states.has_capacity(1 + 2 * usize::from(creates))
+        {
             return false;
         }
         project_scene(
@@ -2737,7 +2738,9 @@ fn project_scene(
                     states.movement_items.remove(position);
                 }
                 states.changed.remove(&id.get());
-                states.paid_scene_items.retain(|_, scene| *scene != identity);
+                states
+                    .paid_scene_items
+                    .retain(|_, scene| *scene != identity);
             }
             QuestSceneMutation::Create {
                 position,
@@ -3205,6 +3208,30 @@ mod lifecycle_tests {
         assert_eq!(current[0].0, position);
         assert_eq!(current[0].1.source, original[0].1.source);
         assert_eq!(current[0].1.facts, item);
+
+        use crate::foundation::{CommandId, GameSessionId};
+        let mut session_bytes = [0; 16];
+        session_bytes[6] = 0x70;
+        session_bytes[8] = 0x80;
+        let session = GameSessionId::decode(&session_bytes).map_err(|e| e.to_string())?;
+        let receipt = |ordinal| {
+            CommandId::new(ordinal)
+                .map(|id| CommandRef::new(session, id))
+                .map_err(|e| format!("{e:?}"))
+        };
+        let first = receipt(1)?;
+        let second = receipt(2)?;
+        let third = receipt(3)?;
+        let restored = BundleFacts::default();
+        assert!(restored.restore_paid_scene_item(1, position, item, first));
+        assert!(restored.restore_paid_scene_item(1, position, item, second));
+        assert!(restored.restore_paid_scene_item(1, position, item, first));
+        assert!(!restored.restore_paid_scene_item(2, position, item, second));
+        assert_eq!(restored.movement_item_entries().len(), 1);
+        assert!(restored.restore_paid_scene_item(2, position, item, third));
+        assert_eq!(restored.movement_item_entries().len(), 2);
+        assert_eq!(restored.object_revision(1), 0);
+        assert_eq!(restored.next_movement_decay_time(), None);
         Ok(())
     }
 

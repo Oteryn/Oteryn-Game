@@ -105,7 +105,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .facts
                 .movement_item_facts(edit.create?)
                 .filter(|facts| !facts.pickupable)?;
-            if !map.facts.restore_paid_scene_item(key, position, facts, receipt) {
+            if !map
+                .facts
+                .restore_paid_scene_item(key, position, facts, receipt)
+            {
                 return None;
             }
         }

@@ -15,6 +15,22 @@ def definitions():
 
 
 class NativeGoalCorpseProof(unittest.TestCase):
+    def test_bonelord_has_an_admitted_corpse_and_exact_decay_chain(self):
+        sources, _ = native.policies()
+        self.assertEqual([sources.get(item) for item in (5992, 4089, 4090, 4091)], [
+            (32, 10000, 4089), (32, 300000, 4090), (32, 300000, 4091),
+            (None, 60000, None),
+        ])
+        root = native.ROOT
+        profiles = json.loads((root / 'content/items/definitions/spell-native-profiles.json').read_bytes())
+        corpse = next(row for row in profiles['records']
+                      if row['production_definition']['production_key'] == 'oteryn:item.tibia.i5992')
+        self.assertEqual(corpse['admission']['legal_destinations'], ['Ground'])
+        loot = json.loads((root / 'tools/content-schema/native-gameplay/loot-tables.json').read_bytes())
+        facts = next(row for row in loot['items'] if row['item']['key'] == 'oteryn:item.tibia.i5992')
+        self.assertTrue(facts['materializable'])
+        self.assertEqual(facts['container_capacity'], 32)
+
     def test_portable_native_profiles_remain_exact_and_conflicts_are_atomic(self):
         root = native.ROOT
         profiles = 'content/items/definitions/spell-native-profiles.json'
