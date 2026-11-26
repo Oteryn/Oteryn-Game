@@ -32,6 +32,7 @@ pub struct ForgeResolvedItems {
     pub second: [u8; 16],
 }
 
+use crate::durability::db::commit_semantic_read;
 use super::DurabilityError;
 use super::character_progression::{CurrentCharacterGameplayFence, uuid_text};
 use super::item_mint_audit::check_uuid_v7;
@@ -903,7 +904,7 @@ impl DurabilityRoot {
                         return Ok(Err(ForgeDustLimitError::ConflictingOccurrence));
                     }
                     let receipt = load_dust_limit_receipt(&mut tx, &frozen).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(receipt))
                 })
             })

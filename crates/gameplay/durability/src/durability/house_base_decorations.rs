@@ -5,6 +5,7 @@ use super::db::{
 };
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
 use super::{DurabilityError, DurabilityRoot};
+use crate::durability::db::commit_semantic_read;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use sqlx::Row;
 
@@ -134,7 +135,7 @@ impl DurabilityRoot {
                                 .map_err(|_| DurabilityError::InvalidStoredState)?,
                         });
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(HouseBaseDecorationSnapshot {
                         materialized,
                         entries: result,
@@ -205,7 +206,7 @@ impl DurabilityRoot {
                         .fetch_one(&mut *tx)
                         .await?;
                     let value: Option<String> = row.try_get(0)?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(value.as_deref().map(disposition))
                 })
             })

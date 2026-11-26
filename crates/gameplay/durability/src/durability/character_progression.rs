@@ -4,6 +4,7 @@
 //! not prove that Combat legitimately produced an occurrence or select the
 //! Reference progression policy.
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
@@ -350,7 +351,7 @@ impl DurabilityRoot {
                         .as_ref()
                         .map(decode_receipt)
                         .transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(record))
                 })
             })
@@ -384,7 +385,7 @@ impl DurabilityRoot {
                     .bind(character_id.as_bytes().as_slice())
                     .fetch_one(&mut *tx)
                     .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(found))
                 })
             })
@@ -419,7 +420,7 @@ impl DurabilityRoot {
                         .as_ref()
                         .map(|row| decode_state(row, character_id))
                         .transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(state))
                 })
             })

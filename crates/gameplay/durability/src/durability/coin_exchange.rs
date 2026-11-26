@@ -273,7 +273,7 @@ pub mod audit_commit_probe {
             root: usize,
             command: CommandRef,
             phase: &'static str,
-            deadline: Instant,
+            deadline: tokio::time::Instant,
         ) -> Self {
             Self(
                 ACTIVE
@@ -287,7 +287,7 @@ pub mod audit_commit_probe {
                             commit: Commit {
                                 phase,
                                 remaining_ms: deadline
-                                    .saturating_duration_since(Instant::now())
+                                    .saturating_duration_since(tokio::time::Instant::now())
                                     .as_millis(),
                                 elapsed_ms: 0,
                                 outcome: "Cancelled",

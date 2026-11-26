@@ -1,7 +1,8 @@
 //! Crystal 201189f player_wheel.cpp:1634-1643: the seven live Atelier balances.
 //! Display counts are by item type, as in player.cpp:5190-5210; they are not a
 //! payment reservation and never enter the Atelier state or mutation receipt.
-use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use crate::durability::db::commit_semantic_read;
+use super::super::db::{begin_semantic_transaction};
 use super::*;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -209,7 +210,7 @@ impl DurabilityRoot {
                             numeric_u64(&row, "stash_supreme")?,
                         ],
                     )?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(balances))
                 })
             })
