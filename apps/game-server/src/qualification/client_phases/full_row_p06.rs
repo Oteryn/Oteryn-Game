@@ -265,18 +265,6 @@ async fn next_vitals(
     }
 }
 
-async fn relog_vitals(
-    client: &mut DevClientSession,
-    expected: oteryn_protocol_oteryn::actor_spell::ActorVitals,
-    step: &str,
-) -> TestResult<oteryn_protocol_oteryn::actor_spell::ActorVitals> {
-    if client.actor_vitals() == Some(&expected) {
-        return Ok(expected);
-    }
-    // A freshly delivered fixture entitlement can update the admitted snapshot on the periodic stream.
-    next_vitals(client, step, 0).await
-}
-
 async fn own_level(client: &mut DevClientSession) -> TestResult<u32> {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
     let reply = client
@@ -627,8 +615,11 @@ async fn journey(
     {
         return Err(format!("step 3 full-slot conviction effect absent: {conviction:?}").into());
     }
-    row.pass("conviction-save", (&saved_full, full_vitals, conviction));
+    row.pass("conviction-save", (&saved_full, full_vitals, &conviction));
 
+    let before_stale = *client
+        .actor_vitals()
+        .ok_or("step 4 pre-save vitals absent")?;
     let (response, stale, _) = send(
         &mut client,
         &request(1, v7(0xd6, 3), initial.revision, partial),
@@ -640,17 +631,38 @@ async fn journey(
         );
     }
     validate_current(&response, &stale)?;
-    if client.actor_vitals().copied() != Some(full_vitals) {
-        return Err("step 4 refused stale save changed actor vitals".into());
+    let after_stale = *client
+        .actor_vitals()
+        .ok_or("step 4 post-save vitals absent")?;
+    // Current mana can rise on a periodic regeneration tick. Wheel dedication
+    // changes maxima and cannot grant mana, and this actor is already at full HP.
+    if (after_stale.max_health, after_stale.max_mana)
+        != (full_vitals.max_health, full_vitals.max_mana)
+        || after_stale
+            != (oteryn_protocol_oteryn::actor_spell::ActorVitals {
+                mana: after_stale.mana,
+                ..before_stale
+            })
+        || !(before_stale.mana..=full_vitals.max_mana).contains(&after_stale.mana)
+        || full_row_p07::live_wheel_effects(&mut client, &saved_full, 5).await? != conviction
+    {
+        return Err(format!("step 4 refused stale save changed actor vitals or Wheel effects: before={before_stale:?} after={after_stale:?}").into());
     }
-    row.pass("stale-refusal", &stale);
+    row.pass("stale-refusal", (&stale, before_stale, after_stale));
 
     logout(&mut client).await?;
     drop(client);
     let mut client = connect_eligible(clients, 0xd7).await?;
     let (_, reloaded, _) = send(&mut client, &query_request()).await?;
-    let reloaded_vitals = relog_vitals(&mut client, full_vitals, "fresh-admission-save").await?;
-    if reloaded != saved_full || reloaded_vitals != full_vitals {
+    let reloaded_vitals = next_vitals(&mut client, "fresh-admission-save", 0).await?;
+    if reloaded != saved_full
+        || reloaded_vitals
+            != (oteryn_protocol_oteryn::actor_spell::ActorVitals {
+                mana: reloaded_vitals.mana,
+                ..full_vitals
+            })
+        || full_row_p07::live_wheel_effects(&mut client, &reloaded, 6).await? != conviction
+    {
         return Err(format!(
             "step 5 fresh admission lost durable allocation/vitals: saved={saved_full:?} queried={reloaded:?} vitals={:?}",
             client.actor_vitals()
