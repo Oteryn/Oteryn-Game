@@ -199,27 +199,41 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("platinum-to-gold", (platinum, initial, reply.lines));
 
+    let bank_before = super::full_row_e06::bank_balance(&dedicated, 1).await?;
+    let deposited = bank_before.checked_add(100).ok_or("E02 bank balance overflow")?;
+    let insufficient = ["Sorry, you do not have enough gold coins."];
     let reply = exchange(&mut client, actor, &["change gold", "2", "yes"]).await?;
     let after_refusal = backpack_coins(&client, refs)?;
-    if after_refusal != initial || !reply.lines.iter().any(|line| line.contains("enough")) {
+    if after_refusal != initial || reply.lines != insufficient || super::full_row_e06::bank_balance(&dedicated, 1).await? != bank_before {
         return Err(format!("step=insufficient-refusal observed=reply:{:?},coins:{after_refusal:?}", reply.lines).into());
     }
     row.pass("insufficient-refusal", (reply.lines, after_refusal));
 
     let reply = exchange(&mut client, actor, &["deposit all", "yes"]).await?;
     wait_coins(&mut client, refs, [0, 0, 0], "deposit-all").await?;
+    if super::full_row_e06::bank_balance(&dedicated, 1).await? != deposited {
+        return Err("step=deposit-all observed=incorrect-bank-credit".into());
+    }
     let refusal = exchange(&mut client, actor, &["change gold", "1", "yes"]).await?;
-    if backpack_coins(&client, refs)? != [0, 0, 0] || !refusal.lines.iter().any(|line| line.contains("enough")) {
+    if backpack_coins(&client, refs)? != [0, 0, 0] || refusal.lines != insufficient || super::full_row_e06::bank_balance(&dedicated, 1).await? != deposited {
         return Err(format!("step=bank-only-refusal observed=deposit:{:?},exchange:{:?},coins:{:?}", reply.lines, refusal.lines, backpack_coins(&client, refs)?).into());
     }
     row.pass("bank-only-refusal", (reply.lines, refusal.lines));
 
     let withdrawal = exchange(&mut client, actor, &["withdraw 100 gold", "yes"]).await?;
     wait_coins(&mut client, refs, platinum, "withdraw-after-refusal").await?;
+    if super::full_row_e06::bank_balance(&dedicated, 1).await? != bank_before {
+        return Err("step=withdraw-after-refusal observed=incorrect-bank-debit".into());
+    }
     let restored = exchange(&mut client, actor, &["change platinum", "gold", "1", "yes"]).await?;
     wait_coins(&mut client, refs, initial, "restore-gold-before-relogin").await?;
     if !restored.lines.iter().any(|line| line == "Here you are.") {
         return Err(format!("step=restore-gold-before-relogin observed={:?}", restored.lines).into());
+    }
+    let final_conversion = exchange(&mut client, actor, &["change gold", "1", "yes"]).await?;
+    wait_coins(&mut client, refs, platinum, "convert-before-relogin").await?;
+    if final_conversion.lines != ["Here you are."] {
+        return Err(format!("step=convert-before-relogin observed={:?}", final_conversion.lines).into());
     }
     let old_session = client.join_snapshot().game_session_id;
     if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -228,7 +242,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     drop(client);
     let mut fresh = connect_world(&dedicated, 0xb1).await?;
     let persisted = backpack_coins(&fresh, refs)?;
-    if fresh.join_snapshot().game_session_id == old_session || persisted != [100, 0, 0] {
+    if fresh.join_snapshot().game_session_id == old_session || persisted != platinum
+        || super::full_row_e06::bank_balance(&dedicated, 1).await? != bank_before {
         return Err(format!("step=fresh-admission-persistence observed=session-reused:{},coins:{persisted:?}", fresh.join_snapshot().game_session_id == old_session).into());
     }
     row.pass("fresh-admission-persistence", (withdrawal.lines, persisted));
