@@ -98,6 +98,7 @@ pub(super) async fn prepare_free_sorcerer(
         QualificationBuildSpec {
             vocation: "sorcerer",
             level: 8,
+            exact_level: false,
             context,
             xp_occurrence,
             build_occurrence,
@@ -111,6 +112,7 @@ pub(super) async fn prepare_free_sorcerer(
 pub(crate) struct QualificationBuildSpec<'a> {
     pub vocation: &'a str,
     pub level: u32,
+    pub exact_level: bool,
     pub context: ProgressionRevisionContext<String>,
     pub xp_occurrence: [u8; 16],
     pub build_occurrence: [u8; 16],
@@ -211,6 +213,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     let QualificationBuildSpec {
         vocation,
         level,
+        exact_level,
         context,
         xp_occurrence: _,
         build_occurrence: _,
@@ -312,7 +315,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
             return Err("spell fixture progression level or XP is not initial".into());
         }
         if checkpoint
-            && !resume_items
+            && (exact_level || !resume_items)
             && (state.level != level || state.total_experience != experience)
         {
             return Err("qualification fixture XP checkpoint has changed".into());
