@@ -8,9 +8,9 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use sqlx::Connection;
 
-pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients, world))).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -80,7 +80,7 @@ fn operation() -> [u8; 16] {
     id
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
     let peer = character_name(clients, 0).await?;
     let mut client = connect_world(clients, 0xd5).await?;
     for capability in [coin_transfer::CAPABILITY, coin_market::CAPABILITY] {
@@ -102,18 +102,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &detail(operation()).map_err(|error| format!("step=encode observed={error:?}"))?,
     )
     .await?;
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
-        bytes,
-        &pin,
-        WorldId::decode(&clients.world)?,
-        ChannelId::decode(&clients.channel)?,
-    )?;
     let start = tile(client.world_spatial().actor_position)?;
     let path = route(world, start, |at| near_locker(world, at))
         .ok_or("step=walk-to-depot observed=no-reachable-locker")?;
     walk(&mut client, world, &path).await?;
+    verdict::Harness::global().progress("transfer-quote");
     let review = coin_transfer::encode(&coin_transfer::Request {
         action: 1,
         recipient: peer.clone(),
@@ -128,6 +121,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &review,
     )
     .await?;
+    verdict::Harness::global().progress("coin-market");
     let list = coin_market::encode(&coin_market::Request::default())
         .map_err(|error| format!("step=encode observed={error:?}"))?;
     let market = json_call(

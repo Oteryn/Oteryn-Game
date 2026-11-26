@@ -175,7 +175,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<(u32, u32)> {
             .points
             .checked_add(CONSUMED_PREMIUM_DAYS)
             .ok_or("loyalty points overflow")?;
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+        // Allow two capped stream backoffs (60 s each), plus their requests.
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
         verdict::Harness::global().bounded_wait(deadline, "loyalty-stream");
         loop {
             let current = snapshot(&mut client, "post-consumption-query").await?;

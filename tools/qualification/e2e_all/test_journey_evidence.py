@@ -8,6 +8,19 @@ ROOT = Path(__file__).resolve().parents[3]
 PHASES = ROOT / 'apps/game-server/src/qualification/client_phases'
 
 class JourneyEvidenceTests(unittest.TestCase):
+    def test_g25_reuses_world_prepared_before_admission(self):
+        source = (PHASES / 'full_row_g25.rs').read_text()
+        caller = (PHASES / 'world.rs').read_text()
+        self.assertNotIn('NODE_BOOT_WORLD_BUNDLE', source)
+        self.assertIn('full_row_g25::run_packet(clients, world).await', caller)
+
+    def test_p13_can_observe_two_capped_stream_retries(self):
+        row = (PHASES / 'full_row_p13.rs').read_text()
+        owner = (ROOT / 'crates/gameplay/social/src/premium/refresh.rs').read_text()
+        cap = int(re.search(r'RETRY_CAP: Duration = Duration::from_secs\((\d+)\)', owner)[1])
+        delay = int(re.search(r'let deadline = tokio::time::Instant::now\(\) \+ Duration::from_secs\((\d+)\);\n        verdict::Harness::global\(\).bounded_wait\(deadline, "loyalty-stream"\);', row)[1])
+        self.assertGreater(delay, 2 * cap)
+
     def test_g16_claim_decodes_shared_result_and_binds_inbox_mint(self):
         source = (PHASES / 'full_row_g16.rs').read_text()
         self.assertNotIn('reply.first()', source)
