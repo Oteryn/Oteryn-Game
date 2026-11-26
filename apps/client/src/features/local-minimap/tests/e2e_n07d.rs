@@ -243,7 +243,21 @@ async fn verify(
         .ok_or("N07d missing moved map")?;
     assert_eq!(moved.header.origin, destination);
     assert_eq!(map_ground(&moved), moved_ground);
-    view.set_live_map(&moved)?;
+    let (_, _, _, zoom, tracking) = view.minimap_camera();
+    assert!(tracking, "N07d needs default automatic minimap tracking");
+    assert_eq!(
+        view.minimap_camera(),
+        (origin.x, origin.y, origin.floor, zoom, true)
+    );
+    view.apply_pushed(&crate::play::Pushed {
+        map: Some(Box::new(moved)),
+        own: Some(destination),
+        ..Default::default()
+    })?;
+    assert_eq!(
+        view.minimap_camera(),
+        (destination.x, destination.y, destination.floor, zoom, true)
+    );
     let retained: BTreeSet<_> = walkable
         .iter()
         .copied()

@@ -3,7 +3,7 @@ use super::*;
 use oteryn_dev_client::native_session::{Admission, Session};
 use oteryn_protocol_oteryn::world_map::{
     STATE_DOMAIN_WORLD_MAP_VIEW, VIEW_HEIGHT, VIEW_LEFT, VIEW_TOP, VIEW_WIDTH,
-    WorldMapViewSnapshot, in_window,
+    WorldMapViewSnapshot, floors_in_view, in_window,
 };
 use std::pin::Pin;
 use std::sync::Mutex;
@@ -155,35 +155,34 @@ fn viewport_ground(
         .into());
     }
     let mut ground = Vec::new();
-    for x in expected.x - VIEW_LEFT..expected.x - VIEW_LEFT + VIEW_WIDTH {
-        for y in expected.y - VIEW_TOP..expected.y - VIEW_TOP + VIEW_HEIGHT {
-            let at = tile(ActorPosition {
-                x,
-                y,
-                floor: expected.floor,
-            })?;
-            if world
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|tile| tile.stored_ground_speed() > 0)
-            {
-                ground.push((expected.floor, x, y));
+    let floors = floors_in_view(expected.floor).ok_or("N07d invalid viewport floor")?;
+    for floor in floors {
+        let shift = i32::from(expected.floor - floor);
+        let left = expected.x - VIEW_LEFT + shift;
+        let top = expected.y - VIEW_TOP + shift;
+        for x in left..left + VIEW_WIDTH {
+            for y in top..top + VIEW_HEIGHT {
+                let at = tile(ActorPosition { x, y, floor })?;
+                if world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|tile| tile.stored_ground_speed() > 0)
+                {
+                    ground.push((floor, x, y));
+                }
             }
         }
     }
     let observed = map
         .tiles
         .iter()
-        .filter(|tile| {
-            tile.ground_speed > 0
-                && tile.position.floor >= map.header.first_visible_floor
-                && in_window(expected, tile.position)
-        })
+        .filter(|tile| tile.ground_speed > 0 && in_window(expected, tile.position))
         .map(|tile| (tile.position.floor, tile.position.x, tile.position.y))
         .collect::<std::collections::BTreeSet<_>>();
     if !ground.iter().copied().eq(observed.iter().copied()) || ground.is_empty() {
         return Err(format!("N07d viewport ground differs from pinned World: origin={expected:?} expected={} actual={}", ground.len(), observed.len()).into());
     }
+    ground.retain(|&(floor, _, _)| floor >= map.header.first_visible_floor);
     Ok(ground)
 }
 
