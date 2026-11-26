@@ -56,6 +56,9 @@ const C10_FULL_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000020";
 const C10_CLIENT_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000021";
 
 #[cfg(feature = "qualification-spawn")]
+const C16B_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000024";
+
+#[cfg(feature = "qualification-spawn")]
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "s08-knight" => Some(("knight", 8)),
@@ -67,6 +70,7 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
         "c11-unassigned" => Some((crate::durability::character_build::NO_VOCATION, 8)),
         "c11-knight" => Some(("knight", 625)),
         "c12-monk" => Some(("monk", 20)),
+        "c16b-druid" => Some(("druid", 100)),
         "c06-sorcerer" => Some(("sorcerer", 15)),
         "f5-c17a" => Some(("sorcerer", 20)),
         "f5-c17c" => Some(("sorcerer", 23)),
@@ -775,6 +779,7 @@ async fn prepare_build(
             | "c11-unassigned"
             | "c11-knight"
             | "c12-monk"
+            | "c16b-druid"
             | "c06-sorcerer"
             | "s13-party"
             | "w20b-light"
@@ -814,6 +819,7 @@ async fn prepare_build(
             | ("c10-sorcerer", C10_FULL_ACCOUNT | C10_CLIENT_ACCOUNT)
             | ("c11-knight", KNIGHT_ACCOUNT)
             | ("c12-monk", MONK_ACCOUNT)
+            | ("c16b-druid", C16B_ACCOUNT)
             | ("c06-sorcerer", C06_CASTER_ACCOUNT)
             | ("s13-party", PARTY_CASTER_ACCOUNT)
             | ("w20b-light", LIGHT_ACCOUNT)
@@ -868,6 +874,49 @@ async fn prepare_build(
         deadline,
     )
     .await?;
+    #[cfg(feature = "qualification-spawn")]
+    if profile == "c16b-druid" {
+        use crate::durability::character_build::{
+            BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildOccurrence, DurableBuildState,
+        };
+        use crate::durability::character_progression::CurrentCharacterGameplayFence;
+
+        let before = root.read_character_build_state(authority, character).await
+            .map_err(qualification_build::debug)?;
+        if before.magic().0 < 18 {
+            let revision = root.read_current_character(authority, character).await
+                .map_err(qualification_build::debug)?.revision;
+            let fence = CurrentCharacterGameplayFence {
+                character_id: character,
+                game_session_id: current.current_game_session_id(),
+                connection_generation: current.current_connection_generation(),
+                character_lease_generation: current.current_character_lease().generation(),
+                runtime_scope: current.current_runtime_scope(),
+                scope_ownership_generation: current.current_scope_generation(),
+                expected_character_revision: revision,
+            };
+            let after = DurableBuildState::new(before.vocation(), (18, 0), before.skills())
+                .map_err(qualification_build::debug)?;
+            let formula = native.training_formula().ok_or("qualification training formula absent")?;
+            let outcome = root.commit_character_build(
+                authority, proof, fence,
+                BuildChangeRequest {
+                    occurrence: BuildOccurrence::from_bytes(fixture_occurrence(
+                        character.as_bytes(), profile, b"magic",
+                    )).map_err(qualification_build::debug)?,
+                    cause: BuildCause::Training,
+                    before,
+                    after,
+                    pruned_stance: None,
+                },
+                formula,
+            ).await.map_err(qualification_build::debug)?;
+            if !matches!(outcome, BuildCommitOutcome::Committed(_)) {
+                return Err(format!("C16b magic preparation did not commit: {outcome:?}").into());
+            }
+        }
+        return prepare_items(root, authority, proof, &current, native, deadline, Some((3165, 1))).await;
+    }
     #[cfg(feature = "qualification-spawn")]
     if spell_build(profile).is_some() {
         return Ok(());
