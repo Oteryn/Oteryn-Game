@@ -1,53 +1,67 @@
-//! Client replay capture for SCENARIO_MATRIX C16d.
+//! Live C16d admission capture and client replay.
 
 use super::*;
+use std::io::Write;
+
+const REPLAY_TEST: &str = "tests::e2e_c16d::e2e_c16d_item_appearance_snapshot_replay";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, _world: &BundleWorld) {
-    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
-        return;
-    }
-    // Capture this admission only; full F5 journeys retain their own dispatch and verdicts.
-    if let Err(error) = verdict::observe(capture(clients)).await {
-        evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=C16d.client capture_error={error}"
-        ));
+    match verdict::observe(capture_and_replay(clients)).await {
+        Ok(()) => evidence(
+            "e2e_all scenario=C16d.client status=PASS evidence=live-entity-snapshot-replay",
+        ),
+        Err(error) => evidence(&format!(
+            "e2e_all scenario=C16d.client status=FAIL evidence={error}"
+        )),
     }
 }
 
-async fn capture(clients: &SeamClients<'_>) -> TestResult {
+async fn capture_and_replay(clients: &SeamClients<'_>) -> TestResult {
+    let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .ok_or("C16d capture directory must be set for live replay")?;
+    let directory = Path::new(&directory).canonicalize()?;
     let mut client = connect_world(clients, 0xd6).await?;
-    let expected = own_appearance_reference(&client)?;
-    let snapshot = client
+    let files = client
         .session_mut()
-        .gated_snapshot(
-            oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-        )
-        .ok_or("C16d capture entity snapshot absent")?;
-    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return Ok(());
-    };
-    let write = || -> TestResult {
-        let path = Path::new(&path);
-        std::fs::write(path.join("c16d-entities.bin"), &snapshot.payload)?;
-        std::fs::write(path.join("c16d-expected.txt"), format!("{expected}\n"))?;
-        Ok(())
-    };
-    if let Err(error) = write() {
-        evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=C16d.client write_error={error}"
-        ));
+        .c16d_capture_files()
+        .ok_or("C16d live capture unavailable")?;
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C16d logout refused: {:?}", logout.result).into());
+    }
+    drop(client);
+    for (name, bytes) in files {
+        std::fs::File::create_new(directory.join(name))?.write_all(&bytes)?;
+    }
+
+    let replay = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("timeout")
+            .current_dir(Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
+            .env("E2E_ALL_CAPTURE_DIR", directory)
+            .args([
+                "80s",
+                env!("CARGO"),
+                "test",
+                "--locked",
+                "-p",
+                "oteryn-session",
+                "--lib",
+                REPLAY_TEST,
+                "--",
+                "--exact",
+                "--format",
+                "pretty",
+            ])
+            .output()
+    })
+    .await??;
+    let passed = format!("test {REPLAY_TEST} ... ok");
+    if !replay.status.success()
+        || !String::from_utf8_lossy(&replay.stdout)
+            .lines()
+            .any(|line| line == passed)
+    {
+        return Err(format!("C16d exact Session replay failed: {}", replay.status).into());
     }
     Ok(())
-}
-
-fn own_appearance_reference(client: &oteryn_dev_client::DevClientSession) -> TestResult<u32> {
-    let entities = client.world_entities().ok_or("C16d entities absent")?;
-    let own = entities
-        .iter()
-        .find(|entity| &entity.entity.identity == entities.own_identity())
-        .ok_or("C16d own actor absent")?;
-    match own.detail {
-        oteryn_dev_client::EntityDetail::Actor { appearance_ref, .. } => Ok(appearance_ref),
-        _ => Err("C16d own actor appearance absent".into()),
-    }
 }
