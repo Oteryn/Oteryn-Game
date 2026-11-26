@@ -409,6 +409,12 @@ async fn prepare_spatial(
                 let (dx, dy) = delta(facing_direction);
                 offset(position, dx, dy)?
             }
+            // Crystal spells.cpp:1254–1257 uses the caster when there is no cursor tile.
+            SpellTarget::None | SpellTarget::AttackTarget
+                if parameters["spell_name"] == "death echo" =>
+            {
+                position
+            }
             SpellTarget::None | SpellTarget::AttackTarget if is_delayed => {
                 if spell
                     .authored

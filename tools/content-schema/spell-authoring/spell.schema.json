@@ -3408,9 +3408,6 @@
                             "maxItems": 5,
                             "prefixItems": [
                               {
-                                "const": 0
-                              },
-                              {
                                 "const": 1
                               },
                               {
@@ -3420,7 +3417,10 @@
                                 "const": 1
                               },
                               {
-                                "const": 0
+                                "const": 1
+                              },
+                              {
+                                "const": 1
                               }
                             ],
                             "items": false
@@ -3500,9 +3500,6 @@
                             "maxItems": 5,
                             "prefixItems": [
                               {
-                                "const": 0
-                              },
-                              {
                                 "const": 1
                               },
                               {
@@ -3512,7 +3509,10 @@
                                 "const": 1
                               },
                               {
-                                "const": 0
+                                "const": 1
+                              },
+                              {
+                                "const": 1
                               }
                             ],
                             "items": false
@@ -5763,9 +5763,6 @@
                             "maxItems": 5,
                             "prefixItems": [
                               {
-                                "const": 0
-                              },
-                              {
                                 "const": 1
                               },
                               {
@@ -5775,7 +5772,10 @@
                                 "const": 1
                               },
                               {
-                                "const": 0
+                                "const": 1
+                              },
+                              {
+                                "const": 1
                               }
                             ],
                             "items": false
@@ -5855,9 +5855,6 @@
                             "maxItems": 5,
                             "prefixItems": [
                               {
-                                "const": 0
-                              },
-                              {
                                 "const": 1
                               },
                               {
@@ -5867,7 +5864,10 @@
                                 "const": 1
                               },
                               {
-                                "const": 0
+                                "const": 1
+                              },
+                              {
+                                "const": 1
                               }
                             ],
                             "items": false

@@ -69,6 +69,14 @@ CIRCLE = [
     [1, 1, 1, 1, 1],
     [0, 1, 1, 1, 0],
 ]
+# Crystal 201189f8, data/scripts/spells/attack/death_echo.lua:11–17.
+DEATH_ECHO_AREA = [
+    [1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1],
+    [1, 1, 3, 1, 1],
+    [1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1],
+]
 STANCE_FIELDS = [
     "elementalStanceIntrinsicType",
     "elementalStanceResolvedType",
@@ -259,7 +267,7 @@ def _raw_snapshot(name):
                 "position_source": "cast_position",
                 "position_timing": "at_cast",
                 "target_resolution": "area_creatures_at_each_occurrence",
-                "area": deepcopy(CIRCLE),
+                "area": deepcopy(DEATH_ECHO_AREA),
                 "damage_element": "death",
                 "effect_asset_binding": "canary.appearance:effect/death_echo",
                 "formula": _formula("magic"),
@@ -281,12 +289,6 @@ def _raw_snapshot(name):
                 "approved_omissions": [
                     _omission("crystal", "base_power", 85, "WIKI/S24:official_8872"),
                     _omission("crystal", "mana", 155, "S24:official_spell_list_150"),
-                    _omission(
-                        "crystal",
-                        "area",
-                        "25_tile_square",
-                        "S21:wiki_5x5_does_not_specify_corners",
-                    ),
                     _omission("crystal", "identity_gate", "player_id_only", "S21"),
                     _omission(
                         "crystal",

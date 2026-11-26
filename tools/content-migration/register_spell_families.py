@@ -1889,6 +1889,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # the live map viewport and LOS bound the cast, rather than Crystal's five tiles.
     catalog_path = spell_import.PROVIDER_DESTINATIONS["catalog"]
     catalog = json.loads(generated[catalog_path])
+    for entry in catalog["bundles"]:
+        spell_import.project_death_echo_area(root, entry["bundle"]["spell"])
     spec = importlib.util.spec_from_file_location(
         "build_executable_catalog",
         root / "tools/content-schema/spell-authoring/build_executable_catalog.py",

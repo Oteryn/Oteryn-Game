@@ -47,7 +47,7 @@
     "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "18bf9dab46263eba5244ba756f9fa57950ef8c36",
+    "declarations": "d6df5a69661c328ebe7bba267c8801660abad614",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "2612aed1054650d66dafb0828220dfefa66e19f4",
     "reference": "e8c4487697f321137afbd4b4962a7d0e202a4331",
@@ -109,10 +109,10 @@
             "dependencies": "tools/content-schema/spell-authoring/spell-dependencies.schema.json",
             "manifest": "tools/content-schema/monster-authoring/monster-import-readiness.schema.json"
           },
-          "sha256": "ad56f262637310a9eab53bc82a2d8d9aaa10709c5345319b39c2f659a47c7327",
+          "sha256": "c91ae6661fa9a2cc19226598be379c1b683c46404d4194feef730a89fe286b24",
           "source_selection": {
             "path": "content/abilities/definitions/player-spell-selection.json",
-            "sha256": "26b3550d695f408462675b843bc50c7a4b7a9d58fc7d2fee697e6bfb22aa54dc"
+            "sha256": "2426a049144c4a83d18008542ecae66964fa7dc1170069da6905c476d90dad5b"
           }
         },
         {
@@ -227,7 +227,7 @@
             "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
             "records": "tools/content-schema/spell-authoring/spell-dependencies.schema.json#/properties/formulas/items"
           },
-          "sha256": "e26c4082197201945932d9fabbeb0f3cf9a527cd0915058075139071ccd24cb0"
+          "sha256": "2fae4aa93ddfcef3c785a325eab892158aad00ae15c467b3ef246173bb182cf0"
         }
       ],
       "Item": [
