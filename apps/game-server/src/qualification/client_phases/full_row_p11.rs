@@ -63,6 +63,8 @@ async fn page(client: &mut DevClientSession, number: u32) -> TestResult<AccountA
     }
 }
 
+const ACHIEVEMENT: &str = "oteryn:achievement/annihilator";
+
 async fn authored_granter(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
@@ -86,25 +88,38 @@ async fn authored_granter(
                 .is_some_and(|id| provisioning::item_reference(&items, id).is_ok())
         },
     )?;
-    let from = tile(client.world_spatial().actor_position)?;
-    for placement in report.served.into_iter().flat_map(|claim| claim.placements) {
-        if let Some(achievement) = placement.placement.achievement
-            && let Some(path) = route(world, from, |at| {
-                at.floor == placement.cell.floor
-                    && at
-                        .x
-                        .abs_diff(placement.cell.x)
-                        .max(at.y.abs_diff(placement.cell.y))
-                        <= 1
-            })
-        {
-            walk(client, world, &path).await?;
-            let mut key = world.base().digest().to_vec();
-            key.extend_from_slice(&placement.bundle_placement_key.to_be_bytes());
-            return Ok((key, achievement));
-        }
+    const REWARD_CHEST: TilePos = TilePos {
+        x: 33227,
+        y: 31656,
+        floor: -13,
+    };
+    let mut matches = report
+        .served
+        .into_iter()
+        .flat_map(|claim| claim.placements)
+        .filter(|placement| {
+            placement.cell.x == REWARD_CHEST.x
+                && placement.cell.y == REWARD_CHEST.y
+                && placement.cell.floor == REWARD_CHEST.floor
+                && placement.placement.achievement.as_deref() == Some(ACHIEVEMENT)
+        });
+    let placement = matches
+        .next()
+        .ok_or("step=granter missing fixed authored Annihilator chest at 33227,31656,13")?;
+    if matches.next().is_some() {
+        return Err("step=granter ambiguous authored Annihilator chest at 33227,31656,13".into());
     }
-    Err("step=granter need=walkable-authored-achievement-reward-chest source=crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:332".into())
+    let from = tile(client.world_spatial().actor_position)?;
+    let interaction = TilePos {
+        y: 31657,
+        ..REWARD_CHEST
+    };
+    let path = route(world, from, |at| at == interaction)
+        .ok_or("step=granter fixed Annihilator chest position 33227,31657,13 unreachable")?;
+    walk(client, world, &path).await?;
+    let mut key = world.base().digest().to_vec();
+    key.extend_from_slice(&placement.bundle_placement_key.to_be_bytes());
+    Ok((key, ACHIEVEMENT.to_owned()))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -230,6 +245,25 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn p11_uses_only_the_authored_annihilator_reward_position() {
+        let source = include_str!("full_row_p11.rs");
+        let Some((_, granter)) = source.split_once("async fn authored_granter(") else {
+            panic!("missing P11 granter");
+        };
+        let Some((granter, _)) = granter.split_once("\n}") else {
+            panic!("missing P11 granter body");
+        };
+        assert!(granter.contains("placement.cell.x == REWARD_CHEST.x"));
+        assert!(granter.contains("placement.cell.y == REWARD_CHEST.y"));
+        assert!(granter.contains("placement.cell.floor == REWARD_CHEST.floor"));
+        assert!(
+            granter.contains("placement.placement.achievement.as_deref() == Some(ACHIEVEMENT)")
+        );
+        assert!(granter.contains("matches.next().is_some()"));
+        assert!(granter.contains("at == interaction"));
+    }
     #[test]
     fn evidence_sanitizer_produces_one_report_token() {
         assert_eq!(
