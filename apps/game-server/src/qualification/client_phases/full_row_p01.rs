@@ -210,23 +210,34 @@ pub(super) async fn prepare_hunter(
     if (vitals.max_health, vitals.max_mana) != (545, 2250) {
         return Err(format!("P01 seeded Sorcerer max vitals {vitals:?}").into());
     }
+    evidence(&format!(
+        "P01_CHECK hunter-profile PASS vocation=sorcerer level={level} xp={xp} max_health=545 max_mana=2250"
+    ));
     let modes = FightModes {
         fight_mode: FightMode::Offensive,
         chase: ChaseMode::Chase,
         secure: true,
     };
     let reply = client.session_mut().set_fight_modes(&modes).await?;
-    if reply.disposition != AttackIntentDisposition::Ok
-        || client
-            .session_mut()
-            .combat_state()
-            .is_none_or(|state| state.modes != modes)
-    {
+    if reply.status != CommandStatus::Accepted || reply.disposition != AttackIntentDisposition::Ok {
         return Err(format!("P01 offensive chase refused: {reply:?}").into());
     }
-    evidence(&format!(
-        "P01_CHECK hunter-profile PASS vocation=sorcerer level={level} xp={xp} max_health=545 max_mana=2250"
-    ));
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while client
+        .session_mut()
+        .combat_state()
+        .is_none_or(|state| state.modes != modes)
+    {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "P01 accepted offensive chase but observed combat state {:?}",
+                client.session_mut().combat_state()
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+    evidence("P01_CHECK hunt-modes PASS offensive-chase");
     Ok(client)
 }
 
