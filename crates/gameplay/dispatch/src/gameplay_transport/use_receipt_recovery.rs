@@ -1,8 +1,8 @@
 //! Reconcile a disconnected USE through its original ledger entry before opening a stream.
-use super::ComposedFreshAdmission;
 use super::connection::{AdmittedSession, UseCommand};
 use super::item_ref_admission::NativeItemWeights;
 use super::session_ingress::UseReceipt;
+use super::{AdmissionRetryBudget, ComposedFreshAdmission};
 use crate::durability::item_craft::{ItemCraftRequest, MapHarvestRequest};
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::world_object::{
@@ -10,6 +10,37 @@ use oteryn_protocol_oteryn::world_object::{
 };
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn finish_recovered_terrain_use(&self, admitted: &AdmittedSession) {
+        let session = admitted.game_session_id;
+        let ingress = &self.states.command_ingress;
+        let (Some(actor), Some(fence), Some(ordinal)) = (
+            admitted.runtime_actor,
+            admitted.item_fence,
+            ingress.recovered_terrain_quest(session),
+        ) else {
+            return;
+        };
+        let command = UseCommand {
+            game_session_id: session,
+            command_id: ordinal.get(),
+            item_fence: Some(fence),
+        };
+        // Receipt recovery runs while control is lost. Use the restored controller's
+        // fence, and the original command identity for the idempotent quest write.
+        if AdmissionRetryBudget::for_command(self.root)
+            .retry_until(async || {
+                if super::quest_terrain_uses::after_tool(self, actor, command).await {
+                    return true;
+                }
+                self.refresh_quest_session(session, false).await;
+                false
+            })
+            .await
+        {
+            ingress.clear_recovered_terrain_quest(CommandRef::new(session, ordinal));
+        }
+    }
+
     pub(super) fn mark_use_receipt(&self, command: UseCommand, receipt: Option<UseReceipt>) {
         if let Ok(id) = CommandId::new(command.command_id) {
             self.states
