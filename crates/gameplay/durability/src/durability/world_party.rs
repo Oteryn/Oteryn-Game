@@ -590,6 +590,7 @@ async fn apply_world_party_command_inner(
                         let seq:String=sqlx::query_scalar("UPDATE game_parties SET next_seq=next_seq+1,revision=revision+1 WHERE party_id=encode($1,'hex')::uuid RETURNING (next_seq-1)::text").bind(id.as_slice()).fetch_one(&mut **tx).await?;
                         sqlx::query("INSERT INTO game_party_invitations(party_id,invitee,seq,expires_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,clock_timestamp()+interval '300 seconds') ON CONFLICT(party_id,invitee) DO UPDATE SET expires_at=clock_timestamp()+interval '300 seconds'")
        .bind(id.as_slice()).bind(target.as_slice()).bind(seq).execute(&mut **tx).await?;
+                        notices::enqueue(tx, id, target, oteryn_protocol_oteryn::party::PartyMembershipChange::Invited).await?;
                     }
                 }
             }
