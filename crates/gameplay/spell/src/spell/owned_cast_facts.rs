@@ -472,18 +472,22 @@ impl OwnedCastFacts {
                         let ReferenceItemField::Known(value) = weapon.attack else {
                             return Err(OwnedFactsError::UnavailableEquipment);
                         };
+                        let ranged = policy.record().authoring.ranged.as_ref();
                         let attack_value = if skill < 4 {
                             self.main_hand_melee(content)
                                 .ok_or(OwnedFactsError::UnavailableEquipment)?
                                 .attack(0)
-                        } else if let Some(damage) = policy
-                            .record()
-                            .authoring
-                            .ranged
-                            .as_ref()
-                            .and_then(|profile| self.ranged_skill_attack(content, profile))
+                        } else if let Some(damage) =
+                            ranged.and_then(|profile| self.ranged_skill_attack(content, profile))
                         {
                             damage.total_attack()
+                        } else if needs_attack
+                            && matches!(ranged, Some(ProjectV2RangedWeapon::Distance { .. }))
+                        {
+                            // Crystal ValueCallback uses the no-weapon inputs if the
+                            // launcher has no usable projectile.
+                            attack = Some((0, 7, 0.0, false));
+                            continue;
                         } else {
                             u32::try_from(value.0)
                                 .map_err(|_| OwnedFactsError::UnavailableEquipment)?
@@ -499,6 +503,14 @@ impl OwnedCastFacts {
                                 })
                                 .ok_or(OwnedFactsError::BuildMismatch)?,
                             attack_value,
+                            if needs_attack {
+                                self.equipment
+                                    .combat_mode
+                                    .ok_or(OwnedFactsError::UnknownCombatMode)?
+                                    .attack_factor()
+                            } else {
+                                0.0
+                            },
                             skill < 4,
                         ));
                     }
@@ -508,18 +520,11 @@ impl OwnedCastFacts {
         if needs_attack && attack.is_none() {
             return Err(OwnedFactsError::UnavailableEquipment);
         }
-        let attack_factor = if needs_attack {
-            self.equipment
-                .combat_mode
-                .ok_or(OwnedFactsError::UnknownCombatMode)?
-                .attack_factor()
-        } else {
-            0.0
-        };
         if spell.needs_shield && shield.is_none() {
             return Err(OwnedFactsError::UnavailableEquipment);
         }
-        let (attack_skill, attack_value, melee_weapon) = attack.unwrap_or((0, 0, false));
+        let (attack_skill, attack_value, attack_factor, melee_weapon) =
+            attack.unwrap_or((0, 0, 0.0, false));
         let harmony = if spell.harmony_role == Some(super::HarmonyRole::Spender) {
             if let Some(monk) = &state.monk {
                 let stage = if self.has_current_wheel(now) {

@@ -225,6 +225,19 @@ fn crystal_equipment_ethereal_cast_uses_qualified_projectile_element() {
         owned(equipment).with_quiver_ammunition(vec![projectile])
     };
     let loadouts = [direct, quiver_cast(10), quiver_cast(6)];
+    let mut empty_quiver = equipment.clone();
+    empty_quiver.items[1] = equip(10, &quiver_def.production_key, &quiver_def.revision_ref);
+    let bolt = content.item_policy_for_source_id(3446).expect("bolt");
+    let bolt_def = &bolt.record().production_definition;
+    let mut incompatible = equip(10, &bolt_def.production_key, &bolt_def.revision_ref);
+    incompatible.item_instance_id = [45; 16];
+    let no_projectile = [
+        ("empty", owned(empty_quiver.clone())),
+        (
+            "incompatible",
+            owned(empty_quiver).with_quiver_ammunition(vec![incompatible]),
+        ),
+    ];
     let standard = content
         .item_policy_for_source_id(3447)
         .expect("standard arrow");
@@ -295,6 +308,18 @@ fn crystal_equipment_ethereal_cast_uses_qualified_projectile_element() {
                 .expect("owned weapon-skill caster");
             assert_eq!(caster.attack_value, total, "{name}");
             assert!(!caster.melee_weapon, "{name}");
+        }
+        for (quiver, owned) in &no_projectile {
+            assert!(owned.intrinsic_weapon_for_spell(spell, &content).is_none());
+            let caster = owned
+                .numerical_caster(&state, spell, &content, HarmonyMultiplier::ONE, 1)
+                .expect("skill callback can run without a projectile");
+            assert_eq!(
+                (caster.attack_skill, caster.attack_value, caster.attack_factor),
+                (0, 7, 0.0),
+                "{name} with {quiver} quiver"
+            );
+            assert!(!caster.melee_weapon, "{name} with {quiver} quiver");
         }
     }
 }
