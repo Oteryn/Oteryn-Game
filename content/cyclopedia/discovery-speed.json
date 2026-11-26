@@ -1,6 +1,6 @@
 {
-  "qualification": "PARITY_PENDING",
-  "owner_decision": "2026-11-09",
+  "qualification": "OWNER_DECIDED",
+  "owner_decision": "owner decision 2026-11-25; official Tibia client evidence: client.en.qm and client.exe (docs/reference/content-prep/season-20261107/W12.md#source-search-2026-11-25)",
   "minimum": 100,
   "maximum": 195
 }

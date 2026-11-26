@@ -48,6 +48,7 @@ pub struct PlayerDeathItemRequest {
 pub enum PlayerDeathItemOutcome {
     Written,
     Replay,
+    RetainedInCustody,
 }
 #[derive(Debug)]
 pub enum PlayerDeathItemError {
@@ -75,7 +76,12 @@ impl std::fmt::Display for PlayerDeathItemError {
 impl std::error::Error for PlayerDeathItemError {}
 type Result<T> = std::result::Result<T, PlayerDeathItemError>;
 
-/// Fixed one-item plan. Slot zero means a direct backpack entry; nine is the main backpack.
+enum DeathItemStep {
+    Complete(PlayerDeathItemOutcome),
+    BranchDropped,
+}
+
+/// Fixed one-item plan. Slot zero means a carried container entry; nine is the main backpack.
 /// Contents follow their existing parent identities; only the selected root is written.
 /// No splitting, burning contents, or stack of necklaces is admitted.
 fn plan(burn: bool, slot: u8, quantity: u32, has_contents: bool) -> Result<(u32, u32)> {
@@ -242,47 +248,54 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| PlayerDeathItemError::AuthorityRejected)?;
-        let node = node.clone();
-        let mut context = permit;
-        self.try_issue_semantic_pass()?
-            .run_with_context(&mut context, move |holder, deadline, context| {
-                Box::pin(async move {
-                    let permit = *context;
-                    let mut tx = begin_type2_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    // Terminal evidence answers a retry without reacquiring mutation authority.
-                    match replay(&mut tx, &fence, cause, &request, burn).await {
-                        Ok(Some(outcome)) => {
-                            tx.commit(deadline).await?;
-                            return Ok(Ok(outcome));
+        let mut context = (permit, &recovery, node, &request);
+        loop {
+            // Each branch has its own atomic drop receipt. A later pass only
+            // sees the branches still attached to the selected container.
+            let step = self
+                .try_issue_semantic_pass()?
+                .run_with_context(&mut context, move |holder, deadline, context| {
+                    Box::pin(async move {
+                        let (permit, recovery, node, request) = *context;
+                        let mut tx = begin_type2_transaction(holder, deadline).await?;
+                        assert_recovery_fence(&mut tx, recovery).await?;
+                        lock_admission_relations(&mut tx).await?;
+                        // Terminal evidence answers a retry without reacquiring mutation authority.
+                        match replay(&mut tx, &fence, cause, request, burn).await {
+                            Ok(Some(outcome)) => {
+                                tx.commit(deadline).await?;
+                                return Ok(Ok(DeathItemStep::Complete(outcome)));
+                            }
+                            Ok(None) => {}
+                            Err(PlayerDeathItemError::Unavailable(error)) => return Err(error),
+                            Err(error) => return Ok(Err(error)),
                         }
-                        Ok(None) => {}
-                        Err(PlayerDeathItemError::Unavailable(error)) => return Err(error),
-                        Err(error) => return Ok(Err(error)),
-                    }
-                    // Serialize both kinds of cause and item under the current Character root lock.
-                    let root = match assert_item_only_fence(&mut tx, &fence, &node).await? {
-                        Ok(root) => root,
-                        Err(_) => return Ok(Err(PlayerDeathItemError::AuthorityRejected)),
-                    };
-                    if root.content_revision != request.content_revision
-                        || root.ruleset_revision != request.ruleset_revision
-                    {
-                        return Ok(Err(PlayerDeathItemError::StaleState));
-                    }
-                    let tuple = tx.tuple();
-                    match write(&mut tx, permit, &fence, cause, &request, burn, tuple).await {
-                        Ok(outcome) => {
-                            tx.commit(deadline).await?;
-                            Ok(Ok(outcome))
+                        // Serialize both kinds of cause and item under the current Character root lock.
+                        let root = match assert_item_only_fence(&mut tx, &fence, node).await? {
+                            Ok(root) => root,
+                            Err(_) => return Ok(Err(PlayerDeathItemError::AuthorityRejected)),
+                        };
+                        if root.content_revision != request.content_revision
+                            || root.ruleset_revision != request.ruleset_revision
+                        {
+                            return Ok(Err(PlayerDeathItemError::StaleState));
                         }
-                        Err(PlayerDeathItemError::Unavailable(error)) => Err(error),
-                        Err(error) => Ok(Err(error)),
-                    }
+                        let tuple = tx.tuple();
+                        match write(&mut tx, permit, &fence, cause, request, burn, tuple).await {
+                            Ok(outcome) => {
+                                tx.commit(deadline).await?;
+                                Ok(Ok(outcome))
+                            }
+                            Err(PlayerDeathItemError::Unavailable(error)) => Err(error),
+                            Err(error) => Ok(Err(error)),
+                        }
+                    })
                 })
-            })
-            .await?
+                .await??;
+            if let DeathItemStep::Complete(outcome) = step {
+                return Ok(outcome);
+            }
+        }
     }
 }
 
@@ -327,17 +340,11 @@ async fn write(
     request: &PlayerDeathItemRequest,
     burn: bool,
     tuple: SelectedType2Tuple,
-) -> Result<PlayerDeathItemOutcome> {
+) -> Result<DeathItemStep> {
     if let Some(outcome) = replay(connection, fence, cause, request, burn).await? {
-        return Ok(outcome);
+        return Ok(DeathItemStep::Complete(outcome));
     }
     let character = fence.character_id.as_bytes();
-    let binding = request.binding(
-        burn,
-        &cause.death_occurrence,
-        &cause.item_instance,
-        character,
-    );
     let world_id = fence.runtime_scope.world_id();
     let (scope_kind, channel_id, instance_id) = match fence.runtime_scope {
         RuntimeScopeRefV1::Channel { channel_id, .. } => {
@@ -348,15 +355,64 @@ async fn write(
         }
     };
     permit.check_scope(fence.runtime_scope)?;
-    let death = sqlx::query("SELECT death_spatial_position, death_map_revision, content_revision FROM game_character_death_receipts WHERE death_occurrence_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND death_world_id=encode($3,'hex')::uuid AND death_scope_kind=$4 AND death_channel_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND death_instance_id IS NOT DISTINCT FROM encode($6,'hex')::uuid")
-        .bind(cause.death_occurrence.as_slice()).bind(character.as_slice()).bind(world_id.as_bytes().as_slice()).bind(scope_kind).bind(channel_id.as_deref()).bind(instance_id.as_deref()).fetch_optional(&mut *connection).await?.ok_or(PlayerDeathItemError::StaleState)?;
+    let death = sqlx::query("SELECT death_spatial_position, death_map_revision, content_revision, \
+        split.retained_item IS NOT NULL AS custody_protected, split.next_item \
+        FROM game_character_death_receipts d \
+        LEFT JOIN LATERAL game_player_death_custody_split(encode($8,'hex')::uuid,d.character_id,d.death_world_id) split \
+          ON ($7 AND amulet_of_loss_item_id=encode($8,'hex')::uuid) \
+             OR (NOT $7 AND encode($8,'hex')::uuid=ANY(lost_item_ids)) \
+        WHERE death_occurrence_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND death_world_id=encode($3,'hex')::uuid AND death_scope_kind=$4 AND death_channel_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND death_instance_id IS NOT DISTINCT FROM encode($6,'hex')::uuid")
+        .bind(cause.death_occurrence.as_slice()).bind(character.as_slice()).bind(world_id.as_bytes().as_slice()).bind(scope_kind).bind(channel_id.as_deref()).bind(instance_id.as_deref()).bind(burn).bind(cause.item_instance.as_slice()).fetch_optional(&mut *connection).await?.ok_or(PlayerDeathItemError::StaleState)?;
     if death.try_get::<String, _>("content_revision")? != request.content_revision {
         return Err(PlayerDeathItemError::StaleState);
     }
+
+    let branch = if burn {
+        None
+    } else {
+        death.try_get::<Option<sqlx::types::Uuid>, _>("next_item")?
+    };
+    let branch_request;
+    let (cause, request) = if let Some(item) = branch {
+        let item_instance = *item.as_bytes();
+        branch_request = PlayerDeathItemRequest {
+            transaction_id: selected_operation_id(
+                &cause.death_occurrence,
+                item_instance,
+                b"transaction",
+            ),
+            event_id: selected_operation_id(&cause.death_occurrence, item_instance, b"event"),
+            ..request.clone()
+        };
+        branch_request.validate(&cause.death_occurrence, &item_instance)?;
+        (
+            PlayerDeathDropCause {
+                item_instance,
+                ..cause
+            },
+            &branch_request,
+        )
+    } else if death.try_get::<bool, _>("custody_protected")? {
+        return Ok(DeathItemStep::Complete(
+            PlayerDeathItemOutcome::RetainedInCustody,
+        ));
+    } else {
+        (cause, request)
+    };
+    let binding = request.binding(
+        burn,
+        &cause.death_occurrence,
+        &cause.item_instance,
+        character,
+    );
     let item = sqlx::query("SELECT definition_family, definition_production_key, definition_revision_ref, quantity, COALESCE((SELECT key_number FROM game_item_keys k WHERE k.item_instance_id=game_item_instances.item_instance_id),0) AS key_number, state_revision::text AS revision FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND lifecycle=1 FOR UPDATE")
         .bind(cause.item_instance.as_slice()).bind(world_id.as_bytes().as_slice()).fetch_optional(&mut *connection).await?.ok_or(PlayerDeathItemError::StaleState)?;
-    let source = sqlx::query("SELECT 9::smallint AS slot, NULL::text AS parent, NULL::text AS ordinal, placed_transaction_id::text AS placement FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid UNION ALL SELECT slot,NULL,NULL,placed_transaction_id::text FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid UNION ALL SELECT 0::smallint,parent_item_instance_id::text,placement_ordinal::text,placed_transaction_id::text FROM game_item_container_entries WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid AND parent_item_instance_id IN(SELECT item_instance_id FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid) LIMIT 2")
-        .bind(character.as_slice()).bind(cause.item_instance.as_slice()).fetch_all(&mut *connection).await?;
+    let source = sqlx::query("SELECT 9::smallint AS slot, NULL::text AS parent, NULL::text AS ordinal, placed_transaction_id::text AS placement, FALSE AS nested FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid \
+        UNION ALL SELECT slot,NULL,NULL,placed_transaction_id::text,FALSE FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid \
+        UNION ALL SELECT 0::smallint,parent_item_instance_id::text,placement_ordinal::text,placed_transaction_id::text,FALSE FROM game_item_container_entries WHERE item_instance_id=encode($2,'hex')::uuid AND world_id=encode($4,'hex')::uuid \
+          AND ($3 OR (character_id=encode($1,'hex')::uuid AND parent_item_instance_id IN (SELECT item_instance_id FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid))) \
+        UNION ALL SELECT 0::smallint,parent_item_instance_id::text,placement_ordinal::text,placed_transaction_id::text,TRUE FROM game_item_nested_entries WHERE $3 AND item_instance_id=encode($2,'hex')::uuid AND world_id=encode($4,'hex')::uuid LIMIT 2")
+        .bind(character.as_slice()).bind(cause.item_instance.as_slice()).bind(branch.is_some()).bind(world_id.as_bytes().as_slice()).fetch_all(&mut *connection).await?;
     let [source] = source.as_slice() else {
         return Err(PlayerDeathItemError::StaleState);
     };
@@ -467,7 +523,11 @@ async fn write(
             .execute(&mut *connection)
             .await?;
     } else {
-        sqlx::query(match slot { 0 => "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid", _ => "DELETE FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid" })
+        sqlx::query(match (slot, source.try_get::<bool, _>("nested")?) {
+            (0, true) => "DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid",
+            (0, false) => "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid",
+            _ => "DELETE FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid",
+        })
             .bind(cause.item_instance.as_slice()).execute(&mut *connection).await?;
     }
     if let Some(revision) = equipment_revision {
@@ -480,7 +540,11 @@ async fn write(
     }
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(request.event_id.as_slice()).bind(request.transaction_id.as_slice()).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(cause.item_instance.as_slice()).bind(request.occurred_at_unix_ms).bind(mint::AUDIT_RETENTION_P90D_MS).bind(envelope).execute(&mut *connection).await?;
-    Ok(PlayerDeathItemOutcome::Written)
+    Ok(if branch.is_some() {
+        DeathItemStep::BranchDropped
+    } else {
+        DeathItemStep::Complete(PlayerDeathItemOutcome::Written)
+    })
 }
 
 #[cfg(test)]

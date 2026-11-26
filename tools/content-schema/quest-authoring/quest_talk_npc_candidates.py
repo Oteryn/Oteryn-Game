@@ -167,8 +167,8 @@ def expected(root: Path):
         raise ValueError("source-derived talk stage population changed")
     expected_counts = Counter(
         {
-            "EXACT_NPC_WITH_DIALOGUE": 175,
-            "EXACT_NPC_NO_DIALOGUE": 23,
+            "EXACT_NPC_WITH_DIALOGUE": 176,
+            "EXACT_NPC_NO_DIALOGUE": 22,
             "AMBIGUOUS_MULTIPLE_NPCS": 36,
             "NO_EXACT_NPC": 17,
         }

@@ -89,22 +89,22 @@ def build(raw):
             continue
         nested = attributes(item.findall("attribute[@key='script']/attribute"))
         ammo = top.get("ammotype")
-        kind = (
-            (
-                "ROD"
-                if top.get("primarytype") == "rods"
-                or "rod" in item.get("name", "").split()
-                else "WAND"
-            )
-            if weapon == "wand"
-            else (
-                "AMMUNITION"
-                if weapon == "ammunition"
-                else "DISTANCE"
-                if ammo
-                else "THROWING"
-            )
-        )
+        if weapon == "wand":
+            # Both caster families register as wand. The Chiller has no
+            # primary category or "rod" in its name, but is Druid-only.
+            vocations = {
+                entry.partition(";")[0].strip().casefold()
+                for entry in (nested.get("vocation") or "").split(",")
+                if entry.strip()
+            }
+            primary = top.get("primarytype")
+            druid_only = bool(vocations) and vocations <= {"druid", "elder druid"}
+            is_rod = primary == "rods" or "rod" in item.get("name", "").split()
+            kind = "ROD" if is_rod or (not primary and druid_only) else "WAND"
+        elif weapon == "ammunition":
+            kind = "AMMUNITION"
+        else:
+            kind = "DISTANCE" if ammo else "THROWING"
         if "id" in item.attrib:
             ids = [integer(item.attrib, "id", low=1)]
         else:

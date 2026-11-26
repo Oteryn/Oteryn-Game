@@ -428,7 +428,7 @@ async fn relog(
     let deadline = Instant::now() + Duration::from_secs(65);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     loop {
-        let (result, reply, ..) = logout_retrying_busy(live).await?;
+        let (result, reply, ..) = logout_once(live).await?;
         match result {
             Some(LogoutResult::Accepted) => break,
             Some(LogoutResult::InFight { retry_after_ms })

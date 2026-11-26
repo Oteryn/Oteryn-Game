@@ -1,6 +1,6 @@
 //! Source boss-death quest continuations on the existing captured lethal queue.
 //! Crystal 201189f HeartBossDeath:26-138; CourtWarlock:323-329;
-//! MagmaBubbleDeath:12-23 and GoblinLeaderDeath:3-8. Never infer social-party credit.
+//! MagmaBubbleDeath:12-23 and GoblinLeaderDeath:3-8.
 //! Herald's qualified local recipient is the present most-damage player only.
 use super::{kill_reward::PendingKillSettlement, quest_kills::Recipient};
 use crate::durability::quest_state::{
@@ -28,7 +28,14 @@ pub(super) fn capture(
     principal_present: bool,
     snapshots: impl Iterator<Item = Snapshot>,
 ) -> Vec<Recipient> {
-    if !source_deaths::tracks_creature(&entry.creature) {
+    let Ok(rules) = source_deaths::rules() else {
+        return Vec::new();
+    };
+    let mut rules = rules
+        .iter()
+        .filter(|rule| rule.matches_creature(&entry.creature))
+        .peekable();
+    if rules.peek().is_none() {
         return Vec::new();
     }
     let Ok(census) = runtime.positioned_melee_census() else {
@@ -69,8 +76,10 @@ pub(super) fn capture(
             let Some(rule) = source_deaths::rule(key) else {
                 continue;
             };
-            if rule.creature != entry.creature
-                || !rule.recipient(position, damaged)
+            if !rule.matches_creature(&entry.creature)
+                // Party rules retain only actors and quest starts seen at death.
+                // The World owner supplies the ordered roster before settlement.
+                || !rule.recipient_with_party(position, damaged, principal_present)
                 || (rule.top_damage_only
                     && (!principal_present
                         || principal.actor != snapshot.actor
@@ -98,8 +107,7 @@ pub(super) fn capture(
                         lease_generation: snapshot.lease_generation,
                         position,
                         dealt_damage: damaged,
-                        top_damage_character: rule
-                            .top_damage_only
+                        top_damage_character: (rule.top_damage_only || rule.top_damage_party)
                             .then_some(*principal.character.as_bytes()),
                     }),
                 },

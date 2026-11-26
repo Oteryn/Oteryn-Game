@@ -417,3 +417,80 @@ mod browser;
 
 #[path = "cosmetic_tokens.rs"]
 mod cosmetic_tokens;
+
+#[test]
+fn store_review_open_inbox_requests_the_store_entitlement_projection()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::{
+        cui3::store::COMMAND_TYPE_STORE_INBOX_CLAIM,
+        server_mechanic::{CommandStatus, ServerMechanicResponse},
+    };
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.store_initialize(true, false);
+    link.store_inbox_set_open(true);
+    let request = incoming.try_recv().ok();
+    assert!(
+        matches!(request, Some(PlayCommand::ServerMechanic(command))
+        if command.capability == 154 && command.command_type == COMMAND_TYPE_STORE_INBOX_CLAIM
+           // The 21st-delivery finding requires the query that returns a claim cursor.
+           && command.payload == [16, 2]),
+        "opening the native Inbox must request the buyer's claimable items"
+    );
+    let mut reply = vec![10, 22, 10, 16];
+    reply.extend([0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2]);
+    reply.extend([16, 0x88, 0xdf, 0x01]);
+    outbox.store_result(&ServerMechanicResponse {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: reply,
+    });
+    assert!(link.store_panel().feedback.is_none());
+    Ok(())
+}
+
+#[test]
+fn store_inbox_waits_for_pending_browse_before_requesting_claims()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::{
+        cui3::store::{COMMAND_TYPE_STORE_INBOX_CLAIM, StoreInboxEntry, browse, encode_inbox_query, encode_inbox_entries},
+        server_mechanic::{CommandStatus, ServerMechanicResponse},
+    };
+
+    let (link, mut commands, outbox) = play_channel();
+    outbox.store_initialize(true, false);
+    link.store_set_open(true);
+    assert!(matches!(commands.try_recv(), Ok(PlayCommand::ServerMechanic(command))
+        if command.command_type == browse::COMMAND_TYPE));
+    link.store_set_open(false);
+    link.store_inbox_set_open(true);
+    assert!(commands.try_recv().is_err(), "the browse still owns the Store request slot");
+
+    outbox.store_result(&ServerMechanicResponse {
+        command_id: 1,
+        status: CommandStatus::Rejected,
+        server_sequence: 1,
+        payload: Vec::new(),
+    });
+    link.pump_store_inbox_refresh();
+    assert!(matches!(commands.try_recv(), Ok(PlayCommand::ServerMechanic(command))
+        if command.command_type == COMMAND_TYPE_STORE_INBOX_CLAIM
+            && command.payload == encode_inbox_query(None)),
+        "opening the Inbox must enqueue one claim query after the browse reply");
+    let entry = StoreInboxEntry {
+        fulfilment_unit_id: [0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2],
+        item_id: 28552,
+    };
+    outbox.store_result(&ServerMechanicResponse {
+        command_id: 2,
+        status: CommandStatus::Accepted,
+        server_sequence: 2,
+        payload: encode_inbox_entries(&[entry]).map_err(|e| format!("{e:?}"))?,
+    });
+    assert_eq!(link.store_panel().inbox.entries, [entry]);
+    link.pump_store_inbox_refresh();
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

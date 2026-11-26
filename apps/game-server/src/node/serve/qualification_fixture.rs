@@ -934,7 +934,10 @@ async fn prepare_build(
             vocation,
             level,
             magic_seed: (profile == "c16c-sorcerer").then(|| {
-                (4, fixture_occurrence(character.as_bytes(), profile, b"magic"))
+                (
+                    4,
+                    fixture_occurrence(character.as_bytes(), profile, b"magic"),
+                )
             }),
             context,
             xp_occurrence: fixture_occurrence(character.as_bytes(), occurrence_profile, b"xp"),
