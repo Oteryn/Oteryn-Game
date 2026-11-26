@@ -1907,6 +1907,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # Qualify each audited Item in its owning provider, including mage hat in
     # the starter fragment. SRX-1 updates then inherit the same base allowances.
     starter_items = json.loads(generated[starting_loadout_profiles.FRAGMENT])
+    crystal_equipment_slice_4.complete_monk_bonds(root, items, starter_items)
     imbuement_item_profiles.apply_crystal_audit(root, items, starter_items)
     native_manifest = json.loads(generated[NATIVE_MANIFEST])
     starting_loadout_profiles.write_fragment(generated, native_manifest, starter_items["records"])

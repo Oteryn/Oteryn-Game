@@ -314,6 +314,7 @@ impl SpellPresentationOwner {
         let mut allowed = BTreeSet::new();
         collect_bindings(profile.spell(), &mut allowed);
         collect_bindings(profile.dependencies(), &mut allowed);
+        allowed.extend(monk_bond_impacts(&definition.key).into_iter().flatten());
         if profile.spell()["execution"]["native_behavior"]["key"] == "companion_haste"
             && profile.spell()["execution"]["native_behavior"]["parameters"]["caster_effect"]
                 == "magic_green"
@@ -380,11 +381,7 @@ impl SpellPresentationOwner {
                 add(&presentation.caster_effect_asset_binding, &mut allowed);
             }
         }
-        if uses_elemental_bond(definition)
-            && allowed.contains("canary.appearance:effect/claw_white")
-        {
-            allowed.extend([EARTH_BOND_IMPACT, ENERGY_BOND_IMPACT]);
-        }
+        allowed.extend(monk_bond_impacts(&definition.key).into_iter().flatten());
         // The current exact source definition's Harmony role also carries the
         // accepted gained-charge heal cue, including a Harmony spender refund.
         // This is closed cue provenance, not recipient or current cast authority.
@@ -686,30 +683,69 @@ fn canonical_events(events: &[Presentation]) -> Result<Vec<u8>, Error> {
     }
     Ok(out)
 }
-pub fn uses_elemental_bond(spell: &crate::spell::SpellDefinition) -> bool {
-    matches!(
-        spell.key.as_str(),
-        "candidate:spell/tiger_clash"
-            | "candidate:spell/greater_tiger_clash"
-            | "candidate:spell/devastating_knockout"
-    )
+// Crystal 201189f8, data/scripts/spells/attack. Cue order: Physical, Earth, Energy.
+const TIGER_CLASH: [&str; 3] = [
+    "canary.appearance:effect/white_tigerclash",
+    "canary.appearance:effect/green_tigerclash",
+    "canary.appearance:effect/pink_tigerclash",
+];
+const FLURRY: [&str; 3] = [
+    "canary.appearance:effect/white_flurryofblows",
+    "canary.appearance:effect/green_flurryofblows",
+    "canary.appearance:effect/pink_flurryofblows",
+];
+const PULSE: [&str; 3] = [
+    "canary.appearance:effect/white_energypulse",
+    "canary.appearance:effect/green_energypulse",
+    "canary.appearance:effect/pink_energypulse",
+];
+const SHOCK: [&str; 3] = [
+    "canary.appearance:effect/white_energyshock",
+    "canary.appearance:effect/green_energyshock",
+    "canary.appearance:effect/yellow_energyshock",
+];
+const TAKEDOWN: [&str; 3] = [
+    "canary.appearance:effect/white_explosionhit",
+    "canary.appearance:effect/green_explosionhit",
+    "canary.appearance:effect/pink_explosionhit",
+];
+const THOUSAND_FISTS: [&str; 3] = [
+    "canary.appearance:effect/green_flurryofblows",
+    "canary.appearance:effect/green_flurryofblows",
+    "canary.appearance:effect/green_flurryofblows",
+];
+
+fn monk_bond_impacts(key: &str) -> Option<[&'static str; 3]> {
+    Some(match key.strip_prefix("candidate:spell/")? {
+        "devastating_knockout"
+        | "double_jab"
+        | "forceful_uppercut"
+        | "greater_tiger_clash"
+        | "swift_jab"
+        | "tiger_clash" => TIGER_CLASH,
+        "flurry_of_blows" | "greater_flurry_of_blows" => FLURRY,
+        "mystic_repulse" => PULSE,
+        "chained_penance" | "spiritual_outburst" => SHOCK,
+        "sweeping_takedown" => TAKEDOWN,
+        "thousand_fist_blows" => THOUSAND_FISTS,
+        _ => return None,
+    })
 }
 
-const EARTH_BOND_IMPACT: &str = "canary.appearance:effect/green_tigerclash";
-const ENERGY_BOND_IMPACT: &str = "canary.appearance:effect/pink_tigerclash";
+pub fn uses_elemental_bond(spell: &crate::spell::SpellDefinition) -> bool {
+    monk_bond_impacts(&spell.key).is_some()
+}
 
-/// The authored physical impact uses the corresponding Crystal claw on a bonded cast.
 pub fn monk_bond_impact(
     spell: &crate::spell::SpellDefinition,
     element: crate::spell::native_combat::Element,
 ) -> Option<&'static str> {
     use crate::spell::native_combat::Element;
-    if !uses_elemental_bond(spell) {
-        return None;
-    }
+    let cues = monk_bond_impacts(&spell.key)?;
     match element {
-        Element::Earth => Some(EARTH_BOND_IMPACT),
-        Element::Energy => Some(ENERGY_BOND_IMPACT),
+        Element::Physical => Some(cues[0]),
+        Element::Earth => Some(cues[1]),
+        Element::Energy => Some(cues[2]),
         _ => None,
     }
 }
@@ -725,25 +761,26 @@ fn resolve_monk_bond_cue(alias: &str) -> Option<Cue> {
         kind: String,
         client_id: Option<u16>,
     }
-    static IDS: OnceLock<Option<[u16; 2]>> = OnceLock::new();
-    let index = [EARTH_BOND_IMPACT, ENERGY_BOND_IMPACT]
-        .iter()
-        .position(|binding| *binding == alias)?;
+    static IDS: OnceLock<std::collections::BTreeMap<&'static str, u16>> = OnceLock::new();
     let ids = IDS.get_or_init(|| {
-        let bindings: Bindings = serde_json::from_slice(include_bytes!(
+        let Ok(bindings) = serde_json::from_slice::<Bindings>(include_bytes!(
             "../../../../../content/presentations/bindings/client-ids.json"
-        ))
-        .ok()?;
-        let resolve = |key| {
-            let found = bindings
-                .records
-                .iter()
-                .find(|row| row.key == key && row.kind == "effect")?;
-            found.client_id.filter(|id| *id > 0)
+        )) else {
+            return Default::default();
         };
-        Some([resolve(EARTH_BOND_IMPACT)?, resolve(ENERGY_BOND_IMPACT)?])
+        [TIGER_CLASH, FLURRY, PULSE, SHOCK, TAKEDOWN, THOUSAND_FISTS]
+            .into_iter()
+            .flatten()
+            .filter_map(|key| {
+                let binding = bindings
+                    .records
+                    .iter()
+                    .find(|row| row.key == key && row.kind == "effect")?;
+                Some((key, binding.client_id.filter(|id| *id > 0)?))
+            })
+            .collect()
     });
-    Some(Cue::Effect(ids.as_ref()?[index]))
+    ids.get(alias).copied().map(Cue::Effect)
 }
 
 #[derive(Deserialize)]

@@ -261,7 +261,7 @@ fn check_weapon_skill_damage(name: &str, aimed: bool, immune: Option<&str>) {
                     &before,
                     spell,
                     &operational,
-                    &facts,
+                    Facts::Combat(&facts),
                     None,
                     now,
                     &mut draw,
