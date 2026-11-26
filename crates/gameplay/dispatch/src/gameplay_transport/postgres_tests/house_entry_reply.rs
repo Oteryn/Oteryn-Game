@@ -5,8 +5,11 @@ use super::house_transfer_fixtures::{
     RecoverySource, TRANSFER_TEST_HOUSE as HOUSE, initialize_transfer_source_for_owner,
     prepare_owned_session, prepare_transfer_scene,
 };
+use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::foundation::{GameSessionId, MessageType, decode_wire_envelope};
+use crate::gameplay_transport::canonical_uuid;
 use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
+use crate::gameplay_transport::fresh_evidence::FreshEvidenceSource;
 use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
 use oteryn_protocol_oteryn::house_transfer::COMMAND_TYPE_HOUSE_TRANSFER;
 use oteryn_protocol_oteryn::{
@@ -47,31 +50,17 @@ fn scenario(admin: String, is_owner: bool) -> TestResult {
 async fn exercise(h: &Harness, is_owner: bool) -> TestResult {
     let evidence = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
-    let house_owner = if is_owner {
-        id(41)
-    } else {
-        let other = id(90);
-        sqlx::query(
-            "INSERT INTO game_character_roots (character_id, account_id, world_id, lifecycle,
-             character_revision, profile_revision, ruleset_revision, content_revision,
-             starter_template_revision, name, sex, creation_vocation)
-             SELECT encode($1,'hex')::uuid, account_id, world_id, lifecycle, character_revision,
-             profile_revision, ruleset_revision, content_revision, starter_template_revision,
-             'Other House Owner', sex, creation_vocation FROM game_character_roots
-             WHERE character_id=encode($2,'hex')::uuid",
-        )
-        .bind(other.as_slice())
-        .bind(id(41).as_slice())
-        .execute(&h.pool)
-        .await?;
-        other
-    };
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
+    let house_owner = if is_owner {
+        id(41)
+    } else {
+        bootstrap_other_owner(h, &authority, &evidence.evidence).await?
+    };
     let (controller, cells, deps) = prepare_transfer_scene(h).await?;
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = controller.active();
@@ -116,6 +105,7 @@ async fn exercise(h: &Harness, is_owner: bool) -> TestResult {
                     .await
             );
             // Hold the real publication store unavailable through the first entry attempt.
+            h.root.await_ready().await?;
             Some(h.root.try_issue_semantic_pass()?)
         } else {
             None
@@ -149,11 +139,14 @@ async fn exercise(h: &Harness, is_owner: bool) -> TestResult {
         assert_eq!(entry_status(&mut client, generation, 2).await?, expected);
         if is_owner {
             read_message(&mut client, MessageType::SnapshotCommit).await?;
-            let recovery = h
-                .root
-                .house_transfer_recovery(admitted.game_session_id)
-                .await?
-                .ok_or("committed house entry")?;
+        }
+        h.root.await_ready().await?;
+        let recovery = h
+            .root
+            .house_transfer_recovery(admitted.game_session_id)
+            .await?;
+        if is_owner {
+            let recovery = recovery.ok_or("committed house entry")?;
             let destination = GameSessionId::decode(&recovery.ack.session).map_err(debug)?;
             let inside = owner
                 .runtime
@@ -172,12 +165,7 @@ async fn exercise(h: &Harness, is_owner: bool) -> TestResult {
                 }
             );
         } else {
-            assert!(
-                h.root
-                    .house_transfer_recovery(admitted.game_session_id)
-                    .await?
-                    .is_none()
-            );
+            assert!(recovery.is_none());
         }
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(())
@@ -188,6 +176,58 @@ async fn exercise(h: &Harness, is_owner: bool) -> TestResult {
     .await??;
     eprintln!("I10_HOUSE_ENTRY_POSTGRES_COMPLETED is_owner={is_owner}");
     Ok(())
+}
+
+async fn bootstrap_other_owner(
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    evidence: &FreshEvidenceSource,
+) -> TestResult<[u8; 16]> {
+    // Keep the owner on the entrant's account so access must distinguish Characters.
+    let account = canonical_uuid(&id(40));
+    h.root.await_ready().await?;
+    evidence
+        .refresh_account(&h.root, &h.node, &account)
+        .await
+        .map_err(debug)?;
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    let operation = id(91);
+    let wire = serde_json::json!({
+        "contract_version": 4,
+        "variant": "OPERATOR_CONTROL_PLANE_BOOTSTRAP",
+        "issuer_authority": "OTERYN_PLATFORM_CHARACTER_AUTHORITY",
+        "issuer_decision_id": canonical_uuid(&id(92)),
+        "source_revision": "2",
+        "operation_id": canonical_uuid(&operation),
+        "operation": "INITIAL_CHARACTER_BOOTSTRAP",
+        "account_id": account,
+        "target_world_id": canonical_uuid(&id(42)),
+        "requested_name": "Other House Owner",
+        "requested_sex": "Male",
+        "requested_vocation": "Knight",
+        "interpretation_context": {
+            "profile_revision": "profile-1", "ruleset_revision": "ruleset-1",
+            "content_revision": "content-1", "starter_template_revision": "starter-1"
+        },
+        "issued_at_source": now.to_string(),
+        "expires_at_source": (now + 120).to_string(),
+        "audience": "OTERYN_GAME_CHARACTER_AUTHORITY",
+    });
+    let intent = crate::character_bootstrap_intent::decode_producer_response(
+        &serde_json::to_vec(&wire)?,
+        operation,
+    )
+    .map_err(debug)?;
+    h.root.await_ready().await?;
+    let created = h
+        .root
+        .bootstrap_character(authority, &h.node, &intent)
+        .await
+        .map_err(debug)?;
+    Ok(*created.character_id.as_bytes())
 }
 
 async fn read_message(client: &mut DuplexStream, kind: MessageType) -> TestResult<Vec<u8>> {
