@@ -780,6 +780,18 @@ pub(crate) mod tests {
 
     #[test]
     fn rottin_wood_boots_from_repository_npc_placement() -> Result<(), Box<dyn std::error::Error>> {
+        assert_repository_npc_boots("oteryn:npc.rottin_wood", (32_652, 32_201, 7))
+    }
+
+    #[test]
+    fn dorian_boots_on_global_floor_eight() -> Result<(), Box<dyn std::error::Error>> {
+        assert_repository_npc_boots("oteryn:npc.dorian", (32_318, 32_209, 8))
+    }
+
+    fn assert_repository_npc_boots(
+        key: &str,
+        (x, y, floor): (u16, u16, i16),
+    ) -> Result<(), Box<dyn std::error::Error>> {
         use crate::content::{
             NpcDataCatalogue, capture_world_project, npc_catalogue_preproduction_limits,
         };
@@ -787,8 +799,6 @@ pub(crate) mod tests {
         use std::ffi::OsStr;
 
         let root = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
-        let key = "oteryn:npc.rottin_wood";
-        let (x, y) = (32_652, 32_201);
         let project = source::project_regions(root, &[(x / 256, y / 256)])?;
         let (registry, palette) = source::registry(root, &project)?;
         let identity = serde_json::from_slice(&source::read(
@@ -826,7 +836,7 @@ pub(crate) mod tests {
             .filter(|entry| runtime.npc_key(entry.actor) == Some(key))
             .map(|entry| (entry.position.x, entry.position.y, entry.position.floor))
             .collect();
-        assert_eq!(positions, [(i32::from(x), i32::from(y), 7)]);
+        assert_eq!(positions, [(i32::from(x), i32::from(y), floor)]);
         Ok(())
     }
 
