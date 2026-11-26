@@ -51,11 +51,17 @@ fn id(marker: u8) -> [u8; 16] {
     ]
 }
 
+#[ignore = "requires an active cloud node-boot capture"]
 #[test]
 fn e2e_c18a_replays_captured_damage_or_unit_refusal() -> Result<(), Error> {
-    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        replay_capture(std::path::Path::new(&root))?;
-    }
+    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .ok_or("C18a live replay requires E2E_ALL_CAPTURE_DIR")?;
+    replay_capture(std::path::Path::new(&root))?;
+    synthetic_refusal_keeps_combat_state()
+}
+
+#[test]
+fn synthetic_refusal_keeps_combat_state() -> Result<(), Error> {
     let Fixture {
         combat,
         result,
@@ -194,6 +200,8 @@ struct Envelope {
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Proof {
+    wrapper: String,
+    regeneration: Vec<(u64, u32, u32)>,
     capture_device: u64,
     capture_inode: u64,
     spell: u32,
@@ -297,6 +305,14 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         (charged.mana, charged.soul),
         (proof.mana_after, proof.soul_after)
     );
+    if !crate::qualification_mana_history(
+        (vitals.server_sequence, charged.mana, charged.soul),
+        &proof.regeneration,
+        charged.max_mana,
+        (proof.logout_sequence, proof.mana_logout, proof.soul_logout),
+    ) {
+        return Err("C18a replay found unexplained mana or soul before logout".into());
+    }
     verify_directional_intent(&std::fs::read(root.join("c18a-intent.bin"))?, proof.spell)?;
     let before = attack::decode_actor_combat_state(&proof.combat_before)
         .map_err(|error| format!("{error:?}"))?;
@@ -356,6 +372,9 @@ fn strict_envelope_rejects_unknown_duplicate_and_missing_keys() {
 
 fn verify_capture_directory(root: &std::path::Path, proof: &Proof) -> Result<(), Error> {
     use std::os::unix::fs::MetadataExt;
+    if crate::qualification_wrapper_identity()? != proof.wrapper {
+        return Err("C18a capture belongs to another wrapper invocation".into());
+    }
     let dir = std::fs::metadata(root)?;
     if (dir.dev(), dir.ino()) != (proof.capture_device, proof.capture_inode) {
         return Err("C18a capture was copied out of its run directory".into());
@@ -399,7 +418,8 @@ fn valid_run_log(log: &str, binding: &str) -> bool {
     log.lines().filter(|line| *line == binding).count() == 1
         && log
             .lines()
-            .any(|line| line == "NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged")
+            .filter(|line| line.starts_with("NODE_BOOT_RESULT="))
+            .eq(["NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged"])
         && !log.lines().any(|line| line.contains("FIXTURE_RETRY "))
 }
 
@@ -434,17 +454,33 @@ fn verify_damage(
     use oteryn_protocol_oteryn::presentation;
     let presentation =
         presentation::decode_presentation_batch(payload).map_err(|error| format!("{error:?}"))?;
+    use oteryn_protocol_oteryn::world_spatial::ActorPosition;
+    let cast_tile = ActorPosition {
+        x: 32490,
+        y: 32169,
+        floor: 7,
+    };
+    let rat_tile = ActorPosition {
+        x: 32491,
+        y: 32169,
+        floor: 7,
+    };
+    if !crate::qualification_scorch_cue(&presentation, cast_tile) {
+        return Err("C18a damage batch lacks the caster's Scorch cue".into());
+    }
     let attributed: Vec<_> = presentation
         .iter()
         .filter_map(|event| match event.kind {
             presentation::PresentationEventKind::ValueText {
                 kind: presentation::PresentationValueKind::DamageDealt,
+                position,
                 target: victim,
                 attacker: Some(source),
                 primary,
                 secondary: None,
                 ..
-            } if victim == target
+            } if position == rat_tile
+                && victim == target
                 && source == caster
                 && primary.color == presentation::PresentationColor::Red =>
             {
@@ -519,7 +555,24 @@ fn rejects_health_loss_without_the_exact_damage_source() -> Result<(), Error> {
             secondary: None,
         },
     };
-    let payload = encode_presentation_batch(&[event(caster, target)])
+    let cue = PresentationEvent {
+        decision_ordinal: 2,
+        emission_ordinal: 1,
+        kind: PresentationEventKind::Sound {
+            position: ActorPosition {
+                x: 32490,
+                y: 32169,
+                floor: 7,
+            },
+            cue_id: 1178,
+            source: oteryn_protocol_oteryn::presentation::PresentationSource::Own,
+            secondary_cue_id: 0,
+        },
+    };
+    let unrelated = encode_presentation_batch(&[event(caster, target)])
+        .map_err(|error| format!("{error:?}"))?;
+    assert!(verify_damage(&unrelated, caster, target, 8).is_err());
+    let payload = encode_presentation_batch(&[event(caster, target), cue])
         .map_err(|error| format!("{error:?}"))?;
     verify_damage(&payload, caster, target, 8)?;
     assert!(verify_damage(&payload, caster, target, 7).is_err());
@@ -564,5 +617,22 @@ fn rejects_unbound_or_retried_wrapper_log() {
     assert!(!valid_run_log(
         &format!("{binding}\nFIXTURE_RETRY step=logout reason=busy attempt=1\n{pass}"),
         binding
+    ));
+}
+
+#[test]
+fn rejects_an_unexplained_cast_refund() {
+    let charged = (10, 22, 100);
+    let logout = (20, 30, 100);
+    let verified = [(12, 24, 100), (14, 26, 100), (16, 28, 100), (18, 30, 100)];
+    assert!(crate::qualification_mana_history(
+        charged, &verified, 30, logout
+    ));
+    assert!(!crate::qualification_mana_history(charged, &[], 30, logout));
+    assert!(!crate::qualification_mana_history(
+        charged,
+        &[(12, 30, 100)],
+        30,
+        logout
     ));
 }

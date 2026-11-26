@@ -893,6 +893,20 @@ class CloudRunSummaryTests(unittest.TestCase):
                 'ROWS-BEGIN', 'S18.client|FAIL|replay-not-run', 'N07d.client|PASS|', 'ROWS-END',
             ])
 
+    def test_summary_rejects_client_boot_only_and_duplicate_replay(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / 'node.log'
+            capture = 'SEAM_EVIDENCE e2e_capture scenario=C18a.client status=CAPTURED\n'
+            replay = 'SEAM_EVIDENCE e2e_all scenario=C18a.client replay=e2e_c18a status=PASS\n'
+            for count, expected in [(0, 'FAIL'), (1, 'PASS'), (2, 'FAIL')]:
+                with self.subTest(count=count):
+                    log.write_text(capture + 'NODE_BOOT_RESULT=NODE_BOOT_PASS\n' + replay * count)
+                    result = subprocess.run(
+                        ['bash', str(HERE / 'cloud_run.sh'), '--summarize', str(log), 'rows'],
+                        capture_output=True, text=True, check=True,
+                    )
+                    self.assertIn(f'CLOUD_RUN group=rows result=NODE_BOOT_{expected}', result.stdout)
+
     def test_summary_uses_full_row_verdicts_and_limits_filtered_diagnostics(self):
         result = subprocess.run(
             ['bash', str(HERE / 'cloud_run.sh'), '--summarize',

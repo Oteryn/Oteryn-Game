@@ -38,6 +38,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
+    let wrapper = oteryn_dev_client::qualification_wrapper_identity()?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -175,12 +176,17 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if before.mana.checked_sub(SCORCH_MANA) != Some(after.mana) || before.soul != after.soul {
         return Err("C18a Scorch did not apply its exact mana and soul costs".into());
     }
+    let mut regeneration = Vec::new();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
     let mut health = None;
     let mut damage = None;
     let (health_sequence, health_after, damage_sequence, damage_value) = loop {
         for event in client.take_events() {
             match event {
+                SessionEvent::ActorVitals(delta) if delta.server_sequence > vitals_sequence => {
+                    regeneration.push((delta.server_sequence, delta.value.mana, delta.value.soul));
+                }
+
                 SessionEvent::WorldSpatialEntities(delta)
                     if delta.server_sequence > result_server_sequence =>
                 {
@@ -209,9 +215,12 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
                 SessionEvent::Presentation(batch)
                     if batch.server_sequence > result_server_sequence =>
                 {
+                    let has_cast_cue =
+                        oteryn_dev_client::qualification_scorch_cue(&batch.value, here);
                     for effect in batch.value {
                         if let presentation::PresentationEventKind::ValueText {
                             kind: presentation::PresentationValueKind::DamageDealt,
+                            position,
                             target: victim,
                             attacker: Some(source),
                             primary,
@@ -221,7 +230,9 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
                             && source == caster
                             && victim == target
                         {
-                            if primary.color != presentation::PresentationColor::Red
+                            if !has_cast_cue
+                                || position != rat.position
+                                || primary.color != presentation::PresentationColor::Red
                                 || secondary.is_some()
                                 || damage
                                     .replace((batch.server_sequence, primary.value))
@@ -300,7 +311,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             destination(world, from, direction).filter(|&at| !is_logout_rest_tile(world, at))
         })
         .ok_or("C18a fixed retreat crosses a protection tile")?;
-    walk_path(&mut client, world, retreat, rest).await?;
+    walk_path(&mut client, world, retreat, rest, Some(&mut regeneration)).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
         let state = client
@@ -317,7 +328,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             .into());
         }
         client.service_liveness(Duration::from_millis(200)).await?;
-        client.take_events();
+        collect_vitals(&mut client, Some(&mut regeneration));
         verdict::Harness::global().progress("wait-for-combat-lock");
     }
     let (result, detail, _, _) = logout_once(&mut client).await?;
@@ -328,6 +339,19 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .actor_vitals()
         .ok_or("C18a missing final logout vitals")?;
     let logout_sequence = client.last_server_sequence();
+    collect_vitals(&mut client, Some(&mut regeneration));
+    if !oteryn_dev_client::qualification_mana_history(
+        (vitals_sequence, after.mana, after.soul),
+        &regeneration,
+        after.max_mana,
+        (logout_sequence, logout_vitals.mana, logout_vitals.soul),
+    ) {
+        return Err(format!(
+            "C18a unexplained mana or soul transition after Scorch: {regeneration:?}"
+        )
+        .into());
+    }
+
     drop(client);
     let mut fresh = connect_character(clients, 0xcb, 1).await?;
     if fresh.join_snapshot().game_session_id == session {
@@ -410,6 +434,8 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             "pre_cast_sequence": pre_cast_sequence,
             "vitals_sequence": vitals_sequence,
             "logout_sequence": logout_sequence,
+            "wrapper": wrapper,
+            "regeneration": regeneration,
             "mana_logout": logout_vitals.mana,
             "soul_logout": logout_vitals.soul,
             "mana_relog": fresh_vitals.mana,
@@ -477,7 +503,7 @@ async fn walk_once(
         |at| !spawn_cells.contains(&at),
     )
     .ok_or_else(|| format!("C18a fixed route unavailable: {start:?} -> {goal:?}"))?;
-    walk_path(client, world, &path, goal).await
+    walk_path(client, world, &path, goal, None).await
 }
 
 async fn walk_path(
@@ -485,6 +511,7 @@ async fn walk_path(
     world: &BundleWorld,
     path: &[StepDirection],
     goal: TilePos,
+    mut vitals: Option<&mut Vec<(u64, u32, u32)>>,
 ) -> TestResult {
     for &direction in path {
         let from = tile(client.world_spatial().actor_position)?;
@@ -500,13 +527,14 @@ async fn walk_path(
             return Err(format!("C18a first step failed: from={from:?} direction={direction:?} expected={expected:?} actual={actual:?} outcome={outcome:?}").into());
         }
         verdict::Harness::global().progress("walk");
-        client.take_events();
+        collect_vitals(client, vitals.as_deref_mut());
         if outcome.step_wait_ms != 0 {
             client
                 .service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms)))
                 .await?;
         }
     }
+    collect_vitals(client, vitals);
     if tile(client.world_spatial().actor_position)? != goal {
         return Err("C18a fixed route did not reach its goal".into());
     }
@@ -570,4 +598,19 @@ async fn first_cast_vitals(mut inbound: &[u8]) -> TestResult<(u64, Vec<u8>)> {
         }
     }
     Err("C18a first cast stats frame absent".into())
+}
+
+fn collect_vitals(
+    client: &mut oteryn_dev_client::DevClientSession,
+    history: Option<&mut Vec<(u64, u32, u32)>>,
+) {
+    let events = client.take_events();
+    if let Some(history) = history {
+        history.extend(events.into_iter().filter_map(|event| match event {
+            SessionEvent::ActorVitals(delta) => {
+                Some((delta.server_sequence, delta.value.mana, delta.value.soul))
+            }
+            _ => None,
+        }));
+    }
 }

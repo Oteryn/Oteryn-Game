@@ -93,3 +93,71 @@ impl AsyncWrite for QualificationTransport {
         Pin::new(&mut self.0).poll_shutdown(cx)
     }
 }
+
+/// Identity of the current Linux cloud runner, including the process start tick.
+pub fn qualification_wrapper_identity() -> io::Result<String> {
+    let mut pid = std::process::id();
+    while pid > 1 {
+        let stat = std::fs::read_to_string(format!("/proc/{pid}/stat"))?;
+        let fields: Vec<_> = stat
+            .rsplit_once(") ")
+            .ok_or_else(|| io::Error::other("malformed process stat"))?
+            .1
+            .split_whitespace()
+            .collect();
+        let args = std::fs::read(format!("/proc/{pid}/cmdline"))?;
+        if args
+            .split(|&byte| byte == 0)
+            .nth(1)
+            .is_some_and(|script| script.ends_with(b"tools/qualification/node_boot/cloud_run.sh"))
+        {
+            let start = fields
+                .get(19)
+                .ok_or_else(|| io::Error::other("missing process start"))?;
+            return Ok(format!("{pid}:{start}"));
+        }
+        pid = fields
+            .get(1)
+            .and_then(|parent| parent.parse().ok())
+            .ok_or_else(|| io::Error::other("missing parent process"))?;
+    }
+    Err(io::Error::other(
+        "C18a replay requires the current cloud wrapper",
+    ))
+}
+
+/// Verify ordered authoritative publications for the unfed level-one Sorcerer.
+/// Each completed outdoor mana interval can credit two points, capped at max.
+pub fn qualification_mana_history(
+    charged: (u64, u32, u32),
+    history: &[(u64, u32, u32)],
+    max_mana: u32,
+    logout: (u64, u32, u32),
+) -> bool {
+    let mut last = charged;
+    for &(sequence, mana, soul) in history {
+        if sequence <= last.0
+            || sequence >= logout.0
+            || soul != last.2
+            || (mana != last.1 && mana != last.1.saturating_add(2).min(max_mana))
+        {
+            return false;
+        }
+        last = (sequence, mana, soul);
+    }
+    (last.1, last.2) == (logout.1, logout.2)
+}
+
+/// Match Scorch's registered own sound at the cast tile in this presentation batch.
+pub fn qualification_scorch_cue(
+    events: &[oteryn_protocol_oteryn::presentation::PresentationEvent],
+    cast_position: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+) -> bool {
+    use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationSource};
+    // content/presentations/bindings/spell-cues.json: canary.sound:spell_scorch.
+    const SCORCH_CUE: u32 = 1178;
+    events.iter().filter(|event| matches!(event.kind,
+        PresentationEventKind::Sound { position, cue_id: SCORCH_CUE, source: PresentationSource::Own, .. }
+            if position == cast_position
+    )).count() == 1
+}

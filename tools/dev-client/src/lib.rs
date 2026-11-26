@@ -40,6 +40,7 @@ use oteryn_session_tcp::{TcpAdapterError, TcpConnect};
 mod qualification_transport;
 pub use qualification_transport::{
     QualificationExchange, QualificationTransport, capture_qualification_exchange,
+    qualification_mana_history, qualification_scorch_cue, qualification_wrapper_identity,
 };
 use rustls::pki_types::CertificateDer;
 use std::error::Error as StdError;

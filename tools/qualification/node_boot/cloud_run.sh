@@ -63,6 +63,24 @@ summarize() {
       printf "%s|%s|%s\n", substr($3, 10), substr($5, 8), reason
     }' < "$log") || return 1
 
+  # The node result covers boot only. Every client row observed in that log
+  # needs exactly one passing replay before this wrapper can report success.
+  if [[ "$result" == NODE_BOOT_PASS ]] && ! awk '
+    $1 == "SEAM_EVIDENCE" && $3 ~ /^scenario=[[:alnum:]_.-]+[.]client$/ {
+      if ($2 == "e2e_capture" || ($2 == "e2e_all" && $4 ~ /^status=/)) observed[$3]++
+      if ($2 == "e2e_all" && $4 ~ /^replay=/) {
+        replay[$3]++
+        if ($5 == "status=PASS") passed[$3]++
+      }
+    }
+    END {
+      for (row in observed)
+        if (observed[row] != 1 || replay[row] != 1 || passed[row] != 1) exit 1
+      for (row in replay)
+        if (observed[row] != 1) exit 1
+    }' < "$log"; then
+    result=NODE_BOOT_FAIL
+  fi
   if [[ "$result" == NODE_BOOT_PASS ]] && grep -qE '^[^|]+\.client\|FAIL\|' <<< "$rows"; then
     result=NODE_BOOT_FAIL
   fi
