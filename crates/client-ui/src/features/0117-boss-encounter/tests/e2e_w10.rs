@@ -2,17 +2,12 @@
 //! `protocol/auxiliary.rs` (Hazard projection).
 //!
 //! Under `E2E_ALL_CAPTURE_DIR`, the keys are `initial`, `query`, `select`, `locked`,
-//! `unchanged` and `relog`, in that order. Each live key has five files:
+//! `unchanged` and `relog`, in that order. Each live key has three files:
 //!
-//! - `w10-<key>-request.bin` is the raw Hazard request (empty query or one level byte).
-//! - `w10-<key>-status.bin` is exactly four bytes, the protocol-oteryn CommandStatus
-//!   as a big-endian u32 (Accepted=1, Rejected=2, DuplicateReplay=3, DuplicateOutcomeExpired=4).
-//! - `w10-<key>-frame.bin` is the original validated server envelope.
-//! - `w10-<key>.bin` is the raw reply (unlocked byte then selected byte, or empty on refusal).
-//! - `w10-<key>.status.json` is a JSON object with the writer's hyphenated `session_id` UUID,
-//!   positive u64 `command_id` and `server_sequence`, and numerical `status` matching
-//!   the binary status. The first five probes share a session and relog uses a fresh one.
-//!   Both IDs and sequences strictly increase within a session.
+//! - `w10-<key>-request.bin` is the raw Hazard request.
+//! - `w10-<key>-frame.bin` is the original server wire frame.
+//! - `w10-<key>.json` is the five-key capture envelope. The first five
+//!   envelopes share a UUIDv7 session and relog has a fresh session.
 //!
 //! `w10-expected.txt` is UTF-8 with four LF-terminated decimal key=value lines in this
 //! order: `query_unlocked=2`, `query_selected=1`, `select_unlocked=2`, `select_selected=2`.
@@ -26,8 +21,8 @@ use std::{fs, path::Path};
 
 type Error = Box<dyn std::error::Error>;
 
-const INITIAL: &str = "00000000-0000-0000-0000-000000000001";
-const RELOG: &str = "00000000-0000-0000-0000-000000000002";
+const INITIAL: &str = "01890f4c-3b2a-7c01-8d11-9a321b7c0001";
+const RELOG: &str = "01890f4c-3b2a-7c01-8d11-9a321b7c0002";
 const EXPECTED: &str = "query_unlocked=2\nquery_selected=1\nselect_unlocked=2\nselect_selected=2\n";
 
 fn decode_session_id(value: &str) -> Option<u128> {
@@ -39,7 +34,7 @@ fn decode_session_id(value: &str) -> Option<u128> {
         }
         Some((id << (width * 4)) | u128::from_str_radix(part, 16).ok()?)
     })?;
-    parts.next().is_none().then_some(id)
+    (parts.next().is_none() && (id >> 76) & 0xf == 7 && (id >> 62) & 0x3 == 2).then_some(id)
 }
 
 struct Probe {
@@ -51,23 +46,26 @@ struct Probe {
 impl Probe {
     fn load(root: &Path, key: &str) -> Result<Self, Error> {
         let prefix = format!("w10-{key}");
-        let status = fs::read(root.join(format!("{prefix}-status.bin")))?;
-        let status = u32::from_be_bytes(
-            status
-                .try_into()
-                .map_err(|_| format!("{prefix}: expected four status bytes"))?,
-        );
         let binding: serde_json::Value =
-            serde_json::from_slice(&fs::read(root.join(format!("{prefix}.status.json")))?)?;
-        if binding["status"].as_u64() != Some(u64::from(status)) {
-            return Err(format!("{prefix}: mismatched capture statuses").into());
+            serde_json::from_slice(&fs::read(root.join(format!("{prefix}.json")))?)?;
+        let keys = [
+            "command_id",
+            "game_session_id",
+            "payload",
+            "server_sequence",
+            "status",
+        ];
+        if !binding.as_object().is_some_and(|value| {
+            value.len() == keys.len() && keys.iter().all(|key| value.contains_key(*key))
+        }) {
+            return Err(format!("{prefix}: invalid envelope fields").into());
         }
-        let status = match status {
+        let status = match binding["status"].as_u64().ok_or("invalid capture status")? {
             1 => CommandStatus::Accepted,
             2 => CommandStatus::Rejected,
             3 => CommandStatus::DuplicateReplay,
             4 => CommandStatus::DuplicateOutcomeExpired,
-            _ => return Err(format!("{prefix}: unknown command status {status}").into()),
+            raw => return Err(format!("{prefix}: unknown command status {raw}").into()),
         };
         let positive = |field: &str| {
             binding[field]
@@ -77,15 +75,15 @@ impl Probe {
         };
         Ok(Self {
             request: fs::read(root.join(format!("{prefix}-request.bin")))?,
-            session_id: binding["session_id"]
+            session_id: binding["game_session_id"]
                 .as_str()
                 .and_then(decode_session_id)
-                .ok_or_else(|| format!("{prefix}: invalid session_id UUID"))?,
+                .ok_or_else(|| format!("{prefix}: invalid game_session_id UUIDv7"))?,
             reply: GatedCommandResult {
                 command_id: positive("command_id")?,
                 server_sequence: positive("server_sequence")?,
                 status,
-                payload: fs::read(root.join(format!("{prefix}.bin")))?,
+                payload: serde_json::from_value(binding["payload"].clone())?,
             },
         })
     }
@@ -357,15 +355,11 @@ fn write_capture() -> Result<TempDir, Error> {
         let session_id = if key == "relog" { RELOG } else { INITIAL };
         fs::write(root.0.join(format!("{prefix}-request.bin")), request)?;
         fs::write(
-            root.0.join(format!("{prefix}-status.bin")),
-            status.to_be_bytes(),
-        )?;
-        fs::write(root.0.join(format!("{prefix}.bin")), payload)?;
-        fs::write(
-            root.0.join(format!("{prefix}.status.json")),
+            root.0.join(format!("{prefix}.json")),
             serde_json::to_vec(&serde_json::json!({
-                "session_id": session_id,
+                "game_session_id": session_id,
                 "command_id": command_id,
+                "payload": payload,
                 "server_sequence": server_sequence,
                 "status": status,
             }))?,
@@ -387,8 +381,8 @@ fn e2e_w10_replays_session_bound_capture() -> Result<(), Error> {
 fn e2e_w10_rejects_reused_session_reply() -> Result<(), Error> {
     let root = write_capture()?;
     fs::copy(
-        root.0.join("w10-select.status.json"),
-        root.0.join("w10-unchanged.status.json"),
+        root.0.join("w10-select.json"),
+        root.0.join("w10-unchanged.json"),
     )?;
     let result = replay(Some(&root.0));
     assert_eq!(
@@ -401,14 +395,14 @@ fn e2e_w10_rejects_reused_session_reply() -> Result<(), Error> {
 #[test]
 fn e2e_w10_rejects_invalid_relog_uuid() -> Result<(), Error> {
     let root = write_capture()?;
-    let path = root.0.join("w10-relog.status.json");
+    let path = root.0.join("w10-relog.json");
     let mut binding: serde_json::Value = serde_json::from_slice(&fs::read(&path)?)?;
-    binding["session_id"] = "unknown".into();
+    binding["game_session_id"] = "unknown".into();
     fs::write(path, serde_json::to_vec(&binding)?)?;
     let result = replay(Some(&root.0));
     assert_eq!(
         result.err().map(|error| error.to_string()).as_deref(),
-        Some("w10-relog: invalid session_id UUID")
+        Some("w10-relog: invalid game_session_id UUIDv7")
     );
     Ok(())
 }
@@ -417,8 +411,8 @@ fn e2e_w10_rejects_invalid_relog_uuid() -> Result<(), Error> {
 fn e2e_w10_rejects_reused_server_sequence_with_new_command_id() -> Result<(), Error> {
     let root = write_capture()?;
     let locked: serde_json::Value =
-        serde_json::from_slice(&fs::read(root.0.join("w10-locked.status.json"))?)?;
-    let path = root.0.join("w10-unchanged.status.json");
+        serde_json::from_slice(&fs::read(root.0.join("w10-locked.json"))?)?;
+    let path = root.0.join("w10-unchanged.json");
     let mut binding: serde_json::Value = serde_json::from_slice(&fs::read(&path)?)?;
     binding["server_sequence"] = locked["server_sequence"].clone();
     fs::write(path, serde_json::to_vec(&binding)?)?;
@@ -427,5 +421,24 @@ fn e2e_w10_rejects_reused_server_sequence_with_new_command_id() -> Result<(), Er
         result.err().map(|error| error.to_string()).as_deref(),
         Some("unchanged: server_sequence did not increase within the session")
     );
+    Ok(())
+}
+
+#[test]
+fn e2e_w10_rejects_extra_fields_and_non_v7_sessions() -> Result<(), Error> {
+    let root = write_capture()?;
+    let path = root.0.join("w10-query.json");
+    let mut envelope: serde_json::Value = serde_json::from_slice(&fs::read(&path)?)?;
+    envelope["extra"] = true.into();
+    fs::write(&path, serde_json::to_vec(&envelope)?)?;
+    assert!(Probe::load(&root.0, "query").is_err());
+
+    envelope
+        .as_object_mut()
+        .ok_or("fixture envelope")?
+        .remove("extra");
+    envelope["game_session_id"] = "01890f4c-3b2a-4c01-8d11-9a321b7c0001".into();
+    fs::write(path, serde_json::to_vec(&envelope)?)?;
+    assert!(Probe::load(&root.0, "query").is_err());
     Ok(())
 }

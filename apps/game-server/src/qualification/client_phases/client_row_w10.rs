@@ -40,13 +40,15 @@ async fn probe(
         );
     }
     capture(root, &format!("w10-{name}-request.bin"), request)?;
-    capture(root, &format!("w10-{name}.bin"), &reply.payload)?;
-    capture(
-        root,
-        &format!("w10-{name}-status.bin"),
-        &(reply.status as u32).to_be_bytes(),
-    )?;
     capture(root, &format!("w10-{name}-frame.bin"), &frame)?;
+    let envelope = serde_json::to_vec(&serde_json::json!({
+        "command_id": reply.command_id,
+        "game_session_id": uuid_text(session.as_bytes()),
+        "payload": reply.payload,
+        "server_sequence": reply.server_sequence,
+        "status": reply.status as u32,
+    }))?;
+    capture(root, &format!("w10-{name}.json"), &envelope)?;
     let digest = |bytes: &[u8]| {
         Sha256::digest(bytes)
             .iter()
@@ -54,18 +56,10 @@ async fn probe(
             .collect::<String>()
     };
     let binding = serde_json::json!({
-        "session_id": uuid_text(session.as_bytes()),
-        "command_id": reply.command_id,
-        "server_sequence": reply.server_sequence,
-        "status": reply.status as u32,
+        "envelope_sha256": digest(&envelope),
         "frame_sha256": digest(&frame),
         "request_sha256": digest(request),
     });
-    capture(
-        root,
-        &format!("w10-{name}.status.json"),
-        &serde_json::to_vec(&binding)?,
-    )?;
     evidence(&format!("w10_frame key={name} provenance={binding}"));
     Ok(())
 }

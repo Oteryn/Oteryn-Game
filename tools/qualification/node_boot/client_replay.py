@@ -137,7 +137,7 @@ def replay_targets():
         "oteryn-client-ui", W10_TEST,
         {"w10-expected.txt"} | {
             f"w10-{key}{suffix}" for key in W10_KEYS
-            for suffix in ("-frame.bin", ".status.json", "-status.bin")
+            for suffix in ("-frame.bin", ".json")
         },
     )]
     return targets
@@ -152,10 +152,12 @@ def w10_provenance_matches(captures, log):
     try:
         for key, record in records:
             prefix = captures / f"w10-{key}"
-            binding = json.loads(prefix.with_suffix(".status.json").read_text())
-            if binding != json.loads(record):
-                return False
-            for suffix, field in (("-frame.bin", "frame_sha256"), ("-request.bin", "request_sha256")):
+            binding = json.loads(record)
+            for suffix, field in (
+                (".json", "envelope_sha256"),
+                ("-frame.bin", "frame_sha256"),
+                ("-request.bin", "request_sha256"),
+            ):
                 payload = prefix.with_name(prefix.name + suffix).read_bytes()
                 if hashlib.sha256(payload).hexdigest() != binding[field]:
                     return False
