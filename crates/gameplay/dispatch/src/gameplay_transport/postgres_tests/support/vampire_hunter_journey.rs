@@ -303,8 +303,8 @@ pub(super) async fn empty_dust(
         .await;
     let first = admitted.continuity.next_command_id;
     for (case, saved, reply) in [
-        (0, 6, "Ye've brought me 0 vampire dusts. Ye' need to bring 14 more."),
-        (1, 20, "Ye've brought me 0 vampire dusts. Ask me for a mission to continue your quest."),
+        (0, 6, "Ye've brought me 0 vampire dusts. Ye' need to bring 15 more."),
+        (1, 20, "Ye've brought me 0 vampire dusts. Ye' need to bring 1 more."),
     ] {
         seed_quest_prerequisites(h, owner, admitted, &[(DUST.into(), saved)], 113 + case).await?;
         owner
