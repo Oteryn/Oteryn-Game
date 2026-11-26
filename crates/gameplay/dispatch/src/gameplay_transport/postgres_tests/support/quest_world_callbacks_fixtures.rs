@@ -1140,6 +1140,27 @@ pub(super) async fn wire(
     kind: u32,
     payload: Vec<u8>,
 ) -> TestResult<Vec<u8>> {
+    wire_exchange(owner, admitted, id, kind, payload, false).await
+}
+
+pub(super) async fn wire_followed_by_command(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    id: u64,
+    kind: u32,
+    payload: Vec<u8>,
+) -> TestResult<Vec<u8>> {
+    wire_exchange(owner, admitted, id, kind, payload, true).await
+}
+
+async fn wire_exchange(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    id: u64,
+    kind: u32,
+    payload: Vec<u8>,
+    follow_up: bool,
+) -> TestResult<Vec<u8>> {
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     let frame = oteryn_protocol_oteryn::encode_client_command(
@@ -1152,6 +1173,7 @@ pub(super) async fn wire(
     )
     .map_err(debug)?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let generation = admitted.continuity.connection_generation;
     client
         .write_all(&u32::try_from(frame.len())?.to_be_bytes())
         .await?;
@@ -1160,6 +1182,7 @@ pub(super) async fn wire(
     // before the result correctly disconnects a real client before the queued step runs.
     let receiving = async move {
         let mut result = None;
+        let mut follow_up_received = false;
         loop {
             let mut prefix = [0; 4];
             match client.read_exact(&mut prefix).await {
@@ -1173,10 +1196,34 @@ pub(super) async fn wire(
             if envelope.message_type() == MessageType::CommandResult {
                 let command = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
                     .map_err(debug)?;
+                if result.is_some() {
+                    assert!(follow_up);
+                    assert_eq!(command.command_id, id + 1);
+                    assert_eq!(command.status, oteryn_protocol_oteryn::CommandStatus::Rejected);
+                    follow_up_received = true;
+                    client.shutdown().await?;
+                    continue;
+                }
                 assert_eq!(command.command_id, id);
                 result = Some(command.payload.to_vec());
-                client.shutdown().await?;
+                if follow_up {
+                    let next = oteryn_protocol_oteryn::encode_client_command(
+                        generation,
+                        &oteryn_protocol_oteryn::ClientCommandValue {
+                            command_id: id + 1,
+                            command_type: u32::MAX,
+                            payload: &[],
+                        },
+                    )
+                    .map_err(debug)?;
+                    crate::gameplay_transport::tcp_tls::write_frame(&mut client, &next).await?;
+                } else {
+                    client.shutdown().await?;
+                }
             }
+        }
+        if follow_up && !follow_up_received {
+            return Err("connection ended before the follow-up command result".into());
         }
         result.ok_or_else(|| "no command result".into())
     };

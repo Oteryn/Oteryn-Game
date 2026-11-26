@@ -73,3 +73,24 @@ pub(super) enum Dispatch {
     House(Option<Vec<u8>>),
     Unregistered,
 }
+
+pub(super) fn refuse_use(
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+    reason: &'static str,
+) -> Dispatch {
+    super::super::operator_event(&format!(
+        "event=use_dispatch_refused reason={reason} command_id={}",
+        command.command_id,
+    ));
+    Dispatch::Use(UseOutcome::rejected())
+}
+
+pub(super) fn log_unresolved_use(
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+    path: &'static str,
+) {
+    super::super::operator_event(&format!(
+        "event=use_dispatch_unresolved path={path} command_id={}",
+        command.command_id,
+    ));
+}
