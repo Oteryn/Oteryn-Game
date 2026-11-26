@@ -127,6 +127,10 @@ async fn completed(client: &mut DevClientSession, race: u16) -> TestResult<bool>
         .ok_or_else(|| "W06 Rat card omitted the Echo Warden completion flag".into())
 }
 
+fn in_melee(from: TilePos, target: TilePos) -> bool {
+    from.floor == target.floor && from.x.abs_diff(target.x).max(from.y.abs_diff(target.y)) <= 1
+}
+
 async fn kill(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -134,10 +138,8 @@ async fn kill(
 ) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
     let goal = tile(target.position)?;
-    let adjacent = |at: TilePos| {
-        at.floor == goal.floor && at.x.abs_diff(goal.x).max(at.y.abs_diff(goal.y)) <= 1
-    };
-    let path = route(world, from, adjacent).ok_or("W06 no route to the exact Rat actor")?;
+    let path =
+        route(world, from, |at| in_melee(at, goal)).ok_or("W06 no route to the exact Rat actor")?;
     walk(client, world, &path).await?;
     let attack = client
         .session_mut()
@@ -149,6 +151,7 @@ async fn kill(
     let deadline = Instant::now() + Duration::from_secs(75);
     let mut damaged = false;
     let mut last_position = target.position;
+    let mut pursuit_steps = 0_u32;
     loop {
         client.service_liveness(Duration::from_millis(100)).await?;
         for event in client.take_events() {
@@ -165,18 +168,34 @@ async fn kill(
                     | EntityDetail::ActorWithIcons { health_percent, .. } if health_percent < 100);
             }
         }
-        if damaged
-            && !visible(client).any(|entity| entity.entity == target.entity)
-            && visible(client)
-                .any(|entity| entity.kind == EntityKind::Corpse && entity.position == last_position)
-        {
+        let alive = visible(client)
+            .find(|entity| entity.entity == target.entity)
+            .copied();
+        let corpse = visible(client)
+            .any(|entity| entity.kind == EntityKind::Corpse && entity.position == last_position);
+        if damaged && alive.is_none() && corpse {
             verdict::Harness::global().progress("echo-kill");
             return Ok(());
         }
         if Instant::now() >= deadline {
-            return Err(
-                "W06 did not observe damage, removal and corpse for the exact Rat actor".into(),
-            );
+            return Err(format!(
+                "W06 exact Rat kill evidence missing: damaged={damaged} live={} corpse={corpse} pursuit_steps={pursuit_steps}",
+                alive.is_some()
+            ).into());
+        }
+        if let Some(actor) = alive {
+            last_position = actor.position;
+            let from = tile(client.world_spatial().actor_position)?;
+            let goal = tile(actor.position)?;
+            if !in_melee(from, goal) {
+                let path = route(world, from, |at| in_melee(at, goal))
+                    .ok_or("W06 no STEP route to the fleeing Rat")?;
+                let step = path
+                    .first()
+                    .ok_or("W06 pursuit route empty outside melee")?;
+                tokio::time::timeout_at(deadline, walk(client, world, &[*step])).await??;
+                pursuit_steps += 1;
+            }
         }
     }
 }
@@ -303,6 +322,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pursuit_keeps_the_exact_target_in_same_floor_melee() {
+        let from = TilePos {
+            x: 100,
+            y: 100,
+            floor: -7,
+        };
+        assert!(in_melee(
+            from,
+            TilePos {
+                x: 101,
+                y: 101,
+                ..from
+            }
+        ));
+        assert!(!in_melee(from, TilePos { x: 102, ..from }));
+        assert!(!in_melee(from, TilePos { floor: -8, ..from }));
+    }
 
     #[test]
     fn portal_poll_spans_the_donor_delay_and_keeps_time_to_enter() {
