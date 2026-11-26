@@ -214,6 +214,26 @@ pub(super) fn prepare(
                         reply: callback.reply.clone(),
                     });
                 }
+                // Crystal storkus.lua:121-141 reports a zero deposit and resets the topic.
+                // The largest eligible hand-in gives the amount still due at this stage.
+                if context.2 == "oteryn:npc.storkus"
+                    && topic == 9
+                    && let Some(facts) = inventory
+                    && let Some(payment) = matching_stage
+                        .clone()
+                        .filter_map(|callback| callback.take.first())
+                        .max_by_key(|payment| payment.count)
+                    && facts.quantities.get(&payment.item).copied().unwrap_or(0) == 0
+                {
+                    return Some(Choice {
+                        transition: None,
+                        next_topic: Some(Topic::from(0)),
+                        reply: vec![format!(
+                            "Ye've brought me 0 vampire dusts. Ye' need to bring {} more.",
+                            payment.count
+                        )],
+                    });
+                }
                 // A later stage with the same keyword cannot hide this stage's
                 // explicit inventory refusal. Successful branches retain priority.
                 let mut blocked = matching_stage;
