@@ -324,13 +324,19 @@ async fn journey(
     let mut speaker_expected = Vec::new();
     let mut listener_expected = Vec::new();
 
-    for (dx, dy, label, audible) in [
-        (1, -1, "near", true),
-        // The temple's north aisle and south cross-aisle give independent fixed boundaries.
-        (0, -6, "boundary-y", true),
-        (0, -7, "outside-y", false),
-        (8, 3, "boundary-x", true),
-        (9, 3, "outside-x", false),
+    for (dx, dy, dz, label, audible) in [
+        (1, -1, 0, "near", true),
+        // The temple aisles give fixed inside and outside probes in each direction.
+        (0, -6, 0, "boundary-north", true),
+        (0, -7, 0, "outside-north", false),
+        (-8, 3, 0, "boundary-west", true),
+        (-9, 3, 0, "outside-west", false),
+        (0, 6, 0, "boundary-south", true),
+        (0, 7, 0, "outside-south", false),
+        (8, 3, 0, "boundary-east", true),
+        (9, 3, 0, "outside-east", false),
+        // The balcony landing is inside the horizontal window, one native floor above.
+        (7, 4, 1, "other-floor", false),
     ] {
         let target = TilePos {
             x: origin
@@ -341,7 +347,10 @@ async fn journey(
                 .y
                 .checked_add_signed(dy)
                 .ok_or("S18 y offset overflow")?,
-            floor: origin.floor,
+            floor: origin
+                .floor
+                .checked_add(dz)
+                .ok_or("S18 floor offset overflow")?,
         };
         service_while(
             &mut speaker,
@@ -511,14 +520,14 @@ async fn journey(
     }
     let capture_digest = hex(&digest.finalize());
     Ok(format!(
-        "head={head};run={run};speaker=Packet_Two;near=verified;boundary_x=verified;boundary_y=verified;outside_x=verified;outside_y=verified;relog=verified;capture_sha256={capture_digest}"
+        "head={head};run={run};speaker=Packet_Two;near=verified;four_boundaries=verified;four_outside_tiles=verified;other_floor=verified;relog=verified;capture_sha256={capture_digest}"
     ))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     let started = tokio::time::Instant::now();
     let result = verdict::indexed_timeout(
-        Duration::from_secs(150),
+        Duration::from_secs(260),
         verdict::observe(async {
             let root = required("E2E_ALL_CAPTURE_DIR")?;
             let checkout = std::process::Command::new("git")

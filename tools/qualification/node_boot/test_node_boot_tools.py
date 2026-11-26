@@ -917,6 +917,27 @@ class CloudRunSummaryTests(unittest.TestCase):
                 'ROWS-BEGIN', 'S18.client|FAIL|replay-not-run', 'N07d.client|PASS|', 'ROWS-END',
             ])
 
+    def test_s18_capture_defers_node_result_in_mixed_groups(self):
+        predicate = RUN_TEXT.split("s18_capture_pending() {", 1)[1].split("\n}", 1)[0]
+        script = "s18_capture_pending() {" + predicate + "\n}\ns18_capture_pending \"$@\""
+        with tempfile.TemporaryDirectory() as tmp:
+            stage = Path(tmp) / "stage-seam_stages.log"
+            for group in ("rows", "rows,f4", "f4,rows"):
+                env = {**os.environ, "NODE_BOOT_E2E_ONLY": group}
+                for status, capture, expected in (
+                    (0, True, 0), (1, True, 1), (0, False, 1),
+                ):
+                    with self.subTest(group=group, status=status, capture=capture):
+                        stage.write_text(
+                            "SEAM_EVIDENCE e2e_capture scenario=S18.client status=CAPTURED\n"
+                            if capture else "SEAM_EVIDENCE e2e_all scenario=S18.client status=FAIL\n"
+                        )
+                        result = subprocess.run(
+                            ["bash", "-c", script, "s18-pending", str(status), tmp],
+                            env=env, capture_output=True, text=True,
+                        )
+                        self.assertEqual(result.returncode, expected, result.stderr)
+
     def test_summary_waits_for_s18_replay_result(self):
         with tempfile.TemporaryDirectory() as tmp:
             log = Path(tmp) / "node.log"

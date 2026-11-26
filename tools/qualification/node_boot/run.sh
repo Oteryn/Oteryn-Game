@@ -488,12 +488,16 @@ interrupted() {
   evidence "interrupted signal=$1 stage=$ACTIVE_STAGE world_bundle=$NODE_BOOT_WORLD"
   exit "$2"
 }
+s18_capture_pending() {
+  [[ $1 == 0 ]] &&
+    grep -qE '^SEAM_EVIDENCE e2e_capture scenario=S18\.client status=CAPTURED([[:space:]]|$)' \
+      "$2"/stage-*.log
+}
+
 cleanup() {
   local rc=$?
   local s18_replay_pending=0
-  if [[ $rc == 0 && ${NODE_BOOT_E2E_ONLY:-} == rows ]] &&
-    grep -qE '^SEAM_EVIDENCE e2e_capture scenario=S18\.client status=CAPTURED([[:space:]]|$)' \
-      "$WORK"/stage-*.log; then
+  if s18_capture_pending "$rc" "$WORK"; then
     s18_replay_pending=1
   fi
   trap - EXIT INT TERM

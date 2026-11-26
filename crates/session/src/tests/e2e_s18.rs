@@ -139,7 +139,7 @@ async fn replay(
     );
     let mut seen = 0;
     let mut previous_command = 0;
-    let mut malformed_checked = false;
+    let mut malformed_checked = [false; 2];
     let mut previous_sequence = session.last_server_sequence();
     while !session.stream.0.is_empty() {
         let frame = read_frame(&mut session.stream).await?;
@@ -181,38 +181,51 @@ async fn replay(
         }
         if envelope.message_type() == MessageType::StateDelta {
             let delta = decode_state_delta(envelope.payload())?;
-            if seen == 0
-                && delta.domain_id == STATE_DOMAIN_CHAT
+            if delta.domain_id == STATE_DOMAIN_CHAT
                 && delta.delta_type == oteryn_protocol_oteryn::chat::DELTA_TYPE_CHAT_LINE_V1
+                && let Some(ChatLine::Local { mode, .. }) = expected.get(seen)
             {
-                let malformed = oteryn_protocol_oteryn::encode_state_delta(
-                    envelope.connection_generation(),
-                    sequence,
-                    delta.domain_id,
-                    delta.base_revision,
-                    delta.new_revision,
-                    delta.delta_type,
-                    &delta.payload[..delta.payload.len() - 1],
-                )?;
-                let malformed = decode_wire_envelope(&malformed)?;
-                assert_eq!(
-                    decode_state_delta(malformed.payload())?.base_revision,
-                    session.chat_revision
-                );
-                assert!(
-                    matches!(
-                        session.apply_state_delta(sequence, malformed.payload()),
-                        Err(SessionError::Chat(_))
-                    ),
-                    "S18 malformed inner chat must reach the chat codec"
-                );
-                assert_eq!(session.chat_revision, delta.base_revision);
-                assert!(session.chat_log().ok_or("S18 chat log absent")?.is_empty());
-                println!(
-                    "S18_CHAT_CODEC_REJECTION sequence={sequence} revision={}",
-                    delta.base_revision
-                );
-                malformed_checked = true;
+                let probe = match mode {
+                    ChatSpeechMode::Say => 0,
+                    ChatSpeechMode::Whisper => 1,
+                    _ => return Err("S18 replay expected say or whisper".into()),
+                };
+                if !malformed_checked[probe] {
+                    let malformed = oteryn_protocol_oteryn::encode_state_delta(
+                        envelope.connection_generation(),
+                        sequence,
+                        delta.domain_id,
+                        delta.base_revision,
+                        delta.new_revision,
+                        delta.delta_type,
+                        &delta.payload[..delta.payload.len() - 1],
+                    )?;
+                    let malformed = decode_wire_envelope(&malformed)?;
+                    assert_eq!(
+                        decode_state_delta(malformed.payload())?.base_revision,
+                        session.chat_revision
+                    );
+                    assert!(
+                        matches!(
+                            session.apply_state_delta(sequence, malformed.payload()),
+                            Err(SessionError::Chat(_))
+                        ),
+                        "S18 malformed inner chat must reach the chat codec"
+                    );
+                    assert_eq!(session.chat_revision, delta.base_revision);
+                    assert!(
+                        session
+                            .chat_log()
+                            .ok_or("S18 chat log absent")?
+                            .lines()
+                            .eq(&expected[..seen])
+                    );
+                    println!(
+                        "S18_CHAT_CODEC_REJECTION mode={mode:?} sequence={sequence} revision={}",
+                        delta.base_revision
+                    );
+                    malformed_checked[probe] = true;
+                }
             }
             let event = session.apply_state_delta(sequence, envelope.payload())?;
             if let SessionEvent::ChatLine(applied) = event {
@@ -232,7 +245,7 @@ async fn replay(
     assert_eq!(seen, expected.len(), "S18 recorded chat line count");
     assert_eq!(
         malformed_checked,
-        !expected.is_empty(),
+        [!expected.is_empty(); 2],
         "S18 chat codec check"
     );
     assert!(
@@ -294,21 +307,33 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
     };
     let mut speaker_lines = Vec::new();
     let mut listener_lines = Vec::new();
-    for label in ["near", "boundary-y", "outside-y", "boundary-x", "outside-x"] {
+    for label in [
+        "near",
+        "boundary-north",
+        "outside-north",
+        "boundary-west",
+        "outside-west",
+        "boundary-south",
+        "outside-south",
+        "boundary-east",
+        "outside-east",
+        "other-floor",
+    ] {
         for (mode, suffix) in [
             (ChatSpeechMode::Say, "say"),
             (ChatSpeechMode::Whisper, "whisper"),
         ] {
             let text = format!("s18-{label}-{suffix}-{run}");
             speaker_lines.push(line(mode, text.clone()));
-            match (label, mode) {
-                ("near", _) | ("boundary-x" | "boundary-y", ChatSpeechMode::Say) => {
-                    listener_lines.push(line(mode, text))
-                }
-                ("boundary-x" | "boundary-y", ChatSpeechMode::Whisper) => {
-                    listener_lines.push(line(mode, "pspsps".into()))
-                }
-                _ => {}
+            if label == "near" {
+                listener_lines.push(line(mode, text));
+            } else if label.starts_with("boundary-") {
+                let heard = if mode == ChatSpeechMode::Whisper {
+                    "pspsps".into()
+                } else {
+                    text
+                };
+                listener_lines.push(line(mode, heard));
             }
         }
     }
