@@ -19,7 +19,9 @@
 
 use super::*;
 use oteryn_dev_client::client_runtime::task_board;
-use oteryn_protocol_oteryn::task_board::full::{Reply, Request};
+use oteryn_protocol_oteryn::task_board::full::{
+    CAPABILITY_TASK_BOARD_DAILY_BOUNTY_V1, Reply, Request,
+};
 
 struct Journey {
     started: std::time::Instant,
@@ -231,10 +233,10 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         .position(|task| !task.delivered)
         .ok_or("weekly-delivery needs an undelivered assignment")?;
     let task = &weekly.deliveries[index];
-    let reference = std::num::NonZeroU32::new(u32::from(task.item))
-        .ok_or("weekly-delivery has a zero item definition")?;
+    let item_index = provisioning::item_index()?;
+    let reference = delivery_reference(&item_index, task.item, client.selected_capabilities())?;
     let required = u32::from(task.required);
-    let bag = provisioning::item_reference(&provisioning::item_index()?, DELIVERY_BAG)?;
+    let bag = provisioning::item_reference(&item_index, DELIVERY_BAG)?;
     let inventory_before = u32::from(task.current);
     let missing = required.saturating_sub(inventory_before);
     if missing != 0 {
@@ -388,6 +390,24 @@ fn delivery_inventory(
         .ok_or_else(|| "weekly-delivery inventory is absent".into())
 }
 
+fn delivery_reference(
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+    item: u32,
+    capabilities: &[u32],
+) -> TestResult<std::num::NonZeroU32> {
+    // The legacy board carries donor item IDs. Inventory and the fixture use
+    // the activated generation's compact references in either projection.
+    if !capabilities.contains(&CAPABILITY_TASK_BOARD_DAILY_BOUNTY_V1) {
+        return provisioning::item_reference(index, item);
+    }
+    let reference =
+        std::num::NonZeroU32::new(item).ok_or("weekly-delivery has a zero item definition")?;
+    index
+        .definition_at(reference)
+        .ok_or("weekly-delivery item definition is absent")?;
+    Ok(reference)
+}
+
 async fn open_delivery_bag(
     client: &mut oteryn_dev_client::DevClientSession,
     handle: oteryn_protocol_oteryn::item_view::ItemHandle,
@@ -499,6 +519,26 @@ async fn logout_once(client: &mut oteryn_dev_client::DevClientSession) -> TestRe
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn delivery_resolves_the_negotiated_id_even_when_both_id_spaces_overlap() -> TestResult {
+        let index = crate::content::item_ref::ItemDefinitionIndex::decode(
+            br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[
+                ["oteryn:item.tibia.i1000","definition-r1"],
+                ["oteryn:item.tibia.i1400","definition-r1"],
+                ["oteryn:item.tibia.i2","definition-r1"]
+            ]}"#,
+        )?;
+        let canonical = &[CAPABILITY_TASK_BOARD_DAILY_BOUNTY_V1];
+        let legacy_item = delivery_reference(&index, 2, &[])?;
+        let canonical_item = delivery_reference(&index, 2, canonical)?;
+        assert_eq!(legacy_item.get(), 3);
+        assert_eq!(canonical_item.get(), 2);
+        assert!(delivery_reference(&index, 3, &[]).is_err());
+        assert!(delivery_reference(&index, 4, canonical).is_err());
+        assert!(delivery_reference(&index, 0, canonical).is_err());
+        Ok(())
+    }
 
     #[test]
     fn scenario_commands_use_full_task_board_action_numbers() {
