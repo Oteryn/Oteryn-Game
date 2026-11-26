@@ -4,8 +4,18 @@ use crate::durability::character_last_position::{
     FinalLastPosition, LastPositionCell, LastPositionKey, LastPositionWrite, load_last_position,
     upsert_last_position,
 };
+use crate::foundation::{CommandId, CommandRef, GameSessionId};
 use oteryn_gameplay_quests::quest::world_callbacks::{NativeSelector, SceneEdit};
 use sqlx::types::Json;
+
+pub type PaidScroll = (CommandRef, NativeSelector, Vec<SceneEdit>);
+type PaidScrollRow = (
+    String,
+    String,
+    String,
+    Json<NativeSelector>,
+    Json<Vec<SceneEdit>>,
+);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PaidArrival {
@@ -121,7 +131,7 @@ impl super::super::DurabilityRoot {
         clippy::too_many_arguments,
         reason = "the successor's scope, node, and pinned world context are independent"
     )]
-    pub async fn read_paid_scroll_scene(
+    pub async fn read_paid_scroll_scenes(
         &self,
         authority: &super::super::character_authority::ReconciledCharacterAuthority<'_, '_>,
         node: &super::super::runtime_scope_assignment::NodeIncarnationProof,
@@ -130,7 +140,7 @@ impl super::super::DurabilityRoot {
         generation: u64,
         map_revision: String,
         frame: [u8; 32],
-    ) -> Result<Option<(NativeSelector, Vec<SceneEdit>)>, DurabilityError> {
+    ) -> Result<Vec<PaidScroll>, DurabilityError> {
         let crate::foundation::RuntimeScopeRefV1::Channel {
             world_id,
             channel_id,
@@ -150,28 +160,47 @@ impl super::super::DurabilityRoot {
                     super::super::spell_item_transaction::assert_spell_item_scope_with_recovery(
                         &mut tx, permit, &recovery, &node, scope, generation,
                     ).await.map_err(|_| DurabilityError::Unavailable)?;
-                    let row: Option<(Json<NativeSelector>, Json<Vec<SceneEdit>>)> = sqlx::query_as(
-                        "SELECT paid.proof_json #> '{callback,selector,native}',
-                                paid.proof_json #> '{callback,effects,scene,open}'
-                           FROM game_quest_callback_consumptions
-                           CROSS JOIN LATERAL (SELECT convert_from(proof,'UTF8')::jsonb AS proof_json) paid
-                          WHERE transition_key='oteryn:quest-callback/dreamer-dread-lord-scroll'
-                            AND location_kind='ground'
-                            AND (before_ground->>'world_id')=encode($1,'hex')::uuid::text
-                            AND (before_ground->>'channel_id')=encode($2,'hex')::uuid::text
-                            AND (before_ground->>'map_revision')=$3
-                            AND (before_ground->>'native_room_placement_context')=(to_jsonb($4::bytea)#>>'{}')
-                            AND paid.proof_json #> '{callback,effects,scene,open}' IS NOT NULL
-                          ORDER BY transaction_id LIMIT 1",
-                    )
-                    .bind(world_id.as_bytes().as_slice())
-                    .bind(channel_id.as_bytes().as_slice())
-                    .bind(&map_revision)
-                    .bind(frame.as_slice())
-                    .fetch_optional(&mut *tx)
-                    .await?;
+                    let mut scenes = Vec::new();
+                    let mut cursor: Option<String> = None;
+                    loop {
+                        let rows: Vec<PaidScrollRow> = sqlx::query_as(
+                            "SELECT transaction_id::text, cause_id::text, cause_ordinal::text,
+                                    paid.proof_json #> '{callback,selector,native}',
+                                    paid.proof_json #> '{callback,effects,scene,open}'
+                               FROM game_quest_callback_consumptions
+                               CROSS JOIN LATERAL (SELECT convert_from(proof,'UTF8')::jsonb AS proof_json) paid
+                              WHERE transition_key='oteryn:quest-callback/dreamer-dread-lord-scroll'
+                                AND location_kind='ground'
+                                AND (before_ground->>'world_id')=encode($1,'hex')::uuid::text
+                                AND (before_ground->>'channel_id')=encode($2,'hex')::uuid::text
+                                AND (before_ground->>'map_revision')=$3
+                                AND (before_ground->>'native_room_placement_context')=(to_jsonb($4::bytea)#>>'{}')
+                                AND paid.proof_json #> '{callback,effects,scene,open}' IS NOT NULL
+                                AND ($5::uuid IS NULL OR transaction_id > $5::uuid)
+                              ORDER BY transaction_id LIMIT 128",
+                        )
+                        .bind(world_id.as_bytes().as_slice())
+                        .bind(channel_id.as_bytes().as_slice())
+                        .bind(&map_revision)
+                        .bind(frame.as_slice())
+                        .bind(cursor.as_deref())
+                        .fetch_all(&mut *tx)
+                        .await?;
+                        if rows.is_empty() {
+                            break;
+                        }
+                        for (id, session, ordinal, Json(source), Json(edits)) in rows {
+                            let session = GameSessionId::decode(&super::super::item_mint::uuid_text(&session)?)
+                                .map_err(|_| DurabilityError::InvalidStoredState)?;
+                            let command = ordinal.parse::<u64>().ok()
+                                .and_then(|id| CommandId::new(id).ok())
+                                .ok_or(DurabilityError::InvalidStoredState)?;
+                            scenes.push((CommandRef::new(session, command), source, edits));
+                            cursor = Some(id);
+                        }
+                    }
                     super::super::db::commit_semantic_transaction(tx, deadline).await?;
-                    Ok(row.map(|(Json(source), Json(edits))| (source, edits)))
+                    Ok(scenes)
                 })
             })
             .await

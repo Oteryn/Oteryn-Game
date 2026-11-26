@@ -1194,8 +1194,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let coffin = VampireCoffinKind::for_callback(&callback.key);
         let mut recover_ordinary_coffin = false;
         let paid_scene = if callback.key == super::paid_projection::DREAD_LORD_SCROLL {
-            let (Some(projection), Some(delay)) =
-                (projection.as_ref(), callback.effects.reset_after_ms)
+            let (QuestCause::Use(payment), Some(projection), Some(delay)) =
+                (cause, projection.as_mut(), callback.effects.reset_after_ms)
             else {
                 return UseDisposition::Rejected;
             };
@@ -1207,6 +1207,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::Rejected;
             }
+            let QuestCallbackProjection::Scene { mutations, .. } = projection else {
+                return UseDisposition::Rejected;
+            };
+            let [
+                crate::map::facts::QuestSceneMutation::Create {
+                    payment: identity,
+                    passable: true,
+                    ..
+                },
+            ] = mutations.as_mut_slice()
+            else {
+                return UseDisposition::Rejected;
+            };
+            *identity = Some(payment);
             let Some(scene) =
                 map.facts
                     .stage_timed_scene_creation(key, expected_revision, after, projection)

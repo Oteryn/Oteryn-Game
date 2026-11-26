@@ -606,9 +606,7 @@ fn lower(
         }
     }
     let block_armor = rules::block_armor(spell).map_err(|_| SpellCastDisposition::Rejected)?
-        && !(uses_elemental_bond(spell)
-            && damage_element
-                .is_some_and(|element| matches!(element, Element::Earth | Element::Energy)));
+        && !uses_elemental_bond(spell);
     let source_delays = hits
         .iter()
         .map(|h| (h.target, h.delay_ms))
@@ -2683,7 +2681,7 @@ pub(in crate::gameplay_transport) async fn prepare_due(
                 cooldown_ms: None,
                 shared_cooldown: None,
                 reduce_all_spell_cooldowns_ms: 0,
-                block_armor: !matches!(bond, Some(Element::Earth | Element::Energy))
+                block_armor: !uses_elemental_bond(spell)
                     && spell
                         .authored
                         .as_ref()

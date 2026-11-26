@@ -165,12 +165,13 @@ pub async fn prepare_from_owners(
     let equipment_plan = equipment_facts
         .as_ref()
         .map(|facts| {
-            let Plan::Equipment(plan) = profile
+            let Plan::Equipment(mut plan) = profile
                 .plan(Facts::Equipment(facts), &mut |minimum, _| minimum)
                 .map_err(|_| SpellCastDisposition::Rejected)?
             else {
                 return reject();
             };
+            monk_equipment::apply_parity(spell, &caster, facts, &mut plan)?;
             Ok(plan)
         })
         .transpose()?;
@@ -448,7 +449,7 @@ async fn prepare_spatial(
                 y: p.y,
                 floor: p.floor,
             },
-            SpellTarget::None if needs_direction && equipment_plan.is_none() => {
+            SpellTarget::None if needs_direction => {
                 let (dx, dy) = delta(facing_direction);
                 offset(position, dx, dy)?
             }

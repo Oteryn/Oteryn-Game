@@ -39,7 +39,7 @@ pub(super) enum Pull {
     Item {
         item: ItemKey,
         from: TilePos,
-        to: TilePos,
+        landings: Vec<TilePos>,
     },
     Player {
         actor: ExactActorRef,
@@ -64,7 +64,7 @@ fn position(tile: TilePos) -> MovementLocalPosition {
 )]
 pub(super) fn pull(
     runtime: &mut ChannelRuntimeV1,
-    states: &ChannelSpellStates,
+    states: &mut ChannelSpellStates,
     cells: &NativeEntryMovementCells,
     map: &BundleMap,
     ground: &LoopGroundOverlay,
@@ -72,6 +72,7 @@ pub(super) fn pull(
     reset_epoch: u64,
     spot: TilePos,
     now: SemanticTimeMicros,
+    optional_pvp: Option<bool>,
 ) -> Result<Pull, UseDisposition> {
     let impossible = UseDisposition::NotPossible;
     let from = TilePos {
@@ -89,43 +90,42 @@ pub(super) fn pull(
         .ok_or(impossible)?;
     let doors = BundleDoors(&map.facts);
     // Crystal Position:moveUpstairs tries south, then north/east/west and the diagonals.
-    let to = [
-        (0, 1),
-        (0, -1),
-        (1, 0),
-        (-1, 0),
-        (-1, 1),
-        (1, 1),
-        (-1, -1),
-        (1, -1),
-    ]
-    .into_iter()
-    .find_map(|(dx, dy)| {
-        let tile = TilePos {
-            x: spot.x.checked_add_signed(dx)?,
-            y: spot.y.checked_add_signed(dy)?,
-            floor: spot.floor,
-        };
-        let at = position(tile);
-        let cell = LogicalCell {
-            x: at.x,
-            y: at.y,
-            z: i32::from(at.floor),
-        };
-        let stack = view::compose_tile(ground.overlay(), &facts, tile).ok()??;
-        (stack.ground_speed > 0
-            && stack
-                .entries
-                .iter()
-                .all(|entry| !entry.facts.blocks_projectile)
-            && cells.index().lookup(cells.scope(), cell) == Ok(CollisionClass::Walkable)
-            && !doors.blocks(cell)
-            && !floor::is_teleport(cells, cell)
-            && map.facts.house_id(tile).is_none())
-        .then_some(tile)
-    })
-    .ok_or(impossible)?;
-    let destination = position(to);
+    let landings = || {
+        [
+            (0, 1),
+            (0, -1),
+            (1, 0),
+            (-1, 0),
+            (-1, 1),
+            (1, 1),
+            (-1, -1),
+            (1, -1),
+        ]
+        .into_iter()
+        .filter_map(|(dx, dy)| {
+            let tile = TilePos {
+                x: spot.x.checked_add_signed(dx)?,
+                y: spot.y.checked_add_signed(dy)?,
+                floor: spot.floor,
+            };
+            let at = position(tile);
+            let cell = LogicalCell {
+                x: at.x,
+                y: at.y,
+                z: i32::from(at.floor),
+            };
+            let stack = view::compose_tile(ground.overlay(), &facts, tile).ok()??;
+            (stack.ground_speed > 0
+                && stack
+                    .entries
+                    .iter()
+                    .all(|entry| !entry.facts.blocks_projectile)
+                && cells.index().lookup(cells.scope(), cell) == Ok(CollisionClass::Walkable)
+                && !floor::is_teleport(cells, cell)
+                && map.facts.house_id(tile).is_none())
+            .then_some(tile)
+        })
+    };
 
     // Crystal's top visible thing gives a creature precedence over tile items.
     let actors = runtime.scene_actor_census().map_err(|_| impossible)?;
@@ -137,25 +137,31 @@ pub(super) fn pull(
         entry.position.position() == position(from)
             && states.native_actor_invisible(runtime, entry.actor, session, now) != Some(true)
     }) {
-        if states.is_dead(target.actor)
-            || runtime.actor_spell_reserved(target.actor)
-            || runtime
-                .scene_destination_reserved(destination)
-                .unwrap_or(true)
-        {
+        if states.is_dead(target.actor) || runtime.actor_spell_reserved(target.actor) {
             return Err(impossible);
         }
         return match target.kind {
             SceneActorKind::Npc => Err(impossible),
             SceneActorKind::Creature => {
-                let moved = crate::movement::relocate::relocate_creature(
-                    runtime,
-                    target.actor,
-                    cells,
-                    &doors,
-                    destination,
-                )
-                .map_err(|_| impossible)?;
+                let moved = landings()
+                    .find_map(|tile| {
+                        let destination = position(tile);
+                        if runtime
+                            .scene_destination_reserved(destination)
+                            .unwrap_or(true)
+                        {
+                            return None;
+                        }
+                        crate::movement::relocate::relocate_creature(
+                            runtime,
+                            target.actor,
+                            cells,
+                            &doors,
+                            destination,
+                        )
+                        .ok()
+                    })
+                    .ok_or(impossible)?;
                 crate::movement::monster_map::apply_committed_step_in(
                     runtime,
                     cells,
@@ -185,33 +191,72 @@ pub(super) fn pull(
                     states: channel,
                     session,
                 };
-                let cell = LogicalCell {
-                    x: destination.x,
-                    y: destination.y,
-                    z: i32::from(destination.floor),
-                };
-                if floor::player_door_entry_blocked(cells, cell, &access)
-                    || !states.spell_idle(runtime, target.actor, session)
-                {
+                if !states.spell_idle(runtime, target.actor, session) {
                     return Err(impossible);
                 }
-                let proof = floor::prepare_quest_callback_teleport(
-                    runtime,
-                    cells,
+                use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
+                let until = now.checked_add(STAIRHOP_MICROS).map_err(|_| impossible)?;
+                let blocked = crate::gameplay_transport::pvp_live::pz_blocked(
+                    states,
                     target.actor,
                     session,
-                    target.position,
-                    destination,
-                    crate::gameplay_transport::pvp_live::pz_blocked(
-                        states,
-                        target.actor,
-                        session,
-                        now,
-                    ),
-                    &access,
-                )
-                .map_err(|_| impossible)?;
+                    now,
+                );
+                let proof = landings()
+                    .find_map(|tile| {
+                        let destination = position(tile);
+                        let cell = LogicalCell {
+                            x: destination.x,
+                            y: destination.y,
+                            z: i32::from(destination.floor),
+                        };
+                        if floor::player_door_entry_blocked(cells, cell, &access)
+                            || runtime
+                                .scene_destination_reserved(destination)
+                                .unwrap_or(true)
+                        {
+                            return None;
+                        }
+                        floor::prepare_quest_callback_teleport(
+                            runtime,
+                            cells,
+                            target.actor,
+                            session,
+                            target.position,
+                            destination,
+                            blocked,
+                            &access,
+                        )
+                        .ok()
+                    })
+                    .ok_or(impossible)?;
                 let after = runtime.commit_source_step(proof).map_err(|_| impossible)?;
+                if let Some(state) = states.get_mut(runtime, target.actor, session) {
+                    state
+                        .cooldowns
+                        .groups
+                        .insert(STAIRHOP_COOLDOWN_KEY.into(), until);
+                }
+                let origin = target.position.position();
+                states.stage_special_movement_step(
+                    runtime,
+                    map,
+                    target.actor,
+                    session,
+                    now.get(),
+                    Some(origin),
+                    after.position(),
+                    optional_pvp,
+                );
+                use crate::gameplay_transport::paced_movement::underwater_drown::underwater;
+                states.stage_underwater_step(
+                    runtime,
+                    target.actor,
+                    session,
+                    now.get(),
+                    underwater(map, origin),
+                    underwater(map, after.position()),
+                );
                 Ok(Pull::Player {
                     actor: target.actor,
                     session,
@@ -240,5 +285,18 @@ pub(super) fn pull(
         },
         _ => return Err(impossible),
     };
-    Ok(Pull::Item { item, from, to })
+    Ok(Pull::Item {
+        item,
+        from,
+        landings: landings()
+            .filter(|tile| {
+                let at = position(*tile);
+                !doors.blocks(LogicalCell {
+                    x: at.x,
+                    y: at.y,
+                    z: i32::from(at.floor),
+                })
+            })
+            .collect(),
+    })
 }

@@ -41,7 +41,10 @@ pub(super) async fn scenario(admin: String, case: u8, use_bundle: bool) -> TestR
 pub(super) enum RopeUse {
     Climb,
     Pull,
+    PullFromFullLanding,
     PullCreature,
+    PullCreatureFromSouth,
+    PullPlayer,
     CoveredObject,
     CoveredHandle,
     GroundHandle,
@@ -57,7 +60,7 @@ impl RopeUse {
     }
 
     fn pulls(self) -> bool {
-        matches!(self, Self::Pull | Self::PullCreature)
+        matches!(self, Self::Pull | Self::PullFromFullLanding | Self::PullCreature | Self::PullCreatureFromSouth | Self::PullPlayer)
     }
 
     fn ground_handle(self) -> bool {
@@ -146,6 +149,7 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
     let room = bundle_room.as_ref().unwrap_or(pin.qualified_room());
     let start = if use_bundle {
         match case {
+            _ if tool.is_some_and(|(_, _, action)| action == RopeUse::PullCreatureFromSouth) => at(11, 11, 7),
             _ if tool.is_some_and(|(_, _, action)| action.pulls()) => at(10, 10, 7),
             0 => at(10, 10, 6),
             1 => at(10, 9, 5),
@@ -344,7 +348,24 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
                 position_fixture_actor(&mut runtime, room.movement_cells(), actor, session, start)?;
             }
         }
-        let creature = if action == RopeUse::PullCreature {
+        let filled = if action == RopeUse::PullFromFullLanding {
+            use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
+
+            let fence = current_fence(&owner, session).await?.item_fence();
+            let offering = Offering {
+                position: Position { x: 11, y: 11, floor: -7 },
+                item: "oteryn:item.tibia.i3264".into(),
+                count: 1,
+            };
+            let limit = u64::try_from(crate::durability::ground_cell_limit::GROUND_CELL_ROOT_LIMIT)?;
+            for n in 0..limit {
+                super::quest_world_callbacks_fixtures::offering(&owner, fence, &offering, 2_000 + n).await?;
+            }
+            i64::try_from(limit)?
+        } else {
+            0
+        };
+        let creature = if matches!(action, RopeUse::PullCreature | RopeUse::PullCreatureFromSouth) {
             use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
             let mut runtime = deps.runtime.lock().await;
             native.install_companion_policies(&mut runtime).map_err(debug)?;
@@ -354,6 +375,24 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
                 .into_iter()
                 .next()
                 .ok_or("rat beneath hole")?)
+        } else {
+            None
+        };
+        let peer = if action == RopeUse::PullPlayer {
+            let session = crate::foundation::GameSessionId::decode(&id(73)).map_err(debug)?;
+            let mut runtime = deps.runtime.lock().await;
+            let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+            let peer = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime.initialize_pinned_test_position(peer, at(11, 10, 8)).map_err(debug)?;
+            owner.states.spell_states.lock().await.initialize(
+                &runtime,
+                peer,
+                session,
+                crate::gameplay_transport::actor_spell::tests::FACTS,
+                (0, 0),
+                owner.owner_now(),
+            ).ok_or("pulled player")?;
+            Some((peer, session))
         } else {
             None
         };
@@ -521,19 +560,37 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
             let runtime = deps.runtime.lock().await;
             assert_eq!(
                 runtime.read_actor_position(creature).map_err(debug)?.position(),
-                at(11, 11, 7),
+                if action == RopeUse::PullCreatureFromSouth { at(10, 10, 7) } else { at(11, 11, 7) },
             );
+        }
+        if let Some((peer, session)) = peer {
+            use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
+            let runtime = deps.runtime.lock().await;
+            assert_eq!(runtime.read_actor_position(peer).map_err(debug)?.position(), at(11, 11, 7));
+            let states = owner.states.spell_states.lock().await;
+            let state = states.get(&runtime, peer, session).ok_or("moved player state")?;
+            let until = state.cooldowns.groups.get(STAIRHOP_COOLDOWN_KEY).ok_or("missing stair-hop cooldown")?;
+            let now = owner.owner_now();
+            assert!(now < *until && *until <= now.checked_add(STAIRHOP_MICROS).map_err(debug)?);
         }
         if pull {
             let (position, quantity): (Vec<u8>, i64) = sqlx::query_as(
                 "SELECT g.spatial_position, i.quantity FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid",
             ).bind(id(72).as_slice()).fetch_one(&h.pool).await?;
             let cell = crate::durability::spell_items_abi::decode_ground_cell(&position).map_err(debug)?;
-            let (y, floor) = if creature.is_some() { (10, -8) } else { (11, -7) };
-            assert_eq!((cell.x, cell.y, cell.z, quantity), (11, y, floor, 7), "{tool}");
+            let actor_pulled = creature.is_some() || peer.is_some();
+            let expected = if actor_pulled {
+                (11, 10, -8)
+            } else if action == RopeUse::PullFromFullLanding {
+                (10, 10, -7)
+            } else {
+                (11, 11, -7)
+            };
+            assert_eq!((cell.x, cell.y, cell.z), expected, "{tool}");
+            assert_eq!(quantity, 7, "{tool}");
             let moves: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_loop_move_receipts")
                 .fetch_one(&h.pool).await?;
-            assert_eq!(moves, if creature.is_some() { 1 } else { 2 });
+            assert_eq!(moves, filled + if actor_pulled { 1 } else { 2 });
         }
         let schedules: Vec<(String, i64)> = sqlx::query_as(
             "SELECT definition_production_key, duration_millis FROM game_spell_item_temporal_schedules WHERE target_production_key=$1",

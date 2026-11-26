@@ -1,5 +1,6 @@
 //! Channel-local callback projection, sharing the bundle's existing fact/view owner.
 use super::*;
+use crate::foundation::CommandRef;
 use sha2::{Digest, Sha256};
 
 // A committed callback can replace or remove one exact native door. Keep every
@@ -183,6 +184,7 @@ pub(super) struct CallbackStates {
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
+    paid_scene_items: BTreeMap<CommandRef, (TilePos, u64, u16)>,
     scene_items: BTreeMap<(TilePos, u64, u16), (EntryId, bool)>,
     merchant_barricades: BTreeMap<u64, (TilePos, EntryId)>,
     batch_blockers: BTreeSet<TilePos>,
@@ -658,6 +660,7 @@ impl CallbackStates {
         self.movement_items.retain(|p, _| !cleared(p));
         self.solid_items.retain(|p| !cleared(p));
         self.scene_items.retain(|(p, _, _), _| !cleared(p));
+        self.paid_scene_items.retain(|_, (p, _, _)| !cleared(p));
         self.merchant_barricades.retain(|_, (pos, _)| !cleared(pos));
         self.batch_blockers.retain(|p| !inside(*p));
         self.portals.retain(|p, _| !cleared(p));
@@ -682,6 +685,7 @@ impl CallbackStates {
             + self.portals.len()
             + self.solid_items.len()
             + self.scene_items.len()
+            + self.paid_scene_items.len()
             + self.merchant_barricades.len()
             + self.batch_blockers.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
@@ -731,6 +735,8 @@ pub struct PreparedTimedScene<'a> {
     position: TilePos,
     creation: Option<(EntryId, EntryFacts, bool)>,
     reset: MovementDecay,
+    payment: Option<CommandRef>,
+    appearance: u16,
     published: bool,
 }
 
@@ -738,9 +744,8 @@ impl PreparedTimedScene<'_> {
     fn release(&self, states: &mut CallbackStates) {
         states.reserved.remove(&self.key);
         states.reserved_positions.remove(&self.position);
-        if self.creation.is_some() {
-            states.scene_reserved_capacity -= 2;
-        }
+        states.scene_reserved_capacity -=
+            2 * usize::from(self.creation.is_some()) + usize::from(self.payment.is_some());
     }
 
     pub fn publish(mut self, due: u64) {
@@ -763,6 +768,11 @@ impl PreparedTimedScene<'_> {
                 (self.position, self.key, facts.appearance_id),
                 (id, passable),
             );
+        }
+        if let Some(payment) = self.payment {
+            states
+                .paid_scene_items
+                .insert(payment, (self.position, self.key, self.appearance));
         }
         states.changed.insert(self.key, self.after);
         states
@@ -2041,6 +2051,7 @@ impl BundleFacts {
                 position,
                 facts,
                 passable,
+                payment,
                 ..
             },
         ] = mutations.as_slice()
@@ -2079,10 +2090,9 @@ impl BundleFacts {
         // The two reservation entries account for the source revision and its timer.
         current.reserved.insert(key);
         current.reserved_positions.insert(*position);
-        if creation.is_some() {
-            // Reserve the new movement item and its scene index entry.
-            current.scene_reserved_capacity += 2;
-        }
+        // Reserve the new movement item, scene index entry and payment receipt.
+        current.scene_reserved_capacity +=
+            2 * usize::from(creation.is_some()) + usize::from(payment.is_some());
         Some(PreparedTimedScene {
             callbacks: &self.callbacks,
             key,
@@ -2090,6 +2100,8 @@ impl BundleFacts {
             position: *position,
             creation,
             reset,
+            payment: *payment,
+            appearance: facts.appearance_id,
             published: false,
         })
     }
@@ -2179,6 +2191,40 @@ impl BundleFacts {
             creations,
             published: false,
         })
+    }
+
+    /// Rehydrate a paid output without changing the source lever or its timer.
+    pub fn restore_paid_scene_item(
+        &self,
+        owner: u64,
+        position: TilePos,
+        facts: EntryFacts,
+        receipt: CommandRef,
+    ) -> bool {
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if let Some(existing) = states.paid_scene_items.get(&receipt) {
+            return *existing == (position, owner, facts.appearance_id);
+        }
+        let creates = !states
+            .scene_items
+            .contains_key(&(position, owner, facts.appearance_id));
+        if states.position_reserved(position) || !states.has_capacity(1 + 2 * usize::from(creates)) {
+            return false;
+        }
+        project_scene(
+            Arc::make_mut(&mut states),
+            owner,
+            &[QuestSceneMutation::Create {
+                position,
+                facts,
+                passable: true,
+                payment: Some(receipt),
+                reuse_existing: true,
+            }],
+            false,
+        )
     }
 
     #[allow(
@@ -2600,6 +2646,7 @@ pub enum QuestSceneMutation {
         position: TilePos,
         facts: EntryFacts,
         passable: bool,
+        payment: Option<CommandRef>,
         /// Accept an existing entry only if this scene owns it and its facts match.
         reuse_existing: bool,
     },
@@ -2669,8 +2716,8 @@ fn project_scene(
                 appearance,
                 allow_missing,
             } => {
-                let Some((id, _)) = states.scene_items.remove(&(*position, owner, *appearance))
-                else {
+                let identity = (*position, owner, *appearance);
+                let Some((id, _)) = states.scene_items.remove(&identity) else {
                     if *allow_missing {
                         continue;
                     }
@@ -2690,14 +2737,21 @@ fn project_scene(
                     states.movement_items.remove(position);
                 }
                 states.changed.remove(&id.get());
+                states.paid_scene_items.retain(|_, scene| *scene != identity);
             }
             QuestSceneMutation::Create {
                 position,
                 facts,
                 passable,
+                payment,
                 reuse_existing,
             } => {
                 let identity = (*position, owner, facts.appearance_id);
+                if payment.is_some_and(|receipt| {
+                    !passable || states.paid_scene_items.contains_key(&receipt)
+                }) {
+                    return false;
+                }
                 if let Some(&(id, existing_passable)) = states.scene_items.get(&identity) {
                     if !reuse_existing
                         || existing_passable != *passable
@@ -2714,6 +2768,9 @@ fn project_scene(
                         })
                     {
                         return false;
+                    }
+                    if let Some(receipt) = payment {
+                        states.paid_scene_items.insert(*receipt, identity);
                     }
                     continue;
                 }
@@ -2733,6 +2790,9 @@ fn project_scene(
                         facts: *facts,
                     });
                 states.scene_items.insert(identity, (entry, *passable));
+                if let Some(receipt) = payment {
+                    states.paid_scene_items.insert(*receipt, identity);
+                }
             }
         }
     }
@@ -2770,6 +2830,7 @@ mod primal_pod_removal_tests {
                 position: tile,
                 facts: entry,
                 passable: false,
+                payment: None,
                 reuse_existing: false,
             }],
             remove_self: false,
@@ -3045,6 +3106,7 @@ mod lifecycle_tests {
                 position,
                 facts: item,
                 passable: true,
+                payment: None,
                 reuse_existing: false,
             }],
             remove_self: false,
@@ -3094,6 +3156,7 @@ mod lifecycle_tests {
                 position,
                 facts: item,
                 passable,
+                payment: None,
                 reuse_existing: true,
             }],
             remove_self: false,

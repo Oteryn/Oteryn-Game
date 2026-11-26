@@ -315,7 +315,11 @@ fn crystal_equipment_ethereal_cast_uses_qualified_projectile_element() {
                 .numerical_caster(&state, spell, &content, HarmonyMultiplier::ONE, 1)
                 .expect("skill callback can run without a projectile");
             assert_eq!(
-                (caster.attack_skill, caster.attack_value, caster.attack_factor),
+                (
+                    caster.attack_skill,
+                    caster.attack_value,
+                    caster.attack_factor
+                ),
                 (0, 7, 0.0),
                 "{name} with {quiver} quiver"
             );

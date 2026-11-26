@@ -11,6 +11,21 @@ fn crystal_rope_pulls_creature_before_ground_stack() -> TestResult {
     exercise(RopeUse::PullCreature, &[3003])
 }
 
+#[test]
+fn crystal_rope_skips_occupied_creature_landing() -> TestResult {
+    exercise(RopeUse::PullCreatureFromSouth, &[3003])
+}
+
+#[test]
+fn crystal_rope_pulled_player_gets_stairhop_cooldown() -> TestResult {
+    exercise(RopeUse::PullPlayer, &[3003])
+}
+
+#[test]
+fn crystal_rope_skips_full_item_landing() -> TestResult {
+    exercise(RopeUse::PullFromFullLanding, &[3003])
+}
+
 fn exercise(action: RopeUse, tools: &'static [u32]) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());

@@ -250,6 +250,23 @@ pub(super) async fn exercise_dread_lord(
     assert_eq!(map.facts.expire_movement_items(second_due - 1), 0);
     assert_eq!(map.facts.expire_movement_items(second_due), 1);
     assert_eq!(ground_outputs(owner)?, 1);
+
+    use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+    use crate::map::boot::BundleCollisionIndexExt;
+    let native = owner.active_generation.and_then(|active| active.native_gameplay())
+        .ok_or("native gameplay")?;
+    let rebuilt = dread_lord_world(native, callback)?;
+    let cells = rebuilt.movement_cells(owner.movement_cells()).map_err(debug)?;
+    let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+        return Err("rebuilt Dread Lord map".into());
+    };
+    let recovered = index.map();
+    owner.restore_paid_quest_scene(recovered).await.ok_or("paid scene recovery")?;
+    assert_eq!(count_outputs(recovered), 1, "both receipts restore the same scene item");
+    owner.restore_paid_quest_scene(recovered).await.ok_or("paid scene replay")?;
+    assert_eq!(count_outputs(recovered), 1, "replay preserves the shared scene item");
+    assert_eq!(counts(harness).await?.1, before.1 + 2);
+
     let after_mints: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources")
         .fetch_one(&harness.pool).await?;
     assert_eq!(after_mints, before_mints);

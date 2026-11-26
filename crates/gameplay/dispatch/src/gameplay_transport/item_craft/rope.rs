@@ -100,6 +100,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(UseOutcome::rejected()));
         }
+        let optional_pvp = self
+            .special_movement_policy(&permit, actor, command.game_session_id)
+            .await;
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         let now = self.owner_now();
@@ -132,7 +135,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             RopeTurn::Hole(spot) => {
                 match pull::pull(
                     &mut runtime,
-                    &states,
+                    &mut states,
                     self.movement_cells(),
                     map,
                     &ground,
@@ -140,6 +143,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.reset_epoch,
                     spot,
                     now,
+                    optional_pvp,
                 ) {
                     Err(disposition) => disposition,
                     Ok(pull::Pull::Creature) => UseDisposition::Committed,
@@ -155,30 +159,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .await;
                         UseDisposition::Committed
                     }
-                    Ok(pull::Pull::Item { item, from, to }) => {
-                        use crate::gameplay_transport::item_move::LoopMoveResult;
+                    Ok(pull::Pull::Item {
+                        item,
+                        from,
+                        landings,
+                    }) => 'relocate: {
+                        use crate::gameplay_transport::item_move::{
+                            LoopMoveRefusal, LoopMoveResult,
+                        };
                         use crate::gameplay_transport::loop_move::{self, SourceItemOrigin};
 
                         drop((states, runtime));
                         let _ground_change =
                             loop_move::GroundChange(Some(&self.states.loop_ground));
-                        match loop_move::relocate_source_item(
-                            self,
-                            &permit,
-                            actor,
-                            command,
-                            item,
-                            SourceItemOrigin::Rope(from),
-                            to,
-                        )
-                        .await
-                        {
-                            LoopMoveResult::Committed => UseDisposition::Committed,
-                            LoopMoveResult::Unknown => return Err(()),
-                            LoopMoveResult::TooFar | LoopMoveResult::Refused(_) => {
-                                UseDisposition::NotPossible
+                        for to in landings {
+                            match loop_move::relocate_source_item(
+                                self,
+                                &permit,
+                                actor,
+                                command,
+                                item,
+                                SourceItemOrigin::Rope(from),
+                                to,
+                            )
+                            .await
+                            {
+                                LoopMoveResult::Committed => {
+                                    break 'relocate UseDisposition::Committed;
+                                }
+                                LoopMoveResult::Unknown => return Err(()),
+                                LoopMoveResult::Refused(LoopMoveRefusal::NoRoom) => continue,
+                                LoopMoveResult::TooFar | LoopMoveResult::Refused(_) => break,
                             }
                         }
+                        UseDisposition::NotPossible
                     }
                 }
             }
