@@ -14,6 +14,8 @@ use oteryn_protocol_oteryn::world_event::{
 };
 use sqlx::{Postgres, Row, Transaction};
 
+pub mod bank_robbery;
+
 #[path = "world_event/occurrence.rs"]
 mod occurrence;
 

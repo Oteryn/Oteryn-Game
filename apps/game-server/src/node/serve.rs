@@ -3981,6 +3981,39 @@ async fn boot_and_serve(
             return Ok(());
         }
     };
+    // Claim/restore the World occurrence at native boot after the same
+    // readiness fence used by live scheduler ticks becomes current.
+    if bundle.is_some() {
+        use oteryn_gameplay_world::bank_robbery;
+        let scope_generation = runtime.lock().await.binding().scope_generation();
+        let projection = match bank_robbery::loaded(&movement_cells) {
+            Ok(sites) => {
+                root.poll_bank_robbery(
+                    &authority,
+                    &proof,
+                    scope,
+                    scope_generation,
+                    reset_epoch,
+                    sites,
+                )
+                .await
+            }
+            Err(error) => Err(error),
+        };
+        match projection {
+            Ok(robbery) => {
+                if let Some(robbery) = robbery {
+                    let mut channel = runtime.lock().await;
+                    if let Err(error) =
+                        bank_robbery::project(&mut channel, &movement_cells, robbery)
+                    {
+                        eprintln!("event=bank_robbery_boot state=retry error={error:?}");
+                    }
+                }
+            }
+            Err(error) => eprintln!("event=bank_robbery_boot state=retry error={error}"),
+        }
+    }
     // Contract §8.1: report the committed publication; never gates serving.
     let reporter = material.runtime_status.as_ref().map(|(descriptor, epoch)| {
         super::runtime_status::start_platform(

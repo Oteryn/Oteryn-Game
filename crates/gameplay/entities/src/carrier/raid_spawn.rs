@@ -385,6 +385,34 @@ impl ChannelRuntimeV1 {
         Ok(receipt)
     }
 
+    /// Retry an exact failed placement for a live World cohort. A successful
+    /// receipt remains terminal even after that actor dies.
+    pub fn realize_retryable_raid_spawn(
+        &mut self,
+        stamp: RuntimeWorkStamp,
+        identity: RaidSpawnIdentity,
+        spec: &NativeRaidSpawnSpec,
+        position: MovementLocalPosition,
+        map_admits: impl FnOnce(&ChannelRuntimeV1, MovementLocalPosition) -> Option<bool>,
+    ) -> Result<RaidSpawnReceipt, EncounterSpawnError> {
+        self.check_raid_stamp(stamp)
+            .map_err(EncounterSpawnError::Native)?;
+        if self.raid_spawns.runs.get(&identity.firing_id) == Some(&false)
+            && self
+                .raid_spawns
+                .receipts
+                .get(&identity)
+                .is_some_and(|receipt| {
+                    receipt.outcome == RaidSpawnOutcome::Failed
+                        && &receipt.spec == spec
+                        && receipt.position == Some(position)
+                })
+        {
+            self.raid_spawns.receipts.remove(&identity);
+        }
+        self.realize_raid_spawn(stamp, identity, spec, Some(position), map_admits)
+    }
+
     /// Current liveness joins retained raid identities to the actual actor
     /// carrier; recycled slots never make an old raid creature alive again.
     /// Read the existing ledger's stable identity for one exact live actor.
