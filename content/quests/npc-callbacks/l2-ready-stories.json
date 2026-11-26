@@ -781,6 +781,14 @@
           "minimum": 1,
           "maximum": 1
         }
+      ],
+      "completes": true,
+      "required_receipts": [
+        {
+          "transition": "oteryn:quest-callback/white-raven-monks-diary",
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary_retrieved",
+          "value": 1
+        }
       ]
     }
   ]

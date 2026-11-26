@@ -6488,6 +6488,147 @@
       ]
     },
     {
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "basic"
+      ],
+      "topic": 0,
+      "next_topic": 101,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The basic exchange costs 2500 radiant attire scraps. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "halo"
+      ],
+      "topic": 0,
+      "next_topic": 103,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The halo exchange costs 1250 radiant attire scraps. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "insignia"
+      ],
+      "topic": 0,
+      "next_topic": 102,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The insignia exchange costs 1250 radiant attire scraps. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "If you have collected enough radiant attire scraps, I can arrange the creation of an Illuminated Warrior for you.",
+        "The full outfit requires 2500 scraps. Each addon requires 1250 more. Are you interested in the {basic} outfit, the {insignia}, or the {halo} helmet?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "no"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Come back when you are ready."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "no"
+      ],
+      "topic": 102,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Come back when you are ready."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "no"
+      ],
+      "topic": 103,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Come back when you are ready."
+      ]
+    },
+    {
       "npc": "oteryn:npc.yberius",
       "keywords": [
         "stake prayer"

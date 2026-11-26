@@ -14,10 +14,24 @@ let mut data=bundle::read(&bytes)?;
 data.manifest.palette.truncate(1);
 data.manifest.palette.push(bundle::PaletteEntry{id:1,key:"oteryn:terrain.tibia.i2476".into(),family:bundle::Family::Terrain,terrain:Some(bundle::Terrain{blocks_projectile:None,kind:bundle::TerrainKind::Common,walkable:None,ground_speed:None})});
 let mut cells=BTreeMap::new();
-for (z,x0,x1,y0,y1) in [(-8,32245,32251,31864,31869),(-6,32188,32194,31955,31961)] {
+for (z,x0,x1,y0,y1) in [(-8,32245,32251,31864,31869),(-6,32188,32194,31955,31961),(-11,32260,32263,31860,31862),(-6,32204,32208,31754,31758),(-7,32170,32179,31934,31939)] {
  for y in y0..=y1 {for x in x0..=x1 {cells.insert((z,x,y),vec![sector::Item{palette:0,depth:0,attrs:Default::default()}]);}}
 }
 cells.get_mut(&(-8,32248,31866)).ok_or("brooch source cell")?.push(sector::Item{palette:1,depth:0,attrs:sector::Attrs{unique:Some(6055),..Default::default()}});
+for (key, position, action) in [
+    ("oteryn:item.tibia.i2573", (-11, 32262, 31861), None),
+    ("oteryn:item.tibia.i4240", (-11, 32262, 31861), None),
+    ("oteryn:item.tibia.i1642", (-7, 32171, 31936), Some(10137)),
+] {
+    let palette = u32::try_from(data.manifest.palette.len())?;
+    let id = reference(key).ok_or(key)?.get() - 1;
+    data.manifest.palette.push(bundle::PaletteEntry {
+        id, key: key.into(), family: bundle::Family::Item, terrain: None,
+    });
+    cells.get_mut(&position).ok_or("source cell")?.push(sector::Item {
+        palette, depth: 0, attrs: sector::Attrs { action, ..Default::default() },
+    });
+}
 let start=Position{x:32247,y:31866,floor:-8};
     data.manifest.world = bundle::Extent {
         min_x: cells

@@ -1,0 +1,742 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/hyena_sign",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:1-26,109-126:sha256:6c2ae2f15c8df502ce1f24cbd1d814097f3f9f0ffd53454ded08b12cdaf398a9"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/lizard_sign",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:1-26,109-126:sha256:6c2ae2f15c8df502ce1f24cbd1d814097f3f9f0ffd53454ded08b12cdaf398a9"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/scorpion_sign",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:1-26,109-126:sha256:6c2ae2f15c8df502ce1f24cbd1d814097f3f9f0ffd53454ded08b12cdaf398a9"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/snake_sign",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:1-26,109-126:sha256:6c2ae2f15c8df502ce1f24cbd1d814097f3f9f0ffd53454ded08b12cdaf398a9"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave1",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave10",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave11",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave12",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave13",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave14",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave15",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave16",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave2",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave3",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave4",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave5",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave6",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave7",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave8",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave9",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest/mining_helmet",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2582-2589:sha256:7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/tibia-tales/appease-accept",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.kazzan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/to_appease_the_mighty_quest",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Speak to Melchior in Ankrahmun first. He can teach you how to approach the djinn."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kazzan.lua:84-104:sha256:213b0e1dde4863ba6f14b538dd61bd02d6657871e6599d86d3c5aab73f68ddde"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/efreet_door",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/tibia-tales/appease-efreet",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.ubaid",
+      "keywords": [
+        "kazzan"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/to_appease_the_mighty_quest",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Tell Kazzan that we decline his offer of peace."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ubaid.lua:102-118:sha256:5277b9b3db05cad4560c7d0f038aec28ab044de7e0ce55f5464d933f0e48674b"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
+          "minimum": 1,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/tibia-tales/appease-learn-greeting",
+      "quest": "oteryn:quest.factions",
+      "npc": "oteryn:npc.melchior",
+      "keywords": [
+        "word of greeting"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/factions",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Say djanni'hah when you approach the djinn. It is their word of greeting."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/melchior.lua:67-80:sha256:1ec7aa8fc1a9b1f972239df7299911f72976aadeacae6c011fd49bc5033383df"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/to_appease_the_mighty_quest",
+          "minimum": 1,
+          "maximum": 4
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/tibia-tales/appease-marid",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.umar",
+      "keywords": [
+        "kazzan"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/to_appease_the_mighty_quest",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Tell Kazzan that we decline his offer of peace."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/umar.lua:102-118:sha256:392e2457a309053a4b12f27ea22368ec8a0b7b808e3151138d6791abcef91df7"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
+          "minimum": 1,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/tibia-tales/appease-report",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.kazzan",
+      "keywords": [
+        "mission",
+        "report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/to_appease_the_mighty_quest",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You did what I asked. Take this for your trouble."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kazzan.lua:105-109:sha256:213b0e1dde4863ba6f14b538dd61bd02d6657871e6599d86d3c5aab73f68ddde"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/tibia-tales/booze-accept",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.boozer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/ultimate_booze_quest",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i138",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this bottle to the brewery in Kazordoon and bring me a sample of the brown ale."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/boozer.lua:69-79:sha256:9a5d787bdb3ad7ac07eaf22c43c60f94467227363d9a01035e5d3b297ede379f"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/tibia-tales/booze-report",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.boozer",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/ultimate_booze_quest",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i136",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i5710",
+        "count": 1,
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i3035",
+            "count": 10
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "That is the ale I needed. Here is your reward."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/boozer.lua:61-68:sha256:9a5d787bdb3ad7ac07eaf22c43c60f94467227363d9a01035e5d3b297ede379f"
+      ],
+      "experience": 100
+    },
+    {
+      "key": "oteryn:quest-reward/tibia-tales/exterminator-accept",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.padreia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/the_exterminator",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i135",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Use this vermin poison on the slime pool beneath Carlin, then report back."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/padreia.lua:93-100:sha256:1b521a3ff677c3c4db585886f43d233f999a945dcd0b6a11fb0fd1c3ce19f63a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/tibia-tales/exterminator-report",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.padreia",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/the_exterminator",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3033",
+        "count": 1,
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i3032",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i3030",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i3029",
+            "count": 1
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You have saved Carlin from the plague. Please accept these gems."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/padreia.lua:74-81:sha256:1b521a3ff677c3c4db585886f43d233f999a945dcd0b6a11fb0fd1c3ce19f63a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/tibia-tales/hallowed-accept",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.amanda",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Speak to Costello at the monastery and tell him I sent you."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/amanda.lua:54-60:sha256:ce09851af74f62f12b43b9cddea4717113f97f5240669306482020734e96fdef"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/tibia-tales/hallowed-report",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.amanda",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i268",
+        "count": 5,
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i266",
+            "count": 5
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The spirits are at rest. Please take these potions."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/amanda.lua:77-78:sha256:ce09851af74f62f12b43b9cddea4717113f97f5240669306482020734e96fdef"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/tibia-tales/hallowed-start-graves",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.amanda",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take the holy water to the cemetery north of Edron and sprinkle it on fifteen graves."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/amanda.lua:74-78:sha256:ce09851af74f62f12b43b9cddea4717113f97f5240669306482020734e96fdef"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/tibia-tales/outfox-accept",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.budrik",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest/questline",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Look for the gang’s hiding place southwest of here, near the coast."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/budrik.lua:99-106:sha256:0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5"
+      ]
+    }
+  ]
+}

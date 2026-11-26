@@ -268,7 +268,7 @@ async fn wait_inventory(
 
 async fn relog(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
     let old = client.join_snapshot().game_session_id;
-    let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(client).await?;
+    let (result, logout, attempts, busy_timed_out) = super::logout_once(client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("durability-check logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
@@ -843,7 +843,7 @@ async fn trade(
     }
     keep_alive(client, return_to_pz(&mut peer, world)).await?;
     let (cleanup_result, cleanup, attempts, busy_timed_out) =
-        keep_alive(client, super::logout_retrying_busy(&mut peer)).await?;
+        keep_alive(client, super::fixture_logout_retrying_busy(&mut peer)).await?;
     if cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("trade peer cleanup logout refused: {cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}; journey={result:?}").into());
     }
@@ -1105,7 +1105,7 @@ async fn market(
     }
     let mut seller = keep_alive(client, connect_character(clients, 0x87, 0)).await?;
     let journey = market_settle(row, client, &mut seller, clients, world, spawns).await;
-    let (result, reply, attempts, timeout) = logout_retrying_busy(&mut seller).await?;
+    let (result, reply, attempts, timeout) = fixture_logout_retrying_busy(&mut seller).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("market seller cleanup: {reply}; attempts={attempts}; busy_timed_out={timeout}; journey={journey:?}").into());
     }
@@ -1578,7 +1578,7 @@ async fn party(
     }
     keep_alive(client, return_to_pz(&mut peer, world)).await?;
     let (cleanup_result, cleanup, attempts, busy_timed_out) =
-        keep_alive(client, super::logout_retrying_busy(&mut peer)).await?;
+        keep_alive(client, super::fixture_logout_retrying_busy(&mut peer)).await?;
     if cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("party peer cleanup logout refused: {cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}; journey={result:?}").into());
     }
@@ -1626,11 +1626,11 @@ async fn logout_peer(
         .tile(tile(position)?.x, tile(position)?.y, tile(position)?.floor)
         .is_some_and(|t| t.protection_zone())
     {
-        let (_, cleanup, attempts, busy_timed_out) = super::logout_retrying_busy(&mut peer).await?;
+        let (_, cleanup, attempts, busy_timed_out) = super::fixture_logout_retrying_busy(&mut peer).await?;
         return Err(format!("logout peer is not on authored PZ tile: cleanup={cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     let session = peer.join_snapshot().game_session_id;
-    let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(&mut peer).await?;
+    let (result, logout, attempts, busy_timed_out) = super::logout_once(&mut peer).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!(
             "PZ logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}"
@@ -1684,7 +1684,7 @@ async fn logout_peer(
         return probes;
     }
     return_to_pz(&mut peer, world).await?;
-    let (result, reply, attempts, timeout) = logout_retrying_busy(&mut peer).await?;
+    let (result, reply, attempts, timeout) = fixture_logout_retrying_busy(&mut peer).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!(
             "logout cleanup: {reply}; attempts={attempts}; busy_timed_out={timeout}"
@@ -1788,7 +1788,7 @@ async fn speech(
         }
         Ok(())
     }.await;
-    let (cleanup, reply, attempts, timeout) = logout_retrying_busy(&mut peer).await?;
+    let (cleanup, reply, attempts, timeout) = fixture_logout_retrying_busy(&mut peer).await?;
     if cleanup != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("speech peer logout: {reply}; attempts={attempts}; busy_timed_out={timeout}; journey={journey:?}").into());
     }

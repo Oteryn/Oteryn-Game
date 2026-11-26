@@ -19,7 +19,7 @@
     "Behavior": 3147,
     "Charm": 25,
     "Creature": 1865,
-    "Dialogue": 836,
+    "Dialogue": 852,
     "Document": 1609,
     "Effect": 5800,
     "Encounter": 108,
@@ -47,9 +47,9 @@
     "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "06aeec67bfa8b2be31552b014457d36b3b029ec4",
+    "declarations": "1804afc63a76dbe887914e3d80d81319e805a6e0",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "307cf0a3d2c62e222a27ceab4f3b19af9f8b3edf",
+    "imports": "2612aed1054650d66dafb0828220dfefa66e19f4",
     "reference": "e8c4487697f321137afbd4b4962a7d0e202a4331",
     "sources": "2cf0e78314dfab9278d37c5bb45e73d155c09eec"
   },
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "23c36410ee5549cd714dd9ba81a4381c9e44118aa82582bec45a802633fc3a4f"
+          "sha256": "4dc230c8f2c788b79e9afc05724b73cac98f495df40b3052ceaaf4e8871b50e2"
         },
         {
           "creates_canonical_identities": false,
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 6658,
+          "record_count": 7487,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "1af83ff0771f034a45d565dfd66f04eaecad100fbb6cc6b1b2f0fc93298397ee"
+          "sha256": "22a53077f2215d773659343ac7623ddde1716be15dbfcc40b7393942764c19f9"
         },
         {
           "creates_canonical_identities": false,
@@ -255,7 +255,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "4d2bf471ff0992dcc19ffd11e6ad42f691421a4521158dd9f7897473c39f566a"
+          "sha256": "0eb31484e7341a477b5f70f01dad8c4a5de0f07f0d4db28594f23e2be491d274"
         }
       ],
       "Presentation": [

@@ -51,6 +51,29 @@ KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
 class KnobTests(unittest.TestCase):
+    def test_world_node_launch_passes_pinned_npc_catalogue(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            node = base / 'bin' / 'oteryn-game-server'
+            node.parent.mkdir()
+            node.write_text('#!/bin/bash\nprintf "%s\\n" "$@" >&2\n')
+            node.chmod(0o755)
+            digest = 'a' * 64
+            result = bash(function('launch_node') + '''
+                set -Eeuo pipefail
+                as_service=()
+                NODE_GAMEPLAY_ENV=()
+                NODE_NPC_ARGS=(--npc-data-project "$BASE/npc-data/content/world" --npc-data-sha256 "$NPC_DIGEST")
+                launch_node pid "$BASE/node.toml" "$BASE/node.log"
+                wait "$pid"
+            ''', {'BASE': temporary, 'NODE_BOOT_UNPRIVILEGED': '0', 'NPC_DIGEST': digest})
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((base / 'node.log').read_text().splitlines(), [
+                'serve', '--config', str(base / 'node.toml'),
+                '--npc-data-project', str(base / 'npc-data' / 'content' / 'world'),
+                '--npc-data-sha256', digest,
+            ])
+
     def preflight_bin(self, temporary):
         bin_dir = Path(temporary, 'bin')
         bin_dir.mkdir()
@@ -705,6 +728,13 @@ class CloudRunSummaryTests(unittest.TestCase):
             result = subprocess.run(["bash", "-c", command, "test", temp],
                                     check=True, capture_output=True, text=True)
             self.assertEqual(result.stdout.strip(), str(work.resolve()))
+
+    def test_qualification_shared_logout_has_explicit_fixture_retry_path(self):
+        world = HERE.parents[2] / 'apps/game-server/src/qualification/client_phases/world.rs'
+        source = world.read_text()
+        self.assertIn('async fn logout_once(', source)
+        self.assertIn('async fn fixture_logout_retrying_busy_observed(', source)
+        self.assertIn('FIXTURE_RETRY step=logout reason=busy', source)
 
     def test_selected_batch_requires_its_own_unique_verdict(self):
         cases = [

@@ -2,9 +2,11 @@
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 use super::fixture::{Harness, debug, id, run};
 use super::{TestResult, prepare_current_session};
+use crate::content::{ProjectV2RangedElement, ProjectV2RangedWeapon};
 use crate::foundation::{
     ChannelId, ChannelRuntimeV1, GameSessionId, MovementLocalPosition, NodeId, WorldId,
 };
+use crate::spell::Vocation;
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
@@ -27,6 +29,18 @@ fn ranged_attack_postgres_bow_kills_at_four_consumes_and_reloads() -> TestResult
 fn ranged_attack_postgres_wand_pays_mana_and_deals_death() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-wand", || {
         scenario(25760, 3, false, 100, false, false)
+    })
+}
+#[test]
+fn ranged_attack_postgres_scorcher_with_novice_spellbook_deals_fire() -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-starter", || {
+        scenario(21348, 3, false, 100, false, false)
+    })
+}
+#[test]
+fn ranged_attack_postgres_chiller_with_novice_spellbook_deals_ice() -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-chiller", || {
+        scenario(21350, 3, false, 100, false, false)
     })
 }
 #[test]
@@ -99,6 +113,17 @@ fn scenario_with_quiver(
     reconcile: bool,
     quiver_slot: Option<i16>,
 ) -> TestResult {
+    let starter_element = match weapon {
+        21348 => Some(("fire", ProjectV2RangedElement::Fire)),
+        21350 => Some(("ice", ProjectV2RangedElement::Ice)),
+        _ => None,
+    };
+    let starter = starter_element.is_some();
+    let (cast_vocation, vocation) = match weapon {
+        21348 => (Vocation::Sorcerer, "sorcerer"),
+        21350 => (Vocation::Druid, "druid"),
+        _ => (Vocation::Paladin, "paladin"),
+    };
     let initial_ammo = if quiver_slot.is_some() && reconcile {
         1
     } else {
@@ -185,11 +210,16 @@ fn scenario_with_quiver(
                     70,
                     weapon,
                     if weapon == 3287 { 100 } else { 1 },
-                    if quiver_slot.is_some() { 5 } else { 6 },
+                    if quiver_slot.is_some() || starter {
+                        5
+                    } else {
+                        6
+                    },
                 ),
                 (71, 3447, initial_ammo, 10),
+                (74, 21400, 1, 6),
             ] {
-                if slot == 10 && !ammo {
+                if (slot == 10 && !ammo) || (item == 21400 && !starter) {
                     continue;
                 }
                 sqlx::raw_sql(sqlx::AssertSqlSafe(
@@ -259,9 +289,7 @@ fn scenario_with_quiver(
             channel_pin.clone(),
         )
         .map_err(debug)?;
-        if matches!(weapon, 25760 | 3287) {
-            // An elemental wand must pass physical immunity. This distinguishes its element
-            // from a fist/physical hit through the real dispatch.
+        if starter || matches!(weapon, 25760 | 3287) {
             let mut rat = native
                 .policies()
                 .policies()
@@ -271,6 +299,15 @@ fn scenario_with_quiver(
                 .as_ref()
                 .clone();
             rat.damage_immunities.push("physical".into());
+            if let Some((element, _)) = starter_element {
+                // The kill must come from the starter's own element.
+                rat.damage_immunities.extend(
+                    ["death", "earth", "energy", "fire", "ice"]
+                        .into_iter()
+                        .filter(|candidate| *candidate != element)
+                        .map(str::to_owned),
+                );
+            }
             let policies =
                 crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(
                     native.source_digest(),
@@ -405,7 +442,7 @@ fn scenario_with_quiver(
                         actor,
                         session,
                         crate::spell::cast::CharacterCastFacts {
-                            vocation: crate::spell::Vocation::Paladin,
+                            vocation: cast_vocation,
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
                         },
                         (0, 0),
@@ -421,7 +458,7 @@ fn scenario_with_quiver(
             let state = states.get_mut(&runtime, actor, session).ok_or("player")?;
             state.restore_saved_vitals(1000, mana);
             let build = crate::durability::character_build::DurableBuildState::new(
-                "paladin",
+                vocation,
                 (0, 0),
                 [(80, 0); 7],
             )
@@ -430,7 +467,7 @@ fn scenario_with_quiver(
                 .enable_owned_training(&build, native.training_formula().ok_or("training formula")?)
                 .map_err(debug)?;
         }
-        if quiver_slot.is_some() {
+        if quiver_slot.is_some() || starter {
             use crate::gameplay_transport::connection::{
                 AdmittedSession, ControllerBinding, FirstEntryOutcome, FreshAdmissionAuthority,
                 SessionContinuity,
@@ -469,7 +506,8 @@ fn scenario_with_quiver(
             let mut input = u32::try_from(frame.len())?.to_be_bytes().to_vec();
             input.extend(frame);
             let (end, output) =
-                super::weather_wire_fixtures::fixture_access::serve_input(&owner, admitted, &input).await?;
+                super::weather_wire_fixtures::fixture_access::serve_input(&owner, admitted, &input)
+                    .await?;
             let mut cursor = output.as_slice();
             let mut accepted = false;
             while !cursor.is_empty() {
@@ -671,12 +709,23 @@ fn scenario_with_quiver(
                 100 - shots,
                 "only broken throwing stars leave the hand"
             );
-        } else if weapon == 25760 && mana > 0 && distance <= 3 {
+        } else if (starter || weapon == 25760) && mana > 0 && distance <= 3 {
             assert!(killed, "wand damage reaches the monster");
             let runtime = owner.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
             let caster = states.get(&runtime, actor, session).ok_or("wand caster")?;
             assert!(caster.vitals().mana < mana);
+            if let Some((_, element)) = starter_element {
+                let policy = native
+                    .item_policy(&format!("oteryn:item.tibia.i{weapon}"), "definition-r1")
+                    .ok_or("starter weapon")?;
+                let profile = match (weapon, &policy.record().authoring.ranged) {
+                    (21348, Some(ProjectV2RangedWeapon::Wand(profile)))
+                    | (21350, Some(ProjectV2RangedWeapon::Rod(profile))) => profile,
+                    _ => return Err("wrong Newhaven ranged profile".into()),
+                };
+                assert_eq!(profile.element, element);
+            }
             let checkpoint = caster
                 .prepare_training_checkpoint(
                     owner.owner_now().get(),
@@ -690,7 +739,7 @@ fn scenario_with_quiver(
             // Crossing a magic level consumes its required mana; compare both level and remainder.
             let expected = oteryn_gameplay_progression::mana_training::advance(
                 native.training_formula().ok_or("formula")?,
-                "paladin",
+                vocation,
                 0,
                 checkpoint.request.before.magic(),
                 u64::from(mana - caster.vitals().mana),
@@ -700,6 +749,12 @@ fn scenario_with_quiver(
                 expected,
                 "mana spent trains magic"
             );
+            if let Some((element, _)) = starter_element {
+                eprintln!(
+                    "POSTGRES_ASSERTIONS_PASS item={weapon} element={element} mana_paid={}",
+                    mana - caster.vitals().mana
+                );
+            }
         } else {
             assert!(!killed);
             assert_eq!(shots, 0, "a refused shot consumes nothing");
