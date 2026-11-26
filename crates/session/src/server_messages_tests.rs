@@ -100,14 +100,14 @@ fn party_membership_notices_share_the_domain_57_revision_only_when_selected() ->
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1));
     const WITH: &[u32] = &[42, 92, 576];
     const WITHOUT: &[u32] = &[42, 92];
-    for selected in [WITH, WITHOUT] {
+    for (advertised, selected) in [(WITH, WITH), (WITHOUT, WITHOUT), (WITH, WITHOUT)] {
         block_on(async {
             let (client, mut server) = tokio::io::duplex(64 * 1024);
             let peer = tokio::spawn(async move {
-                join_peer_with(&mut server, selected, selected, &[],
+                join_peer_with(&mut server, advertised, selected, &[],
                     (SNAPSHOT_TYPE_WORLD_SPATIAL_V1, spatial(0)), &[(57, 0, 1, vec![8, 1])]).await
             });
-            let mut session = Session::admit(client, admission_with(selected)?).await?;
+            let mut session = Session::admit(client, admission_with(advertised)?).await?;
             peer.await??;
             let payload = |base, new, kind, bytes: &[u8]| -> Result<Vec<u8>, BoxError> {
                 let frame = encode_state_delta(1, 41, 57, base, new, kind, bytes)?;

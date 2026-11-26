@@ -98,6 +98,7 @@ impl Mailbox {
         self.player_trade.items.pending = false;
         self.vip.pending = Default::default();
         self.party.pending = Default::default();
+        self.party_notice_refresh.finish_query(false);
         self.hireling.pending = Default::default();
         self.hireling_management.pending = Default::default();
         self.market.pending = Default::default();

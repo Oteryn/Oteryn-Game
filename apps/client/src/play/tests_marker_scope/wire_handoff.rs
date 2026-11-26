@@ -319,3 +319,50 @@ fn idle_handoff_discards_queued_source_modal_answer() -> Result<(), Error> {
         Ok(())
     })
 }
+
+#[test]
+fn party_membership_notice_from_wire_queues_a_party_query() -> Result<(), Error> {
+    use oteryn_client_runtime::party::PartyCommand;
+    use oteryn_protocol_oteryn::party::{
+        CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1, CAPABILITY_PARTY_V1, PartyMembershipChange,
+        PartyMembershipNotice, encode_party_membership_notice,
+    };
+
+    scenario(async {
+        let caps = &[
+            CAPABILITY_PARTY_V1,
+            wire::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
+            CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1,
+        ];
+        let (client, mut peer) = tokio::io::duplex(64 * 1024);
+        let (session, joined) = tokio::join!(admit(client, caps), join(&mut peer, caps));
+        joined?;
+        let mut session = session?;
+        let (link, mut commands, outbox) = play_channel();
+        outbox.party_initialize(session.is_selected(CAPABILITY_PARTY_V1), false);
+        let mut view = super::super::PlayView::from_join(session.join_snapshot())?;
+        let notice = PartyMembershipNotice {
+            member_handle: 9,
+            change: PartyMembershipChange::Left,
+        };
+        let bytes = encode_party_membership_notice(notice).map_err(|error| format!("{error:?}"))?;
+        write_frame(
+            &mut peer,
+            &wire::encode_state_delta(1, 1, 57, 1, 2, 2, &bytes)?,
+        )
+        .await?;
+        let mut events = session.take_events();
+        events.extend(session.wait_for_events(Duration::from_secs(1)).await?);
+        assert!(events.iter().any(|event| matches!(
+            event,
+            oteryn_session::SessionEvent::PartyMembershipNotice(delta) if delta.value == notice
+        )));
+        outbox.push(events);
+        view.tick(&link).map_err(|error| format!("{error:?}"))?;
+        assert_eq!(
+            commands.try_recv()?,
+            PlayCommand::Party(PartyCommand::query())
+        );
+        Ok(())
+    })
+}

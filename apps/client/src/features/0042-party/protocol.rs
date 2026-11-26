@@ -1,9 +1,15 @@
 use crate::play::{Outbox, mailbox::lock};
-use oteryn_client_runtime::party::PartyResponse;
+use oteryn_client_runtime::party::{CommandStatus, PartyResponse, party::COMMAND_TYPE_PARTY_QUERY};
 
 impl Outbox {
     pub(in crate::play) fn party_initialize(&self, selected: bool, chat_selected: bool) {
         let mut mailbox = lock(&self.0);
+        mailbox.party_initialized = true;
+        if selected {
+            mailbox.party_notice_refresh.finish_query(false);
+        } else {
+            mailbox.party_notice_refresh = Default::default();
+        }
         let panel = &mut mailbox.party;
         panel.selected = selected;
         panel.chat_selected = chat_selected;
@@ -32,7 +38,26 @@ impl Outbox {
             })
         };
         let before = members(&mailbox.party);
-        if oteryn_client_ui::party_list::apply_result(&mut mailbox.party, response) {
+        let query = mailbox
+            .party
+            .pending
+            .as_ref()
+            .is_some_and(|command| command.kind == COMMAND_TYPE_PARTY_QUERY);
+        let feedback = mailbox.party.feedback;
+        let applied = oteryn_client_ui::party_list::apply_result(&mut mailbox.party, response);
+        if query {
+            if mailbox.party_notice_refresh.automatic_pending() {
+                mailbox.party.feedback = feedback;
+            }
+            mailbox.party_notice_refresh.finish_query(
+                applied
+                    && matches!(
+                        response.status,
+                        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+                    ),
+            );
+        }
+        if applied {
             mailbox.refresh_party_summons();
         }
         let after = members(&mailbox.party);
