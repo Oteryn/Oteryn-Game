@@ -51,13 +51,18 @@ const PARTY_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000017";
 const C06_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-00000000001c";
 
 #[cfg(feature = "qualification-spawn")]
+const Q_S13B_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000020";
+
+#[cfg(feature = "qualification-spawn")]
 const S02_KNIGHT_ACCOUNT: &str = "01934f10-7c00-7000-8000-0000000000b1";
+
 #[cfg(feature = "qualification-spawn")]
 const S02_SORCERER_ACCOUNT: &str = "01934f10-7c00-7000-8000-0000000000b2";
 
 #[cfg(feature = "qualification-spawn")]
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
+        "q_s13b" => Some(("sorcerer", 32)),
         "s02-knight" => Some(("knight", 8)),
         "s02-sorcerer" => Some(("sorcerer", 8)),
         "s08-knight" => Some(("knight", 8)),
@@ -776,6 +781,7 @@ async fn prepare_build(
             | "c11-knight"
             | "c12-monk"
             | "c06-sorcerer"
+            | "q_s13b"
             | "s13-party"
             | "w20b-light"
             | "s02-knight"
@@ -801,6 +807,7 @@ async fn prepare_build(
             (
                 "premium",
                 KNIGHT_ACCOUNT | MONK_ACCOUNT | HASTE_ACCOUNT | CHALLENGE_ACCOUNT | LIGHT_ACCOUNT
+                | Q_S13B_ACCOUNT
                 | PARTY_CASTER_ACCOUNT,
             ) => {
                 if !config
@@ -816,6 +823,7 @@ async fn prepare_build(
             | ("c11-knight", KNIGHT_ACCOUNT)
             | ("c12-monk", MONK_ACCOUNT)
             | ("c06-sorcerer", C06_CASTER_ACCOUNT)
+            | ("q_s13b", Q_S13B_ACCOUNT)
             | ("s13-party", PARTY_CASTER_ACCOUNT)
             | ("w20b-light", LIGHT_ACCOUNT)
             | ("s02-knight", S02_KNIGHT_ACCOUNT)
@@ -2032,6 +2040,7 @@ mod tests {
             "c12-monk",
             "c06-sorcerer",
             "premium",
+            "q_s13b",
             "s02-knight",
             "s02-sorcerer",
             "item-43895-1",
