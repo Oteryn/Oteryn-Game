@@ -36,10 +36,12 @@ mod shared_experience;
 pub(super) mod skill_training;
 
 use crate::foundation::encode_state_delta;
+#[cfg(test)]
+use oteryn_protocol_oteryn::attack::FightMode as WireFightMode;
 use oteryn_protocol_oteryn::attack::{
     ActorCombatState, AttackIntentDisposition, ChaseMode, DELTA_TYPE_ACTOR_COMBAT_STATE_V1,
-    FightMode as WireFightMode, FightModes, MAX_ATTACK_TARGET_CHANGES_PER_SECOND,
-    MAX_FIGHT_MODE_CHANGES_PER_SECOND, STATE_DOMAIN_ACTOR_COMBAT_STATE, encode_actor_combat_state,
+    FightModes, MAX_ATTACK_TARGET_CHANGES_PER_SECOND, MAX_FIGHT_MODE_CHANGES_PER_SECOND,
+    STATE_DOMAIN_ACTOR_COMBAT_STATE, encode_actor_combat_state,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use oteryn_simulation_determinism::{
@@ -385,14 +387,6 @@ fn refusal_disposition(refusal: TargetRefusal) -> AttackIntentDisposition {
     }
 }
 
-const fn fight_mode(mode: WireFightMode) -> FightMode {
-    match mode {
-        WireFightMode::Offensive => FightMode::Offensive,
-        WireFightMode::Balanced => FightMode::Balanced,
-        WireFightMode::Defensive => FightMode::Defensive,
-    }
-}
-
 pub use oteryn_gameplay_combat_rules::dispatch_target::in_protection_zone as in_protection_zone_rule;
 
 fn in_protection_zone(
@@ -716,8 +710,12 @@ impl ChannelAttackStates {
     ) -> bool {
         match self.entry(runtime, actor, session) {
             Some(entry) => {
-                // RANGED0-RL-08: any mode change clears the route and the refused cells.
-                if modes != entry.modes || modes.chase != ChaseMode::Chase {
+                // The legacy stance is echoed for wire compatibility. Chase and secure
+                // mode are the combat settings that can affect the current route.
+                if modes.chase != entry.modes.chase
+                    || modes.secure != entry.modes.secure
+                    || modes.chase != ChaseMode::Chase
+                {
                     entry.chase.reset();
                 }
                 entry.modes = modes;
