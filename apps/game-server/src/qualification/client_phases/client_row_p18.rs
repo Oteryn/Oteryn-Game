@@ -24,7 +24,7 @@ async fn dust(client: &mut DevClientSession) -> TestResult<(u64, u64)> {
     }
     let body: serde_json::Value = serde_json::from_slice(&result.payload)?;
     Ok((
-        body["dust"].as_u64().ok_or("dust balance missing")?,
+        body["current_dust"].as_u64().ok_or("dust balance missing")?,
         body["dust_limit"].as_u64().ok_or("dust limit missing")?,
     ))
 }
@@ -197,7 +197,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         if succeeded || applied || reason != expected_reason {
             return Err(format!("{name} expected refusal {expected_reason}, got {body}").into());
         }
-        if client.inventory() != Some(&inventory) || dust(&mut client).await? != balance {
+        if dust(&mut client).await? != balance || client.inventory() != Some(&inventory) {
             return Err(format!("{name} refusal changed inventory or Forge balance").into());
         }
         frames.push(bytes);
