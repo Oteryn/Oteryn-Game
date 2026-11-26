@@ -1,27 +1,20 @@
 //! E2E-C17b — Invisibility and targeting, derived from the C17b matrix/audit row
 //! and the ordinary-combat/monster-AI owners named there.
 //!
-//! Player scenario:
-//! 1. Admit the provisioned level-35 caster and an ordinary second character, walk both to a
-//!    rat spawn, and observe the rat damage the visible caster (normal monster targeting).
-//! 2. Have the second player select the visible caster with ATTACK; assert the accepted reply and
-//!    exact combat-state target delta, then clear that target.
-//! 3. Cast `utana vid` through ACTOR_SPELL and verify the exact mana debit and cooldown refusal.
-//! 4. Verify the Rat stops damaging the caster while the other player can still see and target
-//!    the caster, as documented at https://tibia.fandom.com/wiki/Invisible.
-//! 5. Relog and check the fresh session, retained position and vitals, and observer visibility.
+//! Stage a live Rat, prove its attributed hit, then check `utana vid`, its cooldown,
+//! and the Rat's loss of damage while the condition is active. Global Invisible keeps
+//! the caster visible to players: https://tibia.fandom.com/wiki/Invisible.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
-use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
 use std::collections::BTreeSet;
 
 const ACTIONS: &[&str] = &[
     "monster-targets-visible",
-    "player-targets-visible",
+    "player-sees-visible",
     "cast-and-cost",
     "monster-drops-invisible",
-    "player-targets-invisible",
+    "player-sees-invisible",
     "cooldown-no-cost",
     "fresh-admission-condition",
 ];
@@ -103,7 +96,7 @@ pub(super) fn spell_book() -> TestResult<crate::spell::SpellBook> {
     )?;
     Ok(catalog.into_spell_book_with_selections(&selections)?)
 }
-fn spell_index(book: &crate::spell::SpellBook) -> TestResult<std::num::NonZeroU32> {
+pub(super) fn spell_index(book: &crate::spell::SpellBook) -> TestResult<std::num::NonZeroU32> {
     (1..=book.source_len())
         .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
         .find(|i| {
@@ -160,6 +153,55 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+pub(super) async fn invisibility_remaining(
+    client: &mut DevClientSession,
+) -> TestResult<Option<i64>> {
+    use oteryn_protocol_oteryn::condition_status as wire;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_CONDITION_STATUS_V1,
+            wire::COMMAND_TYPE_CONDITION_STATUS_QUERY,
+            &[],
+        )
+        .await?;
+    require_mechanic_acceptance(reply.status, "C17b condition status")?;
+    let state =
+        wire::ConditionStatus::decode(&reply.payload).ok_or("C17b malformed condition status")?;
+    Ok(state
+        .conditions
+        .iter()
+        .find(|condition| condition.icon == 9)
+        .map(|condition| condition.remaining_ms))
+}
+
+pub(super) async fn logout_after_rat_combat(
+    caster: &mut DevClientSession,
+) -> TestResult<(u32, u32)> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
+    loop {
+        let state = caster
+            .session_mut()
+            .combat_state()
+            .ok_or("C17b combat state absent before logout")?;
+        if !state.in_fight {
+            let vitals = caster
+                .actor_vitals()
+                .ok_or("C17b vitals absent before logout")?;
+            let paid = (vitals.mana, vitals.soul);
+            logout(caster).await?;
+            return Ok(paid);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C17b combat protection did not clear before first logout".into());
+        }
+        caster
+            .session_mut()
+            .service_liveness_discarding_events(Duration::from_millis(100))
+            .await?;
+    }
+}
+
 pub(super) async fn seeded_caster(
     clients: &SeamClients<'_>,
     row: &str,
@@ -193,15 +235,11 @@ pub(super) async fn seeded_caster(
 // journey. It cannot select another tile or another spawn.
 pub(super) struct Staging<'a> {
     world: &'a BundleWorld,
-    spawns: &'a oteryn_world_bundle::spawn::Table,
     spawn_cells: BTreeSet<TilePos>,
 }
 
 impl<'a> Staging<'a> {
-    pub(super) fn new(
-        world: &'a BundleWorld,
-        spawns: &'a oteryn_world_bundle::spawn::Table,
-    ) -> Self {
+    pub(super) fn new(world: &'a BundleWorld, spawns: &oteryn_world_bundle::spawn::Table) -> Self {
         let spawn_cells = spawns
             .sources
             .iter()
@@ -213,11 +251,7 @@ impl<'a> Staging<'a> {
                 })
             })
             .collect();
-        Self {
-            world,
-            spawns,
-            spawn_cells,
-        }
+        Self { world, spawn_cells }
     }
 
     fn path(
@@ -246,20 +280,15 @@ impl<'a> Staging<'a> {
         .ok_or_else(|| format!("C17b no eligible route from {from:?}").into())
     }
 
-    async fn walk(
-        &self,
-        client: &mut DevClientSession,
-        path: &[StepDirection],
-        mut observe: impl FnMut(&mut DevClientSession) -> TestResult,
-    ) -> TestResult {
+    async fn walk(&self, client: &mut DevClientSession, path: &[StepDirection]) -> TestResult {
         for &direction in path {
             let from = tile(client.world_spatial().actor_position)?;
             let expected =
                 destination(self.world, from, direction).ok_or("C17b planned landing absent")?;
             let outcome = client.step(direction).await?;
             let actual = tile(client.world_spatial().actor_position)?;
-            require_mechanic_acceptance(outcome.status, "C17b STEP")?;
-            if outcome.disposition != StepDisposition::Moved
+            if outcome.status != oteryn_protocol_oteryn::CommandStatus::Accepted
+                || outcome.disposition != StepDisposition::Moved
                 || outcome.world_spatial_delta.is_none()
                 || outcome.step_wait_ms == 0
                 || actual != expected
@@ -299,7 +328,6 @@ impl<'a> Staging<'a> {
                     outcome.step_wait_ms,
                 )))
                 .await?;
-            observe(client)?;
         }
         Ok(())
     }
@@ -308,119 +336,126 @@ impl<'a> Staging<'a> {
         &self,
         caster: &mut DevClientSession,
         observer: &mut DevClientSession,
-        mut observe: impl FnMut(&mut DevClientSession) -> TestResult,
-    ) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
-        let from = tile(caster.world_spatial().actor_position)?;
-        let spawn = self
-            .spawns
-            .sources
-            .iter()
-            .flat_map(|source| {
-                source.points.iter().filter_map(move |point| {
-                    self.spawns
-                        .creatures
-                        .get(point.creature as usize)
-                        .is_some_and(|entry| entry.key == "oteryn:creature.rat")
-                        .then_some(TilePos {
-                            x: point.x,
-                            y: point.y,
-                            floor: source.floor,
-                        })
-                })
-            })
-            .min_by_key(|at| {
-                (
-                    at.floor.abs_diff(from.floor),
-                    from.x.abs_diff(at.x).max(from.y.abs_diff(at.y)),
-                )
-            })
-            .ok_or("C17b authored Rat spawn absent")?;
-        let adjacent = |at: TilePos, target: TilePos| {
-            at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) == 1
+        capture: &oteryn_dev_client::native_session::test_support::WireCapture,
+    ) -> TestResult {
+        let caster_site = TilePos {
+            x: 32490,
+            y: 32169,
+            floor: -7,
         };
-        let path = self.path(caster, None, |at| {
-            adjacent(at, spawn)
-                && self
-                    .world
-                    .base()
-                    .tile(at.x, at.y, at.floor)
-                    .is_some_and(|tile| !tile.protection_zone())
-        })?;
-        observe(observer)?;
-        super::mp::observations::while_servicing_liveness(
-            self.walk(caster, &path, |_| Ok(())),
-            async || {
-                observer
-                    .session_mut()
-                    .service_liveness_discarding_events(Duration::from_millis(25))
-                    .await?;
-                observe(observer)
-            },
-        )
+        let observer_site = TilePos {
+            x: 32489,
+            ..caster_site
+        };
+        let path = self.path(caster, None, |tile| tile == caster_site)?;
+        super::mp::observations::while_servicing_liveness(self.walk(caster, &path), async || {
+            capture
+                .observe(observer.service_liveness(Duration::from_millis(25)))
+                .await?;
+            observer.take_events();
+            Ok(())
+        })
         .await??;
-        let caster_tile = tile(caster.world_spatial().actor_position)?;
-        if !adjacent(caster_tile, spawn) {
-            return Err(format!(
-                "C17b caster landed at {caster_tile:?}, expected adjacent to {spawn:?}"
-            )
-            .into());
-        }
-        let rat = caster
-            .world_entities()
-            .and_then(|view| {
-                view.iter()
-                    .filter(|entry| {
-                        entry.kind == oteryn_dev_client::EntityKind::Creature
-                            && entry
-                                .display_name
-                                .as_ref()
-                                .and_then(|name| name.as_str().ok())
-                                .is_some_and(|name| name.eq_ignore_ascii_case("Rat"))
-                            && tile(entry.position).is_ok_and(|at| adjacent(at, caster_tile))
-                    })
-                    .min_by_key(|entry| (entry.position.x, entry.position.y))
-                    .copied()
-            })
-            .ok_or("C17b no live Rat adjacent to the authored encounter landing")?;
-        let rat_tile = tile(rat.position)?;
-        // Keep the observer in targeting range on the west approach, two cells
-        // from the caster. The Rat's immediate perimeter is for the caster alone.
-        let observation_tile = TilePos {
-            x: caster_tile
-                .x
-                .checked_sub(2)
-                .ok_or("C17b observer x underflow")?,
-            ..caster_tile
-        };
-        if !self.world.enterable(observation_tile)
-            || !self
-                .world
-                .base()
-                .tile(
-                    observation_tile.x,
-                    observation_tile.y,
-                    observation_tile.floor,
-                )
-                .is_some_and(|tile| tile.walkable() && !tile.protection_zone())
-            || observation_tile == rat_tile
+        let path = self.path(observer, Some(caster), |tile| tile == observer_site)?;
+        provisioning::with_peer_liveness(caster, capture.observe(self.walk(observer, &path)))
+            .await?;
+        if tile(caster.world_spatial().actor_position)? != caster_site
+            || tile(observer.world_spatial().actor_position)? != observer_site
         {
-            return Err(format!("C17b observer tile unavailable: {observation_tile:?}").into());
+            return Err("C17b.client staging did not land at the fixed adjacent tiles".into());
         }
-        let path = self.path(observer, Some(caster), |at| at == observation_tile)?;
-        evidence(&format!(
-            "C17B_STAGING caster={caster_tile:?} rat={rat_tile:?} observer={observation_tile:?} observer_steps={}",
-            path.len()
-        ));
-        provisioning::with_peer_liveness(caster, self.walk(observer, &path, observe)).await?;
-        let observer_tile = tile(observer.world_spatial().actor_position)?;
-        if observer_tile != observation_tile {
-            return Err(format!(
-                "C17b observer landed at {observer_tile:?}, expected {observation_tile:?}"
-            )
-            .into());
-        }
-        Ok(rat)
+        Ok(())
     }
+}
+
+pub(super) async fn place_rat(
+    caster: &DevClientSession,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    let caster_site = tile(caster.world_spatial().actor_position)?;
+    let placement = request_spawn(
+        uuid_text(caster.join_snapshot().game_session_id.as_bytes()),
+        "oteryn:creature.rat".into(),
+    )
+    .await
+    .map_err(|error| format!("FIXTURE_PLACEMENT C17b Rat failed: {error}"))?;
+    let rat = parse_spawned_entity(&placement)?;
+    evidence(&format!(
+        "FIXTURE_PLACEMENT C17b caster={caster_site:?} rat={rat:?}"
+    ));
+    Ok(rat)
+}
+
+pub(super) async fn wait_for_rat_hit(
+    caster: &mut DevClientSession,
+    rat: oteryn_dev_client::EntityRef,
+) -> TestResult<u64> {
+    if !caster
+        .session_mut()
+        .is_selected(oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1)
+    {
+        return Err("FIXTURE C17b requires analyser hit attribution capability 486".into());
+    }
+    let caster_tile = tile(caster.world_spatial().actor_position)?;
+    caster.take_events();
+    let visible_health = caster
+        .actor_vitals()
+        .ok_or("C17b visible caster vitals absent")?
+        .health;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+    let mut damage = 0;
+    let mut saw_adjacent = false;
+    loop {
+        caster.service_liveness(Duration::from_millis(100)).await?;
+        let rat_tile = caster
+            .world_entities()
+            .and_then(|view| view.get(&rat))
+            .map(|entity| tile(entity.position))
+            .transpose()?;
+        saw_adjacent |= rat_tile.is_some_and(|at| {
+            at.floor == caster_tile.floor
+                && at
+                    .x
+                    .abs_diff(caster_tile.x)
+                    .max(at.y.abs_diff(caster_tile.y))
+                    == 1
+        });
+        damage = damage.max(damage_sequence(caster, rat));
+        let health = caster
+            .actor_vitals()
+            .ok_or("C17b visible caster vitals absent")?
+            .health;
+        if saw_adjacent && damage != 0 && health < visible_health {
+            evidence(&format!(
+                "FIXTURE C17b attributed_rat_damage sequence={damage} health_before={visible_health} health_after={health}"
+            ));
+            return Ok(damage);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("FIXTURE_PLACEMENT C17b Rat timeout exact_rat={rat:?} last_tile={rat_tile:?} saw_adjacent={saw_adjacent} attributed_hit={damage} health_before={visible_health} health_after={health}").into());
+        }
+    }
+}
+
+pub(super) async fn require_rat_stops(
+    caster: &mut DevClientSession,
+    rat: oteryn_dev_client::EntityRef,
+) -> TestResult {
+    let hidden_health = caster
+        .actor_vitals()
+        .ok_or("C17b hidden caster vitals absent")?
+        .health;
+    let no_damage_until = tokio::time::Instant::now() + Duration::from_secs(3);
+    while tokio::time::Instant::now() < no_damage_until {
+        caster.service_liveness(Duration::from_millis(100)).await?;
+        if damage_sequence(caster, rat) != 0
+            || caster
+                .actor_vitals()
+                .is_none_or(|vitals| vitals.health < hidden_health)
+        {
+            return Err("step=monster-drops-invisible observed=attributed-rat-damage-after-cast need=AI-invisibility-filter".into());
+        }
+    }
+    Ok(())
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -443,104 +478,47 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let crate::spell::ManaCost::Fixed(cost) = spell.mana else {
         return Err("step=cast observed=non-fixed-mana need=assertable-cost".into());
     };
+    if cost != 440 {
+        return Err(format!("C17b served mana cost={cost} expected=440 per Global Tibia").into());
+    }
     let mut caster = seeded_caster(&caster_clients, "C17b.full", 0xb1, spell)
         .await
         .map_err(|error| format!("step=invisibility-access spell=utana vid: {error}"))?;
     let mut observer = connect_character(clients, 0xb2, 0).await?;
     let staging = Staging::new(world, &metadata.spawns);
-    let rat = staging
-        .encounter(&mut caster, &mut observer, |_| Ok(()))
-        .await?
-        .entity;
-    let caster_ref = own(&caster)?;
-    if !caster
-        .session_mut()
-        .is_selected(oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1)
-    {
-        return Err("FIXTURE C17b requires analyser hit attribution capability 486".into());
-    }
-    let caster_tile = tile(caster.world_spatial().actor_position)?;
-    let rat_tile = caster
-        .world_entities()
-        .and_then(|view| view.get(&rat))
-        .ok_or("FIXTURE C17b Rat absent after staging")?;
-    let rat_tile = tile(rat_tile.position)?;
-    if rat_tile.floor != caster_tile.floor
-        || rat_tile
-            .x
-            .abs_diff(caster_tile.x)
-            .max(rat_tile.y.abs_diff(caster_tile.y))
-            != 1
-    {
-        return Err(format!(
-            "FIXTURE C17b Rat is not adjacent: caster={caster_tile:?} rat={rat_tile:?}"
-        )
-        .into());
-    }
-    evidence(&format!(
-        "FIXTURE C17b aggro caster={caster_tile:?} rat={rat_tile:?} target={rat:?} deadline_seconds=30"
-    ));
-    caster.take_events();
-    let visible_health = caster
-        .actor_vitals()
-        .ok_or("C17b visible caster vitals absent")?
-        .health;
-    let pre_damage = provisioning::with_peer_liveness(&mut observer, async {
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-        let mut damage = 0;
-        loop {
-            caster.service_liveness(Duration::from_millis(100)).await?;
-            damage = damage.max(damage_sequence(&mut caster, rat));
-            let health = caster.actor_vitals().ok_or("C17b visible caster vitals absent")?.health;
-            if damage != 0 && health < visible_health {
-                evidence(&format!("FIXTURE C17b attributed_rat_damage sequence={damage} health_before={visible_health} health_after={health}"));
-                return Ok(damage);
-            }
-            if tokio::time::Instant::now() >= deadline {
-                let last_rat = caster.world_entities().and_then(|view| view.get(&rat)).map(|entity| entity.position);
-                return Err(format!("step=monster-targets-visible observed=fixture-aggro-timeout deadline_seconds=30 rat={rat:?} rat_position={last_rat:?} damage_sequence={damage} health_before={visible_health} health_after={health}").into());
-            }
-        }
-    }).await?;
-    row.pass("monster-targets-visible", pre_damage)?;
-    let modes = FightModes {
-        fight_mode: FightMode::Defensive,
-        chase: ChaseMode::Stand,
-        secure: true,
+    let caster_site = TilePos {
+        x: 32490,
+        y: 32169,
+        floor: -7,
     };
-    let mode = observer.session_mut().set_fight_modes(&modes).await?;
-    if !visible(&observer, caster_ref)
-        || observer
-            .session_mut()
-            .combat_state()
-            .is_none_or(|state| state.target.is_some())
+    let observer_site = TilePos {
+        x: 32488,
+        ..caster_site
+    };
+    let path = staging.path(&caster, None, |tile| tile == caster_site)?;
+    provisioning::with_peer_liveness(&mut observer, staging.walk(&mut caster, &path)).await?;
+    let path = staging.path(&observer, Some(&caster), |tile| tile == observer_site)?;
+    provisioning::with_peer_liveness(&mut caster, staging.walk(&mut observer, &path)).await?;
+    if tile(caster.world_spatial().actor_position)? != caster_site
+        || tile(observer.world_spatial().actor_position)? != observer_site
     {
-        return Err("C17b observer must initially see the caster with no combat target".into());
+        return Err("C17b fixture did not reach the fixed encounter tiles".into());
     }
-    let selected = observer
-        .session_mut()
-        .attack_target(Some(&caster_ref))
+    let rat = place_rat(&caster).await?;
+    let caster_ref = own(&caster)?;
+    let pre_damage =
+        provisioning::with_peer_liveness(&mut observer, wait_for_rat_hit(&mut caster, rat)).await?;
+    row.pass("monster-targets-visible", pre_damage)?;
+    observer
+        .service_liveness(Duration::from_millis(100))
         .await?;
-    if mode.disposition != AttackIntentDisposition::Ok
-        || selected.disposition != AttackIntentDisposition::Ok
-        || observer
-            .session_mut()
-            .combat_state()
-            .is_none_or(|s| s.target != Some(caster_ref))
-    {
-        return Err(format!("step=player-targets-visible observed=mode:{:?}/attack:{:?}/state:{:?} need=accepted-target-delta", mode.disposition, selected.disposition, observer.session_mut().combat_state()).into());
+    if !visible(&observer, caster_ref) {
+        return Err("C17b observer did not see the caster before casting".into());
     }
-    row.pass("player-targets-visible", selected.result_server_sequence)?;
-    let cleared = observer.session_mut().attack_target(None).await?;
-    if cleared.disposition != AttackIntentDisposition::Ok
-        || observer
-            .session_mut()
-            .combat_state()
-            .is_none_or(|state| state.target.is_some())
-    {
-        return Err("C17b clear TARGET did not remove the caster".into());
+    row.pass("player-sees-visible", observer.last_server_sequence())?;
+    if invisibility_remaining(&mut caster).await?.is_some() {
+        return Err("C17b caster already invisible before the cast".into());
     }
-
     let before = caster
         .actor_vitals()
         .copied()
@@ -578,58 +556,37 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     row.pass("cooldown-no-cost", cooldown.result_server_sequence)?;
-    let hidden_health = caster
-        .actor_vitals()
-        .ok_or("C17b hidden caster vitals absent")?
-        .health;
-    let no_damage_until = tokio::time::Instant::now() + Duration::from_secs(3);
-    while tokio::time::Instant::now() < no_damage_until {
-        caster.service_liveness(Duration::from_millis(100)).await?;
-        if damage_sequence(&mut caster, rat) != 0
-            || caster
-                .actor_vitals()
-                .is_none_or(|vitals| vitals.health < hidden_health)
-        {
-            return Err("step=monster-drops-invisible observed=attributed-rat-damage-after-cast need=AI-invisibility-filter".into());
-        }
+    let active = invisibility_remaining(&mut caster)
+        .await?
+        .ok_or("C17b active condition absent after cast")?;
+    if !(195_000..=200_000).contains(&active) {
+        return Err(
+            format!("C17b initial invisibility duration {active}ms outside Global range").into(),
+        );
     }
+    require_rat_stops(&mut caster, rat).await?;
     row.pass("monster-drops-invisible", cast.result_server_sequence)?;
-    let retained = observer
-        .session_mut()
-        .attack_target(Some(&caster_ref))
+    observer
+        .service_liveness(Duration::from_millis(100))
         .await?;
-    if retained.disposition != AttackIntentDisposition::Ok
-        || !visible(&observer, caster_ref)
-        || observer
-            .session_mut()
-            .combat_state()
-            .is_none_or(|state| state.target != Some(caster_ref))
-    {
-        return Err(format!("step=player-targets-invisible observed={retained:?}/visible:{} need=Global-player-remains-visible-and-targetable", visible(&observer, caster_ref)).into());
+    if !visible(&observer, caster_ref) {
+        return Err("Global parity: other players must still see the invisible caster".into());
     }
-    row.pass("player-targets-invisible", retained.result_server_sequence)?;
-    let cleared = observer.session_mut().attack_target(None).await?;
-    if cleared.disposition != AttackIntentDisposition::Ok
-        || observer
-            .session_mut()
-            .combat_state()
-            .is_none_or(|state| state.target.is_some())
-    {
-        return Err("C17b post-cast clear TARGET did not remove the caster".into());
-    }
-    let paid = caster
-        .actor_vitals()
-        .copied()
-        .ok_or("step=fresh-admission-condition observed=vitals-absent")?;
+    row.pass("player-sees-invisible", observer.last_server_sequence())?;
     let session = caster.join_snapshot().game_session_id;
     let position = caster.world_spatial().actor_position;
-    logout(&mut caster).await?;
+    let durable_vitals =
+        provisioning::with_peer_liveness(&mut observer, logout_after_rat_combat(&mut caster))
+            .await?;
+    if durable_vitals.0 >= before.mana {
+        return Err("C17b spent mana did not persist until logout".into());
+    }
     caster = connect_character(&caster_clients, 0xb3, 0).await?;
     if caster.join_snapshot().game_session_id == session
         || caster.world_spatial().actor_position != position
         || caster
             .actor_vitals()
-            .is_none_or(|v| v.mana != paid.mana || v.soul != paid.soul)
+            .is_none_or(|v| (v.mana, v.soul) != durable_vitals)
     {
         return Err("step=fresh-admission-condition observed=session/position/vitals-mismatch need=durable-condition-state".into());
     }
@@ -639,13 +596,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if !visible(&observer, own(&caster)?) {
         return Err("step=fresh-admission-condition observed=caster-absent need=Global-player-remains-visible".into());
     }
+    if invisibility_remaining(&mut caster)
+        .await?
+        .is_none_or(|remaining| remaining <= 0 || remaining >= active)
+    {
+        return Err("C17b invisibility was absent or reset after relog".into());
+    }
     row.pass("fresh-admission-condition", cast.result_server_sequence)?;
     let back = staging.path(&caster, Some(&observer), |at| at == TOWN)?;
-    provisioning::with_peer_liveness(&mut observer, staging.walk(&mut caster, &back, |_| Ok(())))
-        .await?;
+    provisioning::with_peer_liveness(&mut observer, staging.walk(&mut caster, &back)).await?;
     logout(&mut caster).await?;
     let back = staging.path(&observer, None, |at| at == TOWN)?;
-    staging.walk(&mut observer, &back, |_| Ok(())).await?;
+    staging.walk(&mut observer, &back).await?;
     logout(&mut observer).await
 }
 

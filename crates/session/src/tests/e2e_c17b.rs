@@ -14,210 +14,260 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
 
 fn replay_live(directory: &std::path::Path) -> Result<(), BoxError> {
     use serde_json::Value;
-    use world_spatial_entities::{
-        decode_world_spatial_entities_delta_with_sidecar,
-        decode_world_spatial_entities_snapshot_with_fields,
-    };
-    let read = |name: &str| -> Result<Value, BoxError> {
-        Ok(serde_json::from_slice(&std::fs::read(
-            directory.join(name),
-        )?)?)
-    };
-    let expected = read("c17b-expected.json")?;
+    let expected: Value =
+        serde_json::from_slice(&std::fs::read(directory.join("c17b-expected.json"))?)?;
+    let cast: Value = serde_json::from_slice(&std::fs::read(directory.join("c17b-cast.json"))?)?;
     assert_eq!(
         expected["run"].as_str(),
         directory.file_name().and_then(|name| name.to_str())
     );
-    let caster = expected["caster"]
-        .as_str()
-        .ok_or("missing caster session")?;
-    let observer = expected["observer"]
-        .as_str()
-        .ok_or("missing observer session")?;
-    assert_ne!(caster, observer);
-    for id in [caster, observer] {
-        assert_eq!(
-            id.split('-').map(str::len).collect::<Vec<_>>(),
-            [8, 4, 4, 4, 12]
-        );
-        assert!(
-            id.bytes()
-                .all(|byte| byte == b'-' || byte.is_ascii_hexdigit())
-        );
+    let keys = cast.as_object().ok_or("invalid C17b cast envelope")?;
+    assert_eq!(keys.len(), 5);
+    for key in [
+        "command_id",
+        "game_session_id",
+        "payload",
+        "server_sequence",
+        "status",
+    ] {
+        assert!(keys.contains_key(key));
     }
-    let number = |value: &Value| -> Result<u64, BoxError> {
-        value.as_u64().ok_or_else(|| "missing integer".into())
-    };
-    let envelope = |value: &Value,
-                    session: &str,
-                    command: Option<u64>,
-                    status: Option<u64>|
-     -> Result<(u64, Vec<u8>), BoxError> {
-        let keys = value.as_object().ok_or("invalid C17b envelope")?;
-        assert_eq!(keys.len(), 5);
-        for key in [
-            "command_id",
-            "game_session_id",
-            "payload",
-            "server_sequence",
-            "status",
-        ] {
-            assert!(keys.contains_key(key));
-        }
-        assert_eq!(value["game_session_id"].as_str(), Some(session));
-        assert_eq!(value["command_id"], serde_json::json!(command));
-        assert_eq!(value["status"], serde_json::json!(status));
-        Ok((
-            number(&value["server_sequence"])?,
-            serde_json::from_value(value["payload"].clone())?,
-        ))
-    };
-    let cast_command = number(&expected["cast_command"])?;
-    assert!(cast_command > 0);
-    let (cast_sequence, cast_payload) = envelope(
-        &read("c17b-cast.json")?,
-        caster,
-        Some(cast_command),
-        Some(CommandStatus::Accepted as u64),
-    )?;
-    assert!(cast_sequence > 0 && cast_sequence == number(&expected["cast_sequence"])?);
+    assert_eq!(cast["game_session_id"], expected["caster"]);
+    assert_ne!(cast["game_session_id"], expected["observer"]);
+    assert_eq!(cast["command_id"], expected["cast_command"]);
+    assert_eq!(cast["server_sequence"], expected["cast_sequence"]);
+    assert!(cast["command_id"].as_u64().is_some_and(|id| id > 0));
+    assert!(
+        cast["server_sequence"]
+            .as_u64()
+            .is_some_and(|sequence| sequence > 0)
+    );
+    assert_eq!(
+        cast["status"].as_u64(),
+        Some(CommandStatus::Accepted as u64)
+    );
+    let cast_payload: Vec<u8> = serde_json::from_value(cast["payload"].clone())?;
     assert_eq!(
         actor_spell::decode_spell_cast_result(&cast_payload)
-            .map_err(|error| format!("C17b capture decode: {error:?}"))?,
+            .map_err(|error| format!("{error:?}"))?,
         SpellCastDisposition::Cast
     );
-    let (mut previous_sequence, payload) =
-        envelope(&read("c17b-snapshot.json")?, observer, None, None)?;
-    let selected: Vec<u32> = serde_json::from_value(expected["selected"].clone())?;
-    let fields = EntityFields::selected(&selected);
-    let (snapshot, lights) = decode_world_spatial_entities_snapshot_with_fields(&payload, fields)
-        .map_err(|error| format!("C17b capture decode: {error:?}"))?;
-    let mut entities = WorldEntities::from_snapshot(&snapshot, lights);
+    let cast_frame: Vec<u8> = serde_json::from_value(expected["cast_frame"].clone())?;
+    let cast_frame = decode_wire_envelope(&cast_frame)?;
+    cast_frame.validate(Direction::ServerToClient, true)?;
+    assert_eq!(cast_frame.message_type(), MessageType::CommandResult);
+    let reply = decode_command_result(cast_frame.payload())?;
+    assert_eq!(reply.status, CommandStatus::Accepted);
+    assert_eq!(Some(reply.command_id), cast["command_id"].as_u64());
+    assert_eq!(
+        Some(cast_frame.server_sequence()),
+        cast["server_sequence"].as_u64()
+    );
+    assert_eq!(reply.payload, cast_payload);
+    let received: Vec<Vec<u8>> = serde_json::from_value(expected["received"].clone())?;
+    let commands: Vec<Vec<u8>> = serde_json::from_value(expected["commands"].clone())?;
+    let character: [u8; 16] = serde_json::from_value(expected["observer_character"].clone())?;
     let target = EntityRef {
         identity: serde_json::from_value(expected["identity"].clone())?,
-        generation: number(&expected["generation"])?,
+        generation: expected["generation"]
+            .as_u64()
+            .ok_or("missing C17b generation")?,
     };
-    let mut revision = number(&expected["baseline_revision"])?;
-    let leave_sequence = number(&expected["leave_sequence"])?;
-    let deltas = expected["deltas"]
-        .as_array()
-        .ok_or("missing visibility deltas")?;
-    assert!(!deltas.is_empty());
-    for record in deltas {
-        let (sequence, payload) = envelope(&record["frame"], observer, None, None)?;
-        assert!(previous_sequence < sequence && sequence <= leave_sequence);
-        assert_eq!(number(&record["base"])?, revision);
-        let next_revision = number(&record["revision"])?;
-        assert!(next_revision > revision);
-        assert_eq!(
-            number(&record["delta_type"])?,
-            u64::from(DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2)
-        );
-        let (delta, lights, _) = decode_world_spatial_entities_delta_with_sidecar(&payload, fields)
-            .map_err(|error| format!("C17b capture decode: {error:?}"))?;
-        assert_eq!(delta.content_generation, snapshot.content_generation);
-        if sequence == leave_sequence {
-            assert!(entities.get(&target).is_some());
-            assert!(delta.leave.contains(&target));
-            entities = entities.after(&delta, &lights)?;
-            assert!(entities.get(&target).is_none());
-            assert!(entities.after(&delta, &lights).is_err());
-        } else {
-            entities = entities.after(&delta, &lights)?;
+    let last_sequence = expected["observer_sequence"]
+        .as_u64()
+        .ok_or("missing C17b observer sequence")?;
+    assert!(!commands.is_empty());
+    let accepted = decode_wire_envelope(received.first().ok_or("no original C17b admission")?)?;
+    assert_eq!(accepted.message_type(), MessageType::ServerAccepted);
+    let accepted = decode_server_accepted(accepted.payload())?;
+    let session = accepted.game_session_id.as_bytes();
+    let hex = |bytes: &[u8]| {
+        bytes
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+    };
+    let session = format!(
+        "{}-{}-{}-{}-{}",
+        hex(&session[..4]),
+        hex(&session[4..6]),
+        hex(&session[6..8]),
+        hex(&session[8..10]),
+        hex(&session[10..])
+    );
+    assert_eq!(expected["observer"].as_str(), Some(session.as_str()));
+    let directions = commands
+        .iter()
+        .map(|bytes| -> Result<_, BoxError> {
+            let envelope = decode_wire_envelope(bytes)?;
+            let command = envelope.client_command(accepted.connection_generation)?;
+            assert_eq!(
+                command.command_type,
+                world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT
+            );
+            Ok(world_spatial::decode_step_intent_selected(
+                &accepted.selected_capabilities,
+                command.payload,
+            )
+            .map_err(|error| format!("{error:?}"))?)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let duplicate = received
+        .iter()
+        .rev()
+        .find(|bytes| {
+            decode_wire_envelope(bytes).is_ok_and(|frame| {
+                frame.message_type() == MessageType::StateDelta
+                    && frame.server_sequence() <= last_sequence
+            })
+        })
+        .ok_or("missing original sequenced delta for duplicate test")?
+        .clone();
+    block_on(async move {
+        let (client, server) = tokio::io::duplex(256 * 1024);
+        let (mut input, mut output) = tokio::io::split(server);
+        let (duplicate_now, send_duplicate) = tokio::sync::oneshot::channel();
+        let pump = tokio::spawn(async move {
+            let writer = tokio::spawn(async move {
+                for frame in received {
+                    write_frame(&mut output, &frame).await?;
+                }
+                send_duplicate.await?;
+                write_frame(&mut output, &duplicate).await?;
+                Ok::<(), BoxError>(())
+            });
+            let reader = async {
+                let bootstrap = read_frame(&mut input).await?;
+                assert_eq!(
+                    decode_wire_envelope(&bootstrap)?.message_type(),
+                    MessageType::ClientBootstrap
+                );
+                for expected in commands {
+                    loop {
+                        let sent = read_frame(&mut input).await?;
+                        if decode_wire_envelope(&sent)?.message_type() == MessageType::LivenessAck {
+                            continue;
+                        }
+                        assert_eq!(sent, expected);
+                        break;
+                    }
+                }
+                // Drain liveness acknowledgements while the original tail is dispatched.
+                while read_frame(&mut input).await.is_ok() {}
+                Ok::<(), BoxError>(())
+            };
+            reader.await?;
+            writer.await??;
+            Ok::<(), BoxError>(())
+        });
+        let admission = Admission {
+            character_id: CharacterId::decode(&character)?,
+            ..entity_admission()?
+        };
+        let mut observer = Session::admit(client, admission).await?;
+        for direction in directions {
+            let step = observer.step(direction).await?;
+            assert_eq!(step.disposition, world_spatial::StepDisposition::Moved);
+            observer.take_events();
         }
-        revision = next_revision;
-        previous_sequence = sequence;
-    }
-    assert_eq!(previous_sequence, leave_sequence);
-    Ok(())
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        while observer.last_server_sequence() < last_sequence {
+            assert!(
+                tokio::time::Instant::now() < deadline,
+                "C17b replay did not reach its final sequence"
+            );
+            observer.service_liveness(Duration::from_millis(5)).await?;
+            assert!(!observer.take_events().into_iter().any(|event| matches!(event,
+                SessionEvent::WorldSpatialEntities(delta) if delta.value.leave.iter().any(|entity| entity.identity == target.identity))));
+        }
+        assert_eq!(observer.last_server_sequence(), last_sequence);
+        assert!(
+            observer
+                .world_entities()
+                .is_some_and(|view| view.get(&target).is_some())
+        );
+        duplicate_now
+            .send(())
+            .map_err(|_| "C17b duplicate frame sender closed")?;
+        assert!(matches!(
+            observer.service_liveness(Duration::from_secs(1)).await,
+            Err(SessionError::ServerSequenceMismatch { .. })
+        ));
+        assert!(
+            observer
+                .world_entities()
+                .is_some_and(|view| view.get(&target).is_some())
+        );
+        drop(observer);
+        pump.await??;
+        Ok::<(), BoxError>(())
+    })?
 }
 
 #[test]
-fn e2e_c17b_invisibility_visibility_payload_removes_target_and_rejects_replay()
--> Result<(), BoxError> {
+fn e2e_c17b_invisibility_keeps_player_visible_and_rejects_duplicate_frame() -> Result<(), BoxError>
+{
     if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         return replay_live(std::path::Path::new(&directory));
     }
     block_on(async {
-        let (
-            snapshot_payload,
-            delta_payload,
-            expected_identity,
-            expected_generation,
-            sequence,
-            selected,
-        ) = {
-            let target = actor(EntityKind::Player, 9, 3, at(1, 0));
-            let snapshot = WorldSpatialEntitiesSnapshot {
-                content_generation: CONTENT_GENERATION,
-                actor_position: at(0, 0),
-                own_identity: OWN,
-                entities: vec![own(at(0, 0)), target],
-            };
-            let delta = WorldSpatialEntitiesDelta {
-                content_generation: CONTENT_GENERATION,
-                actor_position: at(0, 0),
-                enter: vec![],
-                update: vec![],
-                leave: vec![target.entity],
-            };
-            let fields = EntityFields::selected(&[6]);
-            (
-                encode_world_spatial_entities_snapshot_with_fields(
-                    &snapshot,
-                    fields,
-                    &EntityLights::new(),
-                )
-                .map_err(|error| format!("{error:?}"))?,
-                encode_world_spatial_entities_delta_with_fields(
-                    &delta,
-                    fields,
-                    &EntityLights::new(),
-                )
-                .map_err(|error| format!("{error:?}"))?,
-                target.entity.identity,
-                target.entity.generation,
-                41,
-                &[6_u32] as &'static [u32],
-            )
+        let target = actor(EntityKind::Player, 9, 3, at(1, 0));
+        let snapshot = WorldSpatialEntitiesSnapshot {
+            content_generation: CONTENT_GENERATION,
+            actor_position: at(0, 0),
+            own_identity: OWN,
+            entities: vec![own(at(0, 0)), target],
         };
-        let target = EntityRef {
-            identity: expected_identity,
-            generation: expected_generation,
+        let delta = WorldSpatialEntitiesDelta {
+            content_generation: CONTENT_GENERATION,
+            actor_position: at(0, 0),
+            enter: vec![],
+            update: vec![target],
+            leave: vec![],
         };
+        let fields = EntityFields::selected(&[6]);
+        let snapshot = encode_world_spatial_entities_snapshot_with_fields(
+            &snapshot,
+            fields,
+            &EntityLights::new(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let payload =
+            encode_world_spatial_entities_delta_with_fields(&delta, fields, &EntityLights::new())
+                .map_err(|error| format!("{error:?}"))?;
+        let frame = encode_state_delta(
+            1,
+            41,
+            STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            5,
+            6,
+            DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+            &payload,
+        )?;
         let (client, peer) = entity_peer(
-            (SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2, snapshot_payload),
-            selected,
-            vec![],
+            (SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2, snapshot),
+            &[6],
+            vec![Step::SendTogether(vec![frame.clone(), frame])],
         );
         let mut session = Session::admit(client, entity_admission()?).await?;
         assert!(
             session
                 .world_entities()
-                .is_some_and(|state| state.get(&target).is_some())
+                .is_some_and(|view| view.get(&target.entity).is_some())
         );
-        let frame = encode_state_delta(
-            1,
-            sequence,
-            STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            5,
-            6,
-            DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
-            &delta_payload,
-        )?;
-        let payload = decode_wire_envelope(&frame)?.payload().to_vec();
-        let event = session.apply_state_delta(sequence, &payload)?;
-        assert!(matches!(event, SessionEvent::WorldSpatialEntities(_)));
+        let result = session.service_liveness(Duration::from_secs(1)).await;
+        assert!(matches!(
+            result,
+            Err(SessionError::ServerSequenceMismatch {
+                expected: 42,
+                actual: 41
+            })
+        ));
+        assert_eq!(session.last_server_sequence(), 41);
         assert!(
             session
                 .world_entities()
-                .is_some_and(|state| state.get(&target).is_none())
-        );
-        let visible_after = session.world_entities().map(WorldEntities::len);
-        assert!(session.apply_state_delta(sequence + 1, &payload).is_err());
-        assert_eq!(
-            session.world_entities().map(WorldEntities::len),
-            visible_after
+                .is_some_and(|view| view.get(&target.entity).is_some())
         );
         drop(session);
         peer.await??;

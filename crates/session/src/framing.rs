@@ -98,6 +98,8 @@ pub async fn write_frame<S: AsyncWrite + Unpin>(
     stream.write_all(&length.to_prefix()).await?;
     stream.write_all(body).await?;
     stream.flush().await?;
+    #[cfg(feature = "test-support")]
+    super::test_support::record_sent_frame(body);
     Ok(())
 }
 
@@ -126,7 +128,7 @@ pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     let mut body = vec![0_u8; length.get() as usize];
     stream.read_exact(&mut body).await?;
     #[cfg(feature = "test-support")]
-    super::test_support::record_command_result(&body);
+    super::test_support::record_received_frame(&body);
     Ok(body)
 }
 
