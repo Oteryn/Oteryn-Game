@@ -266,7 +266,9 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         room.entry_start()
     } else {
         crate::content::NativeEntryStart {
-            x: 2,
+            // The outer Takedown row is four tiles east. Start one tile west
+            // so its target stands on open ground at (5, 11), before the wall.
+            x: if plan.tag == "monk_takedown" { 1 } else { 2 },
             y: 11,
             floor: -7,
         }

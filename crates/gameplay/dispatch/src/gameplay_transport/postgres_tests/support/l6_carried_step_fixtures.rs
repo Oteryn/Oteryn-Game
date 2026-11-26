@@ -154,9 +154,7 @@ pub(super) async fn control_loss(
     assert_eq!(loss, ControlLossResult::Recorded);
     let maintain_readiness = async {
         loop {
-            if let Err(error) = super::maintain_ready(&h.root).await {
-                return Err(error);
-            }
+            super::maintain_ready(&h.root).await?;
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
     };

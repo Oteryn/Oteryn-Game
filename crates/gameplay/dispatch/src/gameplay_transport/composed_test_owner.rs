@@ -1,6 +1,6 @@
 //! The single test constructor for the composed gameplay owner.
 
-use super::{ComposedFreshAdmission, SeamRooms, channel_states::ChannelSessionStates};
+use super::{ComposedFreshAdmission, channel_states::ChannelSessionStates};
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
@@ -25,6 +25,10 @@ pub struct ComposedTestOwner<'a, 'f, 's> {
     pub imported_charms: &'a crate::content::charm_source::CanonicalCharmCatalogue,
 }
 
+pub(super) fn empty_test_rooms() -> super::SeamRooms<'static> {
+    super::SeamRooms::new(None, None)
+}
+
 impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
     pub fn build(self) -> ComposedFreshAdmission<'a, 'f, 's> {
         ComposedFreshAdmission {
@@ -47,7 +51,7 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
             spells: self.spells,
             active_generation: None,
             premium_coordinator: None,
-            rooms: SeamRooms::new(None, None),
+            rooms: empty_test_rooms(),
             achievements: self.achievements,
             imported_charms: self.imported_charms,
             states: (ChannelSessionStates::default()).into(),

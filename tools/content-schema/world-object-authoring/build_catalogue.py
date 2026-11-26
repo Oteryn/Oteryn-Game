@@ -487,7 +487,7 @@ def outputs(
         files[crystal_delta_ground.SHARD] = crystal_delta_ground.outputs()[
             crystal_delta_ground.SHARD
         ]
-        index["notes"] += engnpc2_ram_world.NOTE + crystal_delta_ground.MARKER_NOTE
+        index["notes"] += engnpc2_ram_world.NOTE
         index["notes"] = activity_static.compose_terrain_notes(index["notes"])
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
@@ -505,7 +505,10 @@ def outputs(
         files[spawn_map_ground.SHARD] = spawn_map_ground.terrain_output()
         index = json.loads(files[index_path])
         index["notes"] = activity_static.compose_terrain_notes(
-            index["notes"] + blood_vestibule_ground.NOTE + spawn_map_ground.NOTE
+            index["notes"]
+            + blood_vestibule_ground.NOTE
+            + spawn_map_ground.NOTE
+            + crystal_delta_ground.MARKER_NOTE
         )
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"

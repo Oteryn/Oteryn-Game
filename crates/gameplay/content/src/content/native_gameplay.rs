@@ -2447,6 +2447,30 @@ mod tests {
         qualify_native_entry_room_with_gameplay,
     };
     use serde_json::Value;
+
+    fn global_item_details(ids: &[u64]) -> Result<BTreeMap<u64, Value>, ContentError> {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../docs/reference/content-prep/item-cyclopedia-capture-1/items.jsonl");
+        let capture = std::fs::read_to_string(path).map_err(|_| invalid("Global Item capture"))?;
+        let mut details = BTreeMap::new();
+        for line in capture.lines() {
+            let row: Value = serde_json::from_str(line).map_err(|_| invalid("Global Item row"))?;
+            let id = row["id"]
+                .as_u64()
+                .ok_or_else(|| invalid("Global Item id"))?;
+            if ids.contains(&id) {
+                assert_eq!(row["compatibility"]["target"], "tibia-global", "Item {id}");
+                assert!(
+                    row["compatibility"]["details_from_alias_id"].is_null(),
+                    "Item {id}"
+                );
+                details.insert(id, row["basic"].clone());
+            }
+        }
+        assert_eq!(details.len(), ids.len(), "Global Item capture coverage");
+        Ok(details)
+    }
+
     #[test]
     fn crystal_delta_creatures_activate_with_native_policies_and_reward_rows()
     -> Result<(), Box<dyn std::error::Error>> {
@@ -2634,6 +2658,7 @@ mod tests {
         .expect("Crystal equipment JSON");
         let rows = facts["records"].as_array().expect("Crystal equipment rows");
         assert_eq!(rows.len(), 182);
+        let global = global_item_details(&[9020])?;
         let mut usable = 0;
         for row in rows {
             let id = row["id"].as_u64().expect("donor item ID");
@@ -2763,7 +2788,15 @@ mod tests {
             );
             assert_eq!(
                 i32::from(claim.level),
-                number("level").unwrap_or(if id == 14258 { 150 } else { 0 }),
+                if let Some(details) = global.get(&id) {
+                    details["Required Level"]
+                        .as_str()
+                        .unwrap()
+                        .parse::<i32>()
+                        .unwrap()
+                } else {
+                    number("level").unwrap_or(if id == 14258 { 150 } else { 0 })
+                },
                 "{key}"
             );
             let vocations = attributes["vocation"].as_str().unwrap_or_default();
@@ -3015,6 +3048,9 @@ mod tests {
         .unwrap();
         let rows = source["records"].as_object().unwrap();
         assert_eq!(rows.len(), 217);
+        let global = global_item_details(&[
+            43864, 43865, 43866, 51260, 51261, 51262, 51263, 51264, 51269,
+        ])?;
         let mut wrong_slots = Vec::new();
         let mut wrong_families = Vec::new();
         for (id, donor) in rows {
@@ -3028,7 +3064,16 @@ mod tests {
                 wrong_families.push(id);
                 continue;
             };
-            let slots = u8::try_from(donor["slot_count"].as_u64().unwrap()).unwrap();
+            // Global supplies the reviewed socket counts. Crystal still owns the families.
+            let slots = if let Some(details) = global.get(&id.parse::<u64>().unwrap()) {
+                details["Imbuement Slots"]
+                    .as_str()
+                    .unwrap()
+                    .parse::<u8>()
+                    .unwrap()
+            } else {
+                u8::try_from(donor["slot_count"].as_u64().unwrap()).unwrap()
+            };
             if profile.slot_count != Field::Known(slots) {
                 wrong_slots.push(id);
             }
@@ -4084,6 +4129,7 @@ mod tests {
             .as_array()
             .ok_or("Crystal source records")?;
         assert_eq!(source.len(), 183);
+        let global = global_item_details(&[22127, 22129, 22130, 22132])?;
         let held = [22047, 22048, 22049, 22119, 22759, 22760, 25757, 25758];
         let mut qualified = 0;
         for row in source {
@@ -4179,14 +4225,15 @@ mod tests {
                 },
                 "Item {id}"
             );
-            assert_eq!(
-                claims.level,
-                row["registration"]["level"]
+            let client = global.get(&u64::from(id));
+            let level = if let Some(details) = client {
+                details["Required Level"]
                     .as_str()
-                    .unwrap_or("0")
-                    .parse::<u16>()?,
-                "Item {id}"
-            );
+                    .ok_or("Global equipment level")?
+            } else {
+                row["registration"]["level"].as_str().unwrap_or("0")
+            };
+            assert_eq!(claims.level, level.parse::<u16>()?, "Item {id}");
             let names = row["registration"]["vocation"].as_str().unwrap_or_default();
             let expected_vocations = [
                 ("Druid", EquipmentBaseVocation::Druid),
@@ -4196,7 +4243,18 @@ mod tests {
                 ("Sorcerer", EquipmentBaseVocation::Sorcerer),
             ]
             .into_iter()
-            .filter_map(|(name, vocation)| names.contains(name).then_some(vocation))
+            .filter_map(|(name, vocation)| {
+                let allowed = if let Some(details) = client {
+                    details["Vocations"]
+                        .as_str()
+                        .unwrap()
+                        .split(", ")
+                        .any(|global_name| global_name.eq_ignore_ascii_case(&format!("{name}s")))
+                } else {
+                    names.contains(name)
+                };
+                allowed.then_some(vocation)
+            })
             .collect::<Vec<_>>();
             assert_eq!(claims.vocations, expected_vocations, "Item {id}");
 

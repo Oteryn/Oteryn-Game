@@ -536,7 +536,8 @@ async fn serve_idle_successor(
     runtime: tokio::sync::Mutex<crate::foundation::ChannelRuntimeV1>,
 ) -> TestResult {
     use crate::gameplay_transport::{
-        GameplayListenerConfig, GameplaySeamOwners, SeamRooms, quest_log::QuestLogLines,
+        GameplayListenerConfig, GameplaySeamOwners, composed_test_owner::empty_test_rooms,
+        quest_log::QuestLogLines,
         serve_gameplay, source_item_cycle::SOURCE_OWNER_SWEEP_COMPLETE,
     };
     use std::time::Duration;
@@ -590,7 +591,7 @@ async fn serve_idle_successor(
                     spells: owner.spells,
                     active_generation: owner.active_generation,
                     premium_coordinator: None,
-                    rooms: SeamRooms::new(None, None),
+                    rooms: empty_test_rooms(),
                     achievements: owner.achievements,
                     npc_talk: None,
                     imported_charms: owner.imported_charms,
