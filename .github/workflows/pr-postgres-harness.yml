@@ -741,36 +741,63 @@ jobs:
           # Use run creation order on this head, including after selective reruns.
           # Only runs whose scope job started and was not skipped can publish a verdict.
           real_verdict() {
-            local runs run attempt status jobs scope verdict scope_filter gate_filter
-            scope_filter='[.[].jobs[] | select(.name == "PR early signal / PostgreSQL scope and routing")]
+            local runs run attempt status jobs history scope verdict reconcile_retry
+            local scope_filter gate_filter latest_filter reconcile_filter
+            scope_filter='map(select(.name == "PR early signal / PostgreSQL scope and routing"))
               | if any(.[]; .status != "queued" and .conclusion != "skipped") then "real"
                 elif length == 0 then "missing" else "mirror" end'
-            gate_filter='[.[].jobs[] | select(.name == "heavy-gate" and .status == "completed")]
+            gate_filter='map(select(.name == "heavy-gate" and .status == "completed"))
               | max_by([.completed_at, .id]) | .conclusion // "pending"'
+            latest_filter='group_by(.name) | map(max_by([.run_attempt, .completed_at, .id]))'
+            reconcile_filter='map(select(.status != "completed")) as $unfinished
+              | if ($unfinished | length == 1 and .[0].name == "heavy-gate"
+                    and .[0].status == "in_progress" and .[0].run_attempt == $attempt)
+                then map(select(.status == "completed"
+                     and (any(.steps[]?; .name == "Republish heavy-gate after in-flight mirrors") | not)))
+                else [] end'
             runs=$(gh api --paginate --slurp \
               "repos/$REPOSITORY/actions/workflows/pr-postgres-harness.yml/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100" |
               jq -r '[.[].workflow_runs[]] | sort_by([.created_at, .id]) | reverse | .[] | "\(.id) \(.run_attempt) \(.status)"') || return 1
             while read -r run attempt status; do
               [[ -n "$run" ]] || continue
-              jobs=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/attempts/$attempt/jobs?per_page=100") || return 1
+              jobs=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/attempts/$attempt/jobs?per_page=100" |
+                jq '[.[].jobs[]]') || return 1
               scope=$(jq -r "$scope_filter" <<< "$jobs") || return 1
               [[ "$scope" != 'mirror' ]] || continue
               verdict=$(jq -r "$gate_filter" <<< "$jobs") || return 1
-              # A selective rerun can omit the scope job or the gate. Recover
-              # the scope from prior attempts, and reuse an older gate only
-              # after this run finishes.
+              reconcile_retry=false
+              if [[ "$status" == 'in_progress' && "$run" == "${GITHUB_RUN_ID:-}" &&
+                    "$attempt" == "${GITHUB_RUN_ATTEMPT:-}" && "${GITHUB_JOB:-}" == 'heavy_gate_reconcile' ]]; then
+                reconcile_retry=true
+              fi
+              # Selective reruns can omit scope and gate jobs. Recover the
+              # latest record for each job name across all attempts.
               if [[ "$scope" == 'missing' && "$attempt" -gt 1 ]] ||
-                 [[ "$scope" == 'real' && "$status" == 'completed' && "$verdict" == 'pending' ]]; then
-                jobs=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/jobs?filter=latest&per_page=100") || return 1
+                 [[ "$scope" == 'real' && "$verdict" == 'pending' &&
+                    ( "$status" == 'completed' || "$reconcile_retry" == 'true' ) ]]; then
+                history=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/jobs?filter=all&per_page=100" |
+                  jq '[.[].jobs[]]') || return 1
+                jobs=$(jq "$latest_filter" <<< "$history") || return 1
                 if [[ "$scope" == 'missing' ]]; then
                   scope=$(jq -r "$scope_filter" <<< "$jobs") || return 1
                 fi
-                if [[ "$status" == 'completed' && "$verdict" == 'pending' ]]; then
-                  verdict=$(jq -r "$gate_filter" <<< "$jobs") || return 1
+                if [[ "$scope" == 'real' && "$verdict" == 'pending' ]]; then
+                  if [[ "$status" == 'completed' ]]; then
+                    verdict=$(jq -r "$gate_filter" <<< "$jobs") || return 1
+                  elif [[ "$reconcile_retry" == 'true' ]]; then
+                    # Only the running reconcile may remain unfinished. Past
+                    # reconciles share the gate name, so exclude them by step.
+                    verdict=$(jq -r --argjson attempt "$attempt" \
+                      "$reconcile_filter | $latest_filter | $gate_filter" <<< "$history") || return 1
+                  fi
                 fi
               fi
               if [[ "$scope" == 'real' ]]; then
                 echo "$verdict"
+                return
+              fi
+              if [[ "$scope" == 'missing' && "$status" != 'completed' ]]; then
+                echo pending
                 return
               fi
             done <<< "$runs"
@@ -894,36 +921,63 @@ jobs:
           # Use run creation order on this head, including after selective reruns.
           # Only runs whose scope job started and was not skipped can publish a verdict.
           real_verdict() {
-            local runs run attempt status jobs scope verdict scope_filter gate_filter
-            scope_filter='[.[].jobs[] | select(.name == "PR early signal / PostgreSQL scope and routing")]
+            local runs run attempt status jobs history scope verdict reconcile_retry
+            local scope_filter gate_filter latest_filter reconcile_filter
+            scope_filter='map(select(.name == "PR early signal / PostgreSQL scope and routing"))
               | if any(.[]; .status != "queued" and .conclusion != "skipped") then "real"
                 elif length == 0 then "missing" else "mirror" end'
-            gate_filter='[.[].jobs[] | select(.name == "heavy-gate" and .status == "completed")]
+            gate_filter='map(select(.name == "heavy-gate" and .status == "completed"))
               | max_by([.completed_at, .id]) | .conclusion // "pending"'
+            latest_filter='group_by(.name) | map(max_by([.run_attempt, .completed_at, .id]))'
+            reconcile_filter='map(select(.status != "completed")) as $unfinished
+              | if ($unfinished | length == 1 and .[0].name == "heavy-gate"
+                    and .[0].status == "in_progress" and .[0].run_attempt == $attempt)
+                then map(select(.status == "completed"
+                     and (any(.steps[]?; .name == "Republish heavy-gate after in-flight mirrors") | not)))
+                else [] end'
             runs=$(gh api --paginate --slurp \
               "repos/$REPOSITORY/actions/workflows/pr-postgres-harness.yml/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100" |
               jq -r '[.[].workflow_runs[]] | sort_by([.created_at, .id]) | reverse | .[] | "\(.id) \(.run_attempt) \(.status)"') || return 1
             while read -r run attempt status; do
               [[ -n "$run" ]] || continue
-              jobs=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/attempts/$attempt/jobs?per_page=100") || return 1
+              jobs=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/attempts/$attempt/jobs?per_page=100" |
+                jq '[.[].jobs[]]') || return 1
               scope=$(jq -r "$scope_filter" <<< "$jobs") || return 1
               [[ "$scope" != 'mirror' ]] || continue
               verdict=$(jq -r "$gate_filter" <<< "$jobs") || return 1
-              # A selective rerun can omit the scope job or the gate. Recover
-              # the scope from prior attempts, and reuse an older gate only
-              # after this run finishes.
+              reconcile_retry=false
+              if [[ "$status" == 'in_progress' && "$run" == "${GITHUB_RUN_ID:-}" &&
+                    "$attempt" == "${GITHUB_RUN_ATTEMPT:-}" && "${GITHUB_JOB:-}" == 'heavy_gate_reconcile' ]]; then
+                reconcile_retry=true
+              fi
+              # Selective reruns can omit scope and gate jobs. Recover the
+              # latest record for each job name across all attempts.
               if [[ "$scope" == 'missing' && "$attempt" -gt 1 ]] ||
-                 [[ "$scope" == 'real' && "$status" == 'completed' && "$verdict" == 'pending' ]]; then
-                jobs=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/jobs?filter=latest&per_page=100") || return 1
+                 [[ "$scope" == 'real' && "$verdict" == 'pending' &&
+                    ( "$status" == 'completed' || "$reconcile_retry" == 'true' ) ]]; then
+                history=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/jobs?filter=all&per_page=100" |
+                  jq '[.[].jobs[]]') || return 1
+                jobs=$(jq "$latest_filter" <<< "$history") || return 1
                 if [[ "$scope" == 'missing' ]]; then
                   scope=$(jq -r "$scope_filter" <<< "$jobs") || return 1
                 fi
-                if [[ "$status" == 'completed' && "$verdict" == 'pending' ]]; then
-                  verdict=$(jq -r "$gate_filter" <<< "$jobs") || return 1
+                if [[ "$scope" == 'real' && "$verdict" == 'pending' ]]; then
+                  if [[ "$status" == 'completed' ]]; then
+                    verdict=$(jq -r "$gate_filter" <<< "$jobs") || return 1
+                  elif [[ "$reconcile_retry" == 'true' ]]; then
+                    # Only the running reconcile may remain unfinished. Past
+                    # reconciles share the gate name, so exclude them by step.
+                    verdict=$(jq -r --argjson attempt "$attempt" \
+                      "$reconcile_filter | $latest_filter | $gate_filter" <<< "$history") || return 1
+                  fi
                 fi
               fi
               if [[ "$scope" == 'real' ]]; then
                 echo "$verdict"
+                return
+              fi
+              if [[ "$scope" == 'missing' && "$status" != 'completed' ]]; then
+                echo pending
                 return
               fi
             done <<< "$runs"
