@@ -1016,16 +1016,44 @@ async fn recover_dead_archer(
             );
         }
         let token = super::house_transfer_fixtures::RecoverySource::token(generation)?;
-        resumed = owner
-            .resume(ResumeAttempt {
-                game_session_id: session,
-                recovery_material: token.as_bytes(),
-                transport: AuthenticatedTransportRefV1::decode(&[generation; 16]).map_err(debug)?,
-                last_applied_server_sequence: resumed.continuity.server_sequence,
-                supported_capabilities: admitted.continuity.selected_capabilities.as_slice(),
-            })
-            .await
-            .map_err(debug)?;
+        let resume = owner.resume(ResumeAttempt {
+            game_session_id: session,
+            recovery_material: token.as_bytes(),
+            transport: AuthenticatedTransportRefV1::decode(&[generation; 16]).map_err(debug)?,
+            last_applied_server_sequence: resumed.continuity.server_sequence,
+            supported_capabilities: admitted.continuity.selected_capabilities.as_slice(),
+        });
+        resumed = if generation == 2 {
+            // The reconnect is already durable at the quest admission fence read.
+            // Keep the holder checked out through the entire post-resume retry window.
+            let pause = crate::gameplay_transport::quest_admission::test_pause::install();
+            let hold = async {
+                pause.reached.notified().await;
+                let held = harness.root.try_acquire_ready();
+                pause.resume.notify_one();
+                held
+            };
+            let (resumed, held) = tokio::time::timeout(
+                std::time::Duration::from_secs(30),
+                super::fixture::join_two(resume, hold),
+            )
+            .await?;
+            let resumed = resumed.map_err(debug)?;
+            assert_eq!(track_value().await?, 0, "the quest effect is still pending");
+            let returned = held?
+                .return_to_pool_observed_until(
+                    std::time::Instant::now() + std::time::Duration::from_secs(5),
+                )
+                .await;
+            assert!(matches!(
+                returned,
+                sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle
+            ));
+            owner.refresh_due_quest_sessions().await;
+            resumed
+        } else {
+            resume.await.map_err(debug)?
+        };
         assert_eq!(
             resumed.continuity.connection_generation,
             u64::from(generation)
@@ -1033,7 +1061,7 @@ async fn recover_dead_archer(
         assert_eq!(
             track_value().await?,
             1,
-            "resume must apply the committed shovel's quest effect"
+            "the recovered shovel must advance the quest after holder contention clears"
         );
         let mut stream =
             SessionCommandStream::open(Some(ingress), &resumed).ok_or("resumed stream")?;

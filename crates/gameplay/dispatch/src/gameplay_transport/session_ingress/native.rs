@@ -25,7 +25,7 @@ impl SessionIngress {
             .is_some_and(|usage| matches!(usage.receipt, Some(UseReceipt::Terrain)));
         self.complete_reconciled(command, rejected, &payload)?;
         if terrain_quest {
-            self.recovered_terrain_quest = Some(command);
+            self.recovered_terrain_quests.insert(command);
         }
         Some(())
     }

@@ -6,7 +6,7 @@ use super::capabilities::SelectedCapabilities;
 use super::connection::AdmittedSession;
 use super::item_look::LookWindow;
 use crate::foundation::{
-    CommandId, CommandIngress, CommandSemanticIdentity, DuplicateDisposition,
+    CommandId, CommandIngress, CommandSemanticIdentity, DuplicateDisposition, ExactActorRef,
     FoundationProtocolError, GameSessionId, IngressDecision, NormalizedSemanticIntentIdentity,
     RetainedBindingIdentity, TerminalSemanticOutcome,
 };
@@ -14,7 +14,7 @@ use base64::Engine;
 use oteryn_protocol_oteryn::command_replay::{MAX_RETAINED_RESULT_BYTES, encode_duplicate_replay};
 use sha2::{Digest, Sha256};
 use std::{
-    collections::HashMap,
+    collections::{BTreeSet, HashMap},
     sync::{Arc, Mutex},
 };
 
@@ -30,7 +30,7 @@ mod native;
 mod native_tests;
 #[path = "session_ingress/pending_use.rs"]
 mod pending_use;
-pub(super) use pending_use::UseReceipt;
+pub(super) use pending_use::{TerrainQuestController, UseReceipt};
 
 #[derive(Default)]
 struct SessionIngress {
@@ -43,7 +43,8 @@ struct SessionIngress {
     pending_delivery: Option<PendingDelivery>,
     pending_use: Option<pending_use::PendingUseReceipt>,
     // The terminal USE can precede restoration of the controller needed by its quest.
-    recovered_terrain_quest: Option<CommandId>,
+    recovered_terrain_quests: BTreeSet<CommandId>,
+    terrain_quest_controller: Option<pending_use::TerrainQuestController>,
     reconciled_sequence: Option<u64>,
 }
 
