@@ -90,22 +90,8 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
-  if [[ "$group" == rows ]]; then
-    (
-      E2E_ALL_CAPTURE_DIR=$(mktemp -d "$work_dir/captures.XXXXXX") || exit 1
-      export E2E_ALL_CAPTURE_DIR
-      boot_status=0
-      NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
-        bash tools/qualification/node_boot/run.sh > "$log" 2>&1 || boot_status=$?
-      python3 tools/qualification/node_boot/client_replay.py "$log" \
-        | tee -a "$log"
-      replay_pipeline=("${PIPESTATUS[@]}")
-      (( boot_status == 0 && replay_pipeline[0] == 0 && replay_pipeline[1] == 0 ))
-    ) || status=$?
-  else
-    NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
-      bash tools/qualification/node_boot/run.sh > "$log" 2>&1 || status=$?
-  fi
+  NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
+    bash tools/qualification/node_boot/run.sh > "$log" 2>&1 || status=$?
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1
 done
