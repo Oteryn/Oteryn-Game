@@ -22,8 +22,11 @@ const LUBO_WANDER_RADIUS: u16 = 2;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
+    // The cardinal walk from Thais to Lubo may take several minutes at the
+    // server's ordinary step pace. Each step still has to commit on the first send.
     let result =
-        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+        verdict::indexed_timeout(Duration::from_secs(600), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
@@ -177,6 +180,10 @@ async fn buy_watch(
     // Lubo's actual position, which can differ from the authored placement.
     let path = route(world, here, |at| at != home && within(at, home, 3))
         .ok_or("step=seller observed=no-route-to-lubo")?;
+    evidence(&format!(
+        "G09_ROUTE from={here:?} seller_home={home:?} steps={}",
+        path.len()
+    ));
     for direction in path {
         let before = tile(client.world_spatial().actor_position)?;
         let outcome = client.step(direction).await?;
