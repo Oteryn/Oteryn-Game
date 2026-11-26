@@ -113,6 +113,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             },
         )
         .await
+        .map_err(|()| {
+            super::operator_event("boss_activity_prune_refused_attempts failed: lock_poisoned")
+        })
         .ok()?;
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
             && let Some(retained) = self
