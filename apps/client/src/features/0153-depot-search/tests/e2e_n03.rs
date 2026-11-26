@@ -10,7 +10,7 @@ use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicRespon
 
 type Error = Box<dyn std::error::Error>;
 
-const FIXTURE_SESSION: &str = "00000000-0000-4000-8000-000000000001";
+const FIXTURE_SESSION: &str = "00000000-0000-7000-8000-000000000001";
 
 /// One captured `ServerMechanicResponse` envelope (`n03-list-<index>.json`, `n03-retrieve.json`):
 /// the writer's `game_session_id`, `command_id`, `server_sequence`, numeric `status` and raw
@@ -52,6 +52,7 @@ fn row(client_id: u32, depot: u32, tiers: Vec<TierCount>) -> SearchResult {
     }
 }
 
+/// A hyphenated UUIDv7 with the RFC variant, as the production `GameSessionId` decoder requires.
 fn is_uuid(value: &str) -> bool {
     let parts = value.split('-').collect::<Vec<_>>();
     parts.len() == 5
@@ -59,6 +60,62 @@ fn is_uuid(value: &str) -> bool {
             .iter()
             .zip([8, 4, 4, 4, 12])
             .all(|(part, width)| part.len() == width && part.bytes().all(|b| b.is_ascii_hexdigit()))
+        && parts[2].starts_with('7')
+        && parts[3].starts_with(['8', '9', 'a', 'b', 'A', 'B'])
+}
+
+/// Envelope keys the capture writer emits, sorted.
+const ENVELOPE_KEYS: [&str; 5] = [
+    "command_id",
+    "game_session_id",
+    "payload",
+    "server_sequence",
+    "status",
+];
+
+/// Names of the top-level object's keys in `text`, in order and with repeats:
+/// `serde_json::Value` keeps only the last of repeated keys, so a repeated `status` or session
+/// would otherwise mask the first. Call only on text that already parsed as JSON.
+fn top_level_keys(text: &str) -> Result<Vec<String>, Error> {
+    let mut keys = Vec::new();
+    let mut depth = 0usize;
+    let mut chars = text.char_indices();
+    while let Some((start, c)) = chars.next() {
+        match c {
+            '{' | '[' => depth += 1,
+            '}' | ']' => depth = depth.saturating_sub(1),
+            '"' => {
+                let mut end = start;
+                let mut escaped = false;
+                for (index, c) in chars.by_ref() {
+                    if escaped {
+                        escaped = false;
+                    } else if c == '\\' {
+                        escaped = true;
+                    } else if c == '"' {
+                        end = index;
+                        break;
+                    }
+                }
+                if depth == 1 && text[end + 1..].trim_start().starts_with(':') {
+                    keys.push(serde_json::from_str(&text[start..=end])?);
+                }
+            }
+            _ => {}
+        }
+    }
+    Ok(keys)
+}
+
+/// Parses one reply envelope and fails closed unless it has exactly the writer's keys, once each.
+fn envelope_value(raw: &[u8], name: &str) -> Result<serde_json::Value, Error> {
+    let value: serde_json::Value = serde_json::from_slice(raw)?;
+    let mut keys = top_level_keys(std::str::from_utf8(raw)?)?;
+    keys.sort();
+    if keys != ENVELOPE_KEYS {
+        return Err(format!("{name}: envelope keys {keys:?} are not exactly {ENVELOPE_KEYS:?}").into());
+    }
+    Ok(value)
 }
 
 fn status(value: u64) -> Option<CommandStatus> {
@@ -73,7 +130,7 @@ fn status(value: u64) -> Option<CommandStatus> {
 
 fn envelope(path: &std::path::Path) -> Result<Envelope, Error> {
     let name = path.display();
-    let value: serde_json::Value = serde_json::from_slice(&std::fs::read(path)?)?;
+    let value = envelope_value(&std::fs::read(path)?, &name.to_string())?;
     let positive = |key: &str| -> Result<u64, Error> {
         value[key]
             .as_u64()
@@ -370,10 +427,17 @@ fn e2e_n03_replays_captured_envelopes() -> Result<(), Error> {
 #[test]
 fn e2e_n03_rejects_inconsistent_capture_identity() -> Result<(), Error> {
     type Mutation = fn(&mut Captured);
-    let cases: [(&str, Mutation); 5] = [
+    let cases: [(&str, Mutation); 6] = [
         ("refused page", |c| c.pages[0].response.status = CommandStatus::Rejected),
-        ("foreign session", |c| c.retrieve.session = "00000000-0000-4000-8000-000000000002".into()),
+        ("foreign session", |c| c.retrieve.session = "00000000-0000-7000-8000-000000000002".into()),
         ("non-UUID session", |c| c.pages[0].session = "session-1".into()),
+        ("UUIDv4 session", |c| {
+            c.session = "00000000-0000-4000-8000-000000000001".into();
+            for page in &mut c.pages {
+                page.session = c.session.clone();
+            }
+            c.retrieve.session = c.session.clone();
+        }),
         ("repeated command_id", |c| {
             c.retrieve.response.command_id = c.pages[1].response.command_id;
         }),
@@ -388,6 +452,23 @@ fn e2e_n03_rejects_inconsistent_capture_identity() -> Result<(), Error> {
         assert!(captured_from(root.path()).is_err(), "{case} was accepted");
     }
     Ok(())
+}
+
+#[test]
+fn e2e_n03_rejects_repeated_or_unknown_envelope_keys() -> Result<(), Error> {
+    let root = write_capture(&fixture()?)?;
+    let path = root.path().join("n03-retrieve.json");
+    let valid = std::fs::read_to_string(&path)?;
+    for (case, edited) in [
+        ("repeated status", valid.replacen('{', r#"{"status":2,"#, 1)),
+        ("repeated session", valid.replacen('{', r#"{"game_session_id":"x","#, 1)),
+        ("unknown key", valid.replacen('{', r#"{"note":1,"#, 1)),
+    ] {
+        std::fs::write(&path, edited)?;
+        assert!(captured_from(root.path()).is_err(), "{case} was accepted");
+    }
+    std::fs::write(&path, valid)?;
+    captured_from(root.path()).map(drop)
 }
 
 #[test]

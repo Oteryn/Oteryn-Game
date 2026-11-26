@@ -195,6 +195,30 @@ fn e2e_s02_replays_two_icons_from_capture_files() -> Result<(), Error> {
     replay_party_shields_and_skulls(&load_capture(root)?)
 }
 
+#[test]
+fn e2e_s02_rejects_invalid_role_actors() -> Result<(), Error> {
+    let peer = format!("peer_identity={}", "11".repeat(16));
+    let leader = format!("leader_identity={}", "22".repeat(16));
+    for (case, from, to) in [
+        ("nil peer", peer.clone(), format!("peer_identity={}", "00".repeat(16))),
+        ("one actor in both roles", leader, format!("leader_identity={}", "11".repeat(16))),
+        (
+            "icon generation disagrees with the role",
+            "leader_generation=5".to_owned(),
+            "leader_generation=6".to_owned(),
+        ),
+    ] {
+        let mut replay = fixture()?;
+        assert_eq!(replay.expected.matches(&from).count(), 1, "{case}");
+        replay.expected = replay.expected.replacen(&from, &to, 1);
+        assert!(
+            replay_party_shields_and_skulls(&replay).is_err(),
+            "{case} was accepted"
+        );
+    }
+    Ok(())
+}
+
 fn replay_party_shields_and_skulls(replay: &Replay) -> Result<(), Error> {
     let panel = pending();
     let query = command(&panel, Intent::Query)?;
@@ -215,6 +239,27 @@ fn replay_party_shields_and_skulls(replay: &Replay) -> Result<(), Error> {
         identity(value(roles, "leader_identity")?)?,
         value(roles, "leader_generation")?.parse::<u64>()?,
     );
+    // The two roles are distinct, real actors, and an icon of either role carries that role's
+    // generation.
+    if peer.0 == [0; 16] || leader.0 == [0; 16] {
+        return Err("S02 role identity is nil".into());
+    }
+    if peer.0 == leader.0 {
+        return Err("S02 peer and leader are one actor".into());
+    }
+    for (view, expected) in &views {
+        for shown in &expected.icons {
+            for (role, (identity, generation)) in [("peer", peer), ("leader", leader)] {
+                if shown.entity.identity == identity && shown.entity.generation != generation {
+                    return Err(format!(
+                        "S02 {view} icon of the {role} has generation {} not {generation}",
+                        shown.entity.generation
+                    )
+                    .into());
+                }
+            }
+        }
+    }
 
     for (view, bytes, who, shields) in [
         ("invited", &replay.invited, peer, [1u8, 2]),
