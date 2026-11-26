@@ -2002,11 +2002,17 @@ fn scenario_case(
         }
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
-        let fence = owner
-            .current_quest_fence(admitted.game_session_id)
-            .await
-            .map_err(|()| "fence")?
-            .ok_or("fence")?;
+        use crate::durability::DurabilityError::{CommitOutcomeUnknown, RootUnavailable};
+        let read_fence = || owner.current_quest_fence_durable(admitted.game_session_id);
+        let fence = match read_fence().await {
+            Err(CommitOutcomeUnknown | RootUnavailable) => {
+                owner.root.await_ready().await?;
+                read_fence().await
+            }
+            result => result,
+        }
+        .map_err(|error| format!("fence: {error:?}"))?
+        .ok_or("fence")?;
         // Level refresh consumes the current actor lease installed by normal first entry.
         // This fixture uses its freshly read SQL fence, never the level-8 spell-state default.
         owner
