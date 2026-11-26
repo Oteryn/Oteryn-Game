@@ -48,7 +48,10 @@ fn capture(name: &str, bytes: &[u8]) {
     }
 }
 
-async fn hunt(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+pub(super) async fn reach_rat(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let rats: Vec<_> = metadata
@@ -71,20 +74,40 @@ async fn hunt(client: &mut DevClientSession, world: &BundleWorld) -> TestResult 
                 rat.floor == at.floor && rat.x.abs_diff(at.x).max(rat.y.abs_diff(at.y)) <= 1
             })
     })
-    .ok_or("C15 client no route to an unprotected rat")?;
-    walk(client, world, &path).await?;
-    let at = client.world_spatial().actor_position;
-    let target = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Creature
-                    && entity.position.floor == at.floor
-                    && entity.position.x.abs_diff(at.x).max(entity.position.y.abs_diff(at.y)) <= 1
-            })
-        })
-        .copied()
-        .ok_or("C15 client rat reached without an adjacent creature")?;
+    .ok_or("C15 no route to an unprotected rat")?;
+    for direction in path {
+        let before = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, before, direction);
+        let outcome = client.step(direction).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || Some(actual) != expected
+        {
+            return Err(format!(
+                "C15 Rat approach STEP {direction:?} from={before:?} expected={expected:?} actual={actual:?}: {outcome:?}"
+            ).into());
+        }
+        verdict::Harness::global().progress("walk");
+        client.take_events();
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let at = client.world_spatial().actor_position;
+        if let Some(rat) = client.world_entities().and_then(|entities| {
+            entities.iter().find(|entity| full_row_c15::adjacent_hunt_target(entity, at))
+        }) {
+            return Ok(*rat);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("C15 Rat absent at the selected approach tile: {at:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+}
+
+async fn hunt(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    let target = reach_rat(client, world).await?;
     let attack = client.session_mut().attack_target(Some(&target.entity)).await?;
     if attack.disposition != AttackIntentDisposition::Ok {
         return Err(format!("C15 client ATTACK refused: {attack:?}").into());
@@ -156,8 +179,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     logout(&mut client).await?;
     drop(client);
 
-    verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + Duration::from_secs(780), "offline-recovery");
-    tokio::time::sleep(Duration::from_secs(780)).await;
+    let recovery = full_row_c15::recovery_interval(after.stamina);
+    verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + recovery, "offline-recovery");
+    tokio::time::sleep(recovery).await;
     let mut fresh = connect_world(clients, 0xc8).await?;
     let (recovered, recovered_payload) = progress(&mut fresh).await?;
     if recovered.xp != after.xp

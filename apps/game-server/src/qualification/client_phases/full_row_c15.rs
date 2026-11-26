@@ -11,7 +11,7 @@
 //!    positive XP settlement, and one or two minutes of stamina debit in the same hunt.
 //!    The positive award also proves the non-empty stamina XP band is applied.
 //! 4. Send LOGOUT until the combat lock permits it; expect Accepted, then remain
-//!    genuinely offline for the ten-minute delay plus one three-minute recovery period.
+//!    genuinely offline for the ten-minute delay plus the applicable recovery period.
 //! 5. Freshly admit the same character; expect a new game-session id and durable XP,
 //!    plus exactly one recovered stamina minute, then send LOGOUT and expect Accepted.
 
@@ -59,7 +59,7 @@ fn decode_progress(payload: &[u8], vocation_selected: bool) -> TestResult<Progre
     Ok(value)
 }
 
-fn adjacent_hunt_target(
+pub(super) fn adjacent_hunt_target(
     entity: &oteryn_dev_client::WorldSpatialEntity,
     at: oteryn_protocol_oteryn::world_spatial::ActorPosition,
 ) -> bool {
@@ -71,21 +71,7 @@ fn adjacent_hunt_target(
 }
 
 async fn hunt(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    let target = full_e2ef5::wild_rat(client, world, &[]).await?;
-    full_e2ef5::approach_melee(client, world, target.position).await?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop {
-        let at = client.world_spatial().actor_position;
-        if client.world_entities().and_then(|view| view.get(&target.entity))
-            .is_some_and(|entry| adjacent_hunt_target(entry, at))
-        {
-            break;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("step-3 selected Rat did not remain adjacent for ATTACK".into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-    }
+    let target = client_row_c15::reach_rat(client, world).await?;
     let attack = client.session_mut().attack_target(Some(&target.entity)).await?;
     if attack.disposition != AttackIntentDisposition::Ok {
         return Err(format!("step-3 native ATTACK refused: {attack:?}").into());
@@ -126,6 +112,12 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 
 fn first_hunt_debit_valid(before: u16, after: u16) -> bool {
     matches!(before.checked_sub(after), Some(1 | 2))
+}
+
+// Crystal's regenerate_stamina.lua uses a ten-minute delay, then three
+// minutes per point below 2,340 and six minutes per point from 2,340 onward.
+pub(super) fn recovery_interval(stamina: u16) -> Duration {
+    Duration::from_secs(if stamina < 2_340 { 780 } else { 960 })
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -179,8 +171,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     logout(&mut client).await?;
     drop(client);
 
-    verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + Duration::from_secs(780), "offline-recovery");
-    tokio::time::sleep(Duration::from_secs(780)).await;
+    let recovery = recovery_interval(after.stamina);
+    verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + recovery, "offline-recovery");
+    tokio::time::sleep(recovery).await;
     let mut fresh = connect_world(clients, 0xc6).await?;
     if fresh.join_snapshot().game_session_id == first_session {
         return Err("step-5 fresh admission reused the previous game session".into());
@@ -228,6 +221,13 @@ mod tests {
         assert!(first_hunt_debit_valid(2520, 2518));
         assert!(!first_hunt_debit_valid(2520, 2520));
         assert!(!first_hunt_debit_valid(2520, 2517));
+    }
+
+    #[test]
+    fn offline_wait_recovers_one_minute_in_the_saved_stamina_band() {
+        assert_eq!(recovery_interval(2_339), Duration::from_secs(780));
+        assert_eq!(recovery_interval(2_340), Duration::from_secs(960));
+        assert_eq!(recovery_interval(2_519), Duration::from_secs(960));
     }
 
     #[test]
