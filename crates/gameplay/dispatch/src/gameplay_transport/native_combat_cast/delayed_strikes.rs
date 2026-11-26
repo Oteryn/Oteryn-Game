@@ -155,7 +155,6 @@ pub(super) fn facts(
         field_tiles: Vec::new(),
         field_items: Vec::new(),
         created_field_instances: BTreeSet::new(),
-        captured_raw_bounds: saved.and_then(|s| s.scheduled.captured_raw_bounds),
     })
 }
 
@@ -279,8 +278,6 @@ pub(super) fn requests(
         canonical_hex,
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
-    // Preserve the source raw formula snapshot. Crystal computes current Wheel
-    // flat/gem/Focus bonuses in the new due Combat, never inside planted bounds.
     let scheduled = scheduled.clone();
     Ok(vec![ScheduleRequest {
         occurrence: SpellTimerOccurrence {

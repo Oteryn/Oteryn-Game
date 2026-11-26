@@ -137,6 +137,19 @@ def _crystal_damage_bounds(slug):
     )
 
 
+def apply_crystal_grenade_parameters(parameters):
+    # Crystal 201189f8: divine_grenade.lua:6-24,26-42,110 and
+    # player_wheel.cpp:1408-1411,2315-2323.
+    if parameters["value_timing"] != "at_expiry":
+        parameters["expiry_inputs"][:0] = ["level", "magic_level", "wheel_stage"]
+    parameters.pop("snapshot_inputs", None)
+    parameters.update(
+        value_timing="at_expiry",
+        cooldown_ms_by_stage=[26000, 20000, 16000],
+        base_damage_bonus_percent_by_stage=[30, 60, 100],
+    )
+
+
 def apply_c18b_spell_policy(spell):
     key = spell["identity"]["key"]
     slug = key.removeprefix("candidate:spell/")
@@ -145,6 +158,10 @@ def apply_c18b_spell_policy(spell):
         parent[path[-1]] = value
     if slug == "death_echo":
         apply_c18b_death_echo_formula(
+            spell["execution"]["native_behavior"]["parameters"]
+        )
+    elif slug == "divine_grenade":
+        apply_crystal_grenade_parameters(
             spell["execution"]["native_behavior"]["parameters"]
         )
 

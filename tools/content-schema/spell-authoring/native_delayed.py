@@ -10,7 +10,10 @@ import hashlib
 from copy import deepcopy
 from pathlib import Path
 
-from build_executable_catalog import apply_c18b_death_echo_formula
+from build_executable_catalog import (
+    apply_c18b_death_echo_formula,
+    apply_crystal_grenade_parameters,
+)
 
 REVISIONS = {
     "canary": "99902524e052f37574194466c2949c576e4ab269",
@@ -541,4 +544,7 @@ def schemas():
     registered = _snapshot("death echo")["parameters"]
     apply_c18b_death_echo_formula(registered)
     schemas["delayed_strike"]["oneOf"].append(_closed_snapshot_schema(registered))
+    registered_grenade = _snapshot("divine grenade")["parameters"]
+    apply_crystal_grenade_parameters(registered_grenade)
+    schemas["delayed_strike"]["oneOf"].append(_closed_snapshot_schema(registered_grenade))
     return schemas
