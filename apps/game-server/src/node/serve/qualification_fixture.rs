@@ -1202,6 +1202,40 @@ async fn prepare_items(
             quest_transition: None,
             key_number: None,
         };
+        // I18c needs an empty bag. Containers require a pinned weight lookup at reservation and commit.
+        #[cfg(feature = "qualification-spawn")]
+        if named == Some((2853, 1)) {
+            let record = root
+                .read_current_character(authority, fence.character_id)
+                .await
+                .map_err(qualification_build::debug)?;
+            if uuid_text(record.account_id.as_bytes()) == "01934f10-7c00-7000-8000-000000000024" {
+                let weights = FixtureItemContent(native);
+                let request = RewardClaimMintRequest {
+                    content_revision: format!(
+                        "sha256:{}",
+                        native
+                            .source_digest()
+                            .iter()
+                            .map(|byte| format!("{byte:02x}"))
+                            .collect::<String>()
+                    ),
+                    ..request
+                };
+                let mut candidate = root
+                    .freeze_reward_claim_mint_weighted(authority, proof, fence, request, &weights)
+                    .await
+                    .map_err(|error| format!("qualification browse bag reserve: {error:?}"))?;
+                let (outcome, _) = root
+                    .commit_reward_claim_mint_weighted_noticed(
+                        authority, proof, fence, &mut candidate, None, &weights,
+                    )
+                    .await
+                    .map_err(|error| format!("qualification browse bag commit: {error:?}"))?;
+                fixture_item_committed(outcome, quantity)?;
+                continue;
+            }
+        }
         // Reservation replay retains the same CommandRef and frozen semantic intent.
         let mut candidate = qualification_build::retry_holder(
             Some(root),
