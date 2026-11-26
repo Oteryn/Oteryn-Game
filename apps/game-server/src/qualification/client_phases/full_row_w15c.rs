@@ -1,7 +1,7 @@
 //! W15c Killing in the Name Of (Grizzly Adams), derived from the NPC conversation owner
 //! (`gameplay_transport/npc_command/grizzly.rs`) and the quest rules (`quest/grizzly_adams/rules.rs`).
 //!
-//! 1. Take Captain Bluebear to Port Hope and walk to the authored Grizzly Adams placement.
+//! 1. Use the Thais dock ladder, take Captain Bluebear to Port Hope and walk to the authored Grizzly Adams placement.
 //!    Say `hi`, then `join`; assert the server's
 //!    reply lines (the durable join) and `points`.
 //! 2. Ask for the lowest-level task by name; assert the exact reply: a start offer (confirmed with
@@ -15,6 +15,16 @@ use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::npc_service as wire;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
+const DOCK_LADDER: TilePos = TilePos {
+    x: 32321,
+    y: 32220,
+    floor: -7,
+};
+const DOCK_LANDING: TilePos = TilePos {
+    x: 32321,
+    y: 32221,
+    floor: -6,
+};
 const CAPTAIN: &str = "oteryn:npc.captain_bluebear";
 const PORT_HOPE: TilePos = TilePos {
     x: 32527,
@@ -37,8 +47,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         "Drive Grizzly's eligible task conversation within the row budget",
     );
     let started = std::time::Instant::now();
+    // The authored walk from the Port Hope landing alone is 208 paced STEP commands.
     let result =
-        verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients)))
+        verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients)))
             .await;
     let (status, detail) = match result {
         Ok(Ok(Outcome::Started(task))) => (
@@ -127,37 +138,23 @@ fn first_task() -> TestResult<(String, u64)> {
     ))
 }
 
-async fn reach(
+async fn walk_to(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    npcs: &oteryn_world_bundle::npc::Table,
     key: &str,
-) -> TestResult<EntityRef> {
-    let npc = npcs
-        .npcs
-        .iter()
-        .find(|npc| npc.key == key)
-        .ok_or_else(|| format!("step=reach npc={key} observed=no-authored-placement"))?;
-    let [placement] = npc.placements.as_slice() else {
-        return Err(format!("step=reach npc={key} expected=unique-authored-placement").into());
-    };
+    goal: impl Fn(TilePos) -> bool,
+) -> TestResult {
     let here = tile(client.world_spatial().actor_position)?;
-    let path = find_route(
-        here,
-        |at| {
-            at.floor == placement.floor
-                && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
-        },
-        |at, direction| destination(world, at, direction),
-    )
+    let path = find_route(here, goal, |at, direction| {
+        destination(world, at, direction)
+    })
     .map_err(|visited| {
-        format!("step=reach npc={key} from={here:?} observed=no-walk-route visited={visited}")
+        format!("step=reach target={key} from={here:?} observed=no-walk-route visited={visited}")
     })?;
-    let display = if key == CAPTAIN {
-        "Captain Bluebear"
-    } else {
-        "Grizzly Adams"
-    };
+    evidence(&format!(
+        "row=W15c.full step=planned-walk target={key} steps={}",
+        path.len()
+    ));
     for direction in path {
         let before = tile(client.world_spatial().actor_position)?;
         let landing = destination(world, before, direction)
@@ -173,6 +170,33 @@ async fn reach(
         verdict::Harness::global().progress("walk");
         tokio::time::sleep(Duration::from_millis(u64::from(outcome.step_wait_ms))).await;
     }
+    Ok(())
+}
+
+async fn reach(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+    key: &str,
+) -> TestResult<EntityRef> {
+    let npc = npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == key)
+        .ok_or_else(|| format!("step=reach npc={key} observed=no-authored-placement"))?;
+    let [placement] = npc.placements.as_slice() else {
+        return Err(format!("step=reach npc={key} expected=unique-authored-placement").into());
+    };
+    walk_to(client, world, key, |at| {
+        at.floor == placement.floor
+            && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
+    })
+    .await?;
+    let display = if key == CAPTAIN {
+        "Captain Bluebear"
+    } else {
+        "Grizzly Adams"
+    };
     client
         .world_entities()
         .and_then(|entities| {
@@ -325,6 +349,70 @@ fn carried_gold(
         .sum())
 }
 
+async fn climb_dock_ladder(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    use crate::map::view::MapFacts;
+    walk_to(client, world, "thais-dock-ladder", |at| {
+        at.floor == DOCK_LADDER.floor
+            && at
+                .x
+                .abs_diff(DOCK_LADDER.x)
+                .max(at.y.abs_diff(DOCK_LADDER.y))
+                <= 1
+    })
+    .await?;
+    let base = world
+        .base()
+        .tile(DOCK_LADDER.x, DOCK_LADDER.y, DOCK_LADDER.floor)
+        .ok_or("step=dock-ladder observed=no-authored-tile")?;
+    let [ordinal] = base
+        .ids()
+        .iter()
+        .zip(base.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .enumerate()
+        .filter_map(|(ordinal, (id, _))| {
+            let ordinal = u8::try_from(ordinal).ok()?;
+            world
+                .facts()
+                .base_entry(DOCK_LADDER, ordinal, *id)
+                .filter(|entry| entry.appearance_id == 1948)
+                .map(|_| ordinal)
+        })
+        .collect::<Vec<_>>()[..]
+    else {
+        return Err("step=dock-ladder expected=unique-authored-ladder-1948".into());
+    };
+    let key = crate::map::view::placement_key(DOCK_LADDER, ordinal)
+        .ok_or("step=dock-ladder observed=no-placement-key")?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let before = tile(client.world_spatial().actor_position)?;
+    let outcome = client.use_object(&placement, 0).await?;
+    if outcome.status != CommandStatus::Accepted
+        || outcome.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+    {
+        return Err(
+            format!("step=dock-ladder expected={DOCK_LANDING:?} observed={outcome:?}").into(),
+        );
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+    while tile(client.world_spatial().actor_position)? == before
+        && tokio::time::Instant::now() < deadline
+    {
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+    let landing = tile(client.world_spatial().actor_position)?;
+    if landing != DOCK_LANDING {
+        return Err(
+            format!("step=dock-ladder observed={landing:?} expected={DOCK_LANDING:?}").into(),
+        );
+    }
+    evidence(&format!(
+        "row=W15c.full step=dock-ladder landing={DOCK_LANDING:?}"
+    ));
+    Ok(())
+}
+
 async fn sail_to_port_hope(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -340,6 +428,7 @@ async fn sail_to_port_hope(
     if before < FARE {
         return Err(format!("step=fare observed={before} expected=at-least-{FARE}").into());
     }
+    climb_dock_ladder(client, world).await?;
     let captain = reach(client, world, npcs, CAPTAIN).await?;
     say(client, captain, "hi").await?;
     let quote = say(client, captain, "port hope").await?;
