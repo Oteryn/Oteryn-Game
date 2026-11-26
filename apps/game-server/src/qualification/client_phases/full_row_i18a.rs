@@ -1,16 +1,17 @@
 //! I18a: browse field, open a tile's browse container with walk-to.
-//! Drops one of the character's own backpack items on its tile (item move to ground, Moved),
-//! walks at least four tiles away and asks to browse the dropped item's tile: the server must
-//! refuse `TooFar` and open no view. The character then walks back next to the tile and the same
-//! request must answer `Opened` with a browse view whose page is that tile and that lists the
-//! dropped item. The item is picked up again and the restored backpack count is re-read.
+//! Drops a backpack item and walks away. A different-floor request must be refused.
+//! One request for the actual tile must walk the actor back into reach and open the
+//! browse view. The item is picked up and the original backpack quantity is verified
+//! again after relog.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use std::collections::BTreeMap;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -87,20 +88,17 @@ async fn open_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorl
     )
 }
 
+use oteryn_dev_client::client_runtime::inventory::MoveRequest;
 use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
 use oteryn_protocol_oteryn::browse_field as browse;
 use oteryn_protocol_oteryn::container_tree as tree;
 use oteryn_protocol_oteryn::item_view::WorldTilePosition;
 
-fn view_of(selected: &[u32], payload: &[u8]) -> TestResult<tree::ContainerViews> {
-    selected_container_views(selected, payload)
-        .map_err(|error| format!("step=views-decode observed={error:?}").into())
-}
-
 async fn browse_open(
     client: &mut DevClientSession,
     at: WorldTilePosition,
 ) -> TestResult<(tree::ContainerViewOutcome, Option<tree::ContainerView>)> {
+    client.take_events();
     let payload =
         browse::encode_browse_field_intent(&browse::BrowseFieldIntent::Open { position: at })
             .map_err(|error| format!("step=browse-encode observed={error:?}"))?;
@@ -114,29 +112,35 @@ async fn browse_open(
         .await?;
     let outcome = tree::decode_container_view_result(&reply.payload)
         .map_err(|error| format!("step=browse-reply observed={error:?}"))?;
-    if outcome != tree::ContainerViewOutcome::Opened {
-        return Ok((outcome, None));
-    }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(
-            tree::STATE_DOMAIN_CONTAINER_VIEWS,
-            tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
-        )
-        .await?;
-    let view = view_of(client.selected_capabilities(), &delta.payload)?
-        .views
-        .into_iter()
-        .find(|view| view.browse.is_some());
-    Ok((outcome, view))
-}
-
-fn here(client: &DevClientSession) -> WorldTilePosition {
-    let at = client.world_spatial().actor_position;
-    WorldTilePosition {
-        x: at.x,
-        y: at.y,
-        floor: -at.floor,
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let events = client.take_events();
+        let update = events.into_iter().find_map(|event| match event {
+            SessionEvent::ContainerViews(update) => Some(update),
+            _ => None,
+        });
+        if let Some(update) = update {
+            if outcome != tree::ContainerViewOutcome::Opened
+                || update.server_sequence <= reply.server_sequence
+            {
+                return Err("step=browse observed=unexpected-view-update".into());
+            }
+            return Ok((
+                outcome,
+                update
+                    .value
+                    .views
+                    .into_iter()
+                    .find(|view| view.browse.is_some()),
+            ));
+        }
+        if outcome != tree::ContainerViewOutcome::Opened {
+            return Ok((outcome, None));
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step=browse observed=opened-without-view-update".into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
     }
 }
 
@@ -152,31 +156,24 @@ fn ground(client: &DevClientSession) -> WorldTilePosition {
 /// Drops the first backpack entry on the actor's own tile and returns its definition and count.
 async fn drop_first(
     client: &mut DevClientSession,
-    prefer: Option<std::num::NonZeroU32>,
-) -> TestResult<(std::num::NonZeroU32, std::num::NonZeroU32)> {
+) -> TestResult<(std::num::NonZeroU32, std::num::NonZeroU32, u64)> {
     let item = client
         .inventory()
-        .and_then(|inventory| {
-            prefer
-                .and_then(|want| {
-                    inventory
-                        .entries
-                        .iter()
-                        .find(|item| item.item_definition_ref == want)
-                })
-                .or(inventory.entries.first())
-        })
+        .and_then(|inventory| inventory.entries.first())
         .copied()
         .ok_or("step=drop observed=no-backpack-item;needed:player-acquired-item")?;
     let at = ground(client);
     let before = quantity(client, item.item_definition_ref)?;
     client.take_events();
     let moved = client
-        .move_item(&ItemMoveIntent {
+        .session_mut()
+        .move_item_counted(MoveRequest {
             source: item.handle,
             destination: ItemMoveDestination::Ground(at),
+            count: None,
         })
-        .await?;
+        .await
+        .map_err(|error| format!("step=drop exchange={error}"))?;
     if moved.outcome != ItemMoveOutcome::Moved {
         return Err(format!("step=drop observed={:?};needed=Moved", moved.outcome).into());
     }
@@ -188,7 +185,7 @@ async fn drop_first(
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
-    Ok((item.item_definition_ref, item.count))
+    Ok((item.item_definition_ref, item.count, before))
 }
 
 /// Moves a browse entry into the main backpack and waits for the inventory credit.
@@ -230,45 +227,71 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let world = open_world(clients).await?;
     let mut client = connect_world(clients, 0xf1).await?;
     let t0 = tile(client.world_spatial().actor_position)?;
-    let at = here(&client);
-    let (definition, count) = drop_first(&mut client, None).await?;
+    let at = ground(&client);
+    let (definition, count, before) = drop_first(&mut client).await?;
     let away = route(world, t0, |tile| {
         tile.floor == t0.floor && tile.x.abs_diff(t0.x).max(tile.y.abs_diff(t0.y)) >= 4
     })
     .ok_or("step=walk-away observed=no-route;needed:walkable-tiles-around-the-town-start")?;
     walk(&mut client, world, &away).await?;
-    let (far, view) = browse_open(&mut client, at).await?;
-    if far != tree::ContainerViewOutcome::TooFar || view.is_some() {
-        return Err(format!("step=browse-far observed={far:?};needed=TooFar").into());
+    let distant = tile(client.world_spatial().actor_position)?;
+    if distant.floor != t0.floor || distant.x.abs_diff(t0.x).max(distant.y.abs_diff(t0.y)) < 4 {
+        return Err("step=walk-away observed=actor-not-distant".into());
     }
-    let now = tile(client.world_spatial().actor_position)?;
-    let back = route(world, now, |tile| {
-        tile.floor == t0.floor && tile.x.abs_diff(t0.x).max(tile.y.abs_diff(t0.y)) <= 1
-    })
-    .ok_or("step=walk-back observed=no-route")?;
-    walk(&mut client, world, &back).await?;
-    let (near, view) = browse_open(&mut client, at).await?;
-    let view =
-        view.ok_or_else(|| format!("step=browse-near observed={near:?};needed=Opened-with-view"))?;
+    use oteryn_protocol_oteryn::world_map::{BOTTOM_FLOOR, TOP_FLOOR};
+    let other_floor = WorldTilePosition {
+        floor: if at.floor == BOTTOM_FLOOR {
+            TOP_FLOOR
+        } else {
+            BOTTOM_FLOOR
+        },
+        ..at
+    };
+    let (refused, view) = browse_open(&mut client, other_floor).await?;
+    if refused != tree::ContainerViewOutcome::TooFar
+        || view.is_some()
+        || tile(client.world_spatial().actor_position)? != distant
+    {
+        return Err(format!(
+            "step=browse-other-floor observed={refused:?};needed=TooFar-without-moving"
+        )
+        .into());
+    }
+    let (opened, view) = browse_open(&mut client, at).await?;
+    let view = view.ok_or_else(|| {
+        format!("step=browse-walk-to observed={opened:?};needed=Opened-with-view")
+    })?;
+    let arrived = tile(client.world_spatial().actor_position)?;
+    if arrived.floor != t0.floor || arrived.x.abs_diff(t0.x).max(arrived.y.abs_diff(t0.y)) > 1 {
+        return Err("step=browse-walk-to observed=actor-not-adjacent".into());
+    }
     let page = view
         .browse
         .ok_or("step=browse-near observed=no-browse-page")?;
-    if near != tree::ContainerViewOutcome::Opened || page.position != at {
+    if opened != tree::ContainerViewOutcome::Opened || page.position != at {
         return Err(format!(
-            "step=browse-near observed={near:?}-{:?};needed=Opened-at-{at:?}",
+            "step=browse-near observed={opened:?}-{:?};needed=Opened-at-{at:?}",
             page.position
         )
         .into());
     }
     let entry =
         has(&view, definition).ok_or("step=browse-near observed=dropped-item-not-listed")?;
+    if entry.count != count {
+        return Err("step=browse-walk-to observed=dropped-stack-count-mismatch".into());
+    }
     take_entry(&mut client, &entry).await?;
-    if quantity(&client, definition)? < u64::from(count.get()) {
+    if quantity(&client, definition)? != before {
         return Err("step=restore observed=backpack-count-not-restored".into());
     }
     logout(&mut client).await?;
+    let mut relogged = connect_world(clients, 0xf1).await?;
+    if quantity(&relogged, definition)? != before {
+        return Err("step=relog observed=backpack-count-not-restored".into());
+    }
+    logout(&mut relogged).await?;
     Ok(format!(
-        "too-far-then-opened-with-item-entries={}",
+        "wrong-floor-refused;walk-to-opened;relog-restored={before};item-entries={}",
         view.entries.len()
     ))
 }
