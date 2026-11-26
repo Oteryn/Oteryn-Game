@@ -303,6 +303,24 @@ WORK=.
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 
 
+class ProvisionTests(unittest.TestCase):
+    def test_p01_profile_reaches_control_exchange(self):
+        provision = load('provision')
+        session = '01890f4c-3b2a-7c01-8d11-9a321b7c0004'
+        exchanges = []
+
+        def exchange(socket_path, line, limit):
+            exchanges.append((socket_path, line, limit))
+            return b'qualified\n'
+
+        provision._request = exchange
+        provision.provision('control.sock', session, 'p01-sorcerer')
+        self.assertEqual(exchanges, [('control.sock', f'qualify {session} p01-sorcerer\n', 64)])
+        with self.assertRaisesRegex(ValueError, 'invalid qualification request'):
+            provision.provision('control.sock', session, 'p01-unknown')
+        self.assertEqual(len(exchanges), 1)
+
+
 class ReuseTests(unittest.TestCase):
     GUARD = re.search(r'(?ms)^if \[\[ "\$NODE_BOOT_REUSE_STACK" != 0 \]\]; then.*?^fi\n', RUN_TEXT)
 
