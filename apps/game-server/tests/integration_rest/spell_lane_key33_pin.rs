@@ -122,7 +122,6 @@ const NON_LANE_KEY33_READS: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "read_item_loop_ground_container"),
     ("crates/gameplay/durability/src/durability/item_text.rs", "lock_ground_text_item"),
     ("crates/gameplay/durability/src/durability/quest_world_callback/ground_read.rs", "matches"),
-    ("crates/gameplay/durability/src/durability/reward_claim_mint/quest_corpse.rs", "record"),
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "lock_ground_scope"),
 ];
 

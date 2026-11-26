@@ -243,7 +243,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let runtime = &*creature_runtime.as_ref().ok_or(())?.runtime;
             let proof = if let Some(corpse) = corpse {
                 crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current_corpse(
-                    runtime, actor, fence, command_ref, &callback, intent, corpse)
+                    runtime, actor, fence, command_ref, &callback, intent, corpse, &permit)
             } else {
                 crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current(
                     runtime, actor, fence, command_ref, &callback, intent)

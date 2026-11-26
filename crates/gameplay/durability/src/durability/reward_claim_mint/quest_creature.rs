@@ -1,13 +1,14 @@
 //! Sealed exact live creature or self-target admission for a carried quest tool.
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::durability::quest_state::{QuestCause, QuestTransitionRequest};
 use crate::foundation::{ChannelRuntimeV1, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 mod capture;
-#[derive(Clone, Copy, Debug)]
-enum Target {
+#[derive(Clone, Copy)]
+enum Target<'runtime> {
     FreshCorpse,
     Live {
         entity: EntityRef,
@@ -16,6 +17,7 @@ enum Target {
     Corpse {
         item: [u8; 16],
         position: [i32; 3],
+        permit: &'runtime SpellLanePermit,
     },
 }
 
@@ -52,7 +54,6 @@ pub use corpse::QuestCorpseOperand;
 ///     drop(proof);
 /// };
 /// ```
-#[derive(Debug)]
 pub struct QuestCreatureUseProof<'runtime> {
     _runtime: std::marker::PhantomData<&'runtime ChannelRuntimeV1>,
     fence: CurrentCharacterGameplayFence,
@@ -60,10 +61,19 @@ pub struct QuestCreatureUseProof<'runtime> {
     callback: String,
     key: Option<String>,
     self_target: Option<oteryn_gameplay_quests::quest::reward_callbacks::SelfTarget>,
-    target: Target,
+    target: Target<'runtime>,
     intent: UseIntent,
     corpse: Option<corpse::CorpseUse<'runtime>>,
 }
+impl std::fmt::Debug for QuestCreatureUseProof<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.debug_struct("QuestCreatureUseProof")
+            .field("command", &self.command)
+            .field("callback", &self.callback)
+            .finish_non_exhaustive()
+    }
+}
+
 impl<'runtime> QuestCreatureUseProof<'runtime> {
     pub fn read_current(
         runtime: &'runtime ChannelRuntimeV1,
@@ -142,15 +152,16 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
         }
     }
 
-    pub(super) fn corpse(&self) -> Option<([u8; 16], [i32; 3])> {
+    pub(super) fn corpse(&self) -> Option<([u8; 16], [i32; 3], &SpellLanePermit)> {
         match self.target {
-            Target::Corpse { item, position } => Some((item, position)),
+            Target::Corpse { item, position, permit } => Some((item, position, permit)),
             Target::Live { .. } | Target::FreshCorpse => None,
         }
     }
 
     /// Issued by the selected-ground owner after resolving its Item handle.
     /// Position is read from the leased actor under this same runtime turn.
+    #[allow(clippy::too_many_arguments)]
     pub fn read_current_corpse(
         runtime: &'runtime ChannelRuntimeV1,
         actor: ExactActorRef,
@@ -159,6 +170,7 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
         callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
         intent: &UseIntent,
         corpse: [u8; 16],
+        permit: &'runtime SpellLanePermit,
     ) -> Option<Self> {
         let at = runtime.read_actor_position(actor).ok()?.position();
         // The durable corpse sample records actor positions in map coordinates.
@@ -169,6 +181,7 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             .bound_attacker_lease(actor, fence.game_session_id)
             .ok()?;
         if callback.capture_creature
+            || permit.check_scope(fence.runtime_scope).is_err()
             || corpse == [0; 16]
             || actor.runtime_scope() != fence.runtime_scope
             || lease.character_id().as_bytes() != fence.character_id.as_bytes()
@@ -190,6 +203,7 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             target: Target::Corpse {
                 item: corpse,
                 position,
+                permit,
             },
         })
     }
