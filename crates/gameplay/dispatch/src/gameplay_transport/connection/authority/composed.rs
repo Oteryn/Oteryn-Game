@@ -1676,6 +1676,55 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_actor_vitals(actor, game_session_id).await
     }
 
+    async fn observe_actor_cooldowns(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::presentation::ActorCooldowns> {
+        use oteryn_protocol_oteryn::presentation::{
+            ActorCooldown, ActorCooldownKind, ActorCooldowns,
+        };
+        let groups = spell_catalog::cooldown_group_keys()?;
+        let runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        let state = states.get(&runtime, actor, session)?;
+        let now = self.owner_now().get();
+        let mut entries = Vec::new();
+        let mut collect =
+            |kind, index, deadline: Option<oteryn_simulation_determinism::SemanticTimeMicros>| {
+                if let Some(deadline) = deadline.filter(|time| time.get() > now)
+                    && let Ok(id) = u32::try_from(index + 1)
+                {
+                    entries.push(ActorCooldown {
+                        kind,
+                        id,
+                        expires_at_ms: deadline.get().div_ceil(1000),
+                    });
+                }
+            };
+        for (index, spell) in self.spells.spells.iter().enumerate() {
+            if !self.spells.inactive_aliases.contains(&index) {
+                collect(
+                    ActorCooldownKind::Spell,
+                    index,
+                    state.cooldowns.spell_ready_at(&spell.key),
+                );
+            }
+        }
+        for (index, group) in groups.iter().enumerate() {
+            collect(
+                ActorCooldownKind::Group,
+                index,
+                state.cooldowns.group_ready_at(group),
+            );
+        }
+        Some(ActorCooldowns {
+            server_now_ms: now.div_ceil(1000),
+            rtt_ms: None,
+            entries,
+        })
+    }
+
     async fn observe_house_vitals(
         &self,
         actor: ExactActorRef,
