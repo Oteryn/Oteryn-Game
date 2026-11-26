@@ -1608,9 +1608,6 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S; do
     [[ -z "${!knob+x}" ]] || test_env+=("$knob=${!knob}")
   done
-  if [[ -n ${NODE_BOOT_S01_CAPTURE_DIR:-} ]]; then
-    test_env+=("NODE_BOOT_S01_CAPTURE_DIR=$NODE_BOOT_S01_CAPTURE_DIR")
-  fi
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
   local test_dir="$PWD"
@@ -1891,16 +1888,6 @@ fi
 
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
-source "$GAME_SOURCE/tools/qualification/node_boot/s01_client_replay.sh"
-NODE_BOOT_S01_CAPTURE_DIR=
-if s01_client_selected; then
-  # The cloud wrapper owns replay when it supplies the capture directory.
-  if [[ -z ${E2E_ALL_CAPTURE_DIR:-} ]]; then
-    NODE_BOOT_S01_CAPTURE_DIR="$(mktemp -d "$WORK/s01-capture.XXXXXX")" || blocked s01_capture_dir_unavailable
-  fi
-else
-  [[ $? == 3 ]] || blocked s01_selector_failed
-fi
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
   stage "$seam_stage_name" -- seam_stages
 else
@@ -1928,9 +1915,6 @@ else
   fi
   stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
-fi
-if [[ -n "$NODE_BOOT_S01_CAPTURE_DIR" ]]; then
-  stage s01_client_replay "$seam_stage_name" -- s01_client_replay
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
