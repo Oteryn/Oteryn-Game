@@ -139,7 +139,9 @@ def refine_loot_inputs(root: Path, generated: dict[str, bytes]) -> None:
         questpc7_smith_corpse_loot,
         questpc7_hot_corpse_loot,
     ):
-        overlay.apply(root, generated, item_path, NATIVE_MANIFEST, spell_import.canonical_bytes)
+        overlay.apply(
+            root, generated, item_path, NATIVE_MANIFEST, spell_import.canonical_bytes
+        )
 
 
 def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
@@ -1750,8 +1752,11 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # select the fresh body, with its full admitted Ground decay chain.
     creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
     creatures = json.loads(generated[creature_path])
-    koshei = next(row for row in creatures["records"]
-                  if row["profile"]["target"]["key"] == "oteryn:creature.koshei_the_deathless")
+    koshei = next(
+        row
+        for row in creatures["records"]
+        if row["profile"]["target"]["key"] == "oteryn:creature.koshei_the_deathless"
+    )
     details = koshei["profile"]["data"]["profile"]["details"]
     if details["corpse_item"]["key"] != "oteryn:item.tibia.i7538":
         raise ValueError("KOSHEI_CORPSE_SOURCE_CHANGED")
@@ -1790,8 +1795,15 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
     item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
     import loot_slice_one
-    loot_slice_one.admit_native(root, generated, item_path, starting_loadout_profiles.FRAGMENT,
-                                provider_order, spell_import.canonical_bytes)
+
+    loot_slice_one.admit_native(
+        root,
+        generated,
+        item_path,
+        starting_loadout_profiles.FRAGMENT,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     items = json.loads(generated[item_path])
     energy = next(
         row
@@ -1810,7 +1822,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # These late Item admissions belong to the base provider. Apply their
     # verified top-order facts before deriving the separate SRX-1 supplement.
     robbery_creatures = native_goal_corpse_items.bank_robbery_creatures(root)
-    robbery_corpses, _ = native_goal_corpse_items.policies(root, creatures=robbery_creatures)
+    robbery_corpses, _ = native_goal_corpse_items.policies(
+        root, creatures=robbery_creatures
+    )
     robbery_item_ids = robbery_corpses.keys() | native_goal_loot_items.selected(
         root, robbery_creatures
     )
@@ -1828,8 +1842,10 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     house_decoration_actions.apply_top_order(late_items, house_top_order)
     import cloot2_item_admissions
+
     cloot2_item_admissions.admit(root, items, provider_order)
     import cloot3_item_profiles
+
     cloot3_item_profiles.complete_records(root, items["records"], provider_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
     import forge_item_profiles
