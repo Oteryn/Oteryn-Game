@@ -463,3 +463,6 @@ pub use oteryn_protocol_oteryn::gem_presentation;
 pub use oteryn_protocol_oteryn::wheel_presentation;
 
 pub use oteryn_protocol_oteryn::personal_map_marks;
+
+#[cfg(feature = "test-support")]
+pub use session_transport::capture_qualification_wire;

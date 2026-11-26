@@ -103,6 +103,46 @@ fn is_expected_walk(steps: &[ActorPosition]) -> bool {
         ]
 }
 
+fn verify_open_order(arrival: Option<u64>, opening: Option<u64>) -> TestResult {
+    if !matches!((arrival, opening), (Some(arrival), Some(opening)) if arrival < opening) {
+        return Err(format!(
+            "M02 gate must open strictly after arrival: arrival={arrival:?} opening={opening:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
+fn passage_step_matches(
+    disposition: StepDisposition,
+    delta_position: Option<ActorPosition>,
+    actual: ActorPosition,
+    expected: ActorPosition,
+) -> bool {
+    disposition == StepDisposition::Moved && delta_position == Some(expected) && actual == expected
+}
+
+fn observe_opening(
+    events: &[SessionEvent],
+    gate: &mut Option<MapTile>,
+    ordinal: u8,
+    opening: &mut Option<u64>,
+) {
+    for event in events {
+        if let SessionEvent::WorldMap(delta) = event {
+            update_gate(gate, std::slice::from_ref(event));
+            if gate.as_ref().is_some_and(|tile| {
+                tile.items.iter().any(|item| {
+                    item.appearance_id == OPEN_GATE
+                        && matches!(item.origin, MapOrigin::BaseOrdinal { ordinal: at, .. } if at == ordinal)
+                })
+            }) {
+                opening.get_or_insert(delta.server_sequence);
+            }
+        }
+    }
+}
+
 fn gate_matches(tile: &MapTile, ordinal: u8, appearance: u16, revision: u64) -> bool {
     tile.position == GATE_POSITION
         && tile.items.iter().any(|item| {
@@ -136,6 +176,21 @@ fn update_gate(gate: &mut Option<MapTile>, events: &[SessionEvent]) {
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let capture_dir =
         std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("M02 requires a fresh capture directory")?;
+    let (result, wire) =
+        oteryn_dev_client::native_session::capture_qualification_wire(journey_capture(clients))
+            .await;
+    let (binding, frames) = result?;
+    replay::write_capture(Path::new(&capture_dir), &binding, frames, wire)?;
+    evidence(&format!(
+        "e2e_capture scenario=M02.client status=CAPTURED binding={}",
+        binding.identity()
+    ));
+    Ok(())
+}
+
+async fn journey_capture(
+    clients: &SeamClients<'_>,
+) -> TestResult<(replay::Capture, replay::SequencedFrames)> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -197,13 +252,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         floor: 7,
     };
     let mut steps = Vec::new();
+    let mut arrival = None;
+    let mut opening = None;
     for event in &events {
         if let SessionEvent::WorldSpatialEntities(delta) = event
-            && delta.server_sequence < result.result_server_sequence
             && delta.value.actor_position != previous
         {
+            if delta.server_sequence >= result.result_server_sequence {
+                return Err("M02 actor moved after the far-use result".into());
+            }
             previous = delta.value.actor_position;
             steps.push(previous);
+            if previous == EXPECTED_ARRIVAL {
+                arrival = Some(delta.server_sequence);
+            }
         }
     }
     if !is_expected_walk(&steps) {
@@ -211,7 +273,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             format!("M02 expected two consecutive eastward autowalk steps, got {steps:?}").into(),
         );
     }
-    update_gate(&mut gate, &events);
+    observe_opening(&events, &mut gate, ordinal, &mut opening);
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while !gate
         .as_ref()
@@ -224,14 +286,45 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client
             .service_liveness(remaining.min(Duration::from_millis(100)))
             .await?;
-        update_gate(&mut gate, &client.take_events());
+        let events = client.take_events();
+        if events.iter().any(|event| {
+            matches!(event, SessionEvent::WorldSpatialEntities(delta)
+                if delta.value.actor_position != EXPECTED_ARRIVAL)
+        }) {
+            return Err("M02 actor moved while waiting for the gate update".into());
+        }
+        observe_opening(&events, &mut gate, ordinal, &mut opening);
     }
+    verify_open_order(arrival, opening)?;
     let arrived = client.world_spatial().actor_position;
     if arrived != EXPECTED_ARRIVAL || distance(tile(arrived)?, GATE) > 1 {
         return Err(format!(
             "M02 far use did not reach {EXPECTED_ARRIVAL:?} adjacent to the gate: {arrived:?}"
         )
         .into());
+    }
+    let opening_end = client.last_server_sequence();
+    let mut passage = Vec::new();
+    for (direction, expected) in [
+        (StepDirection::East, GATE_POSITION),
+        (StepDirection::West, EXPECTED_ARRIVAL),
+    ] {
+        let step = client.step(direction).await?;
+        passage.push((step.command_id, step.result_server_sequence));
+        require_mechanic_acceptance(step.status, "M02 gate passage")?;
+        if !passage_step_matches(
+            step.disposition,
+            step.world_spatial_delta
+                .as_ref()
+                .map(|delta| delta.value.actor_position),
+            client.world_spatial().actor_position,
+            expected,
+        ) {
+            return Err(format!(
+                "M02 gate passage step {direction:?} did not reach {expected:?}: {step:?}"
+            )
+            .into());
+        }
     }
     let last_sequence = client.last_server_sequence();
     let frames = client.session_mut().take_qualification_capture();
@@ -248,13 +341,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    evidence("M02_GAMEPLAY_VERIFIED steps=2 gate=open revision=1 relog_position=32401,32235,7");
+    evidence(
+        "M02_GAMEPLAY_VERIFIED steps=2 gate=open revision=1 passage=east,west relog_position=32401,32235,7",
+    );
     let binding = replay::Capture {
         game_session_id: uuid_text(session.as_bytes()),
+        character: clients.characters[1],
         command_id: result.command_id,
         first_sequence,
         result_sequence: result.result_server_sequence,
         last_sequence,
+        opening_end,
+        passage: passage
+            .try_into()
+            .map_err(|_| "M02 passage command count")?,
         capabilities,
         content_generation: map.content_generation,
         bundle_digest: map.bundle_digest,
@@ -262,12 +362,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         first_visible_floor: map.first_visible_floor,
         ordinal,
     };
-    replay::write_capture(Path::new(&capture_dir), &binding, frames)?;
-    evidence(&format!(
-        "e2e_capture scenario=M02.client status=CAPTURED binding={}",
-        binding.identity()
-    ));
-    Ok(())
+    Ok((binding, frames))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -317,4 +412,36 @@ fn m02_requires_open_appearance_at_next_revision() -> TestResult {
     };
     assert!(gate_matches(&gate, 1, OPEN_GATE, 1));
     Ok(())
+}
+
+#[test]
+fn m02_opening_requires_both_steps_before_gate_transition() -> TestResult {
+    verify_open_order(Some(12), Some(14))?;
+    assert!(verify_open_order(Some(12), Some(11)).is_err());
+    assert!(verify_open_order(Some(12), Some(12)).is_err());
+    assert!(verify_open_order(None, Some(14)).is_err());
+    assert!(verify_open_order(Some(12), None).is_err());
+    Ok(())
+}
+
+#[test]
+fn m02_open_gate_must_admit_first_passage_step() {
+    assert!(passage_step_matches(
+        StepDisposition::Moved,
+        Some(GATE_POSITION),
+        GATE_POSITION,
+        GATE_POSITION
+    ));
+    assert!(!passage_step_matches(
+        StepDisposition::Blocked,
+        None,
+        EXPECTED_ARRIVAL,
+        GATE_POSITION
+    ));
+    assert!(!passage_step_matches(
+        StepDisposition::Moved,
+        Some(EXPECTED_ARRIVAL),
+        EXPECTED_ARRIVAL,
+        GATE_POSITION
+    ));
 }

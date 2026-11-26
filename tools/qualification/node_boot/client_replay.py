@@ -127,7 +127,7 @@ def replay_targets():
     )]
     targets["e2e_m02"] = [(
         "oteryn-game-server", "m02_replay_captured_autowalk",
-        {"m02-envelope.json", "m02-binding.json"},
+        {"m02-envelope.json", "m02-binding.json", "m02-wire.json"},
     )]
     return targets
 

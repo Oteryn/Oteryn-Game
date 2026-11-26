@@ -1,9 +1,10 @@
 //! The M02 replay consumes the sequenced payloads recorded by the live session.
 
 use super::*;
+use oteryn_dev_client::native_session::{Admission, Session, write_frame};
 use oteryn_protocol_oteryn::{
-    CommandStatus, MessageType, decode_command_result, decode_state_delta, refusal_detail,
-    world_map, world_spatial, world_spatial_entities,
+    CharacterId, CommandStatus, MessageType, decode_command_result, decode_wire_envelope,
+    refusal_detail,
 };
 use serde::{Deserialize, Serialize};
 use std::io::Write;
@@ -13,9 +14,12 @@ use std::io::Write;
 pub(super) struct Capture {
     pub game_session_id: String,
     pub command_id: u64,
+    pub character: [u8; 16],
     pub first_sequence: u64,
     pub result_sequence: u64,
     pub last_sequence: u64,
+    pub opening_end: u64,
+    pub passage: [(u64, u64); 2],
     pub capabilities: Vec<u32>,
     pub content_generation: [u8; 32],
     pub bundle_digest: [u8; 32],
@@ -35,6 +39,18 @@ impl Capture {
             self.last_sequence
         )
     }
+    fn command_at(&self, sequence: u64) -> u64 {
+        self.passage
+            .iter()
+            .rev()
+            .find(|(_, result)| *result <= sequence)
+            .map_or(self.command_id, |(command, _)| *command)
+    }
+
+    fn is_result(&self, sequence: u64) -> bool {
+        sequence == self.result_sequence
+            || self.passage.iter().any(|(_, result)| *result == sequence)
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -47,14 +63,17 @@ struct Envelope {
     status: u32,
 }
 
+pub(super) type SequencedFrames = Vec<(u64, MessageType, Vec<u8>)>;
+
 pub(super) fn write_capture(
     root: &Path,
     binding: &Capture,
-    frames: Vec<(u64, MessageType, Vec<u8>)>,
+    frames: SequencedFrames,
+    wire: Vec<Vec<u8>>,
 ) -> TestResult {
     let mut envelopes = Vec::with_capacity(frames.len());
     for (server_sequence, kind, payload) in frames {
-        let required_type = if server_sequence == binding.result_sequence {
+        let required_type = if binding.is_result(server_sequence) {
             MessageType::CommandResult
         } else {
             MessageType::StateDelta
@@ -65,18 +84,29 @@ pub(super) fn write_capture(
             );
         }
         envelopes.push(Envelope {
-            command_id: binding.command_id,
+            command_id: binding.command_at(server_sequence),
             game_session_id: binding.game_session_id.clone(),
             payload,
             server_sequence,
             status: CommandStatus::Accepted as u32,
         });
     }
+    let wire_end = wire
+        .iter()
+        .position(|body| {
+            decode_wire_envelope(body)
+                .is_ok_and(|frame| frame.server_sequence() == binding.last_sequence)
+        })
+        .ok_or("M02 original wire is missing its final frame")?;
     std::fs::File::create_new(root.join("m02-binding.json"))?
         .write_all(&serde_json::to_vec(binding)?)?;
     serde_json::to_writer(
         std::fs::File::create_new(root.join("m02-envelope.json"))?,
         &envelopes,
+    )?;
+    serde_json::to_writer(
+        std::fs::File::create_new(root.join("m02-wire.json"))?,
+        &wire[..=wire_end],
     )?;
     Ok(())
 }
@@ -90,13 +120,18 @@ fn verify_identity(binding: &Capture, expected: &str, frames: &[Envelope]) -> Te
     }
     if binding.command_id == 0
         || binding.first_sequence >= binding.result_sequence
-        || binding.result_sequence >= binding.last_sequence
+        || binding.result_sequence >= binding.opening_end
+        || binding.opening_end >= binding.passage[0].1
+        || binding.passage[0].1 >= binding.passage[1].1
+        || binding.passage[1].1 >= binding.last_sequence
+        || binding.command_id.checked_add(1) != Some(binding.passage[0].0)
+        || binding.passage[0].0.checked_add(1) != Some(binding.passage[1].0)
         || !(1..=64).contains(&frames.len())
         || binding.last_sequence.checked_sub(binding.first_sequence)
             != Some(frames.len() as u64 - 1)
         || frames.iter().enumerate().any(|(index, frame)| {
             frame.game_session_id != binding.game_session_id
-                || frame.command_id != binding.command_id
+                || frame.command_id != binding.command_at(frame.server_sequence)
                 || frame.status != CommandStatus::Accepted as u32
                 || binding.first_sequence.checked_add(index as u64) != Some(frame.server_sequence)
         })
@@ -106,7 +141,43 @@ fn verify_identity(binding: &Capture, expected: &str, frames: &[Envelope]) -> Te
     Ok(())
 }
 
-fn replay(binding: &Capture, frames: &[Envelope]) -> TestResult {
+async fn replay(binding: &Capture, frames: &[Envelope], wire: &[Vec<u8>]) -> TestResult {
+    let join_end = wire
+        .iter()
+        .position(|body| {
+            decode_wire_envelope(body)
+                .is_ok_and(|frame| frame.message_type() == MessageType::SnapshotCommit)
+        })
+        .ok_or("M02 original admission snapshot is missing")?;
+    let (client, mut peer) = tokio::io::duplex(64 * 1024);
+    let bootstrap = async {
+        oteryn_dev_client::native_session::read_frame(&mut peer).await?;
+        for body in &wire[..=join_end] {
+            write_frame(&mut peer, body).await?;
+        }
+        Ok::<_, oteryn_dev_client::SessionError>(())
+    };
+    let admission = Session::admit(
+        client,
+        Admission {
+            appearance_items: None,
+            schema_revision: 1,
+            character_id: CharacterId::decode(&binding.character)?,
+            admission_material: b"M02 offline replay",
+            client_build_id: "M02 replay",
+            supported_capabilities: oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES,
+            deadline: Duration::from_secs(5),
+        },
+    );
+    let (mut session, ()) = tokio::try_join!(admission, bootstrap)?;
+    if uuid_text(session.join_snapshot().game_session_id.as_bytes()) != binding.game_session_id {
+        return Err("M02 original admission session differs from capture binding".into());
+    }
+
+    if session.selected_capabilities() != binding.capabilities {
+        return Err("M02 replay negotiation differs from the capture".into());
+    }
+
     let approach = ActorPosition {
         x: i32::from(APPROACH.x),
         y: i32::from(APPROACH.y),
@@ -115,18 +186,52 @@ fn replay(binding: &Capture, frames: &[Envelope]) -> TestResult {
     let mut previous = approach;
     let mut steps = Vec::new();
     let mut gate = None;
-    let mut spatial_revision = None;
-    let mut map_revision = None;
-    let fields = world_spatial_entities::EntityFields::selected(&binding.capabilities);
-    let mut map_binding = world_map::MapViewBinding {
-        content_generation: binding.content_generation,
-        bundle_digest: binding.bundle_digest,
-        reset_epoch: binding.reset_epoch,
-        origin: approach,
-        first_visible_floor: binding.first_visible_floor,
-    };
-    for frame in frames {
-        if frame.server_sequence == binding.result_sequence {
+    let mut arrival = None;
+    let mut opening = None;
+    let mut frames = frames.iter();
+    let mut seeded = false;
+    let mut passage_steps = Vec::new();
+    for body in &wire[join_end + 1..] {
+        let raw = decode_wire_envelope(body)?;
+        let sequence = raw.server_sequence();
+        if sequence > binding.last_sequence {
+            return Err("M02 original wire extends beyond the capture binding".into());
+        }
+        if sequence == binding.first_sequence {
+            if session.world_spatial().actor_position != approach {
+                return Err("M02 replay setup did not reach the exact approach".into());
+            }
+            let map = session
+                .world_map_snapshot()
+                .ok_or("M02 replay missing setup map")?;
+            if map.header.content_generation != binding.content_generation
+                || map.header.bundle_digest != binding.bundle_digest
+                || map.header.reset_epoch != binding.reset_epoch
+                || map.header.first_visible_floor != binding.first_visible_floor
+            {
+                return Err("M02 replay map differs from the live setup binding".into());
+            }
+            gate = map
+                .tiles
+                .into_iter()
+                .find(|tile| tile.position == GATE_POSITION);
+            if !gate
+                .as_ref()
+                .is_some_and(|tile| gate_matches(tile, binding.ordinal, CLOSED_GATE, 0))
+            {
+                return Err("M02 replay setup did not observe the closed gate".into());
+            }
+            seeded = true;
+        }
+        let event = session.apply_qualification_frame(body)?;
+        if sequence == 0 || sequence < binding.first_sequence {
+            continue;
+        }
+        let frame = frames.next().ok_or("M02 extra original frame")?;
+        if sequence != frame.server_sequence || raw.payload() != frame.payload {
+            return Err("M02 original wire differs from the capture envelope".into());
+        }
+        if binding.is_result(sequence) {
             let result = decode_command_result(&frame.payload)?;
             let payload = if binding.capabilities.contains(&66) {
                 let (payload, refusal) = refusal_detail::split_refusal_detail(result.payload)
@@ -138,70 +243,65 @@ fn replay(binding: &Capture, frames: &[Envelope]) -> TestResult {
             } else {
                 result.payload
             };
-            if result.command_id != binding.command_id
-                || result.status != CommandStatus::Accepted
-                || oteryn_protocol_oteryn::world_object::decode_use_result(payload)
+            let valid_disposition = if sequence == binding.result_sequence {
+                oteryn_protocol_oteryn::world_object::decode_use_result(payload)
                     .map_err(|error| format!("M02 replay USE result: {error:?}"))?
-                    != UseDisposition::Committed
+                    == UseDisposition::Committed
+            } else {
+                oteryn_protocol_oteryn::world_spatial::decode_step_result_profile(
+                    payload,
+                    binding.capabilities.contains(&13),
+                    binding.capabilities.contains(
+                        &oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
+                    ),
+                )
+                .map_err(|error| format!("M02 replay STEP result: {error:?}"))?
+                .disposition
+                    == StepDisposition::Moved
+            };
+            if result.command_id != frame.command_id
+                || result.status != CommandStatus::Accepted
+                || !valid_disposition
             {
-                return Err("M02 replay did not receive the committed far-use result".into());
+                return Err(
+                    "M02 replay did not receive the exact successful command result".into(),
+                );
             }
             continue;
         }
-        let delta = decode_state_delta(&frame.payload)?;
-        match delta.domain_id {
-            world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY => {
-                if delta.delta_type != world_spatial_entities::DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2
-                {
-                    return Err("M02 replay expected negotiated entity movement".into());
-                }
-                if spatial_revision.is_some_and(|revision| revision != delta.base_revision)
-                    || delta.new_revision <= delta.base_revision
-                {
-                    return Err("M02 replay movement revision mismatch".into());
-                }
-                spatial_revision = Some(delta.new_revision);
-                let (movement, _, _) =
-                    world_spatial_entities::decode_world_spatial_entities_delta_with_sidecar(
-                        delta.payload,
-                        fields,
-                    )
-                    .map_err(|error| format!("M02 replay movement: {error:?}"))?;
-                if movement.content_generation != binding.content_generation {
-                    return Err("M02 replay movement content generation mismatch".into());
-                }
-                if movement.actor_position != previous {
-                    if frame.server_sequence > binding.result_sequence {
-                        return Err("M02 replay moved after the USE result".into());
-                    }
-                    previous = movement.actor_position;
-                    steps.push(previous);
-                }
+        let event = event.ok_or("M02 expected a state event")?;
+        if let SessionEvent::WorldSpatialEntities(delta) = &event
+            && delta.value.actor_position != previous
+        {
+            if sequence > binding.opening_end {
+                previous = delta.value.actor_position;
+                passage_steps.push((frame.command_id, previous));
+                continue;
             }
-            world_map::STATE_DOMAIN_WORLD_MAP_VIEW => {
-                if delta.delta_type != world_map::DELTA_TYPE_WORLD_MAP_VIEW_DELTA_V1
-                    || map_revision.is_some_and(|revision| revision != delta.base_revision)
-                    || delta.new_revision <= delta.base_revision
-                {
-                    return Err("M02 replay map revision mismatch".into());
-                }
-                map_revision = Some(delta.new_revision);
-                let change = world_map::decode_world_map_delta(&map_binding, delta.payload)
-                    .map_err(|error| format!("M02 replay map delta: {error:?}"))?;
-                map_binding = change.header;
-                if change.cleared.contains(&GATE_POSITION) {
-                    gate = None;
-                }
-                if let Some(tile) = change
-                    .tiles
-                    .into_iter()
-                    .find(|tile| tile.position == GATE_POSITION)
-                {
-                    gate = Some(tile);
-                }
+            if sequence > binding.result_sequence {
+                return Err("M02 replay moved after the USE result".into());
             }
-            _ => {}
+            previous = delta.value.actor_position;
+            steps.push(previous);
+            if previous == EXPECTED_ARRIVAL {
+                arrival = Some(sequence);
+            }
         }
+        if sequence <= binding.opening_end {
+            observe_opening(&[event], &mut gate, binding.ordinal, &mut opening);
+        }
+    }
+    if !seeded || frames.next().is_some() {
+        return Err("M02 original frame stream is incomplete".into());
+    }
+    verify_open_order(arrival, opening)?;
+    if passage_steps
+        != [
+            (binding.passage[0].0, GATE_POSITION),
+            (binding.passage[1].0, EXPECTED_ARRIVAL),
+        ]
+    {
+        return Err(format!("M02 original passage steps differ: {passage_steps:?}").into());
     }
     if !is_expected_walk(&steps)
         || !gate
@@ -213,9 +313,9 @@ fn replay(binding: &Capture, frames: &[Envelope]) -> TestResult {
     Ok(())
 }
 
-#[test]
+#[tokio::test]
 #[ignore = "requires the shared wrapper's fresh live capture"]
-fn m02_replay_captured_autowalk() -> TestResult {
+async fn m02_replay_captured_autowalk() -> TestResult {
     let root = Path::new(&required("E2E_ALL_CAPTURE_DIR")?).to_path_buf();
     let expected = required("OTERYN_M02_REPLAY_IDENTITY")?;
     let binding: Capture =
@@ -223,7 +323,9 @@ fn m02_replay_captured_autowalk() -> TestResult {
     let frames: Vec<Envelope> =
         serde_json::from_reader(std::fs::File::open(root.join("m02-envelope.json"))?)?;
     verify_identity(&binding, &expected, &frames)?;
-    replay(&binding, &frames)
+    let wire: Vec<Vec<u8>> =
+        serde_json::from_reader(std::fs::File::open(root.join("m02-wire.json"))?)?;
+    replay(&binding, &frames, &wire).await
 }
 
 #[test]
@@ -231,9 +333,12 @@ fn m02_requires_exact_capture_identity() -> TestResult {
     let binding = Capture {
         game_session_id: "01934f10-7c00-7000-8000-000000000001".into(),
         command_id: 7,
+        character: [0; 16],
         first_sequence: 10,
         result_sequence: 11,
-        last_sequence: 12,
+        last_sequence: 16,
+        opening_end: 12,
+        passage: [(8, 13), (9, 15)],
         capabilities: vec![],
         content_generation: [0; 32],
         bundle_digest: [0; 32],
@@ -242,9 +347,9 @@ fn m02_requires_exact_capture_identity() -> TestResult {
         ordinal: 1,
     };
     let expected = binding.identity();
-    let mut frames: Vec<_> = (10..=12)
+    let mut frames: Vec<_> = (10..=16)
         .map(|server_sequence| Envelope {
-            command_id: 7,
+            command_id: binding.command_at(server_sequence),
             game_session_id: binding.game_session_id.clone(),
             payload: vec![],
             server_sequence,

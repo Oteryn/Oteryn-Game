@@ -1,6 +1,18 @@
 //! Session session transport.
 use super::*;
 
+/// Record the original inbound wire bodies read while polling a qualification future.
+#[cfg(feature = "test-support")]
+pub async fn capture_qualification_wire<T>(future: impl Future<Output = T>) -> (T, Vec<Vec<u8>>) {
+    framing::QUALIFICATION_WIRE
+        .scope(Default::default(), async {
+            let result = future.await;
+            let frames = framing::QUALIFICATION_WIRE.with(|frames| frames.take());
+            (result, frames)
+        })
+        .await
+}
+
 impl<S: SessionStream> Session<S> {
     /// Begin recording validated sequenced frames for qualification.
     #[cfg(feature = "test-support")]
@@ -12,6 +24,34 @@ impl<S: SessionStream> Session<S> {
     #[cfg(feature = "test-support")]
     pub fn take_qualification_capture(&mut self) -> Vec<(u64, MessageType, Vec<u8>)> {
         self.qualification_frames.take().unwrap_or_default()
+    }
+
+    /// Validate an original captured frame and apply it through the live state dispatcher.
+    #[cfg(feature = "test-support")]
+    pub fn apply_qualification_frame(
+        &mut self,
+        body: &[u8],
+    ) -> Result<Option<SessionEvent>, SessionError> {
+        let envelope = decode_wire_envelope(body)?;
+        envelope.validate(Direction::ServerToClient, true)?;
+        self.check_generation(&envelope)?;
+        match envelope.message_type() {
+            MessageType::StateDelta => {
+                let sequence = self.next_sequence(&envelope)?;
+                self.apply_state_delta(sequence, envelope.payload())
+                    .map(Some)
+            }
+            MessageType::CommandResult => {
+                self.next_sequence(&envelope)?;
+                decode_command_result(envelope.payload())?;
+                Ok(None)
+            }
+            MessageType::LivenessProbe => Ok(None),
+            actual => Err(SessionError::UnexpectedMessage {
+                expected: MessageType::StateDelta,
+                actual,
+            }),
+        }
     }
 
     /// Reads the next non-probe frame, requires it to be `expected`, and requires its

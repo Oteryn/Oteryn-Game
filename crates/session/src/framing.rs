@@ -179,6 +179,11 @@ pub(super) async fn read_frame_after<S: AsyncRead + Unpin>(
     read_frame_body(stream, prefix).await
 }
 
+#[cfg(feature = "test-support")]
+tokio::task_local! {
+    pub(crate) static QUALIFICATION_WIRE: std::cell::RefCell<Vec<Vec<u8>>>;
+}
+
 pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     stream: &mut S,
     prefix: [u8; 4],
@@ -186,6 +191,17 @@ pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     let length = FrameLength::from_prefix(&prefix)?;
     let mut body = vec![0_u8; length.get() as usize];
     stream.read_exact(&mut body).await?;
+    #[cfg(feature = "test-support")]
+    if let Ok(result) = QUALIFICATION_WIRE.try_with(|frames| {
+        let mut frames = frames.borrow_mut();
+        if frames.len() >= 4096 {
+            return Err(FoundationProtocolError::PayloadLimitExceeded);
+        }
+        frames.push(body.clone());
+        Ok(())
+    }) {
+        result?;
+    }
     Ok(body)
 }
 

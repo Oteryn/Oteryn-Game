@@ -28,6 +28,20 @@ select_work_parent() {
   return 1
 }
 
+m02_replay_passed() {
+  awk -v final="${2:-0}" '
+    $1 == "SEAM_EVIDENCE" && $2 == "e2e_capture" &&
+      $3 == "scenario=M02.client" && $4 == "status=CAPTURED" { captures++ }
+    $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
+      $3 == "scenario=M02.client" && $4 ~ /^replay=/ {
+      replays++
+      if ($4 == "replay=m02_replay_captured_autowalk" && $5 == "status=PASS") passes++
+    }
+    $1 == "NODE_BOOT_RESULT=NODE_BOOT_PASS" && captures == 1 && passes == 1 { finalized++ }
+    END { exit !(captures == 1 && replays == 1 && passes == 1 && (!final || finalized == 1)) }
+  ' "$1"
+}
+
 summarize() {
   local log=$1 group=$2 seconds=${3:-0} status=${4:-0} result rows row
   result=$(awk '/^NODE_BOOT_RESULT=(NODE_BOOT_[A-Z0-9_]+|BLOCKED)([[:space:]]|$)/ {
@@ -36,6 +50,13 @@ summarize() {
   } END { print result }' < "$log") || return 1
   # A recursive basic pass can succeed before the outer run exits without a result.
   if [[ -z "$result" || ( "$status" != 0 && "$result" == NODE_BOOT_PASS ) ]]; then
+    result=NODE_BOOT_FAIL
+  fi
+
+  if [[ "$result" == NODE_BOOT_REPLAY_REQUIRED ]] ||
+    { [[ "$result" == NODE_BOOT_PASS ]] &&
+      grep -qE '^SEAM_EVIDENCE (e2e_capture|e2e_all) scenario=M02\.client ' "$log" &&
+      ! m02_replay_passed "$log" 1; }; then
     result=NODE_BOOT_FAIL
   fi
 
@@ -141,6 +162,15 @@ for group in "$@"; do
       | tee -a "$log"
     replay_pipeline=("${PIPESTATUS[@]}")
     if (( replay_pipeline[0] != 0 || replay_pipeline[1] != 0 )); then
+      status=1
+    fi
+  fi
+  if grep -qx 'NODE_BOOT_RESULT=NODE_BOOT_REPLAY_REQUIRED mode=unprivileged' "$log"; then
+    if [[ "$status" == 4 ]] && m02_replay_passed "$log"; then
+      status=0
+      printf 'NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged\n' | tee -a "$log"
+    else
+      printf 'NODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged\n' | tee -a "$log"
       status=1
     fi
   fi

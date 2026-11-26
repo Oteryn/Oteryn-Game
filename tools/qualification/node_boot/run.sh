@@ -1896,6 +1896,10 @@ unset FRESH_SEED_HEX RECOVERY_SEED_HEX
 if [[ $failures == 0 ]]; then
   if [[ "$NODE_BOOT_D150_LEGACY" == 1 ]]; then
     result=NODE_BOOT_D150_PASS
+  elif [[ -f "$WORK/stage-seam_stages.log" ]] &&
+    grep -qE '^SEAM_EVIDENCE e2e_capture scenario=M02\.client status=CAPTURED([[:space:]]|$)' "$WORK/stage-seam_stages.log"; then
+    result=NODE_BOOT_REPLAY_REQUIRED
+    exit 4
   else
     result=NODE_BOOT_PASS
   fi

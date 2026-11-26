@@ -877,6 +877,28 @@ class CloudRunSummaryTests(unittest.TestCase):
                             'e2e_s18_say_and_whisper_echo_replay -- --nocapture',
                         ])
 
+    def test_m02_summary_requires_exactly_one_passing_replay(self):
+        capture = 'SEAM_EVIDENCE e2e_capture scenario=M02.client status=CAPTURED binding=fresh\n'
+        replay = ('SEAM_EVIDENCE e2e_all scenario=M02.client '
+                  'replay=m02_replay_captured_autowalk status=PASS\n')
+        passed = 'NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged\n'
+        pending = 'NODE_BOOT_RESULT=NODE_BOOT_REPLAY_REQUIRED mode=unprivileged\n'
+        for log_tail, verdict in [
+            (passed, 'NODE_BOOT_FAIL'),
+            (pending + replay + passed, 'NODE_BOOT_PASS'),
+            (passed + replay, 'NODE_BOOT_FAIL'),
+            (pending + replay * 2 + passed, 'NODE_BOOT_FAIL'),
+            (pending + replay, 'NODE_BOOT_FAIL'),
+        ]:
+            with self.subTest(log_tail=log_tail), tempfile.TemporaryDirectory() as tmp:
+                log = Path(tmp) / 'node.log'
+                log.write_text(capture + log_tail)
+                result = subprocess.run(
+                    ['bash', str(HERE / 'cloud_run.sh'), '--summarize', str(log), 'rows'],
+                    capture_output=True, text=True, check=True,
+                )
+                self.assertIn(f'CLOUD_RUN group=rows result={verdict} seconds=0', result.stdout)
+
     def test_summary_counts_client_replay_verdict_only(self):
         with tempfile.TemporaryDirectory() as tmp:
             log = Path(tmp) / 'node.log'
