@@ -110,6 +110,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
+        let now = self.owner_now();
         if let Some(mut view) =
             house_hireling_view::entities(&runtime, actor, self.owner_now().get() / 1_000).ok()?
         {
