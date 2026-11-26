@@ -705,7 +705,7 @@ class CloudRunSummaryTests(unittest.TestCase):
             mkdir captures || exit 1
             cargo() {
                 touch replay-attempted
-                [[ "$E2E_ALL_CAPTURE_DIR" == "$PWD/captures" ]] || return 2
+                [[ "$E2E_P04_CAPTURE_DIR" == "$PWD/captures" ]] || return 2
                 [[ "$E2E_P04_SESSION" == 01890f4c-3b2a-7c01-8d11-9a321b7c0004 ]] || return 2
                 [[ "$*" == *' -- --ignored --exact' ]] || return 2
                 printf '%s\n' "$test_output"

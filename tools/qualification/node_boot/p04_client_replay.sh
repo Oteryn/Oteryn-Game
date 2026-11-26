@@ -25,7 +25,7 @@ replay_p04_client() {
   session=$(sed -nE 's/^SEAM_EVIDENCE e2e_capture scenario=P04\.client status=CAPTURED evidence=session=([0-9a-f-]{36});.*/\1/p' "$log")
   if [[ "$session" =~ ^[0-9a-f-]{36}$ && $(grep -ac '^SEAM_EVIDENCE e2e_capture scenario=P04.client status=CAPTURED evidence=' "$log") == 1 ]] &&
      ! grep -aqE '^(SEAM_EVIDENCE e2e_all scenario=P04.client status=FAIL|SEAM_EVIDENCE P04_CLIENT_CAPTURE_WRITE_ERROR)' "$log" &&
-     E2E_ALL_CAPTURE_DIR="$captures" E2E_P04_SESSION="$session" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test_name" \
+     E2E_P04_CAPTURE_DIR="$captures" E2E_P04_SESSION="$session" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test_name" \
        -- --ignored --exact > "$replay_log" 2>&1 &&
      grep -Fxq "test $test_name ... ok" "$replay_log"; then
     verdict=PASS
@@ -39,7 +39,7 @@ p04_seam_with_replay() {
   shift 2
   mkdir -- "$captures" || return
   local status=0
-  E2E_ALL_CAPTURE_DIR="$captures" "$@" 2>&1 | tee "$log" || status=$?
+  E2E_P04_CAPTURE_DIR="$captures" "$@" 2>&1 | tee "$log" || status=$?
   if [[ "$status" != 0 ]]; then
     printf 'SEAM_EVIDENCE e2e_all scenario=P04.client status=FAIL evidence=seam_exit\n'
     return "$status"

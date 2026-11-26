@@ -9,15 +9,13 @@ use task_board::task_board::full::{
     Reply, Request, ShopOffer, Weekly, decode_reply, encode_request,
 };
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!(
-            "P04_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
-        ));
-    }
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
+    use std::io::Write as _;
+
+    let root = required("E2E_P04_CAPTURE_DIR")?;
+    let mut file = std::fs::File::create_new(Path::new(&root).join(name))?;
+    file.write_all(bytes)?;
+    Ok(())
 }
 
 async fn send(
@@ -54,7 +52,7 @@ async fn send(
     .into_bytes();
     captured.extend_from_slice(&result.payload);
     if let Some(name) = name {
-        capture(name, &captured);
+        capture(name, &captured)?;
     }
     decode_reply(&result.payload).map_err(|error| format!("reply decode: {error:?}").into())
 }
@@ -149,7 +147,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         offer.kind,
         offer.price
     );
-    capture("p04-expected.txt", expected.as_bytes());
+    capture("p04-expected.txt", expected.as_bytes())?;
     let admitted = client.join_snapshot().game_session_id;
     let session = uuid_text(admitted.as_bytes());
     if client.session_mut().logout().await?.result

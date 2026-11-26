@@ -68,7 +68,7 @@ fn fixture() -> Result<Captured, Error> {
 
 fn captured() -> Result<Captured, Error> {
     let path =
-        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("live capture directory is required")?;
+        std::env::var_os("E2E_P04_CAPTURE_DIR").ok_or("live capture directory is required")?;
     let path = std::path::Path::new(&path);
     let session = std::env::var("E2E_P04_SESSION")?;
     let query = read_live_result(&path.join("p04-query.bin"), &session)?;
