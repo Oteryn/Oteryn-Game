@@ -72,10 +72,11 @@ async fn walk_map_route(
     path: &[StepDirection],
     bounds: TilePos,
 ) -> TestResult {
+    let world = world.clone();
     walk_with_landing_budget(
         client,
         path,
-        |at, direction| destination(world, at, direction),
+        move |at, direction| destination(&world, at, direction),
         None,
         Some(bounds),
     )
