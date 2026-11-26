@@ -24,6 +24,98 @@ pub enum LogoutReply {
     Unknown,
 }
 
+/// A release checkpoint that could not settle before the lease transaction.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum ReleaseRetryStage {
+    Drome,
+    Death,
+    TimedItems,
+    ItemEffects,
+    Fence,
+    WheelGift,
+    Monk,
+    SpellTraining,
+    Gourmet,
+    Conditions,
+    KillRewards,
+    Familiar,
+    OfflineTraining,
+}
+
+impl ReleaseRetryStage {
+    fn label(self) -> &'static str {
+        match self {
+            Self::Drome => "drome_sync",
+            Self::Death => "death_save",
+            Self::TimedItems => "timed_items",
+            Self::ItemEffects => "item_effects",
+            Self::Fence => "fence_wait",
+            Self::WheelGift => "wheel_gift",
+            Self::Monk => "monk_save",
+            Self::SpellTraining => "training_save",
+            Self::Gourmet => "gourmet_checkpoint",
+            Self::Conditions => "condition_save",
+            Self::KillRewards => "kill_rewards",
+            Self::Familiar => "familiar_save",
+            Self::OfflineTraining => "offline_training",
+        }
+    }
+}
+
+/// Retained across release attempts so a checkpoint retry uses the same fence and budget.
+#[derive(Default)]
+pub(super) struct ReleaseProgress<'r> {
+    pub(super) settled_death: Option<super::actor_spell::PlayerDeath>,
+    pub(super) kills: Option<super::KillReleaseMark>,
+    logout_root: Option<&'r crate::durability::DurabilityRoot>,
+    retry: Option<AdmissionRetryBudget<'r>>,
+}
+
+impl ReleaseProgress<'_> {
+    pub(super) async fn retry(&mut self, stage: ReleaseRetryStage) -> bool {
+        #[cfg(test)]
+        let _ = LOGOUT_RELEASE_PROBE.try_with(|probe| {
+            probe
+                .retry_count
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            if probe.first_retry.set(stage).is_ok() {
+                probe.retry_observed.notify_one();
+            }
+        });
+        #[cfg(not(test))]
+        let _ = stage;
+
+        let Some(root) = self.logout_root else {
+            return false;
+        };
+        // Start on the first deferral. A checkpoint already in flight settles its
+        // outcome normally, and a retry may only start inside the command window.
+        let retry = self
+            .retry
+            .get_or_insert_with(|| AdmissionRetryBudget::for_command(root));
+        retry
+            .retries_unavailable(AdmissionRefusal::Unavailable)
+            .await
+            && retry.check_deadline().is_ok()
+    }
+}
+
+#[cfg(test)]
+#[derive(Default)]
+pub(super) struct LogoutReleaseProbe {
+    pub(super) before_conditions: tokio::sync::Notify,
+    pub(super) resume_conditions: tokio::sync::Notify,
+    pub(super) retry_observed: tokio::sync::Notify,
+    pub(super) logout_finished: tokio::sync::Notify,
+    pub(super) first_retry: std::sync::OnceLock<ReleaseRetryStage>,
+    pub(super) retry_count: std::sync::atomic::AtomicUsize,
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static LOGOUT_RELEASE_PROBE: std::sync::Arc<LogoutReleaseProbe>;
+}
+
 pub(super) struct LogoutZones {
     pub(super) no_logout: bool,
     pub(super) protection_zone: Option<bool>,
@@ -296,9 +388,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             in_protection_zone,
         )
     }
-    /// One attempt of the release on the `Abandoned` path, with no retry: the client retries a
-    /// `BUSY`. A failure before the commit reads the durable row and settles the fence
-    /// (`settle_unended`) before `BUSY`, so no character write stays fenced.
+    /// Retry a deferred actor-end checkpoint within the command holder window. All attempts
+    /// share the transition fence and the original transport. An unknown lease transaction
+    /// is handed to control-loss reconciliation without replay.
     async fn release_logout(
         &self,
         admitted: AdmittedSession,
@@ -329,37 +421,61 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             token
         };
         let mut hold = FenceHold::new(session, token);
-        let mut settled_death = None;
-        let mut kills = None;
-        let step = self
-            .release_attempt(
-                &admitted,
-                &store,
-                release,
-                &mut hold,
-                &mut settled_death,
-                &mut kills,
-            )
-            .await;
+        let step = {
+            let mut progress = ReleaseProgress {
+                logout_root: (!channel_switch).then_some(self.root),
+                ..ReleaseProgress::default()
+            };
+            loop {
+                let step = self
+                    .release_attempt(&admitted, &store, release, &mut hold, &mut progress)
+                    .await;
+                let Err(stage) = step else {
+                    break step;
+                };
+                // Conditions already used the remaining window at their save point.
+                if stage == ReleaseRetryStage::Conditions || !progress.retry(stage).await {
+                    break step;
+                }
+            }
+        };
+        if let Err(stage) = step
+            && !channel_switch
+        {
+            operator_event(&format!(
+                "event=logout_busy stage=release_retry_exhausted phase={}",
+                stage.label()
+            ));
+        }
         Ok(match step {
-            ReleaseAttempt::Done(GraceExpiryResult::Released) => {
+            Ok(ReleaseAttempt::Done(GraceExpiryResult::Released)) => {
                 LogoutReply::Result(LogoutResult::Accepted)
             }
             // The session is not this logout's to end, and its fence is lifted.
-            ReleaseAttempt::Done(GraceExpiryResult::NotApplicable) => {
+            Ok(ReleaseAttempt::Done(GraceExpiryResult::NotApplicable)) => {
                 operator_event("event=logout_busy stage=release_not_applicable");
                 LogoutReply::Result(LogoutResult::Busy)
             }
             // A refused fence, or a committed release whose actor could not be removed: the
             // lifecycle reconciles from the row.
-            ReleaseAttempt::Done(GraceExpiryResult::Unknown) => {
+            Ok(ReleaseAttempt::Done(GraceExpiryResult::Unknown)) => {
                 operator_event("event=logout_unknown stage=release_attempt kind=unknown");
                 LogoutReply::Unknown
             }
-            ReleaseAttempt::Retry => match self.settle_unended(&store, actor, &mut hold).await {
-                UnendedSettle::Lifted => {
-                    operator_event("event=logout_busy stage=release_retry_lifted");
+            Err(stage) => match self.settle_unended(&store, actor, &mut hold).await {
+                UnendedSettle::Lifted if channel_switch => {
+                    operator_event(&format!(
+                        "event=logout_busy stage=release_retry_lifted phase={}",
+                        stage.label()
+                    ));
                     LogoutReply::Result(LogoutResult::Busy)
+                }
+                UnendedSettle::Lifted => {
+                    operator_event(&format!(
+                        "event=logout_unknown stage=release_retry_lifted kind=deadline phase={}",
+                        stage.label()
+                    ));
+                    LogoutReply::Unknown
                 }
                 UnendedSettle::Terminal => {
                     match self
@@ -375,11 +491,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 UnendedSettle::Unknown => {
                     self.states.fence_holders.keep(hold);
-                    operator_event("event=logout_unknown stage=logout_settle kind=unknown");
+                    operator_event(&format!(
+                        "event=logout_unknown stage=logout_settle kind=unknown phase={}",
+                        stage.label()
+                    ));
                     LogoutReply::Unknown
                 }
             },
-            ReleaseAttempt::Unknown => {
+            Ok(ReleaseAttempt::Unknown | ReleaseAttempt::Retry) => {
                 self.states.fence_holders.keep(hold);
                 operator_event("event=logout_unknown stage=release_attempt kind=unknown");
                 LogoutReply::Unknown
