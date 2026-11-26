@@ -818,6 +818,18 @@ PY_WORLD
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
     game_platform_config "$WORK/node.toml"
   fi
+  if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+    local groups="${NODE_BOOT_E2E_ONLY:-}"
+    case ",${groups//[[:space:]]/}," in
+      ,,|*,rows,*)
+        cat >> "$WORK/node.toml" <<'TOML'
+[premium_activation]
+activation_id = "node-boot-fixture-premium"
+switch_over_us = 1
+TOML
+        ;;
+    esac
+  fi
   install_owned root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
 # Root/client writes an atomic offset; the service can only read it. Start at

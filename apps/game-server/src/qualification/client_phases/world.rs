@@ -328,6 +328,8 @@ include!("full_e2ef5_mount.rs");
 #[path = "map_journey.rs"]
 mod map_journey;
 include!("native_content.rs");
+#[path = "character_prep.rs"]
+mod character_prep;
 #[path = "full_e2ef1.rs"]
 mod provisioning;
 include!("quest_journal.rs");
