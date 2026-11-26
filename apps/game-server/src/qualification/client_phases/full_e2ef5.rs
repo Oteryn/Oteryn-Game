@@ -4297,6 +4297,32 @@ pub(super) async fn capture_animate_dead(
         caster.service_liveness(Duration::from_millis(50)).await?;
     };
     let corpse = c16c_rat_corpse(&mut caster, world, rat, book).await?;
+    // The death appearance is immovable. Use only the first movable appearance
+    // of this same corpse, as observed through the ordinary entity stream.
+    let movable_ref = provisioning::item_reference(&provisioning::item_index()?, 3994)?;
+    let corpse = tokio::time::timeout(Duration::from_secs(45), async {
+        loop {
+            let current = creature(&caster, corpse.entity)?;
+            if current.position != corpse.position
+                || current.kind != oteryn_dev_client::EntityKind::Corpse
+            {
+                return Err("C16c exact Rat corpse moved or changed kind during decay".into());
+            }
+            use oteryn_dev_client::EntityDetail;
+            if matches!(current.detail,
+                EntityDetail::Object { item_definition_ref, item_handle: Some(_), .. }
+                | EntityDetail::ObjectWithAppearance { item_definition_ref, item_handle: Some(_), .. }
+                if item_definition_ref == movable_ref.get())
+            {
+                return TestResult::Ok(current);
+            }
+            caster.service_liveness(Duration::from_millis(50)).await?;
+        }
+    }).await.map_err(|_| "C16c exact Rat corpse did not reach movable stage 3994")??;
+    evidence(&format!(
+        "C16C_MOVABLE_CORPSE item=3994 entity={:?}",
+        corpse.entity
+    ));
     let mut observer = with_observer_liveness(&mut caster, connect_character(clients, 0xd7, 0)).await?;
     if observer.world_entities().and_then(|view| view.get(&corpse.entity)).is_none() {
         return Err("C16c fresh observer did not see the exact corpse".into());
