@@ -56,6 +56,17 @@ pub(super) fn scenario_in_world(case: u8, world_type: Option<i16>) -> TestResult
         .map_err(Into::into)
 }
 
+const LOGOUT_WITH_COOLDOWN: u8 = 254;
+
+pub(super) fn logout_with_cooldown(admin: String) -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("spell-cooldown-logout", move || {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(scenario_inner(admin, LOGOUT_WITH_COOLDOWN, None))
+    })
+}
+
 async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> TestResult {
     let h = Harness::create_with_admission_seed(
         admin,
@@ -69,7 +80,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     );
     prepare_current_session(&h).await?;
     h.seed_pvp_target().await?;
-    if !matches!(case, 1 | 5 | 6) {
+    if !matches!(case, 1 | 5 | 6 | LOGOUT_WITH_COOLDOWN) {
         observer::admit(&h).await?;
     }
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -229,7 +240,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             .map_err(debug)?;
     }
     let target_session = GameSessionId::decode(&id(110)).map_err(debug)?;
-    let target_actor = if !matches!(case, 1 | 5 | 6) {
+    let target_actor = if !matches!(case, 1 | 5 | 6 | LOGOUT_WITH_COOLDOWN) {
         Some(observer::initialize(&deps, &owner).await?)
     } else {
         None
@@ -253,7 +264,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
     for current_session in [
         Some(session),
-        (!matches!(case, 1 | 5 | 6)).then_some(target_session),
+        (!matches!(case, 1 | 5 | 6 | LOGOUT_WITH_COOLDOWN)).then_some(target_session),
     ]
     .into_iter()
     .flatten()
@@ -346,6 +357,13 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                 .mana,
             before - 20
         );
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
+    if case == LOGOUT_WITH_COOLDOWN {
+        cast_and_logout(&owner, &h, admitted).await?;
         drop(owner);
         drop(authority);
         drop(seal);
@@ -654,6 +672,104 @@ async fn allow_location(
             })
         })
         .await?;
+    Ok(())
+}
+
+async fn cast_and_logout(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use super::autowalk_fixtures::{read, send};
+    use crate::durability::fresh_admission::FreshAdmissionStore;
+    use crate::foundation::GameSessionState;
+    use crate::gameplay_transport::composed_admission::{
+        CONDITION_RELEASE_PROBE, HolderCheckoutProbe,
+    };
+    use crate::gameplay_transport::connection::ConnectionEnd;
+    use oteryn_protocol_oteryn::logout::{
+        COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
+    };
+    use std::{cell::Cell, sync::Arc};
+
+    let actor = admitted.runtime_actor.ok_or("caster")?;
+    let session = admitted.game_session_id;
+    let (index, spell) = (1..=owner.spells.source_len())
+        .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
+        .filter_map(|i| owner.spells.indexed(i).map(|spell| (i, spell)))
+        .find(|(_, spell)| spell.name == "Light Healing")
+        .ok_or("Light Healing")?;
+    let cast = actor_spell::encode_spell_cast_intent(&actor_spell::SpellCastIntent {
+        spell: index,
+        target: actor_spell::SpellTarget::None,
+        aim_at_target: false,
+    });
+
+    let probe = Arc::new(HolderCheckoutProbe::default());
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let drive = async {
+        loop {
+            let frame = read(&mut client).await?;
+            if decode_wire_envelope(&frame)?.message_type() == MessageType::SnapshotCommit {
+                break;
+            }
+        }
+        let command_id = admitted.continuity.next_command_id;
+        send(
+            &mut client,
+            command_id,
+            actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+            &cast,
+        )
+        .await?;
+        let (status, payload) = super::quick_loot::command_reply(&mut client, command_id).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(
+            actor_spell::decode_spell_cast_result(&payload).map_err(debug)?,
+            actor_spell::SpellCastDisposition::Cast,
+        );
+        {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let state = states.get(&runtime, actor, session).ok_or("live caster")?;
+            let ready = state
+                .cooldowns
+                .spell_ready_at(&spell.key)
+                .ok_or("cooldown")?;
+            assert!(
+                ready.get() > owner.owner_now().get(),
+                "cooldown must be active"
+            );
+        }
+        let command_id = command_id + 1;
+        send(&mut client, command_id, COMMAND_TYPE_LOGOUT_INTENT, &[]).await?;
+        probe.contend(&harness.root).await?;
+        let (_, payload) = super::quick_loot::command_reply(&mut client, command_id).await?;
+        client.shutdown().await?;
+        assert_eq!(
+            decode_logout_result(&payload).map_err(debug)?,
+            LogoutResult::Accepted
+        );
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (end, result) = tokio::time::timeout(
+        Duration::from_secs(30),
+        join_two(
+            CONDITION_RELEASE_PROBE.scope(
+                Cell::new(Some(Arc::clone(&probe))),
+                serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS),
+            ),
+            drive,
+        ),
+    )
+    .await?;
+    result?;
+    assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)));
+    let store = FreshAdmissionStore::from_root(harness.root.clone());
+    assert_eq!(
+        store.current_session(session).await?.session_state(),
+        GameSessionState::Terminal
+    );
     Ok(())
 }
 

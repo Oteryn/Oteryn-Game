@@ -300,6 +300,16 @@
       "note": "NBFIX: closed logout refusal stage; no account, session or authentication material."
     },
     {
+      "event": "logout_release_retry",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stage"
+      ],
+      "codes": [],
+      "note": "Closed name of the release prerequisite that deferred logout before the terminal transaction."
+    },
+    {
       "event": "logout_unknown",
       "level": "info",
       "span": false,

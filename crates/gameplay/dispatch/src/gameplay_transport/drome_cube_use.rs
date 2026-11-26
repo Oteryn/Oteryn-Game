@@ -2,6 +2,7 @@
 //! Historical receipts precede live handles. Every new/retried write re-proves current
 //! authority; a saved PREPARE request is data, never a replacement for the current fences.
 
+use crate::durability::DurabilityError;
 use crate::durability::character_authority::SERVER_BUILD_ID;
 use crate::durability::item_loop_move::ItemLoopContent;
 use crate::durability::item_mint::TypedDefinitionRef;
@@ -24,6 +25,41 @@ pub(super) use gate::PendingCubeUse;
 #[path = "drome_cube_use/ports.rs"]
 mod ports;
 pub(in crate::gameplay_transport) use ports::{authority_methods, composed_methods};
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static CUBE_INVENTORY_CHECKOUT_PROBE: std::cell::Cell<Option<std::sync::Arc<super::composed_admission::HolderCheckoutProbe>>>;
+}
+
+async fn retry_read<T>(
+    budget: &AdmissionRetryBudget<'_>,
+    stage: &'static str,
+    mut read: impl AsyncFnMut() -> Result<T, ItemUseError>,
+) -> Result<T, ItemUseError> {
+    // Only a failed checkout is retryable. Preserve unknown receipt outcomes.
+    loop {
+        match read().await {
+            Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
+                if budget
+                    .retries_unavailable(super::AdmissionRefusal::Unavailable)
+                    .await =>
+            {
+                continue;
+            }
+            result => {
+                if matches!(
+                    result,
+                    Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
+                ) {
+                    super::operator_event(&format!(
+                        "event=session_durability_failed stage={stage} kind=holder_busy"
+                    ));
+                }
+                return result;
+            }
+        }
+    }
+}
 
 fn outcome(disposition: UseDisposition) -> UseOutcome {
     UseOutcome {
@@ -325,10 +361,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        #[cfg(test)]
+        let probe = CUBE_INVENTORY_CHECKOUT_PROBE.try_with(std::cell::Cell::take).ok().flatten();
+        #[cfg(test)]
+        if let Some(probe) = &probe {
+            probe.pause().await;
+        }
         let inventory = probe_read(deadline, &budget, "cube_inventory", async || {
-            self.root
-                .read_item_use_inventory(self.character, self.holder, fence)
-                .await
+            let result = self.root.read_item_use_inventory(self.character, self.holder, fence).await;
+            #[cfg(test)]
+            if matches!(result, Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable)))
+                && let Some(probe) = &probe
+            {
+                probe.blocked();
+            }
+            result
         })
         .await?;
         let Some(bag) = inventory.backpack.as_ref() else {
