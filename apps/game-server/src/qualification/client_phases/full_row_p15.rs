@@ -171,7 +171,7 @@ fn decode_result(bytes: &[u8]) -> Option<wire::TrainingResult> {
     Some(result)
 }
 
-fn carried_weapon(client: &DevClientSession) -> TestResult<(ItemHandle, u32, u16)> {
+pub(super) fn carried_weapon(client: &DevClientSession) -> TestResult<(ItemHandle, u32, u16)> {
     let index = provisioning::item_index()?;
     let reference = provisioning::item_reference(&index, EXERCISE_SWORD)?;
     let inventory = client.inventory().ok_or("inventory frame missing")?;
@@ -191,18 +191,18 @@ fn weapon_range(id: u32) -> u16 {
     }
 }
 
-fn dummy_distance(at: TilePos, dummy: TilePos) -> Option<u16> {
+pub(super) fn dummy_distance(at: TilePos, dummy: TilePos) -> Option<u16> {
     (at.floor == dummy.floor).then(|| at.x.abs_diff(dummy.x).max(at.y.abs_diff(dummy.y)))
 }
 
-struct DummyView {
+pub(super) struct DummyView {
     target: ActorPosition,
     origin: ActorPosition,
     tile: Option<MapTile>,
 }
 
 impl DummyView {
-    fn admitted(client: &mut DevClientSession, target: TilePos) -> TestResult<Self> {
+    pub(super) fn admitted(client: &mut DevClientSession, target: TilePos) -> TestResult<Self> {
         let target = ActorPosition {
             x: i32::from(target.x),
             y: i32::from(target.y),
@@ -249,7 +249,7 @@ impl DummyView {
         }
     }
 
-    async fn handle(&mut self, client: &mut DevClientSession) -> TestResult<ItemHandle> {
+    pub(super) async fn handle(&mut self, client: &mut DevClientSession) -> TestResult<ItemHandle> {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
         loop {
             self.observe(client);
@@ -281,7 +281,7 @@ impl DummyView {
     }
 }
 
-async fn walk_to_probe(
+pub(super) async fn walk_to_probe(
     client: &mut DevClientSession,
     world: &BundleWorld,
     path: &[StepDirection],
@@ -304,7 +304,7 @@ async fn walk_to_probe(
     Ok(())
 }
 
-fn dummy_positions(bytes: &[u8]) -> TestResult<std::collections::BTreeSet<TilePos>> {
+pub(super) fn dummy_positions(bytes: &[u8]) -> TestResult<std::collections::BTreeSet<TilePos>> {
     let mut positions = std::collections::BTreeSet::new();
     oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
         for tile in sector.tiles {
@@ -324,13 +324,13 @@ fn dummy_positions(bytes: &[u8]) -> TestResult<std::collections::BTreeSet<TilePo
     Ok(positions)
 }
 
-async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult {
-    use CommandStatus::{Accepted, Rejected};
-
-    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_P15_ACCOUNT").await?;
-    let clients = &dedicated.clients(clients);
+pub(super) async fn exercise_character(
+    clients: &SeamClients<'_>,
+    row: &str,
+    tag: u8,
+) -> TestResult<DevClientSession> {
     character_prep::declare_seeded(
-        "P15.full",
+        row,
         "exercise sword i28552",
         "exercise range and charge persistence",
     );
@@ -341,10 +341,19 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
     // transport and let fresh admission wait for the normal terminal release.
     drop(setup);
 
-    let mut client = connect_character(clients, 0xb5, 0).await?;
+    let client = connect_character(clients, tag, 0).await?;
     if client.join_snapshot().game_session_id == setup_session {
         return Err("exercise journey reused the fixture session".into());
     }
+    Ok(client)
+}
+
+async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult {
+    use CommandStatus::{Accepted, Rejected};
+
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_P15_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    let mut client = exercise_character(clients, "P15.full", 0xb5).await?;
     let initial = command(&mut client, wire::ExerciseIntent::Status, Accepted).await?;
     if initial.disposition != 2 || initial.revision == 0 {
         return Err(format!("STATUS reply={initial:?}; need=stopped durable state").into());

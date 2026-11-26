@@ -744,6 +744,44 @@ class CloudRunSummaryTests(unittest.TestCase):
                 self.assertEqual(len(verdicts), 1)
                 self.assertIn('status=PASS' if passed else 'status=FAIL', verdicts[0])
 
+    def test_p15_replay_requires_successful_node_capture_and_exact_test(self):
+        cloud = (HERE / "cloud_run.sh").read_text()
+        helper = cloud[cloud.index("selected_p15_replay()"):cloud.index('if [[ ${1:-} == --summarize ]]')]
+        world = (HERE.parents[2] / "apps/game-server/src/qualification/client_phases/world.rs").read_text()
+        index = re.search(r'e2e_row_selected\((\d+)\) \{\s*verdict::indexed\("P15\.client"', world)[1]
+        capture = "SEAM_EVIDENCE e2e_capture scenario=P15.client status=CAPTURED evidence=live\n"
+        command = helper + textwrap.dedent(r'''
+            OTERYN_E2E_ROW_BATCH="$5:1" selected_p15_replay rows || exit 3
+            cargo() {
+              [[ "$E2E_ALL_CAPTURE_DIR" == "$EXPECTED_CAPTURE" ]] || return 1
+              [[ "$*" == *'-- --ignored --exact' ]] || return 1
+              [[ "$REPLAY_RESULT" != unmatched ]] || return 0
+              printf 'test %s ... ok\n' "$7"
+            }
+            export EXPECTED_CAPTURE="$2"
+            replay_p15_capture "$1" "$2" "$3" "$4"
+            ''')
+        for node_log, node_status, replay_result, passed in [
+            (capture, 0, "pass", True),
+            (capture, 0, "unmatched", False),
+            (capture, 1, "pass", False),
+            ("", 0, "pass", False),
+        ]:
+            with self.subTest(node_log=node_log, node_status=node_status, replay_result=replay_result), tempfile.TemporaryDirectory() as temp:
+                log = Path(temp, "node.log")
+                log.write_text(node_log)
+                result = subprocess.run(
+                    ["bash", "-c", command, "test", str(log), temp,
+                     str(Path(temp, "client.log")), str(node_status), index],
+                    env={**os.environ, "REPLAY_RESULT": replay_result},
+                    capture_output=True,
+                )
+                self.assertEqual(result.returncode, 0 if passed else 1)
+                self.assertIn(
+                    f'e2e_all scenario=P15.client status={"PASS" if passed else "FAIL"} ',
+                    log.read_text(),
+                )
+
     def test_summary_uses_full_row_verdicts_and_limits_filtered_diagnostics(self):
         result = subprocess.run(
             ['bash', str(HERE / 'cloud_run.sh'), '--summarize',

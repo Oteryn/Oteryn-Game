@@ -5,13 +5,15 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{item_view::ItemHandle, loop_training as wire};
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P15_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+use super::full_row_p15::{
+    DummyView, carried_weapon, dummy_distance, dummy_positions, exercise_character, walk_to_probe,
+};
+use oteryn_dev_client::client_runtime::raw_feature::GatedCommandResult;
+use std::io::Write;
+
+fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    std::fs::File::create_new(root.join(name))?.write_all(bytes)?;
+    Ok(())
 }
 
 fn take_varint(bytes: &[u8], cursor: &mut usize) -> Option<u64> {
@@ -65,6 +67,7 @@ pub(super) fn training_reply(bytes: &[u8]) -> Option<wire::TrainingResult> {
 async fn exercise(
     client: &mut DevClientSession,
     intent: wire::ExerciseIntent,
+    expected_status: CommandStatus,
 ) -> TestResult<(Vec<u8>, wire::TrainingResult)> {
     let mut payload = vec![8];
     match intent {
@@ -77,7 +80,7 @@ async fn exercise(
         wire::ExerciseIntent::Status => payload.push(2),
         wire::ExerciseIntent::Stop => payload.push(3),
     }
-    let reply = client
+    let reply: GatedCommandResult = client
         .session_mut()
         .gated_command(
             wire::CAPABILITY_TRAINING_V1,
@@ -85,85 +88,33 @@ async fn exercise(
             &payload,
         )
         .await?;
-    if reply.status != CommandStatus::Accepted {
+    if reply.status != expected_status {
         return Err(format!("exercise command status={:?}", reply.status).into());
     }
     let decoded = training_reply(&reply.payload).ok_or("malformed training reply")?;
-    Ok((reply.payload, decoded))
-}
-
-fn carried_weapon(client: &DevClientSession) -> TestResult<ItemHandle> {
-    const WEAPONS: &[u32] = &[
-        28540, 28541, 28542, 28543, 28544, 28545, 28552, 28553, 28554, 28555, 28556, 28557, 44064,
-        44065, 50292, 50293,
-    ];
-    let index = provisioning::item_index()?;
-    let inventory = client.inventory().ok_or("inventory frame missing")?;
-    for &id in WEAPONS {
-        let reference = provisioning::item_reference(&index, id)?;
-        if let Some(item) = inventory
-            .entries
-            .iter()
-            .chain(&inventory.main_backpack)
-            .find(|item| item.item_definition_ref == reference)
-        {
-            return Ok(item.handle);
-        }
-    }
-    Err("no carried exercise weapon in inventory".into())
-}
-
-fn visible_dummy(client: &mut DevClientSession) -> TestResult<ItemHandle> {
-    let index = provisioning::item_index()?;
-    let refs: std::collections::BTreeSet<_> = (28558..=28565)
-        .map(|id| provisioning::item_reference(&index, id))
-        .collect::<TestResult<_>>()?;
-    let snapshot = client
-        .session_mut()
-        .gated_snapshot(oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
-        .ok_or("world-map snapshot missing")?;
-    let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload)
-        .map_err(|error| format!("world-map snapshot: {error:?}"))?;
-    map.tiles
-        .iter()
-        .flat_map(|tile| &tile.items)
-        .find_map(|item| match (item.definition, item.origin) {
-            (
-                oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference),
-                oteryn_protocol_oteryn::world_map::MapOrigin::Handle(handle),
-            ) if refs.contains(&reference) => Some(handle),
-            _ => None,
-        })
-        .ok_or_else(|| "no authored exercise dummy in the admitted map range".into())
-}
-
-fn dummy_positions(bytes: &[u8]) -> TestResult<std::collections::BTreeSet<TilePos>> {
-    let mut positions = std::collections::BTreeSet::new();
-    oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
-        for tile in sector.tiles {
-            if tile.items.iter().any(|item| {
-                let key = &manifest.palette[item.palette as usize].key;
-                (28558..=28565).any(|id| key == &format!("oteryn:item.tibia.i{id}"))
-            }) {
-                positions.insert(TilePos {
-                    x: tile.x,
-                    y: tile.y,
-                    floor: sector.floor,
-                });
-            }
-        }
-        Ok(())
-    })?;
-    Ok(positions)
+    let captured = serde_json::to_vec(&(
+        reply.command_id,
+        reply.server_sequence,
+        reply.status as u32,
+        reply.payload,
+    ))?;
+    Ok((captured, decoded))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_character(clients, 0x41, 0).await?;
-    let (status_bytes, status) = exercise(&mut client, wire::ExerciseIntent::Status).await?;
+    use CommandStatus::{Accepted, Rejected};
+
+    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("P15 capture directory missing")?;
+    let root = Path::new(&root);
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_P15_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    let mut client = exercise_character(clients, "P15.client", 0x41).await?;
+    let (status_bytes, status) =
+        exercise(&mut client, wire::ExerciseIntent::Status, Accepted).await?;
     if status.disposition != 2 || status.revision == 0 {
         return Err(format!("STATUS reply={status:?}").into());
     }
-    capture("p15-status.bin", &status_bytes);
+    capture(root, "p15-status.json", &status_bytes)?;
 
     let missing = ItemHandle::new(u64::MAX).ok_or("nonzero refusal handle")?;
     let (refused_bytes, refused) = exercise(
@@ -172,14 +123,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             weapon: missing,
             dummy: missing,
         },
+        Rejected,
     )
     .await?;
     if refused != wire::TrainingResult::REFUSED {
         return Err(format!("invalid START reply={refused:?}").into());
     }
-    capture("p15-refused.bin", &refused_bytes);
+    capture(root, "p15-refused.json", &refused_bytes)?;
 
-    let weapon = carried_weapon(&client)?;
+    let (weapon, _, _) = carried_weapon(&client)?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let positions = dummy_positions(&bytes)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -189,25 +141,39 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        positions.iter().any(|dummy| {
-            at.floor == dummy.floor && at.x.abs_diff(dummy.x).max(at.y.abs_diff(dummy.y)) <= 1
-        })
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| {
+        positions
+            .iter()
+            .any(|target| dummy_distance(at, *target) == Some(1))
     })
     .ok_or("no player-walkable route to an authored exercise dummy")?;
-    walk(&mut client, world, &path).await?;
-    let dummy = visible_dummy(&mut client)?;
-    let (running_bytes, running) =
-        exercise(&mut client, wire::ExerciseIntent::Start { weapon, dummy }).await?;
+    let nearby = path.iter().try_fold(from, |at, &direction| {
+        destination(world, at, direction).ok_or("planned exercise route has no landing")
+    })?;
+    let target = positions
+        .into_iter()
+        .find(|&target| dummy_distance(nearby, target) == Some(1))
+        .ok_or("planned destination has no adjacent exercise dummy")?;
+    let mut view = DummyView::admitted(&mut client, target)?;
+    walk_to_probe(&mut client, world, &path, &mut view).await?;
+    let dummy = view.handle(&mut client).await?;
+    let (running_bytes, running) = exercise(
+        &mut client,
+        wire::ExerciseIntent::Start { weapon, dummy },
+        Accepted,
+    )
+    .await?;
     if running.disposition != 1 || running.revision == 0 || running.charges == 0 {
         return Err(format!("START reply={running:?}").into());
     }
-    capture("p15-running.bin", &running_bytes);
-    let (stopped_bytes, stopped) = exercise(&mut client, wire::ExerciseIntent::Stop).await?;
+    capture(root, "p15-running.json", &running_bytes)?;
+    let (stopped_bytes, stopped) =
+        exercise(&mut client, wire::ExerciseIntent::Stop, Accepted).await?;
     if stopped.disposition != 2 || stopped.charges > running.charges {
         return Err(format!("STOP reply={stopped:?} after {running:?}").into());
     }
-    capture("p15-stopped.bin", &stopped_bytes);
+    capture(root, "p15-stopped.json", &stopped_bytes)?;
     let _ = client.session_mut().logout().await?;
     let expected = format!(
         "status_disposition={}\nstatus_charges={}\nrefused_disposition={}\nrunning_disposition={}\nrunning_charges={}\nstopped_disposition={}\nstopped_charges={}\n",
@@ -219,12 +185,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         stopped.disposition,
         stopped.charges
     );
-    capture("p15-expected.txt", expected.as_bytes());
+    capture(root, "p15-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";"))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P15.client status=CAPTURED evidence={expected}"
         )),

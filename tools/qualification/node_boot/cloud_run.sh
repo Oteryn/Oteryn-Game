@@ -41,7 +41,7 @@ summarize() {
 
   rows=$(awk '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=([[:alnum:]_.-]+\.full|P13\.client)$/ && $4 ~ /^status=(PASS|FAIL)$/ {
+      $3 ~ /^scenario=([[:alnum:]_.-]+\.full|P13\.client|P15\.client)$/ && $4 ~ /^status=(PASS|FAIL)$/ {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)
@@ -92,6 +92,33 @@ replay_loyalty_capture() {
     return 0
   fi
   printf 'SEAM_EVIDENCE e2e_all scenario=P13.client status=FAIL seconds=%s evidence=client-replay-failed\n' "$((SECONDS - started))" >>"$log"
+  return 1
+}
+
+selected_p15_replay() {
+  [[ "$1" == rows ]] || return 1
+  local batch=${OTERYN_E2E_ROW_BATCH:-} first length
+  [[ "$batch" =~ ^([0-9]{1,7}):([0-9]{1,7})$ ]] || return 1
+  first=$((10#${BASH_REMATCH[1]}))
+  length=$((10#${BASH_REMATCH[2]}))
+  local exercise_row=171 # client_phases/world.rs, P15.client
+  (( first <= exercise_row && exercise_row < first + length ))
+}
+
+replay_p15_capture() {
+  local log=$1 capture_dir=$2 replay_log=$3 status=$4
+  local test=play::feature_0054_training::protocol::e2e_p15::e2e_p15_replays_exercise_training_replies
+  local started=$SECONDS
+  if grep -q '^SEAM_EVIDENCE e2e_all scenario=P15\.client status=FAIL ' "$log"; then
+    return 1
+  fi
+  if [[ "$status" == 0 ]] && grep -q '^SEAM_EVIDENCE e2e_capture scenario=P15\.client status=CAPTURED ' "$log" &&
+    E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client --lib "$test" -- --ignored --exact >"$replay_log" 2>&1 &&
+    grep -Fqx "test $test ... ok" "$replay_log"; then
+    printf 'SEAM_EVIDENCE e2e_all scenario=P15.client status=PASS seconds=%s evidence=live-capture-replayed\n' "$((SECONDS - started))" >>"$log"
+    return 0
+  fi
+  printf 'SEAM_EVIDENCE e2e_all scenario=P15.client status=FAIL seconds=%s evidence=client-replay-failed\n' "$((SECONDS - started))" >>"$log"
   return 1
 }
 
@@ -148,7 +175,15 @@ for group in "$@"; do
   if selected_loyalty_replay "$group"; then
     capture_dir=$(mktemp -d "$work_dir/$index-loyalty.XXXXXX") || blocked work_dir_unavailable
   fi
+  p15_capture_dir=
+  if selected_p15_replay "$group"; then
+    p15_capture_dir=$capture_dir
+    if [[ -z "$p15_capture_dir" ]]; then
+      p15_capture_dir=$(mktemp -d "$work_dir/$index-p15.XXXXXX") || blocked work_dir_unavailable
+    fi
+  fi
   (
+    [[ -z "$p15_capture_dir" ]] || export E2E_ALL_CAPTURE_DIR="$p15_capture_dir"
     [[ -z "$capture_dir" ]] || export E2E_ALL_CAPTURE_DIR="$capture_dir"
     export NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group"
     exec bash tools/qualification/node_boot/run.sh
@@ -157,6 +192,9 @@ for group in "$@"; do
   wait "$child_pid" || status=$?
   child_pid=
   if [[ -n "$capture_dir" ]] && ! replay_loyalty_capture "$log" "$capture_dir" "$work_dir/$index-loyalty.log"; then
+    status=1
+  fi
+  if [[ -n "$p15_capture_dir" ]] && ! replay_p15_capture "$log" "$p15_capture_dir" "$work_dir/$index-p15.log" "$status"; then
     status=1
   fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1

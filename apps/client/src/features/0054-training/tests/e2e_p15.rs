@@ -3,8 +3,8 @@
 //! The consumer is `apply` in `apps/client/src/features/0054-training/protocol.rs`; requests are
 //! built by the production `command` so the reducer sees the exact kind the app sends.
 use super::*;
-use oteryn_client_ui::training::panel_text;
 use oteryn_client_runtime::raw_feature::{CommandStatus, GatedCommandResult};
+use oteryn_client_ui::training::panel_text;
 
 fn value(expected: &str, key: &str) -> Result<u32, Box<dyn std::error::Error>> {
     expected
@@ -16,24 +16,36 @@ fn value(expected: &str, key: &str) -> Result<u32, Box<dyn std::error::Error>> {
 }
 
 struct Replies {
-    status: Vec<u8>,
-    refused: Vec<u8>,
-    running: Vec<u8>,
-    stopped: Vec<u8>,
+    status: GatedCommandResult,
+    refused: GatedCommandResult,
+    running: GatedCommandResult,
+    stopped: GatedCommandResult,
     expected: String,
 }
 
-fn replies() -> Result<Replies, Box<dyn std::error::Error>> {
-    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let root = std::path::Path::new(&root);
-        return Ok(Replies {
-            status: std::fs::read(root.join("p15-status.bin"))?,
-            refused: std::fs::read(root.join("p15-refused.bin"))?,
-            running: std::fs::read(root.join("p15-running.bin"))?,
-            stopped: std::fs::read(root.join("p15-stopped.bin"))?,
-            expected: std::fs::read_to_string(root.join("p15-expected.txt"))?,
-        });
+fn captured_replies() -> Result<Replies, Box<dyn std::error::Error>> {
+    let root =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("missing P15 live capture directory")?;
+    let root = std::path::Path::new(&root);
+    let replies = Replies {
+        status: captured_result(root, "p15-status.json")?,
+        refused: captured_result(root, "p15-refused.json")?,
+        running: captured_result(root, "p15-running.json")?,
+        stopped: captured_result(root, "p15-stopped.json")?,
+        expected: std::fs::read_to_string(root.join("p15-expected.txt"))?,
+    };
+    for (before, after) in [
+        (&replies.status, &replies.refused),
+        (&replies.refused, &replies.running),
+        (&replies.running, &replies.stopped),
+    ] {
+        assert!(after.command_id > before.command_id);
+        assert!(after.server_sequence > before.server_sequence);
     }
+    Ok(replies)
+}
+
+fn fixture_replies() -> Result<Replies, Box<dyn std::error::Error>> {
     let encode = |disposition, revision, charges| {
         adapter::loop_training::encode_training_result(adapter::loop_training::TrainingResult {
             disposition,
@@ -44,11 +56,33 @@ fn replies() -> Result<Replies, Box<dyn std::error::Error>> {
         .map_err(|error| format!("{error:?}"))
     };
     Ok(Replies {
-        status: encode(2, 5, 500)?,
-        refused: encode(4, 0, 0)?,
-        running: encode(1, 6, 500)?,
-        stopped: encode(2, 7, 497)?,
+        status: result(CommandStatus::Accepted, &encode(2, 5, 500)?),
+        refused: result(CommandStatus::Rejected, &encode(4, 0, 0)?),
+        running: result(CommandStatus::Accepted, &encode(1, 6, 500)?),
+        stopped: result(CommandStatus::Accepted, &encode(2, 7, 497)?),
         expected: "status_disposition=2\nstatus_charges=500\nrefused_disposition=4\nrunning_disposition=1\nrunning_charges=500\nstopped_disposition=2\nstopped_charges=497\n".into(),
+    })
+}
+
+fn captured_result(
+    root: &std::path::Path,
+    name: &str,
+) -> Result<GatedCommandResult, Box<dyn std::error::Error>> {
+    let (command_id, server_sequence, status, payload): (u64, u64, u32, Vec<u8>) =
+        serde_json::from_slice(&std::fs::read(root.join(name))?)?;
+    if command_id == 0 || server_sequence == 0 {
+        return Err(format!("invalid captured sequence in {name}").into());
+    }
+    let status = match status {
+        1 => CommandStatus::Accepted,
+        2 => CommandStatus::Rejected,
+        _ => return Err(format!("unexpected captured command status in {name}").into()),
+    };
+    Ok(GatedCommandResult {
+        command_id,
+        server_sequence,
+        status,
+        payload,
     })
 }
 
@@ -78,8 +112,25 @@ fn summary(charges: u32) -> String {
 }
 
 #[test]
+fn p15_applies_fixture_exercise_training_replies() -> Result<(), Box<dyn std::error::Error>> {
+    assert_training_replies(fixture_replies()?)
+}
+
+#[test]
+#[ignore = "requires a fresh P15.client live capture"]
 fn e2e_p15_replays_exercise_training_replies() -> Result<(), Box<dyn std::error::Error>> {
-    let replies = replies()?;
+    assert_training_replies(captured_replies()?)
+}
+
+fn assert_training_replies(replies: Replies) -> Result<(), Box<dyn std::error::Error>> {
+    assert_eq!(replies.status.status, CommandStatus::Accepted);
+    assert_eq!(replies.refused.status, CommandStatus::Rejected);
+    assert_eq!(replies.running.status, CommandStatus::Accepted);
+    assert_eq!(replies.stopped.status, CommandStatus::Accepted);
+    assert_eq!(
+        adapter::training_result(&replies.refused.payload),
+        Some(wire::TrainingResult::REFUSED)
+    );
     let panel = pending();
     let start = command(&panel, Intent::Start)?;
     assert_eq!((start.capability, start.kind), (54, 67));
@@ -93,8 +144,11 @@ fn e2e_p15_replays_exercise_training_replies() -> Result<(), Box<dyn std::error:
     let status_charges = value(&replies.expected, "status_charges")?;
     assert_eq!(value(&replies.expected, "status_disposition")?, 2);
     let mut stopped_status = panel.clone();
-    apply(&mut stopped_status, &status, &result(CommandStatus::Accepted, &replies.status));
-    assert_eq!(stopped_status.feedback, "Exercise training stopped or settled");
+    apply(&mut stopped_status, &status, &replies.status);
+    assert_eq!(
+        stopped_status.feedback,
+        "Exercise training stopped or settled"
+    );
     assert_eq!(stopped_status.charges, Some(status_charges));
     assert_eq!(stopped_status.pool_seconds, Some(0));
     assert_eq!(stopped_status.summary, summary(status_charges));
@@ -102,7 +156,7 @@ fn e2e_p15_replays_exercise_training_replies() -> Result<(), Box<dyn std::error:
     // START with a missing weapon or dummy is refused and leaves the panel without charges.
     assert_eq!(value(&replies.expected, "refused_disposition")?, 4);
     let mut refused = panel.clone();
-    apply(&mut refused, &start, &result(CommandStatus::Accepted, &replies.refused));
+    apply(&mut refused, &start, &replies.refused);
     assert!(!refused.pending);
     assert_eq!(refused.feedback, "The server refused the training request");
     assert_eq!((refused.charges, refused.pool_seconds), (None, None));
@@ -112,13 +166,16 @@ fn e2e_p15_replays_exercise_training_replies() -> Result<(), Box<dyn std::error:
     let running_charges = value(&replies.expected, "running_charges")?;
     assert_eq!(value(&replies.expected, "running_disposition")?, 1);
     let mut running = panel.clone();
-    apply(&mut running, &start, &result(CommandStatus::Accepted, &replies.running));
+    apply(&mut running, &start, &replies.running);
     assert_eq!(running.feedback, "Exercise training is running");
     assert_eq!(running.charges, Some(running_charges));
     assert_eq!(running.summary, summary(running_charges));
     assert_eq!(
         panel_text(&running),
-        format!("Training\r\n\r\n{}\r\nExercise training is running", summary(running_charges))
+        format!(
+            "Training\r\n\r\n{}\r\nExercise training is running",
+            summary(running_charges)
+        )
     );
 
     // STOP settles the run; the charges never exceed the running count.
@@ -127,15 +184,18 @@ fn e2e_p15_replays_exercise_training_replies() -> Result<(), Box<dyn std::error:
     assert!(stopped_charges <= running_charges);
     let mut stopped = running.clone();
     stopped.pending = true;
-    apply(&mut stopped, &stop, &result(CommandStatus::Accepted, &replies.stopped));
+    apply(&mut stopped, &stop, &replies.stopped);
     assert_eq!(stopped.feedback, "Exercise training stopped or settled");
     assert_eq!(stopped.charges, Some(stopped_charges));
     assert_eq!(stopped.summary, summary(stopped_charges));
 
     // A rejected status and malformed payloads leave the charges and summary as they were.
     for (code, payload) in [
-        (CommandStatus::Rejected, replies.running.as_slice()),
-        (CommandStatus::Accepted, &replies.running[..replies.running.len() - 1]),
+        (CommandStatus::Rejected, replies.running.payload.as_slice()),
+        (
+            CommandStatus::Accepted,
+            &replies.running.payload[..replies.running.payload.len() - 1],
+        ),
         (CommandStatus::Accepted, &[]),
     ] {
         let mut invalid = running.clone();
@@ -151,7 +211,7 @@ fn e2e_p15_replays_exercise_training_replies() -> Result<(), Box<dyn std::error:
         ..panel
     };
     let before = other.clone();
-    apply(&mut other, &start, &result(CommandStatus::Accepted, &replies.running));
+    apply(&mut other, &start, &replies.running);
     assert_eq!(other, before);
     Ok(())
 }
