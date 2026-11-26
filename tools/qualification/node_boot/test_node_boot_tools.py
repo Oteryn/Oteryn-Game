@@ -14,6 +14,7 @@ import textwrap
 import time
 import tomllib
 import unittest
+from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parent
 # NODE_BOOT_RUN_SH runs the run.sh tests against another copy (a saved baseline).
@@ -745,6 +746,41 @@ class ClientReplayTests(unittest.TestCase):
 
 
 class CloudRunSummaryTests(unittest.TestCase):
+    def test_every_registered_selector_maps_to_a_verdict(self):
+        replay = load('client_replay')
+        source = (replay.PHASES / 'world.rs').read_text()
+        indices = re.findall(r'\be2e_row_selected\s*\(\s*(\d+)\s*\)', source)
+        self.assertTrue(indices)
+        self.assertEqual(len(set(indices)), len(indices))
+        selected, registered = replay.selected_rows('all')
+        self.assertEqual(selected, registered)
+        self.assertEqual(len(registered), len(indices))
+        for index in indices:
+            with self.subTest(index=index):
+                rows, _ = replay.selected_rows(f'{index}:1')
+                self.assertEqual(len(rows), 1)
+                scenario, = rows
+                self.assertIsNotNone(replay.SERVER_ROW.match(
+                    f'SEAM_EVIDENCE e2e_all scenario={scenario} status=PASS'
+                ))
+
+    def test_legacy_greet_ten_selector_requires_one_verdict(self):
+        replay = load('client_replay')
+        with tempfile.TemporaryDirectory() as tmp, patch.object(replay, 'PHASES', Path(tmp)):
+            world = Path(tmp, 'world.rs')
+            world.write_text('if e2e_row_selected(306) {\n'
+                             '    full_e2ef20::greet_ten(clients, world, &metadata.npcs).await;\n'
+                             '}\n')
+            log = Path(tmp, 'rows.log')
+            line = 'SEAM_EVIDENCE e2e_all scenario=NPC-GREET-10.full status=FAIL\n'
+            for count in (0, 1, 2):
+                with self.subTest(count=count):
+                    log.write_text(line * count)
+                    self.assertEqual(replay.main(log, '306:1', validate=True), int(count != 1))
+            world.write_text(world.read_text().replace('::greet_ten', '::unknown'))
+            with self.assertRaisesRegex(RuntimeError, 'unmapped row selector'):
+                replay.selected_rows('306:1')
+
     def test_cloud_uses_first_eligible_work_parent(self):
         cloud = (HERE / "cloud_run.sh").read_text()
         helper = cloud[cloud.index("select_work_parent()"):cloud.index("summarize()")]
