@@ -3,10 +3,9 @@
 //! 1. Admit the provisioned node-boot character and read its native appearance catalogue. Send an
 //!    APPEARANCE_CHANGE selecting an earned outfit with new colours and any earned addons;
 //!    expect Accepted/Committed plus a newer catalogue/binding showing that exact selection.
-//! 2. Send APPEARANCE_CHANGE for an unearned addon (or mount when no addon refusal candidate is
-//!    served); expect Rejected and no catalogue selection/root-revision change.
-//! 3. Loot a slingshot from a real hunt, walk beside an authored bear, and send the native
-//!    USE-with-creature command. A refused tame can be retried after earning another slingshot.
+//! 2. Send APPEARANCE_CHANGE for an unearned addon; expect Rejected and no catalogue selection/root-revision change.
+//! 3. Use the outfit and addon items on the dedicated account, then walk beside an authored
+//!    bear and send the slingshot USE-with-creature command.
 //! 4. After a successful tame, select the newly earned mount with APPEARANCE_CHANGE; expect
 //!    Accepted/Committed and an own-actor appearance mapping carrying the new selection revision.
 //! 5. Log out, freshly admit the same character, and re-read the catalogue/binding; expect the
@@ -83,10 +82,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     .await;
     row.finish(match result {
         Ok(result) => result,
-        Err(_) => Err(
-            "step=deadline_observed=timeout_360s_need=reachable-hunt-tame-and-appearance-lifecycle"
-                .into(),
-        ),
+        Err(_) => {
+            Err("step=deadline_observed=timeout_360s_need=tame-and-appearance-lifecycle".into())
+        }
     });
 }
 
@@ -264,7 +262,7 @@ async fn outfit_and_refusal(
     let mut forbidden = selection.clone();
     forbidden.addons = unearned_addon(permitted);
     if forbidden.addons == 0 {
-        forbidden.mount_key = Some(WAR_BEAR.into());
+        return Err("step=unearned-refusal need=a-locked-addon".into());
     }
     let after = state.catalogue.clone();
     let refusal = appearance::Change {
@@ -297,13 +295,14 @@ async fn outfit_and_refusal(
 
 const SLINGSHOT: u32 = 5907;
 const WAR_BEAR: &str = "oteryn:content.mount.war_bear";
-const HUNTER: &str = "oteryn:creature.hunter";
+const OUTFIT_PARTS: [u32; 2] = [16252, 16253];
+const SLINGSHOTS: u32 = 8;
 const BEAR: &str = "oteryn:creature.bear";
 
 fn carried(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
     let inventory = client
         .inventory()
-        .ok_or("step=taming-loot need=inventory-snapshot")?;
+        .ok_or("step=inventory need=inventory-snapshot")?;
     Ok(inventory
         .entries
         .iter()
@@ -332,7 +331,6 @@ async fn approach_taming_spawn(
             })
         })
         .collect();
-    // The Hunter woods are outside the shared local route radius from Thais.
     let path = find_route(
         from,
         |at| {
@@ -354,111 +352,72 @@ async fn approach_taming_spawn(
     travel_to_spawn(client, world, spawns, creature).await
 }
 
-async fn hunt_hunter(client: &mut DevClientSession) -> TestResult {
-    use oteryn_dev_client::{EntityDetail, EntityKind};
-    let here = client.world_spatial().actor_position;
-    let entities = client
-        .world_entities()
-        .ok_or("step=hunter-loot need=live-entities")?;
-    let target = entities
+async fn earn_addon(
+    row: &mut Row,
+    client: &mut DevClientSession,
+    state: &mut appearance::Snapshot,
+) -> TestResult<String> {
+    const OUTFIT: &str = "oteryn:content.outfit.soil_guardian_outfits";
+    if state
+        .catalogue
+        .outfits
         .iter()
-        .find(|entry| {
-            entry.kind == EntityKind::Creature
-                && entry.position.floor == here.floor
-                && entry
-                    .position
-                    .x
-                    .abs_diff(here.x)
-                    .max(entry.position.y.abs_diff(here.y))
-                    <= 1
-                && entry
-                    .display_name
-                    .as_ref()
-                    .and_then(|name| name.as_str().ok())
-                    .is_some_and(|name| name.eq_ignore_ascii_case("Hunter"))
+        .any(|outfit| outfit.key == OUTFIT)
+    {
+        return Err("step=addon-acquisition observed=outfit-already-earned".into());
+    }
+    let item_index = provisioning::item_index()?;
+    for (item, expected_mask) in OUTFIT_PARTS.into_iter().zip([0, 1]) {
+        let reference = provisioning::item_reference(&item_index, item)?;
+        if carried(client, reference)? != 1 {
+            return Err(format!("step=addon-acquisition item={item} need=one-fixture-item").into());
+        }
+        let payload = world_object::encode_item_use_intent(&world_object::UseIntent {
+            target: world_object::UseTarget::ItemByDefinition(reference),
+            use_with: None,
+            use_with_map_item: None,
+            use_with_position: None,
         })
-        .copied()
-        .ok_or("step=hunter-loot need=adjacent-live-Hunter")?;
-    let corpses_before: std::collections::BTreeSet<_> = entities
-        .iter()
-        .filter(|e| e.kind == EntityKind::Corpse)
-        .map(|entry| entry.entity)
-        .collect();
-    client.take_events();
-    let attack = client
-        .session_mut()
-        .attack_target(Some(&target.entity))
-        .await?;
-    if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
-        return Err(format!("hunt attack: {attack:?}").into());
-    }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
-    let mut removed = false;
-    let mut last_position = target.position;
-    let corpse = loop {
-        client.service_liveness(Duration::from_millis(100)).await?;
-        for event in client.take_events() {
-            if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event {
-                if let Some(updated) = delta
-                    .value
-                    .update
-                    .iter()
-                    .find(|entry| entry.entity == target.entity)
-                {
-                    last_position = updated.position;
-                }
-                removed |= delta.value.leave.contains(&target.entity);
-            }
-        }
-        if let Some(corpse) = client
-            .world_entities()
-            .and_then(|entities| {
-                entities.iter().find(|entry| {
-                    entry.kind == EntityKind::Corpse
-                        && entry.position == last_position
-                        && !corpses_before.contains(&entry.entity)
-                })
-            })
-            .copied()
+        .map_err(|error| format!("outfit item USE encode: {error:?}"))?;
+        let reply = client.session_mut().world_context_use(&payload).await?;
+        let (disposition, _) = world_object::decode_use_result_with_gate(&reply.payload)
+            .map_err(|error| format!("outfit item USE reply: {error:?}"))?;
+        if reply.status != CommandStatus::Accepted
+            || disposition != world_object::UseDisposition::Committed
         {
-            break corpse;
+            return Err(format!(
+                "step=addon-acquisition item={item} observed={:?}/{disposition:?}",
+                reply.status
+            )
+            .into());
         }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("hunt produced no corpse before deadline".into());
-        }
-    };
-    if !removed
-        || client
-            .world_entities()
-            .is_some_and(|entities| entities.get(&target.entity).is_some())
-    {
-        return Err("hunt did not observe damage and target removal".into());
-    }
-    let EntityDetail::Object {
-        item_handle: Some(handle),
-        ..
-    } = corpse.detail
-    else {
-        return Err("hunt corpse has no server-issued item handle".into());
-    };
-    let used = client.use_item(handle).await?;
-    if used.status != CommandStatus::Accepted
-        || used.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
-    {
-        return Err("hunt corpse USE refused".into());
-    }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    while client
-        .open_container()
-        .is_none_or(|view| view.container_handle != Some(handle))
-    {
-        client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
-        if tokio::time::Instant::now() >= deadline {
-            return Err("hunt corpse container delta missing".into());
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            for event in client.take_events() {
+                if let SessionEvent::Appearance(delta) = event {
+                    apply_appearance(state, delta.value);
+                }
+            }
+            let actual_mask = state
+                .catalogue
+                .outfits
+                .iter()
+                .find(|outfit| outfit.key == OUTFIT)
+                .map(|outfit| outfit.permitted_addons);
+            if actual_mask == Some(expected_mask) && carried(client, reference)? == 0 {
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("step=addon-acquisition item={item} observed={actual_mask:?} need=consumed-and-mask-{expected_mask}").into());
+            }
+            client.service_liveness(Duration::from_millis(25)).await?;
         }
     }
-    Ok(())
+    row.pass(
+        "addon-acquisition",
+        format!("outfit={OUTFIT} earned-mask=1"),
+    );
+    Ok(OUTFIT.into())
 }
 
 async fn tame_war_bear(
@@ -466,7 +425,7 @@ async fn tame_war_bear(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     state: &mut appearance::Snapshot,
-) -> TestResult {
+) -> TestResult<u64> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let spawns = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?.spawns;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -483,84 +442,14 @@ async fn tame_war_bear(
         );
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(300);
-    let mut attempt = 0_u32;
-    let mut previous_hunt = None;
-    let creatures = &spawns.creatures;
-    while tokio::time::Instant::now() < deadline {
-        let here = tile(client.world_spatial().actor_position)?;
-        if let Some(site) = previous_hunt
-            && here == site
-        {
-            let path = route(world, here, |at| {
-                at.floor == here.floor && at.x.abs_diff(here.x).max(at.y.abs_diff(here.y)) >= 12
-            })
-            .ok_or("step=hunter-loot need=walkable-retreat-for-Hunter-respawn")?;
-            walk(client, world, &path).await?;
-            let delay = spawns
-                .sources
-                .iter()
-                .flat_map(|source| {
-                    source.points.iter().filter(move |point| {
-                        source.floor == site.floor
-                            && creatures
-                                .get(point.creature as usize)
-                                .is_some_and(|creature| creature.key == HUNTER)
-                            && site.x.abs_diff(point.x).max(site.y.abs_diff(point.y)) <= 4
-                    })
-                })
-                .map(|point| point.respawn_ms)
-                .max()
-                .ok_or("step=hunter-loot need=authored-respawn-for-Hunter")?;
-            let wait = Duration::from_millis(u64::from(delay));
-            if tokio::time::Instant::now() + wait >= deadline {
-                break;
-            }
-            client.service_liveness(wait).await?;
-            client.take_events();
+    for attempt in 1..=20 {
+        if tokio::time::Instant::now() >= deadline {
+            break;
         }
-        let before = carried(client, reference)?;
-        approach_taming_spawn(client, world, &spawns, HUNTER).await.map_err(|error| {
-            verdict::context(format!("step=taming-loot need=reachable-hunter-for-slingshot-i5907 observed={error}"), error)
-        })?;
-        hunt_hunter(client).await?;
-        previous_hunt = Some(tile(client.world_spatial().actor_position)?);
-        if carried(client, reference)? == before {
-            let item = client.open_container().and_then(|view| {
-                view.entries
-                    .iter()
-                    .find(|entry| entry.item_definition_ref == reference)
-            });
-            let Some(item) = item else {
-                evidence("S06_CHECK step=hunter-loot observed=empty-slingshot-roll retry=true");
-                continue;
-            };
-            let moved = client
-                .move_item(&oteryn_dev_client::ItemMoveIntent {
-                    source: item.handle,
-                    destination: oteryn_dev_client::ItemMoveDestination::MainBackpack,
-                })
-                .await?;
-            if moved.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved {
-                return Err(format!(
-                    "step=taming-loot observed={moved:?} need=slingshot-i5907-in-backpack"
-                )
-                .into());
-            }
+        let funded = carried(client, reference)?;
+        if funded == 0 {
+            return Err("step=taming-attempt need=remaining-fixture-slingshot".into());
         }
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-        let funded = loop {
-            let count = carried(client, reference)?;
-            if count > before {
-                break count;
-            }
-            if tokio::time::Instant::now() >= deadline {
-                return Err(
-                    "step=taming-loot observed=no-inventory-increase need=looted-slingshot-i5907"
-                        .into(),
-                );
-            }
-            client.service_liveness(Duration::from_millis(25)).await?;
-        };
         approach_taming_spawn(client, world, &spawns, BEAR)
             .await
             .map_err(|error| {
@@ -569,7 +458,6 @@ async fn tame_war_bear(
                     error,
                 )
             })?;
-        attempt += 1;
         let here = client.world_spatial().actor_position;
         let target = client
             .world_entities()
@@ -612,9 +500,8 @@ async fn tame_war_bear(
             .into());
         }
         let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-        let mut success_seen = false;
+        let mut outcome = None;
         loop {
-            let mut failed = false;
             for event in client.take_events() {
                 match event {
                     SessionEvent::Appearance(delta) => apply_appearance(state, delta.value),
@@ -623,34 +510,49 @@ async fn tame_war_bear(
                             delta.value
                             && speaker_name == "Game"
                         {
-                            success_seen |= text == "You have tamed the war bear.";
-                            failed |= matches!(
-                                text.as_str(),
-                                "The bear ran away."
-                                    | "Oh no! The slingshot broke."
-                                    | "The bear is trying to hit you with its claws."
-                            );
+                            let observed = match text.as_str() {
+                                "You have tamed the war bear." => Some((true, true, true)),
+                                "The bear ran away." => Some((false, true, false)),
+                                "Oh no! The slingshot broke." => Some((false, false, true)),
+                                "The bear is trying to hit you with its claws." => {
+                                    Some((false, true, true))
+                                }
+                                _ => None,
+                            };
+                            if let Some(observed) = observed
+                                && outcome.replace(observed).is_some()
+                            {
+                                return Err(
+                                    "step=taming-attempt observed=multiple-outcome-messages".into(),
+                                );
+                            }
                         }
                     }
                     _ => {}
                 }
             }
-            if failed {
-                break;
-            }
             let unlocked = state.catalogue.mounts.iter().any(|mount| mount == WAR_BEAR);
             let removed = client
                 .world_entities()
                 .is_some_and(|entities| entities.get(&target).is_none());
-            if success_seen && unlocked && removed && carried(client, reference)? + 1 == funded {
-                row.pass(
-                    "taming-attempt",
-                    format!(
-                        "war-bear-unlocked attempt={attempt} sequence={}",
-                        reply.server_sequence
-                    ),
-                );
-                return Ok(());
+            if let Some((success, expect_removed, consumed)) = outcome
+                && (unlocked, removed, carried(client, reference)?)
+                    == (success, expect_removed, funded - u64::from(consumed))
+            {
+                if success {
+                    row.pass(
+                        "taming-attempt",
+                        format!(
+                            "war-bear-unlocked attempt={attempt} sequence={}",
+                            reply.server_sequence
+                        ),
+                    );
+                    return Ok(funded - 1);
+                }
+                evidence(&format!(
+                    "S06_TAMING_OUTCOME attempt={attempt} removed={removed} consumed={consumed} unlocked=false"
+                ));
+                break;
             }
             if tokio::time::Instant::now() >= deadline {
                 return Err(format!("step=taming-attempt need=war-bear-unlock-bear-removal-and-slingshot-consumption observed=unlock-{unlocked}-removed-{removed}").into());
@@ -658,11 +560,44 @@ async fn tame_war_bear(
             client.service_liveness(Duration::from_millis(25)).await?;
         }
     }
-    Err("step=hunter-loot-or-taming observed=acquisition-deadline need=looted-slingshot-and-successful-war-bear-tame".into())
+    Err(
+        "step=taming-attempt observed=attempt-budget-exhausted need=successful-war-bear-tame"
+            .into(),
+    )
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xb6).await?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_S06_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    character_prep::declare_seeded(
+        "S06.full",
+        "slingshots,soil-guardian-outfit-parts,premium",
+        "appearance and taming actions",
+    );
+    let mut client = connect_character(clients, 0xb6, 0).await?;
+    character_prep::grant_premium(&client).await?;
+    for (item, count) in [
+        (SLINGSHOT, SLINGSHOTS),
+        (OUTFIT_PARTS[0], 1),
+        (OUTFIT_PARTS[1], 1),
+    ] {
+        character_prep::grant_item(&client, item, count).await?;
+    }
+    let original = client.join_snapshot().game_session_id;
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err("step=fixture observed=logout-refused".into());
+    }
+    wait_character_released(clients, 0).await?;
+    client = connect_character(clients, 0xb6, 0).await?;
+    if client.join_snapshot().game_session_id == original
+        || carried(
+            &client,
+            provisioning::item_reference(&provisioning::item_index()?, SLINGSHOT)?,
+        )? != u64::from(SLINGSHOTS)
+    {
+        return Err("step=fixture need=fresh-admission-with-exact-slingshot-count".into());
+    }
     if !client
         .selected_capabilities()
         .contains(&appearance::CAPABILITY_APPEARANCE_V1)
@@ -672,25 +607,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         );
     }
     let mut state = snapshot(&mut client)?;
-    let admission_catalogue = state.catalogue.clone();
     let selected = outfit_and_refusal(row, &mut client, &mut state).await?;
-    tame_war_bear(row, &mut client, clients, &mut state).await?;
+    let earned_outfit = earn_addon(row, &mut client, &mut state).await?;
+    let remaining_slingshots = tame_war_bear(row, &mut client, clients, &mut state).await?;
 
     let mount = WAR_BEAR.to_owned();
-    let mut mounted = selected;
-    mounted.mount_key = Some(mount.clone());
-    let original_addons = admission_catalogue
-        .outfits
-        .iter()
-        .find(|outfit| outfit.key == mounted.outfit_key)
-        .map_or(0, |outfit| outfit.permitted_addons);
-    let earned_addons = state
-        .catalogue
-        .outfits
-        .iter()
-        .find(|outfit| outfit.key == mounted.outfit_key)
-        .map_or(0, |outfit| outfit.permitted_addons & !original_addons);
-    mounted.addons |= earned_addons;
+    let mounted = appearance::Selection {
+        outfit_key: earned_outfit,
+        colours: selected.colours,
+        addons: 1,
+        mount_key: Some(mount.clone()),
+    };
     let request = appearance::Change {
         context: state.catalogue.context,
         expected_root_revision: state.catalogue.root_revision,
@@ -714,24 +641,37 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "mount-select",
         format!("committed_revision={committed} selected_revision={selected_revision} sequence={sequence}"),
     );
-    if earned_addons != 0 {
-        row.pass(
-            "addon-acquisition",
-            format!("earned-and-selected-mask={earned_addons}"),
-        );
-    }
     let previous = client.join_snapshot().game_session_id;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=fresh-admission observed=logout-refused".into());
     }
-    let mut fresh = connect_world(clients, 0xb7).await?;
+    wait_character_released(clients, 0).await?;
+    let mut fresh = connect_character(clients, 0xb7, 0).await?;
     let persisted = snapshot(&mut fresh)?;
     let persisted_binding = own_binding(&fresh, &persisted)?;
+    let item_index = provisioning::item_index()?;
+    if carried(
+        &fresh,
+        provisioning::item_reference(&item_index, SLINGSHOT)?,
+    )? != remaining_slingshots
+    {
+        return Err("step=fresh-admission need=persisted-slingshot-consumption".into());
+    }
+    for item in OUTFIT_PARTS {
+        if carried(&fresh, provisioning::item_reference(&item_index, item)?)? != 0 {
+            return Err(
+                format!("step=fresh-admission item={item} need=persisted-consumption").into(),
+            );
+        }
+    }
     if fresh.join_snapshot().game_session_id == previous
         || persisted.catalogue.selected.as_ref().map(|s| &s.selection) != Some(&mounted)
         || !persisted.catalogue.mounts.contains(&mount)
+        || !persisted.catalogue.outfits.iter().any(|outfit| {
+            outfit.key == mounted.outfit_key && outfit.permitted_addons == mounted.addons
+        })
         || persisted.catalogue.root_revision != committed
         || persisted.catalogue.selected.as_ref().map(|s| s.revision) != Some(selected_revision)
         || !look_matches(&persisted, &mounted, persisted_binding)
@@ -740,13 +680,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step=fresh-admission observed=selection-unlock-or-revision-mismatch need=mount-{mount}-root-{committed}-selection-{selected_revision}").into());
     }
+    let logout = fresh.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err("step=fresh-admission observed=final-logout-refused".into());
+    }
+    wait_character_released(clients, 0).await?;
     row.pass(
         "fresh-admission",
         format!("selected-outfit-addon-mount-and-unlock-persisted root_revision={committed} selected_revision={selected_revision}"),
     );
-    if earned_addons == 0 {
-        evidence("S06_GAP step=addon-acquisition need=player-earned-addon-after-admission");
-    }
     Ok(())
 }
 
