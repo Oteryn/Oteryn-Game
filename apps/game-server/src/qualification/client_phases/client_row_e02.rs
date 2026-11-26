@@ -150,7 +150,29 @@ pub(super) async fn find_exchange_npc(
         .find(|npc| npc.key == BANKER)
         .filter(|npc| book.get(&npc.key).is_some_and(|entry| entry.bank()))
         .ok_or_else(|| format!("step=find-exchange-npc observed=missing-authored-banker:{BANKER}"))?;
-    let actor = approach(client, world, banker).await?;
+    let path = npc_approach_path(client, world, banker)
+        .await?
+        .filter(|path| !path.is_empty())
+        .ok_or("step=walk-npc observed=no-discriminating-route")?;
+    for direction in path {
+        let before = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, before, direction)
+            .filter(|landing| *landing != before)
+            .ok_or("step=walk-npc observed=no-discriminating-landing")?;
+        let outcome = client.step(direction).await?;
+        let after = tile(client.world_spatial().actor_position)?;
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || after != expected
+        {
+            return Err(format!(
+                "step=walk-npc observed={after:?} expected={expected:?} outcome={outcome:?}"
+            ).into());
+        }
+        verdict::Harness::global().progress("walk");
+        client.take_events();
+    }
+    let actor = visible_npc(client, banker).ok_or("step=walk-npc observed=kepar-not-visible")?;
     let greeting = talk(client, actor, "hi").await?;
     let reply = talk(client, actor, "change gold").await?;
     if !reply.lines.iter().any(|line| line == PROMPT) {

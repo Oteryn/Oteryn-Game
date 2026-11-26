@@ -168,6 +168,32 @@ fn exact_delta(before: [u64; 3], after: [u64; 3], delta: [i64; 3]) -> bool {
     })
 }
 
+async fn refused_gold_exchange(
+    client: &mut DevClientSession,
+    actor: EntityRef,
+    amount: &str,
+    database_url: &str,
+) -> TestResult<wire::NpcConversation> {
+    exchange(client, actor, &["change gold", amount]).await?;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let command = client.next_command_id().to_string();
+    let reply = talk(client, actor, "yes").await?;
+    let mut database = sqlx::PgConnection::connect(database_url).await?;
+    let result: i16 = sqlx::query_scalar(
+        "SELECT result FROM game_coin_exchange_receipts
+         WHERE game_session_id=$1::uuid AND command_id=$2::numeric",
+    )
+    .bind(session)
+    .bind(command)
+    .fetch_one(&mut database)
+    .await?;
+    // The durable exchange result encodes InsufficientCoins as 3.
+    if result != 3 || reply.lines != ["Sorry, you do not have enough gold coins."] {
+        return Err(format!("step=insufficient-coins observed=code:{result},reply:{:?}", reply.lines).into());
+    }
+    Ok(reply)
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -201,10 +227,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     let bank_before = super::full_row_e06::bank_balance(&dedicated, 1).await?;
     let deposited = bank_before.checked_add(100).ok_or("E02 bank balance overflow")?;
-    let insufficient = ["Sorry, you do not have enough gold coins."];
-    let reply = exchange(&mut client, actor, &["change gold", "2", "yes"]).await?;
+    let reply = refused_gold_exchange(&mut client, actor, "2", clients.url).await?;
     let after_refusal = backpack_coins(&client, refs)?;
-    if after_refusal != initial || reply.lines != insufficient || super::full_row_e06::bank_balance(&dedicated, 1).await? != bank_before {
+    if after_refusal != initial || super::full_row_e06::bank_balance(&dedicated, 1).await? != bank_before {
         return Err(format!("step=insufficient-refusal observed=reply:{:?},coins:{after_refusal:?}", reply.lines).into());
     }
     row.pass("insufficient-refusal", (reply.lines, after_refusal));
@@ -214,8 +239,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if super::full_row_e06::bank_balance(&dedicated, 1).await? != deposited {
         return Err("step=deposit-all observed=incorrect-bank-credit".into());
     }
-    let refusal = exchange(&mut client, actor, &["change gold", "1", "yes"]).await?;
-    if backpack_coins(&client, refs)? != [0, 0, 0] || refusal.lines != insufficient || super::full_row_e06::bank_balance(&dedicated, 1).await? != deposited {
+    let refusal = refused_gold_exchange(&mut client, actor, "1", clients.url).await?;
+    if backpack_coins(&client, refs)? != [0, 0, 0] || super::full_row_e06::bank_balance(&dedicated, 1).await? != deposited {
         return Err(format!("step=bank-only-refusal observed=deposit:{:?},exchange:{:?},coins:{:?}", reply.lines, refusal.lines, backpack_coins(&client, refs)?).into());
     }
     row.pass("bank-only-refusal", (reply.lines, refusal.lines));
