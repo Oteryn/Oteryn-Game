@@ -133,7 +133,7 @@ async fn summon_protection(
         at.y += 1;
         let prepared = runtime
             .prepare_companion_spawn(
-                victim, victim_session, "oteryn:creature.dragon", at, None, None, 1, 0, true,
+                victim, victim_session, "oteryn:creature.cyclops", at, None, None, 1, 0, true,
             )
             .map_err(debug)?;
         let summon = runtime.install_companion_spawn(prepared).map_err(debug)?;
