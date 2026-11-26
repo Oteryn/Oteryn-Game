@@ -350,3 +350,25 @@ mod tests {
         assert!(exact_delta([0, 1, 0], [100, 0, 0], [100, -1, 0]));
     }
 }
+
+pub(super) async fn qualification_npc_talk_book(
+    client: &mut oteryn_dev_client::DevClientSession,
+) -> TestResult<crate::gameplay_transport::NpcTalkBook> {
+    route_work(client, || {
+        let staged = std::path::PathBuf::from(
+            required("NODE_BOOT_NPC_DATA").map_err(|error| error.to_string())?,
+        );
+        let digest = std::fs::read_to_string(staged.join("PROJECT_SHA256"))
+            .map_err(|error| error.to_string())?;
+        let catalogue = crate::content::load_data_only_npc_catalogue(
+            &staged.join("content/world"),
+            digest.trim(),
+        )
+        .map_err(|error| error.to_string())?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| error.to_string())?;
+        Ok(crate::gameplay_transport::NpcTalkBook::from_model(&model))
+    })
+    .await
+}
