@@ -3505,6 +3505,18 @@ pub(super) async fn connect_character(
     tag: u8,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
+    connect_character_using(clients, tag, index, async |request| {
+        Ok(oteryn_dev_client::connect_session(request).await?)
+    })
+    .await
+}
+
+async fn connect_character_using<T>(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    index: usize,
+    connect: impl for<'request> AsyncFnOnce(oteryn_dev_client::JoinRequest<'request>) -> TestResult<T>,
+) -> TestResult<T> {
     wait_character_released(clients, index).await?;
     let token = if requires_platform_grant(&clients.accounts[index]) {
         platform_row_grant(clients, index).await?
@@ -3525,7 +3537,7 @@ pub(super) async fn connect_character(
         };
         sign_grant(&grant, now_seconds()?)
     };
-    let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
+    let client = connect(oteryn_dev_client::JoinRequest {
         address: clients.address,
         server_name: "localhost",
         root_certificate: clients.certificate,

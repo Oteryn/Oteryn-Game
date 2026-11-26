@@ -26,4 +26,4 @@ source /workspace/oteryn-env/env.sh >/dev/null 2>&1
 cargo test --locked -p oteryn-session --lib e2e_s18_say_and_whisper_echo_replay -- --ignored --nocapture |
     tee "$E2E_ALL_CAPTURE_DIR/replay.log"
 grep -Fx 'test tests::e2e_s18::e2e_s18_say_and_whisper_echo_replay ... ok' "$E2E_ALL_CAPTURE_DIR/replay.log"
-printf 'SEAM_EVIDENCE e2e_all scenario=S18.client status=PASS evidence=head=%s;run=%s;live-and-replay=verified\n' "$S18_CAPTURE_HEAD" "$S18_CAPTURE_RUN"
+printf 'SEAM_EVIDENCE e2e_all scenario=S18.client status=PASS seconds=%s evidence=head=%s;run=%s;live-and-replay=verified\n' "$SECONDS" "$S18_CAPTURE_HEAD" "$S18_CAPTURE_RUN"
