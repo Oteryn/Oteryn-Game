@@ -1914,6 +1914,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
         (
             SpellCastOutcome {
+                refresh_inventory: false,
                 disposition: SpellCastDisposition::Cast,
                 vitals: Some((next.revision(), next.vitals())),
             },

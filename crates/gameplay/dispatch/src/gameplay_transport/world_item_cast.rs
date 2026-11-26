@@ -775,6 +775,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         // rather than inventing a charge donor, corpse or Chameleon target.
         if !matches!(key, "random_item_grant" | "conjure") {
             return NativeCastDispatch::Outcome(SpellCastOutcome {
+                refresh_inventory: false,
                 disposition: SpellCastDisposition::NotAvailable,
                 vitals: None,
             });
@@ -854,7 +855,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             intent,
         ) {
             Ok(Some(_)) => {
+                // A recovered command can still owe the connection its item view.
                 return NativeCastDispatch::Outcome(SpellCastOutcome {
+                    refresh_inventory: true,
                     disposition: SpellCastDisposition::Cast,
                     vitals: super::observe_vitals(&runtime, &states, actor, session),
                 });
@@ -964,7 +967,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     };
                     let prepared=match prepare_item_grant(&mut tx,&authority,runtime,states,room,objects,content,owned.clone(),
                         spell,intent,fence,command,owner.owner_now(),&mut draw).await{
-                        Ok(p)=>p,Err(disposition)=>return Ok(NativeCastDispatch::Outcome(SpellCastOutcome{disposition,vitals:None})),
+                        Ok(p)=>p,Err(disposition)=>return Ok(NativeCastDispatch::Outcome(SpellCastOutcome{refresh_inventory:false,disposition,vitals:None})),
                     };
                     if invalid_draw{return Err(DurabilityError::Unavailable);}
                     *pending=Some(prepared);
@@ -1009,7 +1012,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     states.presentations.as_mut().ok_or(DurabilityError::Unavailable)?
                         .release_definitely_uncommitted(&attempt.presentation);
                     *pending=None;
-                    return Ok(NativeCastDispatch::Outcome(SpellCastOutcome{disposition:SpellCastDisposition::Rejected,
+                    return Ok(NativeCastDispatch::Outcome(SpellCastOutcome{refresh_inventory:false,disposition:SpellCastDisposition::Rejected,
                         vitals:super::observe_vitals(&runtime,&states,actor,session)}));
                 }
                 Err(_)=>return Err(DurabilityError::Unavailable),
@@ -1084,7 +1087,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             if receipt.applied && let Some(presentations)=states.presentations.as_mut(){
                 presentations.install_preflighted(attempt.presentation,&receipt);
             }
-            Ok(NativeCastDispatch::Outcome(SpellCastOutcome{disposition:SpellCastDisposition::Cast,
+            Ok(NativeCastDispatch::Outcome(SpellCastOutcome{refresh_inventory:true,disposition:SpellCastDisposition::Cast,
                 vitals:super::observe_vitals(&runtime,&states,actor,session)}))
         })).await;
         let (_, _, writer, guards) = context;

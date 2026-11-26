@@ -222,6 +222,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(paid) => paid,
                 Err(disposition) => {
                     return Some(SpellCastOutcome {
+                        refresh_inventory: false,
                         disposition,
                         vitals: None,
                     });
@@ -361,6 +362,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return SpellCastOutcome::rejected();
         }
         SpellCastOutcome {
+            refresh_inventory: false,
             disposition: if prepared.matches_command(actor, session, command_id) {
                 SpellCastDisposition::Cast
             } else {

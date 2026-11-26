@@ -2494,6 +2494,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         match (&spell.carrier, rune.as_ref()) {
             (crate::spell::Carrier::Rune { .. }, None) => {
                 return NativeCastDispatch::Outcome(super::SpellCastOutcome {
+                    refresh_inventory: false,
                     disposition: SpellCastDisposition::NotAvailable,
                     vitals: None,
                 });
@@ -2595,6 +2596,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 self.record_spell_kills(&mut runtime, &states, std::iter::once(&replayed))
                     .await;
                 return NativeCastDispatch::Outcome(super::SpellCastOutcome {
+                    refresh_inventory: false,
                     disposition: parameter_output
                         .as_ref()
                         .map_or(SpellCastDisposition::Cast, |r| r.disposition),
@@ -2791,6 +2793,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         Some(r)=>match rune_item_cast::reserve(&mut tx,&authority,runtime,room,content,spell,r).await {
                             Ok(reserved)=>Some(reserved),
                             Err(_)=>{Box::pin(refusal_on_live_transaction(&mut tx)).await?;return Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{
+                                refresh_inventory: false,
                                 disposition:SpellCastDisposition::Rejected,vitals:super::observe_vitals(runtime,states,actor,session)}))},
                         },
                         None=>None,
@@ -2864,7 +2867,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                             }
                             return Ok(NativeCastDispatch::RuneRefused(refused));
                         }
-                        return Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{disposition,vitals:super::observe_vitals(runtime,states,actor,session)}))
+                        return Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{refresh_inventory:false,disposition,vitals:super::observe_vitals(runtime,states,actor,session)}))
                     }
                     };
                     if invalid_draw{return Err(DurabilityError::Unavailable);}
@@ -2990,6 +2993,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     }
                     *pending=None;
                     return Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{
+                        refresh_inventory: false,
                         disposition:SpellCastDisposition::Rejected,
                         vitals:super::observe_vitals(&runtime,&states,actor,session)}));
                 }
@@ -3177,7 +3181,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             drop(attack);
             let disposition=private_result.as_ref().map_or(SpellCastDisposition::Cast,|r|r.disposition);
             **parameter_output=private_result;
-            Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{disposition,
+            Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{refresh_inventory:false,disposition,
                 vitals:super::observe_vitals(&runtime,&states,actor,session)}))
         })).await;
         let (_, _, writer, guards, _, _) = context;
