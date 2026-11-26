@@ -328,6 +328,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     // Change these source-qualification expectations only with admitted content.
     let newly_admitted = [
         "oteryn:creature.an_observer_eye",
+        "oteryn:creature.arachir_the_ancient_one",
         "oteryn:creature.arbaziloth",
         "oteryn:creature.bazir",
         "oteryn:creature.black_vixen",
@@ -336,6 +337,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         "oteryn:creature.darkfang",
         "oteryn:creature.demodras",
         "oteryn:creature.dharalion",
+        "oteryn:creature.diblis_the_fair",
         "oteryn:creature.duke_krule",
         "oteryn:creature.earl_osam",
         "oteryn:creature.earth_overlord",
@@ -359,6 +361,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         "oteryn:creature.scarlett_etzel",
         "oteryn:creature.sharpclaw",
         "oteryn:creature.sir_baeloc",
+        "oteryn:creature.sir_valorcrest",
         "oteryn:creature.soul_of_dragonking_zyrtarch",
         "oteryn:creature.spirit_overlord",
         "oteryn:creature.teleskor",
@@ -366,6 +369,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         "oteryn:creature.the_enraged_thorn_knight",
         "oteryn:creature.the_freezing_time_guardian",
         "oteryn:creature.the_old_widow",
+        "oteryn:creature.the_pale_count",
         "oteryn:creature.the_percht_queen",
         "oteryn:creature.the_souldespoiler",
         "oteryn:creature.the_time_guardian",
@@ -373,6 +377,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         "oteryn:creature.unaz_the_mean",
         "oteryn:creature.vok_the_freakish",
         "oteryn:creature.zamulosh",
+        "oteryn:creature.zevelon_duskbringer",
     ];
     let mut missing = 0;
     let mut inadmissible = 0;
@@ -653,7 +658,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 243, 0, 94)
+        (52, 238, 0, 99)
     );
     assert_eq!(
         admitted,
@@ -662,6 +667,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.an_observer_eye",
             "oteryn:creature.anomaly",
             "oteryn:creature.apprentice_sheng",
+            "oteryn:creature.arachir_the_ancient_one",
             "oteryn:creature.arbaziloth",
             "oteryn:creature.armenius_creature",
             "oteryn:creature.ascending_ferumbras",
@@ -675,6 +681,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.darkfang",
             "oteryn:creature.demodras",
             "oteryn:creature.dharalion",
+            "oteryn:creature.diblis_the_fair",
             "oteryn:creature.dragonking_zyrtarch",
             "oteryn:creature.dreadful_disruptor",
             "oteryn:creature.duke_krule",
@@ -728,6 +735,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.sharpclaw",
             "oteryn:creature.shulgrax",
             "oteryn:creature.sir_baeloc",
+            "oteryn:creature.sir_valorcrest",
             "oteryn:creature.soul_of_dragonking_zyrtarch",
             "oteryn:creature.spirit_overlord",
             "oteryn:creature.sugar_daddy",
@@ -742,6 +750,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.the_freezing_time_guardian",
             "oteryn:creature.the_many",
             "oteryn:creature.the_old_widow",
+            "oteryn:creature.the_pale_count",
             "oteryn:creature.the_percht_queen",
             "oteryn:creature.the_primal_menace",
             "oteryn:creature.the_scion_of_havoc",
@@ -752,6 +761,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.vemiath",
             "oteryn:creature.vok_the_freakish",
             "oteryn:creature.zamulosh",
+            "oteryn:creature.zevelon_duskbringer",
         ]
     );
     assert!(

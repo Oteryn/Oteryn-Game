@@ -304,10 +304,7 @@ fn store_inbox_next_claim_page_selects_the_item_after_twenty_deliveries() -> Tes
     app.world_mut().trigger(Activate { entity });
     assert_eq!(
         store_command(&mut rx)?,
-        (
-            186,
-            wire::encode_inbox_query(Some(inbox_key(20)))
-        )
+        (186, wire::encode_inbox_query(Some(inbox_key(20))))
     );
     item_reply(&outbox, inbox_entry(inbox_key(21), 42));
     app.update();

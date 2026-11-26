@@ -759,6 +759,23 @@ impl DurabilityRoot {
     }
 }
 
+/// Materialize a reserved source inside the caller's scene custody transaction.
+pub(super) async fn commit_reserved_map_item_mint(
+    tx: &mut Type2Transaction<'_>,
+    permit: &SpellLanePermit,
+    recovery: &CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    candidate: &MapItemMintCandidate,
+) -> Result<CommittedMapItemMint> {
+    assert_recovery_fence(tx, recovery).await?;
+    match commit_frozen_in_transaction(tx, permit, recovery, node, fence, &FrozenMint::of(candidate))
+        .await??
+    {
+        MapItemMintOutcome::Committed(mint) | MapItemMintOutcome::AlreadyCommitted(mint) => Ok(mint),
+    }
+}
+
 // A caller that composes the mint with a fill owns the final commit.
 pub(super) async fn commit_frozen_in_transaction(
     tx: &mut Type2Transaction<'_>,

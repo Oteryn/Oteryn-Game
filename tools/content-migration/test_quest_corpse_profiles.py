@@ -70,8 +70,8 @@ class CorpseQualification(unittest.TestCase):
         # Letter 3505 finding: the Dwarfs share the 6007 root and three later stages.
         baseline_roots = {
             5960, 5962, 5967, 5968, 5973, 5975, 5995, 5999, 6006, 6007, 6017, 6025, 6030, 6031, 6044,
-            6048, 6055, 6072, 6078, 8909, 11675, 17445, 17446,
-            17449, 17454, 18099, 20972, 21910, 22010, 22066, 22067, 25085,
+            6048, 6055, 6072, 6078, 8109, 8909, 11675, 17445, 17446,
+            17449, 17454, 18099, 18953, 20972, 21910, 22010, 22066, 22067, 25085,
             25815, 27714, 27718, 30272, 31453, 31599, 31611, 33821, 50029}
         packet = json.loads((corpse.ROOT / corpse.REQUIREMENTS).read_bytes())
         projected_roots = {int(row['item'].rsplit('i', 1)[1]) for row in packet['capacity_projections']}
@@ -83,7 +83,7 @@ class CorpseQualification(unittest.TestCase):
                 number = int(corpse.grizzly.source.attrs(self.xml[number])['decayto'])
         new_keys = {f'oteryn:item.tibia.i{number}' for number in new_stages}
         self.assertTrue(new_keys <= self.plan.records.keys())
-        self.assertEqual(len(self.plan.records.keys() - new_keys), 148)
+        self.assertEqual(len(self.plan.records.keys() - new_keys), 156)
         for number, duration, target in [(6017, 10000, 4301), (4301, 300000, 4302),
                                          (4302, 300000, 4303), (50029, 60000, 50028),
                                          (50028, 60000, 50027)]:
@@ -93,7 +93,8 @@ class CorpseQualification(unittest.TestCase):
             self.assertEqual(temporal['decay_target'], corpse.grizzly.source.K(
                 {'key': f'oteryn:item.tibia.i{target}', 'revision': 'definition-r1'}))
         for number, capacity, target in [(5960, 7, 3987), (5962, 30, 3989),
-                                         (5967, 10, 4266), (5968, 5, 4007), (5975, 20, 4291)]:
+                                         (5967, 10, 4266), (5968, 5, 4007), (5975, 20, 4291),
+                                         (8109, 10, 8110), (18953, 15, 18954)]:
             row = self.plan.records[f'oteryn:item.tibia.i{number}']
             self.assertEqual(row['admission']['legal_destinations'], ['Ground'])
             self.assertEqual(row['semantics']['container'], corpse.grizzly.source.K(

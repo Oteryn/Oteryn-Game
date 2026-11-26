@@ -148,6 +148,7 @@ impl PlayLink {
         }
     }
 
+    #[cfg(bevy_shell)]
     pub(crate) fn store_inbox_refresh(&self) {
         self.store_inbox_refresh_locked(&mut lock(&self.mailbox));
     }

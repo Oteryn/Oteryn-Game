@@ -113,7 +113,11 @@ fn perform(owner: &HostOwner, state: &State, control: Control) {
         Kind::Refresh => Intent::Items,
         Kind::Previous => Intent::ItemsPrevious,
         Kind::Next => Intent::ItemsNext,
-        Kind::Close | Kind::Claim(_) | Kind::FirstClaimPage | Kind::NextClaims | Kind::PlaceLamp => return,
+        Kind::Close
+        | Kind::Claim(_)
+        | Kind::FirstClaimPage
+        | Kind::NextClaims
+        | Kind::PlaceLamp => return,
     });
 }
 fn activate(
@@ -323,7 +327,11 @@ fn project(
         buttons.push((Kind::PlaceLamp, "Place Hireling".into(), store_disabled));
     }
     if store.inbox_page_cursor.is_some() {
-        buttons.push((Kind::FirstClaimPage, "First claim page".into(), store_disabled));
+        buttons.push((
+            Kind::FirstClaimPage,
+            "First claim page".into(),
+            store_disabled,
+        ));
     }
     if store.inbox.next.is_some() {
         buttons.push((Kind::NextClaims, "Next claim page".into(), store_disabled));

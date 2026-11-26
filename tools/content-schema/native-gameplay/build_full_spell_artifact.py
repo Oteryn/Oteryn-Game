@@ -836,12 +836,17 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     def admit_yields(entries):
         for entry in entries:
             key = entry['item']['key']
-            profiles = native_by_key.get(key, [])
             fact = facts[key]
-            if len(profiles) == 1 and not fact['materializable']:
+            profiles = native_by_key.get(key, [])
+            needs_stack_policy = fact.get('creature_product') and 'stackable' not in fact
+            if len(profiles) == 1 and (not fact['materializable'] or needs_stack_policy):
                 native = native_loot_yield_facts(entry['item'], profiles[0])
                 if native is not None:
-                    fact.update(native)
+                    if not fact['materializable']:
+                        fact.update(native)
+                    # Existing creature products may already be materializable
+                    # without publishing their exact native stack policy.
+                    fact.setdefault('stackable', native['stackable'])
             admit_yields(entry.get('children', []))
     for creature in sorted(slice_creatures & bindings.keys()):
         reference = bindings[creature]['loot']
