@@ -1,5 +1,9 @@
 //! Owner qualification, spatial facts, preview and live native combat phases.
 use super::*;
+use crate::gameplay_transport::spell_presentations::monk_bond_impact;
+use crate::spell::native::CompiledNativeSpellPlanExt;
+use crate::spell::native_combat::Element;
+use oteryn_gameplay_spell_rules::native_actor_states::{EquipmentAttackPlan, EquipmentFacts};
 
 struct SpatialPhase {
     position: TilePosition,
@@ -8,6 +12,7 @@ struct SpatialPhase {
     operational: OperationalCastFacts,
     facts: NativeCombatFacts,
     delayed: Option<crate::spell::native_delayed::NativeDelayedFacts>,
+    equipment_geometry: Vec<BTreeSet<TilePosition>>,
 }
 
 struct PreviewPhase {
@@ -88,17 +93,19 @@ pub async fn prepare_from_owners(
     {
         return reject();
     }
-    if !matches!(
-        key,
-        "wheel_combat"
-            | "avatar_state"
-            | "monster_ai_override"
-            | "mass_spirit_mend"
-            | "mana_shield_capacity"
-            | "delayed_strike"
-    ) || (key != "delayed_strike"
-        && aim.is_none()
-        && (intent.aim_at_target || intent.target != SpellTarget::None))
+    if !(monk_equipment::applies(spell)
+        || matches!(
+            key,
+            "wheel_combat"
+                | "avatar_state"
+                | "monster_ai_override"
+                | "mass_spirit_mend"
+                | "mana_shield_capacity"
+                | "delayed_strike"
+        ))
+        || (key != "delayed_strike"
+            && aim.is_none()
+            && (intent.aim_at_target || intent.target != SpellTarget::None))
         || book.indexed(intent.spell) != Some(spell)
         || content.spell_book().indexed(intent.spell) != Some(spell)
         || !matches!(spell.carrier, crate::spell::Carrier::Instant { .. })
@@ -152,6 +159,29 @@ pub async fn prepare_from_owners(
     let training_formula = content
         .training_formula()
         .ok_or(SpellCastDisposition::Rejected)?;
+    let equipment_facts = monk_equipment::applies(spell)
+        .then(|| monk_equipment::facts(content, owned, spell, &caster, now))
+        .transpose()?;
+    let equipment_plan = equipment_facts
+        .as_ref()
+        .map(|facts| {
+            let Plan::Equipment(plan) = profile
+                .plan(Facts::Equipment(facts), &mut |minimum, _| minimum)
+                .map_err(|_| SpellCastDisposition::Rejected)?
+            else {
+                return reject();
+            };
+            Ok(plan)
+        })
+        .transpose()?;
+    let monk_bond = if spell.key == "candidate:spell/spiritual_outburst" {
+        Some(ordinary_combat::monk_weapon_element(
+            content,
+            owned.equipment(),
+        )?)
+    } else {
+        None
+    };
     let stage = if key == "delayed_strike"
         && spell
             .authored
@@ -206,6 +236,7 @@ pub async fn prepare_from_owners(
         operational,
         facts,
         delayed,
+        equipment_geometry,
     } = prepare_spatial(
         tx,
         authority,
@@ -217,6 +248,7 @@ pub async fn prepare_from_owners(
         intent,
         aim,
         parameters,
+        equipment_plan.as_deref(),
         actor,
         stage,
         elemental,
@@ -229,6 +261,9 @@ pub async fn prepare_from_owners(
         before,
     )
     .await?;
+    let equipment = equipment_facts
+        .as_ref()
+        .map(|facts| (facts, equipment_geometry.as_slice()));
     let players: Vec<_> = player_predecessors
         .iter()
         .map(|(a, _, p)| (*a, p))
@@ -259,6 +294,8 @@ pub async fn prepare_from_owners(
         &operational,
         &facts,
         delayed.as_ref(),
+        equipment,
+        monk_bond,
         &bindings,
         &players,
         training_formula,
@@ -292,6 +329,8 @@ pub async fn prepare_from_owners(
         &operational,
         &facts,
         delayed.as_ref(),
+        equipment,
+        monk_bond,
         &bindings,
         &players,
         training_formula,
@@ -342,6 +381,7 @@ async fn prepare_spatial(
     intent: &SpellCastIntent,
     aim: Option<super::ordinary_combat::Aim>,
     parameters: &Value,
+    equipment_plan: Option<&EquipmentAttackPlan>,
     actor: ExactActorRef,
     stage: u8,
     elemental: ElementalStance,
@@ -361,10 +401,11 @@ async fn prepare_spatial(
         .read_actor_position(actor)
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let position = tile(current.position());
-    let needs_direction = spell
-        .authored
-        .as_ref()
-        .is_some_and(|p| p.header.targeting.needs_direction)
+    let needs_direction = equipment_plan.is_some()
+        || spell
+            .authored
+            .as_ref()
+            .is_some_and(|p| p.header.targeting.needs_direction)
         || parameters["area"]["directional"] == true;
     let facing = current.facing();
     // WU26-14: an aimed wave or beam turns toward its target or cursor tile from the
@@ -407,7 +448,7 @@ async fn prepare_spatial(
                 y: p.y,
                 floor: p.floor,
             },
-            SpellTarget::None if needs_direction => {
+            SpellTarget::None if needs_direction && equipment_plan.is_none() => {
                 let (dx, dy) = delta(facing_direction);
                 offset(position, dx, dy)?
             }
@@ -444,7 +485,15 @@ async fn prepare_spatial(
     } else {
         parameters
     };
-    let mut candidates = area_candidates(geometry_parameters, origin, facing_direction)?;
+    let equipment_geometry = equipment_plan
+        .map(|plan| monk_equipment::geometry(plan, origin, facing_direction))
+        .transpose()?
+        .unwrap_or_default();
+    let mut candidates = if equipment_plan.is_some() {
+        equipment_geometry.iter().flatten().copied().collect()
+    } else {
+        area_candidates(geometry_parameters, origin, facing_direction)?
+    };
     candidates.insert(position);
     candidates.insert(origin);
     let TargetPhase {
@@ -638,6 +687,7 @@ async fn prepare_spatial(
         operational,
         facts,
         delayed,
+        equipment_geometry,
     })
 }
 
@@ -768,6 +818,58 @@ fn qualify_magnitude(
     Ok(owner)
 }
 
+fn combat_impact(spell: &SpellDefinition, plan: &NativeCombatPlan) -> Option<&'static str> {
+    match plan {
+        NativeCombatPlan::Combat(combat) => monk_bond_impact(spell, combat.element),
+        _ => None,
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn paid_combat(
+    before: &PlayerSpellState,
+    spell: &SpellDefinition,
+    operational: &OperationalCastFacts,
+    world: &NativeCombatFacts,
+    delayed: Option<&crate::spell::native_delayed::NativeDelayedFacts>,
+    equipment: Option<(&EquipmentFacts, &[BTreeSet<TilePosition>])>,
+    monk_bond: Option<Element>,
+    now: SemanticTimeMicros,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+    caster: &crate::spell::CasterState,
+) -> Result<
+    (
+        crate::spell::cast::PaidNativeCast,
+        Option<crate::spell::native_delayed::NativeDelayedPlan>,
+    ),
+    SpellCastDisposition,
+> {
+    let facts = if let Some((facts, _)) = equipment {
+        Facts::Equipment(facts)
+    } else {
+        delayed.map_or(Facts::Combat(world), Facts::Delayed)
+    };
+    let (mut paid, delayed_plan) = delayed_strikes::paid(
+        before,
+        spell,
+        operational,
+        facts,
+        monk_bond,
+        now,
+        draw,
+        caster,
+    )?;
+    if let Some((_, geometry)) = equipment {
+        let Plan::Equipment(equipment) = paid.plan else {
+            return reject();
+        };
+        paid.plan = Plan::Combat(Box::new(monk_equipment::combat(
+            &equipment, geometry, world, draw,
+        )?));
+    }
+    Ok((paid, delayed_plan))
+}
+
 #[allow(clippy::too_many_arguments)]
 fn prepare_preview(
     runtime: &mut ChannelRuntimeV1,
@@ -790,6 +892,8 @@ fn prepare_preview(
     operational: &OperationalCastFacts,
     facts: &NativeCombatFacts,
     delayed: Option<&crate::spell::native_delayed::NativeDelayedFacts>,
+    equipment: Option<(&EquipmentFacts, &[BTreeSet<TilePosition>])>,
+    monk_bond: Option<Element>,
     bindings: &[LiveActorBinding],
     players: &[(ExactActorRef, &PlayerSpellState)],
     training_formula: &crate::content::training_formula::CompiledTrainingFormula,
@@ -802,12 +906,14 @@ fn prepare_preview(
     let caster_id = u64::from(actor.actor_local_id());
     // A lower-bound preview is never committed and consumes no live random stream. It validates
     // common costs, source shape, all magnitude prerequisites and training before the first draw.
-    let (mut preview, delayed_plan) = delayed_strikes::paid(
+    let (mut preview, delayed_plan) = paid_combat(
         before,
         spell,
         operational,
         facts,
         delayed,
+        equipment,
+        monk_bond,
         now,
         &mut |minimum, _| minimum,
         caster,
@@ -944,6 +1050,7 @@ fn prepare_preview(
         profile,
         bindings,
         actor,
+        combat_impact(spell, &preview_plan),
     )?;
     let presentation_owner = states
         .presentations
@@ -978,6 +1085,7 @@ fn prepare_preview(
         &preview_lowered,
         delayed_plan.as_ref(),
         delayed,
+        monk_bond,
         profile,
         occurrence,
         position,
@@ -1038,6 +1146,8 @@ fn prepare_payment(
     operational: &OperationalCastFacts,
     facts: &NativeCombatFacts,
     delayed: Option<&crate::spell::native_delayed::NativeDelayedFacts>,
+    equipment: Option<(&EquipmentFacts, &[BTreeSet<TilePosition>])>,
+    monk_bond: Option<Element>,
     bindings: &[LiveActorBinding],
     players: &[(ExactActorRef, &PlayerSpellState)],
     training_formula: &crate::content::training_formula::CompiledTrainingFormula,
@@ -1052,12 +1162,14 @@ fn prepare_payment(
     let actor = b.actor;
     let session = command.game_session_id();
     let caster_id = u64::from(actor.actor_local_id());
-    let (mut paid, delayed_plan) = delayed_strikes::paid(
+    let (mut paid, delayed_plan) = paid_combat(
         before,
         spell,
         operational,
         facts,
         delayed,
+        equipment,
+        monk_bond,
         now,
         draw,
         caster,
@@ -1163,6 +1275,7 @@ fn prepare_payment(
         profile,
         bindings,
         actor,
+        combat_impact(spell, final_plan),
     )?;
     let presentation = states
         .presentations
@@ -1195,6 +1308,7 @@ fn prepare_payment(
         &lowered,
         delayed_plan.as_ref(),
         delayed,
+        monk_bond,
         profile,
         occurrence,
         position,
@@ -1249,7 +1363,6 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
     decision: oteryn_simulation_determinism::DecisionOccurrenceId,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<Option<crate::spell::delayed_execution::ResolvedStrike>, SpellCastDisposition> {
-    use crate::spell::native::CompiledNativeSpellPlanExt;
     let index = (1_u32..)
         .map_while(std::num::NonZeroU32::new)
         .take_while(|i| book.source_indexed(*i).is_some())
@@ -1310,6 +1423,7 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
         &intent,
         None,
         parameters,
+        None,
         saved.binding.caster,
         stage,
         ElementalStance::None,
@@ -1339,7 +1453,7 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
     let Some(strike) = strike.as_ref() else {
         return Ok(None);
     };
-    let plan = delayed_strikes::combat(Some(strike), None);
+    let plan = delayed_strikes::combat(Some(strike), None, saved.monk_bond);
     let players: Vec<_> = states
         .actors
         .iter()
@@ -1449,7 +1563,15 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
             (states, Some(&mut magnitude)),
         )
         .ok_or(SpellCastDisposition::Rejected)?;
-    let cues = delayed_strikes::strike_cues(room, runtime, Some(strike), &spatial.bindings)?;
+    let cues = delayed_strikes::strike_cues(
+        room,
+        runtime,
+        Some(strike),
+        &spatial.bindings,
+        saved
+            .monk_bond
+            .and_then(|element| monk_bond_impact(spell, element)),
+    )?;
     let presentation = states
         .presentations
         .as_mut()

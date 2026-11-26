@@ -1797,6 +1797,8 @@ fn area_candidates(
 pub(in crate::gameplay_transport) mod delayed_strikes;
 /// All facts originate in the actual owner, static qualified content and the same SQL Item
 /// transaction. Missing Premium/learning/Wheel/elemental/magnitude is refused before RNG.
+#[path = "native_combat_cast/monk_equipment.rs"]
+mod monk_equipment;
 #[path = "native_combat_cast/prepare.rs"]
 mod preparation;
 pub use preparation::prepare_from_owners;
@@ -1809,13 +1811,16 @@ fn presentation_requests(
     profile: &crate::spell::native::CompiledNativeSpell,
     actors: &[LiveActorBinding],
     caster: ExactActorRef,
+    monk_impact: Option<&str>,
 ) -> Result<Vec<super::super::spell_presentations::LocatedCueRequest>, SpellCastDisposition> {
     use super::super::spell_presentations::{CueTarget, LocatedCueRequest, QualifiedCueTile};
     let mut result = Vec::new();
-    let effect =
-        profile.spell()["execution"]["native_behavior"]["parameters"]["effect_asset_binding"]
-            .as_str()
-            .ok_or(SpellCastDisposition::Rejected)?;
+    let effect = monk_impact
+        .or_else(|| {
+            profile.spell()["execution"]["native_behavior"]["parameters"]["effect_asset_binding"]
+                .as_str()
+        })
+        .ok_or(SpellCastDisposition::Rejected)?;
     let actor = |id| {
         actors
             .iter()
@@ -2354,7 +2359,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some((spell, active_spell)) = self.spells.source_indexed(intent.spell) else {
             return NativeCastDispatch::NotApplicable;
         };
-        let native_combat = matches!(&spell.execution, Execution::NativeProfile(p) if matches!(
+        let native_combat = monk_equipment::applies(spell)
+            || matches!(&spell.execution, Execution::NativeProfile(p) if matches!(
             p.spell()["execution"]["native_behavior"]["key"].as_str(), Some("wheel_combat" | "avatar_state"
                 | "monster_ai_override" | "mass_spirit_mend" | "mana_shield_capacity" | "delayed_strike")));
         if !native_combat

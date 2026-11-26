@@ -41,6 +41,7 @@ enum Case {
     Pz,
     StageZero,
     Outburst(u8),
+    MonkBond { cue: &'static str, targeted: bool },
     Logout,
     DepartedTarget,
     QueuedOrder,
@@ -88,12 +89,52 @@ fn delayed_strikes_postgres_outburst_full_harmony_repeats() -> TestResult {
 fn delayed_strikes_postgres_outburst_partial_harmony_no_repeat() -> TestResult {
     outburst(4, "delayed_partial")
 }
-fn outburst(harmony: u8, tag: &'static str) -> TestResult {
+#[test]
+fn delayed_strikes_postgres_outburst_repeats_the_cast_time_earth_bond() -> TestResult {
+    outburst_with_weapon(5, "delayed_earth", "oteryn:item.tibia.i50167")
+}
+
+#[test]
+fn monk_equipment_postgres_flurry_hits_with_the_earth_bond() -> TestResult {
+    monk_bond_attack("monk_flurry", &[("candidate:spell/flurry_of_blows", 0, 110)], "green_flurryofblows", false)
+}
+
+#[test]
+fn monk_equipment_postgres_sweeping_takedown_hits_with_the_earth_bond() -> TestResult {
+    monk_bond_attack("monk_takedown", &[("candidate:spell/sweeping_takedown", 0, 195)], "green_explosionhit", false)
+}
+
+#[test]
+fn monk_ordinary_postgres_mystic_repulse_uses_the_earth_bond() -> TestResult {
+    monk_bond_attack(
+        "monk_mystic",
+        &[("candidate:spell/mystic_repulse", 30, 150)],
+        "green_energypulse",
+        true,
+    )
+}
+
+fn monk_bond_attack(tag: &'static str, spells: &'static [(&'static str, u32, i64)], cue: &'static str, targeted: bool) -> TestResult {
     scenario(Plan {
         tag,
         vocation: "monk",
         experience: 30_000_000_000,
-        weapon: "oteryn:item.tibia.i3277",
+        weapon: "oteryn:item.tibia.i50167",
+        spells,
+        case: Case::MonkBond { cue, targeted },
+    })
+}
+
+fn outburst(harmony: u8, tag: &'static str) -> TestResult {
+    outburst_with_weapon(harmony, tag, "oteryn:item.tibia.i3277")
+}
+
+fn outburst_with_weapon(harmony: u8, tag: &'static str, weapon: &'static str) -> TestResult {
+    scenario(Plan {
+        tag,
+        vocation: "monk",
+        experience: 30_000_000_000,
+        weapon,
         spells: &[("candidate:spell/spiritual_outburst", 0, 425)],
         case: Case::Outburst(harmony),
     })
@@ -157,6 +198,28 @@ fn scenario(plan: Plan) -> TestResult {
         started.elapsed().as_secs_f64()
     );
     result
+}
+
+async fn assert_monk_bond_cue(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    position: crate::foundation::MovementLocalPosition,
+    expected: &str,
+) -> TestResult {
+    let runtime = deps.runtime.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
+    let cues = states
+        .presentations
+        .as_mut()
+        .ok_or("presentation owner")?
+        .take_for_current_publisher(&runtime)
+        .map_err(debug)?;
+    assert!(
+        cues.iter().any(|cue| cue.event.position == position
+            && cue.event.source_binding == format!("canary.appearance:effect/{expected}")),
+        "Earth impact at the target: {cues:?}"
+    );
+    Ok(())
 }
 
 async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
@@ -378,6 +441,13 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 .map_err(debug)?,
             )
             .map_err(debug)?;
+        if matches!(plan.case, Case::MonkBond { targeted: false, .. }) {
+            let before = runtime.read_actor_position(actor).map_err(debug)?;
+            runtime
+                .borrow_movement_position()
+                .commit_turn(before, crate::foundation::MovementFacing::East)
+                .map_err(debug)?;
+        }
         let p = runtime
             .read_actor_position(actor)
             .map_err(debug)?
@@ -387,9 +457,21 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             y: p.y,
             floor: p.floor,
         };
-        runtime
-            .install_companion_policies(native.policies().clone())
-            .map_err(debug)?;
+        let policies = if plan.weapon == "oteryn:item.tibia.i50167" {
+            let mut rat = native.policies().policies().iter()
+                .find(|policy| policy.definition_key == "oteryn:creature.rat")
+                .ok_or("rat policy")?
+                .as_ref()
+                .clone();
+            rat.damage_immunities = vec!["physical".into()];
+            crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(
+                native.source_digest(),
+                vec![rat],
+            ).map_err(debug)?
+        } else {
+            native.policies().clone()
+        };
+        runtime.install_companion_policies(policies).map_err(debug)?;
         let health = runtime
             .companion_policy("oteryn:creature.rat")
             .map_err(debug)?
@@ -457,6 +539,22 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
+    if matches!(plan.case, Case::MonkBond { targeted: true, .. }) {
+        let entity = {
+            let runtime = deps.runtime.lock().await;
+            let visible = runtime.visible_entities();
+            let row = visible.creatures.iter().find(|row| row.actor == target)
+                .ok_or("cast target")?;
+            oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                identity: target.placement_identity(),
+                generation: row.generation,
+            }
+        };
+        assert_eq!(
+            owner.select_attack_target(actor, session, 9, Some(entity)).await,
+            oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+        );
+    }
     for (index, (key, _, mana)) in plan.spells.iter().enumerate() {
         let spell = (1..=deps.spells.source_len())
             .find_map(|i| {
@@ -547,7 +645,9 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 10 + index as u64,
                 actor_spell::SpellCastIntent {
                     spell,
-                    target: if matches!(plan.case, Case::Outburst(_)) {
+                    target: if matches!(plan.case, Case::MonkBond { targeted: true, .. }) {
+                        actor_spell::SpellTarget::AttackTarget
+                    } else if matches!(plan.case, Case::Outburst(_) | Case::MonkBond { .. }) {
                         actor_spell::SpellTarget::None
                     } else {
                         actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
@@ -605,6 +705,18 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .await
             .live_creature_health(target)
             .ok_or("rat survives")?;
+        if let Case::MonkBond { cue, .. } = plan.case {
+            assert!(hit < u64::try_from(RAT_HEALTH)?, "bonded attack hits a Physical-immune target");
+            assert_monk_bond_cue(&owner, &deps, position, cue).await?;
+            let costs: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts")
+                .fetch_one(&h.pool)
+                .await?;
+            assert_eq!(costs, 1, "one durable payment for the bonded attack");
+            continue;
+        }
+        if plan.weapon == "oteryn:item.tibia.i50167" {
+            assert_monk_bond_cue(&owner, &deps, position, "green_energyshock").await?;
+        }
         if plan.case == Case::Grenade {
             assert_eq!(hit, u64::try_from(RAT_HEALTH)?, "marker does no damage");
             {
@@ -926,6 +1038,9 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             assert_eq!(echo, hit);
         } else {
             assert!(echo < hit, "delayed strike damages live area");
+        }
+        if plan.weapon == "oteryn:item.tibia.i50167" {
+            assert_monk_bond_cue(&owner, &deps, position, "green_energyshock").await?;
         }
         if let Some(expected) = expected_echo {
             assert_eq!(

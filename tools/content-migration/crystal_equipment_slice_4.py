@@ -455,6 +455,45 @@ def capture(root, directory):
     }
 
 
+def complete_monk_bonds(root, *providers):
+    """Retain the Crystal bonds on Monk weapons admitted before the gap audit."""
+    from build_source_item_profiles import K, U
+
+    # Crystal 201189f8 data/items/items.xml:84524,84585,84745,84858,86058.
+    bonds = {
+        50157: "earth",
+        50159: "energy",
+        50166: "energy",
+        50171: "energy",
+        51119: "earth",
+    }
+    order = native_order(root)
+    records = {}
+    for provider in providers:
+        for row in provider["records"]:
+            key = row["production_definition"]["production_key"]
+            if key in records:
+                raise ValueError(f"Duplicate equipment provider record: {key}")
+            records[key] = row
+    for identifier, bond in bonds.items():
+        record = records[item_key(identifier)]
+        semantics = record["semantics"]
+        if semantics["weapon"]["value"]["weapon_type"] != K("FIST"):
+            raise ValueError(f"Crystal bond requires a fist weapon: {identifier}")
+        group = semantics["skill_modifiers"].get("value", {})
+        modifiers = group.get("modifiers", {}).get("value", []).copy()
+        [modifier] = modifier_facts(
+            {"elementalbond": bond}, crystal.grizzly.source.engine_items, order, K, U
+        )
+        existing = [row for row in modifiers if row["kind"] == "ELEMENTAL_BOND"]
+        if existing and existing != [modifier]:
+            raise ValueError(f"Conflicting Crystal bond: {identifier}")
+        if not existing:
+            modifiers.append(modifier)
+        modifiers.sort(key=lambda row: order[row["kind"]])
+        semantics["skill_modifiers"] = K({**group, "modifiers": K(modifiers)})
+
+
 def apply(root, document, order):
     packet = json.loads((root / PACKET).read_bytes())
     records = packet["records"]

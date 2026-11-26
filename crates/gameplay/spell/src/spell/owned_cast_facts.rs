@@ -517,7 +517,10 @@ impl OwnedCastFacts {
                 }
             }
         }
-        if needs_attack && attack.is_none() {
+        let unarmed_equipment_attack = matches!(&spell.execution, super::Execution::NativeProfile(profile)
+            if profile.spell()["execution"]["native_behavior"]["key"] == "equipment_attack"
+                && profile.spell()["execution"]["native_behavior"]["parameters"]["input"]["unarmed"].is_object());
+        if needs_attack && attack.is_none() && !unarmed_equipment_attack {
             return Err(OwnedFactsError::UnavailableEquipment);
         }
         if spell.needs_shield && shield.is_none() {
