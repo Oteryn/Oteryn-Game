@@ -18,6 +18,13 @@ FRAGMENT = 'content/items/definitions/starting-loadout-profiles.json'
 APPEARANCES_SHA256 = 'aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50'
 
 
+def encode_fragment(records):
+    return ('{\n  "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",\n  "records": [\n'
+            + ',\n'.join('    ' + json.dumps(row, sort_keys=True, separators=(',', ':'))
+                         for row in records)
+            + '\n  ]\n}\n').encode()
+
+
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     sys.path.insert(0, str(root / 'tools/content-schema/native-gameplay'))
     import build_source_item_profiles as native
@@ -80,9 +87,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     # Separate providers must never repeat an identity. The legacy provider
     # retains existing owners; only missing source-derived records enter this one.
     records = sorted(additions, key=order)
-    raw = ('{\n  "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",\n  "records": [\n'
-           + ',\n'.join('    ' + json.dumps(row, sort_keys=True, separators=(',', ':')) for row in records)
-           + '\n  ]\n}\n').encode()
+    raw = encode_fragment(records)
     # Publish only after every overlap has passed identity and known-fact checks.
     generated[FRAGMENT] = raw
     profile_raw = encode_native_profile(document)
