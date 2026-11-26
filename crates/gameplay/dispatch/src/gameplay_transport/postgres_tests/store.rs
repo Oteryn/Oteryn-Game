@@ -34,6 +34,16 @@ fn store_real_dispatch_pages_purchases_mints_once_and_replays() -> TestResult {
     result
 }
 
+#[test]
+fn store_purchase_then_watch_use_and_one_logout_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-followup-use", || {
+        scenario_with_answer(Case::PurchaseThenUse)
+    })
+}
+
 fn page_request() -> TestResult<(u32, Vec<u8>)> {
     let request = wire::StoreCatalogueRequest {
         category: "consumables.exercise-weapons".into(),
@@ -77,6 +87,115 @@ async fn swords(harness: &Harness) -> TestResult<i64> {
     .await?)
 }
 
+async fn purchase_then_use(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    watch: std::num::NonZeroU32,
+) -> TestResult {
+    use super::autowalk_fixtures::{read, send};
+    use super::quick_loot::command_reply;
+    use crate::durability::fresh_admission::FreshAdmissionStore;
+    use crate::foundation::GameSessionState;
+    use crate::gameplay_transport::composed_admission::HolderCheckoutProbe;
+    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+    use crate::gameplay_transport::drome_cube_use::CUBE_INVENTORY_CHECKOUT_PROBE;
+    use oteryn_protocol_oteryn::item_view::{
+        STATE_DOMAIN_CHARACTER_INVENTORY, decode_character_inventory,
+    };
+    use oteryn_protocol_oteryn::logout::{
+        COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
+    };
+    use oteryn_protocol_oteryn::world_object::{
+        COMMAND_TYPE_USE_INTENT, UseDisposition, decode_use_result, encode_use_item_intent,
+    };
+    use oteryn_protocol_oteryn::{MessageType, decode_snapshot_chunk, decode_wire_envelope};
+    use std::{cell::Cell, time::Duration};
+    use tokio::io::AsyncWriteExt;
+
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let probe = Arc::new(HolderCheckoutProbe::default());
+    let drive = async {
+        let mut handle = None;
+        loop {
+            let frame = read(&mut client).await?;
+            let envelope = decode_wire_envelope(&frame)?;
+            if envelope.message_type() == MessageType::SnapshotChunk {
+                for domain in decode_snapshot_chunk(envelope.payload())?.1 {
+                    if domain.domain_id == STATE_DOMAIN_CHARACTER_INVENTORY {
+                        let inventory =
+                            decode_character_inventory(domain.payload).map_err(debug)?;
+                        handle = inventory
+                            .entries
+                            .iter()
+                            .find(|entry| entry.item_definition_ref == watch)
+                            .map(|entry| entry.handle);
+                    }
+                }
+            }
+            if envelope.message_type() == MessageType::SnapshotCommit {
+                break;
+            }
+        }
+        let handle = handle.ok_or("carried watch handle")?;
+        let command_id = admitted.continuity.next_command_id;
+        let (kind, request) = purchase_request(62, SWORD, 25)?;
+        send(&mut client, command_id, kind, &request).await?;
+        let (status, payload) = command_reply(&mut client, command_id).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(
+            wire::decode_purchase_result(&payload).map_err(debug)?.code,
+            wire::StorePurchaseCode::Accepted
+        );
+
+        send(
+            &mut client,
+            command_id + 1,
+            COMMAND_TYPE_USE_INTENT,
+            &encode_use_item_intent(handle),
+        )
+        .await?;
+        probe.contend(&harness.root).await?;
+        let (status, payload) = command_reply(&mut client, command_id + 1).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(
+            decode_use_result(&payload).map_err(debug)?,
+            UseDisposition::Committed
+        );
+
+        send(&mut client, command_id + 2, COMMAND_TYPE_LOGOUT_INTENT, &[]).await?;
+        let (_, payload) = command_reply(&mut client, command_id + 2).await?;
+        client.shutdown().await?;
+        assert_eq!(
+            decode_logout_result(&payload).map_err(debug)?,
+            LogoutResult::Accepted
+        );
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (end, result) = tokio::time::timeout(
+        Duration::from_secs(30),
+        super::fixture::join_two(
+            CUBE_INVENTORY_CHECKOUT_PROBE.scope(
+                Cell::new(Some(Arc::clone(&probe))),
+                serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS),
+            ),
+            drive,
+        ),
+    )
+    .await?;
+    result?;
+    assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)));
+    let store = FreshAdmissionStore::from_root(harness.root.clone());
+    assert_eq!(
+        store
+            .current_session(admitted.game_session_id)
+            .await?
+            .session_state(),
+        GameSessionState::Terminal
+    );
+    Ok(())
+}
+
 fn scenario() -> TestResult {
     scenario_with_answer(Case::Normal)
 }
@@ -84,6 +203,7 @@ fn scenario() -> TestResult {
 #[derive(Clone, Copy)]
 enum Case {
     Normal,
+    PurchaseThenUse,
     Malformed,
     Restored,
     Blessing,
@@ -334,12 +454,16 @@ fn scenario_with_answer(case: Case) -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let deps = Dependencies::new()?;
-        let (controller, pin) = crate::content::native_gameplay::test_support::activated_with_loot_tables(
-            deps.admitted.world_id,
-            None,
-        );
+        let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        let (controller, pin) = crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
         let active = controller.active().ok_or("active")?;
+        let frame_digest = pin.frame_binding().digest();
+        let deps = if matches!(case, Case::PurchaseThenUse) {
+            let room = pin.qualified_room().clone();
+            Dependencies::with_content(pin.into_channel_pin(), room, crate::spell::cast::v1_spell_book().map_err(debug)?)?
+        } else {
+            Dependencies::new()?
+        };
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
         deps.initialize(&owner).await;
@@ -362,6 +486,11 @@ fn scenario_with_answer(case: Case) -> TestResult {
         let mut account_id = [0; 16];
         for (index, byte) in account_id.iter_mut().enumerate() {
             *byte = u8::from_str_radix(&account[index * 2..index * 2 + 2], 16)?;
+        }
+        if matches!(case, Case::PurchaseThenUse) {
+            owner.runtime.lock().await.bind_attacker_lease(
+                deps.actor, deps.admitted.game_session_id, current.current_character_lease(),
+            ).map_err(debug)?;
         }
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -448,6 +577,33 @@ fn scenario_with_answer(case: Case) -> TestResult {
             &[wire::CAPABILITY_STORE_V1],
         )
         .ok_or("selection")?;
+
+        if matches!(case, Case::PurchaseThenUse) {
+            const WATCH: &str = "oteryn:item.tibia.i2906";
+            super::item_look_fixtures::seed_main_backpack(&harness, &[(WATCH, 1)]).await?;
+            sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
+                .bind(id(41).as_slice()).execute(&harness.pool).await?;
+            sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4) ON CONFLICT DO NOTHING")
+                .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
+            sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+                .bind(id(42).as_slice()).bind(id(43).as_slice())
+                .bind(active.identity().server_artifact_digest().as_slice())
+                .bind(active.identity().client_artifact_digest().as_slice())
+                .bind(frame_digest.as_slice()).execute(&harness.pool).await?;
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                owner.offered_capabilities(), &[4, 6, 15, wire::CAPABILITY_STORE_V1],
+            ).ok_or("Store and USE capabilities")?;
+            let watch = active.native_gameplay().and_then(|n| n.item_index())
+                .and_then(|index| index.definition_ref("Item", WATCH, "definition-r1"))
+                .ok_or("watch definition")?;
+            purchase_then_use(&owner, &harness, admitted, watch).await?;
+            assert_eq!(swords(&harness).await?, 1);
+            assert_eq!(ledger.lock().expect("ledger").debits, [25]);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
 
         if matches!(case, Case::LastSlot) {
             ledger.lock().expect("ledger").balance = 2_000;
@@ -725,9 +881,9 @@ fn scenario_with_answer(case: Case) -> TestResult {
                 sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
                     .bind(admitted.world_id.as_bytes().as_slice())
                     .bind(admitted.channel_id.as_bytes().as_slice())
-                    .bind(pin.identity().server_artifact_digest().as_slice())
-                    .bind(pin.identity().client_artifact_digest().as_slice())
-                    .bind(pin.frame_binding().digest().as_slice())
+                    .bind(active.identity().server_artifact_digest().as_slice())
+                    .bind(active.identity().client_artifact_digest().as_slice())
+                    .bind(frame_digest.as_slice())
                     .execute(&harness.pool).await?;
                 let request = wire::StoreInboxClaimRequest {
                     fulfilment_unit_id: uuid(&result.operation_id.ok_or("delivery ID")?),
