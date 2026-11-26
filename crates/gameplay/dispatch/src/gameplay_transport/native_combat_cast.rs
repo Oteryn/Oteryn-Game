@@ -320,8 +320,34 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         &self,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Option<SpellLanePermit>> + Send + '_>>
     {
+        Box::pin(async move { self.try_spell_lane_permit().await.ok() })
+    }
+
+    pub(in crate::gameplay_transport) fn try_spell_lane_permit(
+        &self,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<SpellLanePermit, DurabilityError>> + Send + '_>,
+    > {
+        self.try_spell_lane_permit_by(None)
+    }
+
+    pub(in crate::gameplay_transport) fn try_spell_lane_permit_by(
+        &self,
+        deadline: Option<tokio::time::Instant>,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<SpellLanePermit, DurabilityError>> + Send + '_>,
+    > {
         Box::pin(async move {
-            let permit = match self.spell_lane.acquire().await {
+            let acquired = if let Some(deadline) = deadline {
+                // Only time out acquisition. A parked writer must run its own
+                // reconciliation and retain its evidence on an uncertain result.
+                tokio::time::timeout_at(deadline, self.spell_lane.acquire())
+                    .await
+                    .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?
+            } else {
+                self.spell_lane.acquire().await
+            };
+            let permit = match acquired {
                 Ok(permit) => permit,
                 Err(unresolved) => self.resolve_unresolved_spell_commit(unresolved).await,
             };

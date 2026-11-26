@@ -1,9 +1,25 @@
 //! BOOSTED-1: the committed World/server-save choice shared by queries, kills and home spawns.
-use super::{ComposedFreshAdmission, connection::AdmittedSession, guild_intent::GuildReply};
+use super::{AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission, connection::AdmittedSession};
 use crate::content::ProjectV2AuthoringProfileData;
-use crate::durability::daily_boost::DailyBoostBinding;
+use crate::durability::{DurabilityError, SqlxFailureClass, daily_boost::DailyBoostBinding};
 use crate::foundation::RuntimeScopeRefV1;
 use oteryn_protocol_oteryn::daily_boost as wire;
+
+#[derive(Debug)]
+pub enum DailyBoostReply {
+    Rejected,
+    Payload(Vec<u8>),
+    Unavailable(DurabilityError),
+}
+
+pub(super) fn is_retryable(error: &DurabilityError) -> bool {
+    matches!(
+        error,
+        DurabilityError::RootUnavailable
+            | DurabilityError::RootPassDeadlineExceeded
+            | DurabilityError::Database(SqlxFailureClass::RetryableStatement)
+    )
+}
 
 pub(super) fn offered(
     base: &[super::capabilities::OfferedCapability],
@@ -72,15 +88,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) async fn initialize_daily_boost(&self) -> Result<(), ()> {
-        self.load_daily_boost(false).await
+        self.load_daily_boost(None).await.map_err(|_| ())
     }
 
-    async fn load_daily_boost(&self, refresh: bool) -> Result<(), ()> {
+    async fn load_daily_boost(&self, deadline: Option<tokio::time::Instant>) -> Result<(), DurabilityError> {
         let Some(map) = self.bundle_map() else {
             return Ok(());
         };
-        let mut runtime = self.runtime.lock().await;
-        runtime.owner_fence().map_err(|_| ())?;
+        let runtime = self.runtime.lock().await;
+        runtime
+            .owner_fence()
+            .map_err(|_| DurabilityError::Unavailable)?;
         if self
             .active_generation
             .and_then(crate::content::ActiveGeneration::native_gameplay)
@@ -88,10 +106,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 native.source_digest() != runtime.content_pin().server_artifact_digest()
             })
         {
-            return Err(());
+            return Err(DurabilityError::Unavailable);
         }
 
-        if !refresh
+        if deadline.is_none()
             && runtime
                 .daily_boost()
                 .is_some_and(|choice| choice.reset_epoch == self.reset_epoch)
@@ -104,12 +122,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(());
         }
         drop(runtime);
-        let permit = self.spell_lane_permit().await.ok_or(())?;
-        runtime = self.runtime.lock().await;
-        let binding = runtime.binding();
+        let permit = self.try_spell_lane_permit_by(deadline).await?;
+        let binding = self.runtime.lock().await.binding();
+        #[cfg(test)]
+        let held = if self
+            .states
+            .test_daily_boost_hold_once
+            .swap(false, std::sync::atomic::Ordering::Relaxed)
+        {
+            Some(self.root.try_issue_semantic_pass()?)
+        } else {
+            None
+        };
         let selection = self
             .root
-            .prepare_daily_boost(
+            .prepare_daily_boost_by(
                 self.character,
                 self.holder,
                 &permit,
@@ -120,10 +147,70 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     epoch: self.reset_epoch,
                 },
                 pools,
+                deadline,
             )
-            .await
-            .map_err(|_| ())?;
-        runtime.install_daily_boost(selection).map_err(|_| ())
+            .await;
+        #[cfg(test)]
+        if let Some(held) = held {
+            assert!(matches!(&selection, Err(DurabilityError::RootUnavailable)));
+            // Return the actual holder with observed readiness before the retry.
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        }
+        let selection = selection?;
+        let mut runtime = self.runtime.lock().await;
+        if runtime.binding() != binding {
+            return Err(DurabilityError::Unavailable);
+        }
+        runtime
+            .install_daily_boost(selection)
+            .map_err(|_| DurabilityError::Unavailable)
+    }
+
+    async fn retry_daily_boost(&self) -> Result<(), DurabilityError> {
+        let budget = AdmissionRetryBudget::for_foreground_command(self.root)?;
+        loop {
+            budget.check_deadline()?;
+            let result = self.load_daily_boost(Some(budget.deadline)).await;
+            // The pass and lane permit have both been returned before waiting.
+            if !result.as_ref().is_err_and(is_retryable)
+                || !budget.retries_unavailable(AdmissionRefusal::Unavailable).await
+            {
+                return result;
+            }
+        }
+    }
+
+    #[cfg(test)]
+    async fn load_with_test_trade_contention(
+        &self,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+        load: impl std::future::Future<Output = Result<(), DurabilityError>>,
+    ) -> Result<(), DurabilityError> {
+        use std::sync::atomic::Ordering;
+        if !self
+            .states
+            .test_daily_boost_parked_trade
+            .swap(false, Ordering::Relaxed)
+        {
+            return load.await;
+        }
+        // Enter after command ingress has read its own fences. The reservation
+        // now belongs specifically to the lane reconciliation this query calls.
+        let binding = self.runtime.lock().await.binding();
+        super::monk_save::postgres_tests::maintain_authority_ready(self).await;
+        let holder = self
+            .root
+            .try_issue_semantic_pass()
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.states
+            .player_trades
+            .retain_test_request(binding, fence)?;
+        let result = load.await;
+        self.states
+            .player_trades
+            .remove_test_request(fence.game_session_id)?;
+        drop(holder);
+        result
     }
 
     pub(super) async fn daily_boost_wire(
@@ -132,9 +219,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         id: u64,
         kind: u32,
         payload: &[u8],
-    ) -> GuildReply {
+    ) -> DailyBoostReply {
         let Some(fence) = admitted.item_fence else {
-            return GuildReply::Rejected;
+            return DailyBoostReply::Rejected;
         };
         if fence.game_session_id != admitted.game_session_id
             || fence.connection_generation.get() != admitted.continuity.connection_generation
@@ -146,10 +233,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .contains(wire::CAPABILITY_DAILY_BOOST_V1)
             || wire::decode_query(payload).is_err()
         {
-            return GuildReply::Rejected;
+            return DailyBoostReply::Rejected;
         }
-        if self.load_daily_boost(true).await.is_err() {
-            return GuildReply::Unavailable;
+        let load = self.retry_daily_boost();
+        #[cfg(test)]
+        let load = self.load_with_test_trade_contention(fence, load);
+        if let Err(error) = load.await {
+            return DailyBoostReply::Unavailable(error);
         }
         let runtime = self.runtime.lock().await;
         if runtime.owner_fence().is_err()
@@ -164,18 +254,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .is_ok_and(|f| f.control_loss.is_none())
             })
         {
-            return GuildReply::Rejected;
+            return DailyBoostReply::Rejected;
         }
         let Some(choice) = runtime.daily_boost() else {
-            return GuildReply::Rejected;
+            return DailyBoostReply::Rejected;
         };
         match wire::encode_view(&wire::DailyBoostView {
             reset_epoch: choice.reset_epoch,
             creature_key: choice.creature.clone(),
             boss_key: choice.boss.clone(),
         }) {
-            Ok(bytes) => GuildReply::Payload(bytes),
-            Err(_) => GuildReply::Unavailable,
+            Ok(bytes) => DailyBoostReply::Payload(bytes),
+            Err(_) => DailyBoostReply::Unavailable(DurabilityError::InvalidStoredState),
         }
     }
 }
@@ -191,9 +281,9 @@ macro_rules! authority_methods {
             _id: u64,
             _kind: u32,
             _payload: &[u8],
-        ) -> impl std::future::Future<Output = $crate::gameplay_transport::guild_intent::GuildReply>
+        ) -> impl std::future::Future<Output = $crate::gameplay_transport::daily_boost::DailyBoostReply>
         {
-            async { $crate::gameplay_transport::guild_intent::GuildReply::Rejected }
+            async { $crate::gameplay_transport::daily_boost::DailyBoostReply::Rejected }
         }
     };
 }
@@ -213,7 +303,7 @@ macro_rules! composed_methods {
             id: u64,
             kind: u32,
             payload: &[u8],
-        ) -> crate::gameplay_transport::guild_intent::GuildReply {
+        ) -> crate::gameplay_transport::daily_boost::DailyBoostReply {
             self.daily_boost_wire(admitted, id, kind, payload).await
         }
     };
