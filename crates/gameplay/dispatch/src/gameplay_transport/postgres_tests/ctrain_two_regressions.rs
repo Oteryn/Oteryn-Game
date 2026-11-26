@@ -14,7 +14,7 @@ fn storkus_accepts_deposits_and_confirms_in_separate_steps() -> TestResult {
 }
 
 #[test]
-fn storkus_answers_empty_direct_dust_hand_in_and_resets_topic() -> TestResult {
+fn storkus_refreshes_collection_and_answers_empty_yes_please() -> TestResult {
     qengine_rewards_fixtures::scenario("qengine-rewards-storkus-empty-dust")
 }
 

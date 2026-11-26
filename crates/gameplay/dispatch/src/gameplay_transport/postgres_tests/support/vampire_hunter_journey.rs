@@ -128,11 +128,11 @@ pub(super) async fn direct_dust(
     use oteryn_gameplay_quests::quest::reward_callbacks;
     use sqlx::types::Uuid;
 
-    const HAND_IN: &str = "oteryn:quest-reward/inquisition-vampire-hunt-dust";
+    const COLLECT: &str = "oteryn:quest-reward/inquisition-vampire-hunt-dust/collect";
     let callbacks = reward_callbacks::load()?;
     let collect = callbacks
         .iter()
-        .find(|callback| callback.key == "oteryn:quest-reward/inquisition-vampire-hunt-dust/collect")
+        .find(|callback| callback.key == COLLECT)
         .ok_or("authored Storkus dust collection")?;
     let [payment] = collect.take.as_slice() else {
         return Err("expected one authored dust payment".into());
@@ -168,16 +168,39 @@ pub(super) async fn direct_dust(
         NpcIntentDisposition::Ok
     );
     let offer = talk_outcome(owner, admitted, npc, first + 1, "vampire dust").await?;
-    assert_eq!(offer.disposition, NpcIntentDisposition::Ok);
+    let shortcut = talk_outcome(owner, admitted, npc, first + 2, "yes").await?;
+    let untouched: (i64, i64, i64, i64, i64) = sqlx::query_as(
+        "SELECT (SELECT quantity FROM game_item_instances WHERE item_instance_id=$1),
+                (SELECT value FROM game_character_quest_tracks WHERE track_key=$2),
+                (SELECT value FROM game_character_quest_tracks WHERE track_key=$3),
+                coalesce((SELECT value FROM game_character_quest_tracks WHERE track_key=$4), 0),
+                (SELECT count(*) FROM game_quest_callback_consumptions)",
+    )
+    .bind(*item)
+    .bind(INQUISITION)
+    .bind(VAMPIRE_HUNT)
+    .bind(DUST)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(untouched, (*before, 6, 1, 0, 0), "direct dust shortcut");
+    assert!(offer.conversation.is_none());
+    assert!(!shortcut.inventory_changed);
+
+    for (offset, word) in [(3, "mission"), (4, "yes")] {
+        assert_eq!(
+            talk(owner, admitted, npc, first + offset, word).await?,
+            NpcIntentDisposition::Ok
+        );
+    }
+    let prompt = talk_outcome(owner, admitted, npc, first + 5, "mission").await?;
     assert_eq!(
-        offer.conversation.ok_or("direct dust offer")?.lines,
-        ["Shall I take the vampire dust you've brought?"]
+        prompt.conversation.ok_or("Storkus collection prompt")?.lines,
+        [format!("Have you brought any vampire dust? You are carrying {stack} of the 20 ounces I asked for.")]
     );
-    let command = first + 2;
+    let command = first + 6;
     assert_eq!(
-        talk(owner, admitted, npc, command, "yes").await?,
-        NpcIntentDisposition::Ok,
-        "Storkus must accept the direct hand-in"
+        talk(owner, admitted, npc, command, "yes please").await?,
+        NpcIntentDisposition::Ok
     );
 
     // Read one snapshot and compare PostgreSQL row versions as well as the
@@ -205,26 +228,56 @@ pub(super) async fn direct_dust(
         .bind(INQUISITION)
         .bind(VAMPIRE_HUNT)
         .bind(DUST)
-        .bind(HAND_IN)
+        .bind(COLLECT)
         .bind(session)
         .bind(command.to_string())
         .fetch_all(&h.pool)
     };
     let committed = snapshot().await?;
-    let [(remaining, debit, tracks, same_xact, _)] = committed.as_slice() else {
-        return Err("expected one receipt for the direct Storkus hand-in".into());
+    let [(remaining, debit, tracks, same_xact, transaction)] = committed.as_slice() else {
+        return Err("expected one receipt for the Storkus collection".into());
     };
     assert_eq!(*debit, i32::from(payment.count));
     assert_eq!(*remaining, *before - i64::from(payment.count));
     assert_eq!(
         tracks,
-        &[questline.set, mission.set, dust.set],
-        "direct hand-in must advance the questline, mission, and dust counter"
+        &[questline.minimum, mission.minimum, dust.set],
+        "collection leaves the questline and mission ready for the report"
     );
-    assert!(*same_xact, "the dust and all tracks must commit together");
+    assert!(*same_xact, "the debit and preserved stage snapshot must commit together");
 
-    let _ = talk(owner, admitted, npc, command, "yes").await?;
-    assert_eq!(snapshot().await?, committed, "replay changed the committed hand-in");
+    let _ = talk(owner, admitted, npc, command, "yes please").await?;
+    assert_eq!(snapshot().await?, committed, "replay changed the committed collection");
+
+    assert_eq!(
+        talk(owner, admitted, npc, command + 1, "my mission").await?,
+        NpcIntentDisposition::Ok
+    );
+    let reported = snapshot().await?;
+    assert_eq!(
+        reported,
+        [(*remaining, *debit, vec![questline.set, mission.set, dust.set], false, *transaction)]
+    );
+    let report_committed_separately: bool = sqlx::query_scalar(
+        "SELECT q.xmin=r.xmin AND m.xmin=r.xmin AND d.xmin=r.xmin
+                AND r.created_xact_id<>c.created_xact_id
+         FROM game_character_quest_receipts r
+         JOIN game_quest_callback_consumptions c ON c.transaction_id=$1
+         JOIN game_character_quest_tracks q ON q.character_id=r.character_id AND q.track_key=$2
+         JOIN game_character_quest_tracks m ON m.character_id=r.character_id AND m.track_key=$3
+         JOIN game_character_quest_tracks d ON d.character_id=r.character_id AND d.track_key=$4
+         WHERE r.transition_key=$5 AND r.cause_id=$6 AND r.cause_ordinal=$7::text::numeric",
+    )
+    .bind(*transaction)
+    .bind(INQUISITION)
+    .bind(VAMPIRE_HUNT)
+    .bind(DUST)
+    .bind(&report.key)
+    .bind(session)
+    .bind((command + 1).to_string())
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(report_committed_separately);
     Ok(())
 }
 
@@ -249,27 +302,6 @@ pub(super) async fn empty_dust(
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     let first = admitted.continuity.next_command_id;
-    let _ = talk(owner, admitted, npc, first, "hi").await?;
-    let offer = talk_outcome(owner, admitted, npc, first + 1, "vampire dust").await?;
-    assert_eq!(
-        offer.conversation.ok_or("direct dust offer")?.lines,
-        ["Shall I take the vampire dust you've brought?"]
-    );
-    let answer = talk_outcome(owner, admitted, npc, first + 2, "yes").await?;
-    assert_eq!(
-        answer.conversation.map(|conversation| conversation.lines),
-        Some(vec![
-            "Ye've brought me 0 vampire dusts. Ye' need to bring 20 more.".into()
-        ])
-    );
-    assert_eq!(answer.disposition, NpcIntentDisposition::Ok);
-    assert!(!answer.inventory_changed);
-    let follow_up = talk_outcome(owner, admitted, npc, first + 3, "mission").await?;
-    assert_eq!(
-        follow_up.conversation.ok_or("mission after empty hand-in")?.lines,
-        ["Are you ready to help me hunt vampires?"]
-    );
-
     for (case, saved, reply) in [
         (0, 6, "Ye've brought me 0 vampire dusts. Ye' need to bring 14 more."),
         (1, 20, "Ye've brought me 0 vampire dusts. Ask me for a mission to continue your quest."),
@@ -278,15 +310,19 @@ pub(super) async fn empty_dust(
         owner
             .refresh_quest_session(admitted.game_session_id, false)
             .await;
-        let command = first + 4 + u64::from(case) * 4;
+        let command = first + u64::from(case) * 6;
         let _ = talk(owner, admitted, npc, command, "bye").await?;
         let _ = talk(owner, admitted, npc, command + 1, "hi").await?;
-        let offer = talk_outcome(owner, admitted, npc, command + 2, "mission").await?;
-        assert_eq!(
-            offer.conversation.ok_or("collection dust offer")?.lines,
-            ["Have you brought any vampire dust?"]
-        );
-        let answer = talk_outcome(owner, admitted, npc, command + 3, "yes").await?;
+        // Mission precedes yes in Crystal's callback even while collection is active.
+        for (offset, word) in [(2, "my mission"), (3, "mission"), (4, "yes, my mission")] {
+            let offer = talk_outcome(owner, admitted, npc, command + offset, word).await?;
+            assert_eq!(
+                offer.conversation.map(|conversation| conversation.lines),
+                Some(vec!["Have you brought any vampire dust? You are carrying 0 of the 20 ounces I asked for.".into()]),
+                "collection prompt for {word} with {saved} saved dust"
+            );
+        }
+        let answer = talk_outcome(owner, admitted, npc, command + 5, "yes please").await?;
         assert_eq!(
             answer.conversation.map(|conversation| conversation.lines),
             Some(vec![reply.into()]),

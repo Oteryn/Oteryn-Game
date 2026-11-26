@@ -14,6 +14,7 @@ mod offer_match;
 mod offer_topic;
 mod offers;
 mod selection_facts;
+mod storkus;
 pub(super) use selection_facts::needs_facts;
 
 #[derive(Deserialize)]
@@ -85,20 +86,30 @@ pub(super) fn prepare(
         command.game_session_id,
         intent,
     )?;
-    let text = intent.text.trim().to_ascii_lowercase();
-    if text == "no"
+    let text = callback_keyword(admission, command, &context.2, &intent.text);
+    let raw_text = intent.text.trim().to_ascii_lowercase();
+    let requests_offer = if context.2 == storkus::NPC {
+        &text
+    } else {
+        &raw_text
+    };
+    let says_no = raw_text == "no";
+    if says_no
         || (phase == Phase::Offers
-            && !matches!(text.as_str(), "yes" | "hi" | "hello" | "bye" | "farewell")
+            && !matches!(
+                requests_offer.as_str(),
+                "yes" | "hi" | "hello" | "bye" | "farewell"
+            )
             && offers
                 .offers
                 .iter()
-                .any(|offer| offer.npc == context.2 && offer.keywords.contains(&text)))
+                .any(|offer| offer.npc == context.2 && offer.keywords.contains(requests_offer)))
     {
         let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
         sessions
             .get_mut(&command.game_session_id)?
             .quest_dialogue
-            .reward_request = (text != "no").then_some(context);
+            .reward_request = (!says_no).then_some(context);
     }
     let catalogue = admission.quest_catalogue.as_deref()?;
     let mut failure_reply = Vec::new();
@@ -144,7 +155,6 @@ pub(super) fn prepare(
                         .iter()
                         .any(|gate| gate.track == EROTH_LEGACY_TRACK)
             });
-            let text = callback_keyword(&context.2, &intent.text);
             let meets_level = |minimum: Option<u32>| {
                 minimum.is_none_or(|minimum| inventory.is_some_and(|facts| facts.level >= minimum))
             };
@@ -169,9 +179,11 @@ pub(super) fn prepare(
                 })
             };
             if phase == Phase::Rewards {
-                let topic = if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN
-                    && text == "mission"
-                {
+                let topic = if text == "mission"
+                    && matches!(
+                        context.2.as_str(),
+                        oteryn_gameplay_quests::quest::classic_talk::ROTTIN | storkus::NPC
+                    ) {
                     0
                 } else {
                     topic.number
@@ -219,30 +231,19 @@ pub(super) fn prepare(
                 }
                 // Crystal storkus.lua:121-141 displays 20 minus the saved counter
                 // for an empty deposit and resets the topic.
-                const STORKUS_DUST: &str =
-                    "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust";
-                if context.2 == "oteryn:npc.storkus"
-                    && matches!(topic, 1 | 9)
-                    && let Some(saved) = track_value(STORKUS_DUST)
+                if context.2 == storkus::NPC
+                    && topic == storkus::COLLECTION_TOPIC
+                    && let Some(saved) = track_value(storkus::DUST)
                     && let Some(facts) = inventory
                     && let Some(payment) = matching_stage
                         .clone()
                         .find_map(|callback| callback.take.first())
                     && facts.quantities.get(&payment.item).copied().unwrap_or(0) == 0
                 {
-                    let remaining = 20 - saved;
-                    let reply = if remaining > 0 {
-                        format!(
-                            "Ye've brought me 0 vampire dusts. Ye' need to bring {remaining} more."
-                        )
-                    } else {
-                        "Ye've brought me 0 vampire dusts. Ask me for a mission to continue your quest."
-                            .into()
-                    };
                     return Some(Choice {
                         transition: None,
                         next_topic: Some(Topic::from(0)),
-                        reply: vec![reply],
+                        reply: vec![reward_callbacks::storkus_dust_reply(0, saved)],
                     });
                 }
                 // A later stage with the same keyword cannot hide this stage's
@@ -269,7 +270,14 @@ pub(super) fn prepare(
                 return Some(Choice {
                     transition: None,
                     next_topic: Some(Topic::from(offer.next_topic)),
-                    reply: offer.reply.clone(),
+                    reply: if context.2 == storkus::NPC
+                        && text == "mission"
+                        && offer.next_topic == storkus::COLLECTION_TOPIC
+                    {
+                        storkus::collection_prompt(&offer.reply, inventory?)
+                    } else {
+                        offer.reply.clone()
+                    },
                 });
             }
             // Earlier stages may share the terminal reward's keyword. Grizzly's
@@ -426,6 +434,11 @@ pub(super) fn unhandled_confirmation(
     let topic = state.quest_dialogue.topic(&context).number;
     let requested = state.quest_dialogue.reward_request.as_ref() == Some(&context);
     drop(sessions);
+    let text = if context.2 == storkus::NPC {
+        callback_keyword(admission, command, &context.2, &intent.text)
+    } else {
+        text
+    };
     let Some(catalogue) = admission.quest_catalogue.as_deref() else {
         return false;
     };
@@ -441,10 +454,20 @@ pub(super) fn unhandled_confirmation(
     })
 }
 
-fn callback_keyword(npc: &str, text: &str) -> String {
+fn callback_keyword(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    command: UseCommand,
+    npc: &str,
+    text: &str,
+) -> String {
     use oteryn_gameplay_quests::quest::classic_talk;
     if npc == classic_talk::ROTTIN {
         return classic_talk::rottin_keyword(text)
+            .unwrap_or_default()
+            .into();
+    }
+    if npc == storkus::NPC {
+        return storkus::keyword(admission, command, text)
             .unwrap_or_default()
             .into();
     }
