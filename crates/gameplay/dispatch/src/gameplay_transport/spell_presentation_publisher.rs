@@ -555,7 +555,7 @@ pub(super) mod ambient_sounds;
 mod tests;
 
 #[path = "spell_presentation_cooldowns.rs"]
-mod cooldowns;
+pub(super) mod cooldowns;
 
 /// Bounded production fan-out journal. Connections keep independent cursors.
 #[derive(Debug, Default)]

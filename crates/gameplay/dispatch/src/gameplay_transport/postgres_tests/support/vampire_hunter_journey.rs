@@ -95,7 +95,9 @@ pub(super) async fn dust(
         ("mission", None),
         ("yes", Some((6, 1, 1, 0))),
         ("mission", None),
+        ("trade yes", Some((6, 1, 1, 0))),
         ("yes", Some((6, 1, 21, 20))),
+        ("hi mission", Some((6, 1, 21, 20))),
         ("mission", Some((7, 2, 21, 20))),
     ]
     .into_iter()
@@ -431,7 +433,7 @@ pub(super) async fn exercise(
     .enumerate()
     {
         let rank = i64::try_from(index + 1)?;
-        let command = first + 8 + u64::try_from(index)? * 4;
+        let command = first + 8 + u64::try_from(index)? * 6;
         let offer = talk_outcome(owner, admitted, npc, command, "vampire lord token").await?;
         assert_eq!(offer.disposition, NpcIntentDisposition::Ok);
         assert_eq!(
@@ -463,12 +465,31 @@ pub(super) async fn exercise(
             true,
         )
         .await?;
+        let stale = talk_outcome(owner, admitted, npc, command + 2, "yes please").await?;
+        assert!(
+            !stale.inventory_changed,
+            "stale confirmation paid for rank {rank}"
+        );
+        let focus = talk_outcome(
+            owner,
+            admitted,
+            npc,
+            command + 3,
+            "trade vampire lord token",
+        )
+        .await?;
+        assert!(
+            focus
+                .conversation
+                .is_none_or(|reply| reply.lines != ["Would ye' like to give me vampire tokens?"]),
+            "trade opened a token offer for rank {rank}"
+        );
         assert_eq!(
-            talk(owner, admitted, npc, command + 2, "vampire lord token").await?,
+            talk(owner, admitted, npc, command + 4, "vampire lord token").await?,
             NpcIntentDisposition::Ok
         );
         assert_eq!(
-            talk(owner, admitted, npc, command + 3, "yes").await?,
+            talk(owner, admitted, npc, command + 5, "yes").await?,
             NpcIntentDisposition::Ok
         );
         assert_eq!(

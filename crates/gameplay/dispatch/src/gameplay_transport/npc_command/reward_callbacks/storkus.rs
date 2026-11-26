@@ -40,12 +40,38 @@ pub(super) fn keyword(
     command: UseCommand,
     text: &str,
 ) -> Option<&'static str> {
+    if focus_intercepts(text) {
+        return None;
+    }
     ["mission", "vampire lord token", "yes"]
         .into_iter()
         .find(|word| {
             classic_talk::contains(text, word)
                 && (*word != "vampire lord token"
                     || track(admission, command, QUESTLINE).is_some_and(|value| value >= 11))
+        })
+}
+
+// Crystal's FocusModule handles these before CALLBACK_MESSAGE_DEFAULT.
+// modules.lua:379-387 rejects a focus word if any occurrence touches [%w+].
+fn focus_intercepts(text: &str) -> bool {
+    let text = text.to_ascii_lowercase();
+    let bytes = text.as_bytes();
+    let touches_word = |byte: u8| byte.is_ascii_alphanumeric() || byte == b'+';
+    ["hi", "hello", "bye", "farewell", "trade", "offers"]
+        .into_iter()
+        .any(|word| {
+            let mut found = false;
+            for (start, _) in text.match_indices(word) {
+                let end = start + word.len();
+                if (start > 0 && touches_word(bytes[start - 1]))
+                    || (end < bytes.len() && touches_word(bytes[end]))
+                {
+                    return false;
+                }
+                found = true;
+            }
+            found
         })
 }
 
