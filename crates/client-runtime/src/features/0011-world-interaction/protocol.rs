@@ -199,6 +199,7 @@ pub async fn send_framed<S: SessionStream>(
         UseDisposition::StaleState => "target changed",
         UseDisposition::NothingToUse => "nothing to use here",
         UseDisposition::RequirementNotMet => "requirements not met",
+        UseDisposition::PremiumRequired => return Ok("You need a premium account.".into()),
         UseDisposition::Exhausted => "exhausted",
         UseDisposition::Full => "already full",
         UseDisposition::NoTarget => "no target",

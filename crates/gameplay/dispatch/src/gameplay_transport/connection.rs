@@ -1298,7 +1298,7 @@ where
 /// The `ACTOR_VITALS` delta (domain 3, delta type 1) from the last transmitted revision to `to`, at the
 /// sequence after `sequence`; `None` on an encoding fault. The complete value
 /// may coalesce multiple actual owner changes from the last transmitted revision.
-/// Dispositions 7 to 10 exist only under capability 15 (ITEM-USE-0 §3): a session without it
+/// Dispositions 7 to 10 and 24 exist only under capability 15: a session without it
 /// gets `Rejected`, the one refusal it can decode, for any of them. So does a session without
 /// capability 11 for the dispositions 11 to 17 (WORLD-INTERACTION-0 §10.1), and a session without
 /// capability 22 for the dispositions 18 and 19 (RUNE-USE-0 §4).
@@ -1332,6 +1332,7 @@ fn negotiated_use_disposition(
         | UseDisposition::Exhausted
         | UseDisposition::Full
         | UseDisposition::NoTarget
+        | UseDisposition::PremiumRequired
             if !item_use =>
         {
             (UseDisposition::Rejected, None)

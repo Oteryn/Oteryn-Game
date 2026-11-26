@@ -208,8 +208,14 @@ pub(super) async fn exercise(
         }
         mint(owner, admitted, 12556, 1, &mut ordinal).await?;
         let premium = owner.premium_coordinator.take();
-        use_native(owner, admitted, 12551, UseDisposition::RequirementNotMet).await?;
+        let before_grants = grants(h).await?;
+        use_native(owner, admitted, 12551, UseDisposition::PremiumRequired).await?;
         owner.premium_coordinator = premium;
+        assert_eq!(
+            grants(h).await?,
+            before_grants,
+            "Premium refusal grants no outfit"
+        );
         for item in 12551..=12556 {
             assert_eq!(
                 quantity(h, item).await?,
@@ -337,10 +343,20 @@ pub(super) async fn exercise(
             actual, expected,
             "complete unsigned CommandId identity domain"
         );
-        use_native(owner, admitted, 12787, UseDisposition::Committed).await?;
-        mask(owner, admitted, &key, 1).await?;
         mint(owner, admitted, 12786, 1, &mut ordinal).await?;
-        use_native(owner, admitted, 12786, UseDisposition::Committed).await?;
+        for (item, before_mask, after_mask) in [(12787, 0, 1), (12786, 1, 3)] {
+            let premium = owner.premium_coordinator.take();
+            use_native(owner, admitted, item, UseDisposition::PremiumRequired).await?;
+            owner.premium_coordinator = premium;
+            assert_eq!(
+                quantity(h, item).await?,
+                1,
+                "Premium refusal retains the addon item"
+            );
+            mask(owner, admitted, &key, before_mask).await?;
+            use_native(owner, admitted, item, UseDisposition::Committed).await?;
+            mask(owner, admitted, &key, after_mask).await?;
+        }
     } else {
         let [npc] =
             super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.gnomally"]).await?;
@@ -410,7 +426,7 @@ pub(super) async fn exercise(
             );
             assert_eq!(quantity(h, voucher).await?, 1, "native backpack MINT");
             let premium = owner.premium_coordinator.take();
-            use_native(owner, admitted, voucher, UseDisposition::RequirementNotMet).await?;
+            use_native(owner, admitted, voucher, UseDisposition::PremiumRequired).await?;
             owner.premium_coordinator = premium;
             assert_eq!(
                 quantity(h, voucher).await?,
