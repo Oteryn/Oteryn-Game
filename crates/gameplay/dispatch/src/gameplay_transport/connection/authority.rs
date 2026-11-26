@@ -1604,15 +1604,6 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
-    /// Cooldown presentation from the admitted caster's committed runtime state.
-    fn spell_cooldown_delta(
-        &self,
-        _admitted: AdmittedSession,
-        _publisher: &mut SpellCooldownPublisher,
-    ) -> impl Future<Output = Option<Vec<u8>>> {
-        async { None }
-    }
-
     fn observe_house_vitals(
         &self,
         actor: ExactActorRef,
