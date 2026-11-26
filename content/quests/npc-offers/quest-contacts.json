@@ -577,7 +577,8 @@
         "mission"
       ],
       "topic": 0,
-      "next_topic": 10,
+      "any_topic": true,
+      "next_topic": 9,
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
@@ -604,6 +605,7 @@
         "mission"
       ],
       "topic": 0,
+      "any_topic": true,
       "next_topic": 1,
       "storage": [
         {
@@ -622,41 +624,7 @@
         }
       ],
       "reply": [
-        "Have you brought any vampire dust?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.storkus",
-      "keywords": [
-        "vampire dust"
-      ],
-      "topic": 0,
-      "next_topic": 9,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
-          "minimum": 6,
-          "maximum": 6,
-          "set": 6,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 1,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust",
-          "minimum": 0,
-          "maximum": 20,
-          "set": 0,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Shall I take the vampire dust you've brought?"
+        "Have you brought any vampire dust? You are carrying {carried_dust} of the 20 ounces I asked for."
       ]
     },
     {
