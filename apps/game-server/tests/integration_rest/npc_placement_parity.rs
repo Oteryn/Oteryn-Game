@@ -398,6 +398,8 @@ fn crystal_npc_services_use_their_source_placement_cells() -> TestResult {
         let key = format!("oteryn:npc.{npc}");
         assert!(admitted.contains(key.as_str()), "{key}");
         let cell = match npc {
+            // Keep Dalbrect's Isle of the Kings arrival clear.
+            "captain_jack" => (32190, 31958, 6),
             "ferryman_kamil_meluna" => (32088, 32469, 7),
             "hawkhurst_ingol" => (33711, 32602, 6),
             _ => (x, y, z),

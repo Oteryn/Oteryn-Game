@@ -2617,6 +2617,7 @@ mod primal_pod_removal_tests {
                 passable: false,
             }],
             remove_self: false,
+            source_reset: None,
         };
         let abandoned = map
             .stage_scene_close(1, 0, entry, &[], &[], Some(&projection))

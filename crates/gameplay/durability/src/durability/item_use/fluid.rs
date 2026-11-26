@@ -64,7 +64,7 @@ impl ItemFluidRequest {
         std::iter::once(&self.change).chain(&self.other)
     }
 
-    pub(in crate::durability) fn validate(&self) -> Result<()> {
+    fn validate(&self) -> Result<()> {
         // A pour moves the whole fluid: one side empties, the other takes its sub-type.
         let pour = match &self.other {
             None => true,
@@ -260,7 +260,7 @@ async fn replay(
     }
 }
 
-pub(in crate::durability) async fn write_fluid(
+async fn write_fluid(
     connection: &mut PgConnection,
     fence: &CurrentCharacterItemFence,
     request: &ItemFluidRequest,

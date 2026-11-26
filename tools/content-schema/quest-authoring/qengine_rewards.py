@@ -958,11 +958,11 @@ def build():
         present=[(death_list, 1)],
     )
     referral_lines = [line.strip()[1:-2] for line in arito_referral if line.strip().startswith('"')]
-    # Keep the referral and the authored hint for the native entrance ritual.
+    # Keep the referral and describe the cave's current state.
     callbacks[-1]["reply"] = [
         referral_lines[0],
         referral_lines[1].split(" Please go", 1)[0],
-        "The entrance is sealed. The nomads' ritual calls for a scimitar and water.",
+        "The entrance is sealed.",
     ]
     callbacks[-1]["sources"] = [
         f"crystal:{PIN}:{arito_path}:71-96:sha256:{sha(inputs[arito_path])}"

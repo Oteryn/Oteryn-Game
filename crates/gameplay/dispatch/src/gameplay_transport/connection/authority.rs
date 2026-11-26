@@ -704,16 +704,6 @@ pub trait FreshAdmissionAuthority {
         async move { Some(self.use_item(actor, command, item).await) }
     }
 
-    /// Probe the receipt before a replay needs the source's current view handle.
-    fn replay_nomads_pour(
-        &self,
-        _actor: ExactActorRef,
-        _command: UseCommand,
-        _target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
-    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
-        async { Ok(None) }
-    }
-
     /// I10a: a carried fluid container used on a map source or ground tile.
     fn use_fluid_on_map(
         &self,
@@ -721,7 +711,7 @@ pub trait FreshAdmissionAuthority {
         _command: UseCommand,
         _source: ItemKey,
         _target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
-    ) -> impl Future<Output = Option<Result<UseOutcome, ()>>> {
+    ) -> impl Future<Output = Option<UseOutcome>> {
         async { None }
     }
 

@@ -91,27 +91,6 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             return Some(Dispatch::Use(outcome));
         }
     }
-    if let Ok(UseIntent {
-        target: UseTarget::Item(_),
-        use_with_map_item: Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(target)),
-        ..
-    }) = &decoded
-        && crate::durability::nomads_ritual::is_water_placement(&target.placement)
-        && let Some(outcome) = authority
-            .replay_nomads_pour(
-                actor,
-                UseCommand {
-                    game_session_id: admitted.game_session_id,
-                    command_id: command.command_id,
-                    item_fence: admitted.item_fence,
-                },
-                target,
-            )
-            .await
-            .ok()?
-    {
-        return Some(Dispatch::Use(outcome));
-    }
     if let Ok(intent) = &decoded {
         let source = match intent.target {
             UseTarget::Item(handle) => {
@@ -140,27 +119,19 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         && intent.use_with.is_none()
         && intent.use_with_map_item.is_none()
         && intent.use_with_position.is_none()
-        && matches!(
-            intent.target,
-            UseTarget::Item(_) | UseTarget::WorldObject(_)
+        && matches!(intent.target, UseTarget::Item(_) | UseTarget::WorldObject(_))
+        && admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
         )
-        && admitted
-            .continuity
-            .selected_capabilities
-            .contains(oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1)
-        && admitted
-            .continuity
-            .selected_capabilities
-            .contains(oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1)
+        && admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
+        )
     {
         let resolved = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
             _ => None,
         };
-        if let Some(outcome) = authority
-            .server_modal_offer_bed(*admitted, intent.target.clone(), resolved)
-            .await
-        {
+        if let Some(outcome) = authority.server_modal_offer_bed(*admitted, intent.target.clone(), resolved).await {
             return Some(Dispatch::Use(outcome));
         }
     }
@@ -450,7 +421,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         )
                         .await
                 {
-                    return Some(Dispatch::Use(outcome.ok()?));
+                    return Some(Dispatch::Use(outcome));
                 }
                 if let Some(outcome) = transport::house_destroy::dispatch_map_use(authority, actor, UseCommand {
                     game_session_id: admitted.game_session_id,

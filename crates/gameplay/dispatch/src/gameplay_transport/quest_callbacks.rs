@@ -334,7 +334,7 @@ fn local(p: Position) -> MovementLocalPosition {
         floor: -i16::from(p.floor),
     }
 }
-pub(super) fn native(p: MovementLocalPosition) -> Option<TilePos> {
+fn native(p: MovementLocalPosition) -> Option<TilePos> {
     Some(TilePos {
         x: p.x.try_into().ok()?,
         y: p.y.try_into().ok()?,
@@ -1302,7 +1302,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|c| {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
-                    && !crate::durability::nomads_ritual::is_callback(&c.key)
                     && !superseded_chest(c, callbacks)
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
@@ -1581,10 +1580,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(at) = native(expected.position()) else {
                 return UseDisposition::Rejected;
             };
-            if !callback.reaches(
-                Position { x: at.x, y: at.y, floor: at.floor },
-                Position { x: resolved.pos.x, y: resolved.pos.y, floor: resolved.pos.floor },
-            ) {
+            if !callback.reaches(Position { x: at.x, y: at.y, floor: at.floor }, Position { x: resolved.pos.x, y: resolved.pos.y, floor: resolved.pos.floor }) {
                 return UseDisposition::TooFar;
             }
             if !callback.is_read_only() && !self
@@ -2083,7 +2079,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-pub(super) fn hex(bytes: &[u8]) -> String {
+fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
@@ -2182,7 +2178,7 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
     }
 }
 
-pub(super) fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
+fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
     callback.world_requirements.iter().all(|requirement| {
         // Closed Ground-only slots have no static anchor; the refreshed Ground
         // owner and fenced SQL read-set prove their portable roots separately.

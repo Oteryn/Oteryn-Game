@@ -674,20 +674,7 @@ mod main_native_contract {
         // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
         // Knightwatch adds the shared tower permit and the diamond lever claim.
         // Main contributes its 44 native tracks, including the two Vampire Hunter tracks.
-        let ritual_tracks = crate::quest::world_callbacks::load()?
-            .into_iter()
-            .filter(|row| {
-                row.key == crate::quest::world_callbacks::nomads_ritual::PLACE_SCIMITAR
-                    || row.key == crate::quest::world_callbacks::nomads_ritual::OPEN_ENTRANCE
-            })
-            .flat_map(|row| row.track_initials.into_iter())
-            .collect::<std::collections::BTreeMap<_, _>>();
-        assert_eq!(ritual_tracks.len(), 2);
-        for (key, initial) in &ritual_tracks {
-            let track = before.tracks.get(key).ok_or("Arito ritual proof track")?;
-            assert_eq!((track.initial, track.min, track.max), (*initial, 0, 1));
-        }
-        assert_eq!(before.tracks.len(), 2_237 + 44 + ritual_tracks.len());
+        assert_eq!(before.tracks.len(), 2_237 + 44);
         for (name, max) in [("rank", 6), ("door", 1)] {
             let key = format!("oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/{name}");
             assert_eq!(

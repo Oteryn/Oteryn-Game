@@ -978,14 +978,13 @@ pub async fn loop_ground(
 /// The loop item receipt of command 9's CommandRef. A session without an item fence has none.
 pub(super) async fn committed_loop_move(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
-    _actor: ExactActorRef,
-    use_command: UseCommand,
+    command: UseCommand,
 ) -> Option<LoopMoveReplay> {
-    let Some(fence) = use_command.item_fence else {
+    let Some(fence) = command.item_fence else {
         return Some(LoopMoveReplay::Absent);
     };
-    let command_id = CommandId::new(use_command.command_id).ok()?;
-    let command = CommandRef::new(use_command.game_session_id, command_id);
+    let command_id = CommandId::new(command.command_id).ok()?;
+    let command = CommandRef::new(command.game_session_id, command_id);
     let replay = super::AdmissionRetryBudget::for_command(admission.root)
         .retry_command_guard(async || {
             admission
@@ -998,18 +997,6 @@ pub(super) async fn committed_loop_move(
     // A committed Dreamer offering whose acknowledgement was lost publishes before the replay.
     if replay == LoopMoveReplay::Moved
         && !dreamer_ring::reconcile(admission, fence.character_id, command).await
-    {
-        return None;
-    }
-    if replay == LoopMoveReplay::Moved
-        && admission.bundle_map().is_some()
-        && admission
-            .resume_nomads_ritual(
-                use_command,
-                crate::durability::nomads_ritual::NomadsRitualGesture::Drop,
-            )
-            .await
-            .is_err()
     {
         return None;
     }
@@ -1314,42 +1301,6 @@ pub(super) async fn move_loop_item_with_house_capacity(
             },
         },
     };
-    let crack = oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual::CRACK;
-    if matches!(&seed_result, Ok(None))
-        && assembly_target.is_none()
-        && matches!(request.target, LoopTarget::Ground(to)
-            if (to.x, to.y, to.floor) == (i32::from(crack.x), i32::from(crack.y), i16::from(crack.floor)))
-    {
-        let weights = NativeItemWeights(native).with_wheel(admission.premium_coordinator);
-        let physical = crate::durability::nomads_ritual::NomadsPhysical::Drop {
-            request: &loop_request,
-            slot: request.slot,
-            content: &weights,
-        };
-        match admission
-            .commit_nomads_ritual(&permit, actor, command, physical)
-            .await
-        {
-            Ok(Some(true)) => {
-                // The offered instance is consumed before it can enter the Ground view.
-                admission
-                    .states
-                    .browse_fields
-                    .committed_move(request.item, None);
-                drop(permit);
-                admission.refresh_terrain_tools().await;
-                admission
-                    .states
-                    .attack
-                    .lock()
-                    .await
-                    .forget_weapon(actor, command.game_session_id);
-                return LoopMoveResult::Committed;
-            }
-            Ok(Some(false) | None) => {} // The ordinary drop still owns its typed result.
-            Err(()) => return LoopMoveResult::Unknown,
-        }
-    }
     let committed = match seed_result {
         Ok(Some(result)) => Ok(result),
         Ok(None) if assembly_target.is_some() => {

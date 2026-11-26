@@ -99,7 +99,7 @@ pub(super) async fn path(
     }))
 }
 
-pub(super) async fn prepare<C: ItemLoopContent + ?Sized>(
+pub(super) async fn prepare<C: ItemLoopContent>(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
     context: &HouseLoopContext,

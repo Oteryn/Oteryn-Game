@@ -278,13 +278,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if callback.key == super::amphoras::GATE {
             map.facts.expire_movement_items(self.owner_now().get());
         }
-        let world_requirements_met = world_requirements_match(map, callback);
         if !close
-            && (!world_requirements_met
+            && (!world_requirements_match(map, callback)
                 || !self.ground_requirements_match(runtime, map, callback)
                 || !super::clear_area::area_is_clear(runtime, callback))
         {
-            if !world_requirements_met
+            if !world_requirements_match(map, callback)
                 && self.ground_requirements_match(runtime, map, callback)
                 && super::clear_area::area_is_clear(runtime, callback)
                 && super::timed_passages::lion_is_busy(map, callback)

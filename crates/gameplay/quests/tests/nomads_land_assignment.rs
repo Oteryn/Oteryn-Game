@@ -49,7 +49,7 @@ fn arito_referral_unlocks_muhad_assignment_from_initial_progress() -> Result<(),
 }
 
 #[test]
-fn arito_reports_the_sealed_cave_and_preserves_the_ritual() -> Result<(), String> {
+fn arito_reports_the_sealed_cave() -> Result<(), String> {
     let catalogue = load_embedded_quest_state("nomads-sealed-entrance")
         .map_err(|error| format!("{error:?}"))?;
     let referral = reward_callbacks::offered_for(catalogue.catalogue())?
@@ -58,7 +58,6 @@ fn arito_reports_the_sealed_cave_and_preserves_the_ritual() -> Result<(), String
         .ok_or("Arito referral")?;
     let reply = referral.reply.join(" ").to_ascii_lowercase();
     assert!(reply.contains("the entrance is sealed"));
-    assert!(reply.contains("scimitar") && reply.contains("water"));
     assert!(!reply.contains("will be revealed"));
     Ok(())
 }

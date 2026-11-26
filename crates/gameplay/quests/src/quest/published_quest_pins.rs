@@ -694,11 +694,6 @@ const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
             b"8d75517e41359a25abea653c8fd44fa5b4d2768c1470d9acaa9442b73f543065",
         )],
     ),
-    (
-        "oteryn:quest.tibia_tales",
-        TIBIA_TALES_RITUAL_SUCCESSOR,
-        &[TIBIA_TALES_TRAIN_SUCCESSOR],
-    ),
     // The native crypt and parcel extensions preserve saves from 3e0991642.
     (
         "oteryn:quest.too_hot_to_handle_quest",
@@ -778,9 +773,6 @@ pub(super) const BROTHERHOOD_BEFORE_DREAD_LORD: DefinitionHash =
 const TIBIA_TALES_TRAIN_SUCCESSOR: DefinitionHash =
     hash(b"08ddd97de427afb52741eacdef7781de95f438f5a86a88915d484b447e885db7");
 
-const TIBIA_TALES_RITUAL_SUCCESSOR: DefinitionHash =
-    hash(b"f558acb742256047fe7ab150edb88a897e69041b362d7be409a635c39e3d918f");
-
 // Exact successors captured from the integrated production loader. The unit
 // hashes remain valid predecessors for their own quest.
 const CONTENT_TRAIN_SUCCESSORS: &[(&str, DefinitionHash, DefinitionHash)] = &[
@@ -853,10 +845,7 @@ fn is_content_train_successor(
 
 fn is_successor(quest: &str, current: DefinitionHash, active: Option<DefinitionHash>) -> bool {
     active == Some(current)
-        || (quest == "oteryn:quest.tibia_tales" && active == Some(TIBIA_TALES_RITUAL_SUCCESSOR))
-        || (quest == "oteryn:quest.tibia_tales"
-            && current != TIBIA_TALES_RITUAL_SUCCESSOR
-            && active == Some(TIBIA_TALES_TRAIN_SUCCESSOR))
+        || (quest == "oteryn:quest.tibia_tales" && active == Some(TIBIA_TALES_TRAIN_SUCCESSOR))
         || is_content_train_successor(quest, current, active)
 }
 

@@ -508,42 +508,6 @@ pub(super) async fn consume(
     if !context_is_current(tx, permit, fence, context).await? {
         return Ok(false);
     }
-    use oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual;
-    let mut moved_scimitar = None;
-    if matches!(
-        callback.key.as_str(),
-        nomads_ritual::PLACE_SCIMITAR | nomads_ritual::OPEN_ENTRANCE
-    ) {
-        let drop = callback.key == nomads_ritual::PLACE_SCIMITAR;
-        let gesture = sqlx::query(
-            "SELECT uuid_send(item_instance_id) AS item,uuid_send(move_transaction_id) AS move_id
-               FROM game_nomads_ritual_gestures
-              WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric
-                AND character_id=encode($3,'hex')::uuid AND world_id=encode($4,'hex')::uuid
-                AND channel_id=encode($5,'hex')::uuid AND created_xact_id=pg_current_xact_id()
-                AND 'sha256:'||encode(map_digest,'hex')=$6 AND reset_epoch=$7::text::numeric
-                AND (move_transaction_id IS NOT NULL)=$8",
-        )
-        .bind(command.game_session_id().as_bytes().as_slice())
-        .bind(command.command_id().get().to_string())
-        .bind(fence.character_id.as_bytes().as_slice())
-        .bind(world_id.as_bytes().as_slice())
-        .bind(channel_id.as_bytes().as_slice())
-        .bind(&context.map_revision)
-        .bind(context.reset_epoch.to_string())
-        .bind(drop)
-        .fetch_optional(&mut **tx)
-        .await?;
-        let Some(gesture) = gesture else {
-            return Ok(false);
-        };
-        if drop {
-            moved_scimitar = Some((
-                gesture.try_get::<Vec<u8>, _>("item")?,
-                gesture.try_get::<Vec<u8>, _>("move_id")?,
-            ));
-        }
-    }
     if !completed_quests::require(tx, fence, &callback.required_completed_quests).await? {
         return Ok(false);
     }
@@ -711,19 +675,7 @@ pub(super) async fn consume(
         return Ok(true);
     }
     let consumed = consume_inputs(
-        tx,
-        permit,
-        fence,
-        request,
-        callback,
-        changes,
-        context,
-        command,
-        world_id,
-        channel_id,
-        moved_scimitar
-            .as_ref()
-            .map(|(item, movement)| (item.as_slice(), movement.as_slice())),
+        tx, permit, fence, request, callback, changes, context, command, world_id, channel_id,
     )
     .await?;
     if consumed && coffin == Some(VampireCoffinKind::Weakened) {
@@ -801,7 +753,6 @@ async fn consume_inputs(
     command: crate::foundation::CommandRef,
     world_id: crate::foundation::WorldId,
     channel_id: crate::foundation::ChannelId,
-    moved_scimitar: Option<(&[u8], &[u8])>,
 ) -> Result<bool, DurabilityError> {
     // Resolve and lock every input before any write, including replacement preconditions.
     let mut inputs = Vec::new();
@@ -983,8 +934,6 @@ async fn consume_inputs(
              AND g.runtime_scope_ownership_generation=$7::text::numeric \
              AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$8 \
              AND i.quantity >= $9 AND game_item_loop_drop_ref(g.corpse_ref) \
-             AND ($10::bytea IS NULL OR i.item_instance_id=encode($10,'hex')::uuid \
-                  AND i.last_transaction_id=encode($11,'hex')::uuid) \
              ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
         )
         .bind(world_id.as_bytes().as_slice())
@@ -996,8 +945,6 @@ async fn consume_inputs(
         .bind(fence.scope_ownership_generation.get().to_string())
         .bind(&offering.item)
         .bind(i64::from(offering.count))
-        .bind(moved_scimitar.map(|(item, _)| item))
-        .bind(moved_scimitar.map(|(_, movement)| movement))
         .fetch_optional(&mut **tx)
         .await?;
         let Some(row) = row else { return Ok(false) };

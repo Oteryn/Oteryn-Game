@@ -729,9 +729,9 @@ struct PlannedDestination {
     rest: u32,
 }
 
-async fn plan_loop_destination(
+async fn plan_loop_destination<C: ItemLoopContent>(
     tx: &mut Transaction<'_, Postgres>,
-    content: &dyn ItemLoopContent,
+    content: &C,
     plan: LoopPlan<'_>,
     house: Option<&house::HouseLoopContext>,
 ) -> LoopResult<PlannedDestination> {
@@ -1079,47 +1079,14 @@ enum MoveBatch {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(super) async fn write_nomads_drop(
+async fn apply_loop_move<C: ItemLoopContent>(
     tx: &mut Transaction<'_, Postgres>,
     permit: &SpellLanePermit,
     record: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
     fence: &CurrentCharacterItemFence,
     command: CommandRef,
-    content: &dyn ItemLoopContent,
-    request: &LoopMoveRequest,
-    slot: Option<u32>,
-) -> Result<Option<LoopMoveReceipt>, DurabilityError> {
-    let attempt: LoopResult<_> = async {
-        let intent = match slot {
-            Some(slot) => serde_json::to_vec(&json!({
-                "character": fence.character_id.as_bytes(), "request": request, "slot": slot
-            }))
-            .map_err(|_| DurabilityError::InvalidStoredState)?,
-            None => intent_bytes(fence.character_id, request)?,
-        };
-        lock_loop_command(tx, command).await?;
-        if committed_loop_move(tx, command, fence.character_id, &intent).await?.is_some() {
-            return Ok(None);
-        }
-        apply_loop_move(tx, permit, record, node, fence, command, content, request,
-            &intent, None, None, None, None).await.map(Some)
-    }.await;
-    match attempt {
-        Ok(receipt) => Ok(receipt),
-        Err(error) => loop_error(error).map(|_| None),
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
-async fn apply_loop_move(
-    tx: &mut Transaction<'_, Postgres>,
-    permit: &SpellLanePermit,
-    record: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
-    node: &NodeIncarnationProof,
-    fence: &CurrentCharacterItemFence,
-    command: CommandRef,
-    content: &dyn ItemLoopContent,
+    content: &C,
     request: &LoopMoveRequest,
     intent: &[u8],
     depot: Option<DepotMove>,
@@ -1138,14 +1105,14 @@ async fn apply_loop_move(
     clippy::too_many_arguments,
     reason = "one transaction binds the source, destination, session and custody policy"
 )]
-async fn apply_loop_move_with_source_policy(
+async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
     tx: &mut Transaction<'_, Postgres>,
     permit: &SpellLanePermit,
     record: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
     fence: &CurrentCharacterItemFence,
     command: CommandRef,
-    content: &dyn ItemLoopContent,
+    content: &C,
     request: &LoopMoveRequest,
     intent: &[u8],
     depot: Option<DepotMove>,
@@ -1811,9 +1778,9 @@ async fn apply_loop_move_with_source_policy(
     })
 }
 
-async fn main_target(
+async fn main_target<C: ItemLoopContent>(
     tx: &mut Transaction<'_, Postgres>,
-    content: &dyn ItemLoopContent,
+    content: &C,
     slot: &InventoryItem,
 ) -> LoopResult<Target> {
     let Some(capacity) = content
@@ -2087,46 +2054,6 @@ impl DurabilityRoot {
                 })
             })
             .await
-    }
-
-    pub async fn read_nomads_ordinary_drop(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        fence: CurrentCharacterItemFence,
-        command: CommandRef,
-    ) -> Result<bool, DurabilityError> {
-        let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else {
-            return Ok(false);
-        };
-        if command.game_session_id() != fence.game_session_id {
-            return Ok(false);
-        }
-        let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| Box::pin(async move {
-                let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
-                assert_recovery_fence(&mut tx, &recovery).await?;
-                lock_loop_command(&mut tx, command).await?;
-                let moved = sqlx::query_scalar(
-                    "SELECT EXISTS(SELECT 1 FROM game_item_loop_move_receipts r
-                        JOIN game_item_loop_move_lines l USING(transaction_id)
-                       WHERE r.game_session_id=encode($1,'hex')::uuid AND r.command_id=$2::text::numeric
-                         AND r.character_id=encode($3,'hex')::uuid AND r.world_id=encode($4,'hex')::uuid
-                         AND r.channel_id=encode($5,'hex')::uuid AND l.to_kind=3
-                         AND l.to_spatial_position=$6 AND l.definition_family='Item'
-                         AND l.definition_production_key=$7)"
-                )
-                .bind(command.game_session_id().as_bytes().as_slice())
-                .bind(command.command_id().get().to_string())
-                .bind(fence.character_id.as_bytes().as_slice())
-                .bind(world_id.as_bytes().as_slice())
-                .bind(channel_id.as_bytes().as_slice())
-                .bind(super::nomads_ritual::crack_cell().as_slice())
-                .bind(oteryn_gameplay_quests::quest::world_callbacks::nomads_ritual::SCIMITAR)
-                .fetch_one(&mut *tx).await?;
-                super::db::commit_semantic_transaction(tx, deadline).await?;
-                Ok(moved)
-            })).await
     }
 
     /// Resolve an uncertain ordinary or elemental-arrival move against its exact request.

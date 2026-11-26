@@ -3,7 +3,7 @@ use super::*;
 use crate::durability::quest_state::CommittedQuestTransition;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(in crate::gameplay_transport) fn apply_committed_quest_copy(
+    pub(super) fn apply_committed_quest_copy(
         &self,
         session: GameSessionId,
         fresh: bool,

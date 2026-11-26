@@ -2,7 +2,7 @@
 //! entries retained by historical death drops until their accepted pickup.
 use super::*;
 
-pub(super) async fn weight<C: ItemLoopContent + ?Sized>(
+pub(super) async fn weight<C: ItemLoopContent>(
     tx: &mut Transaction<'_, Postgres>,
     content: &C,
     item: [u8; 16],

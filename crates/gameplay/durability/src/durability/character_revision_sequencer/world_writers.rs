@@ -1,29 +1,4 @@
 impl RevisionSlot {
-    #[allow(clippy::too_many_arguments)]
-    pub async fn commit_nomads_ritual(
-        &mut self,
-        root: &DurabilityRoot,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        fence: CurrentCharacterGameplayFence,
-        command: crate::foundation::CommandRef,
-        catalogue: std::sync::Arc<QuestStateCatalogue>,
-        permit: &super::spell_owner_commit::SpellLanePermit,
-        context: super::quest_world_callback::QuestWorldContext,
-        physical: &super::nomads_ritual::NomadsPhysical<'_>,
-    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
-        self.sequenced(
-            root_revision(root, authority),
-            fence,
-            Expect::Cursor(OnMismatch::RetryOnce),
-            |fence| root.commit_character_nomads_ritual(
-                authority, node, fence, command, std::sync::Arc::clone(&catalogue),
-                permit, context.clone(), physical,
-            ),
-        ).await
-    }
-
-
     /// World callback storage and altar inputs share one revision slot and transaction.
     #[allow(clippy::too_many_arguments)]
     pub async fn commit_world_callback(

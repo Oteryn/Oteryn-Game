@@ -55,7 +55,6 @@ struct PendingDelivery {
 enum ProvenNativeReply {
     ItemUse(oteryn_protocol_oteryn::world_object::UseDisposition),
     HirelingSummon(bool),
-    NomadsDrop,
 }
 
 impl ProvenNativeReply {
@@ -72,19 +71,6 @@ impl ProvenNativeReply {
                 Some((
                     disposition == oteryn_protocol_oteryn::world_object::UseDisposition::Rejected,
                     payload,
-                ))
-            }
-            Self::NomadsDrop => {
-                use oteryn_protocol_oteryn::item_view::{
-                    ItemMoveOutcome, ItemMoveSelection, encode_item_move_result_for,
-                };
-                Some((
-                    false,
-                    encode_item_move_result_for(
-                        ItemMoveOutcome::Moved,
-                        ItemMoveSelection::default(),
-                    )
-                    .ok()?,
                 ))
             }
             Self::HirelingSummon(active) => Some((false, vec![u8::from(active)])),
@@ -298,22 +284,6 @@ impl SessionCommands {
         disposition: oteryn_protocol_oteryn::world_object::UseDisposition,
     ) -> Option<()> {
         self.retain_native_result(command, ProvenNativeReply::ItemUse(disposition))
-    }
-
-    pub(super) fn complete_nomads_drop(
-        &self,
-        command: crate::foundation::CommandRef,
-    ) -> Option<()> {
-        self.retain_native_result(command, ProvenNativeReply::NomadsDrop)
-    }
-
-    pub(super) fn disconnected_original(&self, session: GameSessionId) -> Option<CommandId> {
-        let commands = self.0.lock().ok()?;
-        let state = commands.get(&session)?.lock().ok()?;
-        if state.active || state.ingress.outstanding() != 1 {
-            return None;
-        }
-        CommandId::new(state.pending_delivery?.command).ok()
     }
 
     /// Legacy command 220 shares the lamp's native effect, but retains its own
