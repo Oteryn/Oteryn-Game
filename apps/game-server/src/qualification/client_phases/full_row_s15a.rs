@@ -1,20 +1,18 @@
 //! S15a (login protection: monsters ignore a fresh login for 10 s):
-//! 1. Admit the node-boot character and start the clock, walk to a compiled rat spawn with
-//!    player STEP commands and keep the nearest visible creature as the monster under test.
-//! 2. For the rest of the 10 s window after admission, require no monster-attributed damage
-//!    frame and no HP loss. If the walk itself used up the window, the row reports the
-//!    precondition instead of passing.
+//! 1. Walk the node-boot character out of protection, log out and admit at that saved position.
+//!    Place an exact Rat with the qualification spawn fixture as soon as the client joins.
+//! 2. Require no monster-attributed damage frame and no HP loss through the 10 s window.
+//!    The fresh admission must expose the exact Rat early enough to test the window.
 //! 3. After the window, require a monster-attributed damage frame and a lower HP, proving the
 //!    monster was only held back by the protection, then log out once the combat lock expires.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, EntityRef, SessionEvent};
+use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef, SessionEvent};
 
 const WINDOW: Duration = Duration::from_secs(10);
 const MARGIN: Duration = Duration::from_millis(750);
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
         bytes,
@@ -22,39 +20,88 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0x8d).await?;
+    let mut setup = connect_world(clients, 0x8d).await?;
+    stow_equipment(&mut setup).await?;
+    let path = route(world, tile(setup.world_spatial().actor_position)?, |at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone() && !tile.no_logout())
+    })
+    .ok_or("step=setup;needed=reachable-unprotected-logout-tile")?;
+    walk(&mut setup, world, &path).await?;
+    let staged = setup.world_spatial().actor_position;
+    let old_session = setup.join_snapshot().game_session_id;
+    logout(&mut setup).await?;
+    drop(setup);
+
+    let admission_requested = tokio::time::Instant::now();
+    let mut client = connect_world(clients, 0x8e).await?;
     let admitted = tokio::time::Instant::now();
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    let (monster, own) = actors(&client)?;
-    let used = admitted.elapsed();
-    if used + MARGIN >= WINDOW {
-        logout(&mut client).await?;
-        return Ok((
-            "FAIL",
-            format!(
-                "step=window;observed=monster-reached-after-{:.1}s;needed=monster-within-10s-of-login",
-                used.as_secs_f64()
-            ),
-        ));
+    let quiet_deadline = admission_requested + WINDOW;
+    if client.join_snapshot().game_session_id == old_session
+        || client.world_spatial().actor_position != staged
+        || !client
+            .inventory()
+            .is_some_and(|view| view.equipment.is_empty())
+    {
+        return Err(
+            "step=setup;needed=fresh-unarmoured-admission-at-saved-unprotected-position".into(),
+        );
     }
-    client.take_events();
-    // Absolute boundary: quiet through admission + 10 s, damage counts only after it.
+    require_attribution(&client)?;
+    let initial_health = health(&client)?;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let monster = tokio::time::timeout_at(quiet_deadline - MARGIN, async {
+        let spawn = request_spawn(session, "oteryn:creature.rat".into())
+            .await
+            .map_err(|error| format!("step=window;observed=rat-fixture-refused-{error}"))?;
+        let monster = parse_spawned_entity(&spawn)?;
+        while !client.world_entities().is_some_and(|entities| {
+            entities
+                .get(&monster)
+                .is_some_and(|entry| entry.kind == EntityKind::Creature)
+        }) {
+            client.service_liveness(Duration::from_millis(25)).await?;
+        }
+        TestResult::Ok(monster)
+    })
+    .await
+    .map_err(|_| "step=window;needed=exact-rat-visible-before-login-protection-expires")??;
+    evidence(&format!(
+        "S15A_TARGET actor={staged:?} rat={monster:?} setup_seconds={:.3}",
+        admitted.elapsed().as_secs_f64()
+    ));
+    // The server commits admission between the request and the joined receipt.
+    // Check silence up to the earliest expiry and count damage after the latest.
     require_quiet(
         &mut client,
         monster,
-        own,
-        admitted + WINDOW,
+        initial_health,
+        quiet_deadline,
         "step=protected-window",
     )
     .await?;
+    client
+        .service_liveness(
+            (admitted + WINDOW).saturating_duration_since(tokio::time::Instant::now()),
+        )
+        .await?;
     require_damage(
         &mut client,
         monster,
-        own,
         Duration::from_secs(20),
         "step=after-window",
     )
     .await?;
+    let shelter = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| tile.protection_zone() && !tile.no_logout())
+    })
+    .ok_or("step=logout;needed=walkable-protection-zone-outside-rat-aggro")?;
+    walk(&mut client, world, &shelter).await?;
     logout_after_combat(&mut client).await?;
     Ok((
         "PASS",
@@ -65,67 +112,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     ))
 }
 
-fn actors(client: &DevClientSession) -> TestResult<(EntityRef, EntityRef)> {
-    let entities = client
-        .world_entities()
-        .ok_or("step=setup;observed=missing-entity-snapshot")?;
-    let own = entities
-        .iter()
-        .find(|entry| entry.entity.identity == *entities.own_identity())
-        .map(|entry| entry.entity)
-        .ok_or("step=setup;observed=own-actor-absent")?;
-    let here = client.world_spatial().actor_position;
-    let monster = entities
-        .iter()
-        .filter(|entry| entry.kind == EntityKind::Creature && entry.position.floor == here.floor)
-        .min_by_key(|entry| {
-            entry
-                .position
-                .x
-                .abs_diff(here.x)
-                .max(entry.position.y.abs_diff(here.y))
-        })
-        .map(|entry| entry.entity)
-        .ok_or("step=setup;observed=no-visible-monster")?;
-    Ok((monster, own))
-}
+async fn stow_equipment(client: &mut DevClientSession) -> TestResult {
+    use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
 
-fn monster_damage(event: &SessionEvent, monster: EntityRef, own: EntityRef) -> bool {
-    use oteryn_protocol_oteryn::presentation::PresentationEventKind;
-    matches!(event, SessionEvent::Presentation(delta) if delta.value.iter().any(|event|
-        matches!(&event.kind, PresentationEventKind::ValueText { target, attacker: Some(attacker), primary, .. }
-            if *target == own && *attacker == monster && primary.value > 0)))
-}
-
-fn health(client: &DevClientSession, own: EntityRef) -> TestResult<u8> {
-    let entry = client
-        .world_entities()
-        .and_then(|entities| entities.iter().find(|entry| entry.entity == own))
-        .ok_or("observed=own-actor-left-entity-snapshot")?;
-    match entry.detail {
-        EntityDetail::Actor { health_percent, .. } => Ok(health_percent),
-        _ => Err("observed=own-actor-has-no-health".into()),
-    }
-}
-
-async fn require_quiet(
-    client: &mut DevClientSession,
-    monster: EntityRef,
-    own: EntityRef,
-    deadline: tokio::time::Instant,
-    step: &str,
-) -> TestResult {
-    let before = health(client, own)?;
-    while tokio::time::Instant::now() < deadline {
-        client.service_liveness(Duration::from_millis(25)).await?;
-        if client
-            .take_events()
-            .iter()
-            .any(|event| monster_damage(event, monster, own))
-            || health(client, own)? < before
-        {
+    // The Rat's authored physical attack caps at 8 and is mitigated by armour and shields.
+    let equipped = client
+        .inventory()
+        .ok_or("step=setup;needed=equipment-view")?
+        .equipment
+        .clone();
+    for entry in equipped {
+        let moved = client
+            .move_item(&ItemMoveIntent {
+                source: entry.item.handle,
+                destination: ItemMoveDestination::MainBackpack,
+            })
+            .await?;
+        if moved.outcome != ItemMoveOutcome::Moved {
             return Err(format!(
-                "{step};observed=monster-damage-or-hp-loss-inside-login-protection"
+                "step=setup;observed=could-not-stow-{:?}-{moved:?}",
+                entry.slot
             )
             .into());
         }
@@ -133,14 +139,67 @@ async fn require_quiet(
     Ok(())
 }
 
+fn require_attribution(client: &DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1;
+    if !client
+        .selected_capabilities()
+        .contains(&CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1)
+    {
+        return Err("step=setup;needed=negotiated-damage-attribution".into());
+    }
+    Ok(())
+}
+
+fn monster_damage(event: &SessionEvent, monster: EntityRef) -> bool {
+    use oteryn_protocol_oteryn::analyser::{AnalyserDamageSource, AnalyserFact};
+    matches!(event, SessionEvent::AnalyserAttributedFacts(delta) if delta.value.iter().any(|hit|
+        hit.attacker == Some(monster)
+            && matches!(&hit.fact, AnalyserFact::DamageInput { source: AnalyserDamageSource::Creature(_), .. })))
+}
+
+fn health(client: &DevClientSession) -> TestResult<u32> {
+    client
+        .actor_vitals()
+        .map(|vitals| vitals.health)
+        .ok_or_else(|| "observed=own-actor-vitals-unavailable".into())
+}
+
+async fn require_quiet(
+    client: &mut DevClientSession,
+    monster: EntityRef,
+    before: u32,
+    deadline: tokio::time::Instant,
+    step: &str,
+) -> TestResult {
+    loop {
+        if client
+            .take_events()
+            .iter()
+            .any(|event| monster_damage(event, monster))
+            || health(client)? < before
+        {
+            return Err(format!(
+                "{step};observed=monster-damage-or-hp-loss-inside-login-protection"
+            )
+            .into());
+        }
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Ok(());
+        }
+        client
+            .service_liveness(remaining.min(Duration::from_millis(25)))
+            .await?;
+    }
+}
+
 async fn require_damage(
     client: &mut DevClientSession,
     monster: EntityRef,
-    own: EntityRef,
     duration: Duration,
     step: &str,
 ) -> TestResult {
-    let before = health(client, own)?;
+    let before = health(client)?;
     client.take_events();
     let deadline = tokio::time::Instant::now() + duration;
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
@@ -150,13 +209,13 @@ async fn require_damage(
         frame |= client
             .take_events()
             .iter()
-            .any(|event| monster_damage(event, monster, own));
-        if frame && health(client, own)? < before {
+            .any(|event| monster_damage(event, monster));
+        if frame && health(client)? < before {
             return Ok(());
         }
     }
     Err(format!(
-        "{step};observed=damage-frame:{frame},hp-before:{before};needed=monster-damage-after-window"
+        "{step};observed=damage-frame:{frame},hp-before:{before},hp-after:{};needed=monster-damage-after-window", health(client)?
     )
     .into())
 }
@@ -183,7 +242,9 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
