@@ -71,7 +71,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
             _ => None,
         };
-        if let Some(outcome) = tokio::time::timeout(
+        match tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.use_drome_cube(
                 actor,
@@ -85,10 +85,17 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             ),
         )
         .await
-        .ok()?
-        .ok()?
         {
-            return Some(Dispatch::Use(outcome));
+            Ok(Ok(Some(outcome))) => return Some(Dispatch::Use(outcome)),
+            Ok(Ok(None)) => {}
+            Ok(Err(())) => {
+                transport::operator_event("drome_cube_use failed: owner_unavailable");
+                return None;
+            }
+            Err(_) => {
+                transport::operator_event("drome_cube_use failed: deadline");
+                return None;
+            }
         }
     }
     if let Ok(intent) = &decoded {

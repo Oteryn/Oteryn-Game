@@ -57,6 +57,120 @@ mod tests {
         }
     }
 
+    struct QueryOwner;
+
+    impl FreshAdmissionAuthority for QueryOwner {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn imbuement_command(
+            &self,
+            admitted: AdmittedSession,
+            _id: u64,
+            kind: u32,
+            payload: &[u8],
+            _views: Option<&SessionItemView>,
+        ) -> transport::imbuement::ImbuementReply {
+            use transport::imbuement::ImbuementReply as Outcome;
+            assert_eq!(kind, imbuement::COMMAND_TYPE_IMBUEMENT);
+            assert!(matches!(
+                imbuement::decode_imbuement_request(payload),
+                Ok(request) if request.action == imbuement::ImbuementAction::Query
+            ));
+            let reply = imbuement::ImbuementReply {
+                result: imbuement::ImbuementResult::Ok,
+                window: Some(imbuement::ImbuementWindow {
+                    slot_count: 2,
+                    applied: Vec::new(),
+                    offers: vec![imbuement::ImbuementOffer {
+                        family: 1,
+                        tier: 1,
+                        gold: 7500,
+                        requires_premium: false,
+                    }],
+                    clear_gold: 15000,
+                }),
+            };
+            let encoded = if admitted
+                .continuity
+                .selected_capabilities
+                .contains(imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1)
+            {
+                imbuement::encode_imbuement_reply_with_success(&reply, &[100])
+            } else {
+                imbuement::encode_imbuement_reply(&reply)
+            };
+            encoded.map_or(Outcome::Unavailable, Outcome::Payload)
+        }
+
+        async fn imbuement_funds(&self, _admitted: AdmittedSession) -> Option<u64> {
+            Some(7500)
+        }
+    }
+
+    #[tokio::test]
+    async fn imbuement_details_accepts_both_negotiated_reply_formats() -> Result<(), String> {
+        check_query_formats(wire::COMMAND_TYPE_IMBUEMENT_DETAILS).await
+    }
+
+    #[tokio::test]
+    async fn imbuement_affordability_accepts_both_negotiated_reply_formats() -> Result<(), String> {
+        check_query_formats(wire::COMMAND_TYPE_IMBUEMENT_AFFORDABILITY).await
+    }
+
+    async fn check_query_formats(command_type: u32) -> Result<(), String> {
+        let id = [1, 0x90, 0, 0, 0, 9, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 9];
+        let mut admitted = AdmittedSession {
+            game_session_id: GameSessionId::decode(&id).map_err(|e| format!("{e:?}"))?,
+            world_id: WorldId::decode(&id).map_err(|e| format!("{e:?}"))?,
+            channel_id: ChannelId::decode(&id).map_err(|e| format!("{e:?}"))?,
+            runtime_actor: None,
+            first_entry: FirstEntryOutcome::Positioned,
+            controller: None,
+            continuity: SessionContinuity::FRESH,
+            item_fence: None,
+        };
+        let offered = [
+            OfferedCapability { id: 4, requires: &[] },
+            OfferedCapability { id: 68, requires: &[4] },
+            OfferedCapability { id: 447, requires: &[68] },
+            OfferedCapability { id: 491, requires: &[68] },
+            OfferedCapability { id: 582, requires: &[447] },
+        ];
+        let item = ItemHandle::new(9).ok_or("item handle")?;
+        let payload = wire::encode_query(item);
+        for selected in [&[4, 68, 447, 582][..], &[4, 68, 447, 491, 582]] {
+            admitted.continuity.selected_capabilities =
+                SelectedCapabilities::select(&offered, selected).ok_or("imbuement selection")?;
+            let command = ClientCommandView {
+                command_id: 1,
+                command_type,
+                payload: &payload,
+            };
+            let Some(Dispatch::Reply(CommandStatus::Accepted, bytes)) =
+                route(&QueryOwner, &admitted, command, &None).await
+            else {
+                return Err(format!("command {command_type}, capabilities {selected:?}: expected an accepted reply"));
+            };
+            let details = if command_type == wire::COMMAND_TYPE_IMBUEMENT_AFFORDABILITY {
+                let reply = wire::AffordabilityReply::decode(&bytes)
+                    .map_err(|e| format!("{e:?}"))?;
+                assert_eq!(reply.affordable, [true]);
+                reply.details
+            } else {
+                wire::decode_reply(&bytes).map_err(|e| format!("{e:?}"))?
+            };
+            assert_eq!(details.item, item);
+            assert_eq!(details.quotes.len(), 1);
+            assert_eq!(details.quotes[0].success_percent, 100);
+        }
+        Ok(())
+    }
+
     #[tokio::test]
     async fn imbuement_protection_route_refuses_the_purchase() -> Result<(), String> {
         let id = [1, 0x90, 0, 0, 0, 9, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 9];
