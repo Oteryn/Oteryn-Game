@@ -249,7 +249,7 @@ async fn require_routes(
         || routes
             != [
                 (0, true, Some(pouch.to_vec())),
-                (5, true, Some(pouch.to_vec())),
+                (2, true, Some(pouch.to_vec())),
             ]
     {
         return Err(format!(
@@ -273,7 +273,8 @@ impl Capture<'_> {
         request: QuickLootRequest,
         expected: &[(&Placement, bool)],
     ) -> TestResult {
-        let payload = encode_quick_loot_request(&request).map_err(|error| format!("{error:?}"))?;
+        let payload = encode_quick_loot_request(&request)
+            .map_err(|error| format!("I07 probe {key} cannot encode {request:?}: {error:?}"))?;
         let session = client.join_snapshot().game_session_id;
         let reply = client
             .session_mut()
@@ -455,7 +456,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     };
     let armor_route = |fallback| {
         route(
-            Some(QuickLootCategory::Armor),
+            Some(QuickLootCategory::Equipment),
             QuickLootRecipient::GoldPouch,
             Some(pouch),
             fallback,

@@ -360,7 +360,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     );
     let armor = |fallback| {
         route(
-            Some(QuickLootCategory::Armor),
+            Some(QuickLootCategory::Equipment),
             QuickLootRecipient::GoldPouch,
             Some(expected.pouch),
             fallback,
