@@ -18,7 +18,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             .await;
     match result {
         Ok(Ok(())) => evidence(
-            "SEAM_EVIDENCE e2e_all scenario=I09.client status=PASS evidence=domain-17-furniture-rotation-replay-captured",
+            "SEAM_EVIDENCE e2e_all scenario=I09.client status=PASS evidence=domain-17-furniture-rotation-fresh-capture-replayed",
         ),
         Ok(Err(error)) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=I09.client status=FAIL evidence={}",
@@ -34,18 +34,20 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
-fn capture(name: &str, bytes: &[u8]) -> TestResult {
-    if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(Path::new(&directory).join(name))?;
-        std::io::Write::write_all(&mut file, bytes)?;
-    }
+fn capture(directory: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(directory.join(name))?;
+    std::io::Write::write_all(&mut file, bytes)?;
     Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let capture_root =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("I09 capture directory absent")?;
+    let capture_root = Path::new(&capture_root);
+    let replay = std::env::var_os("OTERYN_I09_REPLAY_BIN").ok_or("I09 replay binary absent")?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -87,19 +89,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let definitions = provisioning::item_index()?;
     let expected = provisioning::item_reference(&definitions, 2359)?;
     let mut client = connect_world(clients, 0xc9).await?;
-    let adjacent = |cell: TilePos| {
-        cell.floor == at.floor && cell.x.abs_diff(at.x).max(cell.y.abs_diff(at.y)) == 1
-    };
+    let approach = TilePos { x: 32356, ..at };
     let path = route(
         world,
         tile(client.world_spatial().actor_position)?,
-        adjacent,
+        |cell| cell == approach,
     )
-    .ok_or("no route to fixed chair 2358 at 32355,32206,7")?;
-    walk(&mut client, world, &path).await?;
-    if !adjacent(tile(client.world_spatial().actor_position)?) {
-        return Err("arrived outside use distance of fixed chair 2358".into());
+    .ok_or("no route to fixed chair approach at 32356,32206,7")?;
+    walk_once(&mut client, world, &path).await?;
+    if tile(client.world_spatial().actor_position)? != approach {
+        return Err("I09 arrived outside the fixed chair approach".into());
     }
+    let chair_steps = [StepDirection::West, StepDirection::East];
+    if destination(world, approach, chair_steps[0]) != Some(at)
+        || destination(world, at, chair_steps[1]) != Some(approach)
+    {
+        return Err("I09 fixed chair collision probe has invalid landings".into());
+    }
+    walk_once(&mut client, world, &chair_steps).await?;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(
         &crate::map::view::placement_key(at, ordinal)
@@ -169,7 +176,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                     return Err("I09 map snapshot replaced before rotation delta".into());
                 }
                 SessionEvent::WorldMap(delta)
-                    if delta.value.tiles.iter().any(|tile| tile.position == target) =>
+                    if delta.value.cleared.contains(&target)
+                        || delta.value.tiles.iter().any(|tile| tile.position == target) =>
                 {
                     rotation = Some(delta);
                     break;
@@ -187,6 +195,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     };
+    if delta.server_sequence <= reply.server_sequence {
+        return Err("I09 chair update did not follow the USE reply".into());
+    }
     if delta.base_revision != before.revision {
         return Err("I09 predecessor revision does not match rotation delta".into());
     }
@@ -209,6 +220,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .iter()
         .find(|item| item.origin == rotated)
         .ok_or("rotation delta omitted revised furniture")?;
+    // The client replay selects the revision-1 item from this delta.
+    if delta
+        .value
+        .tiles
+        .iter()
+        .flat_map(|tile| &tile.items)
+        .filter(|item| {
+            matches!(
+                item.origin,
+                MapOrigin::BaseOrdinal {
+                    object_revision: 1,
+                    ..
+                }
+            )
+        })
+        .count()
+        != 1
+    {
+        return Err("I09 rotation delta has ambiguous revision-1 items".into());
+    }
     let MapDefinition::Item(definition) = item.definition else {
         return Err("rotated furniture was not an item".into());
     };
@@ -224,11 +255,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .map_err(|error| format!("I09 capture encode: {error:?}"))?;
     let stale = client.session_mut().world_context_use(&intent(0)?).await?;
-    if decode_use_result(&stale.payload).map_err(|error| format!("I09 stale decode: {error:?}"))?
-        != UseDisposition::StaleState
+    if stale.status != CommandStatus::Accepted
+        || decode_use_result(&stale.payload)
+            .map_err(|error| format!("I09 stale decode: {error:?}"))?
+            != UseDisposition::StaleState
     {
         return Err("stale rotation was not refused".into());
     }
+    assert_chair(&mut client, target, item)?;
+    walk_once(&mut client, world, &chair_steps).await?;
     assert_chair(&mut client, target, item)?;
     let session = client.join_snapshot().game_session_id;
     let position = client.world_spatial().actor_position;
@@ -244,8 +279,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("I09 relog did not open a new session at the saved position".into());
     }
     assert_chair(&mut relogged, target, item)?;
-    capture("i09-map-before.bin", &before.payload)?;
+    capture(capture_root, "i09-map-before.bin", &before.payload)?;
     capture(
+        capture_root,
         "i09-map-before.txt",
         format!(
             "{predecessor_sequence} {} {} {}\n",
@@ -253,9 +289,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .as_bytes(),
     )?;
-    capture("i09-result.bin", &reply.payload)?;
-    capture("i09-map-delta.bin", &payload)?;
+    capture(capture_root, "i09-result.bin", &reply.payload)?;
+    capture(capture_root, "i09-map-delta.bin", &payload)?;
     capture(
+        capture_root,
         "i09-expected.txt",
         format!(
             "{} {} {} {} {}\n",
@@ -267,6 +304,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .as_bytes(),
     )?;
+    let output = std::process::Command::new(replay)
+        .args([
+            "tests::e2e_i09::furniture_rotation_real_payload_replays_and_malformed_delta_is_atomic",
+            "--exact",
+            "--nocapture",
+        ])
+        .output()?;
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    if !output.status.success() || !stdout.contains("1 passed; 0 failed; 0 ignored;") {
+        return Err(format!("I09 fresh capture replay failed: {stdout} {stderr}").into());
+    }
+    evidence(&format!(
+        "I09_REPLAY {}",
+        stdout
+            .lines()
+            .find(|line| line.starts_with("test result:"))
+            .ok_or("I09 replay verdict missing")?
+    ));
     Ok(())
 }
 
@@ -285,6 +341,30 @@ fn assert_chair(
         .any(|tile| tile.position == target && tile.items.contains(expected))
     {
         return Err("I09 verification map omitted the exact rotated chair".into());
+    }
+    Ok(())
+}
+
+async fn walk_once(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected =
+            destination(world, from, direction).ok_or("I09 route step has no landing")?;
+        let outcome = client.step(direction).await?;
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || tile(client.world_spatial().actor_position)? != expected
+        {
+            return Err(format!(
+                "I09 first step {direction:?} from {from:?} to {expected:?} failed: {outcome:?}"
+            )
+            .into());
+        }
+        verdict::Harness::global().progress("walk");
     }
     Ok(())
 }
