@@ -1,33 +1,20 @@
-//! P12b (Cyclopedia badges, Crystal `PlayerBadge::checkAndUpdateNewBadges`):
-//! 1. Prove the account has no stored badges, then admit the node-boot character.
-//! 2. Check the exact awards from admission and request the list over capability 199.
-//! 3. Compare it with the durable truth read through read-only SQL: the earned rows of the
-//!    account (`game_account_badges`) must equal the reply and contain exactly the badges the
-//!    account facts (age, loyalty, level sum, vocation levels) qualify for.
-//! 4. Prove the original award rows survive logout, fresh admission, and a second request.
-//!
-//! An account that meets no global badge rule has nothing to show, so the row then reports the
-//! missing precondition instead of passing an empty list.
+//! P12b exercises the native account badge award through the Cyclopedia request.
+//! The dedicated account starts fresh. Qualification supplies the level input,
+//! and only the wire request may award the badge. Original award rows must
+//! survive terminal logout and fresh admission before another refresh.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::cyclopedia_character::{
-    Badge, BadgeFacts, BaseVocation, CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
-    COMMAND_TYPE_CYCLOPEDIA_BADGES, newly_earned,
+    Badge, CAPABILITY_CYCLOPEDIA_CHARACTER_V1, COMMAND_TYPE_CYCLOPEDIA_BADGES,
 };
-use sqlx::{Connection, Row};
+use sqlx::Connection;
 
-const FACTS_SQL: &str = "WITH me AS (SELECT account_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid), \
- chars AS (SELECT p.level, CASE b.vocation WHEN 'elder_druid' THEN 'druid' WHEN 'elite_knight' THEN 'knight' WHEN 'exalted_monk' THEN 'monk' \
-   WHEN 'royal_paladin' THEN 'paladin' WHEN 'master_sorcerer' THEN 'sorcerer' ELSE b.vocation END AS base \
-   FROM game_character_roots r JOIN me ON me.account_id=r.account_id \
-   JOIN game_character_progression_state p ON p.character_id=r.character_id \
-   LEFT JOIN game_character_build_state b ON b.character_id=r.character_id) \
- SELECT \
- COALESCE((SELECT extract(year FROM age(to_timestamp($2/1000.0), to_timestamp((('x'||lpad(substr(replace(me.account_id::text,'-',''),1,12),16,'0'))::bit(64)::bigint)/1000.0)))::bigint FROM me),0) AS account_years, \
- COALESCE((SELECT l.loyalty_points FROM game_account_loyalty_projections l JOIN me ON me.account_id=l.account_id),0)::bigint AS loyalty_points, \
- COALESCE((SELECT sum(level) FROM chars),0)::bigint AS level_sum, \
- ARRAY(SELECT COALESCE((SELECT max(level) FROM chars WHERE base=v.key),0)::bigint FROM unnest($3::text[]) WITH ORDINALITY v(key,n) ORDER BY v.n) AS vocation_levels";
+// Native Cyclopedia contract: a total level over 500 earns Global Player grade 1.
+// Keep the expected wire ID independent of the production eligibility evaluator.
+const EXPECTED_BADGES: [u8; 1] = [9];
+const SEEDED_LEVEL: i64 = 501;
+const SEEDED_EXPERIENCE: i64 = 2_070_900_000;
 
 /// The reply is `count:u8` followed by `count` strictly ascending known badge ids.
 fn decode_badges(payload: &[u8]) -> Result<Vec<u8>, String> {
@@ -75,76 +62,131 @@ async fn stored_badges(clients: &SeamClients<'_>) -> TestResult<Vec<(i16, i64)>>
          WHERE account_id=(SELECT account_id FROM game_character_roots \
          WHERE character_id=encode($1,'hex')::uuid) ORDER BY badge",
     )
-    .bind(clients.characters[1].as_slice())
+    .bind(clients.characters[0].as_slice())
     .fetch_all(&mut connection)
     .await?)
 }
 
-async fn expected_badges(clients: &SeamClients<'_>) -> TestResult<Vec<u8>> {
-    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
-    let now_ms = i64::try_from(
+async fn journey(scope: &SeamClients<'_>) -> TestResult<Verdict> {
+    let fixture = character_prep::dedicated_character(scope, "NODE_BOOT_P12B_ACCOUNT").await?;
+    let clients = &fixture.clients(scope);
+    let account = crate::node::uuid_bytes(&clients.accounts[0]).ok_or("invalid q_p12b account")?;
+    let mut timestamp = [0; 8];
+    timestamp[2..].copy_from_slice(&account[..6]);
+    let created_ms = u64::from_be_bytes(timestamp);
+    let now_ms = u64::try_from(
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
             .as_millis(),
     )?;
-    let row = sqlx::query(FACTS_SQL)
-        .bind(clients.characters[1].as_slice())
-        .bind(now_ms)
-        .bind(BaseVocation::KEYS.as_slice())
-        .fetch_one(&mut connection)
-        .await?;
-    let count = |value: i64| u32::try_from(value.max(0)).unwrap_or(u32::MAX);
-    let levels: Vec<i64> = row.try_get("vocation_levels")?;
-    let mut vocation_levels = [0; 5];
-    for (slot, value) in vocation_levels.iter_mut().zip(levels) {
-        *slot = count(value);
-    }
-    let facts = BadgeFacts {
-        account_years: count(row.try_get("account_years")?),
-        loyalty_points: row.try_get("loyalty_points")?,
-        level_sum: row.try_get("level_sum")?,
-        vocation_levels,
-    };
-    Ok(newly_earned(facts, &[])
-        .into_iter()
-        .map(Badge::id)
-        .collect())
-}
+    expect(
+        now_ms
+            .checked_sub(created_ms)
+            .is_some_and(|age| age < 86_400_000),
+        "fresh-account",
+        (created_ms, now_ms),
+    )?;
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
-    let expected = expected_badges(clients).await?;
-    expect(!expected.is_empty(), "qualifying-badge-inputs", &expected)?;
     let before = stored_badges(clients).await?;
-    expect(before.is_empty(), "badge-pre-state", &before)?;
+    expect(before.is_empty(), "badge-pre-admission", &before)?;
+    let mut client = connect_character(clients, 0xc1, 0).await?;
+    let unqualified = reply_badges(&mut client).await?;
+    expect(
+        unqualified.is_empty(),
+        "unqualified-badge-reply",
+        &unqualified,
+    )?;
+    let unqualified_stored = stored_badges(clients).await?;
+    expect(
+        unqualified_stored.is_empty(),
+        "unqualified-badge-storage",
+        &unqualified_stored,
+    )?;
 
-    let mut client = connect_world(clients, 0xc1).await?;
-    let awarded = stored_badges(clients).await?;
-    let awarded_ids: Vec<_> = awarded.iter().map(|&(id, _)| id).collect();
-    let expected_ids: Vec<_> = expected.iter().copied().map(i16::from).collect();
-    expect(awarded_ids == expected_ids, "qualifying-badges-granted", &awarded)?;
+    character_prep::declare_seeded(
+        "P12b.full",
+        "knight-level-501",
+        "Cyclopedia level-sum badge",
+    );
+    let session = client.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(session.as_bytes()),
+        "--profile",
+        "p12b-knight".into(),
+    )
+    .await?;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let progression: (i64, i64) = sqlx::query_as(
+        "SELECT level, total_experience FROM game_character_progression_state
+         WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(clients.characters[0].as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    database.close().await?;
+    expect(
+        progression == (SEEDED_LEVEL, SEEDED_EXPERIENCE),
+        "seeded-progression",
+        progression,
+    )?;
+    let before_award = stored_badges(clients).await?;
+    expect(before_award.is_empty(), "badge-pre-request", &before_award)?;
+
     let reply = reply_badges(&mut client).await?;
-    expect(reply == expected, "reply-vs-durable", (&expected, &reply))?;
-    let listed = stored_badges(clients).await?;
-    expect(listed == awarded, "durable-after-listing", (&awarded, &listed))?;
+    expect(
+        reply == EXPECTED_BADGES,
+        "qualifying-badges-granted",
+        &reply,
+    )?;
+    let awarded = stored_badges(clients).await?;
+    expect(
+        awarded
+            .iter()
+            .map(|&(id, _)| id)
+            .eq(EXPECTED_BADGES.map(i16::from)),
+        "reply-vs-durable",
+        &awarded,
+    )?;
     logout(&mut client).await?;
-    wait_character_released(clients, 1).await?;
+    wait_character_released(clients, 0).await?;
     let offline = stored_badges(clients).await?;
-    expect(offline == awarded, "durable-before-relog", (&awarded, &offline))?;
+    expect(
+        offline == awarded,
+        "durable-before-relog",
+        (&awarded, &offline),
+    )?;
 
-    let mut fresh = connect_world(clients, 0xc2).await?;
+    let mut fresh = connect_character(clients, 0xc2, 0).await?;
+    expect(
+        fresh.join_snapshot().game_session_id != session,
+        "fresh-session",
+        fresh.join_snapshot().game_session_id,
+    )?;
     let admitted = stored_badges(clients).await?;
-    expect(admitted == awarded, "durable-after-admission", (&awarded, &admitted))?;
+    expect(
+        admitted == awarded,
+        "durable-after-admission",
+        (&awarded, &admitted),
+    )?;
     let again = reply_badges(&mut fresh).await?;
-    expect(again == expected, "reply-after-relog", (&expected, &again))?;
+    expect(again == EXPECTED_BADGES, "reply-after-relog", &again)?;
     let reread = stored_badges(clients).await?;
-    expect(reread == awarded, "durable-after-relog", (&awarded, &reread))?;
+    expect(
+        reread == awarded,
+        "durable-after-relog",
+        (&awarded, &reread),
+    )?;
     logout(&mut fresh).await?;
-    wait_character_released(clients, 1).await?;
+    wait_character_released(clients, 0).await?;
     let released = stored_badges(clients).await?;
-    expect(released == awarded, "durable-after-final-logout", (&awarded, &released))?;
+    expect(
+        released == awarded,
+        "durable-after-final-logout",
+        (&awarded, &released),
+    )?;
     Ok((
         "PASS",
-        format!("badges={reply:?};pre-state-empty;original-awards-survive-relog"),
+        format!("badges={reply:?};seeded-level=501;pre-state-empty;original-awards-survive-relog"),
     ))
 }
 
@@ -152,7 +194,9 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
