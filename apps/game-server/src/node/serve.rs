@@ -490,7 +490,7 @@ struct Material {
     gameplay_key: PrivateKeyDer<'static>,
     evidence: FreshEvidenceSource,
     intents: ProducerDescriptor,
-    store: ProducerDescriptor,
+    store: Option<ProducerDescriptor>,
     /// Runtime-status identity and declared epoch; `None` disables reporting.
     runtime_status: Option<(std::sync::Arc<RuntimeStatusDescriptor>, u64)>,
     /// `ListCharactersForAccount` publisher: its identity, source authority
@@ -543,17 +543,17 @@ const PLATFORM_ENV_IDENTITIES: [&str; 8] = [
     "OTERYN_PLATFORM_PROFILE_B_CHANGES_CLIENT_IDENTITY_PEM",
 ];
 
-fn store_descriptor(
+/// Load the dedicated Store descriptor, or disable Store when it is unconfigured.
+pub fn store_descriptor(
     config: &NodeConfig,
-    evidence: &ProducerDescriptor,
     endpoint: &(String, u16),
     roots: &[CertificateDer<'static>],
     gameplay_chain: &[CertificateDer<'static>],
     secret: impl Fn(&'static str, &Path, usize) -> Result<Vec<u8>, StartupError>,
-) -> Result<ProducerDescriptor, BootError> {
+) -> Result<Option<ProducerDescriptor>, BootError> {
     let platform = &config.platform;
     let Some(store) = &platform.store else {
-        return Ok(evidence.clone());
+        return Ok(None);
     };
     let read_chain = |key, path: &Path| {
         certificates(&secret(key, path, MAX_PEM_BYTES)?).map_err(|_| invalid(key))
@@ -601,6 +601,7 @@ fn store_descriptor(
         chain,
         key,
     )
+    .map(Some)
     .map_err(|_| invalid("platform.store"))
 }
 
@@ -1044,14 +1045,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
             (chain, key)
         }
     };
-    let store = store_descriptor(
-        &config,
-        &evidence,
-        &endpoint,
-        &roots,
-        &gameplay_chain,
-        secret,
-    )?;
+    let store = store_descriptor(&config, &endpoint, &roots, &gameplay_chain, secret)?;
     let intents = ProducerDescriptor::new(
         CHARACTER_BOOTSTRAP_INTENT_ISSUER.into(),
         endpoint,
@@ -4105,6 +4099,14 @@ async fn boot_and_serve(
         "event=store_configuration store_purchases={}",
         config.store_purchases.as_str()
     );
+    if material.store.is_none() {
+        use oteryn_error_codes::{FieldValue, Level, Line};
+        emit(
+            PROCESS,
+            &Line::new(Level::Warn, "node", "platform_store_disabled")
+                .field("reason", FieldValue::Token("missing_platform_store")),
+        );
+    }
     let owners = GameplaySeamOwners {
         platform_enforcement_enabled: enforcement_clients.is_some(),
         cast,
@@ -4112,17 +4114,8 @@ async fn boot_and_serve(
         soulpit_template: soulpit_template.as_ref(),
         gameplay_idle_policy: config.gameplay_idle,
         store_purchases: config.store_purchases,
-        store: Some(
-            crate::native_admission_source::store::StoreClient::new(
-                Box::new(
-                    crate::native_admission_source::store::MtlsStoreTransport::new(
-                        material.store.clone(),
-                    ),
-                ),
-                material.store.source_authority().to_owned(),
-            )
-            .with_coins(coins),
-        ),
+        store: material.store.as_ref().map(store_client),
+        coins,
         emit,
         root,
         character: &authority,
@@ -4201,18 +4194,18 @@ async fn boot_and_serve(
         // enforcement-owner exit authoritative while this auxiliary worker is idle.
         std::future::pending::<()>().await;
     };
-    let receipts = crate::gameplay_transport::run_store_receipt_outbox(
-        root,
-        authority,
-        crate::native_admission_source::store::StoreClient::new(
-            Box::new(
-                crate::native_admission_source::store::MtlsStoreTransport::new(
-                    material.store.clone(),
-                ),
-            ),
-            material.store.source_authority().to_owned(),
-        ),
-    );
+    let receipts = async {
+        if let Some(store) = &material.store {
+            crate::gameplay_transport::run_store_receipt_outbox(
+                root,
+                authority,
+                store_client(store),
+            )
+            .await;
+        } else {
+            std::future::pending::<()>().await;
+        }
+    };
     first(
         first(first(serving, enforcement_owner), catalogue),
         Box::pin(receipts),
@@ -4221,6 +4214,17 @@ async fn boot_and_serve(
     .flatten()
     .flatten()
     .unwrap_or(Err(BootError::Serve))
+}
+
+/// Build a Store client from the validated Store descriptor.
+pub fn store_client(
+    store: &ProducerDescriptor,
+) -> crate::native_admission_source::store::StoreClient {
+    use crate::native_admission_source::store::{MtlsStoreTransport, StoreClient};
+    StoreClient::new(
+        Box::new(MtlsStoreTransport::new(store.clone())),
+        store.source_authority().to_owned(),
+    )
 }
 
 #[cfg(test)]
@@ -4695,7 +4699,8 @@ client_key_file = "/etc/oteryn/node/store.key"
         store: &rcgen::Certificate,
         key: &rcgen::KeyPair,
         status: Option<&rcgen::Certificate>,
-    ) -> Result<ProducerDescriptor, BootError> {
+        remote: Option<(u16, &rcgen::Certificate)>,
+    ) -> Result<Option<ProducerDescriptor>, BootError> {
         use super::super::config::tests::NODE;
         use base64::Engine as _;
         let pem = |label: &str, der: &[u8]| {
@@ -4715,24 +4720,15 @@ assignment_epoch = 1
         };
         let config = NodeConfig::parse(format!("{NODE}{section}{status_section}").as_bytes())
             .expect("Store node config");
-        let endpoint = ("127.0.0.1".to_owned(), 8443);
-        let roots = vec![evidence.cert.der().clone()];
-        let descriptor = ProducerDescriptor::new(
-            "fixture-evidence".into(),
-            endpoint.clone(),
-            "localhost".into(),
-            "localhost".into(),
-            roots.clone(),
-            roots.clone(),
-            PrivateKeyDer::Pkcs8(evidence.signing_key.serialize_der().into()),
-        )
-        .expect("evidence descriptor");
+        let (port, root) = remote.unwrap_or((8443, &evidence.cert));
+        let endpoint = ("127.0.0.1".to_owned(), port);
+        let roots = [root.der().clone()];
+        let gameplay_chain = [evidence.cert.der().clone()];
         store_descriptor(
             &config,
-            &descriptor,
             &endpoint,
             &roots,
-            &roots,
+            &gameplay_chain,
             |config_key, _, _| {
                 match config_key {
                     "platform.client_certificate_file" => Some(certificate(&evidence.cert)),
@@ -4749,12 +4745,20 @@ assignment_epoch = 1
     }
 
     #[test]
-    fn store_section_absent_keeps_evidence_identity() {
+    fn store_section_absent_disables_the_store_descriptor() {
         let evidence = issue_client_certificate();
-        let descriptor =
-            select_store_descriptor("", &evidence, &evidence.cert, &evidence.signing_key, None)
-                .expect("evidence fallback");
-        assert_eq!(descriptor.source_authority(), "fixture-evidence");
+        assert!(
+            select_store_descriptor(
+                "",
+                &evidence,
+                &evidence.cert,
+                &evidence.signing_key,
+                None,
+                None
+            )
+            .expect("unconfigured Store")
+            .is_none()
+        );
     }
 
     #[test]
@@ -4762,8 +4766,10 @@ assignment_epoch = 1
         let evidence = issue_client_certificate();
         let key = rcgen::KeyPair::generate().expect("Store key");
         let store = store_certificate(&key);
-        let descriptor = select_store_descriptor(STORE_SECTION, &evidence, &store, &key, None)
-            .expect("distinct Store identity");
+        let descriptor =
+            select_store_descriptor(STORE_SECTION, &evidence, &store, &key, None, None)
+                .expect("valid Store configuration")
+                .expect("distinct Store identity");
         assert_eq!(
             descriptor.source_authority(),
             "urn:oteryn:platform:game-auth"
@@ -4774,12 +4780,118 @@ assignment_epoch = 1
                 &evidence,
                 &store,
                 &evidence.signing_key,
-                None
+                None,
+                None,
             ),
             Err(BootError::Startup(StartupError::Invalid {
                 key: "platform.store"
             }))
         ));
+    }
+
+    #[tokio::test]
+    async fn store_client_presents_the_configured_store_identity()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::native_admission_source::store::PENDING_PATH;
+        use rcgen::{BasicConstraints, CertificateParams, CertifiedIssuer, IsCa, KeyPair};
+        use std::sync::Arc;
+        use tokio::io::{AsyncBufReadExt, BufReader};
+
+        let mut ca_params = CertificateParams::new(Vec::<String>::new())?;
+        ca_params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
+        let ca = CertifiedIssuer::self_signed(ca_params, KeyPair::generate()?)?;
+        let server_key = KeyPair::generate()?;
+        let server = CertificateParams::new(vec!["game-auth.internal".to_owned()])?
+            .signed_by(&server_key, &ca)?;
+        let store_key = KeyPair::generate()?;
+        let mut params = CertificateParams::new(Vec::<String>::new())?;
+        params
+            .distinguished_name
+            .push(rcgen::DnType::CommonName, "Fixture Store");
+        let store = params.signed_by(&store_key, &ca)?;
+        let evidence = issue_client_certificate();
+
+        let mut roots = rustls::RootCertStore::empty();
+        roots.add(ca.der().clone())?;
+        let provider = Arc::new(rustls::crypto::aws_lc_rs::default_provider());
+        let verifier = rustls::server::WebPkiClientVerifier::builder_with_provider(
+            Arc::new(roots),
+            provider.clone(),
+        )
+        .build()?;
+        let acceptor = tokio_rustls::TlsAcceptor::from(Arc::new(
+            rustls::ServerConfig::builder_with_provider(provider)
+                .with_protocol_versions(&[&rustls::version::TLS13])?
+                .with_client_cert_verifier(verifier)
+                .with_single_cert(
+                    vec![server.der().clone()],
+                    PrivateKeyDer::Pkcs8(server_key.serialize_der().into()),
+                )?,
+        ));
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+        let descriptor = select_store_descriptor(
+            STORE_SECTION,
+            &evidence,
+            &store,
+            &store_key,
+            None,
+            Some((listener.local_addr()?.port(), ca.as_ref())),
+        )
+        .expect("configured Store descriptor")
+        .expect("Store enabled");
+        let mut client = store_client(&descriptor);
+        let cursor = Default::default();
+        let peer = async {
+            let (socket, _) = listener.accept().await?;
+            let tls = acceptor.accept(socket).await?;
+            let peer = tls
+                .get_ref()
+                .1
+                .peer_certificates()
+                .ok_or("missing Store peer")?;
+            assert_eq!(peer.first(), Some(store.der()));
+            let mut stream = BufReader::new(tls);
+            let mut line = String::new();
+            stream.read_line(&mut line).await?;
+            assert_eq!(line, format!("POST {PENDING_PATH} HTTP/1.1\r\n"));
+            let mut length = None;
+            loop {
+                line.clear();
+                if stream.read_line(&mut line).await? == 0 {
+                    return Err("Store request ended before its headers".into());
+                }
+                if line == "\r\n" {
+                    break;
+                }
+                if let Some(value) = line.strip_prefix("Content-Length: ") {
+                    length = Some(value.trim().parse::<usize>()?);
+                }
+            }
+            let mut body = vec![0; length.ok_or("missing Store request content length")?];
+            stream.read_exact(&mut body).await?;
+            let page = r#"{"contract_version":1,"pending":[]}"#;
+            let reply = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{page}",
+                page.len()
+            );
+            stream.write_all(reply.as_bytes()).await?;
+            stream.shutdown().await?;
+            Ok::<_, Box<dyn std::error::Error>>(())
+        };
+        let (page, ()) = tokio::time::timeout(Duration::from_secs(5), async {
+            tokio::try_join!(
+                async {
+                    client
+                        .list_pending(&cursor)
+                        .await
+                        .map_err(|error| format!("{error:?}").into())
+                },
+                peer
+            )
+        })
+        .await??;
+        assert!(page.entries.is_empty());
+        Ok(())
     }
 
     #[test]
@@ -4792,7 +4904,8 @@ assignment_epoch = 1
                 &evidence,
                 &reissued,
                 &evidence.signing_key,
-                None
+                None,
+                None,
             ),
             Err(BootError::Startup(StartupError::Invalid {
                 key: "platform.store"
@@ -4809,7 +4922,8 @@ assignment_epoch = 1
                 &evidence,
                 &store.cert,
                 &store.signing_key,
-                None
+                None,
+                None,
             ),
             Err(BootError::Startup(StartupError::Invalid {
                 key: "platform.store"
@@ -4826,7 +4940,8 @@ assignment_epoch = 1
                 &evidence,
                 &status.cert,
                 &status.signing_key,
-                Some(&status.cert)
+                Some(&status.cert),
+                None,
             ),
             Err(BootError::Startup(StartupError::Invalid {
                 key: "platform.store"

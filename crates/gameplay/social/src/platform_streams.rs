@@ -499,7 +499,9 @@ impl StreamPuller {
 /// Why one pull did not advance.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Failure {
-    Store,
+    CursorRead,
+    RequestEncode,
+    PageApply,
     Pull(PullFailure),
     Malformed,
 }
@@ -518,8 +520,9 @@ async fn pull_once(
     let after = root
         .platform_stream_cursor(puller.stream)
         .await
-        .map_err(|_| Failure::Store)?;
-    let body = request_body(puller.stream, after.as_deref(), PAGE_LIMIT).ok_or(Failure::Store)?;
+        .map_err(|_| Failure::CursorRead)?;
+    let body =
+        request_body(puller.stream, after.as_deref(), PAGE_LIMIT).ok_or(Failure::RequestEncode)?;
     let raw = tokio::time::timeout(
         PULL_TIMEOUT,
         post_json(&puller.http, &puller.endpoint, body, MAX_PAGE_BYTES),
@@ -531,7 +534,7 @@ async fn pull_once(
     match root
         .apply_platform_stream_page(after, page.records, page.next_cursor)
         .await
-        .map_err(|_| Failure::Store)?
+        .map_err(|_| Failure::PageApply)?
     {
         PageOutcome::Advanced(counts) => {
             if puller.stream == PlatformStream::SecurityRevocations {
@@ -601,7 +604,10 @@ async fn run(
                 }
                 let retry_after = match failure {
                     Failure::Pull(pull) => pull.retry_after(),
-                    Failure::Store | Failure::Malformed => None,
+                    Failure::CursorRead
+                    | Failure::RequestEncode
+                    | Failure::PageApply
+                    | Failure::Malformed => None,
                 };
                 let delay = crate::premium::refresh::after_failure(
                     attempt,

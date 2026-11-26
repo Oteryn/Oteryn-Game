@@ -60,6 +60,11 @@ client_certificate_file = "<BASE>/node/secrets/platform-client.crt"
 client_key_file = "<BASE>/node/secrets/platform-client.key"
 descriptor_revision = 1
 installed_at = <UNIX_SECONDS_AT_SETUP>
+# Provision the dedicated Store identity on Platform before enabling this preprod section.
+# Store stays unavailable when this section is omitted.
+# [platform.store]
+# client_certificate_file = "<BASE>/node/secrets/store-client.crt"
+# client_key_file = "<BASE>/node/secrets/store-client.key"
 [platform.runtime_status]
 # The node host's own runtime-status identity, never the evidence one above.
 client_certificate_file = "<BASE>/node/secrets/runtime-status.crt"

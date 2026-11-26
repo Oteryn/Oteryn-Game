@@ -29,9 +29,7 @@ pub(super) async fn exercise(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
 ) -> TestResult {
-    use crate::{
-        durability::guild_chat_fixture as chars, native_admission_source::store::StoreClient,
-    };
+    use crate::durability::guild_chat_fixture as chars;
     let recipient = chars::sid(91, 1);
     let recipient_account = chars::sid(91, 2);
     chars::historical_character(
@@ -57,10 +55,7 @@ pub(super) async fn exercise(
         s.wallets
             .insert(uuid(&recipient_account), peer::Wallet::default());
     }
-    owner.store = Some(std::sync::Arc::new(tokio::sync::Mutex::new(
-        StoreClient::new(Box::new(peer::NoStore), "platform-test".into())
-            .with_coins(Some(peer::client(&shared))),
-    )));
+    owner.coins = Some(std::sync::Arc::new(tokio::sync::Mutex::new(peer::client(&shared))));
     let review = Gift {
         action: 1,
         recipient: "Gift Recipient".into(),

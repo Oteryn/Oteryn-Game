@@ -60,6 +60,27 @@ impl TestPki {
             ca_der: ca.der().clone(),
         }
     }
+
+    /// Require the generated client identity on a loopback test endpoint.
+    pub fn acceptor(&self) -> tokio_rustls::TlsAcceptor {
+        let provider = Arc::new(rustls::crypto::aws_lc_rs::default_provider());
+        let mut roots = rustls::RootCertStore::empty();
+        roots.add(self.ca_der.clone()).unwrap();
+        let verifier = rustls::server::WebPkiClientVerifier::builder_with_provider(
+            Arc::new(roots),
+            provider.clone(),
+        )
+        .build()
+        .unwrap();
+        let mut config = rustls::ServerConfig::builder_with_provider(provider)
+            .with_protocol_versions(&[&rustls::version::TLS13])
+            .unwrap()
+            .with_client_cert_verifier(verifier)
+            .with_single_cert(self.server_chain.clone(), self.server_key.clone_key())
+            .unwrap();
+        config.alpn_protocols = vec![b"http/1.1".to_vec()];
+        tokio_rustls::TlsAcceptor::from(Arc::new(config))
+    }
 }
 
 impl Default for TestPki {
@@ -152,23 +173,7 @@ impl TestProducer {
         pki: &TestPki,
         handler: impl Fn(&ProducerRequest) -> Reply + Send + Sync + 'static,
     ) -> Self {
-        let provider = Arc::new(rustls::crypto::aws_lc_rs::default_provider());
-        let mut roots = rustls::RootCertStore::empty();
-        roots.add(pki.ca_der.clone()).unwrap();
-        let verifier = rustls::server::WebPkiClientVerifier::builder_with_provider(
-            Arc::new(roots),
-            provider.clone(),
-        )
-        .build()
-        .unwrap();
-        let mut config = rustls::ServerConfig::builder_with_provider(provider)
-            .with_protocol_versions(&[&rustls::version::TLS13])
-            .unwrap()
-            .with_client_cert_verifier(verifier)
-            .with_single_cert(pki.server_chain.clone(), pki.server_key.clone_key())
-            .unwrap();
-        config.alpn_protocols = vec![b"http/1.1".to_vec()];
-        let acceptor = tokio_rustls::TlsAcceptor::from(Arc::new(config));
+        let acceptor = pki.acceptor();
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let port = listener.local_addr().unwrap().port();
         let handler: Arc<Mutex<Handler>> = Arc::new(Mutex::new(Arc::new(handler)));

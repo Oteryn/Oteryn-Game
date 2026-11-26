@@ -83,13 +83,10 @@ pub(super) async fn execute(
     if r.action == 3 {
         return reply(coin.detail(uuid(&r.operation)).await.ok()?);
     }
-    let Some(platform) = &owner.store else {
+    let Some(coins) = &owner.coins else {
         return reply(json!({"result":"unavailable"}));
     };
-    let mut platform = platform.lock().await;
-    let Some(coins) = platform.coins() else {
-        return reply(json!({"result":"unavailable"}));
-    };
+    let mut coins = coins.lock().await;
     if owner.store_purchases == super::StorePurchaseMode::DisabledRestoredBackup
         || !coins.transfers_enabled()
     {
@@ -120,7 +117,7 @@ pub(super) async fn execute(
     } else {
         let result = coin.gift_confirm(r.clone()).await.ok()?;
         if result["result"] == "ok" {
-            super::coin_market::reconcile_coin_market(&coin, coins).await;
+            super::coin_market::reconcile_coin_market(&coin, &mut coins).await;
             coin.detail(uuid(&r.operation)).await.ok()?
         } else {
             result

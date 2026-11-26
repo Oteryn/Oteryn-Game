@@ -337,6 +337,16 @@
       "note": "A privacy-safe local node health snapshot was served."
     },
     {
+      "event": "platform_store_disabled",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "reason"
+      ],
+      "codes": [],
+      "note": "Store requests and receipt reconciliation are unavailable when [platform.store] is omitted."
+    },
+    {
       "event": "public_projections",
       "level": "info",
       "span": false,

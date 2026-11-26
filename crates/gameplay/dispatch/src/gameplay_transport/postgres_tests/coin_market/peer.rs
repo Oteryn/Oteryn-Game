@@ -1,5 +1,5 @@
 //! Contract-exact test producer. This is never mounted by a production node.
-use crate::native_admission_source::{coins as c,store,descriptor::Operation};
+use crate::native_admission_source::coins as c;
 use std::{collections::BTreeMap,future::Future,pin::Pin,sync::{Arc,Mutex}};
 #[derive(Default)]pub(super) struct Wallet{pub transferable:i64,pub non_transferable:i64,pub reserved:i64}
 #[derive(Default)]pub(super) struct State {
@@ -69,9 +69,5 @@ impl c::Transport for Peer {
    Ok((200,serde_json::to_vec(&r)?))
   })
  }
-}
-pub(super) struct NoStore;
-impl store::StoreTransport for NoStore {
- fn exchange<'a>(&'a mut self,_operation:Operation,_body:&'a str)->Pin<Box<dyn Future<Output=Result<Vec<u8>,store::TransportFailure>>+Send+'a>>{Box::pin(async{Err(store::TransportFailure::Unavailable)})}
 }
 pub(super) fn client(state:&Shared)->c::CoinClient{c::CoinClient::new(Box::new(Peer(Arc::clone(state)))).with_market_enabled(true).with_transfers_enabled(true)}

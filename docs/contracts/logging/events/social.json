@@ -29,7 +29,7 @@
         "reason"
       ],
       "codes": [],
-      "note": "Platform stream polling failed."
+      "note": "Platform stream polling failed. Local failures report CursorRead, RequestEncode or PageApply before retrying."
     },
     {
       "event": "platform_stream_page",

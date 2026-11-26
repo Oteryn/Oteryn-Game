@@ -23,7 +23,6 @@ use oteryn_game_server::durability::runtime_scope_assignment::{
     RuntimeScopeAssignmentWriter,
 };
 use oteryn_game_server::foundation::{ChannelId, NodeId, RuntimeScopeRefV1, WorldId};
-use oteryn_game_server::native_admission_source::descriptor::ProducerDescriptor;
 use oteryn_game_server::native_admission_source::restore_notice::{
     self, Ack as RestoreAck, RestoreNotice, RestoreNoticeConfig, RestoreNoticeDescriptor,
 };
@@ -31,7 +30,7 @@ use oteryn_game_server::native_admission_source::scope_assignment::{
     self, Assignment, Delivery, NotDelivered, ReportConfig, RetryPolicy, Revocation,
     ScopeAssignmentDescriptor,
 };
-use oteryn_game_server::native_admission_source::store::{MtlsStoreTransport, StoreClient};
+use oteryn_game_server::native_admission_source::store::StoreClient;
 use oteryn_game_server::node::config::{DatabaseConfig, NodeConfig, OpsConfig};
 use oteryn_game_server::node::descriptor_facts::{MAX_PEM_BYTES, certificates, descriptor_facts};
 use oteryn_game_server::node::operator_files::{
@@ -753,38 +752,34 @@ fn restore_store_client(
             "restore and Store must use the same Platform peer".into(),
         ));
     }
-    let read = |label, path: &std::path::Path| {
-        read_file(label, path, FileClass::Secret, service, MAX_PEM_BYTES)
+    use oteryn_game_server::node::serve::{store_client, store_descriptor};
+    if platform.store.is_none() {
+        return Err(Failure::Input(
+            "--node-config missing [platform.store]".into(),
+        ));
+    }
+    let read = |label, path: &std::path::Path, max| {
+        read_file(label, path, FileClass::Secret, service, max)
     };
-    let roots = certificates(&read(
-        "platform.trust_roots_file",
-        &platform.trust_roots_file,
-    )?)
-    .map_err(|_| Failure::Input("platform.trust_roots_file".into()))?;
-    let client = certificates(&read(
-        "platform.client_certificate_file",
-        &platform.client_certificate_file,
-    )?)
-    .map_err(|_| Failure::Input("platform.client_certificate_file".into()))?;
-    let key = PrivateKeyDer::from_pem_slice(&read(
-        "platform.client_key_file",
-        &platform.client_key_file,
-    )?)
-    .map_err(|_| Failure::Input("platform.client_key_file".into()))?;
-    let store = ProducerDescriptor::new(
-        platform.source_authority.clone(),
-        (platform.endpoint.ip().to_string(), platform.endpoint.port()),
-        platform.peer_name.clone(),
-        platform.peer_name.clone(),
-        roots,
-        client,
-        key,
+    let chain = |label, path: &std::path::Path| {
+        certificates(&read(label, path, MAX_PEM_BYTES)?).map_err(|_| Failure::Input(label.into()))
+    };
+    let roots = chain("platform.trust_roots_file", &platform.trust_roots_file)?;
+    let gameplay_chain = chain(
+        "listener.certificate_chain_file",
+        &node.listener.certificate_chain_file,
+    )?;
+    store_descriptor(
+        &node,
+        &(platform.endpoint.ip().to_string(), platform.endpoint.port()),
+        &roots,
+        &gameplay_chain,
+        read,
     )
-    .map_err(|_| Failure::Input("--node-config platform Store identity".into()))?;
-    Ok(StoreClient::new(
-        Box::new(MtlsStoreTransport::new(store)),
-        platform.source_authority.clone(),
-    ))
+    .map_err(|error| Failure::Input(error.to_string()))?
+    .as_ref()
+    .map(store_client)
+    .ok_or_else(|| Failure::Input("--node-config missing [platform.store]".into()))
 }
 
 fn restore_notice_descriptor(

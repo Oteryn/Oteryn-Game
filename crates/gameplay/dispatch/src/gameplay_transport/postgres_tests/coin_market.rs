@@ -153,7 +153,6 @@ fn scenario(gift:bool)->TestResult{run(async |admin|{
     })}
 async fn scenario_body(h:&Harness,authority:&crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,owner:&mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,deps:&Dependencies,gift:bool)->TestResult{
  use crate::durability::guild_chat_fixture as chars;
- use crate::native_admission_source::store::StoreClient;
  use crate::gameplay_transport::coin_market::reconcile_coin_market;
  let buyer_account=chars::sid(90,2);let buyer_character=chars::sid(90,1);
  chars::historical_character(&h.pool,90,crate::domain::CharacterId::from_bytes(buyer_character).map_err(debug)?,buyer_account,id(42),"Coin Buyer").await?;
@@ -161,7 +160,7 @@ async fn scenario_body(h:&Harness,authority:&crate::durability::character_author
  seed_gold(h,[(id(40),id(41),200),(buyer_account,buyer_character,220)]).await?;
  let shared=std::sync::Arc::new(std::sync::Mutex::new(peer::State::default()));
  for a in [uuid(&id(40)),uuid(&buyer_account)]{shared.lock().map_err(|_|"coin peer")?.wallets.insert(a,peer::Wallet{transferable:100,non_transferable:5,reserved:0});}
- owner.store=Some(std::sync::Arc::new(tokio::sync::Mutex::new(StoreClient::new(Box::new(peer::NoStore),"platform-test".into()).with_coins(Some(peer::client(&shared))))));
+ owner.coins=Some(std::sync::Arc::new(tokio::sync::Mutex::new(peer::client(&shared))));
  deps.initialize(owner).await;
  let mut admitted=deps.admitted;
  let current=crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone()).current_session_at(admitted.game_session_id).await?.0;

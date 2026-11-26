@@ -1994,6 +1994,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             gameplay_idle_policy: Default::default(),
             store_purchases: Default::default(),
             store: None,
+            coins: None,
             emit: crate::node::serve::emit,
             root: &root,
             character: &authority,

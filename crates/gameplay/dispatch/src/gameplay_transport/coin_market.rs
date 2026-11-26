@@ -40,8 +40,8 @@ pub(super) async fn execute(owner:&ComposedFreshAdmission<'_, '_, '_>,admitted:A
  if matches!(r.action,3..=6) && crate::durability::bank::fee_payer_is_junior(fence.character_id){return reply(json!({"result":"junior"}));}
  let coin=owner.root.coin_owner(owner.character,owner.holder,admitted.world_id,Some(fence)).ok()?;
  let account=match coin.account().await {Ok(a)=>a,Err(_)=>return reply(json!({"result":"rejected"}))};
- let Some(platform)=&owner.store else{return reply(json!({"result":"unavailable"}));};
- let mut platform=platform.lock().await;let Some(coins)=platform.coins() else{return reply(json!({"result":"unavailable"}));};
+ let Some(coins)=&owner.coins else{return reply(json!({"result":"unavailable"}));};
+ let mut coins=coins.lock().await;
  if coins.market_enabled() && coin.tick().await.is_err(){return reply(json!({"result":"unavailable"}));}
  if matches!(r.action,3..=6) && !coins.market_enabled(){return reply(json!({"result":"unavailable"}));}
  let value=match r.action {
@@ -49,7 +49,7 @@ pub(super) async fn execute(owner:&ComposedFreshAdmission<'_, '_, '_>,admitted:A
   3..=6=>{
    let result=coin.prepare(r.clone()).await.ok()?;
    if result["result"]=="ok" {
-    reconcile_coin_market(&coin,coins).await;
+    reconcile_coin_market(&coin,&mut coins).await;
     let op=uuid(&r.operation);
     coin.detail(op).await.ok()?
    }else{result}

@@ -135,6 +135,9 @@ pub async fn serve_gameplay(
         store: owners
             .store
             .map(|client| std::sync::Arc::new(tokio::sync::Mutex::new(client))),
+        coins: owners
+            .coins
+            .map(|client| std::sync::Arc::new(tokio::sync::Mutex::new(client))),
         store_purchases: owners.store_purchases,
     };
     // Capture actual registered source execution time before startup awaits,

@@ -424,6 +424,7 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub gameplay_idle_policy: connection::GameplayIdlePolicy,
     pub store_purchases: StorePurchaseMode,
     pub store: Option<crate::native_admission_source::store::StoreClient>,
+    pub coins: Option<crate::native_admission_source::coins::CoinClient>,
     /// The composition root's leveled diagnostic writer.
     pub emit: fn(&str, &oteryn_error_codes::Line<'_>),
     pub root: &'a DurabilityRoot,
@@ -692,6 +693,9 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     pub spell_lane: crate::durability::spell_owner_commit::SpellLane,
     /// STORE_V1: the node's Platform Store client; `None` refuses every purchase as disabled.
     pub store: Option<store::StorePlatform>,
+    pub coins: Option<
+        std::sync::Arc<tokio::sync::Mutex<crate::native_admission_source::coins::CoinClient>>,
+    >,
     pub store_purchases: StorePurchaseMode,
 }
 

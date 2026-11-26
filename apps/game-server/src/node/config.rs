@@ -129,7 +129,7 @@ pub struct PlatformConfig {
     pub runtime_status: Option<RuntimeStatusConfig>,
     /// Optional purpose-separated credentials for the existing Character intent read.
     pub bootstrap_intents: Option<BootstrapIntentsConfig>,
-    /// Optional dedicated client identity shared by Store purchase and delivery.
+    /// Dedicated client identity shared by Store purchase and delivery. Absent: Store is off.
     pub store: Option<StoreConfig>,
     /// `oteryn-game-list-characters-for-account-v1` §3. Absent: the
     /// projection publisher does not run. Endpoint, peer name and trust roots
@@ -1945,13 +1945,27 @@ start_floor = -7
 
     #[test]
     fn store_section_is_opt_in_and_refuses_production_worlds() {
+        assert!(
+            NodeConfig::parse(NODE.as_bytes())
+                .expect("node config")
+                .platform
+                .store
+                .is_none()
+        );
         let store = r#"
 [platform.store]
 client_certificate_file = "/etc/oteryn/node/store.crt"
 client_key_file = "/etc/oteryn/node/store.key"
 "#;
         let preproduction = format!("{NODE}{WORLD_BUNDLE}{store}");
-        assert!(NodeConfig::parse(preproduction.as_bytes()).is_ok());
+        let parsed = NodeConfig::parse(preproduction.as_bytes()).expect("preproduction config");
+        assert_eq!(
+            parsed.platform.store,
+            Some(StoreConfig {
+                client_certificate_file: "/etc/oteryn/node/store.crt".into(),
+                client_key_file: "/etc/oteryn/node/store.key".into(),
+            })
+        );
         let production = preproduction.replace("production = false", "production = true");
         assert_eq!(
             NodeConfig::parse(production.as_bytes())

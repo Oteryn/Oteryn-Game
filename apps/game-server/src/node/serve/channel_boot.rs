@@ -174,7 +174,7 @@ pub(super) async fn prepare_channel(
                 crate::gameplay_transport::world_required_capabilities::offered_for_scope(
                     bundle.is_some(), active_content.active(),
                 ),
-                true, // The node's required Platform descriptor composes its Store client.
+                material.store.is_some(),
              ),
              active_content.active(), combat_room.as_ref(), &channel_pin,
             ),
