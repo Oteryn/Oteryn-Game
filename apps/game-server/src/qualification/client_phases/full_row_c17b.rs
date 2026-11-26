@@ -285,8 +285,12 @@ impl<'a> Staging<'a> {
                 ).into());
             }
             verdict::Harness::global().progress("walk");
+            client.take_events();
             client
-                .service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms)))
+                .session_mut()
+                .service_liveness_discarding_events(Duration::from_millis(u64::from(
+                    outcome.step_wait_ms,
+                )))
                 .await?;
         }
         Ok(())
@@ -333,7 +337,7 @@ impl<'a> Staging<'a> {
                     .tile(at.x, at.y, at.floor)
                     .is_some_and(|tile| !tile.protection_zone())
         })?;
-        full_e2ef5::with_observer_liveness(observer, self.walk(caster, &path)).await?;
+        provisioning::with_peer_liveness(observer, self.walk(caster, &path)).await?;
         let caster_tile = tile(caster.world_spatial().actor_position)?;
         if !adjacent(caster_tile, spawn) {
             return Err(format!(
@@ -360,7 +364,7 @@ impl<'a> Staging<'a> {
             .ok_or("C17b no live Rat adjacent to the authored encounter landing")?;
         let rat_tile = tile(rat.position)?;
         let path = self.path(observer, |at| adjacent(at, caster_tile) && at != rat_tile)?;
-        full_e2ef5::with_observer_liveness(caster, self.walk(observer, &path)).await?;
+        provisioning::with_peer_liveness(caster, self.walk(observer, &path)).await?;
         let observer_tile = tile(observer.world_spatial().actor_position)?;
         if !adjacent(observer_tile, caster_tile) {
             return Err(format!(
@@ -550,7 +554,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("fresh-admission-condition", cast.result_server_sequence)?;
     let back = staging.path(&caster, |at| at == TOWN)?;
-    full_e2ef5::with_observer_liveness(&mut observer, staging.walk(&mut caster, &back)).await?;
+    provisioning::with_peer_liveness(&mut observer, staging.walk(&mut caster, &back)).await?;
     logout(&mut caster).await?;
     let back = staging.path(&observer, |at| at == TOWN)?;
     staging.walk(&mut observer, &back).await?;
