@@ -746,13 +746,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             &[(other, true)],
         )
         .await?;
-    let mut bag_other = other.clone();
-    bag_other.slot = expected_backpack
-        .last()
-        .ok_or("I07 backpack lost food")?
-        .slot
-        + 1;
-    expected_backpack.push(bag_other);
+    // The starter backpack already contains one of this food. The transfer merges
+    // into that existing identity and slot rather than placing the corpse identity.
+    let mut stacks = expected_backpack
+        .iter_mut()
+        .filter(|entry| entry.key == other.key);
+    let stack = stacks.next().ok_or("I07 starter food stack is absent")?;
+    if stacks.next().is_some() || stack.quantity != 1 {
+        return Err("I07 expected one starter food stack containing exactly one item".into());
+    }
+    stack.quantity += other.quantity;
     require_placements(&mut database, Storage::Corpse, character, stacked, &[]).await?;
     require_placements(
         &mut database,
@@ -772,6 +775,38 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     .await?;
     evidence("I07_LOOT_CUSTODY unassigned=pouch_refused_then_main_moved");
     require_logout(&mut fresh).await?;
+    drop(fresh);
+    let mut readback = connect_world(clients, 0x07).await?;
+    let readback_session = readback.join_snapshot().game_session_id;
+    if readback_session == original_session
+        || readback_session == fresh_session
+        || owned_containers(&mut database, character, &clients.world).await? != (pouch, backpack)
+    {
+        return Err("I07 final relog changed container custody or reused a session".into());
+    }
+    require_placements(
+        &mut database,
+        Storage::InboxPouch,
+        character,
+        &pouch,
+        &expected_pouch,
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::Backpack,
+        character,
+        &backpack,
+        &expected_backpack,
+    )
+    .await?;
+    require_placements(&mut database, Storage::Corpse, character, corpse, &[]).await?;
+    require_placements(&mut database, Storage::Corpse, character, stacked, &[]).await?;
+    require_filters(&mut database, character, false, &expected_filters).await?;
+    require_logout(&mut readback).await?;
+    evidence(
+        "I07_LOOT_CUSTODY final_relog=true exact_ids_counts_slots=true pouch=inbox backpack=equipped corpses=empty",
+    );
     let fresh_session = uuid_text(fresh_session.as_bytes());
     write_capture(
         &capture_dir.join("i07-expected.txt"),
