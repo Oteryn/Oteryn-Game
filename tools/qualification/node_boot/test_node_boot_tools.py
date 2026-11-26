@@ -842,7 +842,13 @@ class CloudRunSummaryTests(unittest.TestCase):
                     (captures / 'n07d-stale-for-s18.bin').write_bytes(b'unrelated')
                     (captures / 's18-say.bin').write_bytes(b'fresh')
                     if capture:
-                        for name in ('s18-whisper.bin', 's18-expected.txt'):
+                        for name in (
+                            's18-expected.txt',
+                            's18-listener-relog.json', 's18-listener-relog.wire',
+                            's18-listener.json', 's18-listener.wire',
+                            's18-speaker-relog.json', 's18-speaker-relog.wire',
+                            's18-speaker.json', 's18-speaker.wire',
+                        ):
                             (captures / name).write_bytes(b'fresh')
                     log = work / 'node.log'
                     kind = 'e2e_capture' if server == 'CAPTURED' else 'e2e_all'

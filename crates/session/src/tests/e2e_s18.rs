@@ -56,9 +56,45 @@ impl AsyncWrite for RecordedInput<'_> {
     }
 }
 
+async fn verify_envelopes(
+    mut wire: &[u8],
+    session: &str,
+    envelopes: &[serde_json::Value],
+) -> Result<(), BoxError> {
+    for captured in envelopes {
+        let frame = read_frame(&mut wire).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        let (command_id, status) = if envelope.message_type() == MessageType::CommandResult {
+            let result = decode_command_result(envelope.payload())?;
+            (Some(result.command_id), Some(result.status as u32))
+        } else {
+            (None, None)
+        };
+        let expected = serde_json::json!({
+            "command_id": command_id,
+            "game_session_id": session,
+            "payload": envelope.payload(),
+            "server_sequence": envelope.server_sequence(),
+            "status": status,
+        });
+        if captured != &expected {
+            return Err(format!(
+                "S18 envelope disagrees with original frame at sequence {}",
+                envelope.server_sequence()
+            )
+            .into());
+        }
+    }
+    if !wire.is_empty() {
+        return Err("S18 capture omits an original server frame".into());
+    }
+    Ok(())
+}
+
 async fn replay(
     capture: &[u8],
     expected: &[ChatLine],
+    envelopes: &[serde_json::Value],
 ) -> Result<(JoinSnapshot, ActorPosition), BoxError> {
     let header_end = capture
         .iter()
@@ -86,6 +122,15 @@ async fn replay(
     if claimed_session != actual_session {
         return Err("S18 recorded game session mismatch".into());
     }
+    let session_uuid = format!(
+        "{}-{}-{}-{}-{}",
+        &actual_session[..8],
+        &actual_session[8..12],
+        &actual_session[12..16],
+        &actual_session[16..20],
+        &actual_session[20..],
+    );
+    verify_envelopes(wire, &session_uuid, envelopes).await?;
     assert!(
         session
             .chat_log()
@@ -234,14 +279,28 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
         line(ChatSpeechMode::Whisper, "pspsps"),
     ];
     block_on(async {
-        for (role, expected) in [
-            ("speaker", speaker_lines.as_slice()),
-            ("listener", listener_lines.as_slice()),
+        for (role, envelope_file, relog_file, expected) in [
+            (
+                "speaker",
+                "s18-speaker.json",
+                "s18-speaker-relog.json",
+                speaker_lines.as_slice(),
+            ),
+            (
+                "listener",
+                "s18-listener.json",
+                "s18-listener-relog.json",
+                listener_lines.as_slice(),
+            ),
         ] {
+            let envelopes: Vec<serde_json::Value> =
+                serde_json::from_slice(&std::fs::read(root.join(envelope_file))?)?;
+            let relog_envelopes: Vec<serde_json::Value> =
+                serde_json::from_slice(&std::fs::read(root.join(relog_file))?)?;
             let wire = read_bound(root, &format!("s18-{role}.wire"), &binding)?;
-            let (initial, after) = replay(&wire, expected).await?;
+            let (initial, after) = replay(&wire, expected, &envelopes).await?;
             let relog = read_bound(root, &format!("s18-{role}-relog.wire"), &binding)?;
-            let (fresh, _) = replay(&relog, &[]).await?;
+            let (fresh, _) = replay(&relog, &[], &relog_envelopes).await?;
             assert_ne!(initial.game_session_id, fresh.game_session_id);
             assert_eq!(after, fresh.world_spatial.actor_position);
             if role == "listener" {

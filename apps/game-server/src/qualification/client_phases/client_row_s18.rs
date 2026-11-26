@@ -3,7 +3,9 @@
 use super::*;
 use oteryn_dev_client::native_session::{Admission, Session};
 use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, ChatSpeechMode, DevClientSession};
-use oteryn_protocol_oteryn::{chat, logout::LogoutResult};
+use oteryn_protocol_oteryn::{
+    FrameLength, MessageType, chat, decode_command_result, decode_wire_envelope, logout::LogoutResult,
+};
 use std::cell::RefCell;
 use std::pin::Pin;
 use std::rc::Rc;
@@ -165,6 +167,32 @@ pub(super) async fn speak(
 
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+fn frame_envelopes(mut wire: &[u8], session: &[u8; 16]) -> TestResult<Vec<serde_json::Value>> {
+    let session = uuid_text(session);
+    let mut frames = Vec::new();
+    while !wire.is_empty() {
+        let (prefix, rest) = wire.split_at_checked(4).ok_or("S18 incomplete frame prefix")?;
+        let length = FrameLength::from_prefix(prefix)?.get() as usize;
+        let (body, rest) = rest.split_at_checked(length).ok_or("S18 incomplete frame body")?;
+        let envelope = decode_wire_envelope(body)?;
+        let (command_id, status) = if envelope.message_type() == MessageType::CommandResult {
+            let result = decode_command_result(envelope.payload())?;
+            (Some(result.command_id), Some(result.status as u32))
+        } else {
+            (None, None)
+        };
+        frames.push(serde_json::json!({
+            "command_id": command_id,
+            "game_session_id": session,
+            "payload": envelope.payload(),
+            "server_sequence": envelope.server_sequence(),
+            "status": status,
+        }));
+        wire = rest;
+    }
+    Ok(frames)
 }
 
 type CommandReceipt = (u64, u64);
@@ -395,8 +423,11 @@ async fn journey(
         }
         bytes.extend_from_slice(provenance.as_bytes());
         bytes.push(b'\n');
-        bytes.extend_from_slice(&wire.borrow());
-        capture(root, &format!("s18-{role}.wire"), &bytes)
+        let wire = wire.borrow();
+        bytes.extend_from_slice(&wire);
+        capture(root, &format!("s18-{role}.wire"), &bytes)?;
+        let envelopes = frame_envelopes(&wire, &session)?;
+        capture(root, &format!("s18-{role}.json"), &serde_json::to_vec(&envelopes)?)
     };
     save(
         "speaker",

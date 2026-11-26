@@ -128,6 +128,17 @@ def replay_targets():
         "oteryn-client", "e2e_e09_real_mail_outcomes_replay_into_mail_panel",
         capture_names("e09", mail.read_text()),
     )]
+    # S18 requires its five-field envelopes and cross-checks them against the original wire.
+    targets["e2e_s18"] = [(
+        "oteryn-session", "e2e_s18_say_and_whisper_echo_replay",
+        {
+            "s18-expected.txt",
+            "s18-listener-relog.json", "s18-listener-relog.wire",
+            "s18-listener.json", "s18-listener.wire",
+            "s18-speaker-relog.json", "s18-speaker-relog.wire",
+            "s18-speaker.json", "s18-speaker.wire",
+        },
+    )]
     return targets
 
 
