@@ -80,6 +80,76 @@ pub(super) async fn exercise(
 }
 
 #[test]
+fn hotkey_equips_leather_helmet_to_head_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    support::scenario_with_admin(Case::HotkeyEquipLeatherHelmet, admin)
+}
+
+pub(super) async fn exercise_leather_helmet(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use protocol::item_view::{self, EquipmentSlot, ItemMoveOutcome};
+
+    let key = "oteryn:item.tibia.i3355";
+    super::super::item_forge_fixtures::support::seed_items(h, &[(90, key, 1, 0)]).await?;
+    let definition = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .and_then(|n| n.item_index())
+        .and_then(|index| index.definition_ref("Item", key, "definition-r1"))
+        .ok_or("leather helmet definition")?;
+    let payload = wire::Request { definition }.encode().to_vec();
+    let frames = support::events(
+        owner,
+        admitted,
+        &[(1, wire::COMMAND_TYPE_HOTKEY_EQUIP, payload)],
+    )
+    .await?;
+    let mut moved = false;
+    let mut equipped_on_head = false;
+    for frame in frames {
+        let envelope = protocol::decode_wire_envelope(&frame).map_err(debug)?;
+        match envelope.message_type() {
+            protocol::MessageType::CommandResult => {
+                let result = protocol::decode_command_result(envelope.payload()).map_err(debug)?;
+                assert_eq!(result.status, protocol::CommandStatus::Accepted);
+                assert_eq!(
+                    wire::decode_reply(result.payload).map_err(debug)?,
+                    ItemMoveOutcome::Moved
+                );
+                moved = true;
+            }
+            protocol::MessageType::StateDelta => {
+                let delta = protocol::decode_state_delta(envelope.payload()).map_err(debug)?;
+                if delta.domain_id == item_view::STATE_DOMAIN_CHARACTER_INVENTORY {
+                    let inventory = item_view::decode_character_inventory_with_equip_drop(
+                        delta.payload,
+                        true,
+                    )
+                    .map_err(debug)?;
+                    equipped_on_head |= inventory.equipment.iter().any(|entry| {
+                        entry.slot == EquipmentSlot::Head
+                            && entry.item.item_definition_ref == definition
+                    });
+                }
+            }
+            _ => {}
+        }
+    }
+    assert!(moved, "hotkey returned Moved");
+    assert!(
+        equipped_on_head,
+        "inventory delta equips the leather helmet on HEAD"
+    );
+    eprintln!("POSTGRES_CASE_COMPLETED hotkey_equips_leather_helmet_to_head");
+    Ok(())
+}
+
+#[test]
 fn open_pvp_knight_hotkey_equips_and_publishes_tier_zero_axe_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -141,8 +211,7 @@ pub(super) async fn exercise_open_pvp(
         .ok_or("starter shield definition")?;
     super::super::item_forge_fixtures::support::seed_items(h, &[(90, axe, 1, 0), (91, shield, 1, 0)])
         .await?;
-    // Model the already-worn starter shield. Its occupancy is known even though
-    // the native profile does not qualify it for a fresh equip.
+    // Model the already-worn starter shield so the axe must preserve its occupancy.
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)

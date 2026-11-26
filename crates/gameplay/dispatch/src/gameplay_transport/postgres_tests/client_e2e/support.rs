@@ -16,6 +16,7 @@ pub(super) enum Case {
     DepotSearch,
     Hireling,
     HotkeyEquip,
+    HotkeyEquipLeatherHelmet,
     HotkeyEquipOpenPvp,
     ItemForge,
     Store,
@@ -225,7 +226,9 @@ fn body(case: Case, admin: String) -> TestResult {
             Case::DailyBoost => 151,
             Case::DepotSearch => 153,
             Case::Hireling => 165,
-            Case::HotkeyEquip => wire::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
+            Case::HotkeyEquip | Case::HotkeyEquipLeatherHelmet => {
+                wire::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1
+            }
             Case::HotkeyEquipOpenPvp => {
                 wire::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1
             }
@@ -262,6 +265,9 @@ fn body(case: Case, admin: String) -> TestResult {
             Case::DepotSearch => super::depot_search::exercise(&h, &owner, &mut admitted).await?,
             Case::Hireling => super::hireling::exercise(&h, &owner, &mut admitted).await?,
             Case::HotkeyEquip => super::hotkey_equip::exercise(&h, &owner, &mut admitted).await?,
+            Case::HotkeyEquipLeatherHelmet => {
+                super::hotkey_equip::exercise_leather_helmet(&h, &owner, admitted).await?;
+            }
             Case::HotkeyEquipOpenPvp => {
                 super::hotkey_equip::exercise_open_pvp(&h, &owner, admitted).await?;
             }
