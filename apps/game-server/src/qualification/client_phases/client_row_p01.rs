@@ -25,7 +25,7 @@ fn capture(name: &str, bytes: &[u8]) -> TestResult {
 async fn send(
     client: &mut DevClientSession,
     action: CharmProgressionAction,
-    capture_name: Option<&str>,
+    capture_name: &str,
 ) -> TestResult<CharmProgressionReply> {
     let payload = wire::encode_charm_progression_request(&action)
         .map_err(|error| format!("encode {action:?}: {error:?}"))?;
@@ -45,7 +45,7 @@ async fn send(
     if reply.command_id != command_id {
         return Err(format!("{action:?} returned a different command ID").into());
     }
-    if let Some(name) = capture_name {
+    {
         let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
         let envelope = serde_json::to_vec(&serde_json::json!({
             "command_id": reply.command_id,
@@ -54,7 +54,7 @@ async fn send(
             "server_sequence": reply.server_sequence,
             "status": reply.status as u32,
         }))?;
-        capture(name, &envelope)?;
+        capture(capture_name, &envelope)?;
     }
     wire::decode_charm_progression_reply(&reply.payload)
         .map_err(|error| format!("decode {action:?}: {error:?}").into())
@@ -84,7 +84,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .position(|(definition, _)| definition.key() == "oteryn:creature.rat")
         .ok_or("Rat is absent from the canonical Bestiary")?;
     let race = NonZeroU32::new(u32::try_from(rat_index)? + 1).ok_or("Rat race index")?;
-    let initial = send(&mut client, CharmProgressionAction::Query, None).await?;
+    let initial = send(
+        &mut client,
+        CharmProgressionAction::Query,
+        "p01-initial.json",
+    )
+    .await?;
     if initial.outcome != CharmProgressionOutcome::Query || kills(&initial, race) != 0 {
         return Err("P01 client requires a zero-kill Rat baseline".into());
     }
@@ -97,7 +102,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let before = send(
         &mut client,
         CharmProgressionAction::Query,
-        Some("p01-before.json"),
+        "p01-before.json",
     )
     .await?;
     if before.outcome != CharmProgressionOutcome::Query || before.charms.charms.is_empty() {
@@ -117,7 +122,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let refused = send(
         &mut client,
         CharmProgressionAction::Assign { charm, race },
-        Some("p01-refused.json"),
+        "p01-refused.json",
     )
     .await?;
     if refused.outcome != CharmProgressionOutcome::Assign(CharmAssignDisposition::CharmLocked)
@@ -132,12 +137,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "captured-rat-combat",
     );
     client_hunt::hunt(&mut client).await?;
-    let after = send(
-        &mut client,
-        CharmProgressionAction::Query,
-        Some("p01-after.json"),
-    )
-    .await?;
+    let after = send(&mut client, CharmProgressionAction::Query, "p01-after.json").await?;
     if after.outcome != CharmProgressionOutcome::Query {
         return Err(format!("post-hunt QUERY outcome {:?}", after.outcome).into());
     }
@@ -162,7 +162,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let durable = send(
         &mut fresh,
         CharmProgressionAction::Query,
-        Some("p01-durable.json"),
+        "p01-durable.json",
     )
     .await?;
     if durable != after {

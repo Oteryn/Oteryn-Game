@@ -12,6 +12,7 @@ use wire::{
 };
 
 struct Replies {
+    initial: Option<GatedCommandResult>,
     before: GatedCommandResult,
     refused: GatedCommandResult,
     after: GatedCommandResult,
@@ -119,6 +120,11 @@ fn replies() -> Result<Replies, Box<dyn std::error::Error>> {
         }
         let mut previous = (0, 0);
         return Ok(Replies {
+            initial: Some(captured_reply(
+                &path.join("p01-initial.json"),
+                session,
+                &mut previous,
+            )?),
             before: captured_reply(&path.join("p01-before.json"), session, &mut previous)?,
             refused: captured_reply(&path.join("p01-refused.json"), session, &mut previous)?,
             after: captured_reply(&path.join("p01-after.json"), session, &mut previous)?,
@@ -146,6 +152,7 @@ fn replies() -> Result<Replies, Box<dyn std::error::Error>> {
         Ok(result(CommandStatus::Accepted, &payload))
     };
     Ok(Replies {
+        initial: None,
         before: fixture_reply(&view(4, 7)?)?,
         refused: fixture_reply(&refused)?,
         after: fixture_reply(&view(5, 7)?)?,
@@ -206,6 +213,20 @@ fn e2e_p01_replays_query_refusal_and_kill_delta() -> Result<(), Box<dyn std::err
     };
 
     let mut panel = Panel::default();
+    if let Some(initial) = &replies.initial {
+        let (mut admitted, query) = pending(&panel, Intent::Query)?;
+        apply(&mut admitted, &query, initial);
+        assert_eq!(admitted.feedback, "Completed: Query; fee: 0 gold");
+        let initial = admitted.reply.as_ref().ok_or("initial Query missing")?;
+        assert!(
+            initial
+                .bestiary
+                .iter()
+                .all(|entry| { entry.race.get() != replies.race || entry.kill_count == 0 })
+        );
+        assert_eq!((replies.kills_before, replies.kills_after), (1, 2));
+        panel = admitted;
+    }
     let (mut loading, query) = pending(&panel, Intent::Query)?;
     assert_eq!(
         (query.capability, query.kind),
