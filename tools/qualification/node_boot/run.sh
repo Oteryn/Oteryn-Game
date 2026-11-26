@@ -771,9 +771,20 @@ install_owned root -m 0600 "$WORK/ops.toml" "$BASE/ops/ops.toml"
 # One descriptor installation time: changed facts under an unchanged
 # revision are refused at boot, as D3 requires.
 DESCRIPTOR_INSTALLED_AT="$(date +%s)"
+node_boot_server_motd() {
+  # Keep the initial modal empty for P14 (50) and C10 (75). The normal
+  # matrix puts G14 (246) in a separate batch. See the row registry in world.rs.
+  [[ "$NODE_BOOT_WORLD" == 1 && "${OTERYN_E2E_ROW_BATCH:-}" =~ ^([0-9]{1,7}):([0-9]{1,7})$ ]] || return 0
+  local first=$((10#${BASH_REMATCH[1]})) length=$((10#${BASH_REMATCH[2]}))
+  if (( first > 75 && first <= 246 && 246 - first < length )); then
+    printf '%s' 'Welcome to the node-boot qualification world.'
+  fi
+}
+
 write_node_config() { # launch-file
   cat > "$WORK/node.toml" <<TOML
 qualification_fixture = true
+server_motd = "$(node_boot_server_motd)"
 [listener]
 address = "127.0.0.1:${NODE_BOOT_GAME_PORT:-17181}"
 entry_deadline_ms = 20000
