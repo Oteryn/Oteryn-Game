@@ -1367,6 +1367,7 @@ pub(super) async fn prepare_client_capture(
     }
     let mut client = prepare_c12_monk(dedicated_clients).await?;
     character_prep::grant_premium(&client).await?;
+    eprintln!("FIXTURE C12 Premium grant applied once for the dedicated Monk");
     character_prep::grant_item(&client, ITEM_ID, 1).await?;
     client = fresh_c12_admission(client, dedicated_clients).await?;
     verify_seeded_monk(&mut client).await?;
@@ -1432,6 +1433,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         );
     }
     character_prep::grant_premium(&client).await?;
+    eprintln!("FIXTURE C12 Premium grant applied once for the dedicated Monk");
     character_prep::grant_item(&client, MANA_POTION, 12).await?;
     let coins = pema_planned_price()?.div_ceil(CRYSTAL_COIN_VALUE);
     character_prep::grant_item(&client, CRYSTAL_COIN, u32::try_from(coins)?).await?;
