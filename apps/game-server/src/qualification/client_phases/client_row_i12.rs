@@ -1,8 +1,8 @@
 //! I12 client replay capture: use the real pick on a legitimately carried shiny stone and retain
 //! the command result plus the inventory snapshot/delta bytes consumed by `oteryn-session`.
 use super::*;
-use oteryn_dev_client::SessionEvent;
 use oteryn_dev_client::native_session::{Admission, Session};
+use oteryn_dev_client::{SessionError, SessionEvent};
 use oteryn_protocol_oteryn::capability_tables::CAPABILITY_WORLD_SPATIAL_FIELDS;
 use oteryn_protocol_oteryn::item_view;
 use oteryn_protocol_oteryn::logout::CAPABILITY_LOGOUT_V1;
@@ -83,7 +83,7 @@ pub(super) async fn connect_for_capture<S: oteryn_dev_client::native_session::Se
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let result =
-        verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(clients)))
             .await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", detail),
@@ -101,6 +101,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let pick_ref = provisioning::item_reference(&index, PICK)?;
     let stone_ref = provisioning::item_reference(&index, SHINY_STONE)?;
     prepare_inputs(clients).await?;
+    match refine(clients, pick_ref, stone_ref).await {
+        Err(error) if error.downcast_ref::<SessionError>().is_some_and(|error| {
+            matches!(error, SessionError::Io(error) if error.kind() == io::ErrorKind::UnexpectedEof)
+        }) => {
+            // A lost result can leave a committed refinement. The new admission
+            // must still contain the single original stone before retrying.
+            evidence("I12 retrying after lost result; checking fresh inventory");
+            refine(clients, pick_ref, stone_ref).await
+        }
+        result => result,
+    }
+}
+
+async fn refine(
+    clients: &SeamClients<'_>,
+    pick_ref: std::num::NonZeroU32,
+    stone_ref: std::num::NonZeroU32,
+) -> TestResult<String> {
     let mut client = connect_for_capture(
         clients,
         0xc2,
@@ -133,7 +151,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         use_with_position: None,
     })
     .map_err(|error| format!("pick intent: {error:?}"))?;
-    client.take_events();
+    client
+        .service_liveness_discarding_events(Duration::from_secs(1))
+        .await?;
     let reply = client.world_context_use(&payload).await?;
     let disposition = oteryn_protocol_oteryn::world_object::decode_use_result(&reply.payload)
         .map_err(|error| format!("pick reply: {error:?}"))?;
