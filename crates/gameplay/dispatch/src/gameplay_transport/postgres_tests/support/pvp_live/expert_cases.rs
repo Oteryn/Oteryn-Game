@@ -261,7 +261,7 @@ pub(super) async fn drive(
                     4,
                     modes(ExpertMode::YellowHand)
                 )
-                .await,
+                .await.map_err(debug)?,
             Rejected
         );
         assert_eq!(

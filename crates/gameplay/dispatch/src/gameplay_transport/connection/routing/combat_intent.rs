@@ -20,11 +20,26 @@ pub(in super::super) async fn route_expert_modes<A: FreshAdmissionAuthority>(
         .mode_intents
         .admit(tokio::time::Instant::now());
     match oteryn_protocol_oteryn::pvp_expert::decode_expert_fight_modes(command.payload) {
-        Ok(modes) if admitted_rate => Dispatch::Attack(
-            authority
-                .expert_fight_modes(actor, admitted.game_session_id, command.command_id, modes)
-                .await,
-        ),
+        Ok(modes) if admitted_rate => match authority
+            .expert_fight_modes(actor, admitted.game_session_id, command.command_id, modes)
+            .await
+        {
+            Ok(disposition) => Dispatch::Attack(disposition),
+            Err(
+                crate::durability::DurabilityError::RootUnavailable
+                | crate::durability::DurabilityError::RootPassDeadlineExceeded,
+            ) => {
+                // An unexecuted command has no combat changes to refresh.
+                use oteryn_protocol_oteryn::attack::{
+                    AttackIntentDisposition, encode_attack_intent_result,
+                };
+                Dispatch::Reply(
+                    crate::foundation::CommandStatus::Rejected,
+                    encode_attack_intent_result(AttackIntentDisposition::Rejected),
+                )
+            }
+            Err(_) => Dispatch::Unregistered,
+        },
         _ => Dispatch::Unregistered,
     }
 }

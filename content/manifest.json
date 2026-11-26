@@ -38,10 +38,6 @@
       "index": "content/encounters/definitions/index.json",
       "records": 108
     },
-    "Encounter.Raid": {
-      "index": "content/encounters/raids/index.json",
-      "records": 240
-    },
     "Formula": {
       "index": "content/abilities/formulas/index.json",
       "records": 6129
@@ -371,15 +367,6 @@
     },
     {
       "path": "content/encounters/definitions/index.json"
-    },
-    {
-      "path": "content/encounters/raids/catalogue.json"
-    },
-    {
-      "path": "content/encounters/raids/evidence-00000-00121.json"
-    },
-    {
-      "path": "content/encounters/raids/index.json"
     },
     {
       "path": "content/interactions/reward_claims/engclaim-native.json"
@@ -733,12 +720,6 @@
       "path": "content/quests/definitions/quests-00300-00351.json"
     },
     {
-      "path": "content/quests/native-reward-callbacks/engclaim.json"
-    },
-    {
-      "path": "content/quests/native-reward-callbacks/nrwicked.json"
-    },
-    {
       "path": "content/services/bank/bank-00000-00001.json"
     },
     {
@@ -1061,7 +1042,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 7491,
+          "record_count": 7495,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1069,7 +1050,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "ba0a96079bb4b934af36bf8dbc401d8435e242e630fd8b0a1e6bc5b6ff674f43"
+          "sha256": "96de5550a29f4741ce73a9eda7296dae9c160179e670de6fd1d33d45794cc722"
         },
         {
           "creates_canonical_identities": false,
