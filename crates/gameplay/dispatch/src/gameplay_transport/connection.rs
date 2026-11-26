@@ -34,9 +34,11 @@ pub(super) async fn test_analyser_route(
 mod serve;
 use crate::combat_pickup::GroundPickupError;
 use routing::Dispatch;
-#[cfg(test)]
-pub(in crate::gameplay_transport) use serve::regression_routed_step;
 use serve::serve_admitted_actor;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use serve::{
+    regression_bag_use_with_busy_holder, regression_routed_step,
+};
 #[path = "newhaven_travel_transport.rs"]
 mod newhaven_travel_transport;
 #[path = "server_save_countdown_transport.rs"]

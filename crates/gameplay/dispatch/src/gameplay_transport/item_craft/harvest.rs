@@ -82,17 +82,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operand: None,
         };
         let permit = self.spell_lane_permit().await.ok_or(())?;
-        if let Some(result) = self
-            .root
-            .harvest_map_item(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &NativeItemWeights(native),
-            )
+        // This pass has no operand, so it only classifies a previous receipt.
+        // Ordinary lever USE must survive a background pass borrowing the holder.
+        let budget = super::super::AdmissionRetryBudget::for_command(self.root);
+        if let Some(result) = budget
+            .retry_command_guard(async || {
+                self.root
+                    .harvest_map_item(
+                        &permit,
+                        self.character,
+                        self.holder,
+                        fence,
+                        request.clone(),
+                        native,
+                        &NativeItemWeights(native),
+                    )
+                    .await
+            })
             .await
             .map_err(|_| ())?
         {
