@@ -90,7 +90,7 @@ where
     }
     record_join_progress("activity_scope", admitted.first_entry);
     if let Some(payload) = authority
-        .activity_scope_snapshot(*admitted)
+        .activity_scope_snapshot(admitted)
         .await
         .map_err(|_| {
             failed(

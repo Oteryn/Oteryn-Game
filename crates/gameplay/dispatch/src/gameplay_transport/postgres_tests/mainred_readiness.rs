@@ -49,7 +49,7 @@ fn mainred_resume_projections_wait_for_real_holder_postgres() -> TestResult {
                         .map(|v| v.is_none())
                 } else {
                     owner
-                        .project_activity_scope(admitted)
+                        .project_activity_scope(&mut admitted)
                         .await
                         .map(|v| v.is_none())
                 }

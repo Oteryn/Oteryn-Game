@@ -92,6 +92,11 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             .await
             .map_err(|_| ServeEnd::Disconnected)?
             .ok_or(ServeEnd::Disconnected)?;
+        // House has its own wire projection, but shares the activity input guard.
+        authority
+            .activity_scope_snapshot(&mut admitted)
+            .await
+            .map_err(|_| ServeEnd::Disconnected)?;
         let sequence = admitted
             .continuity
             .server_sequence
