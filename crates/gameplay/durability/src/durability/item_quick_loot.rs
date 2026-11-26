@@ -7,7 +7,7 @@ use oteryn_gameplay_items::quick_loot::{
 };
 use oteryn_protocol_oteryn::quick_loot::{
     self as wire, QuickLootAction, QuickLootCategory, QuickLootItemResult, QuickLootRecipient,
-    QuickLootDestination, QuickLootDestinations, QuickLootRequest, QuickLootResult,
+    QuickLootDestination, QuickLootDestinations, QuickLootFilters, QuickLootRequest, QuickLootResult,
 };
 
 #[derive(Clone, Copy)]
@@ -31,6 +31,7 @@ pub fn is_loot_coin(definition: &TypedDefinitionRef) -> bool {
 }
 
 const _: () = {
+    assert!(wire::MAX_QUICK_LOOT_FILTER_ITEMS == oteryn_gameplay_items::quick_loot::MAX_FILTER_ITEMS);
     assert!(LootCategory::ALL.len() == QuickLootCategory::ALL.len());
     let mut index = 0;
     while index < LootCategory::ALL.len() {
@@ -224,12 +225,18 @@ impl DurabilityRoot {
                     match request.action {
                         QuickLootAction::ReviewDestinations => {
                             let obtain = settings_owner::load_obtain(&mut tx, fence.character_id.as_bytes()).await?;
+                            let filters = request.review_filters.then(|| QuickLootFilters {
+                                mode: if settings.accept_only { wire::QuickLootFilterMode::Accept } else { wire::QuickLootFilterMode::Skip },
+                                skipped: filter_references(content, &settings.skipped_items),
+                                accepted: filter_references(content, &settings.accepted_items),
+                            });
                             let loot = std::iter::once((None, settings.unassigned_target))
                                 .chain(settings.category_targets.into_iter().map(|(key, target)| (Some(key), target)));
                             let projection = QuickLootDestinations {
                                 loot: loot.map(destination_row).collect(),
                                 obtain: obtain.into_iter().map(destination_row).collect(),
                                 fallback_to_main: settings.fallback_to_main,
+                                filters,
                             };
                             return wire::encode_quick_loot_destinations(&projection)
                                 .map_err(|_| DurabilityError::InvalidStoredState.into());
@@ -241,7 +248,10 @@ impl DurabilityRoot {
                             let target = if request.action == QuickLootAction::UnassignLoot {
                                 None
                             } else {
-                                let target = assignment(request)?;
+                                let mut target = assignment(request)?;
+                                if let (QuickLootAction::Assign, Recipient::GoldPouch(id)) = (request.action, target) {
+                                    target = Recipient::GoldPouch(resolve_inbox_pouch(&mut tx, &fence, id).await?);
+                                }
                                 recipient(&mut tx, fence.character_id, world, content, target).await?;
                                 settings.fallback_to_main = request.fallback_to_main;
                                 Some(target)
@@ -358,11 +368,58 @@ impl DurabilityRoot {
     }
 }
 
+fn filter_references<C: ItemLoopContent>(
+    content: &C,
+    keys: &std::collections::BTreeSet<String>,
+) -> Vec<u32> {
+    let mut refs: Vec<_> = keys.iter().filter_map(|key| content.loop_definition_ref(key)).collect();
+    refs.sort_unstable();
+    refs
+}
+
 fn assignment(request: QuickLootRequest) -> LoopResult<Recipient<[u8; 16]>> {
     match (request.recipient, request.recipient_id) {
         (Some(QuickLootRecipient::MainContainer), None) => Ok(Recipient::MainContainer),
         (Some(QuickLootRecipient::Container), Some(id)) => Ok(Recipient::Container(id)),
         (Some(QuickLootRecipient::GoldPouch), Some(id)) => Ok(Recipient::GoldPouch(id)),
+        _ => refuse(LoopMoveRefusal::Rejected),
+    }
+}
+
+async fn resolve_inbox_pouch(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: &CurrentCharacterItemFence,
+    id: [u8; 16],
+) -> LoopResult<[u8; 16]> {
+    // Exact item IDs keep their meaning. Only a distinct Inbox fulfilment ID
+    // can resolve through the character's committed Store delivery.
+    let supplied = sqlx::types::Uuid::from_bytes(id);
+    let candidates: Vec<sqlx::types::Uuid> = sqlx::query_scalar(
+        "SELECT r.item_instance_id
+         FROM game_character_roots c
+         JOIN store_delivery_receipts r
+           ON r.account_id=c.account_id AND r.character_id=c.character_id
+         JOIN game_item_character_inbox_locations x
+           ON x.item_instance_id=r.item_instance_id
+           AND x.character_id=r.character_id AND x.world_id=r.world_id
+         WHERE c.character_id=$1 AND r.world_id=$2 AND r.fulfilment_unit_id=$3
+           AND r.item_instance_id IS NOT NULL
+           AND NOT EXISTS (SELECT 1 FROM game_item_instances WHERE item_instance_id=$4)
+           AND NOT EXISTS (
+               SELECT 1 FROM game_store_restore_conflicts f
+               WHERE f.delivery_operation_id=r.operation_id OR f.operation_id=r.operation_id
+           )
+         LIMIT 2",
+    )
+    .bind(sqlx::types::Uuid::from_bytes(*fence.character_id.as_bytes()))
+    .bind(sqlx::types::Uuid::from_bytes(*fence.runtime_scope.world_id().as_bytes()))
+    .bind(supplied.to_string())
+    .bind(supplied)
+    .fetch_all(&mut **tx)
+    .await?;
+    match candidates.as_slice() {
+        [] => Ok(id),
+        [item] => Ok(*item.as_bytes()),
         _ => refuse(LoopMoveRefusal::Rejected),
     }
 }
