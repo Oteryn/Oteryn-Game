@@ -148,6 +148,8 @@ pub struct PullTicket(u64);
 
 #[derive(Debug, Clone, Default)]
 struct AccountView {
+    #[cfg(feature = "qualification-spawn")]
+    retain_fixture_authority: bool,
     publication: std::sync::Arc<tokio::sync::Mutex<()>>,
     profile_b_hint_revision: u64,
     profile_b_wake: Option<std::sync::Weak<tokio::sync::Notify>>,
@@ -387,9 +389,25 @@ impl PremiumConsumer {
         }
     }
 
+    /// Keep a fenced qualification grant across logout for this disposable account.
+    #[cfg(feature = "qualification-spawn")]
+    pub fn retain_fixture_authority(&self, account_id: [u8; 16]) {
+        if let Some(view) = self.lock().get_mut(&account_id) {
+            view.retain_fixture_authority = view.proven;
+        }
+    }
+
     /// Drop the in-memory view, when the account has no session left on this node.
     pub fn release(&self, account_id: [u8; 16]) {
-        self.lock().remove(&account_id);
+        let mut accounts = self.lock();
+        #[cfg(feature = "qualification-spawn")]
+        if accounts
+            .get(&account_id)
+            .is_some_and(|view| view.retain_fixture_authority)
+        {
+            return;
+        }
+        accounts.remove(&account_id);
     }
 
     /// The `refresh_after` of the account's kept evidence: when the next pull is due.

@@ -808,7 +808,14 @@ async fn prepare_build(
                 {
                     return Err("qualification Premium activation absent".into());
                 }
-                return grant_premium(root, premium, *record.account_id.as_bytes(), deadline).await;
+                return grant_premium(
+                    root,
+                    premium,
+                    *record.account_id.as_bytes(),
+                    account == MONK_ACCOUNT,
+                    deadline,
+                )
+                .await;
             }
             ("c11-unassigned", UNASSIGNED_ACCOUNT)
             | ("c10-sorcerer", C10_FULL_ACCOUNT | C10_CLIENT_ACCOUNT)
@@ -892,6 +899,7 @@ async fn grant_premium(
         &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
     >,
     account: [u8; 16],
+    retain_across_logout: bool,
     deadline: tokio::time::Instant,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::premium::{
@@ -948,7 +956,11 @@ async fn grant_premium(
         .premium_gate(account)
         .await
         .require()
-        .map_err(|_| "qualification Premium gate remained closed".into())
+        .map_err(|_| "qualification Premium gate remained closed")?;
+    if retain_across_logout {
+        consumer.retain_fixture_authority(account);
+    }
+    Ok(())
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
