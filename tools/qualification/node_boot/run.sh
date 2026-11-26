@@ -855,6 +855,30 @@ TOML
   fi
   install_owned root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
+# G27 exercises fresh VIP writes using the real World relay.
+if [[ "$NODE_BOOT_WORLD" == 1 ]] && python3 - "${OTERYN_E2E_ROW_BATCH:-0:15}" <<'PY_G27_BATCH'
+import re
+import sys
+
+batch = sys.argv[1]
+match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+if batch == "all":
+    sys.exit(0)
+if match is None:
+    sys.exit(1)
+start, count = map(int, match.groups())
+sys.exit(not (start <= 259 < start + count))
+PY_G27_BATCH
+then
+  psql_admin oteryn_node_boot <<'SQL'
+GRANT SET ON PARAMETER log_min_duration_statement, log_parameter_max_length, log_statement TO nb_runtime;
+SQL
+  relay_key="$(openssl rand -base64 32)"
+  printf '1 0 %s\n' "$relay_key" > "$WORK/chat-relay.keys"
+  unset relay_key
+  secret_to "$SERVICE_UID" "$WORK/chat-relay.keys" "$BASE/node/secrets/chat-relay.keys"
+  NODE_GAMEPLAY_ENV+=("OTERYN_CHAT_RELAY_KEYS_FILE=$BASE/node/secrets/chat-relay.keys")
+fi
 # Root/client writes an atomic offset; the service can only read it. Start at
 # zero on every disposable run, and keep it across the shutdown/restart probes.
 if (( ${#NODE_CLOCK_FEATURES[@]} )); then
