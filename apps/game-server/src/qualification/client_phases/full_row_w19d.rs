@@ -228,9 +228,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             .into());
         }
         client.service_liveness(Duration::from_millis(100)).await?;
-    }
-    if quantities(&client)? != initial_inventory {
-        return Err("step=refused-use observed=inventory-changed".into());
+        if quantities(&client)? != initial_inventory || outfits(&mut client)? != initial_outfits {
+            return Err(format!("step=refused-use item={label} observed=state-changed").into());
+        }
     }
     let mut funded = initial_inventory.clone();
     for id in AFFLICTED_PIECES.into_iter().chain([ADDON_DOLL]) {
@@ -243,15 +243,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if quantities(&client)? != funded || outfits(&mut client)? != initial_outfits {
         return Err("step=fund observed=unexpected-carried-items-or-appearance".into());
     }
-    // Current Premium proof is released on logout. Prepare it on the session that uses the pieces.
-    character_prep::grant_premium(&client).await?;
-    commit_use(&mut client, reference(AFFLICTED_OUTFIT_PIECE)?).await?;
-    let mut client = relog(client, &clients).await?;
-    for id in AFFLICTED_PIECES {
-        funded.remove(&reference(id)?.get());
-    }
-    let afflicted = outfits(&mut client)?;
-    let mut expected_outfits = initial_outfits;
+    let mut expected_outfits = initial_outfits.clone();
     for key in [
         "oteryn:content.outfit.afflicted_outfits",
         "oteryn:outfit.afflicted",
@@ -260,6 +252,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             return Err(format!("step=afflicted observed=outfit-already-owned key={key}").into());
         }
     }
+    // Current Premium proof is released on logout. Prepare it on the session that uses the pieces.
+    character_prep::grant_premium(&client).await?;
+    commit_use(&mut client, reference(AFFLICTED_OUTFIT_PIECE)?).await?;
+    let mut client = relog(client, &clients).await?;
+    for id in AFFLICTED_PIECES {
+        funded.remove(&reference(id)?.get());
+    }
+    let afflicted = outfits(&mut client)?;
     if afflicted != expected_outfits {
         let changed: Vec<_> = afflicted
             .iter()
