@@ -187,6 +187,7 @@ pub(super) fn scenario_with_rat_transform() -> TestResult {
         (None, None, None),
         false,
         None,
+        false,
     )
 }
 
