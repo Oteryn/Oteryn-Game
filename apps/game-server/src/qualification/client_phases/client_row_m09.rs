@@ -10,8 +10,7 @@
 use super::*;
 use oteryn_dev_client::{DevClientSession, ItemEntry};
 use oteryn_protocol_oteryn::world_object::{
-    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
-    encode_item_use_intent,
+    MapUseTarget, UseDisposition, UseIntent, UseTarget, decode_use_result, encode_item_use_intent,
 };
 use std::collections::BTreeSet;
 use std::fs;
@@ -61,13 +60,6 @@ impl Row {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-struct MapObject {
-    at: TilePos,
-    ordinal: u8,
-    appearance: u16,
-}
-
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
     let result = verdict::indexed_timeout(Duration::from_secs(600), journey(&mut row, clients))
@@ -113,44 +105,6 @@ async fn settle(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-fn objects(bytes: &[u8]) -> TestResult<Vec<MapObject>> {
-    let mut found = Vec::new();
-    oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
-        for tile in sector.tiles {
-            for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
-                if let Some(appearance) =
-                    crate::map::palette_appearance(&manifest.palette[item.palette as usize].key)
-                {
-                    found.push(MapObject {
-                        at: TilePos {
-                            x: tile.x,
-                            y: tile.y,
-                            floor: sector.floor,
-                        },
-                        ordinal: u8::try_from(ordinal)
-                            .map_err(|_| oteryn_world_bundle::Error::Limit("M09 ordinal".into()))?,
-                        appearance,
-                    });
-                }
-            }
-        }
-        Ok(())
-    })?;
-    found.sort_by_key(|object| (object.at, object.ordinal));
-    Ok(found)
-}
-
-fn target(world: &BundleWorld, object: MapObject) -> TestResult<WorldObjectTarget> {
-    let key =
-        crate::map::view::placement_key(object.at, object.ordinal).ok_or("M09 placement key")?;
-    let mut placement = world.base().digest().to_vec();
-    placement.extend_from_slice(&key.to_be_bytes());
-    Ok(WorldObjectTarget {
-        placement,
-        expected_revision: 0,
-    })
-}
-
 async fn use_on(
     client: &mut DevClientSession,
     source: oteryn_protocol_oteryn::item_view::ItemHandle,
@@ -163,208 +117,51 @@ async fn use_on(
         use_with_position: None,
     })
     .map_err(|error| format!("M09 USE-WITH encode: {error:?}"))?;
-    let reply = client
-        .session_mut()
-        .world_context_use(&payload)
-        .await?;
+    let command = client.next_command_id();
+    evidence(&format!(
+        "M09_CAST command={command} position={:?} last_sequence={}",
+        client.world_spatial().actor_position,
+        client.last_server_sequence()
+    ));
+    let reply = client.session_mut().world_context_use(&payload).await?;
     let disposition = decode_use_result(&reply.payload)
         .map_err(|error| format!("M09 USE-WITH reply status={:?}: {error:?}", reply.status))?;
+    evidence(&format!(
+        "M09_CAST_RESULT command={command} status={:?} disposition={disposition:?}",
+        reply.status
+    ));
     Ok((reply.status, disposition))
 }
 
-async fn buy(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    index: &crate::content::item_ref::ItemDefinitionIndex,
-    key: &str,
-    count: u32,
-) -> TestResult<NonZeroU32> {
-    use oteryn_dev_client::client_runtime::npc_shop as shop;
-    use oteryn_protocol_oteryn::npc_service as npc;
-    let revision = index
-        .revision(key)
-        .ok_or_else(|| format!("step 1 content definition absent: {key}"))?;
-    let wanted = index
-        .definition_ref("Item", key, revision)
-        .ok_or("step 1 definition reference absent")?;
-    if units(client, wanted) >= u64::from(count) {
-        return Err(format!(
-            "step 1 BUY {key} was not run: observed existing inventory count={}",
-            units(client, wanted)
-        )
-        .into());
-    }
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let offers: serde_json::Value = serde_json::from_slice(&fs::read(
-        root.join("content/services/trade/trade-00000-00323.json"),
-    )?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(
-        &fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
-        |_, _| Ok(()),
-    )?;
-    for record in offers["records"]
-        .as_array()
-        .ok_or("step 1 trade records absent")?
-    {
-        let declaration = &record["declaration"];
-        if !declaration["offers"].as_array().is_some_and(|rows| {
-            rows.iter()
-                .any(|offer| offer["item"]["key"] == key && offer["direction"] == "SellToPlayer")
-        }) {
-            continue;
-        }
-        let Some(name) = declaration["identity"]["key"]
-            .as_str()
-            .and_then(|value| value.strip_prefix("oteryn:service.trade."))
-        else {
-            continue;
-        };
-        let Some(vendor) = metadata
-            .npcs
-            .npcs
-            .iter()
-            .find(|npc| npc.key == format!("oteryn:npc.{name}"))
-        else {
-            continue;
-        };
-        let Some(path) = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            vendor
-                .placements
-                .iter()
-                .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 3)
-        }) else {
-            continue;
-        };
-        walk(client, world, &path).await?;
-        let actor = client
-            .world_entities()
-            .and_then(|entities| {
-                entities.iter().find(|entry| {
-                    entry.kind == oteryn_dev_client::EntityKind::Npc
-                        && vendor.placements.iter().any(|p| {
-                            entry.position
-                                == ActorPosition {
-                                    x: i32::from(p.x),
-                                    y: i32::from(p.y),
-                                    floor: -i16::from(p.floor),
-                                }
-                        })
-                })
-            })
-            .map(|entry| entry.entity)
-            .ok_or("step 1 vendor actor missing after walk")?;
-        for text in ["hi", "trade"] {
-            let reply = shop::talk(
-                client.session_mut(),
-                &npc::NpcTalkIntent {
-                    npc_actor: actor,
-                    text: text.into(),
-                },
-            )
-            .await?;
-            if reply != npc::NpcIntentDisposition::Ok {
-                return Err(format!("step 1 NPC {name} {text} reply={reply:?}").into());
-            }
-            let domain = if text == "hi" {
-                npc::STATE_DOMAIN_NPC_CONVERSATION
-            } else {
-                npc::STATE_DOMAIN_NPC_TRADE_WINDOW
-            };
-            let delta = client.session_mut().read_gated_delta(domain, 1).await?;
-            if text == "hi" {
-                if npc::decode_npc_conversation(&delta.payload)
-                    .map_err(|e| format!("step 1 dialogue frame: {e:?}"))?
-                    .open
-                    .is_none()
-                {
-                    return Err("step 1 greeting delta did not open dialogue".into());
-                }
-                continue;
-            }
-            let window = npc::decode_npc_trade_window(&delta.payload)
-                .map_err(|e| format!("step 1 trade frame: {e:?}"))?;
-            let (offer_index, offer) = window
-                .offers
-                .iter()
-                .enumerate()
-                .find(|(_, offer)| {
-                    offer.side == npc::NpcTradeSide::Buy
-                        && offer.item_definition_ref == wanted.get()
-                })
-                .ok_or("step 1 BUY offer absent")?;
-            let missing = u64::from(count).saturating_sub(units(client, wanted));
-            let quantity = u32::try_from(missing.div_ceil(u64::from(offer.count)))?;
-            let before = units(client, wanted);
-            let reply = shop::buy(
-                client.session_mut(),
-                &npc::NpcTradeIntent {
-                    npc_actor: actor,
-                    catalogue_revision: window.open.ok_or("step 1 trade closed")?.1,
-                    offer_index: u32::try_from(offer_index)?,
-                    side: offer.side,
-                    quantity,
-                    expected_unit_price: offer.unit_price,
-                },
-            )
-            .await?;
-            if reply != npc::NpcIntentDisposition::Ok {
-                return Err(format!(
-                    "step 1 BUY {key} reply={reply:?}; before={before}; price={}",
-                    offer.unit_price
-                )
-                .into());
-            }
-            settle(client).await?;
-            if units(client, wanted) < u64::from(count) {
-                return Err(format!(
-                    "step 1 BUY delta missing for {key}: before={before} after={}",
-                    units(client, wanted)
-                )
-                .into());
-            }
-        }
-        return Ok(wanted);
-    }
-    Err(format!("step 1 no reachable served NPC offer for {key}").into())
-}
-
-fn capture_inventory(client: &mut DevClientSession) {
+fn capture_inventory(client: &mut DevClientSession) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    let inventory = client.take_events().into_iter().rev().find_map(|event| match event {
-        oteryn_dev_client::SessionEvent::Inventory(delta) => Some(delta.value),
-        _ => None,
-    });
-    let Some(inventory) = inventory else {
-        evidence("M09_CLIENT_CAPTURE write-error=no inventory delta followed committed fishing");
-        return;
-    };
-    let payload = match oteryn_protocol_oteryn::item_view::encode_character_inventory(&inventory) {
-        Ok(payload) => payload,
-        Err(error) => {
-            evidence(&format!("M09_CLIENT_CAPTURE write-error=encode {error:?}"));
-            return;
-        }
-    };
+    let inventory = client
+        .take_events()
+        .into_iter()
+        .rev()
+        .find_map(|event| match event {
+            oteryn_dev_client::SessionEvent::Inventory(delta) => Some(delta.value),
+            _ => None,
+        })
+        .ok_or("M09 capture missing inventory delta after committed fishing")?;
+    let payload = oteryn_protocol_oteryn::item_view::encode_character_inventory(&inventory)
+        .map_err(|error| format!("M09 capture encode: {error:?}"))?;
     let expected = inventory
         .entries
         .iter()
         .map(|entry| format!("{} {}\n", entry.item_definition_ref, entry.count))
         .collect::<String>();
     let root = std::path::Path::new(&root);
-    for result in [
-        std::fs::write(root.join("m09-inventory.bin"), payload),
-        std::fs::write(root.join("m09-expected.txt"), expected),
-    ] {
-        if let Err(error) = result {
-            evidence(&format!("M09_CLIENT_CAPTURE write-error={error}"));
-        }
-    }
+    std::fs::write(root.join("m09-inventory.bin"), payload)?;
+    std::fs::write(root.join("m09-expected.txt"), expected)?;
+    Ok(())
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let inputs = full_row_m09::FishingInputs::load(&bytes)?;
     let pin = serde_json::from_slice(&fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
         bytes.clone(),
@@ -373,47 +170,45 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let index = provisioning::item_index()?;
-    let mut client = connect_world(clients, 0xb9).await?;
-    let rod_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3483", 1).await?;
-    let worm_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3492", 40).await?;
+    let identity =
+        character_prep::dedicated_character(clients, "NODE_BOOT_M09_CLIENT_ACCOUNT").await?;
+    let clients = &identity.clients(clients);
+    character_prep::declare_seeded(
+        "M09.client",
+        "190 carried gold",
+        "rod and 40 bait purchases",
+    );
+    let mut client = character_prep::funded_character(
+        clients,
+        0xb9,
+        190,
+        &[(3031, 100), (3031, 20), (3031, 19), (3031, 1)],
+    )
+    .await?;
+    let (rod_ref, worm_ref) =
+        full_row_m09::buy_fishing_gear(&mut client, world, &index, &inputs, 40).await?;
     let fish_ref = reference(&index, 3578)?;
     row.pass(
         "player-acquired-rod-and-bait",
         (units(&client, rod_ref), units(&client, worm_ref)),
     );
 
-    let start = tile(client.world_spatial().actor_position)?;
-    let water = objects(&bytes)?
-        .into_iter()
-        .filter(|object| {
-            oteryn_gameplay_items::fishing::is_water(&format!(
-                "oteryn:item.tibia.i{}",
-                object.appearance
-            ))
-        })
-        .filter_map(|object| {
-            route(world, start, |at| {
-                at.floor == object.at.floor
-                    && at.x.abs_diff(object.at.x).max(at.y.abs_diff(object.at.y)) <= 1
-            })
-            .map(|path| (path, object))
-        })
-        .min_by_key(|(path, object)| (path.len(), object.at))
-        .ok_or("step 2 no reachable authored fishing water")?;
-    walk(&mut client, world, &water.0).await?;
+    let (water, water_tile) =
+        full_row_m09::water_approach(&mut client, world, &inputs, None).await?;
     let rod = carried(&client, rod_ref).ok_or("step 2 rod not directly carried")?;
     let before_fish = units(&client, fish_ref);
     let mut committed = None;
     for attempt in 1..=40 {
+        client.take_events();
         let worms = units(&client, worm_ref);
         let fish = units(&client, fish_ref);
-        let reply = use_on(
-            &mut client,
-            rod.handle,
-            MapUseTarget::Object(target(world, water.1)?),
-        )
-        .await?;
-        settle(&mut client).await?;
+        let reply = use_on(&mut client, rod.handle, MapUseTarget::Object(water.clone())).await?;
+        if reply == (CommandStatus::Accepted, UseDisposition::Committed) {
+            full_row_m09::wait_for_catch_delta(&mut client, worm_ref, fish_ref, worms, fish)
+                .await?;
+        } else {
+            settle(&mut client).await?;
+        }
         match reply {
             (CommandStatus::Accepted, UseDisposition::NothingToUse) if units(&client, worm_ref) == worms && units(&client, fish_ref) == fish => {}
             (CommandStatus::Accepted, UseDisposition::Committed) if units(&client, worm_ref) + 1 == worms && units(&client, fish_ref) == fish + 1 => { committed = Some((attempt, reply)); break; }
@@ -431,27 +226,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("step 2 committed fishing consumed rod".into());
     }
     row.pass("fishing-replies-and-deltas", committed);
-    capture_inventory(&mut client);
-
-    while units(&client, worm_ref) > 0 {
-        let reply = use_on(
-            &mut client,
-            rod.handle,
-            MapUseTarget::Object(target(world, water.1)?),
-        )
-        .await?;
-        settle(&mut client).await?;
-        if reply.0 != CommandStatus::Accepted {
-            return Err(format!("step 3 bait-drain reply={reply:?}").into());
-        }
-    }
+    capture_inventory(&mut client)?;
+    full_row_m09::clear_spare_bait(&mut client, worm_ref).await?;
+    let (unspent_water, _) =
+        full_row_m09::water_approach(&mut client, world, &inputs, Some(water_tile)).await?;
     let fish = units(&client, fish_ref);
-    let refusal = use_on(
-        &mut client,
-        rod.handle,
-        MapUseTarget::Object(target(world, water.1)?),
-    )
-    .await?;
+    let refusal = use_on(&mut client, rod.handle, MapUseTarget::Object(unspent_water)).await?;
     settle(&mut client).await?;
     if refusal != (CommandStatus::Accepted, UseDisposition::NothingToUse)
         || units(&client, fish_ref) != fish

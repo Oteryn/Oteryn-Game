@@ -166,6 +166,46 @@ pub(super) async fn dedicated_named_character(
     })
 }
 
+/// Provision a dedicated row character and verify its usable funds through the
+/// client after the fixture writes have crossed a fresh admission.
+pub(super) async fn funded_character(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    expected_gold: u64,
+    grants: &[(u32, u32)],
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    use oteryn_dev_client::client_runtime::npc_shop;
+    let mut client = connect_character(clients, tag, 0).await?;
+    let initial = client.join_snapshot().game_session_id;
+    for &(id, count) in grants {
+        grant_item(&client, id, count).await?;
+    }
+    let (result, detail, _, _) = logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("funded character logout refused: {detail}").into());
+    }
+    drop(client);
+    let mut fresh = connect_character(clients, tag, 0).await?;
+    if fresh.join_snapshot().game_session_id == initial {
+        return Err("funded character reused its preparation session".into());
+    }
+    let balances = npc_shop::balances(fresh.session_mut())
+        .await?
+        .ok_or("funded character has no served balance")?;
+    if balances.carried_gold != expected_gold || balances.bank_gold != 0 {
+        return Err(format!(
+            "funded character served carried={} bank={} expected carried={expected_gold} bank=0",
+            balances.carried_gold, balances.bank_gold
+        )
+        .into());
+    }
+    evidence(&format!(
+        "character_preparation carried_gold={} bank_gold={}",
+        balances.carried_gold, balances.bank_gold
+    ));
+    Ok(fresh)
+}
+
 pub(super) async fn grant_item(
     client: &oteryn_dev_client::DevClientSession,
     id: u32,

@@ -16,7 +16,7 @@
 //! vendor content, reachable authored terrain, or a server frame is reported
 //! only after the preceding real player actions have been attempted.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
+use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::npc_service as npc;
 use oteryn_protocol_oteryn::world_map::{MapOrigin, MapTile};
 use oteryn_protocol_oteryn::world_object::*;
@@ -39,13 +39,18 @@ const CASES: [(&str, u32, u16, u16); 6] = [
     ("pick", 3456, 7200, 7236),
 ];
 
+// Catalogue prices for the exact authored sellers used by this journey.
+const PURCHASES: [(&str, &[(u32, u32)]); 2] = [
+    ("sam", &[(3293, 7)]),
+    (
+        "lubo",
+        &[(3457, 50), (3308, 35), (3453, 50), (3304, 260), (3456, 50)],
+    ),
+];
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(clients))).await;
-    let result = match result {
-        Ok(result) => result,
-        Err(_) => Err("step=journey observed=timeout-after-300s need=responsive-server".into()),
-    };
+    let result = verdict::observe(journey(clients)).await;
     if let Err(error) = &result {
         evidence(&format!("M08_GAP {error}"));
     }
@@ -114,17 +119,58 @@ async fn approach(
     objects: &[Object],
     appearance: u16,
 ) -> TestResult<Object> {
-    let from = tile(client.world_spatial().actor_position)?;
-    for &object in objects
+    let targets: Vec<_> = objects
         .iter()
+        .copied()
         .filter(|object| object.appearance == appearance)
-    {
-        if let Some(path) = route(world, from, |at| distance(at, object.at) == 1) {
-            walk(client, world, &path).await?;
-            return Ok(object);
-        }
+        .collect();
+    let candidates = targets.clone();
+    let path = route_live(client, world, move |at| {
+        candidates.iter().any(|object| distance(at, object.at) == 1)
+    })
+    .await?
+    .ok_or_else(|| format!("step=approach-{appearance} observed=no-reachable-authored-target need=compiled-world-target"))?;
+    walk_logged(client, world, &path, &format!("terrain-{appearance}")).await?;
+    let at = tile(client.world_spatial().actor_position)?;
+    targets
+        .into_iter()
+        .find(|object| distance(at, object.at) == 1)
+        .ok_or_else(|| {
+            format!("step=approach-{appearance} observed=target-not-adjacent at={at:?}").into()
+        })
+}
+
+/// Keep the in-flight STEP and its compiled landing in the evidence even if the
+/// outer row deadline cancels the walk before the server replies.
+async fn walk_logged(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+    purpose: &str,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let goal = path
+        .iter()
+        .copied()
+        .try_fold(from, |at, step| destination(world, at, step));
+    evidence(&format!(
+        "M08_ROUTE purpose={purpose} from={from:?} goal={goal:?} steps={}",
+        path.len()
+    ));
+    for (index, &step) in path.iter().enumerate() {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, from, step);
+        evidence(&format!(
+            "M08_STEP purpose={purpose} index={index} from={from:?} step={step:?} expected={expected:?}"
+        ));
+        walk(client, world, &[step]).await.map_err(|error| {
+            format!(
+                "M08_ROUTE purpose={purpose} last={:?} {error}",
+                client.world_spatial().actor_position
+            )
+        })?;
     }
-    Err(format!("step=approach-{appearance} observed=no-reachable-authored-target need=compiled-world-target").into())
+    Ok(())
 }
 
 fn inventory_item(
@@ -139,154 +185,169 @@ fn inventory_item(
         .copied()
 }
 
-async fn buy(
+async fn stage_starting_tools(
     client: &mut DevClientSession,
-    world: &BundleWorld,
-    npcs: &oteryn_world_bundle::npc::Table,
-    id: u32,
-) -> TestResult<oteryn_dev_client::ItemEntry> {
-    use oteryn_dev_client::client_runtime::npc_shop as shop;
-    let definitions = provisioning::item_index()?;
-    let reference = provisioning::item_reference(&definitions, id)?;
-    if inventory_item(client, reference).is_some() {
-        return Err(format!(
-            "step=1-buy-{id} observed=reply-not-sent-item-already-present need=live-buy-reply-and-inventory-delta"
-        )
-        .into());
-    }
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let records: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/services/trade/trade-00000-00323.json"),
-    )?)?;
-    let key = format!("oteryn:item.tibia.i{id}");
-    for record in records["records"]
-        .as_array()
-        .ok_or("step=trade-catalogue observed=missing-records")?
-    {
-        if !record["declaration"]["offers"]
-            .as_array()
-            .is_some_and(|offers| {
-                offers.iter().any(|offer| {
-                    offer["direction"] == "SellToPlayer" && offer["item"]["key"] == key
+    definitions: &crate::content::item_ref::ItemDefinitionIndex,
+) -> TestResult {
+    let at = client.world_spatial().actor_position;
+    let ground = oteryn_protocol_oteryn::item_view::WorldTilePosition {
+        x: at.x,
+        y: at.y,
+        floor: at.floor,
+    };
+    for (_, id, _, _) in CASES {
+        let reference = provisioning::item_reference(definitions, id)?;
+        if let Some(item) = inventory_item(client, reference) {
+            let moved = client
+                .session_mut()
+                .move_item_counted(oteryn_dev_client::client_runtime::inventory::MoveRequest {
+                    source: item.handle,
+                    destination: oteryn_dev_client::ItemMoveDestination::Ground(ground),
+                    count: None,
                 })
-            })
-        {
-            continue;
-        }
-        let Some(slug) = record["declaration"]["identity"]["key"]
-            .as_str()
-            .and_then(|value| value.strip_prefix("oteryn:service.trade."))
-        else {
-            continue;
-        };
-        let Some(vendor) = npcs
-            .npcs
-            .iter()
-            .find(|entry| entry.key == format!("oteryn:npc.{slug}"))
-        else {
-            continue;
-        };
-        let Some(path) = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            vendor
-                .placements
-                .iter()
-                .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 3)
-        }) else {
-            continue;
-        };
-        walk(client, world, &path).await?;
-        let actor = client
-            .world_entities()
-            .and_then(|entities| {
-                entities.iter().find(|entity| {
-                    entity.kind == EntityKind::Npc
-                        && vendor.placements.iter().any(|p| {
-                            entity.position
-                                == ActorPosition {
-                                    x: i32::from(p.x),
-                                    y: i32::from(p.y),
-                                    floor: -i16::from(p.floor),
-                                }
-                        })
-                })
-            })
-            .map(|entry| entry.entity)
-            .ok_or_else(|| format!("step=vendor-{slug} observed=actor-not-visible"))?;
-        for text in ["hi", "trade"] {
-            let reply = shop::talk(
-                client.session_mut(),
-                &npc::NpcTalkIntent {
-                    npc_actor: actor,
-                    text: text.into(),
-                },
-            )
-            .await?;
-            if reply != npc::NpcIntentDisposition::Ok {
+                .await?;
+            if moved.outcome != oteryn_dev_client::ItemMoveOutcome::Moved {
+                return Err(
+                    format!("M08 staging starter tool {id} at {at:?} refused: {moved:?}").into(),
+                );
+            }
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+            while inventory_item(client, reference).is_some()
+                && tokio::time::Instant::now() < deadline
+            {
+                client.service_liveness(Duration::from_millis(25)).await?;
+            }
+            if inventory_item(client, reference).is_some() {
                 return Err(format!(
-                    "step=vendor-{slug}-{text} observed={reply:?} need=accepted-dialogue"
+                    "M08 starter tool {id} remained in served inventory after move"
                 )
                 .into());
             }
-            let domain = if text == "hi" {
-                npc::STATE_DOMAIN_NPC_CONVERSATION
-            } else {
-                npc::STATE_DOMAIN_NPC_TRADE_WINDOW
-            };
-            let delta = client.session_mut().read_gated_delta(domain, 1).await?;
-            if text == "hi" {
-                if npc::decode_npc_conversation(&delta.payload)
-                    .map_err(|e| format!("conversation:{e:?}"))?
-                    .open
-                    .is_none()
-                {
-                    return Err(format!("step=vendor-{slug}-hi observed=missing-open-delta").into());
-                }
-            } else {
-                let window = npc::decode_npc_trade_window(&delta.payload)
-                    .map_err(|e| format!("trade-window:{e:?}"))?;
-                let (index, offer) = window
-                    .offers
-                    .iter()
-                    .enumerate()
-                    .find(|(_, offer)| {
-                        offer.side == npc::NpcTradeSide::Buy
-                            && offer.item_definition_ref == reference.get()
-                    })
-                    .ok_or_else(|| format!("step=buy-{id} observed=offer-missing vendor={slug}"))?;
-                let reply = shop::buy(
-                    client.session_mut(),
-                    &npc::NpcTradeIntent {
-                        npc_actor: actor,
-                        catalogue_revision: window.open.ok_or("trade-window-closed")?.1,
-                        offer_index: u32::try_from(index)?,
-                        side: offer.side,
-                        quantity: 1,
-                        expected_unit_price: offer.unit_price,
-                    },
-                )
+            evidence(&format!(
+                "M08_CHECK stage-starter-{id} PASS position={at:?} reply=Moved inventory=0"
+            ));
+        }
+    }
+    Ok(())
+}
+
+async fn buy_tools(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+    definitions: &crate::content::item_ref::ItemDefinitionIndex,
+    seller: &str,
+    purchases: &[(u32, u32)],
+) -> TestResult {
+    use oteryn_dev_client::client_runtime::npc_shop as shop;
+    let vendor = npcs
+        .npcs
+        .iter()
+        .find(|entry| entry.key == format!("oteryn:npc.{seller}"))
+        .ok_or_else(|| format!("step=vendor-{seller} observed=placement-missing"))?;
+    let path = full_row_m09::shop_path(client, world, vendor).await?;
+    walk_logged(client, world, &path, seller).await?;
+    let name = match seller {
+        "lubo" => "Lubo",
+        "sam" => "Sam",
+        _ => return Err(format!("step=vendor-{seller} observed=not-a-tool-seller").into()),
+    };
+    let actor = full_row_m09::shop_actor(client, vendor, name).await?;
+
+    for text in ["hi", "trade"] {
+        let reply = shop::talk(
+            client.session_mut(),
+            &npc::NpcTalkIntent {
+                npc_actor: actor,
+                text: text.into(),
+            },
+        )
+        .await?;
+        if reply != npc::NpcIntentDisposition::Ok {
+            return Err(format!(
+                "step=vendor-{seller}-{text} observed={reply:?} need=accepted-dialogue"
+            )
+            .into());
+        }
+        if text == "hi" {
+            let delta = client
+                .session_mut()
+                .read_gated_delta(npc::STATE_DOMAIN_NPC_CONVERSATION, 1)
                 .await?;
-                if reply != npc::NpcIntentDisposition::Ok {
-                    return Err(format!("step=buy-{id} observed={reply:?} vendor={slug} price={} need=player-earnable-funds", offer.unit_price).into());
-                }
-                let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-                while inventory_item(client, reference).is_none()
-                    && tokio::time::Instant::now() < deadline
-                {
-                    client.service_liveness(Duration::from_millis(25)).await?;
-                }
-                let item = inventory_item(client, reference)
-                    .ok_or_else(|| format!("step=buy-{id} observed=missing-inventory-delta"))?;
-                evidence(&format!(
-                    "M08_CHECK acquire-{id} PASS vendor={slug} reply=Ok inventory=present"
-                ));
-                return Ok(item);
+            if npc::decode_npc_conversation(&delta.payload)
+                .map_err(|e| format!("conversation:{e:?}"))?
+                .open
+                .is_none()
+            {
+                return Err(format!("step=vendor-{seller}-hi observed=missing-open-delta").into());
             }
         }
     }
-    Err(
-        format!("step=buy-{id} observed=no-reachable-live-vendor need=world-vendor-for-{key}")
-            .into(),
-    )
+    let delta = client
+        .session_mut()
+        .read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
+        .await?;
+    let details = client
+        .session_mut()
+        .is_selected(oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
+    let window = npc::decode_npc_trade_window_for(&delta.payload, details)
+        .map_err(|e| format!("trade-window:{e:?}"))?;
+    let catalogue_revision = window.open.ok_or("trade-window-closed")?.1;
+    for &(id, price) in purchases {
+        let reference = provisioning::item_reference(definitions, id)?;
+        if inventory_item(client, reference).is_some() {
+            return Err(format!(
+                "step=1-buy-{id} observed=reply-not-sent-item-already-present need=live-buy-reply-and-inventory-delta"
+            ).into());
+        }
+        let (index, offer) = window
+            .offers
+            .iter()
+            .enumerate()
+            .find(|(_, offer)| {
+                offer.side == npc::NpcTradeSide::Buy && offer.item_definition_ref == reference.get()
+            })
+            .ok_or_else(|| format!("step=buy-{id} observed=offer-missing vendor={seller}"))?;
+        if offer.count != 1 || offer.unit_price != price {
+            return Err(format!("step=buy-{id} vendor={seller} served-count={} served-price={} expected-count=1 expected-price={price}", offer.count, offer.unit_price).into());
+        }
+        let reply = shop::buy(
+            client.session_mut(),
+            &npc::NpcTradeIntent {
+                npc_actor: actor,
+                catalogue_revision,
+                offer_index: u32::try_from(index)?,
+                side: offer.side,
+                quantity: 1,
+                expected_unit_price: offer.unit_price,
+            },
+        )
+        .await?;
+        if reply != npc::NpcIntentDisposition::Ok {
+            return Err(
+                format!("step=buy-{id} observed={reply:?} vendor={seller} price={price}").into(),
+            );
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        while inventory_item(client, reference).is_none() && tokio::time::Instant::now() < deadline
+        {
+            client.service_liveness(Duration::from_millis(25)).await?;
+        }
+        let carried = inventory_item(client, reference)
+            .ok_or_else(|| format!("step=buy-{id} observed=no-inventory-delta"))?;
+        if carried.count.get() != 1 {
+            return Err(format!(
+                "step=buy-{id} observed=unexpected-served-count:{}",
+                carried.count
+            )
+            .into());
+        }
+        evidence(&format!(
+            "M08_CHECK acquire-{id} PASS vendor={seller} reply=Ok inventory=0->1"
+        ));
+        verdict::Harness::global().progress("npc-purchase");
+    }
+    Ok(())
 }
 
 fn target(world: &BundleWorld, object: Object, revision: u64) -> TestResult<WorldObjectTarget> {
@@ -328,9 +389,11 @@ fn contains_placement_tile_delta(events: &[SessionEvent], object: Object) -> boo
             .tiles
             .iter()
             .any(|tile| tile_at(tile, object.at)),
-        SessionEvent::WorldMapSnapshot(delta) => {
-            delta.value.tiles.iter().any(|tile| tile_at(tile, object.at))
-        }
+        SessionEvent::WorldMapSnapshot(delta) => delta
+            .value
+            .tiles
+            .iter()
+            .any(|tile| tile_at(tile, object.at)),
         _ => false,
     })
 }
@@ -359,10 +422,7 @@ async fn use_tool(
         use_with_position: None,
     };
     let payload = encode_item_use_intent(&intent).map_err(|e| format!("tool-intent:{e:?}"))?;
-    let reply = client
-        .session_mut()
-        .world_context_use(&payload)
-        .await?;
+    let reply = client.session_mut().world_context_use(&payload).await?;
     let disposition =
         decode_use_result(&reply.payload).map_err(|e| format!("tool-result:{e:?}"))?;
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
@@ -408,14 +468,20 @@ async fn verify_after_relog(
     {
         return Err(format!("step=relog-{name} observed=logout-refused").into());
     }
-    *client = connect_world(clients, 0xd9).await?;
+    *client = connect_character(clients, 0xd9, 0).await?;
     if client.join_snapshot().game_session_id == session {
         return Err(format!("step=relog-{name} observed=reused-session").into());
     }
     approach(client, world, &[object], object.appearance).await?;
-    let snapshot = client.session_mut().world_map_snapshot()
+    let snapshot = client
+        .session_mut()
+        .world_map_snapshot()
         .ok_or("step=relog observed=missing-map-snapshot")?;
-    if !snapshot.tiles.iter().any(|tile| tile_has(tile, object, after)) {
+    if !snapshot
+        .tiles
+        .iter()
+        .any(|tile| tile_has(tile, object, after))
+    {
         return Err(format!(
             "step=relog-{name} observed=transformed-placement-missing position={:?} expected={after}",
             object.at
@@ -436,26 +502,65 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let objects = objects(&bytes)?;
-    let mut client = connect_world(clients, 0xd8).await?;
+    let identity =
+        character_prep::dedicated_character(clients, "NODE_BOOT_M08_FULL_ACCOUNT").await?;
+    let clients = &identity.clients(clients);
+    character_prep::declare_seeded("M08.full", "452 carried gold", "six live tool purchases");
+    let definitions = provisioning::item_index()?;
+    // The 44-step Sam leg and 205-step Lubo leg reached the shovel purchase
+    // guard after 355.698 s. Measured purchase staging is bounded separately
+    // from the original 300 s budget for transformations, stale use and relogs.
+    let mut client = verdict::indexed_timeout(Duration::from_secs(460), async {
+        let mut client =
+            character_prep::funded_character(clients, 0xd8, 452, &[(3035, 4), (3031, 2)]).await?;
+        stage_starting_tools(&mut client, &definitions).await?;
+        for (seller, purchases) in PURCHASES {
+            buy_tools(
+                &mut client,
+                world,
+                &metadata.npcs,
+                &definitions,
+                seller,
+                purchases,
+            )
+            .await?;
+        }
+        TestResult::Ok(client)
+    })
+    .await
+    .map_err(|_| "step=tool-purchase-staging observed=timeout-after-460s")??;
+    verdict::indexed_timeout(Duration::from_secs(300), async {
+        exercise_tools(&mut client, clients, world, &objects, &definitions).await
+    })
+    .await
+    .map_err(|_| "step=terrain-journey observed=timeout-after-300s")?
+}
+
+async fn exercise_tools(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    objects: &[Object],
+    definitions: &crate::content::item_ref::ItemDefinitionIndex,
+) -> TestResult {
     let mut pick = None;
     for (name, id, before, after) in CASES {
-        let item = buy(&mut client, world, &metadata.npcs, id).await?;
-        let object = approach(&mut client, world, &objects, before).await?;
-        use_tool(&mut client, world, item, object, after).await?;
+        let reference = provisioning::item_reference(definitions, id)?;
+        let item = inventory_item(client, reference)
+            .ok_or_else(|| format!("step={name} observed=purchased-tool-missing"))?;
+        let object = approach(client, world, objects, before).await?;
+        use_tool(client, world, item, object, after).await?;
         if name == "pick" {
             pick = Some((object, after));
         } else {
             // Several terrain bindings decay in minutes. Read the fresh
             // snapshot before routing to the next tool or terrain target.
-            verify_after_relog(&mut client, clients, world, name, object, after).await?;
+            verify_after_relog(client, clients, world, name, object, after).await?;
         }
     }
     let (pick, pick_after) = pick.ok_or("step=pick observed=not-attempted")?;
-    let pick_item = inventory_item(
-        &client,
-        provisioning::item_reference(&provisioning::item_index()?, 3456)?,
-    )
-    .ok_or("pick missing")?;
+    let pick_ref = provisioning::item_reference(definitions, 3456)?;
+    let pick_item = inventory_item(client, pick_ref).ok_or("pick missing")?;
     let stale = UseIntent {
         target: UseTarget::Item(pick_item.handle),
         use_with: None,
@@ -465,7 +570,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     client.take_events();
     let reply = client
         .session_mut()
-        .world_context_use(&encode_item_use_intent(&stale).map_err(|e| format!("stale-intent:{e:?}"))?)
+        .world_context_use(
+            &encode_item_use_intent(&stale).map_err(|e| format!("stale-intent:{e:?}"))?,
+        )
         .await?;
     let refusal = decode_use_result(&reply.payload).map_err(|e| format!("stale-result:{e:?}"))?;
     if reply.status != CommandStatus::Accepted || refusal == UseDisposition::Committed {
@@ -496,7 +603,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     evidence(&format!(
         "M08_CHECK stale-refusal PASS reply={refusal:?} object_delta=false appearance=7236"
     ));
-    verify_after_relog(&mut client, clients, world, "pick", pick, pick_after).await?;
+    verify_after_relog(client, clients, world, "pick", pick, pick_after).await?;
     Ok(())
 }
 
