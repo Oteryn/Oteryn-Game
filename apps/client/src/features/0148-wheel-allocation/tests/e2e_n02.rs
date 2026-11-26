@@ -13,6 +13,7 @@ const CORE_SLOT: usize = 20;
 const PRESET_OK: &str = "Preset updated. Loaded points are proposals; Save Wheel submits them.";
 
 struct Frames {
+    atelier_v2: bool,
     kind: u32,
     status: CommandStatus,
     receipt: Vec<u8>,
@@ -58,6 +59,7 @@ fn frames(revision: u64, points: [u16; 36]) -> Result<Frames, Error> {
         vessels: None,
     }))?;
     Ok(Frames {
+        atelier_v2: false,
         kind: 161,
         status: CommandStatus::Accepted,
         receipt: wheel_frame.clone(),
@@ -95,7 +97,7 @@ fn captured() -> Result<Captured, Error> {
     let read = |name: &str| -> Result<Frames, Error> {
         let metadata = std::fs::read_to_string(path.join(format!("n02-{name}-wire.txt")))?;
         let fields: Vec<_> = metadata.split_whitespace().collect();
-        let [session, sequence, kind, status] = fields.as_slice() else {
+        let [session, sequence, kind, status, atelier_v2] = fields.as_slice() else {
             return Err("invalid N02 wire metadata".into());
         };
         if let Ok(binding) = std::env::var("N02_REPLAY_BINDING") {
@@ -118,7 +120,13 @@ fn captured() -> Result<Captured, Error> {
             value if value == CommandStatus::Accepted as u32 => CommandStatus::Accepted,
             _ => return Err("N02 capture status was not Accepted".into()),
         };
+        let atelier_v2 = match *atelier_v2 {
+            "0" => false,
+            "1" => true,
+            _ => return Err("invalid negotiated Atelier mode".into()),
+        };
         Ok(Frames {
+            atelier_v2,
             kind,
             status,
             receipt: std::fs::read(path.join(format!("n02-{name}-receipt.bin")))?,
@@ -156,6 +164,7 @@ fn response(frames: &Frames) -> WheelResponse {
 
 fn synchronised(panel: &mut WheelPanel, frames: &Frames) -> Result<(), Error> {
     panel.selected = true;
+    panel.atelier_v2 = frames.atelier_v2;
     request(panel, Intent::Refresh, occurrence(1)).ok_or("refresh was not sent")?;
     assert!(apply_result(panel, &response(frames)));
     assert!(panel.ready());
@@ -204,11 +213,24 @@ fn e2e_n02_named_build_export_import_and_malformed_code() -> Result<(), Error> {
             .collect::<Vec<_>>()
             .join(",")
     );
+    assert_eq!(captured.query.atelier_v2, captured.save.atelier_v2);
+    let named = if captured.save.atelier_v2 {
+        let board = mailbox
+            .wheel
+            .vessel_board
+            .as_ref()
+            .ok_or("live v2 Vessel board absent")?;
+        assert_eq!(board.slots.len(), 12);
+        assert!(board.slots.iter().all(|slot| slot.gem.is_none()));
+        format!("{code}#v2:{}", ["-"; 12].join(","))
+    } else {
+        code.clone()
+    };
     mailbox.wheel.preset_fields[0] = "Core build".into();
     submit(&mut mailbox, 0, &path);
     assert_eq!(mailbox.wheel.preset_feedback, PRESET_OK);
-    assert_eq!(mailbox.wheel.preset_book.0.get("Core build"), Some(&code));
-    assert_eq!(PresetBook::load(&path)?.0.get("Core build"), Some(&code));
+    assert_eq!(mailbox.wheel.preset_book.0.get("Core build"), Some(&named));
+    assert_eq!(PresetBook::load(&path)?.0.get("Core build"), Some(&named));
 
     // Export the code and the URL form.
     submit(&mut mailbox, 3, &path);

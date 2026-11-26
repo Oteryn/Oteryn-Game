@@ -70,11 +70,16 @@ async fn send(
         if sequence <= before_sequence {
             return Err("Wheel response did not advance the server sequence".into());
         }
+        let atelier_v2 = client
+            .selected_capabilities()
+            .contains(&oteryn_protocol_oteryn::atelier::v2::CAPABILITY_GEM_ATELIER_V2);
         capture(
             &format!("n02-{name}-wire.txt"),
             format!(
-                "{session} {sequence} {} {}\n",
-                response.kind, response.status as u32
+                "{session} {sequence} {} {} {}\n",
+                response.kind,
+                response.status as u32,
+                u8::from(atelier_v2)
             )
             .as_bytes(),
         )?;
