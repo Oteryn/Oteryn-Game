@@ -4,6 +4,7 @@
 
 use super::super::*;
 use crate::durability::item_use::concoction::kooldown_aid::{KOOLDOWN_AID_KEY, KooldownAidOutcome};
+use crate::gameplay_transport::item_craft::retry_item_use_holder;
 
 const RESET_TEXT: &str = "Your spells are no longer on cooldown.";
 
