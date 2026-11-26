@@ -799,7 +799,7 @@ async fn large_resync(database: &Database) -> TestResult {
         .map_err(|e| format!("{e:?}"))?
         .run(|holder, deadline| {
             Box::pin(async move {
-                let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+                let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
                 let mut tx = sqlx::Connection::begin(&mut **holder).await?;
                 sqlx::query(
                     "SELECT set_config('transaction_timeout', $1, true), \

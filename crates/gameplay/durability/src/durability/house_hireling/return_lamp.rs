@@ -1,3 +1,4 @@
+use crate::durability::db::commit_semantic_read;
 use super::super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::super::character_inbox::{
     RewardClaimInboxError, RewardClaimInboxMintRequest, RewardClaimInboxOutcome,
@@ -66,7 +67,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let result = receipts::replay(&mut tx, &current, command, &digest).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })

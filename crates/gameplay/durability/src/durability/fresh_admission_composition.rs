@@ -19,6 +19,7 @@
 //! durable commit (`DurabilityRoot::commit_composed_fresh_admission`) re-locks every guard, so a
 //! snapshot never outlives a concurrent owner change.
 
+use crate::durability::db::commit_semantic_read;
 use super::admission_authority_guards::{
     AdmissionGuardStore, GuardPublicationDisposition, encode_guard,
 };
@@ -689,7 +690,7 @@ impl DurabilityRoot {
                     let store = AdmissionGuardStore::from_root(root);
                     let composition =
                         resolve_current(&mut tx, &store, &recovery, &holder, subject).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(composition)
                 })
             })

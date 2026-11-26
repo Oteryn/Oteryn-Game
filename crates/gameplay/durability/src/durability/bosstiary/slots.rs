@@ -1,4 +1,5 @@
 //! WB2/P02: current-session, root-serialized boss slots and atomic native gold fees.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::domain::bosstiary::{loot_bonus_percent, remove_fee, slot_unlocked};
 use crate::durability::charm_state::CharmRemoveFee;
@@ -173,7 +174,7 @@ impl DurabilityRoot {
                 } else {0};
                 out.push((character,bonus));
             }
-            commit_semantic_transaction(tx,deadline).await?;Ok(out)
+            commit_semantic_read(tx,deadline).await?;Ok(out)
         })).await
     }
 }

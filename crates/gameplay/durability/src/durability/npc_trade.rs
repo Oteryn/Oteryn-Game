@@ -29,6 +29,7 @@
 //! and exact full native charge defaults. Subtype joins the immutable binding and audit;
 //! every sale selects matching state. Nondefault timed items and contents remain refused.
 
+use crate::durability::db::commit_semantic_read;
 use oteryn_gameplay_economy::npc_trade as rules;
 mod grizzly;
 mod obsidian_knife;
@@ -48,7 +49,7 @@ use super::character_authority::{
 };
 use super::character_progression::numeric_u64;
 use super::db::{
-    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    begin_semantic_transaction, begin_type2_transaction,
     lock_admission_relations,
 };
 use super::item_mint::{TypedDefinitionRef, uuid_text};
@@ -801,7 +802,7 @@ impl DurabilityRoot {
                     .fetch_optional(&mut *tx)
                     .await?
                     else {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
                     if uuid_text(&row.try_get::<String, _>("occurrence_id")?)? != occurrence {
@@ -826,7 +827,7 @@ impl DurabilityRoot {
                         unit_price: numeric_u64(&row, "unit_price")?,
                         sell_all: row.try_get("sell_all")?,
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(Some(receipt)))
                 })
             })

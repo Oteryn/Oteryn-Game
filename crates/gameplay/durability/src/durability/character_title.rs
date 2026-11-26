@@ -1,6 +1,7 @@
 //! CHARINFO durable title facts. Writes are fenced by the existing reconciled
 //! Character authority and never copy the native facts used for qualification.
 
+use crate::durability::db::commit_semantic_read;
 use super::DurabilityRoot;
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
@@ -348,7 +349,7 @@ impl DurabilityRoot {
             for field in ["achievements", "appearances", "inventory", "depot", "stash", "inboxes"] { bytes.extend_from_slice(&row.try_get::<i64,_>(field)?.to_le_bytes()); }
             bytes.extend_from_slice(&(deaths.len() as u16).to_le_bytes());
             bytes.extend_from_slice(&(kills.len() as u16).to_le_bytes());
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(bytes))
         })).await?
     }

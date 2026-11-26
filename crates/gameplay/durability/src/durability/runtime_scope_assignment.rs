@@ -16,7 +16,7 @@ use super::admission_authority_guards::{
     AdmissionGuardStore, GuardPublicationDisposition, Writer, decode_guard, encode_guard, write_key,
 };
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, commit_semantic_read, commit_semantic_transaction, lock_admission_relations,
 };
 use super::{DurabilityError, DurabilityRoot, MAX_ADMISSION_GUARD_BYTES};
 use crate::foundation::admission_authority_publication::{
@@ -339,7 +339,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let current = prove_current_incarnation(&mut tx, &proof).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(if current {
                         Ok(())
                     } else {
@@ -764,7 +764,7 @@ impl DurabilityRoot {
                     {
                         return Err(DurabilityError::InvalidStoredState);
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(current)
                 })
             })
@@ -788,12 +788,12 @@ impl DurabilityRoot {
                     let high_water = writer_high_water(&mut tx, false).await?;
                     require_history_matches_high_water(&mut tx, high_water).await?;
                     let Some(current) = load_assignment(&mut tx, &key, false).await? else {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(None);
                     };
                     require_guard_covers_latest_fence(&root, &mut tx, &key, scope).await?;
                     let guard = runtime_guard_publication_revision(&root, &mut tx, scope).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Some(AssignmentPredecessor {
                         ownership_generation: current.ownership_generation,
                         source_revision: current.source_revision,

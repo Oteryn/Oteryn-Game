@@ -1,6 +1,6 @@
 //! Connection-owner acceptance under the Guild reader's current durable custody.
 //! The callback is synchronous. No socket I/O or asynchronous consumer work holds SQL locks.
-use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::db::{begin_semantic_transaction, commit_semantic_read};
 use super::fresh_admission::FreshAdmissionStore;
 use super::guild::{GuildChatMembership, GuildError, read_current_guild_chat_data};
 use super::item_transfer::CurrentCharacterItemFence;
@@ -149,7 +149,7 @@ impl DurabilityRoot {
                     // Linearization: the connection owner's synchronous callback reserves its
                     // in-flight slot while exclusion, resume and scope handoff are still locked out.
                     let accepted = accept(guild, party, name);
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(accepted))
                 })
             })

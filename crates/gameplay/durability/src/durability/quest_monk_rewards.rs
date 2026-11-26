@@ -5,7 +5,7 @@ use super::account_achievement::{
 };
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::CurrentCharacterGameplayFence;
-use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::db::{begin_semantic_transaction, commit_semantic_read};
 use super::quest_state::QuestTransitionRequest;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
@@ -125,7 +125,7 @@ impl DurabilityRoot {
                 item_source_id: u32::try_from(row.try_get::<i32,_>("item_source_id")?).map_err(|_| DurabilityError::InvalidStoredState)?,
                 claim_key: row.try_get("claim_key")?, content_revision: row.try_get("content_revision")?,
             }) }).transpose()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(result)
         })).await
     }

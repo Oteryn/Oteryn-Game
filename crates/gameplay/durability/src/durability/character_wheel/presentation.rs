@@ -1,4 +1,5 @@
 //! Advisory coherent read. The exact point-budget reader is shared with the unchanged writer.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use oteryn_gameplay_progression::atelier::AtelierState;
@@ -115,7 +116,7 @@ impl DurabilityRoot {
                     let vocation = read_vocation(&mut tx, fence.character_id).await?;
                     let promoted = super::super::character_promotion::read_durable_promotion(&mut tx, fence.character_id).await?;
                     let budget = read_budget(&mut tx, fence.character_id, level, atelier.as_ref(), ruleset.revision(), pilgrimage_points).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(WheelPresentationRead { allocation, atelier, vessels, level, vocation, promoted, premium_permitted, budget }))
                 })
             }).await?

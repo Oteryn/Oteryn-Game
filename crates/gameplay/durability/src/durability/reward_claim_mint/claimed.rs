@@ -1,4 +1,5 @@
 //! Read the existing once-claim owner; a gate never creates a shadow quest track.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 
 impl DurabilityRoot {
@@ -40,7 +41,7 @@ impl DurabilityRoot {
                     .bind(claim)
                     .fetch_one(&mut *tx)
                     .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(claimed))
                 })
             })
