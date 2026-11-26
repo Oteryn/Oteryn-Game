@@ -6,7 +6,8 @@
 //! 3. The watch is not consumed: the carried count is unchanged.
 //! 4. Log out, freshly admit and use again: require a new line with the advanced World time.
 //!
-//! The fixture supplies the 20-gold purchase price from Crystal's `data-global/npc/lubo.lua`.
+//! The fixture adds 19 gold toward Crystal Lubo's 20-gold price. The purchase
+//! leaves one fewer coin than the character's observed starter balance.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{
@@ -17,6 +18,7 @@ use oteryn_protocol_oteryn::{
 const GOLD: u32 = 3031;
 const WATCH: u32 = 2906;
 const PRICE: u32 = 20;
+const PURCHASE_FUNDING: u32 = PRICE - 1;
 // Pinned Lubo behavior in content/behaviors/behaviors-02500-02999.json.
 const LUBO_WANDER_RADIUS: u16 = 2;
 
@@ -209,7 +211,8 @@ async fn buy_watch(
     clients: &SeamClients<'_>,
     watch: std::num::NonZeroU32,
     gold: std::num::NonZeroU32,
-    starter_gold: u64,
+    funded_gold: u64,
+    remaining_gold: u64,
 ) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let bundle = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -361,9 +364,7 @@ async fn buy_watch(
         )
         .into());
     }
-    if !carried(client, watch).is_empty()
-        || gold_balance(client, gold) != starter_gold + u64::from(PRICE)
-    {
+    if !carried(client, watch).is_empty() || gold_balance(client, gold) != funded_gold {
         return Err("step=buy observed=inventory-changed-before-purchase".into());
     }
     client.take_events();
@@ -384,10 +385,10 @@ async fn buy_watch(
             .into_iter()
             .any(|event| matches!(event, oteryn_dev_client::SessionEvent::Inventory(delta) if delta.server_sequence > purchase))
             && matches!(carried(client, watch).as_slice(), [(_, 1)])
-            && gold_balance(client, gold) == starter_gold
+            && gold_balance(client, gold) == remaining_gold
         {
             evidence(&format!(
-                "G09_CHECK step=buy status=PASS watch={WATCH} price={PRICE}"
+                "G09_CHECK step=buy status=PASS watch={WATCH} price={PRICE} gold_before={funded_gold} gold_after={remaining_gold}"
             ));
             return Ok(());
         }
@@ -401,7 +402,7 @@ async fn buy_watch(
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     character_prep::declare_seeded(
         "G09",
-        &format!("{PRICE} gold"),
+        &format!("{PURCHASE_FUNDING} gold"),
         "Lubo's authored watch price",
     );
     let identity = character_prep::dedicated_character(clients, "NODE_BOOT_G09_ACCOUNT").await?;
@@ -414,17 +415,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=fixture observed=watch-already-present".into());
     }
     let starter_gold = gold_balance(&client, gold);
-    character_prep::grant_item(&client, GOLD, PRICE).await?;
+    let funded_gold = starter_gold + u64::from(PURCHASE_FUNDING);
+    let remaining_gold = funded_gold
+        .checked_sub(u64::from(PRICE))
+        .ok_or("step=fixture observed=no-starter-coin-for-purchase")?;
+    character_prep::grant_item(&client, GOLD, PURCHASE_FUNDING).await?;
     logout(&mut client).await?;
     drop(client);
 
     let mut client = connect_character(clients, 0xce, 0).await?;
-    if !carried(&client, definition).is_empty()
-        || gold_balance(&client, gold) != starter_gold + u64::from(PRICE)
-    {
+    if !carried(&client, definition).is_empty() || gold_balance(&client, gold) != funded_gold {
         return Err("step=fixture observed=expected-only-purchase-gold".into());
     }
-    buy_watch(&mut client, clients, definition, gold, starter_gold).await?;
+    buy_watch(
+        &mut client,
+        clients,
+        definition,
+        gold,
+        funded_gold,
+        remaining_gold,
+    )
+    .await?;
     let inventory = carried(&client, definition);
     let [(handle, 1)] = inventory.as_slice() else {
         return Err("step=fixture observed=expected-exactly-one-served-watch".into());
@@ -441,7 +452,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut fresh = connect_character(clients, 0xcf, 0).await?;
     if fresh.join_snapshot().game_session_id == previous_session
         || fresh.world_spatial().actor_position != purchased_at
-        || gold_balance(&fresh, gold) != starter_gold
+        || gold_balance(&fresh, gold) != remaining_gold
     {
         return Err("step=fresh observed=stale-session-or-position-or-gold-debit-lost".into());
     }
