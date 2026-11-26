@@ -1,5 +1,17 @@
 use super::*;
 
+#[cfg(test)]
+pub(in crate::gameplay_transport) struct ConditionReleaseProbe {
+    pub(crate) before_read: tokio::sync::Notify,
+    pub(crate) proceed: tokio::sync::Notify,
+    pub(crate) read_failed: tokio::sync::Notify,
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static CONDITION_RELEASE_PROBE: std::cell::Cell<Option<std::sync::Arc<ConditionReleaseProbe>>>;
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn release_terminal(
         &self,
@@ -215,7 +227,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !super::super::item_use::gourmet::checkpoint_at_actor_end(self, actor, session).await {
             return ReleaseAttempt::Retry;
         }
+        #[cfg(test)]
+        let probe = CONDITION_RELEASE_PROBE.try_with(std::cell::Cell::take).ok().flatten();
+        #[cfg(test)]
+        if let Some(probe) = &probe {
+            probe.before_read.notify_one();
+            probe.proceed.notified().await;
+        }
         if !self.save_conditions_at_actor_end(actor, session).await {
+            #[cfg(test)]
+            if let Some(probe) = probe {
+                probe.read_failed.notify_one();
+            }
             return ReleaseAttempt::Retry;
         }
         // KILL-REWARD-COMP-1 §1.3: the session's own kills settle before it ends.
