@@ -3237,6 +3237,14 @@ pub async fn run_with_npc_data_project(
 ) -> Result<(), BootError> {
     // D3 step 1: everything is read and checked before a socket is bound.
     let material = load(config_path)?;
+    if material.store.is_none() {
+        use oteryn_error_codes::{FieldValue, Level, Line};
+        emit(
+            PROCESS,
+            &Line::new(Level::Warn, "node", "platform_store_disabled")
+                .field("reason", FieldValue::Token("missing_platform_store")),
+        );
+    }
     let npc_catalogue = npc_data
         .map(|(root, digest)| crate::content::load_data_only_npc_catalogue(root, digest))
         .transpose()
@@ -4099,14 +4107,6 @@ async fn boot_and_serve(
         "event=store_configuration store_purchases={}",
         config.store_purchases.as_str()
     );
-    if material.store.is_none() {
-        use oteryn_error_codes::{FieldValue, Level, Line};
-        emit(
-            PROCESS,
-            &Line::new(Level::Warn, "node", "platform_store_disabled")
-                .field("reason", FieldValue::Token("missing_platform_store")),
-        );
-    }
     let owners = GameplaySeamOwners {
         platform_enforcement_enabled: enforcement_clients.is_some(),
         cast,
