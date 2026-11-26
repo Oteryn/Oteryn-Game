@@ -1,5 +1,6 @@
 //! Persisted heterogeneous slot assignments; every active action uses an existing command path.
 use super::item_actions::item_source;
+use crate::combat_input::{BarFallback, PlayCommand};
 #[path = "readiness.rs"]
 mod readiness;
 use crate::play::feature_0287_actor_spell_catalog::view::ArchiveBindings;
@@ -284,9 +285,9 @@ impl SettingsState {
     }
 }
 
-fn action_ready(mailbox: &Mailbox, action: &BarAction) -> bool {
+fn action_ready(mailbox: &Mailbox, action: &BarAction, preview: bool) -> bool {
     action.equip_tier_supported(mailbox.hotkey_equip.tiered)
-        && readiness::action_ready(mailbox, action)
+        && readiness::action_ready(mailbox, action, preview)
 }
 
 pub(in crate::play) fn activate(link: &PlayLink, slot: NonZeroU32) -> bool {
@@ -339,20 +340,76 @@ fn activate_inner(
     if read_items && super::item_cooldowns::begin(mailbox, commands, slot, &action, true) {
         return true;
     }
-    let action = if let BarAction::Multi { actions } = action {
-        let Some(action) = actions
-            .iter()
-            .find(|action| action_ready(mailbox, action))
-            .cloned()
-        else {
-            mailbox.spell_bar.feedback =
-                "All multiaction slots are cooling down or unavailable".into();
-            return true;
-        };
-        action
+    if let BarAction::Multi { actions } = action {
+        activate_multi(mailbox, commands, slot.get() as usize - 1, 0, actions);
     } else {
-        action
+        activate_action(mailbox, commands, action, None);
+    }
+    true
+}
+
+fn activate_multi(
+    mailbox: &mut Mailbox,
+    commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,
+    slot: usize,
+    start: usize,
+    actions: Vec<BarAction>,
+) {
+    let count = actions.len();
+    let Some((index, action)) = actions
+        .into_iter()
+        .enumerate()
+        .skip(start)
+        .find(|(_, action)| action_ready(mailbox, action, false))
+    else {
+        mailbox.spell_bar.feedback =
+            "All multiaction slots are cooling down or unavailable".into();
+        return;
     };
+    let next = index + 1;
+    let fallback = (matches!(action, BarAction::Spell { .. }) && next < count).then(|| {
+        Box::new(BarFallback {
+            slot,
+            next,
+            scope: mailbox.bar_actions.scope,
+            edit: mailbox.bar_actions.edit,
+            cursor: mailbox.bar_actions.cursor.clone(),
+        })
+    });
+    activate_action(mailbox, commands, action, fallback);
+}
+
+impl crate::play::Outbox {
+    pub(in crate::play) fn resume_bar_cast(&self, fallback: BarFallback) -> Option<PlayCommand> {
+        let mut mailbox = lock(&self.0);
+        if !bar_cast_current(&mailbox, &fallback) {
+            return None;
+        }
+        let BarAction::Multi { actions } = mailbox.bar_actions.saved.0.get(&fallback.slot)?.clone()
+        else {
+            return None;
+        };
+        let (commands, mut queued) = tokio::sync::mpsc::unbounded_channel();
+        let cursor = std::mem::replace(&mut mailbox.bar_actions.cursor, fallback.cursor);
+        activate_multi(&mut mailbox, &commands, fallback.slot, fallback.next, actions);
+        mailbox.bar_actions.cursor = cursor;
+        queued.try_recv().ok()
+    }
+}
+
+pub(in crate::play) fn bar_cast_current(mailbox: &Mailbox, fallback: &BarFallback) -> bool {
+    !mailbox.world_input_blocked()
+        && !mailbox.activity_reset_commands
+        && mailbox.bar_actions.scope == fallback.scope
+        && mailbox.bar_actions.edit == fallback.edit
+}
+
+fn activate_action(
+    mailbox: &mut Mailbox,
+    commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,
+    action: BarAction,
+    fallback: Option<Box<BarFallback>>,
+) {
     match action {
         BarAction::Spell { name, words, aim } => {
             if let Some(entry) = ArchiveBindings::matching_spell(
@@ -366,10 +423,10 @@ fn activate_inner(
                     let Some((_, cursor)) = &mailbox.bar_actions.cursor else {
                         mailbox.spell_bar.feedback =
                             "Cursor is outside the game window or battle list".into();
-                        return true;
+                        return;
                     };
                     let Some(actor) = mailbox.bar_actions.own_actor else {
-                        return true;
+                        return;
                     };
                     Some(oteryn_client_ui::spell_aim_mode::CursorAim {
                         position: oteryn_session::SpellTargetPosition {
@@ -388,9 +445,13 @@ fn activate_inner(
                 let Some(command) =
                     oteryn_client_ui::spell_aim_mode::cast_command(aim.option(), index, cursor_aim)
                 else {
-                    return true;
+                    return;
                 };
-                let _ = commands.send(crate::combat_input::PlayCommand::Combat(command));
+                let request = match fallback {
+                    Some(fallback) => PlayCommand::BarCast(command, fallback),
+                    None => PlayCommand::Combat(command),
+                };
+                let _ = commands.send(request);
             } else {
                 mailbox.spell_bar.feedback = "Spell unavailable in the live catalogue".into();
             }
@@ -404,7 +465,7 @@ fn activate_inner(
                     .map(|view| view.view_id)
             });
             let intent = if let Some(view) = open_view {
-                if !mailbox.containers.activate(view) { return true; }
+                if !mailbox.containers.activate(view) { return; }
                 mailbox.containers.close()
             } else {
                 matching.next().and_then(|item| mailbox.containers.open(item.handle, None))
@@ -458,7 +519,6 @@ fn activate_inner(
             mailbox.spell_bar.feedback = "Passive status: no cast command is sent".into();
         }
     }
-    true
 }
 
 pub(in crate::play) fn label(mailbox: &Mailbox, action: &BarAction) -> String {
@@ -570,7 +630,7 @@ pub(in crate::play) fn slot_label(mailbox: &Mailbox, _slot: usize, action: &BarA
                         .into(),
                     );
                 }
-                action_ready(mailbox, action).then(|| {
+                action_ready(mailbox, action, true).then(|| {
                     format!(
                         "Next {}/{}: {}",
                         index + 1,

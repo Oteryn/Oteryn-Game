@@ -57,6 +57,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
     let mut personal_marks_refresh = std::time::Instant::now();
     let mut read_initial_features = !outbox.scope_waiting();
     let mut query_returner = true;
+    let mut bar_fallback = None;
     'session: loop {
         if outbox.session_cancelled() {
             return;
@@ -199,8 +200,12 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             }
             publish(&mut session, &outbox, &mut held);
         }
+        let command = bar_fallback
+            .take()
+            .and_then(|fallback| outbox.resume_bar_cast(fallback))
+            .map_or_else(|| outbox.scope_command(&commands), Ok);
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
-            outbox.scope_command(&commands), session, outbox, held, publish;
+            command, session, outbox, held, publish;
             Ok(command @ (PlayCommand::SkillsCombat(_) | PlayCommand::HudStamina)) => match outbox.hud_character_query(&mut session, command).await {
                 Ok(()) => {
                     publish(&mut session, &outbox, &mut held);
@@ -419,6 +424,17 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 match outbox.battle_run(&mut session, command).await {
                     Ok(()) => {
                         publish(&mut session, &outbox, &mut held);
+                        continue;
+                    }
+                    Err(error) => error,
+                }
+            }
+            Ok(PlayCommand::BarCast(command, fallback)) => {
+                match outbox.bar_cast_run(&mut session, command, *fallback).await {
+                    Ok(next) => {
+                        publish(&mut session, &outbox, &mut held);
+                        outbox.push(session.drain());
+                        bar_fallback = next;
                         continue;
                     }
                     Err(error) => error,
