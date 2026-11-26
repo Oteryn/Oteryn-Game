@@ -5,8 +5,8 @@ use oteryn_protocol_oteryn::logout::{LogoutResult, MAX_LOGOUT_RETRY_AFTER_MS};
 
 use super::connection::{AdmittedSession, ControllerBinding, GraceExpiryResult};
 use super::{
-    AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission, FenceHold, ReleaseAttempt,
-    TerminalRelease, UnendedSettle, operator_event,
+    AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission, FenceHold, RECONCILE_ATTEMPTS,
+    ReleaseAttempt, TerminalRelease, UnendedSettle, operator_event,
 };
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
@@ -296,9 +296,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             in_protection_zone,
         )
     }
-    /// One attempt of the release on the `Abandoned` path, with no retry: the client retries a
-    /// `BUSY`. A failure before the commit reads the durable row and settles the fence
-    /// (`settle_unended`) before `BUSY`, so no character write stays fenced.
+    /// Retry a precommit release failure only after settling the previous fence.
+    /// Each retry rechecks logout locks and proves the same session generation.
     async fn release_logout(
         &self,
         admitted: AdmittedSession,
@@ -314,77 +313,134 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             store
         };
         let release = TerminalRelease::Logout(controller.transport);
-        // Nothing is fenced yet when no transition id can be minted.
-        let token = {
-            let mut runtime = self.runtime.lock().await;
-            if channel_switch
-                && let Some(lock) = self.switch_encounter_lock(&runtime, actor, session)
-            {
-                return Err(lock);
-            }
-            let Ok(token) = release.fence(&mut runtime) else {
-                operator_event("event=logout_busy stage=release_fence");
-                return Ok(LogoutReply::Result(LogoutResult::Busy));
-            };
-            token
-        };
-        let mut hold = FenceHold::new(session, token);
+        let budget = AdmissionRetryBudget::for_command(self.root);
         let mut settled_death = None;
-        let mut kills = None;
-        let step = self
-            .release_attempt(
-                &admitted,
-                &store,
-                release,
-                &mut hold,
-                &mut settled_death,
-                &mut kills,
-            )
-            .await;
-        Ok(match step {
-            ReleaseAttempt::Done(GraceExpiryResult::Released) => {
-                LogoutReply::Result(LogoutResult::Accepted)
-            }
-            // The session is not this logout's to end, and its fence is lifted.
-            ReleaseAttempt::Done(GraceExpiryResult::NotApplicable) => {
-                operator_event("event=logout_busy stage=release_not_applicable");
-                LogoutReply::Result(LogoutResult::Busy)
-            }
-            // A refused fence, or a committed release whose actor could not be removed: the
-            // lifecycle reconciles from the row.
-            ReleaseAttempt::Done(GraceExpiryResult::Unknown) => {
-                operator_event("event=logout_unknown stage=release_attempt kind=unknown");
-                LogoutReply::Unknown
-            }
-            ReleaseAttempt::Retry => match self.settle_unended(&store, actor, &mut hold).await {
-                UnendedSettle::Lifted => {
+        let mut attempt = 1;
+        loop {
+            if attempt > 1 {
+                let current = match budget
+                    .retry_durability("logout_retry_session", || store.current_session(session))
+                    .await
+                {
+                    Ok(current) => current,
+                    Err(crate::durability::DurabilityError::RootUnavailable) => {
+                        operator_event("event=logout_busy stage=release_retry_lifted");
+                        return Ok(LogoutReply::Result(LogoutResult::Busy));
+                    }
+                    Err(_) => return Ok(LogoutReply::Unknown),
+                };
+                if current.session_state() != GameSessionState::Active
+                    || current.current_transport() != Some(controller.transport)
+                    || current.current_connection_generation().get()
+                        != admitted.continuity.connection_generation
+                    || current.current_runtime_scope() != actor.runtime_scope()
+                {
+                    operator_event("event=logout_busy stage=release_not_applicable");
+                    return Ok(LogoutReply::Result(LogoutResult::Busy));
+                }
+                if let Err(reply) = self.logout_preflight(admitted).await {
+                    return Ok(reply);
+                }
+                if budget.check_deadline().is_err() {
                     operator_event("event=logout_busy stage=release_retry_lifted");
+                    return Ok(LogoutReply::Result(LogoutResult::Busy));
+                }
+            }
+            let mut kills = None;
+            // Nothing is fenced yet when no transition id can be minted.
+            let token = {
+                let mut runtime = self.runtime.lock().await;
+                if channel_switch
+                    && let Some(lock) = self.switch_encounter_lock(&runtime, actor, session)
+                {
+                    return Err(lock);
+                }
+                let Ok(token) = release.fence(&mut runtime) else {
+                    operator_event("event=logout_busy stage=release_fence");
+                    return Ok(LogoutReply::Result(LogoutResult::Busy));
+                };
+                token
+            };
+            let mut hold = FenceHold::new(session, token);
+            let step = self
+                .release_attempt(
+                    &admitted,
+                    &store,
+                    release,
+                    &mut hold,
+                    &mut settled_death,
+                    &mut kills,
+                )
+                .await;
+            return Ok(match step {
+                ReleaseAttempt::Done(GraceExpiryResult::Released) => {
+                    LogoutReply::Result(LogoutResult::Accepted)
+                }
+                // The session is not this logout's to end, and its fence is lifted.
+                ReleaseAttempt::Done(GraceExpiryResult::NotApplicable) => {
+                    operator_event("event=logout_busy stage=release_not_applicable");
                     LogoutReply::Result(LogoutResult::Busy)
                 }
-                UnendedSettle::Terminal => {
-                    match self
-                        .retire_reconciled(controller.account_id, session, actor)
-                        .await
-                    {
-                        GraceExpiryResult::Released => LogoutReply::Result(LogoutResult::Accepted),
-                        _ => {
-                            operator_event("event=logout_unknown stage=retire kind=unknown");
+                // A refused fence, or a committed release whose actor could not be removed: the
+                // lifecycle reconciles from the row.
+                ReleaseAttempt::Done(GraceExpiryResult::Unknown) => {
+                    operator_event("event=logout_unknown stage=release_attempt kind=unknown");
+                    LogoutReply::Unknown
+                }
+                ReleaseAttempt::Retry => {
+                    match self.settle_unended(&store, actor, &mut hold).await {
+                        UnendedSettle::Lifted => {
+                            // An uncertain familiar write belongs to its original actor end.
+                            // Leave its reconciliation to the next client intent or control loss.
+                            if !channel_switch && attempt < RECONCILE_ATTEMPTS {
+                                let retained = self
+                                    .states
+                                    .spell_states
+                                    .lock()
+                                    .await
+                                    .has_retained_familiar_logout(actor, session);
+                                if !retained
+                                    && budget
+                                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                                        .await
+                                {
+                                    attempt += 1;
+                                    continue;
+                                }
+                            }
+                            operator_event("event=logout_busy stage=release_retry_lifted");
+                            LogoutReply::Result(LogoutResult::Busy)
+                        }
+                        UnendedSettle::Terminal => {
+                            match self
+                                .retire_reconciled(controller.account_id, session, actor)
+                                .await
+                            {
+                                GraceExpiryResult::Released => {
+                                    LogoutReply::Result(LogoutResult::Accepted)
+                                }
+                                _ => {
+                                    operator_event(
+                                        "event=logout_unknown stage=retire kind=unknown",
+                                    );
+                                    LogoutReply::Unknown
+                                }
+                            }
+                        }
+                        UnendedSettle::Unknown => {
+                            self.states.fence_holders.keep(hold);
+                            operator_event("event=logout_unknown stage=logout_settle kind=unknown");
                             LogoutReply::Unknown
                         }
                     }
                 }
-                UnendedSettle::Unknown => {
+                ReleaseAttempt::Unknown => {
                     self.states.fence_holders.keep(hold);
-                    operator_event("event=logout_unknown stage=logout_settle kind=unknown");
+                    operator_event("event=logout_unknown stage=release_attempt kind=unknown");
                     LogoutReply::Unknown
                 }
-            },
-            ReleaseAttempt::Unknown => {
-                self.states.fence_holders.keep(hold);
-                operator_event("event=logout_unknown stage=release_attempt kind=unknown");
-                LogoutReply::Unknown
-            }
-        })
+            });
+        }
     }
     /// §1.6: a session whose current row is TERMINAL when its transport loss is committed ended
     /// in a release whose acknowledgement was lost. Its actor is retired: Premium release, the
