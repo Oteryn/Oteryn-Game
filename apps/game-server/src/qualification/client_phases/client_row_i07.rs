@@ -446,6 +446,25 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     accept.filter_mode = Some(QuickLootFilterMode::Accept);
     accept.filter_definition_ref = Some(accept_reference);
     let (pouch, backpack) = owned_containers(&mut database, character, &clients.world).await?;
+    let deliveries: Vec<String> = sqlx::query_scalar(
+        "SELECT fulfilment_unit_id FROM store_delivery_receipts
+         WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid
+           AND world_id=encode($3,'hex')::uuid AND result='COMMITTED' LIMIT 2",
+    )
+    .bind(character.as_slice())
+    .bind(pouch.as_slice())
+    .bind(clients.world.as_slice())
+    .fetch_all(&mut database)
+    .await?;
+    let [delivery] = deliveries.as_slice() else {
+        return Err("I07 expected one committed Store delivery for its Inbox pouch".into());
+    };
+    let fulfilment = *sqlx::types::Uuid::parse_str(delivery)?.as_bytes();
+    if fulfilment == pouch {
+        return Err("I07 fulfilment and item instance identifiers must be distinct".into());
+    }
+    evidence("FIXTURE I07 pouch=store_inbox fulfilment_id=distinct_from_item");
+
     let cell = |x: i32| {
         [
             x.to_be_bytes().as_slice(),
@@ -549,7 +568,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     let gold_route = route(
         Some(QuickLootCategory::Gold),
         QuickLootRecipient::GoldPouch,
-        Some(pouch),
+        Some(fulfilment),
         false,
     );
     let unassigned = route(None, QuickLootRecipient::MainContainer, None, false);
@@ -582,6 +601,17 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     }
     evidence("I07_UNASSIGNED_ASSIGNMENT initial=true recipient=exact_inbox_pouch fallback=false");
     capture.probe(&mut client, 4, gold_route, &[]).await?;
+    let gold_target: (bool, Option<Vec<u8>>) = sqlx::query_as(
+        "SELECT gold_pouch, uuid_send(container_id) FROM game_character_quick_loot_categories
+         WHERE character_id=encode($1,'hex')::uuid AND category=0",
+    )
+    .bind(character.as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    if gold_target != (true, Some(pouch.to_vec())) {
+        return Err("I07 Gold assignment did not resolve its fulfilment to the exact pouch".into());
+    }
+    evidence("I07_POUCH_ASSIGNMENT wire=fulfilment_id stored=exact_item_instance");
     // Restore a distinct Unassigned route before testing Gold transfer.
     capture.probe(&mut client, 5, unassigned, &[]).await?;
     capture
@@ -1062,7 +1092,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         write_capture(
             &capture_dir.join("i07-expected.txt"),
             &serde_json::to_vec(&serde_json::json!({
-                "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "selected_handle": selected.get(),
+                "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "fulfilment": fulfilment, "selected_handle": selected.get(),
                 "coin": coin.item, "armor": armor.item, "filtered": filtered.item, "spare": spare.item, "other": other.item,
             }))?,
         )?;

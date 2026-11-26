@@ -335,6 +335,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         backpack: [u8; 16],
         accept: u32,
         pouch: [u8; 16],
+        fulfilment: [u8; 16],
         selected_handle: u64,
         coin: [u8; 16],
         armor: [u8; 16],
@@ -367,7 +368,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     let gold = route(
         Some(QuickLootCategory::Gold),
         QuickLootRecipient::GoldPouch,
-        Some(expected.pouch),
+        Some(expected.fulfilment),
         false,
     );
     let armor = |fallback| {
