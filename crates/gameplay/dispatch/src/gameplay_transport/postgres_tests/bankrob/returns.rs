@@ -418,6 +418,7 @@ impl Bank {
         })
         .await?;
         movement?;
+        assert!(!greeting.unknown);
         assert_eq!(greeting.disposition, NpcIntentDisposition::Rejected);
         assert!(
             greeting

@@ -73,20 +73,11 @@ pub(super) fn clear(
     take(admission, session);
 }
 
-#[cfg(test)]
-tokio::task_local! {
-    pub(in crate::gameplay_transport) static ROBBERY_DIALOGUE_OBSERVED: (
-        std::sync::Arc<tokio::sync::Notify>,
-        std::sync::Arc<tokio::sync::Notify>,
-    );
-}
-
 pub(super) async fn talk(
     admission: &super::super::ComposedFreshAdmission<'_, '_, '_>,
-    actor: ExactActorRef,
     command: super::super::connection::UseCommand,
     intent: &NpcTalkIntent,
-    context: &(u64, u64, String),
+    context: (u64, u64, String),
     permit: Option<&crate::durability::spell_owner_commit::SpellLanePermit>,
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
 ) -> Option<NpcTalkOutcome> {
@@ -94,8 +85,8 @@ pub(super) async fn talk(
     let pending = take(admission, command.game_session_id);
     let fence = command.item_fence?;
     let conversation = Conversation {
-        generation: *generation,
-        key: key.clone(),
+        generation,
+        key,
         npc: intent.npc_actor,
         reset_epoch: admission.reset_epoch,
     };
@@ -158,6 +149,7 @@ pub(super) async fn talk(
         };
     }
 
+    let key = conversation.key.clone();
     let state = match admission
         .root
         .bank_robbery_dialogue(
@@ -173,29 +165,6 @@ pub(super) async fn talk(
         Err(CharacterProgressionError::Unavailable(_)) => return Some(held_bank_outcome()),
         Err(_) => return Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected)),
     };
-    #[cfg(test)]
-    if let Ok((observed, displaced)) = ROBBERY_DIALOGUE_OBSERVED.try_with(Clone::clone) {
-        observed.notify_one();
-        displaced.notified().await;
-    }
-    // The database observation released the runtime lock. Movement or a new
-    // conversation may have invalidated this reply and its bag recognition.
-    let runtime = admission.runtime.lock().await;
-    if admission
-        .states
-        .npc_conversations
-        .current_npc(
-            &admission.states.chat,
-            &runtime,
-            actor,
-            command.game_session_id,
-            intent,
-        )
-        .as_ref()
-        != Some(context)
-    {
-        return Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected));
-    }
     if state.phase.suspended() {
         admission
             .states
@@ -207,7 +176,7 @@ pub(super) async fn talk(
             sessions.entry(command.game_session_id).or_default().robbery = Some(bag);
             return reply(RECOGNITION);
         }
-        return reply(clue(key));
+        return reply(clue(&key));
     }
     (greeting && state.phase == Phase::Returned)
         .then(|| NpcConversations::bank_reply(intent, REOPENED.into()))

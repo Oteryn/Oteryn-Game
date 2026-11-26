@@ -37,8 +37,6 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
 mod bank_robbery;
-#[cfg(test)]
-pub(super) use bank_robbery::ROBBERY_DIALOGUE_OBSERVED;
 #[path = "benevola.rs"]
 mod benevola;
 mod cake;
@@ -789,6 +787,14 @@ impl NpcConversations {
         }
     }
 }
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static ROBBERY_DIALOGUE_OBSERVED: (
+        std::sync::Arc<tokio::sync::Notify>,
+        std::sync::Arc<tokio::sync::Notify>,
+    );
+}
+
 /// Command 7 Bank integration: native retained command first, then the current NPC owner's
 /// conversation, and finally the native settlement owner.
 pub(super) async fn npc_bank_talk(
@@ -920,24 +926,41 @@ pub(super) async fn npc_bank_talk(
         .filter(|context| bank_robbery::interested(&context.2))
     {
         drop(runtime);
-        if let Some(outcome) = bank_robbery::talk(
+        let robbery = bank_robbery::talk(
             admission,
-            actor,
             command,
             &intent,
-            &context,
+            context.clone(),
             _trade_permit.as_ref(),
             native,
         )
-        .await
+        .await;
+        #[cfg(test)]
+        if robbery.is_some()
+            && let Ok((observed, displaced)) = ROBBERY_DIALOGUE_OBSERVED.try_with(Clone::clone)
         {
-            return outcome;
+            observed.notify_one();
+            displaced.notified().await;
         }
         runtime = admission.runtime.lock().await;
+        // The robbery lookup ran without the runtime lock. Qualify the reply
+        // again before publishing its Open state.
         if conversations.current_npc(&admission.states.chat, &runtime, actor, session, &intent)
             != Some(context)
         {
+            bank_robbery::clear(admission, session);
+            if let Some(mut outcome) = robbery
+                && (outcome.unknown || outcome.inventory_changed)
+            {
+                if let Some(conversation) = outcome.conversation.as_mut() {
+                    conversation.open = None;
+                }
+                return outcome;
+            }
             return rejected();
+        }
+        if let Some(outcome) = robbery {
+            return outcome;
         }
     } else {
         bank_robbery::clear(admission, session);
