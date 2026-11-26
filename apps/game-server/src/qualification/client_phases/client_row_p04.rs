@@ -187,7 +187,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use task_board::task_board::full::{Bounty, TalismanPath};
+    use task_board::task_board::full::{Bounty, DeliveryTask, KillTask, TalismanPath};
 
     #[test]
     fn p04_fresh_expectations_reject_self_consistent_wrong_replies() -> TestResult {
@@ -222,6 +222,22 @@ mod tests {
             |r| r.bounty_points += 1,
             |r| r.soulseals += 1,
             |r| r.weekly.expanded = true,
+            |r| {
+                r.weekly.kills.push(KillTask {
+                    race: "oteryn:creature.rat".into(),
+                    required: 1,
+                    current: 0,
+                })
+            },
+            |r| {
+                r.weekly.deliveries.push(DeliveryTask {
+                    item: 1,
+                    required: 1,
+                    current: 0,
+                    delivered: false,
+                })
+            },
+            |r| r.shop[0].kind = 1,
             |r| {
                 r.shop.pop();
             },
