@@ -1,4 +1,6 @@
 name: PR PostgreSQL harness
+# Keep this in sync with concurrency.group so reconcile can read it from display_title.
+run-name: pr-postgres-harness-${{ github.event.pull_request.number }}${{ ((github.event.action == 'labeled' && github.event.label.name != 'heavy-tests') || (github.event.action == 'edited' && github.event.changes.base == null)) && format('-label-{0}', github.run_id) || '' }}
 
 # Early signal only: runs the Merge Queue PostgreSQL harness on pull requests
 # that can change what it runs (the game-server crate and its path
@@ -736,33 +738,48 @@ jobs:
           # mirror the newest real run without cancelling it. While it is
           # pending the mirror fails; that run's reconcile job waits for this
           # run to finish and publishes last.
-          # The newest real run (its PostgreSQL scope job started and was not
-          # skipped) on this exact head, by workflow run creation, and the
-          # heavy-gate of its latest attempt; selective reruns keep the run's
-          # place. A run whose scope job is still queued is not known to be
-          # real and is passed over. Prints success/failure/..., pending or none.
+          # Use run creation order on this head, including after selective reruns.
+          # Only runs whose scope job started and was not skipped can publish a verdict.
           real_verdict() {
-            local runs run attempt jobs verdict
+            local runs run attempt status jobs scope verdict scope_filter gate_filter
+            scope_filter='[.[].jobs[] | select(.name == "PR early signal / PostgreSQL scope and routing")]
+              | if any(.[]; .status != "queued" and .conclusion != "skipped") then "real"
+                elif length == 0 then "missing" else "mirror" end'
+            gate_filter='[.[].jobs[] | select(.name == "heavy-gate" and .status == "completed")]
+              | max_by([.completed_at, .id]) | .conclusion // "pending"'
             runs=$(gh api --paginate --slurp \
               "repos/$REPOSITORY/actions/workflows/pr-postgres-harness.yml/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100" |
-              jq -r '[.[].workflow_runs[]] | sort_by([.created_at, .id]) | reverse | .[] | "\(.id) \(.run_attempt)"')
-            while read -r run attempt; do
+              jq -r '[.[].workflow_runs[]] | sort_by([.created_at, .id]) | reverse | .[] | "\(.id) \(.run_attempt) \(.status)"') || return 1
+            while read -r run attempt status; do
               [[ -n "$run" ]] || continue
-              jobs=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/attempts/$attempt/jobs?per_page=100")
-              verdict=$(jq -r '[.[].jobs[]] as $jobs
-                | if any($jobs[]; .name == "PR early signal / PostgreSQL scope and routing"
-                      and .status != "queued" and .conclusion != "skipped") | not then "mirror"
-                  else [$jobs[] | select(.name == "heavy-gate" and .status == "completed")]
-                    | if length == 0 then "pending" else (max_by([.completed_at, .id]) | .conclusion // "pending") end
-                  end' <<< "$jobs")
-              if [[ "$verdict" != 'mirror' ]]; then
+              jobs=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/attempts/$attempt/jobs?per_page=100") || return 1
+              scope=$(jq -r "$scope_filter" <<< "$jobs") || return 1
+              [[ "$scope" != 'mirror' ]] || continue
+              verdict=$(jq -r "$gate_filter" <<< "$jobs") || return 1
+              # A selective rerun can omit the scope job or the gate. Recover
+              # the scope from prior attempts, and reuse an older gate only
+              # after this run finishes.
+              if [[ "$scope" == 'missing' && "$attempt" -gt 1 ]] ||
+                 [[ "$scope" == 'real' && "$status" == 'completed' && "$verdict" == 'pending' ]]; then
+                jobs=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/jobs?filter=latest&per_page=100") || return 1
+                if [[ "$scope" == 'missing' ]]; then
+                  scope=$(jq -r "$scope_filter" <<< "$jobs") || return 1
+                fi
+                if [[ "$status" == 'completed' && "$verdict" == 'pending' ]]; then
+                  verdict=$(jq -r "$gate_filter" <<< "$jobs") || return 1
+                fi
+              fi
+              if [[ "$scope" == 'real' ]]; then
                 echo "$verdict"
                 return
               fi
             done <<< "$runs"
             echo none
           }
-          conclusion=$(real_verdict)
+          if ! conclusion=$(real_verdict); then
+            echo 'Could not verify heavy-gate; the real heavy-tests run may be still running.'
+            exit 1
+          fi
           if [[ "$conclusion" == 'pending' || "$conclusion" == 'none' ]]; then
             echo 'The real heavy-tests run is still running and will publish the final heavy-gate.'
             exit 1
@@ -851,7 +868,7 @@ jobs:
   # heavy_gate. This second heavy-gate publishes last. It trusts needs.* only
   # where heavy-gate itself would: when heavy-tests is live on an eligible PR,
   # it republishes the newest real run's verdict, and in a real run it first
-  # waits until every other run of this workflow on the head has finished.
+  # waits for other runs of this workflow on the head that can finish.
   # It always runs: a skipped heavy-gate check must never follow a failed one.
   heavy_gate_reconcile:
     name: heavy-gate
@@ -874,26 +891,38 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          # The newest real run (its PostgreSQL scope job started and was not
-          # skipped) on this exact head, by workflow run creation, and the
-          # heavy-gate of its latest attempt; selective reruns keep the run's
-          # place. A run whose scope job is still queued is not known to be
-          # real and is passed over. Prints success/failure/..., pending or none.
+          # Use run creation order on this head, including after selective reruns.
+          # Only runs whose scope job started and was not skipped can publish a verdict.
           real_verdict() {
-            local runs run attempt jobs verdict
+            local runs run attempt status jobs scope verdict scope_filter gate_filter
+            scope_filter='[.[].jobs[] | select(.name == "PR early signal / PostgreSQL scope and routing")]
+              | if any(.[]; .status != "queued" and .conclusion != "skipped") then "real"
+                elif length == 0 then "missing" else "mirror" end'
+            gate_filter='[.[].jobs[] | select(.name == "heavy-gate" and .status == "completed")]
+              | max_by([.completed_at, .id]) | .conclusion // "pending"'
             runs=$(gh api --paginate --slurp \
               "repos/$REPOSITORY/actions/workflows/pr-postgres-harness.yml/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100" |
-              jq -r '[.[].workflow_runs[]] | sort_by([.created_at, .id]) | reverse | .[] | "\(.id) \(.run_attempt)"')
-            while read -r run attempt; do
+              jq -r '[.[].workflow_runs[]] | sort_by([.created_at, .id]) | reverse | .[] | "\(.id) \(.run_attempt) \(.status)"') || return 1
+            while read -r run attempt status; do
               [[ -n "$run" ]] || continue
-              jobs=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/attempts/$attempt/jobs?per_page=100")
-              verdict=$(jq -r '[.[].jobs[]] as $jobs
-                | if any($jobs[]; .name == "PR early signal / PostgreSQL scope and routing"
-                      and .status != "queued" and .conclusion != "skipped") | not then "mirror"
-                  else [$jobs[] | select(.name == "heavy-gate" and .status == "completed")]
-                    | if length == 0 then "pending" else (max_by([.completed_at, .id]) | .conclusion // "pending") end
-                  end' <<< "$jobs")
-              if [[ "$verdict" != 'mirror' ]]; then
+              jobs=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/attempts/$attempt/jobs?per_page=100") || return 1
+              scope=$(jq -r "$scope_filter" <<< "$jobs") || return 1
+              [[ "$scope" != 'mirror' ]] || continue
+              verdict=$(jq -r "$gate_filter" <<< "$jobs") || return 1
+              # A selective rerun can omit the scope job or the gate. Recover
+              # the scope from prior attempts, and reuse an older gate only
+              # after this run finishes.
+              if [[ "$scope" == 'missing' && "$attempt" -gt 1 ]] ||
+                 [[ "$scope" == 'real' && "$status" == 'completed' && "$verdict" == 'pending' ]]; then
+                jobs=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/jobs?filter=latest&per_page=100") || return 1
+                if [[ "$scope" == 'missing' ]]; then
+                  scope=$(jq -r "$scope_filter" <<< "$jobs") || return 1
+                fi
+                if [[ "$status" == 'completed' && "$verdict" == 'pending' ]]; then
+                  verdict=$(jq -r "$gate_filter" <<< "$jobs") || return 1
+                fi
+              fi
+              if [[ "$scope" == 'real' ]]; then
                 echo "$verdict"
                 return
               fi
@@ -911,7 +940,12 @@ jobs:
             while :; do
               others=$(gh api --paginate --slurp \
                 "repos/$REPOSITORY/actions/workflows/pr-postgres-harness.yml/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100" |
-                jq -r --arg own "$GITHUB_RUN_ID" '[.[].workflow_runs[] | select((.id | tostring) != $own and .status != "completed")] | length')
+                jq -r --arg own "$GITHUB_RUN_ID" --arg group "pr-postgres-harness-$PR_NUMBER" '
+                  [.[].workflow_runs[]
+                   | select((.id | tostring) != $own and .status != "completed")
+                   | select((.display_title == $group and
+                             (.status == "queued" or .status == "pending" or .status == "waiting")) | not)]
+                  | length')
               [[ "$others" == '0' ]] && break
               if (( waited >= 54 )); then
                 echo "$others other run(s) on this head are still running; the last of them publishes heavy-gate"
