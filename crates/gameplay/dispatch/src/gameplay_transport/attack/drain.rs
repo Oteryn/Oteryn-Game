@@ -23,7 +23,7 @@ use crate::world_runtime::LocalObjectRuntime;
 use oteryn_gameplay_combat_rules::attack::formulas::player_monk_formula;
 use oteryn_gameplay_combat_rules::attack::target::Swing;
 use oteryn_gameplay_combat_rules::resolution::{
-    creature_physical_response, creature_physically_immune,
+    creature_melee_mitigation, creature_physical_resistance, creature_physically_immune,
     equipped_offence::{CRITICAL_ROLL_MAX, CRITICAL_ROLL_MIN},
     swing_mitigated,
 };
@@ -879,54 +879,62 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let blocked = selected.weapon.ranged.is_none()
                     && blocks[index].1.try_block(&constants.block, swing.at);
+                let melee_damage = |physical| {
+                    creature_melee_damage(
+                        &snapshot.state.policy,
+                        physical,
+                        blocked,
+                        armor,
+                        |damage, blocked, armor| {
+                            creature_mitigated(
+                                &root,
+                                constants,
+                                entry.actor,
+                                swing.lineage,
+                                ordinal,
+                                damage,
+                                blocked,
+                                defense,
+                                armor,
+                            )
+                        },
+                    )
+                };
                 if selected.weapon.ranged.is_none() && offence.elemental_conversion.is_some() {
-                    ranged_magnitude = {
-                        use crate::content::ProjectV2RangedElement as E;
-                        offence.convert_physical(damage, 0, E::Physical).and_then(|(physical, elemental, element)| {
-                        let physical = creature_mitigated(&root, constants, entry.actor, swing.lineage, ordinal, physical, blocked, defense, armor)?;
-                        let physical = creature_physical_response(&snapshot.state.policy, physical)?;
-                        let key = match element {E::Fire=>"fire",E::Earth=>"earth",E::Ice=>"ice",E::Energy=>"energy",E::Death=>"death",E::Physical=>"physical"};
-                        let elemental = oteryn_gameplay_combat_rules::resolution::creature_damage_response(&snapshot.state.policy, elemental, key)?;
-                        resolved_element = element;
-                        Some([physical,elemental])
-                    })
-                    };
+                    use crate::content::ProjectV2RangedElement as E;
+                    ranged_magnitude = offence.convert_physical(damage, 0, E::Physical).and_then(
+                        |(physical, elemental, element)| {
+                            let (_, physical) = melee_damage(physical)?;
+                            let key = match element {
+                                E::Fire => "fire",
+                                E::Earth => "earth",
+                                E::Ice => "ice",
+                                E::Energy => "energy",
+                                E::Death => "death",
+                                E::Physical => "physical",
+                            };
+                            let elemental =
+                                oteryn_gameplay_combat_rules::resolution::creature_damage_response(
+                                    &snapshot.state.policy,
+                                    elemental,
+                                    key,
+                                )?;
+                            resolved_element = element;
+                            Some([physical, elemental])
+                        },
+                    );
                 }
-                let Some(magnitude) = (if selected.weapon.ranged.is_some()
+                let Some((magnitude, landed)) = (if selected.weapon.ranged.is_some()
                     || offence.elemental_conversion.is_some()
                 {
-                    ranged_magnitude.and_then(|parts| parts[0].checked_add(parts[1]))
+                    ranged_magnitude
+                        .and_then(|parts| parts[0].checked_add(parts[1]))
+                        .map(|total| (total, total))
                 } else {
-                    creature_mitigated(
-                        &root,
-                        constants,
-                        entry.actor,
-                        swing.lineage,
-                        ordinal,
-                        damage,
-                        blocked,
-                        defense,
-                        armor,
-                    )
+                    melee_damage(damage)
                 }) else {
                     continue;
                 };
-                // CREATURE-RESIST-MELEE-1: the creature's mitigation and physical response shape
-                // what passed its defence and armor (`Creature::mitigateDamage`, `Monster::blockHit`).
-                // Training already counted the swing by its block, so it trains by `magnitude`.
-                let landed =
-                    if selected.weapon.ranged.is_some() || offence.elemental_conversion.is_some() {
-                        magnitude
-                    } else if magnitude > 0 {
-                        let Some(landed) =
-                            creature_physical_response(&snapshot.state.policy, magnitude)
-                        else {
-                            continue;
-                        };
-                        landed
-                    } else {
-                        magnitude
-                    };
                 let landed = if selected.weapon.ranged.is_none() {
                     let Some(parts) = finish_melee_components(
                         ranged_magnitude.unwrap_or([landed, 0]),
@@ -1665,19 +1673,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
                 .map(i64::from)
         } else {
-            swing_mitigated(
-                root,
-                constants,
-                hit.actor.placement_identity(),
-                (
-                    *hit.lineage.game_session_id().as_bytes(),
-                    hit.lineage.command_id().get(),
-                ),
-                hit.ordinal,
-                physical_raw,
-                defence,
-                armor,
-            )
+            let reduce = |damage, defence, armor| {
+                swing_mitigated(
+                    root,
+                    constants,
+                    hit.actor.placement_identity(),
+                    (
+                        *hit.lineage.game_session_id().as_bytes(),
+                        hit.lineage.command_id().get(),
+                    ),
+                    hit.ordinal,
+                    damage,
+                    defence,
+                    armor,
+                )
+            };
+            reduce(physical_raw, defence, 0).and_then(|damage| {
+                player_melee_after_defence(damage, protection, |protected| {
+                    reduce(protected, None, armor)
+                })
+            })
         }) else {
             return;
         };
@@ -1760,12 +1775,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .as_ref()
                 .and_then(|read| read.protections.get(&kind).copied())
                 .or_else(|| {
-                    if hit.weapon.ranged.is_none() {
-                        if kind == Kind::Physical {
-                            protection
-                        } else {
-                            target.equipped_element_protection(kind)
-                        }
+                    if hit.weapon.ranged.is_none() && kind != Kind::Physical {
+                        target.equipped_element_protection(kind)
                     } else {
                         None
                     }
@@ -2087,6 +2098,39 @@ pub(super) fn select_swing(
     })
 }
 
+fn player_melee_after_defence(
+    damage: i64,
+    protection: impl IntoIterator<Item = crate::content::ReferenceRationalPercent>,
+    armor: impl FnOnce(i64) -> Option<i64>,
+) -> Option<i64> {
+    let protected = protection.into_iter().try_fold(damage, |damage, percent| {
+        percent.validate().ok()?;
+        let denominator = 100 * i128::from(percent.denominator);
+        let reduction = i128::from(percent.numerator).clamp(-denominator, denominator);
+        let remaining = i128::from(damage).checked_mul(denominator - reduction)? / denominator;
+        i64::try_from(remaining).ok()
+    })?;
+    armor(protected)
+}
+
+/// The amount after defence and armor drives training, before the creature's mitigation.
+pub(super) fn creature_melee_damage(
+    policy: &oteryn_gameplay_content::content::creature_policy::CompiledCreaturePolicy,
+    damage: i64,
+    blocked: bool,
+    armor: u32,
+    reduce: impl Fn(i64, bool, u32) -> Option<i64>,
+) -> Option<(i64, i64)> {
+    let defended = reduce(damage, blocked, 0)?;
+    if defended == 0 {
+        return Some((0, 0));
+    }
+    let resisted = creature_physical_resistance(policy, defended)?;
+    let armored = reduce(resisted, false, armor)?;
+    let landed = creature_melee_mitigation(policy, armored)?;
+    Some((armored, landed))
+}
+
 fn melee_swing_formula(
     constants: &AttackConstants,
     vocation: crate::spell::Vocation,
@@ -2120,7 +2164,7 @@ fn melee_swing_formula(
     }
 }
 
-fn draw_swing_damage(
+pub(super) fn draw_swing_damage(
     entry: &mut ActorAttack,
     runtime: &ChannelRuntimeV1,
     selected: &SelectedSwing,
@@ -2141,7 +2185,6 @@ fn draw_swing_damage(
             .state
             .record_hit(swing.at, constants.in_fight_micros());
     }
-    let mode = constants.fight_mode(fight_mode(entry.modes.fight_mode));
     let (formula, attack_value, revision) = if let Some(ranged) = &selected.weapon.ranged {
         let from = runtime.read_actor_position(entry.actor).ok()?.position();
         let to = runtime.read_actor_position(target).ok()?.position();
@@ -2172,7 +2215,7 @@ fn draw_swing_damage(
         base_power: None,
         attack_skill: skills.attack,
         attack_value,
-        attack_factor: mode.attack_factor,
+        attack_factor: AttackConstants::PLAYER_ATTACK_FACTOR,
         shielding_skill: skills.shielding,
         shield_defense: None,
     };
@@ -2464,6 +2507,30 @@ fn reported_primary(parts: [i64; 2], committed: u32) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::{melee_swing_formula, swing_lands};
+
+    #[test]
+    fn global_parity_wiki_200_damage_with_zaoan_helmet_protection_amulet_and_armor_9()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::ReferenceRationalPercent;
+        use oteryn_gameplay_combat_rules::resolution::player_armor_mitigated;
+
+        let constants = super::AttackConstants::checked_in().ok_or("attack constants")?;
+        let helmet = ReferenceRationalPercent::new(5, 1)?;
+        let amulet = ReferenceRationalPercent::new(6, 1)?;
+        let helmet_only = super::player_melee_after_defence(200, [helmet], Some);
+        assert_eq!(helmet_only, Some(190));
+        for (draw, expected) in (0..4).zip([174, 173, 172, 171]) {
+            let actual = super::player_melee_after_defence(200, [helmet, amulet], |protected| {
+                assert_eq!(protected, 178);
+                let protected = u32::try_from(protected).ok()?;
+                Some(i64::from(player_armor_mitigated(
+                    constants, protected, 9, draw,
+                )))
+            });
+            assert_eq!(actual, Some(expected));
+        }
+        Ok(())
+    }
 
     #[test]
     fn t174_converted_melee_wheel_preserves_both_mitigated_components()

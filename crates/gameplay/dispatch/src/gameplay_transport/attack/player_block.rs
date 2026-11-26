@@ -57,7 +57,7 @@ impl ChannelAttackStates {
             return None;
         }
         Some((
-            fight_mode(entry.modes.fight_mode),
+            FightMode::Offensive,
             entry
                 .state
                 .swung_within_interval(now, constants.attack_interval_micros()),

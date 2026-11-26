@@ -106,15 +106,15 @@ fn inputs(level: u32, skill: u32, attack: u32) -> FormulaInputs {
         base_power: None,
         attack_skill: skill,
         attack_value: attack,
-        attack_factor: table().fight_mode(FightMode::Offensive).attack_factor,
+        attack_factor: table().fight_modes.offensive.attack_factor,
         shielding_skill: 0,
         shield_defense: None,
     }
 }
 
 #[test]
-fn offensive_is_the_unit_factor_the_fixtures_bind() {
-    assert_eq!(table().fight_mode(FightMode::Offensive).attack_factor, 1.0);
+fn archived_offensive_input_is_the_unit_factor_the_fixtures_bind() {
+    assert_eq!(table().fight_modes.offensive.attack_factor, 1.0);
     let fixture = fixture();
     for row in fixture["rows"].as_array().unwrap() {
         assert_eq!(row["oteryn_fight_mode"], "OFFENSIVE");

@@ -20,7 +20,7 @@ fn a_player_blocks_two_creature_hits_then_refills_one_per_second() {
             .attack
             .take_player_block(&owner.runtime, player, session, at(now))
     };
-    let blocked = Some((FightMode::Defensive, false));
+    let blocked = Some((FightMode::Offensive, false));
     assert_eq!(take(T0), blocked);
     assert_eq!(take(T0), blocked);
     assert_eq!(take(T0 + 999_999), None, "two blocks, then armor only");
