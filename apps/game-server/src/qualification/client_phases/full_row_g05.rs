@@ -1,7 +1,11 @@
 //! G05 delegates local settings persistence to the native client's app-level test.
 use super::*;
+use oteryn_dev_client::client_ui::reference_preferences;
 
-const SETTINGS_TEST: &str = "e2e_n05_settings_export_import_backup_defaults_and_corrupt_file";
+const SETTINGS_TEST: &str = concat!(
+    "play::feature_local_reference_preferences::settings::sync::e2e_n05::",
+    "e2e_n05_settings_export_import_backup_defaults_and_corrupt_file",
+);
 
 pub(super) async fn run_packet(_clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -24,6 +28,11 @@ pub(super) async fn run_packet(_clients: &SeamClients<'_>) {
 }
 
 async fn client_settings() -> TestResult {
+    if reference_preferences::open_key(&[]) {
+        return Err("step=open-key observed=fired-without-input".into());
+    }
+    evidence("G05_SETTINGS_SHORTCUT_CHECK PASS input=empty");
+
     let output = tokio::task::spawn_blocking(|| {
         std::process::Command::new("timeout")
             .args([
@@ -38,6 +47,7 @@ async fn client_settings() -> TestResult {
                 "--lib",
                 SETTINGS_TEST,
                 "--",
+                "--exact",
                 "--format",
                 "pretty",
             ])
@@ -46,13 +56,14 @@ async fn client_settings() -> TestResult {
     })
     .await??;
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let passed = stdout.lines().any(|line| {
-        line.starts_with("test ") && line.ends_with(&format!("::{SETTINGS_TEST} ... ok"))
-    }) && stdout
-        .lines()
-        .any(|line| line.starts_with("test result: ok. 1 passed; 0 failed; 0 ignored;"));
+    print!("{stdout}");
+    let passed_line = format!("test {SETTINGS_TEST} ... ok");
+    let passed = stdout.lines().any(|line| line == passed_line)
+        && stdout
+            .lines()
+            .any(|line| line.starts_with("test result: ok. 1 passed; 0 failed; 0 ignored;"));
     if !output.status.success() || !passed {
-        eprintln!("{stdout}{}", String::from_utf8_lossy(&output.stderr));
+        eprint!("{}", String::from_utf8_lossy(&output.stderr));
         return Err(format!("step=client-settings observed={}", output.status).into());
     }
     Ok(())
