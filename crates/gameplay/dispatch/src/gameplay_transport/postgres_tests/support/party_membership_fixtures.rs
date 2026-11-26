@@ -56,9 +56,14 @@ pub(super) fn run_fanout_notices(admin: String) -> TestResult {
     run_with_admin(admin, false, false, false, false, Some(NoticeCase::Fanout), None)
 }
 
+pub(super) fn run_leader_joined_notice(admin: String) -> TestResult {
+    run_with_admin(admin, false, false, false, false, Some(NoticeCase::LeaderJoined), None)
+}
+
 #[derive(Clone, Copy)]
 enum NoticeCase {
     Fanout,
+    LeaderJoined,
     JoinLeave,
     InviteDisband,
 }
@@ -540,8 +545,11 @@ async fn scenario(
             SelectedCapabilities::select(owner.offered_capabilities(), &[6, 42])
                 .ok_or("party offer")?;
     }
-    if matches!(notices, Some(NoticeCase::Fanout)) {
-        return invite_disband::check_fanout(&owner, &mut admitted, targets[1], characters, h).await;
+    if matches!(notices, Some(NoticeCase::Fanout | NoticeCase::LeaderJoined)) {
+        return invite_disband::check_fanout(
+            &owner, &mut admitted, targets[1], characters, h,
+            matches!(notices, Some(NoticeCase::LeaderJoined)),
+        ).await;
     }
     if matches!(notices, Some(NoticeCase::InviteDisband)) {
         return invite_disband::check(&owner, &mut admitted, targets[1], characters[0]).await;
