@@ -257,5 +257,5 @@ if __name__ == "__main__":
             selected, _ = selected_rows(os.environ.get("OTERYN_E2E_ROW_BATCH"))
         except ValueError:
             sys.exit(0)  # Batch validation owns malformed selectors.
-        sys.exit(int("I07.client" in selected))
+        sys.exit(int(bool({"I07.client", "I07.full"} & selected)))
     sys.exit(main(Path(args[-1]), os.environ.get("OTERYN_E2E_ROW_BATCH"), mode == "--validate", mode=mode))

@@ -6,8 +6,11 @@ use oteryn_protocol_oteryn::quick_loot::{
 };
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result =
-        verdict::indexed_timeout(Duration::from_secs(30), verdict::observe(journey(clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(30),
+        verdict::observe(capture_journey(clients)),
+    )
+    .await;
     let result = result.unwrap_or_else(|_| Err("I07 client capture timed out".into()));
     evidence(&format!(
         "e2e_all scenario=I07.client status={}",
@@ -145,6 +148,7 @@ enum Storage {
     Corpse,
     Backpack,
     InboxPouch,
+    Quiver,
 }
 
 async fn placements(
@@ -159,7 +163,7 @@ async fn placements(
             "game_item_container_entries",
             "AND e.character_id=encode($2,'hex')::uuid",
         ),
-        Storage::InboxPouch => ("game_item_nested_entries", ""),
+        Storage::InboxPouch | Storage::Quiver => ("game_item_nested_entries", ""),
     };
     let query = format!(
         "SELECT uuid_send(i.item_instance_id), i.definition_production_key, i.quantity, e.placement_ordinal::bigint
@@ -274,7 +278,7 @@ async fn require_routes(
 }
 
 struct Capture<'a> {
-    directory: &'a Path,
+    directory: Option<&'a Path>,
     previous: (u64, u64),
 }
 
@@ -326,33 +330,35 @@ impl Capture<'_> {
             )
             .into());
         }
-        write_capture(
-            &self.directory.join(format!("i07-{key}-request.bin")),
-            &payload,
-        )?;
-        write_capture(
-            &self.directory.join(format!("i07-{key}.json")),
-            &capture_envelope(
-                session.as_bytes(),
-                reply.command_id,
-                reply.server_sequence,
-                reply.status,
-                &reply.payload,
-            )?,
-        )?;
+        if let Some(directory) = self.directory {
+            write_capture(&directory.join(format!("i07-{key}-request.bin")), &payload)?;
+            write_capture(
+                &directory.join(format!("i07-{key}.json")),
+                &capture_envelope(
+                    session.as_bytes(),
+                    reply.command_id,
+                    reply.server_sequence,
+                    reply.status,
+                    &reply.payload,
+                )?,
+            )?;
+        }
         Ok(())
     }
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult {
+async fn capture_journey(clients: &SeamClients<'_>) -> TestResult {
+    let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .ok_or("I07 requires a fresh E2E_ALL_CAPTURE_DIR")?;
+    journey(clients, Some(Path::new(&directory))).await
+}
+
+pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path>) -> TestResult {
     use sqlx::Connection as _;
     const FILTERS: [(bool, &str); 2] = [
         (false, "oteryn:item.tibia.i3577"),
         (true, "oteryn:item.tibia.i3357"),
     ];
-    let capture_dir = std::env::var_os("E2E_ALL_CAPTURE_DIR")
-        .ok_or("I07 requires a fresh E2E_ALL_CAPTURE_DIR")?;
-    let capture_dir = Path::new(&capture_dir);
     let index = provisioning::item_index()?;
     let skip_reference = provisioning::item_reference(&index, 3577)?.get();
     let gold_reference = provisioning::item_reference(&index, 3031)?.get();
@@ -360,7 +366,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let dedicated = character_prep::dedicated_named_character(
         clients,
         "NODE_BOOT_I07_ACCOUNT",
-        Some("Quick Loot Tester"),
+        Some(if capture_dir.is_some() {
+            "Quick Loot Tester"
+        } else {
+            "Quick Loot Full"
+        }),
     )
     .await?;
     let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
@@ -870,6 +880,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     evidence("I07_SELECTED_CLICK sibling=retained foreign_item=rejected");
+    let quiver = if capture_dir.is_none() {
+        Some(exercise_quiver(&mut fresh, &mut database, character, &backpack).await?)
+    } else {
+        None
+    };
     require_logout(&mut fresh).await?;
     drop(fresh);
     let mut readback = connect_world(clients, 0x07).await?;
@@ -950,21 +965,36 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     evidence("I07_CLIENT_INVENTORY final_relog=exact_definitions_and_quantities");
+    if let Some((quiver, arrows)) = quiver {
+        require_quiver(&mut database, character, &quiver, &arrows).await?;
+        let index = provisioning::item_index()?;
+        let definition = provisioning::item_reference(&index, 35562)?;
+        if !inventory
+            .equipment
+            .iter()
+            .any(|entry| entry.item.item_definition_ref == definition)
+        {
+            return Err("I07 full relog inventory omitted the equipped quiver".into());
+        }
+        evidence("I07_FULL_QUIVER arrows=7 backpack_debit=7 after_relog=true");
+    }
     require_logout(&mut readback).await?;
     evidence(
         "I07_LOOT_CUSTODY final_relog=true exact_ids_counts_slots=true pouch=inbox backpack=equipped click_sibling=retained skip_listed=retained",
     );
     let fresh_session = uuid_text(fresh_session.as_bytes());
-    write_capture(
-        &capture_dir.join("i07-expected.txt"),
-        &serde_json::to_vec(&serde_json::json!({
-            "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "corpse": corpse_id,
-            "coin": coin.item, "armor": armor.item, "filtered": filtered.item, "spare": spare.item, "other": other.item,
-        }))?,
-    )?;
-    evidence(&format!(
-        "I07_LIVE_CAPTURE session={session} relog={fresh_session}"
-    ));
+    if let Some(capture_dir) = capture_dir {
+        write_capture(
+            &capture_dir.join("i07-expected.txt"),
+            &serde_json::to_vec(&serde_json::json!({
+                "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "corpse": corpse_id,
+                "coin": coin.item, "armor": armor.item, "filtered": filtered.item, "spare": spare.item, "other": other.item,
+            }))?,
+        )?;
+        evidence(&format!(
+            "I07_LIVE_CAPTURE session={session} relog={fresh_session}"
+        ));
+    }
     Ok(())
 }
 
@@ -976,4 +1006,80 @@ async fn require_logout(client: &mut oteryn_dev_client::DevClientSession) -> Tes
         return Err(format!("I07 first-attempt logout refused: {logout:?}").into());
     }
     Ok(())
+}
+
+async fn require_quiver(
+    database: &mut sqlx::PgConnection,
+    character: &[u8],
+    quiver: &[u8],
+    arrows: &[Placement],
+) -> TestResult {
+    // Storage slot 6 is the quiver's shield-hand slot, independent of wire slot numbers.
+    let worn: Option<Vec<u8>> = sqlx::query_scalar(
+        "SELECT uuid_send(item_instance_id) FROM game_character_equipment_slots
+         WHERE character_id=encode($1,'hex')::uuid AND slot=6",
+    )
+    .bind(character)
+    .fetch_optional(&mut *database)
+    .await?;
+    if worn.as_deref() != Some(quiver) {
+        return Err(format!("I07 quiver equipment custody differs: {worn:?}").into());
+    }
+    require_placements(database, Storage::Quiver, character, quiver, arrows).await
+}
+
+async fn exercise_quiver(
+    client: &mut oteryn_dev_client::DevClientSession,
+    database: &mut sqlx::PgConnection,
+    character: &[u8],
+    backpack: &[u8],
+) -> TestResult<(Vec<u8>, [Placement; 1])> {
+    use oteryn_dev_client::{ItemMoveOutcome, client_runtime::hotkey_equip::equip_definition};
+
+    let before = placements(database, Storage::Backpack, character, backpack).await?;
+    character_prep::grant_item(client, 35562, 1).await?;
+    character_prep::grant_item(client, 3447, 7).await?;
+    evidence("FIXTURE I07.full quiver=35562 arrows=3447 count=7");
+    let seeded = placements(database, Storage::Backpack, character, backpack).await?;
+    let added: Vec<_> = seeded
+        .iter()
+        .filter(|item| !before.contains(item))
+        .collect();
+    let [quiver, arrows] = added.as_slice() else {
+        return Err("I07 full fixture must add exactly two unequipped items".into());
+    };
+    if (
+        quiver.key.as_str(),
+        quiver.quantity,
+        arrows.key.as_str(),
+        arrows.quantity,
+    ) != ("oteryn:item.tibia.i35562", 1, "oteryn:item.tibia.i3447", 7)
+    {
+        return Err(format!("I07 full fixture custody differs: {added:?}").into());
+    }
+    let index = provisioning::item_index()?;
+    let quiver_definition = provisioning::item_reference(&index, 35562)?;
+    let arrow_definition = provisioning::item_reference(&index, 3447)?;
+
+    let reply = equip_definition(client.session_mut(), arrow_definition).await?;
+    if reply != ItemMoveOutcome::SlotMismatch {
+        return Err(format!("I07 arrows without equipped quiver: {reply:?}").into());
+    }
+    require_placements(database, Storage::Backpack, character, backpack, &seeded).await?;
+    let reply = equip_definition(client.session_mut(), quiver_definition).await?;
+    if reply != ItemMoveOutcome::Moved {
+        return Err(format!("I07 equip quiver: {reply:?}").into());
+    }
+    require_quiver(database, character, &quiver.item, &[]).await?;
+
+    let reply = equip_definition(client.session_mut(), arrow_definition).await?;
+    if reply != ItemMoveOutcome::Moved {
+        return Err(format!("I07 equip arrows into quiver: {reply:?}").into());
+    }
+    let mut credited = (*arrows).clone();
+    credited.slot = 1;
+    let credited = [credited];
+    require_quiver(database, character, &quiver.item, &credited).await?;
+    require_placements(database, Storage::Backpack, character, backpack, &before).await?;
+    Ok((quiver.item.clone(), credited))
 }

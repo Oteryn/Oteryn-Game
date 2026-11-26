@@ -235,6 +235,8 @@ include!("full_row_e06_mount.rs");
 include!("full_row_i11_mount.rs");
 include!("full_row_i10_mount.rs");
 include!("full_row_i05_mount.rs");
+#[path = "full_row_i07.rs"]
+mod full_row_i07;
 include!("full_row_m11b_mount.rs");
 include!("full_row_m11a_mount.rs");
 include!("full_row_m08_mount.rs");
@@ -3395,6 +3397,13 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(306) {
                 full_e2ef20::greet_ten(clients, world, &metadata.npcs).await;
+            }
+            if e2e_row_selected(307) {
+                verdict::indexed("I07.full", async {
+                    full_row_i07::run_packet(clients).await;
+                    release_row_characters(clients).await
+                })
+                .await;
             }
         }
         for index in 0..clients.accounts.len() {
