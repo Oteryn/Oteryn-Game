@@ -30,7 +30,12 @@ fn scenario_case(
     let koshei = name == super::super::koshei_the_deathless_journey_fixtures::NAME;
     use super::super::new_frontier_journey_fixtures;
     let recover_bait = name == new_frontier_journey_fixtures::BAIT_RECOVERY;
-    let frontier = name == new_frontier_journey_fixtures::NAME || recover_bait;
+    let frontier = matches!(
+        name,
+        new_frontier_journey_fixtures::NAME
+            | new_frontier_journey_fixtures::BAIT_RECOVERY
+            | new_frontier_journey_fixtures::POLISHER_RETRY
+    );
     let sarina_vine = name.starts_with("thieves-guild-sarina-vine-");
     let vampire_coffin = super::super::inquisition_coffin_recovery_fixtures::matches(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
@@ -1500,7 +1505,7 @@ fn scenario_case(
         let initial_level: Option<u32> = match name {
             super::super::koshei_the_deathless_journey_fixtures::NAME => Some(150),
             // The settlement journey includes combat with a classed starter loadout.
-            new_frontier_journey_fixtures::NAME => Some(8),
+            new_frontier_journey_fixtures::NAME | new_frontier_journey_fixtures::POLISHER_RETRY => Some(8),
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
             "questpc7-eligibility-high" | "questpc7-eligibility-outfit-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
@@ -2055,7 +2060,7 @@ fn scenario_case(
             },
             ..crate::durability::starter_grant::StarterTemplate::main()
         };
-        if name == super::super::new_frontier_journey_fixtures::NAME {
+        if frontier && !recover_bait {
             let build = h.root.read_character_build_state(&authority, fence.character_id).await.map_err(debug)?;
             super::super::annihilator_combat::prepare_supplies(&owner, &admitted, &build, false).await?;
         } else {
@@ -3064,7 +3069,7 @@ fn scenario_case(
             .await?;
         } else if frontier {
             Box::pin(
-                new_frontier_journey_fixtures::exercise(&mut owner, &mut admitted, &h, recover_bait),
+                new_frontier_journey_fixtures::exercise(&mut owner, &mut admitted, &h, name),
             ).await?;
         } else if name == "authored-secret-library" {
             Box::pin(super::super::questpc8_secret_library_fixtures::exercise(

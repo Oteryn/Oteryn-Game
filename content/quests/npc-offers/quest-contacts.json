@@ -322,6 +322,30 @@
       ]
     },
     {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "I don't think that's a very convincing argument. I have nothing more to say about {farmine}."
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 14,
+          "maximum": 14
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
       "npc": "oteryn:npc.oswald",
       "keywords": [
         "invitation"
