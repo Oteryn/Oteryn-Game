@@ -109,7 +109,15 @@ fn mint_spec(request: &RewardClaimInboxMintRequest) -> Result<Vec<u8>, RewardCla
     let mut outputs = Vec::with_capacity(request.outputs.len());
     for output in &request.outputs {
         validate_facts(&output.item).map_err(|_| RewardClaimInboxError::InvalidPlan)?;
-        if output.item.container_capacity.is_some() || output.item.container_slot_equip_pattern {
+        let item = &output.item;
+        // Keep this exception aligned with the SQL reservation guard in migration 3320.
+        let is_gold_pouch = item.definition.family == "Item"
+            && item.definition.production_key == "oteryn:item.tibia.i23721"
+            && item.definition.revision_ref == "definition-r1"
+            && item.container_capacity == Some(20)
+            && item.stack == ItemStackClass::NonStackable
+            && output.key_number.is_none();
+        if item.container_slot_equip_pattern || (item.container_capacity.is_some() && !is_gold_pouch) {
             return Err(RewardClaimInboxError::InvalidPlan);
         }
         let (maximum, _) =
