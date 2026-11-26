@@ -7,6 +7,7 @@ use oteryn_protocol_oteryn::charm::CharmAssignDisposition;
 use oteryn_protocol_oteryn::charm_progression::{
     self as wire, CharmProgressionAction, CharmProgressionOutcome, CharmProgressionReply,
 };
+use std::fmt::Write as _;
 use std::num::NonZeroU32;
 
 // The authored Rat approach is 208 wire steps. The client packet now runs a
@@ -26,6 +27,7 @@ async fn send(
     client: &mut DevClientSession,
     action: CharmProgressionAction,
     capture_name: &str,
+    frames: &mut String,
 ) -> TestResult<CharmProgressionReply> {
     let payload = wire::encode_charm_progression_request(&action)
         .map_err(|error| format!("encode {action:?}: {error:?}"))?;
@@ -45,17 +47,20 @@ async fn send(
     if reply.command_id != command_id {
         return Err(format!("{action:?} returned a different command ID").into());
     }
-    {
-        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-        let envelope = serde_json::to_vec(&serde_json::json!({
-            "command_id": reply.command_id,
-            "game_session_id": session,
-            "payload": reply.payload,
-            "server_sequence": reply.server_sequence,
-            "status": reply.status as u32,
-        }))?;
-        capture(capture_name, &envelope)?;
-    }
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let envelope = serde_json::to_vec(&serde_json::json!({
+        "command_id": reply.command_id,
+        "game_session_id": session,
+        "payload": reply.payload,
+        "server_sequence": reply.server_sequence,
+        "status": reply.status as u32,
+    }))?;
+    capture(capture_name, &envelope)?;
+    writeln!(
+        frames,
+        "{capture_name}={}:{}",
+        command_id, reply.server_sequence
+    )?;
     wire::decode_charm_progression_reply(&reply.payload)
         .map_err(|error| format!("decode {action:?}: {error:?}").into())
 }
@@ -84,10 +89,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .position(|(definition, _)| definition.key() == "oteryn:creature.rat")
         .ok_or("Rat is absent from the canonical Bestiary")?;
     let race = NonZeroU32::new(u32::try_from(rat_index)? + 1).ok_or("Rat race index")?;
+    let mut frames = String::new();
     let initial = send(
         &mut client,
         CharmProgressionAction::Query,
         "p01-initial.json",
+        &mut frames,
     )
     .await?;
     if initial.outcome != CharmProgressionOutcome::Query || kills(&initial, race) != 0 {
@@ -103,6 +110,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &mut client,
         CharmProgressionAction::Query,
         "p01-before.json",
+        &mut frames,
     )
     .await?;
     if before.outcome != CharmProgressionOutcome::Query || before.charms.charms.is_empty() {
@@ -123,6 +131,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &mut client,
         CharmProgressionAction::Assign { charm, race },
         "p01-refused.json",
+        &mut frames,
     )
     .await?;
     if refused.outcome != CharmProgressionOutcome::Assign(CharmAssignDisposition::CharmLocked)
@@ -137,7 +146,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "captured-rat-combat",
     );
     client_hunt::hunt(&mut client).await?;
-    let after = send(&mut client, CharmProgressionAction::Query, "p01-after.json").await?;
+    let after = send(
+        &mut client,
+        CharmProgressionAction::Query,
+        "p01-after.json",
+        &mut frames,
+    )
+    .await?;
     if after.outcome != CharmProgressionOutcome::Query {
         return Err(format!("post-hunt QUERY outcome {:?}", after.outcome).into());
     }
@@ -163,6 +178,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &mut fresh,
         CharmProgressionAction::Query,
         "p01-durable.json",
+        &mut frames,
     )
     .await?;
     if durable != after {
@@ -177,7 +193,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         after.charms.charm_points_available,
         locked.unlocked_stage
     );
-    capture("p01-expected.txt", expected.as_bytes())?;
+    frames.push_str(&expected);
+    capture("p01-expected.txt", frames.as_bytes())?;
     Ok(expected.replace('\n', ";"))
 }
 

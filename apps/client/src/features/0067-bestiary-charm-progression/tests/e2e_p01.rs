@@ -69,6 +69,7 @@ fn captured_reply(
     path: &std::path::Path,
     session: &str,
     previous: &mut (u64, u64),
+    expected: &str,
 ) -> Result<GatedCommandResult, Error> {
     let frame: Envelope = serde_json::from_slice(&std::fs::read(path)?)?;
     let parts: Vec<_> = session.split('-').collect();
@@ -84,6 +85,17 @@ fn captured_reply(
     if !uuid_v7 || frame.game_session_id != session {
         return Err(format!("{}: unexpected game session", path.display()).into());
     }
+    let (command_id, sequence) = expected
+        .split_once(':')
+        .ok_or("expected command ID and sequence")?;
+    let position = (frame.command_id, frame.server_sequence);
+    if position != (command_id.parse::<u64>()?, sequence.parse::<u64>()?) {
+        return Err(format!(
+            "{}: command ID or sequence differs from live capture",
+            path.display()
+        )
+        .into());
+    }
     if frame.command_id <= previous.0 || frame.server_sequence <= previous.1 {
         return Err(format!("{}: command ID or sequence did not advance", path.display()).into());
     }
@@ -94,7 +106,7 @@ fn captured_reply(
         )
         .into());
     }
-    *previous = (frame.command_id, frame.server_sequence);
+    *previous = position;
     Ok(GatedCommandResult {
         command_id: frame.command_id,
         status: CommandStatus::Accepted,
@@ -119,19 +131,19 @@ fn replies() -> Result<Replies, Box<dyn std::error::Error>> {
             return Err("relog capture reused the original session".into());
         }
         let mut previous = (0, 0);
+        let mut original =
+            |name| captured_reply(&path.join(name), session, &mut previous, field(name)?);
+        let durable = "p01-durable.json";
         return Ok(Replies {
-            initial: Some(captured_reply(
-                &path.join("p01-initial.json"),
-                session,
-                &mut previous,
-            )?),
-            before: captured_reply(&path.join("p01-before.json"), session, &mut previous)?,
-            refused: captured_reply(&path.join("p01-refused.json"), session, &mut previous)?,
-            after: captured_reply(&path.join("p01-after.json"), session, &mut previous)?,
+            initial: Some(original("p01-initial.json")?),
+            before: original("p01-before.json")?,
+            refused: original("p01-refused.json")?,
+            after: original("p01-after.json")?,
             durable: Some(captured_reply(
-                &path.join("p01-durable.json"),
+                &path.join(durable),
                 durable_session,
                 &mut (0, 0),
+                field(durable)?,
             )?),
             race: field("race")?.parse()?,
             kills_before: field("kills_before")?.parse()?,
