@@ -145,6 +145,7 @@ pub(super) fn analyser_scenario() -> TestResult {
         (None, None, None),
         true,
         None,
+        false,
     )
 }
 
@@ -165,7 +166,7 @@ pub(super) fn dwarf_letter_scenario(creature: &str) -> TestResult {
 
 pub(super) fn scenario_with_blocked_bounty_read() -> TestResult {
     scenario_with_creature_observed(
-        None, false, None, false, false, false, (None, None, None), false, true,
+        None, false, None, false, false, false, (None, None, None), false, None, true,
     )
 }
 

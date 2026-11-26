@@ -63,10 +63,10 @@ summarize() {
       printf "%s|%s|%s\n", substr($3, 10), substr($5, 8), reason
     }' < "$log") || return 1
 
-  grep -aE '^NODE_BOOT_PORTS ([A-Z_]+=[0-9]+ ?)+$' "$log" | sort -u || true
   if [[ "$result" == NODE_BOOT_PASS ]] && grep -qE '^[^|]+\.client\|FAIL\|' <<< "$rows"; then
     result=NODE_BOOT_FAIL
   fi
+  grep -aE '^NODE_BOOT_PORTS ([A-Z_]+=[0-9]+ ?)+$' "$log" | sort -u || true
   printf 'CLOUD_RUN group=%s result=%s seconds=%s\nROWS-BEGIN\n' "$group" "$result" "$seconds"
   [[ -z "$rows" ]] || printf '%s\n' "$rows"
   printf 'ROWS-END\n'
@@ -126,27 +126,24 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
-  (
-    if [[ "$group" == rows ]]; then
-      (
-        E2E_ALL_CAPTURE_DIR=$(mktemp -d "$work_dir/captures.XXXXXX") || exit 1
-        export E2E_ALL_CAPTURE_DIR
-        boot_status=0
-        NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
-          bash tools/qualification/node_boot/run.sh > "$log" 2>&1 || boot_status=$?
-        python3 tools/qualification/node_boot/client_replay.py "$log" \
-          | tee -a "$log"
-        replay_pipeline=("${PIPESTATUS[@]}")
-        (( boot_status == 0 && replay_pipeline[0] == 0 && replay_pipeline[1] == 0 ))
-      )
-    else
-      NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
-        bash tools/qualification/node_boot/run.sh > "$log" 2>&1
-    fi
-  ) &
+  capture_env=()
+  if [[ "$group" == rows ]]; then
+    capture_dir=$(mktemp -d "$work_dir/captures.XXXXXX") || blocked capture_dir_unavailable
+    capture_env=(E2E_ALL_CAPTURE_DIR="$capture_dir")
+  fi
+  env "${capture_env[@]}" NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
+    bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
+  if [[ "$group" == rows ]]; then
+    E2E_ALL_CAPTURE_DIR="$capture_dir" python3 tools/qualification/node_boot/client_replay.py "$log" \
+      | tee -a "$log"
+    replay_pipeline=("${PIPESTATUS[@]}")
+    if (( replay_pipeline[0] != 0 || replay_pipeline[1] != 0 )); then
+      status=1
+    fi
+  fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1
 done
