@@ -208,9 +208,12 @@ pub async fn serve_gameplay(
             return Ok(());
         }
     }
-    // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
-    // not the session's connection runs any other cadence. It never ends on its own.
-    let quest_retries = async {
+    // Recover retained boss awards before the listener and the other cadences
+    // start competing for the durability holder.
+    let _ = authority.reconcile_boss_achievement_queue().await;
+
+    // Retry deferred boss awards and QUEST-STATE-0 §5.4 obligations even in an empty Channel.
+    let owner_retries = async {
         loop {
             if first(
                 tokio::time::sleep(QUEST_RETRY_CADENCE),
@@ -221,6 +224,10 @@ pub async fn serve_gameplay(
             {
                 std::future::pending::<()>().await;
             }
+            let _ = authority
+                .root
+                .with_background_operation(authority.reconcile_boss_achievement_queue())
+                .await;
             authority.refresh_due_quest_sessions().await;
         }
     };
@@ -235,7 +242,7 @@ pub async fn serve_gameplay(
             shutdown,
             Some(drain),
         ),
-        DurabilityRoot::with_background_holder(quest_retries),
+        DurabilityRoot::with_background_holder(owner_retries),
     );
     let mut serving = pin!(serving);
     let cycles_stop = CancellationToken::new();

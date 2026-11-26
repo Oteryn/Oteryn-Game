@@ -228,14 +228,18 @@ impl PendingKillSettlement {
         self.boss_achievements.is_some()
     }
 
-    pub(super) async fn retain_boss_achievements_without_corpse(
+    fn has_corpse(&self) -> bool {
+        self.row
+            .as_ref()
+            .is_some_and(|row| row.corpse_item.is_some())
+    }
+
+    pub(super) async fn retain_boss_achievements(
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        skips_corpse: bool,
     ) -> Result<(), crate::durability::DurabilityError> {
-        if self
-            .row
-            .as_ref()
-            .is_none_or(|row| row.corpse_item.is_none())
+        if (skips_corpse || !self.has_corpse())
             && let Some(achievement) = self.boss_achievements.as_ref()
         {
             achievement.work.retain(tx, self.facts.death).await?;
@@ -3433,7 +3437,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             DrainOutcome::Drained
         }
     }
-    async fn reconcile_boss_achievement_queue(&self) -> DrainOutcome {
+    pub(super) async fn reconcile_boss_achievement_queue(&self) -> DrainOutcome {
         use std::sync::atomic::Ordering;
         let reconciled = &self.states.boss_achievement_reconciled;
         if reconciled.load(Ordering::Acquire) {
@@ -3638,6 +3642,13 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
             return self.settle_soulpit(entry).await;
         }
         let achievement = entry.boss_achievements.as_deref();
+        if achievement.is_some() {
+            // A reward writer can leave work even if its caller loses the commit reply.
+            self.admission
+                .states
+                .boss_achievement_reconciled
+                .store(false, std::sync::atomic::Ordering::Release);
+        }
         let mut report = if let Some(report) = achievement.and_then(|a| a.settled_rewards.get()) {
             *report
         } else {
@@ -3670,10 +3681,6 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
                 .await
                 .is_err()
         {
-            self.admission
-                .states
-                .boss_achievement_reconciled
-                .store(false, std::sync::atomic::Ordering::Release);
             report.verdict = SettleVerdict::Retry;
         }
         self.admission
@@ -3947,7 +3954,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 };
             };
             if admission
-                .settle_boss_without_experience(&permit, entry)
+                .settle_boss_without_experience(&permit, entry, true)
                 .await
                 .is_err()
             {
@@ -4005,7 +4012,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 };
             };
             if admission
-                .settle_boss_without_experience(&permit, entry)
+                .settle_boss_without_experience(&permit, entry, true)
                 .await
                 .is_err()
             {
@@ -4131,7 +4138,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .any(|death| death.occurrence == entry.facts.occurrence && death.reward_principal_gone);
         if proficiency_only {
             if admission
-                .settle_boss_without_experience(&permit, entry)
+                .settle_boss_without_experience(&permit, entry, true)
                 .await
                 .is_err()
             {
@@ -4165,9 +4172,10 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         if admission
             .progression_binding(self.fence.game_session_id)
             .is_none()
-            && entry.boss_reward_plan.get().is_some()
+            && (entry.boss_reward_plan.get().is_some()
+                || (entry.has_boss_achievement_work() && !entry.has_corpse()))
             && admission
-                .settle_boss_without_experience(&permit, entry)
+                .settle_boss_without_experience(&permit, entry, false)
                 .await
                 .is_err()
         {
@@ -4263,8 +4271,12 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 Ok(party) => Some(party),
                 Err(error) => {
                     operator_event(&format!("party_xp_settle_deferred reason={error:?}"));
-                    // A composed Quest failure must retry the entire settlement.
-                    if super::quest_kill_objectives::has_grave_boss_credit(&entry) {
+                    // The corpse is the last writer for a boss achievement roster.
+                    // A retryable XP failure must leave that writer uncommitted.
+                    if (entry.has_boss_achievement_work()
+                        && matches!(error, CharacterProgressionError::Unavailable(_)))
+                        || super::quest_kill_objectives::has_grave_boss_credit(&entry)
+                    {
                         return SettleReport {
                             verdict: SettleVerdict::Retry,
                             no_progression: false,

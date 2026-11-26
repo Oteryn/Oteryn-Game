@@ -473,7 +473,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             &mut tx, owner.holder, entry, &participants, quest_fences, owner.quest_catalogue.as_deref()).await {
                             Ok(committed) => committed, Err(error) => return Ok(Err(error)),
                         };
-                        entry.retain_boss_achievements_without_corpse(&mut tx).await?;
+                        entry.retain_boss_achievements(&mut tx, false).await?;
                         party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
                         super::quest_kill_objectives::publish(_attack.kills(), &objectives);
                         publish_stamina(states, runtime, previous, entry, &awards);
@@ -634,7 +634,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &mut tx, owner.holder, entry, &participants, quest_fences, owner.quest_catalogue.as_deref()).await {
                         Ok(committed) => committed, Err(error) => return Ok(Err(error)),
                     };
-                    entry.retain_boss_achievements_without_corpse(&mut tx).await?;
+                    entry.retain_boss_achievements(&mut tx, false).await?;
                         party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
                     super::quest_kill_objectives::publish(_attack.kills(), &objectives);
                     publish_stamina(states, runtime, &current, entry, &awards);
@@ -801,6 +801,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         permit: &SpellLanePermit,
         entry: &PendingKillSettlement,
+        skips_corpse: bool,
     ) -> Result<(), CharacterProgressionError> {
         if entry.boss_reward.is_none()
             && !super::quest_kill_objectives::has_grave_boss_credit(entry)
@@ -906,7 +907,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             Vec::new()
                         };
                     entry
-                        .retain_boss_achievements_without_corpse(&mut tx)
+                        .retain_boss_achievements(&mut tx, skips_corpse)
                         .await?;
                     party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
                     super::quest_kill_objectives::publish(attack.kills(), &objectives);

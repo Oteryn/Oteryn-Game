@@ -1091,11 +1091,9 @@ pub(super) async fn exercise(
         ))
         .await;
     }
-    if name == "qengine-rewards-m25-galthen-native-deaths"
-        || name == "qengine-rewards-m25-galthen-native-deaths-takeover"
-    {
+    if name.starts_with("qengine-rewards-m25-galthen-native-deaths") {
         return Box::pin(super::m25_galthen_native_death_fixtures::exercise(
-            owner, admitted, h, name.ends_with("-takeover"),
+            owner, admitted, h, name,
         ))
         .await;
     }
