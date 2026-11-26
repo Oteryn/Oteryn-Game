@@ -157,6 +157,25 @@ async fn approach(
     visible_npc(client, npc).ok_or_else(|| format!("step=walk-npc observed=actor-not-visible:{}", npc.key).into())
 }
 
+pub(super) async fn qualification_npc_talk_book(
+    client: &mut DevClientSession,
+) -> TestResult<crate::gameplay_transport::NpcTalkBook> {
+    route_work(client, || {
+        let staged = std::path::PathBuf::from(required("NODE_BOOT_NPC_DATA").map_err(|error| error.to_string())?);
+        let digest = std::fs::read_to_string(staged.join("PROJECT_SHA256")).map_err(|error| error.to_string())?;
+        let catalogue = crate::content::load_data_only_npc_catalogue(
+            &staged.join("content/world"),
+            digest.trim(),
+        )
+        .map_err(|error| error.to_string())?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| error.to_string())?;
+        Ok(crate::gameplay_transport::NpcTalkBook::from_model(&model))
+    })
+    .await
+}
+
 async fn find_exchange_npc(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -349,4 +368,164 @@ mod tests {
         assert!(!exact_delta([100, 0, 0], [0, 0, 1], [-100, 1, 0]));
         assert!(exact_delta([0, 1, 0], [100, 0, 0], [100, -1, 0]));
     }
+}
+
+pub(super) async fn greet_ten(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) {
+    let mut row = verdict::Row::new("NPC", "NPC-GREET-10", &["greet-ten", "logout"]);
+    let result = row
+        .watch()
+        .bound(
+            Duration::from_secs(180),
+            "NPC-GREET-10 deadline",
+            greet_ten_journey(&mut row, clients, world, npcs),
+        )
+        .await;
+    row.finish(&result);
+}
+
+async fn greet_ten_journey(
+    row: &mut verdict::Row,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult {
+    mod hunt_route {
+        use super::*;
+        include!("qualification_hunt_route.rs");
+    }
+    character_prep::declare_seeded(
+        "NPC-GREET-10",
+        "dedicated-character-birth",
+        "isolate dialogue state",
+    );
+    let mut characters = clients.characters.to_vec();
+    characters[1] =
+        hunt_route::qualification_character(clients, 1, 0xb9, "Town Greeter", "Knight").await?;
+    let clients = SeamClients {
+        characters: &characters,
+        ..*clients
+    };
+    let mut client = connect_world(&clients, 0xb9).await?;
+    let result: TestResult = async {
+        let talk_book = qualification_npc_talk_book(&mut client).await?;
+        // The placement table also contains silent actors. Choose greetings
+        // from the authored service book and verify each one over the wire.
+        let mut remaining: BTreeMap<TilePos, &str> = npcs
+            .npcs
+            .iter()
+            .filter(|npc| talk_book.get(&npc.key).is_some())
+            .flat_map(|npc| {
+                npc.placements.iter().map(|placement| {
+                    (
+                        TilePos {
+                            x: placement.x,
+                            y: placement.y,
+                            floor: placement.floor,
+                        },
+                        npc.key.as_str(),
+                    )
+                })
+            })
+            .collect();
+        let mut greeted = Vec::new();
+        for _ in 0..10 {
+            let start = tile(client.world_spatial().actor_position)?;
+            let candidates: Vec<_> = remaining.keys().copied().collect();
+            let snapshot = world.clone();
+            let (path, target) = route_work(&mut client, move || {
+                let mut approaches = BTreeMap::new();
+                for target in candidates {
+                    for (dx, dy) in [
+                        (-1, -1),
+                        (-1, 0),
+                        (-1, 1),
+                        (0, -1),
+                        (0, 1),
+                        (1, -1),
+                        (1, 0),
+                        (1, 1),
+                    ] {
+                        if let (Some(x), Some(y)) = (
+                            target.x.checked_add_signed(dx),
+                            target.y.checked_add_signed(dy),
+                        ) {
+                            approaches
+                                .entry(TilePos {
+                                    x,
+                                    y,
+                                    floor: target.floor,
+                                })
+                                .or_insert(target);
+                        }
+                    }
+                }
+                let path = route(&snapshot, start, |at| approaches.contains_key(&at))
+                    .ok_or("no route to another ungreeted NPC placement")?;
+                let end = path
+                    .iter()
+                    .try_fold(start, |at, &direction| {
+                        destination(&snapshot, at, direction)
+                    })
+                    .ok_or("NPC route endpoint disappeared")?;
+                let target = *approaches
+                    .get(&end)
+                    .ok_or("NPC route ended without an adjacent placement")?;
+                Ok((path, target))
+            })
+            .await?;
+            walk(&mut client, world, &path).await?;
+            let key = remaining
+                .remove(&target)
+                .ok_or("NPC selection repeated a placement")?;
+            let actor = client
+                .world_entities()
+                .and_then(|view| {
+                    view.iter().find(|entity| {
+                        entity.kind == EntityKind::Npc && tile(entity.position).ok() == Some(target)
+                    })
+                })
+                .ok_or_else(|| format!("served NPC missing at {target:?}: {key}"))?
+                .entity;
+            if greeted.contains(&actor) {
+                return Err(format!("NPC actor already greeted: {key}").into());
+            }
+            let hello = talk(&mut client, actor, "hi")
+                .await
+                .map_err(|error| format!("NPC greeting at {target:?} for {key}: {error}"))?;
+            if hello.open.map(|(npc, _)| npc) != Some(actor) || hello.lines.is_empty() {
+                return Err(
+                    format!("NPC greeting did not open a dialogue with {key}: {hello:?}").into(),
+                );
+            }
+            greeted.push(actor);
+            evidence(&format!(
+                "NPC_GREET row=NPC-GREET-10 npc={key} placement={target:?} count={}",
+                greeted.len()
+            ));
+            let goodbye = talk(&mut client, actor, "bye").await?;
+            if goodbye.open.is_some() {
+                return Err(format!("NPC farewell left the conversation open with {key}").into());
+            }
+        }
+        row.pass(
+            "greet-ten",
+            format_args!("distinct_actors={}", greeted.len()),
+        );
+        Ok(())
+    }
+    .await;
+    let release = logout_once(&mut client)
+        .await
+        .and_then(|(status, diagnostic, _, _)| {
+            if status != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+                return Err(format!("Town Greeter logout refused: {diagnostic}").into());
+            }
+            row.pass("logout", "accepted");
+            Ok(())
+        });
+    result.and(release)
 }

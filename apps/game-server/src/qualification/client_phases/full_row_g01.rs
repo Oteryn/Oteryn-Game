@@ -71,6 +71,120 @@ async fn catalogue(
     Ok(None)
 }
 
+pub(super) const HOUSE: &str = "oteryn:content.house.upper_swamp_lane_4";
+
+pub(super) async fn prepare_owned_house(
+    clients: &SeamClients<'_>,
+    tag: u8,
+) -> TestResult<DevClientSession> {
+    const AUCTION: &str = "01934f10-7c04-7021-805b-3b1122334491";
+
+    async fn seed_auction(clients: &SeamClients<'_>) -> TestResult {
+        let catalogue: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/houses/houses-00500-00994.json"
+        ))?;
+        let house = catalogue["houses"]
+            .as_array()
+            .ok_or("house fixture catalogue")?
+            .iter()
+            .find(|house| house["identity"]["key"] == HOUSE)
+            .ok_or("house fixture authored property missing")?;
+        let rent = house["rent_gold"]
+            .as_i64()
+            .ok_or("house fixture authored rent missing")?;
+        if house["kind"] != "private_house" || rent <= 0 {
+            return Err("house fixture requires an authored private property with rent".into());
+        }
+        let world = uuid_text(&clients.world);
+        let channel = uuid_text(&clients.channel);
+        let character = uuid_text(&clients.characters[0]);
+        let mut database = sqlx::PgConnection::connect(clients.url).await?;
+        let mut tx = sqlx::Connection::begin(&mut database).await?;
+        let property = sqlx::query(
+            "INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest)
+             SELECT world_id,$3,'private_house',2,$4,server_artifact_digest
+             FROM game_content_activations WHERE world_id=$1::text::uuid AND channel_id=$2::text::uuid
+             ORDER BY activation_sequence DESC LIMIT 1",
+        )
+        .bind(&world)
+        .bind(&channel)
+        .bind(HOUSE)
+        .bind(rent)
+        .execute(&mut *tx)
+        .await?;
+        if property.rows_affected() != 1 {
+            return Err("house fixture active content missing".into());
+        }
+        sqlx::query("INSERT INTO game_house_ownership VALUES($1::text::uuid,$2,NULL,1,game_character_uuid_v7())")
+            .bind(&world).bind(HOUSE).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_house_auctions(auction_id,world_id,house_key,first_rent,ends_at,next_order)
+                     VALUES($1::text::uuid,$2::text::uuid,$3,$4,clock_timestamp()-interval '1 second',2)")
+            .bind(AUCTION).bind(&world).bind(HOUSE).bind(rent).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_house_bids VALUES($1::text::uuid,$2::text::uuid,$3::text::uuid,$4::text::uuid,1,$5,1,1,$5+1)")
+            .bind(AUCTION).bind(&clients.accounts[0]).bind(&world).bind(&character).bind(rent).execute(&mut *tx).await?;
+        tx.commit().await?;
+        Ok(())
+    }
+
+    let mut client = connect_character(clients, tag, 0).await?;
+    let world = WorldId::decode(&clients.world)?;
+    let mut panel = panel_ui::Panel::default();
+    panel.admitted(*world.as_bytes(), client.selected_capabilities());
+    catalogue(&mut client, &mut panel).await?;
+    if !panel
+        .page
+        .rows
+        .iter()
+        .any(|row| row.house == HOUSE && row.owned)
+    {
+        let (result, detail, _, _) = fixture_logout_retrying_busy(&mut client).await?;
+        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("step=fixture-logout observed={detail}").into());
+        }
+        drop(client);
+        let mut prepared = character_prep::Seeded {
+            profile: "house-g01-build",
+            reason: "authored house requires level 20",
+        }
+        .connect(clients, tag, 0)
+        .await?;
+        let level = prepared
+            .actor_vitals()
+            .ok_or("house fixture vitals missing")?;
+        let (health, mana, _) = oteryn_gameplay_characters::vitals::maxima(
+            "sorcerer",
+            20,
+            oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+            oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+        )
+        .ok_or("house fixture has no source vitals")?;
+        if (level.max_health, level.max_mana) != (health, mana) {
+            return Err("step=fixture-admission observed=incorrect-level-20-vitals".into());
+        }
+        seed_auction(clients).await?;
+        request_fixture_control(
+            uuid_text(prepared.join_snapshot().game_session_id.as_bytes()),
+            "--profile",
+            "house-g01".into(),
+        )
+        .await?;
+        catalogue(&mut prepared, &mut panel).await?;
+        if !panel
+            .page
+            .rows
+            .iter()
+            .any(|row| row.house == HOUSE && row.owned)
+        {
+            return Err(
+                "step=settlement observed=authored-house-not-owned-in-served-catalogue".into(),
+            );
+        }
+        client = prepared;
+    }
+    evidence(&format!("G01_CHECK step=served-ownership status=PASS house={HOUSE}"));
+    Ok(client)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xc1).await?;
     if !client.selected_capabilities().contains(&49) {
