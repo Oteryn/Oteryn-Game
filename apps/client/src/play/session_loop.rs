@@ -14,7 +14,7 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 pub use super::stepper::Stepper;
 
 mod scope_transition;
-use scope_transition::{initialize, publish_scope_transition, query_initial_returner, reset_modal};
+use scope_transition::{publish_scope_transition, query_initial_returner, reset_modal};
 
 /// Initializes the live map, sends commands and services session liveness.
 pub async fn run_session<T: Stepper>(
@@ -45,11 +45,10 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
     if outbox.session_cancelled() {
         return;
     }
-    if let Err(error) = initialize(&session, &outbox) {
+    if let Err(error) = super::session_initialize::initialize_admission(&session, &outbox) {
         outbox.end(public_class(&error));
         return;
     }
-    outbox.spell_bar_initialize(session.actor_cooldown_snapshot());
     let mut held = Vec::new();
     // Publish the admission queue before any query can append a new scope's
     // snapshot with the same initial sequence and revisions.
@@ -65,7 +64,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             reset_modal(&session, &outbox, &mut modal);
         }
         if outbox.scope_needs_initialize() {
-            if let Err(error) = initialize(&session, &outbox) {
+            if let Err(error) = super::session_initialize::initialize_scope(&session, &outbox) {
                 outbox.end(public_class(&error));
                 return;
             }
