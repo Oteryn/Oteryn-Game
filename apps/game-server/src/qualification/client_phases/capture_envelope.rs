@@ -34,7 +34,9 @@ mod tests {
             // Exact serialized text catches repeated and unknown keys before parsing can hide them.
             assert_eq!(
                 std::str::from_utf8(&bytes)?,
-                format!(r#"{{"command_id":17,"game_session_id":"00000000-0000-7000-{digit}000-000000000000","payload":[0,255],"server_sequence":31,"status":1}}"#),
+                format!(
+                    r#"{{"command_id":17,"game_session_id":"00000000-0000-7000-{digit}000-000000000000","payload":[0,255],"server_sequence":31,"status":1}}"#
+                ),
             );
         }
         for (version, variant) in [(0x40, 0x80), (0x70, 0x00), (0x70, 0xc0)] {
