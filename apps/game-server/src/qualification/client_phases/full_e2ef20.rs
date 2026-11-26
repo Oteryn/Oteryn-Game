@@ -214,8 +214,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("bank-only-refusal", (reply.lines, refusal.lines));
 
-    let withdrawal = exchange(&mut client, actor, &["withdraw 100", "yes"]).await?;
-    wait_coins(&mut client, refs, [100, 0, 0], "withdraw-after-refusal").await?;
+    let withdrawal = exchange(&mut client, actor, &["withdraw 100 gold", "yes"]).await?;
+    wait_coins(&mut client, refs, platinum, "withdraw-after-refusal").await?;
+    let restored = exchange(&mut client, actor, &["change platinum", "gold", "1", "yes"]).await?;
+    wait_coins(&mut client, refs, initial, "restore-gold-before-relogin").await?;
+    if !restored.lines.iter().any(|line| line == "Here you are.") {
+        return Err(format!("step=restore-gold-before-relogin observed={:?}", restored.lines).into());
+    }
     let old_session = client.join_snapshot().game_session_id;
     if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("step=logout observed=refused".into());
