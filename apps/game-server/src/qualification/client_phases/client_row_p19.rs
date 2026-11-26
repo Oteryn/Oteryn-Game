@@ -3,43 +3,116 @@ use super::*;
 use oteryn_dev_client::EntityKind;
 use oteryn_protocol_oteryn::appearance::CAPABILITY_FORGE_CREATURE_V1;
 
+async fn place_observer(clients: &SeamClients<'_>, at: TilePos, spawn: TilePos) -> TestResult {
+    wait_character_released(clients, 0).await?;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let updated = sqlx::query(
+        "UPDATE game_character_last_positions
+         SET tile_x=$1, tile_y=$2, tile_floor=$3, write_sequence=write_sequence+1
+         WHERE character_id=encode($4,'hex')::uuid AND world_id=encode($5,'hex')::uuid",
+    )
+    .bind(i32::from(at.x))
+    .bind(i32::from(at.y))
+    .bind(-i16::from(at.floor))
+    .bind(clients.characters[0].as_slice())
+    .bind(clients.world.as_slice())
+    .execute(&mut db)
+    .await?;
+    if updated.rows_affected() != 1 {
+        return Err("P19 fixture needs a saved position for the released observer".into());
+    }
+    evidence(&format!(
+        "FIXTURE_PLACEMENT row=P19 tile={at:?} spawn={spawn:?}"
+    ));
+    Ok(())
+}
+
+fn observer_tile(
+    world: &BundleWorld,
+    spawn: TilePos,
+    occupied: &std::collections::BTreeSet<TilePos>,
+) -> Option<TilePos> {
+    // Keep the creature's home well inside the interest window and leave room
+    // for it to move as the live monster owner starts processing the observer.
+    (3..=5).find_map(|distance| {
+        (-distance..=distance).find_map(|dy: i16| {
+            (-distance..=distance).find_map(|dx: i16| {
+                let at = TilePos {
+                    x: spawn.x.checked_add_signed(dx)?,
+                    y: spawn.y.checked_add_signed(dy)?,
+                    floor: spawn.floor,
+                };
+                (dx.abs().max(dy.abs()) == distance
+                    && !occupied.contains(&at)
+                    && world.enterable(at))
+                .then_some(at)
+            })
+        })
+    })
+}
+
 async fn journey(clients: &SeamClients<'_>, directory: &Path) -> TestResult {
     let world = full_e2ef7::qualification_world(clients)?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    const ELIGIBLE_CREATURE: &str = "oteryn:creature.dragon";
+
+    let points = metadata.spawns.sources.iter().flat_map(|source| {
+        source.points.iter().map(move |point| {
+            (
+                point.creature,
+                TilePos {
+                    x: point.x,
+                    y: point.y,
+                    floor: source.floor,
+                },
+            )
+        })
+    });
+    let occupied = points.clone().map(|(_, at)| at).collect();
+    let sites: Vec<_> = points
+        .filter(|&(creature, _)| {
+            metadata.spawns.creatures[creature as usize].key == ELIGIBLE_CREATURE
+        })
+        .map(|(_, at)| at)
+        .collect();
+    let (spawn, at) = sites
+        .iter()
+        .filter_map(|&spawn| Some((spawn, observer_tile(world, spawn, &occupied)?)))
+        .max_by_key(|&(_, at)| {
+            sites
+                .iter()
+                .filter(|p| {
+                    p.floor == at.floor && p.x.abs_diff(at.x) <= 5 && p.y.abs_diff(at.y) <= 5
+                })
+                .count()
+        })
+        .ok_or("P19 compiled world lacks an enterable observation tile by a Dragon spawn")?;
+
     let client = connect_character(clients, 0x53, 0).await?;
     let mut client = provisioning::provision_fixture(client, clients, 0, 100).await?;
+    full_e2ef5::player_logout(&mut client).await?;
+    drop(client);
+    place_observer(clients, at, spawn).await?;
+    let mut client = connect_character(clients, 0x54, 0).await?;
+    if tile(client.world_spatial().actor_position)? != at {
+        return Err("P19 observer was admitted away from its fixture tile".into());
+    }
     if !client
         .selected_capabilities()
         .contains(&CAPABILITY_FORGE_CREATURE_V1)
     {
         return Err("P19 forge creature capability was not selected".into());
     }
-    let start = tile(client.world_spatial().actor_position)?;
-    let sites: std::collections::BTreeSet<_> = metadata
-        .spawns
-        .sources
-        .iter()
-        .flat_map(|source| {
-            source
-                .points
-                .iter()
-                .map(move |point| (source.floor, point.x, point.y))
-        })
-        .filter(|&(floor, x, y)| {
-            start.floor.abs_diff(floor) <= 2 && start.x.abs_diff(x).max(start.y.abs_diff(y)) <= 161
-        })
-        .collect();
-    let approach = |at: TilePos, (floor, x, y)| {
-        at.floor == floor && at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 5
-    };
-    // The marker is visible at a distance. Observe spawn areas from outside
-    // melee range and repeat the sweep as the population owner adds markers.
-    let mut points = sites.clone();
-    let mut blocked = std::collections::BTreeSet::new();
+
+    let mut previous = None;
     let files = loop {
-        client.service_liveness(Duration::from_millis(100)).await?;
-        client.take_events();
+        let creatures = client.world_entities().map_or(0, |entities| {
+            entities
+                .iter()
+                .filter(|entity| entity.kind == EntityKind::Creature)
+                .count()
+        });
         let marker = client
             .session_mut()
             .visible_appearances()
@@ -47,64 +120,25 @@ async fn journey(clients: &SeamClients<'_>, directory: &Path) -> TestResult {
             .find(|entry| {
                 entry.entity.kind == EntityKind::Creature && entry.forge_stacks.is_some()
             });
+        let observed = (creatures, marker.is_some());
+        if previous != Some(observed) {
+            evidence(&format!(
+                "P19_FORGE_OBSERVATION visible_creatures={creatures} visible_mapping={}",
+                observed.1
+            ));
+            previous = Some(observed);
+        }
         if let Some(marker) = marker {
-            if let Some(files) = client.session_mut().p19_capture_files(marker.entity.entity) {
-                break files;
-            }
-            // Re-admit in the same area to get a new common world/appearance baseline
-            // if the walk to this spawn exceeded the retained delta history.
-            full_e2ef5::player_logout(&mut client).await?;
-            drop(client);
-            client = connect_character(clients, 0x54, 0).await?;
-            if let Some(files) = client
+            break client
                 .session_mut()
-                .visible_appearances()
-                .into_iter()
-                .filter(|entry| {
-                    entry.entity.kind == EntityKind::Creature && entry.forge_stacks.is_some()
-                })
-                .find_map(|entry| client.session_mut().p19_capture_files(entry.entity.entity))
-            {
-                break files;
-            }
+                .p19_capture_files(marker.entity.entity)
+                .ok_or("P19 received Forge mapping but could not retain a complete replay")?;
         }
-        let before = client.world_spatial().actor_position;
-        let here = tile(before)?;
-        points.retain(|&point| !approach(here, point));
-        let path = route_avoiding(
-            world,
-            here,
-            |at| points.iter().any(|&point| approach(at, point)),
-            |at| !blocked.contains(&at),
-        );
-        let Some(direction) = path.and_then(|path| path.first().copied()) else {
-            if points == sites && blocked.is_empty() {
-                return Err("P19 no reachable compiled spawn approaches".into());
-            }
-            let tick = Duration::from_secs(10);
-            verdict::Harness::global()
-                .bounded_wait(tokio::time::Instant::now() + tick, "forge-population-tick");
-            client.service_liveness(tick).await?;
-            points.clone_from(&sites);
-            blocked.clear();
-            continue;
-        };
-        let expected = destination(world, here, direction).ok_or("P19 route lost its landing")?;
-        let step = client.step_retrying(direction).await?;
-        let after = client.world_spatial().actor_position;
-        match step.disposition {
-            StepDisposition::Moved
-                if step.world_spatial_delta.is_some() && tile(after)? == expected =>
-            {
-                verdict::Harness::global().progress("walk");
-            }
-            // The compiled route cannot predict live collision. Replan from
-            // the observed position without retrying this cell in the sweep.
-            StepDisposition::Blocked if before == after && step.world_spatial_delta.is_none() => {
-                blocked.insert(expected);
-            }
-            _ => return Err(format!("P19 unexpected step from {before:?}: {step:?}").into()),
-        }
+        let tick = Duration::from_secs(1);
+        verdict::Harness::global()
+            .bounded_wait(tokio::time::Instant::now() + tick, "forge-population-tick");
+        client.service_liveness(tick).await?;
+        client.take_events();
     };
     for (name, bytes) in files {
         std::fs::write(directory.join(name), bytes)?;
