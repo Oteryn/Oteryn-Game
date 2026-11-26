@@ -66,7 +66,7 @@ async fn defeat_primal(
     .ok_or("no reachable combat tile for the Primal Menace")?;
     walk(client, world, &path).await?;
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let answer = request_spawn(session.clone(), PRIMAL.into()).await?;
+    let answer = request_spawn(session.clone(), "oteryn:qualification.w10-primal".into()).await?;
     let target = parse_spawned_entity(&answer)?;
     let visible = tokio::time::Instant::now() + Duration::from_secs(10);
     while !client
@@ -113,7 +113,7 @@ async fn defeat_primal(
     evidence(&format!(
         "W10_COMBAT initial_target_hp_percent={last_health:?}"
     ));
-    let axe = provisioning::item_reference(&provisioning::item_index()?, 3276)?;
+    let axe = provisioning::item_reference(&provisioning::item_index()?, 7434)?;
     let equipped = client.inventory().is_some_and(|inventory| {
         inventory
             .equipment
@@ -121,23 +121,12 @@ async fn defeat_primal(
             .any(|slot| slot.item.item_definition_ref == axe)
     });
     evidence(&format!(
-        "W10_FIXTURE level=100 weapon=axe_3276 equipped={equipped} damage_type=physical"
+        "W10_FIXTURE level=1000 axe_skill=120 weapon=royal_axe_7434 equipped={equipped} damage_type=physical primal_starting_hp=1000"
     ));
     let reply = client.session_mut().attack_target(Some(&target)).await?;
-    let player = client.world_spatial().actor_position;
-    let state = client.session_mut().combat_state();
-    evidence(&format!(
-        "W10_COMBAT attack_status={:?} disposition={:?} target_set={} chase={:?} player={player:?} target={last_position:?} range={}",
-        reply.status,
-        reply.disposition,
-        state.is_some_and(|state| state.target == Some(target)),
-        state.map(|state| state.modes.chase),
-        player
-            .x
-            .abs_diff(last_position.x)
-            .max(player.y.abs_diff(last_position.y))
-    ));
-
+    if !equipped {
+        return Err("W10 fixture royal axe is not equipped".into());
+    }
     if reply.status != CommandStatus::Accepted
         || reply.disposition != attack::AttackIntentDisposition::Ok
     {
@@ -147,8 +136,27 @@ async fn defeat_primal(
     verdict::Harness::global().bounded_wait(deadline, "W10-Primal-combat");
     let mut removed = false;
     let mut inspected = false;
+    let state_deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    let mut target_confirmed = false;
     loop {
         for event in client.take_events() {
+            if let SessionEvent::ActorCombatState(delta) = &event
+                && delta.server_sequence > reply.result_server_sequence
+                && !target_confirmed
+            {
+                if delta.value.target != Some(target) {
+                    return Err(format!(
+                        "first post-attack combat delta has wrong target: {:?}",
+                        delta.value
+                    )
+                    .into());
+                }
+                target_confirmed = true;
+                evidence(&format!(
+                    "W10_COMBAT attack_status=Accepted target_set=true sequence={}",
+                    delta.server_sequence
+                ));
+            }
             if let SessionEvent::WorldSpatialEntities(delta) = event {
                 if delta.value.leave.contains(&target) {
                     removed = true;
@@ -185,12 +193,15 @@ async fn defeat_primal(
                     .await;
             evidence(&format!("W10_COMBAT live_damage={damage:?}"));
         }
+        if !target_confirmed && tokio::time::Instant::now() >= state_deadline {
+            return Err("W10 attack accepted without its combat-state delta".into());
+        }
         let corpse_seen = client.world_entities().is_some_and(|entities| {
             entities
                 .iter()
                 .any(|entity| entity.kind == EntityKind::Corpse && entity.entity.identity == corpse)
         });
-        if corpse_seen {
+        if corpse_seen && target_confirmed {
             evidence(&format!(
                 "W10_COMBAT exact_corpse=true target_removed={removed} last_hp_percent={last_health:?}"
             ));
@@ -214,6 +225,27 @@ async fn defeat_primal(
     .await
     .map_err(|error| format!("BLOCKED-SERVER: exact Primal corpse observed: {error}"))?;
     client.session_mut().attack_target(None).await?;
+    let handle = client
+        .world_entities()
+        .and_then(|entities| {
+            entities.iter().find_map(|entity| {
+                if entity.kind != EntityKind::Corpse || entity.entity.identity != corpse {
+                    return None;
+                }
+                match entity.detail {
+                    EntityDetail::Object { item_handle, .. }
+                    | EntityDetail::ObjectWithAppearance { item_handle, .. } => item_handle,
+                    _ => None,
+                }
+            })
+        })
+        .ok_or("exact Primal corpse has no live item handle")?;
+    let loot = creature_sweep::open_corpse(client, handle).await?;
+    if !loot.is_empty() {
+        return Err(format!("Primal corpse had unexpected physical loot: {loot:?}").into());
+    }
+    evidence("W10_LOOT exact_corpse_open=accepted physical_items=0");
+
     Ok(())
 }
 
@@ -228,8 +260,55 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let client = connect_world(clients, 0x05).await?;
-    let mut client = provisioning::provision_fixture(client, clients, 1, 100).await?;
+    let mut client = connect_world(clients, 0x05).await?;
+    let staged = client.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(staged.as_bytes()),
+        "--profile",
+        "w10-primal".into(),
+    )
+    .await?;
+    if logout_retrying_busy(&mut client).await?.0 != Some(LogoutResult::Accepted) {
+        return Err("W10 fixture logout refused".into());
+    }
+    drop(client);
+    let mut client = connect_world(clients, 0x06).await?;
+    if client.join_snapshot().game_session_id == staged {
+        return Err("W10 fixture readmission reused its staging session".into());
+    }
+    let (health, mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        "knight",
+        1000,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    )
+    .ok_or("W10 fixture maxima unavailable")?;
+    if !client
+        .actor_vitals()
+        .is_some_and(|vitals| vitals.max_health == health && vitals.max_mana == mana)
+    {
+        return Err("W10 fixture readmission did not load level-1000 knight vitals".into());
+    }
+    let weapon = provisioning::item_reference(&provisioning::item_index()?, 7434)?;
+    let equip = client.session_mut().equip_item_definition(weapon).await?;
+    if equip.status != CommandStatus::Accepted
+        || equip.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
+    {
+        return Err(format!("W10 fixture royal axe equip refused: {equip:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    while !client.inventory().is_some_and(|inventory| {
+        inventory
+            .equipment
+            .iter()
+            .any(|slot| slot.item.item_definition_ref == weapon)
+    }) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("W10 fixture royal axe equipment delta missing".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+    }
     let session = client.join_snapshot().game_session_id;
     use CommandStatus::{Accepted, Rejected};
     probe(&mut client, root, "initial", &[], Accepted, &[1, 1]).await?;

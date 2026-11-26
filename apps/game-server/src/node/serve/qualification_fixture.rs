@@ -19,6 +19,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
             | "druid"
             | "monk"
             | "knight-underlevel"
+            | "w10-primal"
             | "premium"
     )
     .then_some((session, profile))
@@ -325,6 +326,13 @@ async fn place(
     let fence = wild_spawn::SpawnRefusal::Fence;
     let session = crate::foundation::GameSessionId::decode(&session)
         .map_err(|_| wild_spawn::SpawnRefusal::SessionUnknown)?;
+    // W10 needs a real lethal swing in the wire budget. The PostgreSQL Primal
+    // cutoff case likewise stages positive HP before the ordinary attack.
+    let (key, starting_health) = if key == "oteryn:qualification.w10-primal" {
+        ("oteryn:creature.the_primal_menace", Some(1_000))
+    } else {
+        (key, None)
+    };
     let source = wild_spawn::next_command_source()?;
     let mut runtime = owners.runtime.lock().await;
     let mut plan = Some(wild_spawn::snapshot_adjacent_spawn(
@@ -390,13 +398,15 @@ async fn place(
                     .take()
                     .ok_or_else(|| fence("missing qualification spawn plan".into()))?;
                 let tiles = publication_candidates(fresh, std::mem::take(&mut eligible));
-                return Ok(Some(wild_spawn::publish_spawn(
-                    &mut runtime,
-                    plan,
-                    source,
-                    key,
-                    &tiles,
-                )?));
+                let mut creature =
+                    wild_spawn::publish_spawn(&mut runtime, plan, source, key, &tiles)?;
+                if let Some(health) = starting_health {
+                    runtime
+                        .set_test_creature_health(creature.actor, health)
+                        .map_err(|error| fence(format!("W10 fixture health: {error:?}")))?;
+                    creature.health = health;
+                }
+                return Ok(Some(creature));
             }
             Ok(None)
         },
@@ -724,6 +734,7 @@ async fn prepare_build(
     let context = policy.context.clone();
     let (vocation, level) = match profile {
         "knight-underlevel" => ("knight", 66),
+        "w10-primal" => ("knight", 1000),
         "explorer" => ("knight", 100),
         _ => (profile, 100),
     };
@@ -748,7 +759,22 @@ async fn prepare_build(
         deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    let gear = if profile == "w10-primal" {
+        qualification_build::prepare_w10_axe(
+            root,
+            authority,
+            proof,
+            &current,
+            content_revision,
+            fixture_occurrence(character.as_bytes(), profile, b"axe-training"),
+            deadline,
+        )
+        .await?;
+        &[7434, 3003, 3457]
+    } else {
+        &[3276, 3003, 3457]
+    };
+    prepare_items(root, authority, proof, &current, native, deadline, gear).await
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
@@ -770,6 +796,7 @@ fn fixture_occurrence(character: &[u8; 16], vocation: &str, phase: &[u8]) -> [u8
 
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item
 // inserts. They are setup evidence only, not proof of player chest interaction.
+#[allow(clippy::too_many_arguments)] // The selected fixture gear uses the existing fenced claim.
 async fn prepare_items(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -779,6 +806,7 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
+    gear: &[u32],
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -853,7 +881,7 @@ async fn prepare_items(
         .ok_or("qualification Item index missing")?;
     // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
     // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+    for (ordinal, id) in gear.iter().copied().enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),

@@ -488,6 +488,77 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     Ok(())
 }
 
+/// Seed the W10 knight's axe training through the durable build owner.
+pub(super) async fn prepare_w10_axe(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    current: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    content: &str,
+    occurrence: [u8; 16],
+    deadline: tokio::time::Instant,
+) -> TestResult {
+    let character =
+        CharacterId::from_bytes(*current.current_character_lease().character_id().as_bytes())
+            .map_err(debug)?;
+    let revision = retry_holder(Some(root), deadline, authority_busy, async || {
+        root.read_current_character(authority, character).await
+    })
+    .await
+    .map_err(debug)?
+    .revision;
+    let before = retry_holder(Some(root), deadline, progression_busy, async || {
+        root.read_character_build_state(authority, character).await
+    })
+    .await
+    .map_err(debug)?;
+    let mut skills = before.skills();
+    // SKILLS stores axe after fist, club and sword.
+    skills[3] = (120, 0);
+    let after = DurableBuildState::new("knight", before.magic(), skills).map_err(debug)?;
+    if before == after {
+        return Ok(());
+    }
+    let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
+        include_bytes!("../../../tools/content-schema/native-gameplay/build-training.json"),
+        content,
+    )
+    .map_err(debug)?;
+    let fence = CurrentCharacterGameplayFence {
+        character_id: character,
+        game_session_id: current.current_game_session_id(),
+        connection_generation: current.current_connection_generation(),
+        character_lease_generation: current.current_character_lease().generation(),
+        runtime_scope: current.current_runtime_scope(),
+        scope_ownership_generation: current.current_scope_generation(),
+        expected_character_revision: revision,
+    };
+    let occurrence = BuildOccurrence::from_bytes(occurrence).map_err(debug)?;
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut slot = sequencer.acquire(character).await;
+    retry_holder(Some(root), deadline, progression_busy, async || {
+        slot.commit_build(
+            root,
+            authority,
+            node,
+            fence,
+            BuildChangeRequest {
+                occurrence,
+                cause: BuildCause::Training,
+                before: before.clone(),
+                after: after.clone(),
+                pruned_stance: None,
+            },
+            &formula,
+            None,
+        )
+        .await
+    })
+    .await
+    .map_err(debug)?;
+    Ok(())
+}
+
 /// Advance an already classed disposable Character using its existing bound XP
 /// policy. This is an award, not a replacement of the Character or actor facts.
 #[cfg(test)]

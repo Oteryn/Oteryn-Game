@@ -1274,7 +1274,7 @@ fn judge_loot(
     );
 }
 
-async fn open_corpse(
+pub(super) async fn open_corpse(
     client: &mut DevClientSession,
     handle: oteryn_protocol_oteryn::item_view::ItemHandle,
 ) -> TestResult<BTreeMap<std::num::NonZeroU32, u64>> {
