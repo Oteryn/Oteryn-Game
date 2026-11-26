@@ -374,16 +374,15 @@ fi
 # Seed only this run's extra synthetic accounts through the same portal binary
 # and disposable environment as the upstream harness and composition.py.
 seed_mp_accounts() {
-  Q_P06_ACCOUNT="$Q_P06_ACCOUNT" python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$Q_P06_ACCOUNT" <<'PY_MP_SEED'
+  python3 - "$WORK" "$PVP_WORLD_ID" "$Q_P06_ACCOUNT" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$Q_P06_ACCOUNT" <<'PY_MP_SEED'
 import json
-import os
 from pathlib import Path
 import secrets
 import subprocess
 import sys
 
 work = Path(sys.argv[1])
-world, *accounts = sys.argv[2:]
+world, q_p06, *accounts = sys.argv[2:]
 env = json.loads((work / "portal/secrets/env.json").read_text())
 binary = json.loads((work / "identity.json").read_text())["portal_binary"]
 
@@ -398,7 +397,7 @@ seed("world", {"worldId": world, "name": "Open PvP", "region": "local"})
 row_accounts = {}
 for account in accounts:
     credentials = {"email": f"nb-{account}@example.invalid", "password": secrets.token_urlsafe(48)}
-    if account == os.environ["Q_P06_ACCOUNT"]:
+    if account == q_p06:
         credentials["email"] = "q_p06@example.invalid"
     seed("account", {"accountId": account, **credentials})
     if account.endswith(("000000000016", "00000000001c", "00000000001d")):

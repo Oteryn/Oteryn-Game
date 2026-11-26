@@ -307,6 +307,20 @@ WORK=.
         self.assertEqual(basic.returncode, 0, basic.stdout + basic.stderr)
         self.assertEqual(basic.stdout.splitlines(), accounts[:2])
 
+    def test_p06_account_reaches_platform_seed_with_readonly_fixture_constants(self):
+        fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
+        fixtures += section('readonly PVP_WORLD_ID=', 'readonly PVP_DATABASE=')
+        script = (
+            'set -Eeuo pipefail\nWORK=work\n' + fixtures
+            + 'python3() { printf "%s\\n" "$@"; }\n'
+            + function('seed_mp_accounts') + '\nseed_mp_accounts\n'
+        )
+        result = bash(script)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        args = result.stdout.splitlines()
+        self.assertEqual(args[3], '01934f10-7c00-7000-8000-000000000020')
+        self.assertEqual(args[4:].count(args[3]), 1)
+
 
 class ReuseTests(unittest.TestCase):
     GUARD = re.search(r'(?ms)^if \[\[ "\$NODE_BOOT_REUSE_STACK" != 0 \]\]; then.*?^fi\n', RUN_TEXT)
