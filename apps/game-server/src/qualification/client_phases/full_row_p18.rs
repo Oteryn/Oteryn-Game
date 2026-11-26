@@ -556,7 +556,7 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
         character_prep::grant_item(&grant, 37110, u32::try_from(case.cores)?).await?;
     }
     if case.operation == Operation::SliversToCores {
-        for count in [20, 20, 10] {
+        for count in [20, 19, 11] {
             character_prep::grant_item(&grant, 37109, count).await?;
         }
     }
@@ -627,6 +627,10 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
         )
     };
     let (slivers, cores) = counts(&client);
+    if case.operation == Operation::SliversToCores && slivers < 50 {
+        logout(&mut client).await?;
+        return Err(format!("fixture supplied {slivers} slivers, expected at least 50").into());
+    }
     if super::client_row_p18::dust(&mut client).await? != funded
         || bank_balance(&mut db, clients).await? != gold
         || cores < case.cores
