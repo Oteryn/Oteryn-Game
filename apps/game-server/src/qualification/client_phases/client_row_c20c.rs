@@ -124,7 +124,9 @@ async fn journey(core: &SeamClients<'_>) -> TestResult {
         return Err("C20c must hold both regular and Twist protections before the kill".into());
     }
 
-    let mut attacker = prepare_build(clients, 0xc4, 0, "knight").await?;
+    let mut attacker =
+        full_e2ef6::while_keeping_alive(&mut victim, prepare_build(clients, 0xc4, 0, "knight"))
+            .await?;
     assert_build(&mut attacker, 100, 1565, 550).await?;
     let (before, after) =
         full_e2ef6::drive_pvp_death(&mut victim, &mut attacker, world, &metadata.spawns, true)

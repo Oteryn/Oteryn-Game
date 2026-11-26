@@ -2394,6 +2394,20 @@ async fn saved_blessings(
     Ok(())
 }
 
+/// Keep the idle client answering wire probes while its peer prepares or walks.
+pub(super) async fn while_keeping_alive<T>(
+    idle: &mut DevClientSession,
+    action: impl Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    tokio::pin!(action);
+    loop {
+        tokio::select! {
+            result = &mut action => return result,
+            status = idle.service_liveness(Duration::from_millis(250)) => status?,
+        }
+    }
+}
+
 /// Follow the planned path once, pacing each advance by the accepted STEP receipt.
 pub(super) async fn walk_once(
     client: &mut DevClientSession,
@@ -2470,7 +2484,7 @@ async fn pvp_meet(
     }
     .ok_or("PvP player route blocked: no reachable non-PZ tile clear of creature spawns")?;
     if strict {
-        walk_once(victim, world, &path).await?;
+        while_keeping_alive(attacker, walk_once(victim, world, &path)).await?;
     } else {
         walk(victim, world, &path).await?;
     }
@@ -2491,7 +2505,7 @@ async fn pvp_meet(
     }
     .ok_or("PvP player route blocked: no adjacent non-PZ attacker tile")?;
     if strict {
-        walk_once(attacker, world, &path).await?;
+        while_keeping_alive(victim, walk_once(attacker, world, &path)).await?;
     } else {
         walk(attacker, world, &path).await?;
     }
