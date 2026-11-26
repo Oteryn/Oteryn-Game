@@ -9,11 +9,15 @@ use oteryn_protocol_oteryn::bosstiary_slots::{
 };
 
 fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P02_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+    for key in ["E2E_ALL_CAPTURE_DIR", "OTERYN_P02_CAPTURE_DIR"] {
+        let Some(root) = std::env::var_os(key) else {
+            continue;
+        };
+        if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
+            evidence(&format!(
+                "P02_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+            ));
+        }
     }
 }
 
@@ -93,7 +97,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P02.client status=CAPTURED evidence={expected}"
         )),

@@ -1597,7 +1597,7 @@ PY_P02_SELECTED
   then
     p02_captures="$(mktemp -d "$WORK/p02-captures.XXXXXX")" || return 1
     p02_log="$p02_captures/seam.log"
-    test_env+=("E2E_ALL_CAPTURE_DIR=$p02_captures")
+    test_env+=("OTERYN_P02_CAPTURE_DIR=$p02_captures")
   fi
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
