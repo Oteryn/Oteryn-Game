@@ -1569,17 +1569,21 @@ mod tests {
             item_instance_id: [3; 16],
             occurred_at_unix_ms: 1,
             envelope_sha256: [4; 32],
-            quantity: 1,
+            quantity: 4,
             destination: crate::durability::item_transfer::ContainerEntryPosition {
                 parent_item_instance_id: [5; 16],
                 placement_ordinal: 0,
             },
         };
         assert!(
-            fixture_item_committed(RewardClaimMintOutcome::Committed(receipt.clone()), 1).is_ok()
+            fixture_item_committed(RewardClaimMintOutcome::Committed(receipt.clone()), 4).is_ok()
         );
         assert!(
-            fixture_item_committed(RewardClaimMintOutcome::AlreadyCommitted(receipt), 1).is_ok()
+            fixture_item_committed(RewardClaimMintOutcome::AlreadyCommitted(receipt.clone()), 4)
+                .is_ok()
+        );
+        assert!(
+            fixture_item_committed(RewardClaimMintOutcome::AlreadyCommitted(receipt), 1).is_err()
         );
     }
 
