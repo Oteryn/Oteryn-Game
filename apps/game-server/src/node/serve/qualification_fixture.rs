@@ -906,7 +906,7 @@ async fn prepare_g20_dust(
                 WHERE s.game_session_id = encode($1, 'hex')::uuid
                   AND s.character_id = encode($2, 'hex')::uuid
                   AND s.account_id = $3::uuid
-                  AND s.session_state = 1 AND s.current_transport_ref IS NOT NULL
+                  AND s.session_state = 2 AND s.current_transport_ref IS NOT NULL
                 FOR UPDATE OF s
             ), credit AS (
                 INSERT INTO game_character_forge_dust_entries (
