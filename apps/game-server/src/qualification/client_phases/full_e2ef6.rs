@@ -2435,18 +2435,26 @@ pub(super) async fn walk_once(
     Ok(())
 }
 
-/// Plan once using the authored spawn cells as occupied before any STEP is sent.
+/// Plan once outside the hostile spawn approach range before any STEP is sent.
 pub(super) fn spawn_clear_route(
     world: &BundleWorld,
     from: TilePos,
     spawns: &oteryn_world_bundle::spawn::Table,
     goal: impl Fn(TilePos) -> bool,
 ) -> Option<Vec<StepDirection>> {
-    let occupied: BTreeSet<_> = spawns
-        .sources
-        .iter()
-        .flat_map(|source| source.points.iter().map(|point| (source.floor, point.x, point.y)))
-        .collect();
+    const APPROACH_CLEARANCE: i16 = 8;
+    let mut occupied = BTreeSet::new();
+    for source in &spawns.sources {
+        for point in &source.points {
+            for dx in -APPROACH_CLEARANCE..=APPROACH_CLEARANCE {
+                for dy in -APPROACH_CLEARANCE..=APPROACH_CLEARANCE {
+                    if let Some((x, y)) = point.x.checked_add_signed(dx).zip(point.y.checked_add_signed(dy)) {
+                        occupied.insert((source.floor, x, y));
+                    }
+                }
+            }
+        }
+    }
     route_avoiding(world, from, goal, |at| {
         !occupied.contains(&(at.floor, at.x, at.y))
     })
