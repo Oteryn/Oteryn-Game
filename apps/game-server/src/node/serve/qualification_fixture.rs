@@ -10,11 +10,23 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let text = std::str::from_utf8(bytes).ok()?.trim_end_matches('\n');
     let (session, profile) = text.strip_prefix("qualify ")?.split_once(' ')?;
     let session = parse_operation_id(session.as_bytes())?;
-    matches!(
-        profile,
-        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
-    )
-    .then_some((session, profile))
+    build_profile(profile)?;
+    Some((session, profile))
+}
+
+fn build_profile(profile: &str) -> Option<(&str, u32)> {
+    match profile {
+        "explorer" => Some(("knight", 100)),
+        "knight-underlevel" => Some(("knight", 66)),
+        #[cfg(feature = "qualification-spawn")]
+        "sorcerer-120" => Some(("sorcerer", 120)),
+        #[cfg(feature = "qualification-spawn")]
+        "monk-120" => Some(("monk", 120)),
+        vocation if qualification_build::PLAYABLE_VOCATIONS.contains(&vocation) => {
+            Some((vocation, 100))
+        }
+        _ => None,
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -680,11 +692,7 @@ async fn prepare_build(
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
-    let (vocation, level) = match profile {
-        "knight-underlevel" => ("knight", 66),
-        "explorer" => ("knight", 100),
-        _ => (profile, 100),
-    };
+    let (vocation, level) = build_profile(profile).ok_or("unknown qualification profile")?;
     let occurrence_profile = if level == 100 { vocation } else { profile };
     qualification_build::prepare_character_with_policy_until(
         root,
@@ -1495,9 +1503,11 @@ mod tests {
                             .join(format!("qualification-{}.sock", uuid_text(&session)));
                         let result = tokio::time::timeout(Duration::from_secs(10), async {
                             let listener = UnixListener::bind(&path)?;
-                            for profile in
-                                ["knight", "druid", "paladin", "sorcerer", "explorer", "monk"]
-                            {
+                            let profiles =
+                                ["knight", "druid", "paladin", "sorcerer", "explorer", "monk"];
+                            #[cfg(feature = "qualification-spawn")]
+                            let profiles = profiles.into_iter().chain(["sorcerer-120", "monk-120"]);
+                            for profile in profiles {
                                 let script = Path::new(env!("CARGO_MANIFEST_DIR"))
                                     .join("../../tools/qualification/node_boot/provision.py");
                                 let socket = path.clone();
@@ -1693,6 +1703,22 @@ mod tests {
             "qualify 01890f4c-3b2a-4c01-8d11-9a321b7c0004 knight".into(),
         ] {
             assert!(request(text.as_bytes()).is_none());
+        }
+    }
+
+    #[test]
+    fn qualification_level_120_profiles_require_spawn_feature() {
+        let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
+        for (profile, vocation) in [("sorcerer-120", "sorcerer"), ("monk-120", "monk")] {
+            let request = format!("qualify {id} {profile}\n");
+            assert_eq!(
+                prepare_request(true, Some(()), request.as_bytes()).is_ok(),
+                cfg!(feature = "qualification-spawn")
+            );
+            assert_eq!(
+                build_profile(profile),
+                cfg!(feature = "qualification-spawn").then_some((vocation, 120))
+            );
         }
     }
 }

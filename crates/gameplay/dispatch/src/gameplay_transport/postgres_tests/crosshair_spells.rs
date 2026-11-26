@@ -22,20 +22,28 @@ use crate::gameplay_transport::spell_premium_coordinator::{
 };
 use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
 use oteryn_protocol_oteryn::{
-    ClientCommandValue, CommandStatus, actor_spell, decode_command_result, encode_client_command,
+    ClientCommandValue, CommandStatus, actor_spell, attack::AttackIntentDisposition,
+    decode_command_result, encode_client_command, world_spatial_entities::EntityRef,
 };
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 
 /// What one vocation's scenario casts: the durable vocation and experience that reach every
-/// spell's level, the weapon the formulas read, and `(key, level, mana)` of each spell.
+/// spell's level, the weapon the formulas read, and the expected targeting of each cast.
 #[derive(Clone, Copy)]
 struct Plan {
     tag: &'static str,
     vocation: &'static str,
     experience: i64,
     weapon: &'static str,
-    spells: &'static [(&'static str, u32, i64)],
+    spells: &'static [(&'static str, u32, i64, Targeting)],
+}
+
+#[derive(Clone, Copy)]
+enum Targeting {
+    Clicked,
+    ClickedWithHeld,
+    Held,
 }
 
 /// The rat's health before every cast: far above any one hit, so the health lost is the damage.
@@ -51,8 +59,25 @@ fn crosshair_spells_postgres_paladin_barrages_hit_position_target() -> TestResul
         // A DISTANCE weapon with a known attack: Ethereal Barrage reads attack_skill.
         weapon: "oteryn:item.tibia.i3277",
         spells: &[
-            ("candidate:spell/divine_barrage", 70, 175),
-            ("candidate:spell/ethereal_barrage", 60, 135),
+            ("candidate:spell/divine_barrage", 70, 175, Targeting::Clicked),
+            ("candidate:spell/ethereal_barrage", 60, 135, Targeting::Clicked),
+        ],
+    })
+}
+
+#[test]
+fn crosshair_spells_postgres_needs_target_prefers_held_creature() -> TestResult {
+    let Ok(_) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(Plan {
+        tag: "crosshair_held",
+        vocation: "paladin",
+        experience: 6_000_000,
+        weapon: "oteryn:item.tibia.i3277",
+        spells: &[
+            ("candidate:spell/ethereal_spear", 23, 25, Targeting::Clicked),
+            ("candidate:spell/ethereal_spear", 23, 25, Targeting::Held),
         ],
     })
 }
@@ -66,7 +91,12 @@ fn crosshair_spells_postgres_monk_thousand_fist_blows_hits_position_target() -> 
         experience: 30_000_000,
         // A FIST weapon with a known attack: Thousand Fist Blows reads attack_skill.
         weapon: "oteryn:item.tibia.i50157",
-        spells: &[("candidate:spell/thousand_fist_blows", 120, 145)],
+        spells: &[(
+            "candidate:spell/thousand_fist_blows",
+            120,
+            145,
+            Targeting::ClickedWithHeld,
+        )],
     })
 }
 
@@ -138,10 +168,10 @@ async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestRe
         cp,
         room.clone(),
         native.spell_book().clone(),
-        3,
+        5,
     )?;
     deps.combat_room = Some(room);
-    // Every spell here is premium: the account holds a Current Premium.
+    // The barrage scenarios require Current Premium.
     let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
     h.root
         .latch_premium_activation(
@@ -211,11 +241,12 @@ async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestRe
     else {
         return Err("durable caster facts".into());
     };
-    for (key, level, mana) in plan.spells {
+    for (key, level, mana, _) in plan.spells {
         assert!(i64::from(facts.level) >= i64::from(*level), "{key} level");
         assert!(i64::from(facts.max_mana) >= *mana, "{key} max mana");
     }
     let target;
+    let held;
     let position;
     {
         let mut runtime = deps.runtime.lock().await;
@@ -252,19 +283,27 @@ async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestRe
             .maximum_health;
         runtime
             .realize_activation_spawns(vec![(
-                vec![(position.x, position.y, position.floor)],
+                vec![
+                    (position.x, position.y, position.floor),
+                    (p.x, p.y + 4, p.floor),
+                ],
                 60_000,
                 5_000,
                 "oteryn:creature.rat".into(),
                 u64::try_from(health)?,
             )])
             .map_err(|error| format!("realize crosshair target spawn: {error:?}"))?;
-        target = runtime
-            .visible_entities()
-            .creatures
-            .first()
-            .ok_or("rat")?
-            .actor;
+        let visible = runtime.visible_entities();
+        let [first, second] = visible.creatures.as_slice() else {
+            return Err("crosshair scenario needs two rats".into());
+        };
+        let (clicked, attacked) = if first.position == position {
+            (first, second)
+        } else {
+            (second, first)
+        };
+        assert_eq!(clicked.position, position);
+        (target, held) = (clicked.actor, attacked.actor);
         let mut states = owner.states.spell_states.lock().await;
         assert!(
             states
@@ -317,7 +356,7 @@ async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestRe
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
-    for (index, (key, _, mana)) in plan.spells.iter().enumerate() {
+    for (index, (key, _, mana, targeting)) in plan.spells.iter().enumerate() {
         let spell = (1..=deps.spells.source_len())
             .find_map(|i| {
                 std::num::NonZeroU32::new(u32::try_from(i).ok()?).filter(|i| {
@@ -334,11 +373,26 @@ async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestRe
                 .checked_sub(Duration::from_secs(5))
                 .ok_or("clock advance")?;
         }
-        deps.runtime
-            .lock()
-            .await
-            .set_test_creature_health(target, RAT_HEALTH)
-            .map_err(debug)?;
+        {
+            let mut runtime = deps.runtime.lock().await;
+            runtime.set_test_creature_health(target, RAT_HEALTH).map_err(debug)?;
+            runtime.set_test_creature_health(held, RAT_HEALTH).map_err(debug)?;
+        }
+        if !matches!(targeting, Targeting::Clicked) {
+            assert_eq!(
+                owner.select_attack_target(
+                    actor,
+                    session,
+                    1000 + u64::try_from(index)?,
+                    Some(EntityRef {
+                        identity: held.placement_identity(),
+                        generation: held.actor_local_generation(),
+                    }),
+                ).await,
+                AttackIntentDisposition::Ok,
+                "hold the rat away from the cursor"
+            );
+        }
         let before = owner
             .observe_vitals(actor, session)
             .await
@@ -368,16 +422,21 @@ async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestRe
             actor_spell::SpellCastDisposition::Cast,
             "{key}"
         );
-        let hit = deps
-            .runtime
-            .lock()
-            .await
-            .live_creature_health(target)
-            .ok_or("rat survives")?;
-        assert!(
-            hit < u64::try_from(RAT_HEALTH)?,
-            "{key} must damage the creature on the targeted tile: {hit}"
-        );
+        {
+            let (hit, untouched) = match targeting {
+                Targeting::Held => (held, target),
+                Targeting::Clicked | Targeting::ClickedWithHeld => (target, held),
+            };
+            let runtime = deps.runtime.lock().await;
+            let hit_health = runtime.live_creature_health(hit).ok_or("target rat survives")?;
+            let starting_health = u64::try_from(RAT_HEALTH)?;
+            assert!(hit_health < starting_health, "{key} must damage the expected rat");
+            assert_eq!(
+                runtime.live_creature_health(untouched),
+                Some(starting_health),
+                "{key} must leave the other rat untouched"
+            );
+        }
         let after = owner
             .observe_vitals(actor, session)
             .await

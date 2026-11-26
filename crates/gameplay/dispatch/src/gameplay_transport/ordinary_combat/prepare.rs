@@ -1,5 +1,8 @@
 //! Source, spatial, legality and payment phases of ordinary cast preparation.
 use super::*;
+use oteryn_gameplay_spell_rules::{
+    dispatch_plans::rune_use::target_rule, target::AllowedTargetsExt,
+};
 
 struct SpatialPhase {
     position: MovementPositionSnapshot,
@@ -258,16 +261,6 @@ pub(super) async fn prepare_inner(
         .as_ref()
         .ok_or(SpellCastDisposition::Rejected)?;
     let aim = aim(spell, intent)?;
-    // An aimed wave or beam qualifies its targets as a facing cast does.
-    let targeted = if aim.is_some() {
-        SpellCastIntent {
-            target: SpellTarget::None,
-            aim_at_target: false,
-            ..*intent
-        }
-    } else {
-        *intent
-    };
     let party = if matches!(spell.execution, Execution::PartyBuff(_))
         || may_heal_player(spell)
         || matches!(
@@ -302,35 +295,78 @@ pub(super) async fn prepare_inner(
         .filter(|(a, s, _)| states.get(runtime, *a, *s).is_some())
         .cloned()
         .collect::<Vec<_>>();
-    let spatial = prepare_spatial(
-        tx,
-        authority,
-        runtime,
-        room,
-        objects,
-        spell,
-        intent,
-        aim,
-        profile,
-        actor,
-        attack_target,
-        &roster,
-        states,
-        now,
-    )
-    .await?;
-    let caster_position = spatial.caster_position;
+    let mut qualify = async |intent: SpellCastIntent, aim: Option<Aim>| {
+        let spatial = prepare_spatial(
+            tx,
+            authority,
+            runtime,
+            room,
+            objects,
+            spell,
+            &intent,
+            aim,
+            profile,
+            actor,
+            attack_target,
+            &roster,
+            states,
+            now,
+        )
+        .await?;
+        // An aimed wave or beam qualifies its targets as a facing cast does.
+        let targeted = if aim.is_some() {
+            SpellCastIntent {
+                target: SpellTarget::None,
+                aim_at_target: false,
+                ..intent
+            }
+        } else {
+            intent
+        };
+        qualify_targets(
+            tx, root, authority, runtime, states, room, objects, spell, &targeted, profile, actor,
+            named, pvp_modes, &players, &creatures, spatial, now,
+        )
+        .await
+    };
+    // A crosshair spell requiring a creature tries the held target through the same
+    // spatial and legality checks as ATTACK_TARGET before using the clicked tile.
+    let held = if spell.needs_target
+        && matches!(intent.target, SpellTarget::Position(_))
+        && rune.is_none()
+        && attack_target.is_some()
+    {
+        let held_intent = SpellCastIntent {
+            target: SpellTarget::AttackTarget,
+            aim_at_target: false,
+            ..*intent
+        };
+        match qualify(held_intent, None).await {
+            Ok(phase)
+                if phase
+                    .operational
+                    .target
+                    .as_ref()
+                    .is_some_and(|target| target_rule(spell).allows(target)) =>
+            {
+                Some(phase)
+            }
+            Ok(_) | Err(SpellCastDisposition::TargetIllegal) => None,
+            Err(other) => return Err(other),
+        }
+    } else {
+        None
+    };
     let TargetPhase {
         world,
         operational,
         pvp_targets,
         chain_start,
         bindings,
-    } = qualify_targets(
-        tx, root, authority, runtime, states, room, objects, spell, &targeted, profile, actor,
-        named, pvp_modes, &players, &creatures, spatial, now,
-    )
-    .await?;
+    } = match held {
+        Some(phase) => phase,
+        None => qualify(*intent, aim).await?,
+    };
     let PaidPreparation {
         paid,
         output,
@@ -361,7 +397,7 @@ pub(super) async fn prepare_inner(
         &operational,
         &pvp_targets,
         chain_start,
-        caster_position,
+        operational.caster_position,
         draw,
     )?;
     Ok(PreparedNativeCombatCast {
