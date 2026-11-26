@@ -48,7 +48,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "3f488a4e42d3c3c61186ec6a7d38ea5528b43b85
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "1a1f98f8f2df7b981fa6a85f0f4bf3ac218247121ab330bf5348a703ce0b1e0d"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "b3423b858c7cad5c2814cef0708819f41c4b5bb328bae5450d202c2e18a92631"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "46f0f120cbdb5a750ebc1256ae04cb5b2e6d59b8"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "7059973d1bd8ea5cca790715fc79e3106c7a71d8"
 EXPECTED_POST_MERGE_RUST_SHA256 = "e14581834f2ceec245d87380e97f446ca3b06524a90b733adf20eca38380902e"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -710,7 +710,7 @@ def main() -> int:
                 "    if: needs.candidate.outputs.server_qualification != 'false'\n",
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
                 "python3 tools/qualification/node_boot/matrix.py plan --set pr > \"$RUNNER_TEMP/shards.json\"",
-                "\"$RUNNER_TEMP/shards.json\")\" = 6d04b52a16145723eedb0c56640ad052dbd26e94\n",
+                "\"$RUNNER_TEMP/shards.json\")\" = a4ab6150cecbe3590389ac61a7e3ff2def5b2bff\n",
                 'echo "fe1f1df027a012e269fba8e8088b433ffdaff2a939be4a1a05d7827537455cb0  .github/workflows/node-boot-build.yml" | sha256sum -c -',
                 'echo "288a79b279ca36544338daf3834bdaec8be9f00e39072f6e8d1770e814e4daa0  tools/qualification/node_boot/prebuilt.py" | sha256sum -c -',
             ),
@@ -776,7 +776,7 @@ def main() -> int:
                 'unpack server-seam "$SEAM_SHA256"',
                 'unpack platform "$PLATFORM_SHA256"',
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
-                "ref: 6d04b52a16145723eedb0c56640ad052dbd26e94",
+                "ref: a4ab6150cecbe3590389ac61a7e3ff2def5b2bff",
                 "WP5_QUALIFICATION=seam bash tools/qualification/wp5_s3b/run.sh | tee \"$evidence\"",
                 "grep -Fxq 'S3B_RESULT=SEAM_PASS' \"$evidence\"",
             ),

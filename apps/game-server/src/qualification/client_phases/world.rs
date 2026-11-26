@@ -3473,7 +3473,7 @@ pub(super) fn requires_platform_grant(account: &str) -> bool {
         .is_ok_and(|accounts| accounts.split(',').any(|required| required == account))
 }
 
-async fn platform_row_grant(clients: &SeamClients<'_>, index: usize) -> TestResult<String> {
+async fn platform_row_grant(clients: &SeamClients<'_>, index: usize, challenge: bool) -> TestResult<String> {
     let work = required("NODE_BOOT_PLATFORM_GRANT_DIR")?;
     let account = clients.accounts[index].clone();
     let character = uuid_text(&clients.characters[index]);
@@ -3487,6 +3487,7 @@ async fn platform_row_grant(clients: &SeamClients<'_>, index: usize) -> TestResu
                     .join("../../tools/qualification/node_boot/platform_grant.py"),
             )
             .args([work, account, character, world, channel, address])
+            .args(challenge.then_some("challenge"))
             .output()
     })
     .await??;
@@ -3528,7 +3529,7 @@ async fn connect_character_with_grant(
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     wait_character_released(clients, index).await?;
     let token = if platform_grant {
-        platform_row_grant(clients, index).await?
+        platform_row_grant(clients, index, false).await?
     } else {
         let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
         let (nonce, attempt) = fresh_grant_material(tag)?;
@@ -3546,6 +3547,14 @@ async fn connect_character_with_grant(
         };
         sign_grant(&grant, now_seconds()?)
     };
+    admit_character(clients, index, &token).await
+}
+
+async fn admit_character(
+    clients: &SeamClients<'_>,
+    index: usize,
+    token: &str,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
     let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
         address: clients.address,
         server_name: "localhost",

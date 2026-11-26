@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Sourced only by node_boot's fixed-path lifecycle hook. No Platform boot copy.
 set +x
-readonly GAME_PLATFORM_SHA=6d04b52a16145723eedb0c56640ad052dbd26e94
+readonly GAME_PLATFORM_SHA=a4ab6150cecbe3590389ac61a7e3ff2def5b2bff
 GP_HARNESS_PID=''
 GP_PG_CONTAINER=''
 game_platform_retain_test_logs() {
@@ -111,7 +111,8 @@ game_platform_start() {
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == native_reference && "$NODE_BOOT_WORLD" == 1 ]]; then
     reference_accounts=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID")
   fi
-  python3 "$GAME_SOURCE/tools/qualification/game_platform/prepare.py" "$WORK" "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID" \
+  env NODE_BOOT_LOGIN_CHALLENGE="${2:-0}" NODE_BOOT_GAME_COMMERCE="$commerce_enabled" \
+    python3 "$GAME_SOURCE/tools/qualification/game_platform/prepare.py" "$WORK" "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID" \
     "$WORLD_ID" "$CHANNEL_ID" "$FRESH_PUBLIC_HEX" "$RECOVERY_PUBLIC_HEX" "$FRESH_KEY_ID" "$RECOVERY_KEY_ID" "${reference_accounts[@]}" \
     || prepare_code=$?
   [[ "$prepare_code" != 3 ]] || game_platform_fail platform real_portal_binary_missing
@@ -146,7 +147,7 @@ game_platform_start() {
     || game_platform_fail platform route_seed_conflict_failed
   evidence "flow=route_seed result=pass revision_format=1 idempotent=1 conflict_exit=2"
   # node_boot's unassigned identity phase needs only NativeEvidence credentials.
-  # Do not combine the harness's other fifteen purpose identities with this leaf.
+  # Do not combine the harness's other purpose identities with this leaf.
   cp "$PORTAL_E2E_OUT/certs/ca.pem" "$WP5_PKI/server-ca.crt"
   cp "$PORTAL_E2E_OUT/certs/clients/native-evidence.pem" "$WP5_PKI/client.crt"
   cp "$PORTAL_E2E_OUT/certs/clients/native-evidence.key" "$WP5_PKI/client.key"
@@ -154,7 +155,7 @@ game_platform_start() {
   WP5_SERVER_NAME=localhost
   WP5_SOURCE_AUTHORITY=oteryn-platform-e2e
   WP5_ROUTE_REVISION="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["seed"]["route"]["routeRevision"])' "$WORK/portal-report.json")"
-  evidence "platform_roles=migrate,serve,worker,gateway platform_pg=18.6 game_pg=18.6 separate_database_roles=1 clients=16"
+  evidence "platform_roles=migrate,serve,worker,gateway platform_pg=18.6 game_pg=18.6 separate_database_roles=1 clients=18"
 }
 game_platform_config() {
   local -a mode=()

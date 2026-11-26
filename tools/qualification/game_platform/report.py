@@ -8,7 +8,7 @@ from urllib.parse import urlsplit
 
 CLIENTS = {
     "native-evidence", "runtime-status", "scope-assignment", "bootstrap-intents",
-    "lcfa", "character-commands", "character-services", "restore-notice", "store",
+    "lcfa", "journal-items", "journal-progress", "character-commands", "character-services", "restore-notice", "store",
     "premium", "loyalty-snapshot", "loyalty-stream", "coins", "sanctions",
     "security-revocations", "public-projections",
 }
@@ -31,7 +31,7 @@ def validate(report, work):
     for client in report["clients"].values():
         identities.add(client["san"])
         paths += [client["cert"], client["key"]]
-    if len(identities) != 16:
+    if len(identities) != len(CLIENTS):
         raise ValueError("overlapping_client_identities")
     paths += [report["logs"][role] for role in ["migrate", "serve", "worker", "gateway"]]
     for value in paths:

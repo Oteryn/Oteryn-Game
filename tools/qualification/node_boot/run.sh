@@ -11,7 +11,7 @@
 set -Eeuo pipefail
 umask 077
 
-readonly PLATFORM_SHA=6d04b52a16145723eedb0c56640ad052dbd26e94
+readonly PLATFORM_SHA=a4ab6150cecbe3590389ac61a7e3ff2def5b2bff
 readonly TOPOLOGY_REVISION=wp5-node-boot-v1
 readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
 readonly SECOND_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
@@ -135,8 +135,16 @@ if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" 
   NODE_BOOT_TOPOLOGY=portal-rs-game-platform-v1
 fi
 readonly NODE_BOOT_PLATFORM_PIN NODE_BOOT_TOPOLOGY
-# Enable with the pin update that includes Platform package A2 (--game-commerce).
-readonly NODE_BOOT_GAME_COMMERCE=0
+# Enable the Platform fixture profiles only for their isolated rows.
+NODE_BOOT_GAME_COMMERCE=0
+NODE_BOOT_LOGIN_CHALLENGE=0
+if [[ "${NODE_BOOT_E2E_ONLY:-}" == rows ]]; then
+  case "${OTERYN_E2E_ROW_BATCH:-}" in
+    51:1|63:1|254:1|257:1) NODE_BOOT_GAME_COMMERCE=1 ;;
+    238:1) NODE_BOOT_LOGIN_CHALLENGE=1 ;;
+  esac
+fi
+readonly NODE_BOOT_GAME_COMMERCE NODE_BOOT_LOGIN_CHALLENGE
 export NODE_BOOT_PROFILE="${NODE_BOOT_PROFILE:-sorcerer}"
 case "$NODE_BOOT_PROFILE" in
   explorer|knight|paladin|sorcerer|druid|monk) ;;
@@ -623,7 +631,7 @@ echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres
 ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
 
 # Use the merged native producer for every shard; the PHP producer is retired.
-game_platform_start "$NODE_BOOT_GAME_COMMERCE"
+game_platform_start "$NODE_BOOT_GAME_COMMERCE" "$NODE_BOOT_LOGIN_CHALLENGE"
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
   seed_mp_accounts
 fi
@@ -1601,7 +1609,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       "NODE_BOOT_PLATFORM_GRANT_ACCOUNTS=$C12_MONK_ACCOUNT,$C06_CASTER_ACCOUNT,$C06_PEER_ACCOUNT")
     test_env+=("NODE_BOOT_W18_ACCOUNT=$W18_ACCOUNT")
     test_env+=("NODE_BOOT_C01_ACCOUNT=$C01_ACCOUNT")
-    test_env+=("NODE_BOOT_GAME_COMMERCE=$NODE_BOOT_GAME_COMMERCE")
+    test_env+=("NODE_BOOT_GAME_COMMERCE=$NODE_BOOT_GAME_COMMERCE" "NODE_BOOT_LOGIN_CHALLENGE=$NODE_BOOT_LOGIN_CHALLENGE")
     test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID" "NODE_BOOT_LIGHT_ACCOUNT_ID=$LIGHT_ACCOUNT_ID")
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 && ${STATUS[pvp_character_bootstrap]:-} == PASS ]]; then

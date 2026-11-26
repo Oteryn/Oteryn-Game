@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 import secrets
+import socket
 import sys
 import time
 import urllib.error
@@ -55,8 +56,51 @@ def loopback(url):
     return url.rstrip("/")
 
 
+def unique_fields(pairs):
+    fields = dict(pairs)
+    if len(fields) != len(pairs):
+        raise ValueError("duplicate challenge field")
+    return fields
+
+
+def challenge_proof(opener, public, cookie, token_form):
+    body, _ = request(opener, public + "/oauth/token", data=form(token_form), statuses=(403,))
+    envelope = json.loads(body, object_pairs_hook=unique_fields)
+    if (len(body) > 16384 or set(envelope) != {"error", "challenge_id", "expires_in"}
+            or envelope["error"] != "oteryn_challenge_required"
+            or type(envelope["expires_in"]) is not int or not 1 <= envelope["expires_in"] <= 300):
+        raise ValueError("invalid challenge envelope")
+    challenge_id = uuid.UUID(envelope["challenge_id"])
+    if challenge_id.version != 7 or str(challenge_id) != envelope["challenge_id"]:
+        raise ValueError("invalid challenge identifier")
+    deadline = time.monotonic() + envelope["expires_in"]
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+        listener.bind(("127.0.0.1", 0))
+        redirect = f"http://127.0.0.1:{listener.getsockname()[1]}/callback"
+        state = secrets.token_urlsafe(32)
+        fields = dict(client_id=token_form["client_id"], challenge_id=str(challenge_id),
+                      redirect_uri=redirect, state=state)
+        path = public + "/oauth/challenge"
+        page, _ = request(opener, path + "?" + form(fields).decode(), headers={"Cookie": cookie})
+        answer = re.search(rb'<strong aria-describedby="challenge-alternative">([0-9]{6})</strong>', page)[1]
+        _, headers = request(opener, path, data=form({**fields, "_csrf": csrf(page), "answer": answer}),
+                             headers={"Cookie": cookie, "Origin": public}, statuses=(302, 303))
+        callback = urllib.parse.urlsplit(headers["Location"])
+        if (callback._replace(query="").geturl() != redirect or len(callback.query) > 4096
+                or time.monotonic() >= deadline):
+            raise ValueError("invalid challenge callback")
+        returned = unique_fields(urllib.parse.parse_qsl(callback.query, strict_parsing=True))
+        if (set(returned) != {"code", "state"} or returned["state"] != state
+                or not re.fullmatch(r"[A-Za-z0-9_.-]{1,2048}", returned["code"])):
+            raise ValueError("invalid challenge proof")
+        return {"challenge_id": str(challenge_id), "challenge_token": returned["code"]}
+
+
 def main():
-    work, account, character, world, channel, authority = sys.argv[1:]
+    work, account, character, world, channel, authority = sys.argv[1:7]
+    mode = sys.argv[7:]
+    if mode not in ([], ["challenge"]):
+        raise ValueError("invalid mode")
     work = Path(work)
     identity = json.loads((work / "identity.json").read_text())
     report = json.loads((work / "portal-report.json").read_text())
@@ -94,10 +138,13 @@ def main():
     values = urllib.parse.parse_qs(callback.query, strict_parsing=True)
     if values["state"] != [state] or len(values["code"]) != 1:
         raise RuntimeError("Platform authorization state mismatch")
-    token, _ = request(opener, public + "/oauth/token", data=form(dict(
+    token_form = dict(
         grant_type="authorization_code", code=values["code"][0], code_verifier=verifier,
         client_id=identity["client"], redirect_uri=identity["callback"],
-    )))
+    )
+    if mode:
+        token_form.update(challenge_proof(opener, public, cookie, token_form))
+    token, _ = request(opener, public + "/oauth/token", data=form(token_form))
     ticket, _ = request(opener, public + "/api/v1/game-auth/tickets", data=b'{"protocol_version":1}',
                         headers={"Content-Type": "application/json",
                                  "Authorization": "Bearer " + json.loads(token)["access_token"]})

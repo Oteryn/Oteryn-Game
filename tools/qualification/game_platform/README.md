@@ -7,7 +7,7 @@ PLATFORM_SOURCE=/absolute/path/to/Oteryn-Platform bash tools/qualification/game_
 ```
 
 The clean Platform checkout must be exactly
-`6d04b52a16145723eedb0c56640ad052dbd26e94`. No main merge, PHP fallback,
+`a4ab6150cecbe3590389ac61a7e3ff2def5b2bff`. No main merge, PHP fallback,
 mock handler or tool installation is performed. Required tools remain Docker,
 Compose, OpenSSL, Python 3, Node 22+, psql, Cargo, timeout, setsid and sudo.
 The upstream harness requires its prepared Node pg dependency.

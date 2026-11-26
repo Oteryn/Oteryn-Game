@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Private per-run input for the upstream harness, never an identity SQL writer."""
+import base64
 import json
 import os
 import secrets
@@ -7,6 +8,8 @@ import shlex
 import socket
 from contextlib import ExitStack
 import sys
+import uuid
+import time
 from pathlib import Path
 
 
@@ -92,6 +95,26 @@ def main():
     ]
     steps.append({"name": "routeReplay", "entity": "route", "args": steps[-1]["args"].copy()})
     (work / "route-input.json").write_text(json.dumps(steps[-1]["args"]))
+    challenge_env = ""
+    if os.environ.get("NODE_BOOT_LOGIN_CHALLENGE") == "1":
+        policy = json.dumps({"enabled": True, "source_attempts": 1})
+        key = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode().rstrip("=")
+        challenge_env = (
+            f"export PORTAL_NATIVE_LOGIN_CHALLENGE={shlex.quote(policy)}\n"
+            f"export PORTAL_NATIVE_LOGIN_CHALLENGE_KEYS=qualification={key}\n"
+        )
+    if os.environ.get("NODE_BOOT_GAME_COMMERCE") == "1":
+        catalogue = Path(__file__).resolve().parents[3] / "rulesets/economy/store/catalogue.json"
+        steps.append({"name": "storeCatalog", "entity": "store-catalog",
+                      "args": {"file": str(catalogue)}})
+        for account in accounts[-2:]:
+            operation = bytearray(secrets.token_bytes(16))
+            operation[:6] = (time.time_ns() // 1_000_000).to_bytes(6, "big")
+            operation[6] = (operation[6] & 15) | 0x70
+            operation[8] = (operation[8] & 63) | 0x80
+            steps.append({"name": f"coins-{account['accountId']}", "entity": "coin-credit",
+                          "args": {"accountId": account["accountId"], "amount": 1000,
+                                   "operationId": str(uuid.UUID(bytes=bytes(operation)))}})
     (work / "seed-plan.json").write_text(json.dumps({"steps": steps}))
     (work / "identity.json").write_text(json.dumps({"accounts": accounts, "callback": callback, "client": client,
         "native_origin": f"https://127.0.0.1:{native_port}", "portal_binary": str(binary)}))
@@ -100,6 +123,7 @@ def main():
     custody_args = shlex.quote(json.dumps({"directory": str(custody), "purpose": "fresh_admission"}))
     launcher = work / "portal-exec"
     launcher.write_text("#!/usr/bin/env bash\nset -euo pipefail\nset +x\n"
+                        + challenge_env +
                         "export OTERYN_ACCOUNT_MFA=true APP_ENV=testing\n"
                         "export OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED=true\n"
                         "export OTERYN_NATIVE_DEVICE_PROJECTION_AUTHORITY=oteryn-game-e2e\n"

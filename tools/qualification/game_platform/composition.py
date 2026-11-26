@@ -90,7 +90,7 @@ def bootstrap(work, account, world, operation, revisions, name="Qualification Tw
 def seed_loyalty(work, account, days):
     env = json.loads((work / "portal/secrets/env.json").read_text())
     binary = json.loads((work / "identity.json").read_text())["portal_binary"]
-    args = {"accountId": account, "spentPremiumDays": int(days)}
+    args = {"accountId": account, "premiumDays": int(days)}
     subprocess.run([binary, "seed", "loyalty", json.dumps(args)], env=env,
                    capture_output=True, timeout=20, check=True)
 

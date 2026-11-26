@@ -68,7 +68,7 @@ use crate::qualification_wild_spawn as wild_spawn;
 #[path = "spell_book_sweep_tests.rs"]
 mod spell_book_sweep_tests;
 
-const PLATFORM_SOURCE: &str = "6d04b52a16145723eedb0c56640ad052dbd26e94";
+const PLATFORM_SOURCE: &str = "a4ab6150cecbe3590389ac61a7e3ff2def5b2bff";
 /// Interpretation requested by the Platform intents that `run.sh` issues.
 /// Its content revision is also the served `readiness.content_revision`: the quest and Task Board
 /// owners refuse a Character whose stored progression content differs from the served one.

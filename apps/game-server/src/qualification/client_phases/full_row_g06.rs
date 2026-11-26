@@ -1,24 +1,17 @@
-//! G06: native login challenge before admission (apps/client `native_entry/challenge`,
-//! `platform-client` `native_login/challenge.rs`).
-//! The challenge is an OAuth extension of the Platform token endpoint: Platform answers
-//! `POST /oauth/token` with `oteryn_challenge_required`, serves `/oauth/challenge` and verifies
-//! the proof. The Game server owns no challenge route (the contract assigns issuance and
-//! verification to Platform: `docs/contracts/OTERYN_NATIVE_LOGIN_CHALLENGE_V1.md`), so nothing
-//! in the production-session path can issue one.
-//! 1. Admit the node-boot character through the dev client with a signed grant; the Game
-//!    admission accepts it without any challenge exchange (no Game challenge step exists).
-//! 2. Log out and require `Accepted`.
-//!
-//! The row then reports MISSING-SERVER naming the contract line that leaves issuance to Platform.
+//! G06 exercises Platform OAuth challenge proof before Game admission.
 use super::*;
 
 const SOURCE: &str = "source:docs/contracts/OTERYN_NATIVE_LOGIN_CHALLENGE_V1.md:4";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    if std::env::var("NODE_BOOT_LOGIN_CHALLENGE").as_deref() != Ok("1") {
+        evidence(&format!("e2e_all scenario=G06.full status=MISSING-SERVER seconds=0.000 evidence={SOURCE}"));
+        return;
+    }
     let started = std::time::Instant::now();
     let result = verdict::indexed_timeout(Duration::from_secs(60), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
-        Ok(Ok(())) => ("MISSING-SERVER", SOURCE.to_owned()),
+        Ok(Ok(())) => ("PASS", "platform-challenge-ticket-grant-and-logout".to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
     };
@@ -33,7 +26,9 @@ fn token(value: &str) -> String {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xc7).await?;
+    wait_character_released(clients, 1).await?;
+    let token = platform_row_grant(clients, 1, true).await?;
+    let mut client = admit_character(clients, 1, &token).await?;
     client.service_liveness(Duration::from_millis(50)).await?;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)

@@ -11,7 +11,7 @@
 set -Eeuo pipefail
 umask 077
 
-readonly PLATFORM_SHA=6d04b52a16145723eedb0c56640ad052dbd26e94
+readonly PLATFORM_SHA=a4ab6150cecbe3590389ac61a7e3ff2def5b2bff
 readonly TOPOLOGY_REVISION=portal-rs-game-platform-v1
 readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
 readonly SECOND_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
