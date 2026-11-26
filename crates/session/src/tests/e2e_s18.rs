@@ -140,17 +140,32 @@ async fn replay(
     let mut seen = 0;
     let mut previous_command = 0;
     let mut malformed_checked = [false; 2];
-    let mut previous_sequence = session.last_server_sequence();
     while !session.stream.0.is_empty() {
         let frame = read_frame(&mut session.stream).await?;
         let envelope = decode_wire_envelope(&frame)?;
         envelope.validate(Direction::ServerToClient, true)?;
         session.check_generation(&envelope)?;
-        let sequence = envelope.server_sequence();
-        if sequence != 0 {
-            assert!(sequence > previous_sequence, "S18 wire sequence regressed");
-            previous_sequence = sequence;
+        if let Some(error) = session.terminal_protocol_error(&envelope)? {
+            return Err(error.into());
         }
+        match envelope.message_type() {
+            MessageType::LivenessProbe => {
+                session.answer_probe(envelope.payload()).await?;
+                continue;
+            }
+            MessageType::SnapshotBegin => {
+                session.replace_snapshot(envelope.payload()).await?;
+                session.take_events();
+                println!(
+                    "S18_CAPTURED_REPLACEMENT sequence={}",
+                    session.last_server_sequence()
+                );
+                continue;
+            }
+            MessageType::CommandResult | MessageType::StateDelta => {}
+            actual => return Err(format!("S18 unexpected recorded frame: {actual:?}").into()),
+        }
+        let sequence = session.next_sequence(&envelope)?;
         if envelope.message_type() == MessageType::CommandResult {
             let outcome = decode_command_result(envelope.payload())?;
             let receipt = format!("{}:{sequence}", outcome.command_id);
