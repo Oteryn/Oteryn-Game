@@ -160,7 +160,7 @@ fn own_ref(
         .ok_or_else(|| "own entity absent".into())
 }
 
-fn spell_book() -> TestResult<crate::spell::SpellBook> {
+pub(super) fn spell_book() -> TestResult<crate::spell::SpellBook> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(
         &root.join("content/spells.manifest.json"),
@@ -175,7 +175,10 @@ fn spell_book() -> TestResult<crate::spell::SpellBook> {
     Ok(catalog.into_spell_book_with_selections(&selected)?)
 }
 
-fn spell_index(book: &crate::spell::SpellBook, words: &str) -> TestResult<std::num::NonZeroU32> {
+pub(super) fn spell_index(
+    book: &crate::spell::SpellBook,
+    words: &str,
+) -> TestResult<std::num::NonZeroU32> {
     let key = &book
         .spoken(words)
         .ok_or_else(|| format!("compiled spell missing: {words}"))?
@@ -208,6 +211,40 @@ fn cast_requirement(disposition: casts::SpellCastDisposition) -> &'static str {
     }
 }
 
+pub(super) async fn prepare_caster(
+    clients: &SeamClients<'_>,
+    tag: u8,
+) -> TestResult<DevClientSession> {
+    character_prep::declare_seeded(
+        "S13c",
+        "sorcerer-level-32,premium",
+        "Ordinary leveling to the party spell prerequisite exceeds the row budget",
+    );
+    let caster = character_prep::Seeded {
+        profile: "s13-party",
+        reason: "Enchant Party requires level 32",
+    }
+    .connect(clients, tag, 1)
+    .await?;
+    character_prep::grant_premium(&caster).await?;
+    Ok(caster)
+}
+
+pub(super) async fn require_seeded_caster(
+    caster: &mut DevClientSession,
+    spell: &crate::spell::SpellDefinition,
+) -> TestResult {
+    let level = full_e2ef5::prepare_spell_access(caster, spell).await?;
+    let mana = caster.actor_vitals().ok_or("caster vitals absent")?.mana;
+    if level != 32 || mana < 216 {
+        return Err(format!(
+            "step=seeded-caster expected level 32 and 216 mana, observed level={level} mana={mana}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -217,7 +254,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut caster = connect_character(clients, 0xc3, 1).await?;
+    let dedicated =
+        character_prep::dedicated_character(clients, "NODE_BOOT_Q_S13C_ACCOUNT").await?;
+    let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
+    let scope = SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
+    let clients = &scope;
+    let mut caster = prepare_caster(clients, 0xc3).await?;
     let mut peer = connect_character(clients, 0xc4, 0).await?;
     if caster.join_snapshot().game_session_id == peer.join_snapshot().game_session_id
         || !party(&mut caster, None).await?.members.is_empty()
@@ -268,45 +314,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("walk-invite-accept");
 
-    let ranking = oteryn_dev_client::client_runtime::highscores::command(
-        oteryn_dev_client::client_runtime::highscores::wire::HighscoresQuery {
-            world: None,
-            details: false,
-            category: 1,
-            vocation: 0,
-            page: 1,
-            snapshot_id: 0,
-        },
-    )
-    .map_err(|e| format!("ranking input: {e:?}"))?;
-    let reply = caster
-        .session_mut()
-        .gated_command(ranking.capability, ranking.command_type, &ranking.payload)
-        .await?;
-    let page = oteryn_dev_client::client_runtime::highscores::wire::decode_highscores_result(
-        &reply.payload,
-    )
-    .map_err(|e| format!("ranking result: {e:?}"))?;
-    let own = page
-        .own_row
-        .ok_or("step=spell-select observed=no-own-ranking-row need=durable-vocation")?;
-    let (words, slot) = match oteryn_gameplay_progression::wheel::base_vocation(&own.vocation) {
-        Some("knight") => ("utito mas sio", 0),
-        Some("paladin") => ("utamo mas sio", 1),
-        Some("sorcerer") => ("utori mas sio", 2),
-        Some("druid") => ("utura mas sio", 3),
-        Some("monk") => ("utevo mas sio", 4),
-        _ => {
-            return Err(format!(
-                "step=spell-select observed=vocation-{} need=party-spell-vocation",
-                own.vocation
-            )
-            .into());
-        }
-    };
+    let words = "utori mas sio";
+    let slot = 2;
     let book = spell_book()?;
     let index = spell_index(&book, words)?;
     let spell = book.indexed(index).ok_or("indexed party spell absent")?;
+    require_seeded_caster(&mut caster, spell).await?;
     let before = caster
         .actor_vitals()
         .copied()
@@ -327,14 +340,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     row.pass("cast-reply-and-mana");
-    let caster_effects = effects(&mut caster).await?;
-    let peer_effects = effects(&mut peer).await?;
-    if caster_effects.party_spell_remaining_ms[slot] == 0
-        || peer_effects.party_spell_remaining_ms[slot] == 0
-    {
-        return Err(format!("step=member-condition observed=caster-{caster_effects:?}-peer-{peer_effects:?} need=nonzero-slot-{slot}").into());
-    }
-    row.pass("member-condition-deltas");
     let refused_before = caster
         .actor_vitals()
         .copied()
@@ -353,6 +358,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     row.pass("cooldown-refusal");
+    let caster_effects = effects(&mut caster).await?;
+    let peer_effects = effects(&mut peer).await?;
+    if caster_effects.party_spell_remaining_ms[slot] == 0
+        || peer_effects.party_spell_remaining_ms[slot] == 0
+    {
+        return Err(format!("step=member-condition observed=caster-{caster_effects:?}-peer-{peer_effects:?} need=nonzero-slot-{slot}").into());
+    }
+    row.pass("member-condition-deltas");
 
     let sessions = [
         caster.join_snapshot().game_session_id,
