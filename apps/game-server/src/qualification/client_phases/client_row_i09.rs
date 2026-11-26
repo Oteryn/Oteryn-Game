@@ -13,12 +13,16 @@ use oteryn_protocol_oteryn::world_object::{
 const BEFORE: &str = "oteryn:item.tibia.i2358";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result =
-        verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
-            .await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(120),
+        verdict::observe(oteryn_dev_client::with_qualification_transcript(journey(
+            clients,
+        ))),
+    )
+    .await;
     match result {
         Ok(Ok(())) => evidence(
-            "SEAM_EVIDENCE e2e_all scenario=I09.client status=FAIL evidence=BLOCKED-CLIENT-original-received-I09-frames-unavailable",
+            "SEAM_EVIDENCE e2e_capture scenario=I09.client status=CAPTURED evidence=domain-17-original-received-frames",
         ),
         Ok(Err(error)) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=I09.client status=FAIL evidence={}",
@@ -34,7 +38,18 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
+fn capture(directory: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(directory.join(name))?;
+    std::io::Write::write_all(&mut file, bytes)?;
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let capture_root = required("E2E_ALL_CAPTURE_DIR")?;
+    let capture_root = Path::new(&capture_root);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -142,9 +157,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     client.take_events();
     let reply = client.session_mut().world_context_use(&intent(0)?).await?;
     require_mechanic_acceptance(reply.status, "I09 chair rotation")?;
-    if decode_use_result(&reply.payload)
-            .map_err(|error| format!("I09 result decode: {error:?}"))?
-            != UseDisposition::Committed
+    if decode_use_result(&reply.payload).map_err(|error| format!("I09 result decode: {error:?}"))?
+        != UseDisposition::Committed
     {
         return Err(format!("rotation refused: {:?}", reply.status).into());
     }
@@ -232,6 +246,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    let transcript = oteryn_dev_client::take_qualification_transcript()
+        .ok_or("I09 original received frames unavailable")?;
     let stale = client.session_mut().world_context_use(&intent(0)?).await?;
     if stale.status != CommandStatus::Accepted
         || decode_use_result(&stale.payload)
@@ -257,6 +273,46 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("I09 relog did not open a new session at the saved position".into());
     }
     assert_chair(&mut relogged, target, item)?;
+    let binding = format!(
+        "{} {} {} {}",
+        uuid_text(session.as_bytes()),
+        reply.command_id,
+        reply.server_sequence,
+        delta.server_sequence
+    );
+    capture(capture_root, "i09-original-frames.bin", &transcript)?;
+    capture(capture_root, "i09-binding.txt", binding.as_bytes())?;
+    capture(capture_root, "i09-map-before.bin", &before.payload)?;
+    capture(
+        capture_root,
+        "i09-map-before.txt",
+        format!(
+            "{} {} {} {}\n",
+            delta.server_sequence - 1,
+            before.domain_id,
+            before.snapshot_type,
+            before.revision
+        )
+        .as_bytes(),
+    )?;
+    capture(
+        capture_root,
+        "i09-expected.txt",
+        format!(
+            "{} {} {} {} {} {} {} {} {}\n",
+            delta.base_revision,
+            delta.new_revision,
+            delta.server_sequence,
+            definition,
+            item.appearance_id,
+            target.x,
+            target.y,
+            target.floor,
+            ordinal
+        )
+        .as_bytes(),
+    )?;
+    evidence(&format!("I09_ORIGINAL_FRAME_BINDING {binding}"));
     Ok(())
 }
 

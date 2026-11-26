@@ -23,7 +23,6 @@ use oteryn_protocol_oteryn::world_spatial::{self, StepDirection, WorldSpatialObs
 use oteryn_protocol_oteryn::{CharacterId, FoundationProtocolError};
 /// Default support sent by this harness, shared with the native session.
 pub use oteryn_session::CLIENT_SUPPORTED_CAPABILITIES;
-pub use oteryn_session::SessionError;
 use oteryn_session::{Admission, Session};
 pub use oteryn_session::{
     AppliedDelta, CastOutcome, CharacterInventory, ChatDisposition, ChatIntent, ChatLine, ChatLog,
@@ -35,6 +34,9 @@ pub use oteryn_session::{
     MAX_CORPSE_CONTAINER_48_ENTRIES, MAX_OPEN_CONTAINER_ENTRIES, MAX_QUEUED_EVENTS, OpenContainer,
     SessionEvent, StepOutcome, UseOutcome, WorldEntities, WorldSpatialEntitiesDelta,
     WorldSpatialEntity,
+};
+pub use oteryn_session::{
+    SessionError, take_qualification_transcript, with_qualification_transcript,
 };
 use oteryn_session_tcp::{TcpAdapterError, TcpConnect, TcpTlsStream};
 use rustls::pki_types::CertificateDer;

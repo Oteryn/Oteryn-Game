@@ -162,6 +162,27 @@ pub(super) fn trace_client_frame(body: &[u8], generation: u64, selected: &[u32])
     );
 }
 
+const QUALIFICATION_TRANSCRIPT_LIMIT: usize = 32 * 1024 * 1024;
+
+tokio::task_local! {
+    static QUALIFICATION_TRANSCRIPT: std::cell::RefCell<Option<Vec<u8>>>;
+}
+
+/// Retain original received frames for one qualification journey on the current task.
+pub async fn with_qualification_transcript<T>(journey: impl Future<Output = T>) -> T {
+    QUALIFICATION_TRANSCRIPT
+        .scope(std::cell::RefCell::new(Some(Vec::new())), journey)
+        .await
+}
+
+/// Finish the current transcript. An absent scope or overflow denies qualification.
+pub fn take_qualification_transcript() -> Option<Vec<u8>> {
+    QUALIFICATION_TRANSCRIPT
+        .try_with(|capture| capture.borrow_mut().take())
+        .ok()
+        .flatten()
+}
+
 /// Reads one length-prefixed frame body (bounded by `FrameLength`).
 pub async fn read_frame<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Vec<u8>, SessionError> {
     let mut prefix = [0_u8; 4];
@@ -186,6 +207,17 @@ pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     let length = FrameLength::from_prefix(&prefix)?;
     let mut body = vec![0_u8; length.get() as usize];
     stream.read_exact(&mut body).await?;
+    let _capture_unavailable = QUALIFICATION_TRANSCRIPT.try_with(|capture| {
+        let mut capture = capture.borrow_mut();
+        if let Some(bytes) = capture.as_mut() {
+            if bytes.len() + prefix.len() + body.len() > QUALIFICATION_TRANSCRIPT_LIMIT {
+                *capture = None;
+            } else {
+                bytes.extend_from_slice(&prefix);
+                bytes.extend_from_slice(&body);
+            }
+        }
+    });
     Ok(body)
 }
 

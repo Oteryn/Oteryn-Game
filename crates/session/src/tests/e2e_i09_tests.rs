@@ -7,19 +7,16 @@
 //! `crates/client-runtime/src/features/`; `tools/dev-client/src/lib.rs::take_events` delegates to
 //! this session owner.
 //!
-//! Capture files in `E2E_ALL_CAPTURE_DIR` (separate text fields with one ASCII space):
-//! - `i09-map-before.bin`: raw `GatedSnapshot::payload` from
-//!   `Session::gated_snapshot(STATE_DOMAIN_WORLD_MAP_VIEW)` after walking and before USE.
-//! - `i09-map-before.txt`: decimal `predecessor_sequence domain_id snapshot_type revision\n`
-//!   as UTF-8. The last three fields come from that same `GatedSnapshot`. Use the first
-//!   rotation map delta's `server_sequence - 1` as the predecessor sequence, even when
-//!   command results or other domains consumed sequence numbers after the map was saved.
-//!   Require the saved revision to match the delta's base and no intervening map replacement.
-//! - `i09-map-delta.bin`: raw `encode_world_map_delta(&delta.value.header, &delta.value)`
-//!   bytes from the rotation `SessionEvent::WorldMap` returned by `Session::take_events`.
-//! - `i09-expected.txt`: decimal `base_revision new_revision server_sequence definition appearance\n`
-//!   as UTF-8, using the applied delta and its rotated item.
-//! - `i09-result.bin`: raw USE `GatedCommandResult::payload`, retained as server-side evidence.
+//! The live replay consumes the original received frames from the first admission through the
+//! chair update. Node Boot supplies the session, command and reply/delta sequences from the live
+//! log. The transcript must agree with that binding, the exact chair, and the original map
+//! revision chain. The raw predecessor payload and metadata verify the replay's derived state:
+//! - `i09-original-frames.bin`: original length-prefixed Server-to-Client frames.
+//! - `i09-binding.txt`: session UUID, USE command ID, reply sequence and rotation delta sequence.
+//! - `i09-map-before.bin`: raw predecessor map snapshot payload.
+//! - `i09-map-before.txt`: predecessor sequence, domain, snapshot type and revision.
+//! - `i09-expected.txt`: base/new revisions, delta sequence, definition, appearance,
+//!   x/y/floor and base ordinal.
 
 use super::*;
 use oteryn_protocol_oteryn::world_map::{
@@ -30,8 +27,37 @@ use std::{num::NonZeroU32, path::Path};
 
 #[test]
 fn furniture_rotation_real_payload_replays_and_malformed_delta_is_atomic() -> Result<(), BoxError> {
-    let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR");
-    run_replay(directory.as_deref().map(Path::new))
+    if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        return std::thread::scope(|scope| {
+            std::thread::Builder::new()
+                .stack_size(64 << 20)
+                .spawn_scoped(scope, || block_on(replay_original(Path::new(&directory)))?)?
+                .join()
+                .map_err(|_| "I09 replay thread panicked")?
+        });
+    }
+    run_replay(None)
+}
+
+#[test]
+fn furniture_rotation_transcript_retains_original_framed_bytes() -> Result<(), BoxError> {
+    block_on(async {
+        let (mut reader, mut writer) = tokio::io::duplex(64);
+        let wire = [0, 0, 0, 3, 0xab, 0xcd, 0xef];
+        tokio::io::AsyncWriteExt::write_all(&mut writer, &wire).await?;
+        with_qualification_transcript(async {
+            assert_eq!(read_frame(&mut reader).await?, wire[4..]);
+            assert_eq!(
+                take_qualification_transcript().as_deref(),
+                Some(wire.as_slice())
+            );
+            assert!(take_qualification_transcript().is_none());
+            Ok::<_, BoxError>(())
+        })
+        .await?;
+        assert!(take_qualification_transcript().is_none());
+        Ok::<_, BoxError>(())
+    })?
 }
 
 #[test]
@@ -213,6 +239,198 @@ async fn replay(root: Option<&Path>) -> Result<(), BoxError> {
     assert!(map_transport::apply(&mut session, expected.2 + 1, &[0xff]).is_err());
     assert!(session.take_events().is_empty());
     Ok(())
+}
+
+async fn replay_original(root: &Path) -> Result<(), BoxError> {
+    use oteryn_protocol_oteryn::world_object::{UseDisposition, decode_use_result};
+    use oteryn_protocol_oteryn::{
+        Direction, FrameLength, decode_command_result, decode_server_accepted, decode_state_delta,
+    };
+
+    let binding = std::fs::read_to_string(root.join("i09-binding.txt"))?;
+    if binding != std::env::var("OTERYN_I09_EXPECTED_BINDING")? {
+        return Err("I09 capture binding did not match the current live log".into());
+    }
+    let fields: Vec<_> = binding.split_ascii_whitespace().collect();
+    let [session_id, command, reply_sequence, delta_sequence] = fields.as_slice() else {
+        return Err("invalid I09 capture binding".into());
+    };
+    let command: u64 = command.parse()?;
+    let reply_sequence: u64 = reply_sequence.parse()?;
+    let delta_sequence: u64 = delta_sequence.parse()?;
+    let expected_text = std::fs::read_to_string(root.join("i09-expected.txt"))?;
+    let expected: Vec<_> = expected_text.split_ascii_whitespace().collect();
+    let [
+        base,
+        new,
+        sequence,
+        definition,
+        appearance,
+        x,
+        y,
+        floor,
+        ordinal,
+    ] = expected.as_slice()
+    else {
+        return Err("invalid I09 original-frame expectations".into());
+    };
+    let base: u64 = base.parse()?;
+    let new: u64 = new.parse()?;
+    let definition = NonZeroU32::new(definition.parse()?).ok_or("zero I09 item definition")?;
+    let target = ActorPosition {
+        x: x.parse()?,
+        y: y.parse()?,
+        floor: floor.parse()?,
+    };
+    let ordinal: u8 = ordinal.parse()?;
+    let (predecessor, map) = capture_predecessor(root)?;
+    if sequence.parse::<u64>()? != delta_sequence
+        || delta_sequence <= reply_sequence
+        || predecessor.checked_add(1) != Some(delta_sequence)
+        || base != map.revision
+        || map.domain_id != world_map::STATE_DOMAIN_WORLD_MAP_VIEW
+        || map.snapshot_type != world_map::SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1
+        || *appearance != "2359"
+        || target
+            != (ActorPosition {
+                x: 32355,
+                y: 32206,
+                floor: 7,
+            })
+    {
+        return Err("inconsistent I09 replay expectations".into());
+    }
+
+    let bytes = std::fs::read(root.join("i09-original-frames.bin"))?;
+    let mut remaining = bytes.as_slice();
+    let mut frames = Vec::new();
+    while !remaining.is_empty() {
+        let prefix = remaining.get(..4).ok_or("truncated I09 frame prefix")?;
+        let length = FrameLength::from_prefix(prefix)?.get() as usize;
+        let frame = remaining
+            .get(..4 + length)
+            .ok_or("truncated I09 frame body")?;
+        frames.push((frame, decode_wire_envelope(&frame[4..])?));
+        remaining = &remaining[frame.len()..];
+    }
+    let (_, accepted_frame) = frames.first().ok_or("I09 transcript is empty")?;
+    accepted_frame.validate(Direction::ServerToClient, false)?;
+    if accepted_frame.message_type() != MessageType::ServerAccepted {
+        return Err("I09 transcript did not start with ServerAccepted".into());
+    }
+    let accepted = decode_server_accepted(accepted_frame.payload())?;
+    let id = accepted.game_session_id.as_bytes();
+    let actual_id = id
+        .iter()
+        .enumerate()
+        .fold(String::new(), |mut out, (index, byte)| {
+            if matches!(index, 4 | 6 | 8 | 10) {
+                out.push('-');
+            }
+            out.push_str(&format!("{byte:02x}"));
+            out
+        });
+    if actual_id != *session_id || command < accepted.next_command_id {
+        return Err("I09 original session or command did not match".into());
+    }
+    let joined = frames
+        .iter()
+        .position(|(_, frame)| frame.message_type() == MessageType::SnapshotCommit)
+        .ok_or("I09 original admission snapshot incomplete")?;
+    let original_join: Vec<u8> = frames[..=joined]
+        .iter()
+        .flat_map(|(bytes, _)| bytes.iter().copied())
+        .collect();
+    let (client, mut server) = tokio::io::duplex(64 * 1024);
+    let peer = tokio::spawn(async move {
+        read_frame(&mut server).await?;
+        tokio::io::AsyncWriteExt::write_all(&mut server, &original_join).await?;
+        Ok::<_, BoxError>(server)
+    });
+    let mut session = Session::admit(
+        client,
+        Admission {
+            appearance_items: None,
+            schema_revision: accepted.schema_revision,
+            character_id: CharacterId::decode(&uuid_v7(4))?,
+            admission_material: b"i09-offline-replay",
+            client_build_id: "e2e-i09-replay",
+            supported_capabilities: &accepted.selected_capabilities,
+            deadline: DEADLINE,
+        },
+    )
+    .await?;
+    let _server = peer.await??;
+    let mut last_sequence = session.last_server_sequence();
+    let mut committed = false;
+    for (_, frame) in &frames[joined + 1..] {
+        frame.validate(Direction::ServerToClient, true)?;
+        if frame.connection_generation() != accepted.connection_generation {
+            return Err("I09 transcript crossed connection generations".into());
+        }
+        let sequence = frame.server_sequence();
+        if sequence != 0 {
+            if last_sequence.checked_add(1) != Some(sequence) {
+                return Err("I09 original frame sequence is discontinuous".into());
+            }
+            last_sequence = sequence;
+        }
+        if sequence == reply_sequence {
+            if frame.message_type() != MessageType::CommandResult {
+                return Err("I09 expected a command result at the recorded sequence".into());
+            }
+            let result = decode_command_result(frame.payload())?;
+            if result.command_id != command
+                || result.status != CommandStatus::Accepted
+                || decode_use_result(result.payload) != Ok(UseDisposition::Committed)
+            {
+                return Err("I09 original USE result did not match".into());
+            }
+            committed = true;
+        }
+        if frame.message_type() != MessageType::StateDelta {
+            continue;
+        }
+        let delta = decode_state_delta(frame.payload())?;
+        if delta.domain_id != world_map::STATE_DOMAIN_WORLD_MAP_VIEW {
+            continue;
+        }
+        if sequence < delta_sequence {
+            map_transport::apply(&mut session, sequence, frame.payload())?;
+            continue;
+        }
+        if !committed
+            || sequence != delta_sequence
+            || delta.base_revision != base
+            || delta.new_revision != new
+            || session.gated_snapshot(map.domain_id) != Some(&map)
+        {
+            return Err("I09 original rotation did not match the captured predecessor".into());
+        }
+        let SessionEvent::WorldMap(update) =
+            map_transport::apply(&mut session, sequence, frame.payload())?
+        else {
+            return Err("I09 original rotation did not publish a map update".into());
+        };
+        let origin = MapOrigin::BaseOrdinal {
+            ordinal,
+            object_revision: 1,
+        };
+        if !update.value.tiles.iter().any(|tile| {
+            tile.position == target
+                && tile.items.iter().any(|item| {
+                    item.origin == origin
+                        && item.definition == MapDefinition::Item(definition)
+                        && item.appearance_id == 2359
+                })
+        }) {
+            return Err("I09 original rotation did not change the exact chair".into());
+        }
+        assert!(map_transport::apply(&mut session, sequence + 1, &[0xff]).is_err());
+        assert!(session.take_events().is_empty());
+        return Ok(());
+    }
+    Err("I09 transcript omitted its exact rotation frame".into())
 }
 
 type Fixture = (Vec<u8>, (u64, u64, u64, u32, u16));

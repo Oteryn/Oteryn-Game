@@ -114,6 +114,11 @@ def replay_targets():
         "oteryn-client", "e2e_e09_real_mail_outcomes_replay_into_mail_panel",
         capture_names("e09", mail.read_text()),
     )]
+    targets["e2e_i09"] = [(
+        "oteryn-session", "furniture_rotation_real_payload_replays_and_malformed_delta_is_atomic",
+        {"i09-original-frames.bin", "i09-binding.txt", "i09-map-before.bin",
+         "i09-map-before.txt", "i09-expected.txt"},
+    )]
     return targets
 
 
@@ -127,11 +132,21 @@ def replay_cause(row, package, test, names, captures, server, log):
     if not package or not server:
         return "replay-not-run"
 
+    replay_env = os.environ.copy()
+    if row == "I09":
+        bindings = re.findall(
+            r"^(?:SEAM_EVIDENCE )?I09_ORIGINAL_FRAME_BINDING ([0-9a-f-]{36} [0-9]+ [0-9]+ [0-9]+)$",
+            log.read_text(errors="replace"), re.MULTILINE,
+        )
+        if len(bindings) != 1:
+            return "capture-binding-missing-or-duplicate"
+        replay_env["OTERYN_I09_EXPECTED_BINDING"] = bindings[0]
+
     try:
         result = subprocess.run(
             [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package,
              "--lib", test, "--", "--nocapture"],
-            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=replay_env,
         )
     except OSError:
         return "replay-not-run"
