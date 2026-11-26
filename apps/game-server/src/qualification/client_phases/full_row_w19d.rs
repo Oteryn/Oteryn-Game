@@ -1,7 +1,9 @@
 //! W19d ordinary USE of carried outfit acquisition items.
 use super::*;
+use crate::content::native_gameplay::{NativeCosmeticsView, test_support::cosmetics_fixture};
+use crate::domain::appearance::{AccountUnlocks, EarnedCosmetics, Sex, UnlockFact};
 use oteryn_dev_client::DevClientSession;
-use oteryn_gameplay_items::item_cosmetics::{self, GrantKind};
+use oteryn_gameplay_items::item_cosmetics;
 use oteryn_protocol_oteryn::{appearance, world_object as use_wire};
 use std::collections::BTreeMap;
 use std::num::NonZeroU32;
@@ -142,51 +144,63 @@ async fn commit_use(client: &mut DevClientSession, reference: NonZeroU32) -> Tes
     Ok(())
 }
 
+fn outfit_grant_projection(
+    content: &NativeCosmeticsView,
+    before: &BTreeMap<String, (u32, u8)>,
+    grants: &[String],
+) -> BTreeMap<String, (u32, u8)> {
+    let facts: Vec<_> = grants
+        .iter()
+        .map(|key| (key.clone(), item_cosmetics::PROVENANCE.to_owned()))
+        .collect();
+    let earned = EarnedCosmetics {
+        content,
+        facts: &facts,
+    }
+    .with_sex(Sex::Female);
+    let mut expected = before.clone();
+    for key in content.outfit_keys() {
+        let key = key.to_owned();
+        let prior = before.get(&key);
+        if prior.is_none() && earned.outfit(&key) != UnlockFact::Compatible {
+            continue;
+        }
+        let earned_addons = u8::from(earned.addon(&key, 1) == UnlockFact::Compatible)
+            | (u8::from(earned.addon(&key, 2) == UnlockFact::Compatible) << 1);
+        if let Some(look) = content.look_type(&key, Sex::Female) {
+            expected.insert(
+                key,
+                (look, prior.map_or(0, |value| value.1) | earned_addons),
+            );
+        }
+    }
+    expected
+}
+
 fn verify_doll(
+    content: &NativeCosmeticsView,
     before: &BTreeMap<String, (u32, u8)>,
     after: &BTreeMap<String, (u32, u8)>,
 ) -> TestResult {
-    let catalogue = item_cosmetics::catalogue().ok_or("step=doll observed=no-native-rules")?;
     let rule =
         item_cosmetics::rule("oteryn:item.tibia.i6579").ok_or("step=doll observed=no-rule")?;
-    let mut changes = after
-        .iter()
-        .filter(|(key, value)| before.get(*key) != Some(*value));
-    let (key, &(look, addons)) = changes
-        .next()
-        .ok_or("step=doll observed=no-outfit-change")?;
-    let (old_look, prior_addons) = before.get(key).copied().unwrap_or((look, 0));
-    let addon = match addons ^ prior_addons {
-        1 => 1,
-        2 => 2,
-        _ => {
-            return Err(
-                format!("step=doll observed=invalid-addon-mask {prior_addons}->{addons}").into(),
-            );
-        }
-    };
-    if changes.next().is_some()
-        || before.keys().any(|key| !after.contains_key(key))
-        || old_look != look
-        || (addons & prior_addons) != prior_addons
-        || !catalogue.grants.iter().any(|grant| {
-            grant.kind == GrantKind::Addon
-                && grant.addon == Some(addon)
-                && grant.look_types.contains(&look)
-                && rule.choices.iter().any(|choice| choice.owned == grant.key)
-        })
-    {
-        return Err(
-            format!("step=doll observed=invalid-outfit-change {key}/{look}/{addons}").into(),
-        );
+    if before == after {
+        return Err("step=doll observed=no-outfit-change".into());
     }
+    let choice = rule
+        .choices
+        .iter()
+        .find(|choice| outfit_grant_projection(content, before, &choice.grants) == *after)
+        .ok_or("step=doll observed=outfits-do-not-match-a-single-authored-draw")?;
     evidence(&format!(
-        "W19D_DOLL_ASSERT outfit={key} look={look} addon={addon} consumed=1"
+        "W19D_DOLL_ASSERT grant={} consumed=1",
+        choice.owned
     ));
     Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let cosmetics = cosmetics_fixture::decode_cosmetics(&native_input()?.cosmetics.bytes)?;
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W19D_ACCOUNT").await?;
     let clients = dedicated.clients(clients);
     let mut client = connect_character(&clients, 0xd4, 0).await?;
@@ -238,18 +252,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let afflicted = outfits(&mut client)?;
     let mut expected_outfits = initial_outfits;
-    let key = "oteryn:outfit.afflicted";
-    let (look, addons) = afflicted
-        .get(key)
-        .copied()
-        .ok_or("step=afflicted observed=no-outfit")?;
-    if look != 431
-        || addons != 0
-        || expected_outfits.insert(key.to_owned(), (look, 0)).is_some()
-        || afflicted != expected_outfits
-        || quantities(&client)? != funded
-    {
-        return Err("step=afflicted observed=wrong-consumption-or-outfit-grant".into());
+    for key in [
+        "oteryn:content.outfit.afflicted_outfits",
+        "oteryn:outfit.afflicted",
+    ] {
+        if expected_outfits.insert(key.to_owned(), (431, 0)).is_some() {
+            return Err(format!("step=afflicted observed=outfit-already-owned key={key}").into());
+        }
+    }
+    if afflicted != expected_outfits {
+        let changed: Vec<_> = afflicted
+            .iter()
+            .filter(|(key, value)| expected_outfits.get(*key) != Some(*value))
+            .collect();
+        let missing: Vec<_> = expected_outfits
+            .keys()
+            .filter(|key| !afflicted.contains_key(*key))
+            .collect();
+        return Err(format!("step=afflicted changed={changed:?} missing={missing:?}").into());
+    }
+    let carried = quantities(&client)?;
+    if carried != funded {
+        return Err(
+            format!("step=afflicted observed=carried-{carried:?} expected={funded:?}").into(),
+        );
     }
     evidence("W19D_AFFLICTED_ASSERT consumed=12551,12552,12553,12554,12555,12556 outfit=afflicted");
     commit_use(&mut client, reference(ADDON_DOLL)?).await?;
@@ -257,7 +283,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if quantities(&client)? != initial_inventory {
         return Err("step=doll observed=wrong-consumption".into());
     }
-    verify_doll(&afflicted, &outfits(&mut client)?)?;
+    verify_doll(&cosmetics, &afflicted, &outfits(&mut client)?)?;
     logout(client).await
 }
 
@@ -273,17 +299,38 @@ mod tests {
 
     #[test]
     fn doll_requires_one_new_donor_addon_and_preserves_existing_outfits() -> TestResult {
+        let cosmetics = cosmetics_fixture::decode_cosmetics(&native_input()?.cosmetics.bytes)?;
         let citizen = "oteryn:outfit.citizen".to_owned();
+        let citizen_alias = "oteryn:content.outfit.citizen_outfits".to_owned();
         let afflicted = "oteryn:outfit.afflicted".to_owned();
-        let before = BTreeMap::from([(citizen.clone(), (128, 0))]);
-        let existing_base = BTreeMap::from([(citizen.clone(), (128, 1))]);
-        verify_doll(&before, &existing_base)?;
-        let new_base = BTreeMap::from([(citizen.clone(), (128, 0)), (afflicted.clone(), (431, 2))]);
-        verify_doll(&before, &new_base)?;
-        assert!(verify_doll(&before, &before).is_err());
-        assert!(verify_doll(&before, &BTreeMap::from([(afflicted.clone(), (431, 2))])).is_err());
-        assert!(verify_doll(&before, &BTreeMap::from([(citizen.clone(), (128, 3))])).is_err());
-        assert!(verify_doll(&before, &BTreeMap::from([(citizen, (999, 1))])).is_err());
+        let afflicted_alias = "oteryn:content.outfit.afflicted_outfits".to_owned();
+        let before = BTreeMap::from([
+            (citizen.clone(), (136, 0)),
+            (citizen_alias.clone(), (136, 0)),
+        ]);
+        let existing_base = BTreeMap::from([
+            (citizen.clone(), (136, 1)),
+            (citizen_alias.clone(), (136, 0)),
+        ]);
+        verify_doll(&cosmetics, &before, &existing_base)?;
+        let mut unearned_alias = existing_base.clone();
+        unearned_alias.insert(citizen_alias, (136, 1));
+        assert!(verify_doll(&cosmetics, &before, &unearned_alias).is_err());
+        let mut new_base = before.clone();
+        new_base.insert(afflicted.clone(), (431, 2));
+        assert!(verify_doll(&cosmetics, &before, &new_base).is_err());
+        new_base.insert(afflicted_alias, (431, 2));
+        verify_doll(&cosmetics, &before, &new_base)?;
+        assert!(verify_doll(&cosmetics, &before, &before).is_err());
+        let mut removed_base = new_base.clone();
+        removed_base.remove(&citizen);
+        assert!(verify_doll(&cosmetics, &before, &removed_base).is_err());
+        let mut wrong_look = existing_base.clone();
+        wrong_look.insert(citizen.clone(), (128, 1));
+        assert!(verify_doll(&cosmetics, &before, &wrong_look).is_err());
+        let mut wrong_mask = existing_base;
+        wrong_mask.insert(citizen, (136, 3));
+        assert!(verify_doll(&cosmetics, &before, &wrong_mask).is_err());
         Ok(())
     }
 
