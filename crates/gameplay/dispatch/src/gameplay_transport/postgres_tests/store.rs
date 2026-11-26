@@ -99,7 +99,7 @@ async fn purchase_then_use(
     use crate::foundation::GameSessionState;
     use crate::gameplay_transport::composed_admission::HolderCheckoutProbe;
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
-    use crate::gameplay_transport::drome_cube_use::CUBE_INVENTORY_CHECKOUT_PROBE;
+    use crate::gameplay_transport::item_use::drome_cube::CUBE_INVENTORY_CHECKOUT_PROBE;
     use oteryn_protocol_oteryn::item_view::{
         STATE_DOMAIN_CHARACTER_INVENTORY, decode_character_inventory,
     };
