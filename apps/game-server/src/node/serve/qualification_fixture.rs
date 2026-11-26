@@ -56,6 +56,9 @@ const C10_FULL_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000020";
 const C10_CLIENT_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000021";
 
 #[cfg(feature = "qualification-spawn")]
+const C20C_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000024";
+
+#[cfg(feature = "qualification-spawn")]
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "s08-knight" => Some(("knight", 8)),
@@ -64,6 +67,7 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
         "w20b-light" => Some(("sorcerer", 26)),
         "c05-exiva" => Some(("sorcerer", 8)),
         "c10-sorcerer" => Some(("sorcerer", 20)),
+        "c20c-sorcerer" => Some(("sorcerer", 21)),
         "c11-unassigned" => Some((crate::durability::character_build::NO_VOCATION, 8)),
         "c11-knight" => Some(("knight", 625)),
         "c12-monk" => Some(("monk", 20)),
@@ -812,6 +816,7 @@ async fn prepare_build(
             }
             ("c11-unassigned", UNASSIGNED_ACCOUNT)
             | ("c10-sorcerer", C10_FULL_ACCOUNT | C10_CLIENT_ACCOUNT)
+            | ("c20c-sorcerer", C20C_ACCOUNT)
             | ("c11-knight", KNIGHT_ACCOUNT)
             | ("c12-monk", MONK_ACCOUNT)
             | ("c06-sorcerer", C06_CASTER_ACCOUNT)
@@ -2022,6 +2027,7 @@ mod tests {
             "c11-unassigned",
             "c11-knight",
             "c10-sorcerer",
+            "c20c-sorcerer",
             "c12-monk",
             "c06-sorcerer",
             "premium",
