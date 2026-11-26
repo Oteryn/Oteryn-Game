@@ -583,7 +583,16 @@ async fn journey(
         )
         .into());
     }
-    row.pass("dedication-save", (&saved_partial, partial_vitals));
+    let dedication = full_row_p07::live_wheel_effects(&mut client, &saved_partial, 7).await?;
+    if dedication != ["Maximum mana: +150"] {
+        return Err(
+            format!("step 2 partial-slot dedication effects differ: {dedication:?}").into(),
+        );
+    }
+    row.pass(
+        "dedication-save",
+        (&saved_partial, partial_vitals, dedication),
+    );
 
     let mut full = [0; 36];
     full[CORE_SLOT] = 50;
@@ -609,9 +618,11 @@ async fn journey(
         .into());
     }
     let conviction = full_row_p07::live_wheel_effects(&mut client, &saved_full, 1).await?;
-    if !conviction
-        .iter()
-        .any(|line| line.starts_with("augmented focus spells: augment stage 1;"))
+    if conviction
+        != [
+            "Maximum mana: +300",
+            "augmented focus spells: augment stage 1; Hell's Core, Rage of the Skies",
+        ]
     {
         return Err(format!("step 3 full-slot conviction effect absent: {conviction:?}").into());
     }
@@ -719,7 +730,7 @@ async fn journey(
         let active = full_row_p07::live_wheel_effects(&mut client, &revealed, 2).await?;
         if !active
             .iter()
-            .any(|line| line.ends_with(": revelation stage 1"))
+            .any(|line| line == "gift of life: revelation stage 1")
         {
             return Err(
                 format!("step=revelation-effect stage-one projection missing: {active:?}").into(),
@@ -784,11 +795,10 @@ async fn journey(
     }
     if revelation_gap.is_none() {
         let active = full_row_p07::live_wheel_effects(&mut client, &reset, 4).await?;
-        if active
-            .iter()
-            .any(|line| line.contains(": revelation stage "))
-        {
-            return Err(format!("step=revelation-reset active effect remains: {active:?}").into());
+        if !active.is_empty() {
+            return Err(
+                format!("step=revelation-reset active Wheel effects remain: {active:?}").into(),
+            );
         }
     }
     row.pass("reset", (&reset, reset_vitals));
@@ -797,7 +807,12 @@ async fn journey(
     drop(client);
     let mut final_client = connect_eligible(clients, 0xd8).await?;
     let (_, final_state, _) = send(&mut final_client, &query_request()).await?;
-    if final_state != reset || final_client.actor_vitals().copied() != Some(baseline) {
+    if final_state != reset
+        || final_client.actor_vitals().copied() != Some(baseline)
+        || !full_row_p07::live_wheel_effects(&mut final_client, &final_state, 8)
+            .await?
+            .is_empty()
+    {
         return Err(format!(
             "step 8 fresh admission lost durable reset: reset={reset:?} query={final_state:?} vitals={:?}",
             final_client.actor_vitals()
