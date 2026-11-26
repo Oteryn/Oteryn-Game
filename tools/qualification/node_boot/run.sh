@@ -1537,6 +1537,29 @@ SQL
   evidence "d150_starter_history=registered historical=nb-starter-1 current=${INTERPRETATION[3]}"
 }
 
+e02_client_replay() {
+  local seam_log="$WORK/stage-seam_stages.log"
+  local captured replay_output
+  captured="$(grep -cE '^SEAM_EVIDENCE e2e_all scenario=E02\.client status=CAPTURED( |$)' "$seam_log" || true)"
+  if [[ "$captured" != 1 ]]; then
+    echo "SEAM_EVIDENCE e2e_all scenario=E02.client status=FAIL evidence=expected-one-live-capture"
+    return 1
+  fi
+
+  local replay_test=tests::e2e_e02::e02_coin_inventory_replay
+  if ! replay_output="$(cargo +1.100.0 test --locked -p oteryn-session --lib "$replay_test" -- --exact)"; then
+    printf '%s\n' "$replay_output"
+    echo "SEAM_EVIDENCE e2e_all scenario=E02.client status=FAIL evidence=replay-failed"
+    return 1
+  fi
+  printf '%s\n' "$replay_output"
+  if ! grep -Fxq "test $replay_test ... ok" <<< "$replay_output"; then
+    echo "SEAM_EVIDENCE e2e_all scenario=E02.client status=FAIL evidence=replay-did-not-run"
+    return 1
+  fi
+  echo "SEAM_EVIDENCE e2e_all scenario=E02.client status=PASS evidence=live-backpack-coin-replay"
+}
+
 seam_stages() { # §4.6 every #823 stage against the node's own port
   if [[ "${NODE_BOOT_D150_LEGACY:-0}" == 0 ]] &&
     [[ -z "${NODE_BOOT_LIBTEST:-}" || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
@@ -1837,6 +1860,11 @@ fi
 
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
+if [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_E2E_ONLY:-}" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 147:1 ]]; then
+  # The live row and replay share only files written by this invocation.
+  E2E_ALL_CAPTURE_DIR="$(mktemp -d "$WORK/e02-captures.XXXXXX")"
+  export E2E_ALL_CAPTURE_DIR
+fi
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
   stage "$seam_stage_name" -- seam_stages
 else
@@ -1861,6 +1889,9 @@ else
   fi
   stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
+fi
+if [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_E2E_ONLY:-}" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 147:1 ]]; then
+  stage e02_client_replay seam_stages -- e02_client_replay
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then

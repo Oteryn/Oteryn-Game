@@ -738,6 +738,29 @@ class CloudRunSummaryTests(unittest.TestCase):
             '''))
 
 
+class E02ClientReplayTests(unittest.TestCase):
+    def test_pass_requires_one_live_capture_and_executed_replay(self):
+        helper = section('e02_client_replay() {', 'seam_stages() {')
+        capture = 'SEAM_EVIDENCE e2e_all scenario=E02.client status=CAPTURED evidence=live\n'
+        passing_test = 'test tests::e2e_e02::e02_coin_inventory_replay ... ok'
+        with tempfile.TemporaryDirectory() as work:
+            for live_log, test_output, test_exit, expected in (
+                ('', passing_test, 0, 'expected-one-live-capture'),
+                (capture * 2, passing_test, 0, 'expected-one-live-capture'),
+                (capture, 'running 0 tests', 0, 'replay-did-not-run'),
+                (capture, '', 101, 'replay-failed'),
+                (capture, passing_test, 0, 'live-backpack-coin-replay'),
+            ):
+                with self.subTest(expected=expected, live_log=live_log):
+                    Path(work, 'stage-seam_stages.log').write_text(live_log)
+                    result = bash(helper + '''
+                        cargo() { printf '%s\\n' "$TEST_OUTPUT"; return "$TEST_EXIT"; }
+                        e02_client_replay
+                    ''', {'WORK': work, 'TEST_OUTPUT': test_output, 'TEST_EXIT': str(test_exit)})
+                    self.assertIn(f'evidence={expected}', result.stdout)
+                    self.assertEqual(result.returncode, int(expected != 'live-backpack-coin-replay'))
+
+
 class FailureSummaryTests(unittest.TestCase):
     summary = load('failure_summary')
 
