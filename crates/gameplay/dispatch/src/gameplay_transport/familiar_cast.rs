@@ -304,7 +304,7 @@ impl ChannelSpellStates {
     }
     /// An actor-end save whose outcome is unknown. Only the next actor end resolves it: a later
     /// logout attempt's release or the grace expiry supersedes it (`save_familiar_logout`).
-    pub(super) fn has_retained_familiar_logout(
+    pub(in crate::gameplay_transport) fn has_retained_familiar_logout(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
