@@ -974,6 +974,23 @@ fn fixture_occurrence(character: &[u8; 16], vocation: &str, phase: &[u8]) -> [u8
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item
 // inserts. They are setup evidence only, not proof of player chest interaction.
 #[cfg(feature = "qualification-spawn")]
+fn p04_fixture_retry(
+    attempts: &std::sync::atomic::AtomicU8,
+    deadline: tokio::time::Instant,
+    step: &str,
+) -> bool {
+    if attempts.load(std::sync::atomic::Ordering::Relaxed) >= 5
+        || tokio::time::Instant::now() >= deadline
+    {
+        return false;
+    }
+    let attempt = attempts.load(std::sync::atomic::Ordering::Relaxed) + 1;
+    attempts.store(attempt, std::sync::atomic::Ordering::Relaxed);
+    eprintln!("FIXTURE_RETRY row=P04 step={step} cause=RootUnavailable attempt={attempt}");
+    true
+}
+
+#[cfg(feature = "qualification-spawn")]
 async fn prepare_p04_delivery(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -995,8 +1012,17 @@ async fn prepare_p04_delivery(
         *current.current_character_lease().character_id().as_bytes(),
     )
     .map_err(qualification_build::debug)?;
+    let attempts = std::sync::atomic::AtomicU8::new(1);
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let record = root
-        .read_current_character(authority, character)
+        .retry_foreground_holder(
+            deadline,
+            |error| {
+                qualification_build::authority_busy(error)
+                    && p04_fixture_retry(&attempts, deadline, "read-character")
+            },
+            async || root.read_current_character(authority, character).await,
+        )
         .await
         .map_err(qualification_build::debug)?;
     if uuid_text(record.account_id.as_bytes()) != Q_P04_ACCOUNT
@@ -1014,7 +1040,18 @@ async fn prepare_p04_delivery(
         scope_ownership_generation: current.current_scope_generation(),
     };
     let inventory = root
-        .read_item_use_inventory(authority, proof, fence)
+        .retry_foreground_holder(
+            deadline,
+            |error| {
+                matches!(
+                    error,
+                    crate::durability::item_use::ItemUseError::Unavailable(
+                        DurabilityError::RootUnavailable
+                    )
+                ) && p04_fixture_retry(&attempts, deadline, "read-inventory")
+            },
+            async || root.read_item_use_inventory(authority, proof, fence).await,
+        )
         .await
         .map_err(qualification_build::debug)?;
     let bag = inventory
