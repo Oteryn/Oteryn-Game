@@ -212,7 +212,7 @@ pub trait FreshAdmissionAuthority {
     }
     fn activity_scope_snapshot(
         &self,
-        _admitted: AdmittedSession,
+        _admitted: &mut AdmittedSession,
     ) -> impl Future<Output = Result<Option<Vec<u8>>, ()>> {
         async { Ok(None) }
     }

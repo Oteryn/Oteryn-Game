@@ -252,7 +252,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
     async fn activity_scope_snapshot(
         &self,
-        admitted: AdmittedSession,
+        admitted: &mut AdmittedSession,
     ) -> Result<Option<Vec<u8>>, ()> {
         self.project_activity_scope(admitted).await
     }

@@ -346,6 +346,8 @@ pub struct SessionContinuity {
     /// a House handoff. A replacement cannot clear the old transport's flag.
     /// None preserves the admission authority's guard for other owners.
     pub house_input_pending: Option<bool>,
+    /// A join-time durable lookup proved that this exact GameSession has no activity origin.
+    pub non_activity_session: Option<GameSessionId>,
     /// ITEM-VIEW-1b: the item handle counter, the domain 9 and 11 high-water revisions and the
     /// open corpse. Used only with capability 4; a resume or channel transfer carries it.
     pub item_view: ItemViewContinuity,
@@ -403,6 +405,7 @@ impl SessionContinuity {
         achievement_notice_revision: None,
         selected_capabilities: SelectedCapabilities::NONE,
         house_input_pending: None,
+        non_activity_session: None,
         item_view: ItemViewContinuity {
             handle_counter: 0,
             inventory_revision: 0,
@@ -827,7 +830,7 @@ where
                     supported_capabilities: resume.supported_capabilities,
                 })
                 .await;
-            let resumed = match resumed {
+            let mut resumed = match resumed {
                 Ok(resumed) => resumed,
                 // ADMIT0 §4: the owner reached this only after authenticating the recovery
                 // credential, so the typed refusal may be revealed. One frame, then close.
@@ -862,7 +865,7 @@ where
             }
             // A real activity receipt/current owner supplies the exact scope;
             // no House acknowledgement or unsolicited command result is used.
-            let Ok(activity_scope) = authority.activity_scope_snapshot(resumed).await else {
+            let Ok(activity_scope) = authority.activity_scope_snapshot(&mut resumed).await else {
                 super::operator_event(&format!(
                     "event=resume_bootstrap_failed phase=activity_scope code={}",
                     FoundationProtocolError::SessionJoinUnavailable.code()
@@ -908,7 +911,6 @@ where
                 write_frame(stream, &ack)
                     .await
                     .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
-                let mut resumed = resumed;
                 resumed.continuity.server_sequence += 1;
                 return Ok(resumed);
             }
