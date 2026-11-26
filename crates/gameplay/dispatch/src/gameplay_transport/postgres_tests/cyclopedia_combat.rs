@@ -268,6 +268,8 @@ fn scenario(hand_defence_only: bool) -> TestResult {
         let (status, bytes) = exchange(&owner, &mut admitted, 4, tab, &[9, 0, 0, 1]).await?;
         assert_eq!(status, CommandStatus::Accepted);
         let defence = CombatStats::decode(&bytes).map_err(debug)?;
+        // The equipped sword has defence 12 and an extra shield modifier of +1.
+        assert_eq!(defence.get(Stat::DefenceEquipment), Some(12));
         assert_eq!(defence.get(Stat::Armor), Some(i64::from(armor)));
         assert_eq!(defence.get(Stat::PhysicalReflection), Some(99));
         assert_eq!(defence.get(Stat::Dodge), None);

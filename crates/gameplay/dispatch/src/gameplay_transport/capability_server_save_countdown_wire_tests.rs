@@ -139,22 +139,31 @@ fn categorized_server_save_keeps_the_countdown_domain_and_emits_one_system_notic
             CAPABILITY_SERVER_SAVE_COUNTDOWN_V1, CAPABILITY_ZONES_NOLOGOUT_V1,
             CAPABILITY_SERVER_MESSAGE_CATEGORY_V1,
         ])?).await?;
-        authority.server_save.set(Some(due(1)));
-        let (_, frames) = serve_probed(&authority, admitted.map_err(|e| format!("{e:?}"))?).await?;
-        assert_eq!(countdown_of(&frames)?.1, [(0, 1, due(1).notice)]);
-        let mut notices = Vec::new();
-        for frame in frames {
-            let envelope = decode_wire_envelope(&frame)?;
-            if envelope.message_type() == MessageType::StateDelta {
-                let delta = decode_state_delta(envelope.payload())?;
-                if delta.domain_id == STATE_DOMAIN_SERVER_MESSAGES {
-                    notices.push(decode_server_notification(delta.payload).map_err(|e| format!("{e:?}"))?);
+        let mut served = admitted.map_err(|e| format!("{e:?}"))?;
+        for (revision, (minutes, message)) in [
+            (5, "Server is saving game in 5 minutes. Please come back in 10 minutes."),
+            (3, "Server is saving game in 3 minutes. Please come back in 10 minutes."),
+            (1, "Server is saving game in 1 minute. Please log out."),
+        ].into_iter().enumerate() {
+            let revision = u64::try_from(revision)?;
+            authority.server_save.set(Some(due(minutes)));
+            let (next, frames) = serve_probed(&authority, served).await?;
+            served = next;
+            assert_eq!(countdown_of(&frames)?.1, [(revision, revision + 1, due(minutes).notice)]);
+            let mut notices = Vec::new();
+            for frame in frames {
+                let envelope = decode_wire_envelope(&frame)?;
+                if envelope.message_type() == MessageType::StateDelta {
+                    let delta = decode_state_delta(envelope.payload())?;
+                    if delta.domain_id == STATE_DOMAIN_SERVER_MESSAGES {
+                        notices.push(decode_server_notification(delta.payload).map_err(|e| format!("{e:?}"))?);
+                    }
                 }
             }
+            assert_eq!(notices.len(), 1);
+            assert_eq!(notices[0].category, ServerMessageCategory::System);
+            assert_eq!(notices[0].message, ServerMessage::Warning(message.into()));
         }
-        assert_eq!(notices.len(), 1);
-        assert_eq!(notices[0].category, ServerMessageCategory::System);
-        assert_eq!(notices[0].message, ServerMessage::Warning("Server is saving the game in 1 minute(s). Please logout.".into()));
         Ok(())
     })
 }

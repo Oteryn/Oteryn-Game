@@ -62,12 +62,16 @@ pub(super) async fn emit<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         .selected_capabilities
         .contains(CAPABILITY_SERVER_MESSAGE_CATEGORY_V1)
     {
-        let minutes = due.notice.minutes_remaining;
-        // Crystal 201189f8 data/scripts/globalevents/global_server_save.lua:22-28.
+        let message = match due.notice.minutes_remaining {
+            5 | 3 => format!(
+                "Server is saving game in {} minutes. Please come back in 10 minutes.",
+                due.notice.minutes_remaining
+            ),
+            1 => "Server is saving game in 1 minute. Please log out.".into(),
+            minutes => format!("Server is saving the game in {minutes} minute(s). Please logout."),
+        };
         let notice = ServerNotification {
-            message: ServerMessage::Warning(format!(
-                "Server is saving the game in {minutes} minute(s). Please logout."
-            )),
+            message: ServerMessage::Warning(message),
             category: ServerMessageCategory::System,
         };
         zones_nologout_transport::emit_notification(stream, admitted, sequence, &notice).await?;

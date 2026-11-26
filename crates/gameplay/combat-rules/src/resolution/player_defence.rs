@@ -31,8 +31,8 @@ struct HandItem {
 /// The defence of the hands `hand` resolves (`getShieldAndWeapon` over right (5) then left (6)):
 /// the shield is the hand item of type shield (a spellbook too) with the higher defence, the
 /// weapon the last other weapon. With a shield the value is the shield's defence plus the
-/// weapon's extra defence, scaled by shielding; with a weapon only, its defence plus extra
-/// defence, scaled by its skill; empty hands defend with the fist value and the fist skill.
+/// weapon's extra defence, scaled by shielding; with a weapon only, its base defence is
+/// scaled by its skill; empty hands defend with the fist value and the fist skill.
 /// An unauthored extra defence contributes zero. Unknown base defence or conflicting facts
 /// still leave the hand defence unresolved.
 pub fn hand_defence<'a>(
@@ -91,7 +91,7 @@ pub fn hand_defence<'a>(
         ),
         (None, Some(weapon)) => (
             DefenceSource::Weapon,
-            weapon.defense.saturating_add(weapon.extra_defense),
+            weapon.defense,
             weapon_skill(weapon.kind),
         ),
         (None, None) => (
