@@ -1,7 +1,7 @@
 //! W01a full-row player scenario, derived from the matrix/re-audit and the
 //! `ai_think` owner that they name:
-//! 1. Freshly admit the node-boot character and walk from town to the authored
-//!    `oteryn:creature.rat` spawn; expect native spatial snapshots/deltas for a
+//! 1. Freshly admit the node-boot character and take the authored sewer grate
+//!    from town to the Rat spawn; expect native spatial snapshots/deltas for a
 //!    live creature, without manufacturing either actor or position.
 //! 2. Walk within perception and do not send ATTACK; expect successive think
 //!    cycles to select the visible player and publish creature position deltas
@@ -117,6 +117,150 @@ fn visible_adjacent_rat(
         })
 }
 
+// The paired grate and ladder are authored in the Thais sewer map. STEP alone
+// cannot descend through the grate.
+const SEWER_GRATE: TilePos = TilePos {
+    x: 32389,
+    y: 32251,
+    floor: -7,
+};
+const SEWER_LADDER: TilePos = TilePos {
+    floor: -8,
+    ..SEWER_GRATE
+};
+const SURFACE_APPROACH: TilePos = TilePos {
+    y: 32252,
+    ..SEWER_GRATE
+};
+const RAT_APPROACH: TilePos = TilePos {
+    x: 32388,
+    ..SEWER_LADDER
+};
+const RAT_SPAWN: TilePos = TilePos {
+    x: 32387,
+    y: 32252,
+    floor: -8,
+};
+
+pub(super) async fn walk_once(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected =
+            destination(world, from, direction).ok_or("W01a step has no authored landing")?;
+        let result = client.step(direction).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if result.disposition != StepDisposition::Moved
+            || result.world_spatial_delta.is_none()
+            || actual != expected
+        {
+            return Err(format!("W01a STEP {direction:?} from={from:?} expected={expected:?} actual={actual:?} reply={result:?}").into());
+        }
+        verdict::Harness::global().progress("walk");
+        client.take_events();
+    }
+    Ok(())
+}
+
+async fn walk_to(client: &mut DevClientSession, world: &BundleWorld, goal: TilePos) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| at == goal)
+        .ok_or_else(|| format!("W01a no STEP route from={from:?} to={goal:?}"))?;
+    walk_once(client, world, &path).await
+}
+
+async fn use_sewer_object(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    at: TilePos,
+    appearance: u16,
+    expected: TilePos,
+) -> TestResult {
+    use crate::map::view::MapFacts;
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+    let base = world
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .ok_or("W01a sewer tile missing")?;
+    let ordinal = base
+        .ids()
+        .iter()
+        .zip(base.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .enumerate()
+        .find_map(|(ordinal, (id, _))| {
+            let ordinal = u8::try_from(ordinal).ok()?;
+            world
+                .facts()
+                .base_entry(at, ordinal, *id)
+                .filter(|entry| entry.appearance_id == appearance)
+                .map(|_| ordinal)
+        })
+        .ok_or_else(|| format!("W01a sewer object {appearance} missing at {at:?}"))?;
+    let key = crate::map::view::placement_key(at, ordinal).ok_or("W01a sewer placement key")?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+
+    let before = client.world_spatial().actor_position;
+    let result = client.use_object(&placement, 0).await?;
+    if result.status != CommandStatus::Accepted || result.disposition != UseDisposition::Committed {
+        return Err(format!("W01a USE {appearance} at {at:?} refused: {result:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while client.world_spatial().actor_position == before && tokio::time::Instant::now() < deadline
+    {
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+    let actual = tile(client.world_spatial().actor_position)?;
+    if actual != expected {
+        return Err(
+            format!("W01a USE {appearance} expected={expected:?} actual={actual:?}").into(),
+        );
+    }
+    client.take_events();
+    evidence(&format!(
+        "W01A_ROUTE USE appearance={appearance} landing={actual:?}"
+    ));
+    Ok(())
+}
+
+async fn descend(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    walk_to(client, world, SURFACE_APPROACH).await?;
+    use_sewer_object(client, world, SEWER_GRATE, 435, SEWER_LADDER).await
+}
+
+async fn ascend(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    walk_to(client, world, RAT_APPROACH).await?;
+    use_sewer_object(client, world, SEWER_LADDER, 1948, SURFACE_APPROACH).await
+}
+
+pub(super) async fn approach_rat(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
+    if !spawns.sources.iter().any(|source| {
+        source.floor == RAT_SPAWN.floor
+            && source.points.iter().any(|point| {
+                point.x == RAT_SPAWN.x
+                    && point.y == RAT_SPAWN.y
+                    && spawns
+                        .creatures
+                        .get(point.creature as usize)
+                        .is_some_and(|creature| creature.key == "oteryn:creature.rat")
+            })
+    }) {
+        return Err(format!("W01a authored Rat spawn missing at {RAT_SPAWN:?}").into());
+    }
+    descend(client, world).await?;
+    walk_to(client, world, RAT_APPROACH).await?;
+    visible_adjacent_rat(client)
+}
+
 fn actor_health(detail: EntityDetail) -> Option<u8> {
     match detail {
         EntityDetail::Actor { health_percent, .. }
@@ -172,8 +316,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_world(clients, 0xa1).await?;
 
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    let target = visible_adjacent_rat(&client)?;
+    let target = approach_rat(&mut client, world, &metadata.spawns).await?;
     row.pass("authored-rat", (target.entity, target.position));
 
     // Create room for the AI to chase using only ordinary cardinal movement.
@@ -188,7 +331,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 >= 3
     })
     .ok_or("step=target-and-chase observed=no-walkable-retreat need=reachable-rat-lane")?;
-    walk(&mut client, world, &retreat).await?;
+    walk_once(&mut client, world, &retreat).await?;
     let chased = wait_for_motion(&mut client, target.entity, target.position, true).await?;
     row.pass("target-and-chase", (target.position, chased));
 
@@ -203,7 +346,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 <= 1
     })
     .ok_or("step=attack-and-damage observed=target-unreachable need=movement-route")?;
-    walk(&mut client, world, &approach).await?;
+    walk_once(&mut client, world, &approach).await?;
     let modes = FightModes {
         fight_mode: FightMode::Offensive,
         chase: ChaseMode::Chase,
@@ -277,11 +420,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let fled = wait_for_motion(&mut client, target.entity, last_position, false).await?;
     row.pass("low-health-flee", (low, last_position, fled));
 
-    let home = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at == TOWN
-    })
-    .ok_or("step=out-of-range-refusal observed=no-town-route need=walkable-return")?;
-    walk(&mut client, world, &home).await?;
+    ascend(&mut client, world).await?;
     let refused = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -302,13 +441,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     // The refused target is outside interest. Walk back into interest before
     // checking the same generation's health, then return to the saved town cell.
+    descend(&mut client, world).await?;
     let last_seen = tile(fled)?;
     let reobserve = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at.floor == last_seen.floor
             && at.x.abs_diff(last_seen.x).max(at.y.abs_diff(last_seen.y)) <= 2
     })
     .ok_or("step=out-of-range-refusal observed=no-return-route need=same-rat-health-observation")?;
-    walk(&mut client, world, &reobserve).await?;
+    walk_once(&mut client, world, &reobserve).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let health = loop {
         if let Some(health) = client.world_entities().and_then(|entities| {
@@ -330,9 +470,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("out-of-range-refusal", (refused, low, health));
 
-    let home = route(world, tile(client.world_spatial().actor_position)?, |at| at == TOWN)
-        .ok_or("step=logout-fresh-admission observed=no-town-route need=walkable-return")?;
-    walk(&mut client, world, &home).await?;
+    ascend(&mut client, world).await?;
+    walk_to(&mut client, world, TOWN).await?;
     let saved = client.world_spatial().actor_position;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -346,15 +485,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=logout-fresh-admission observed=saved={saved:?},fresh={:?} need=durable-player-cell", client.world_spatial().actor_position).into());
     }
     row.pass("logout-fresh-admission", saved);
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    let fresh = visible_adjacent_rat(&client)?;
+    let fresh = approach_rat(&mut client, world, &metadata.spawns).await?;
     let fresh_tile = tile(fresh.position)?;
     let retreat = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at.floor == fresh_tile.floor
             && at.x.abs_diff(fresh_tile.x).max(at.y.abs_diff(fresh_tile.y)) >= 3
     })
     .ok_or("step=think-reacquires observed=no-retreat-route need=reachable-rat-lane")?;
-    walk(&mut client, world, &retreat).await?;
+    walk_once(&mut client, world, &retreat).await?;
     let reacquired = wait_for_motion(&mut client, fresh.entity, fresh.position, true).await?;
     row.pass("think-reacquires", (fresh.position, reacquired));
     let _ = client.session_mut().logout().await?;

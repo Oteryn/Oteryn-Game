@@ -164,22 +164,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0x0b).await?;
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    let target = super::full_row_w01a::approach_rat(&mut client, world, &metadata.spawns).await?;
     let here = client.world_spatial().actor_position;
-    let target = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entry| {
-                entry.kind == oteryn_dev_client::EntityKind::Creature
-                    && entry
-                        .display_name
-                        .is_some_and(|name| name.as_str() == Ok("Rat"))
-                    && entry.position.floor == here.floor
-                    && distance(entry.position, here) <= 1
-            })
-        })
-        .copied()
-        .ok_or("W01a client capture: no adjacent rat")?;
 
     // Chase: retreat with ordinary steps, then record the rat closing the distance.
     let target_tile = tile(target.position)?;
@@ -188,7 +174,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             && at.x.abs_diff(target_tile.x).max(at.y.abs_diff(target_tile.y)) >= 3
     })
     .ok_or("W01a client capture: no retreat lane")?;
-    walk(&mut client, world, &retreat).await?;
+    super::full_row_w01a::walk_once(&mut client, world, &retreat).await?;
     let mut chase = Segment::begin(&client, "chase", target.entity)?;
     let player = client.world_spatial().actor_position;
     let start = target_state(&client, target.entity)
@@ -216,7 +202,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             && at.x.abs_diff(chased_tile.x).max(at.y.abs_diff(chased_tile.y)) <= 1
     })
     .ok_or("W01a client capture: rat unreachable")?;
-    walk(&mut client, world, &approach).await?;
+    super::full_row_w01a::walk_once(&mut client, world, &approach).await?;
     let modes = FightModes {
         fight_mode: FightMode::Offensive,
         chase: ChaseMode::Chase,
