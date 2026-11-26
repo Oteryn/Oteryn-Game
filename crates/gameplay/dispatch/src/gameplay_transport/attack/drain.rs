@@ -1115,6 +1115,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &selected.weapon,
                     );
                 }
+                if let Some(loss) = result.committed_health_loss() {
+                    states
+                        .sounds
+                        .record_damage(&runtime, entry.actor, target, loss);
+                }
                 if result.applied {
                     let value = u32::try_from(
                         result

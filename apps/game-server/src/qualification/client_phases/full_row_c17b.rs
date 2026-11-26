@@ -145,6 +145,28 @@ fn damage_sequence(client: &mut DevClientSession, rat: oteryn_dev_client::Entity
         .max()
         .unwrap_or(0)
 }
+pub(super) async fn wait_visible(
+    client: &mut DevClientSession, target: oteryn_dev_client::EntityRef, expected: bool,
+) -> TestResult<u64> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let mut sequence = 0;
+    loop {
+        for event in client.take_events() {
+            if let SessionEvent::WorldSpatialEntities(delta) = event {
+                let matches = if expected {
+                    delta.value.enter.iter().any(|entry| entry.entity == target)
+                } else { delta.value.leave.contains(&target) };
+                if matches { sequence = delta.server_sequence; }
+            }
+        }
+        if sequence != 0 && visible(client, target) == expected { return Ok(sequence); }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("C17b missing visibility transition target={target:?} expected={expected} last_sequence={}", client.last_server_sequence()).into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+}
+
 async fn logout(client: &mut DevClientSession) -> TestResult {
     let (result, detail, _, _) = logout_once(client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -623,7 +645,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if durable_vitals.0 >= before.mana {
         return Err("C17b spent mana did not persist until logout".into());
     }
-    caster = connect_character(&caster_clients, 0xb3, 0).await?;
+    wait_visible(&mut observer, caster_ref, false).await?;
+    caster = provisioning::with_peer_liveness(&mut observer, connect_character(&caster_clients, 0xb3, 0)).await?;
     if caster.join_snapshot().game_session_id == session
         || caster.world_spatial().actor_position != position
         || caster
@@ -632,19 +655,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step=fresh-admission-condition observed=session/position/vitals-mismatch need=durable-condition-state".into());
     }
-    observer
-        .service_liveness(Duration::from_millis(100))
-        .await?;
-    if !visible(&observer, own(&caster)?) {
-        return Err("step=fresh-admission-condition observed=caster-absent need=Global-player-remains-visible".into());
-    }
+    let fresh_ref = own(&caster)?;
+    if fresh_ref == caster_ref { return Err("C17b fresh admission reused entity incarnation".into()); }
+    let enter_sequence = wait_visible(&mut observer, fresh_ref, true).await?;
     if invisibility_remaining(&mut caster)
         .await?
         .is_none_or(|remaining| remaining <= 0 || remaining >= active)
     {
         return Err("C17b invisibility was absent or reset after relog".into());
     }
-    row.pass("fresh-admission-condition", cast.result_server_sequence)?;
+    row.pass("fresh-admission-condition", enter_sequence)?;
     let back = staging.path(&caster, Some(&observer), |at| at == TOWN)?;
     provisioning::with_peer_liveness(&mut observer, staging.walk(&mut caster, &back)).await?;
     logout(&mut caster).await?;

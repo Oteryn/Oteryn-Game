@@ -570,13 +570,24 @@ struct SoundEntry {
     revision: u64,
     actor: ExactActorRef,
     position: MovementLocalPosition,
-    cue: u16,
-    secondary: u16,
+    cue: PositionalCue,
     creature: bool,
-    effect: bool,
     private: bool,
     house_scope: Option<(crate::foundation::RuntimeScopeRefV1, u64)>,
 }
+#[derive(Debug, Clone, Copy)]
+enum PositionalCue {
+    Sound {
+        cue: u16,
+        secondary: u16,
+    },
+    Effect(u16),
+    Damage {
+        target: ExactActorRef,
+        value: std::num::NonZeroU64,
+    },
+}
+
 impl SoundPublisher {
     /// Channel outbox ownership does not change when its caster enters a House
     /// before the publisher drains the committed events.
@@ -588,6 +599,55 @@ impl SoundPublisher {
         cue: u16,
         secondary: u16,
     ) {
+        let (cue, secondary) = if cue == 0 {
+            (secondary, 0)
+        } else {
+            (cue, secondary)
+        };
+        if cue != 0 {
+            self.record_positional(
+                runtime,
+                actor,
+                position,
+                PositionalCue::Sound { cue, secondary },
+                false,
+            );
+        }
+    }
+
+    /// Publish actual HP loss after the combat owner commits the hit.
+    pub(super) fn record_damage(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        attacker: ExactActorRef,
+        target: ExactActorRef,
+        value: std::num::NonZeroU64,
+    ) {
+        let Ok(position) = runtime.read_actor_position(target) else {
+            return;
+        };
+        let private = [attacker, target].into_iter().any(|actor| {
+            runtime
+                .actor_staff_visibility(actor)
+                .is_ok_and(|(ghost, _, _)| ghost)
+        });
+        self.record_positional(
+            runtime,
+            attacker,
+            position.position(),
+            PositionalCue::Damage { target, value },
+            private,
+        );
+    }
+
+    fn record_positional(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        position: MovementLocalPosition,
+        cue: PositionalCue,
+        private: bool,
+    ) {
         let Ok(binding) = context(runtime) else {
             return;
         };
@@ -595,14 +655,6 @@ impl SoundPublisher {
             self.sounds.clear();
             self.ambient.clear();
             self.binding = Some(binding);
-        }
-        let (cue, secondary) = if cue == 0 {
-            (secondary, 0)
-        } else {
-            (cue, secondary)
-        };
-        if cue == 0 {
-            return;
         }
         let Some(revision) = self.revision.checked_add(1) else {
             return;
@@ -616,10 +668,8 @@ impl SoundPublisher {
             actor,
             position,
             cue,
-            secondary,
             creature: runtime.companion_snapshot_including_dead(actor).is_ok(),
-            effect: false,
-            private: false,
+            private,
             house_scope: None,
         });
     }
@@ -634,14 +684,13 @@ impl SoundPublisher {
         if cue == 0 {
             return;
         }
-        let before = self.revision;
-        self.record(runtime, actor, position, cue, 0);
-        if self.revision != before
-            && let Some(entry) = self.sounds.back_mut()
-        {
-            entry.effect = true;
-            entry.private = private;
-        }
+        self.record_positional(
+            runtime,
+            actor,
+            position,
+            PositionalCue::Effect(cue),
+            private,
+        );
     }
     /// Crystal 201189f `data-global/scripts/actions/other/fish_tank.lua:3-5` emits at
     /// the item tile. The existing journal retains its actual named-House owner.
@@ -686,7 +735,7 @@ impl SoundPublisher {
         Ok(())
     }
     /// The two independently negotiated domains retain their own bounds: at most
-    /// MAX_PRESENTATION_EVENTS positional sounds plus one private ambient replacement.
+    /// MAX_PRESENTATION_EVENTS positional cues plus one private ambient replacement.
     pub fn observe(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -699,7 +748,8 @@ impl SoundPublisher {
         Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
     )> {
         use oteryn_protocol_oteryn::presentation::{
-            PresentationEvent, PresentationEventKind, PresentationSource,
+            PresentationColor, PresentationEvent, PresentationEventKind, PresentationSource,
+            PresentationValue, PresentationValueKind,
         };
         if !selected {
             return Some((after, Vec::new()));
@@ -763,18 +813,42 @@ impl SoundPublisher {
             events.push(PresentationEvent {
                 decision_ordinal: u32::try_from(events.len() + 1).ok()?,
                 emission_ordinal: 1,
-                kind: if sound.effect {
-                    PresentationEventKind::MagicEffect {
+                kind: match sound.cue {
+                    PositionalCue::Effect(cue) => PresentationEventKind::MagicEffect {
                         position,
-                        effect_id: u32::from(sound.cue),
+                        effect_id: u32::from(cue),
                         source,
-                    }
-                } else {
-                    PresentationEventKind::Sound {
+                    },
+                    PositionalCue::Sound { cue, secondary } => PresentationEventKind::Sound {
                         position,
-                        cue_id: u32::from(sound.cue),
+                        cue_id: u32::from(cue),
                         source,
-                        secondary_cue_id: u32::from(sound.secondary),
+                        secondary_cue_id: u32::from(secondary),
+                    },
+                    PositionalCue::Damage { target, value } => {
+                        let entity_ref = |actor: ExactActorRef| {
+                            oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                                identity: actor.placement_identity(),
+                                generation: actor.actor_local_generation(),
+                            }
+                        };
+                        PresentationEventKind::ValueText {
+                            kind: if sound.actor == actor {
+                                PresentationValueKind::DamageDealt
+                            } else if target == actor {
+                                PresentationValueKind::DamageReceived
+                            } else {
+                                PresentationValueKind::DamageOthers
+                            },
+                            position,
+                            target: entity_ref(target),
+                            attacker: Some(entity_ref(sound.actor)),
+                            primary: PresentationValue {
+                                value: value.get(),
+                                color: PresentationColor::Red,
+                            },
+                            secondary: None,
+                        }
                     }
                 },
             });
