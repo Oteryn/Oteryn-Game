@@ -374,30 +374,28 @@ pub(super) async fn travel_to_poison_spider(
         })
         .ok_or("C08 authored spawn has no visible Poison Spider")?
         .entity;
-    for _ in 0..32 {
+    // Let this exact aggressive creature close the distance over the wire.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+    loop {
         let target = client
             .world_entities()
             .and_then(|entities| entities.get(&spider))
             .ok_or("C08 lost the selected Poison Spider")?
             .position;
-        let target = tile(target)?;
-        let occupied = c08_visible_occupants(client);
-        let path = route_avoiding(
-            world,
-            tile(client.world_spatial().actor_position)?,
-            |at| {
-                at.floor == target.floor
-                    && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) == 1
-            },
-            |at| !occupied.contains(&at),
-        )
-        .ok_or("C08 selected Poison Spider unreachable")?;
-        let Some(direction) = path.first() else {
+        if client.world_spatial().actor_position != here {
+            return Err("C08 actor moved while waiting for the Poison Spider".into());
+        }
+        if target.floor == here.floor
+            && target.x.abs_diff(here.x).max(target.y.abs_diff(here.y)) == 1
+        {
             return Ok(spider);
-        };
-        walk_c08(client, world, &[*direction]).await?;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C08 selected Poison Spider did not approach".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
     }
-    Err("C08 could not approach the selected Poison Spider within the route budget".into())
 }
 
 fn c08_visible_occupants(client: &DevClientSession) -> std::collections::BTreeSet<TilePos> {
