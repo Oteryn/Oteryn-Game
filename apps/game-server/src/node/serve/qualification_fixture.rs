@@ -1454,6 +1454,30 @@ mod tests {
             .ok_or("missing control spawn boundary")
     }
 
+    #[cfg(feature = "qualification-spawn")]
+    #[test]
+    fn p04_fixture_readiness_budget_is_shared_by_both_reads() {
+        use std::sync::atomic::{AtomicU8, Ordering};
+
+        let attempts = AtomicU8::new(1);
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        for step in [
+            "read-character",
+            "read-inventory",
+            "read-inventory",
+            "read-inventory",
+        ] {
+            assert!(p04_fixture_retry(&attempts, deadline, step));
+        }
+        assert!(!p04_fixture_retry(&attempts, deadline, "read-inventory"));
+        assert_eq!(attempts.load(Ordering::Relaxed), 5);
+        assert!(!p04_fixture_retry(
+            &AtomicU8::new(1),
+            tokio::time::Instant::now(),
+            "read-character"
+        ));
+    }
+
     #[test]
     fn qualification_spawn_releases_runtime_before_durable_reads() -> Result<(), &'static str> {
         let source = control_spawn_source()?;
