@@ -7,7 +7,7 @@ use super::runtime_scope_assignment::{
 };
 use super::{DurabilityError, DurabilityRoot};
 use sqlx::{Postgres, Row, Transaction};
-use std::time::Instant;
+use tokio::time::Instant;
 
 type Result<T> = std::result::Result<T, DurabilityError>;
 

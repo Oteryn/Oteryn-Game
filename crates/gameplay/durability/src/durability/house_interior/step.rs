@@ -2,7 +2,6 @@
 //! The same Character -> Guild -> House -> house-items locks as native placement
 //! protect missing-row collision checks. A published step may release its
 //! original native entry reservation through the existing handoff owner.
-use crate::durability::db::commit_semantic_read;
 use super::super::character_equipment::EquipmentSnapshot;
 use super::*;
 
@@ -79,7 +78,7 @@ impl DurabilityRoot {
                 }
                 // A failed or unknown cleanup may retain the reservation for
                 // retry; it cannot undo an already published native step.
-                commit_semantic_read(tx, deadline).await
+                commit_semantic_transaction(tx, deadline).await
             })
         }).await
     }

@@ -1,7 +1,6 @@
 //! WORLDCHG-Q. One World/reset decision, reused by every Channel and quest lane.
 //! Mutation helpers join the caller's fenced semantic transaction; they never commit,
 //! debit Items, grant rewards, or authorize a held title's activation.
-use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use oteryn_gameplay_world_change::{
@@ -243,7 +242,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let day = load(&mut tx, world, epoch).await?;
-                    commit_semantic_read(tx, deadline).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
                     Ok(day)
                 })
             })

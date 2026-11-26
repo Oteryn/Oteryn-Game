@@ -1,5 +1,4 @@
 //! Native quest callbacks observe the existing World owner; no quest state is invented.
-use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::durability::character_progression::{
     CurrentCharacterGameplayFence, assert_gameplay_fence,
@@ -97,7 +96,7 @@ impl DurabilityRoot {
                         ).await? {
                         return Ok(false);
                     }
-                    commit_semantic_read(tx, deadline).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
                     Ok(true)
                 })
             })

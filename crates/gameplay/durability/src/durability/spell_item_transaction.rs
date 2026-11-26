@@ -73,7 +73,7 @@ pub async fn read_source_item_description_in_transaction(
 
 pub async fn begin_spell_owner_transaction<'a>(
     holder: &'a mut sqlx::pool::PoolConnection<Postgres>,
-    deadline: std::time::Instant,
+    deadline: tokio::time::Instant,
 ) -> std::result::Result<Transaction<'a, Postgres>, DurabilityError> {
     super::db::begin_semantic_transaction(holder, deadline).await
 }
@@ -82,7 +82,7 @@ pub async fn begin_spell_owner_transaction<'a>(
 /// before recovery, session, scope or Item locks, just as the timed Item owner.
 pub async fn begin_field_owner_transaction<'a>(
     holder: &'a mut sqlx::pool::PoolConnection<Postgres>,
-    deadline: std::time::Instant,
+    deadline: tokio::time::Instant,
 ) -> std::result::Result<super::item_mint_audit::Type2Transaction<'a>, DurabilityError> {
     super::db::begin_type2_transaction(holder, deadline).await
 }
@@ -528,7 +528,7 @@ pub async fn stage_spell_owner_commit(
     items: CommittedSpellItems,
     companion: Option<PendingCompanionAcquisition>,
     familiar: Option<super::character_familiar::PendingCharacterFamiliar>,
-    deadline: std::time::Instant,
+    deadline: tokio::time::Instant,
 ) -> Result<super::spell_owner_commit::PendingSpellOwnerTransaction> {
     check_transaction(tx, authority).await?;
     if items.command != authority.command {
@@ -569,7 +569,7 @@ pub async fn stage_spell_owner_commit_with_direct(
     authority: &SpellItemAuthority,
     items: CommittedSpellItems,
     direct: PendingDirectCompanionAcquisition,
-    deadline: std::time::Instant,
+    deadline: tokio::time::Instant,
 ) -> Result<super::spell_owner_commit::PendingSpellOwnerTransaction> {
     check_transaction(tx, authority).await?;
     if items.command != authority.command {
@@ -3898,7 +3898,7 @@ pub fn creature_item_recovery_record(
 }
 pub async fn commit_creature_item_owner_transaction(
     tx: Transaction<'_, Postgres>,
-    deadline: std::time::Instant,
+    deadline: tokio::time::Instant,
 ) -> std::result::Result<(), DurabilityError> {
     super::db::commit_semantic_transaction(tx, deadline).await
 }

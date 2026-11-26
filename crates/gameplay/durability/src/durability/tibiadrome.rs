@@ -11,7 +11,6 @@ use super::db::{
 };
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
-use crate::durability::db::commit_semantic_read;
 use crate::foundation::CommandRef;
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
@@ -179,7 +178,7 @@ impl DurabilityRoot {
                     publish(&mut tx, fence.character_id, rotation).await?;
                     let potion = next_potion(&mut tx, fence).await?;
                     let (rank, potions) = standing(&mut tx, fence, rotation).await?;
-                    commit_semantic_read(tx, deadline).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(Read {
                         potion,
                         rotation_points_eligible,

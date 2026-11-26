@@ -22,7 +22,7 @@ use crate::foundation::RuntimeScopeRefV1;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
-use std::time::Instant;
+use tokio::time::Instant;
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 const BINDING_VERSION: u8 = 1;
 

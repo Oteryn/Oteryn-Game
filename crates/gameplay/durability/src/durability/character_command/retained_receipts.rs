@@ -8,7 +8,7 @@ use crate::native_admission_source::character_commands::{
     CreateSendability, RetainedCreateKey, RetainedCreatePage, RetainedCreateScan,
 };
 use sqlx::postgres::PgRow;
-use std::time::Instant;
+use tokio::time::Instant;
 
 const PAGE_SIZE: i64 = 2;
 
@@ -58,9 +58,8 @@ impl<'a, 'f, 's> RetainedCreatePublisherStore<'a, 'f, 's> {
             .acquire()
             .await
             .map_err(|_| SourceError::Unavailable)?;
-        let remaining = deadline.saturating_duration_since(Instant::now());
         let result =
-            tokio::time::timeout(remaining, operation(&mut holder, deadline, recovery)).await;
+            tokio::time::timeout_at(deadline, operation(&mut holder, deadline, recovery)).await;
         if matches!(
             result,
             Err(_) | Ok(Err(DurabilityError::CommitOutcomeUnknown))

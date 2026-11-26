@@ -18,7 +18,7 @@ use sqlx::postgres::PgRow;
 use sqlx::{Acquire, Postgres, Row, Transaction};
 use std::future::Future;
 use std::pin::Pin;
-use std::time::Instant;
+use tokio::time::Instant;
 
 const PREPARED: i16 = 1;
 const COLLISION_TERMINAL: i16 = 2;

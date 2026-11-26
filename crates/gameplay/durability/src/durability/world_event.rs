@@ -191,7 +191,7 @@ impl DurabilityRoot {
             changes.fury_gates = change_active(&mut tx, world, "fury_gates").await?.then_some(changes.fury_exit);
             changes.grimvale_full_moon = change_active(&mut tx, world, "grimvale").await?;
             changes.their_masters_voice = change_active(&mut tx, world, "their_masters_voice").await?;
-            commit_semantic_read(tx, deadline).await?;
+            commit_semantic_transaction(tx, deadline).await?;
             Ok(changes)
         })).await
     }
@@ -211,7 +211,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let active = change_active(&mut tx, world, &key).await?;
-                    commit_semantic_read(tx, deadline).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
                     Ok(active)
                 })
             })
