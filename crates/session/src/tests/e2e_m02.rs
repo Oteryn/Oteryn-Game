@@ -1,7 +1,4 @@
-//! M02 replay covers the session state owner used by `DevClientSession::world_spatial`.
-//! The production application path is `domain_dispatch.rs::Session::apply_state_delta`;
-//! reads are exposed by `session_access.rs::Session::world_spatial` and
-//! `tools/dev-client/src/lib.rs::DevClientSession::world_spatial`.
+//! Unit coverage for applying spatial deltas. The live M02 replay is in Game qualification.
 
 use super::*;
 use oteryn_protocol_oteryn::world_spatial::{
@@ -10,40 +7,18 @@ use oteryn_protocol_oteryn::world_spatial::{
 };
 
 #[test]
-fn replay_far_action_autowalk_position() -> Result<(), BoxError> {
-    let (payload, expected) = if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let root = std::path::Path::new(&root);
-        let payload = std::fs::read(root.join("m02-world-spatial.bin"))?;
-        let expected = std::fs::read_to_string(root.join("m02-expected.txt"))?;
-        (payload, expected)
-    } else {
-        let position = ActorPosition {
-            x: 101,
-            y: 202,
-            floor: 7,
-        };
-        (
-            encode_world_spatial(
-                &oteryn_protocol_oteryn::world_spatial::WorldSpatialObservation {
-                    content_generation: CONTENT_GENERATION,
-                    actor_position: position,
-                },
-            ),
-            "101 202 7\n".into(),
-        )
-    };
-    let coordinates = expected
-        .split_whitespace()
-        .map(str::parse::<i32>)
-        .collect::<Result<Vec<_>, _>>()?;
-    let [x, y, floor] = coordinates.as_slice() else {
-        return Err("invalid M02 expected position".into());
-    };
+fn spatial_delta_applies_and_malformed_update_leaves_position_unchanged() -> Result<(), BoxError> {
     let expected = ActorPosition {
-        x: *x,
-        y: *y,
-        floor: i16::try_from(*floor)?,
+        x: 101,
+        y: 202,
+        floor: 7,
     };
+    let payload = encode_world_spatial(
+        &oteryn_protocol_oteryn::world_spatial::WorldSpatialObservation {
+            content_generation: CONTENT_GENERATION,
+            actor_position: expected,
+        },
+    );
     let decoded = oteryn_protocol_oteryn::world_spatial::decode_world_spatial(&payload)
         .map_err(|error| format!("M02 spatial payload: {error:?}"))?;
     let initial = encode_world_spatial(

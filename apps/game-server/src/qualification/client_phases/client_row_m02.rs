@@ -11,6 +11,9 @@ const GATE_POSITION: ActorPosition = ActorPosition {
     y: 32235,
     floor: 7,
 };
+#[path = "client_row_m02_replay.rs"]
+mod replay;
+
 const CLOSED_GATE: u16 = 2177;
 const OPEN_GATE: u16 = 2178;
 
@@ -131,6 +134,8 @@ fn update_gate(gate: &mut Option<MapTile>, events: &[SessionEvent]) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let capture_dir =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("M02 requires a fresh capture directory")?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -158,7 +163,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if stand != APPROACH || distance(stand, GATE) != 3 {
         return Err("M02 route missed its planned approach".into());
     }
-    client.take_events();
+    update_gate(&mut gate, &client.take_events());
+    if !gate
+        .as_ref()
+        .is_some_and(|tile| gate_matches(tile, ordinal, CLOSED_GATE, 0))
+    {
+        return Err("M02 gate changed before far use".into());
+    }
+    let map = client
+        .session_mut()
+        .world_map_snapshot()
+        .ok_or("M02 missing map binding")?
+        .header;
+    let session = client.join_snapshot().game_session_id;
+    let first_sequence = client
+        .last_server_sequence()
+        .checked_add(1)
+        .ok_or("M02 sequence overflow")?;
+    let capabilities = client.selected_capabilities().to_vec();
+    client.session_mut().begin_qualification_capture();
     verdict::Harness::global().progress("far-use");
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
@@ -210,6 +233,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    let last_sequence = client.last_server_sequence();
+    let frames = client.session_mut().take_qualification_capture();
     let (logout, detail, _, _) = logout_once(&mut client).await?;
     if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("M02 first logout refused: {detail}").into());
@@ -224,7 +249,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     evidence("M02_GAMEPLAY_VERIFIED steps=2 gate=open revision=1 relog_position=32401,32235,7");
-    Err("BLOCKED-CLIENT: original server frame capture and same-run replay are required".into())
+    let binding = replay::Capture {
+        game_session_id: uuid_text(session.as_bytes()),
+        command_id: result.command_id,
+        first_sequence,
+        result_sequence: result.result_server_sequence,
+        last_sequence,
+        capabilities,
+        content_generation: map.content_generation,
+        bundle_digest: map.bundle_digest,
+        reset_epoch: map.reset_epoch,
+        first_visible_floor: map.first_visible_floor,
+        ordinal,
+    };
+    replay::write_capture(Path::new(&capture_dir), &binding, frames)?;
+    evidence(&format!(
+        "e2e_capture scenario=M02.client status=CAPTURED binding={}",
+        binding.identity()
+    ));
+    Ok(())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

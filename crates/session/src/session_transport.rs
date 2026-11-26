@@ -2,6 +2,18 @@
 use super::*;
 
 impl<S: SessionStream> Session<S> {
+    /// Begin recording validated sequenced frames for qualification.
+    #[cfg(feature = "test-support")]
+    pub fn begin_qualification_capture(&mut self) {
+        self.qualification_frames = Some(Vec::new());
+    }
+
+    /// End recording and return the original sequenced payloads in receive order.
+    #[cfg(feature = "test-support")]
+    pub fn take_qualification_capture(&mut self) -> Vec<(u64, MessageType, Vec<u8>)> {
+        self.qualification_frames.take().unwrap_or_default()
+    }
+
     /// Reads the next non-probe frame, requires it to be `expected`, and requires its
     /// `server_sequence` to be exactly the last applied one plus one. Returns that sequence and
     /// the frame's payload.
@@ -57,6 +69,17 @@ impl<S: SessionStream> Session<S> {
                 expected: expected_sequence,
                 actual: envelope.server_sequence(),
             });
+        }
+        #[cfg(feature = "test-support")]
+        if let Some(frames) = &mut self.qualification_frames {
+            if frames.len() == 64 {
+                return Err(FoundationProtocolError::PayloadLimitExceeded.into());
+            }
+            frames.push((
+                expected_sequence,
+                envelope.message_type(),
+                envelope.payload().to_vec(),
+            ));
         }
         self.last_server_sequence = expected_sequence;
         Ok(expected_sequence)

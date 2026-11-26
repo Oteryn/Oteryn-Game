@@ -202,6 +202,8 @@ impl<S: SessionStream> Session<S> {
             gated_snapshots,
             gated_revisions,
             events,
+            #[cfg(feature = "test-support")]
+            qualification_frames: None,
             entities,
             appearance,
             chat_revision,

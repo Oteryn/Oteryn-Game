@@ -395,6 +395,8 @@ pub struct Session<S> {
     gated_snapshots: Vec<GatedSnapshot>,
     gated_revisions: Vec<(u32, u64)>,
     events: Vec<SessionEvent>,
+    #[cfg(feature = "test-support")]
+    qualification_frames: Option<Vec<(u64, MessageType, Vec<u8>)>>,
     /// `Some` exactly when capability 6 is selected.
     entities: Option<WorldEntities>,
     appearance: Option<appearance_state::AppearanceState>,

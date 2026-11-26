@@ -125,6 +125,10 @@ def replay_targets():
         "oteryn-client", "e2e_e09_real_mail_outcomes_replay_into_mail_panel",
         capture_names("e09", mail.read_text()),
     )]
+    targets["e2e_m02"] = [(
+        "oteryn-game-server", "m02_replay_captured_autowalk",
+        {"m02-envelope.json", "m02-binding.json"},
+    )]
     return targets
 
 
@@ -138,11 +142,23 @@ def replay_cause(row, package, test, names, captures, server, log):
     if not package or not server:
         return "replay-not-run"
 
+    replay_env = None
+    if test == "m02_replay_captured_autowalk":
+        bindings = re.findall(
+            r"^SEAM_EVIDENCE e2e_capture scenario=M02\.client status=CAPTURED binding=([0-9a-f:-]+)$",
+            log.read_text(errors="replace"), re.MULTILINE,
+        )
+        if len(bindings) != 1:
+            return "replay-failed"
+        replay_env = {**os.environ, "OTERYN_M02_REPLAY_IDENTITY": bindings[0]}
     try:
         result = subprocess.run(
             [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package,
-             "--lib", test, "--", "--nocapture"],
-            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+             *(["--features", "qualification-clock,qualification-unprivileged"]
+               if test == "m02_replay_captured_autowalk" else []),
+             "--lib", test, "--", "--nocapture",
+             *(["--include-ignored"] if test == "m02_replay_captured_autowalk" else [])],
+            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=replay_env,
         )
     except OSError:
         return "replay-not-run"
