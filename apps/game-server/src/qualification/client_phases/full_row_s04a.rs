@@ -163,23 +163,46 @@ fn view(result: &wire::ResultView, step: &str) -> TestResult<serde_json::Value> 
         .map_err(|error| format!("step={step} observed=invalid-view:{error}").into())
 }
 
-fn peer_name(client: &DevClientSession, peer: &DevClientSession) -> TestResult<String> {
-    let identity = peer
+async fn peer_name(client: &mut DevClientSession, peer: &mut DevClientSession) -> TestResult<String> {
+    let identity = *peer
         .world_entities()
         .ok_or("step=discover-target observed=peer-entity-domain-missing")?
         .own_identity();
-    client
-        .world_entities()
-        .ok_or("step=discover-target observed=watcher-entity-domain-missing")?
-        .iter()
-        .find(|entity| &entity.entity.identity == identity)
-        .and_then(|entity| entity.display_name)
-        .ok_or("step=discover-target observed=visible-peer-name-missing need=served-player-name")?
-        .as_str()
-        .map(str::to_owned)
-        .map_err(|error| {
-            format!("step=discover-target observed=invalid-player-name:{error:?}").into()
-        })
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let entities = client
+            .world_entities()
+            .ok_or("step=discover-target observed=watcher-entity-domain-missing")?;
+        if let Some(name) = entities
+            .iter()
+            .find(|entity| entity.entity.identity == identity)
+            .and_then(|entity| entity.display_name)
+        {
+            return name.as_str().map(str::to_owned).map_err(|error| {
+                format!("step=discover-target observed=invalid-player-name:{error:?}").into()
+            });
+        }
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            let peer_visible = entities.iter().any(|entity| entity.entity.identity == identity);
+            return Err(format!(
+                "step=discover-target observed=visible-peer-name-missing need=served-player-name peer_visible={peer_visible} watcher={:?} peer={:?} named_capability={}",
+                client.world_spatial().actor_position,
+                peer.world_spatial().actor_position,
+                client.selected_capabilities().contains(
+                    &oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2
+                ),
+            )
+            .into());
+        }
+        let slice = remaining.min(Duration::from_millis(100));
+        let (watcher_live, peer_live) = tokio::join!(
+            client.service_liveness(slice),
+            peer.service_liveness(slice),
+        );
+        watcher_live?;
+        peer_live?;
+    }
 }
 
 async fn wait_presence(
@@ -232,9 +255,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             .into());
         }
     }
-    watcher.service_liveness(Duration::from_millis(100)).await?;
-    target.service_liveness(Duration::from_millis(100)).await?;
-    let name = peer_name(&watcher, &target)?;
+    let name = peer_name(&mut watcher, &mut target).await?;
+    evidence("S04A_DIAG step=discover-target observed=served-player-name");
 
     let initial = ok(
         &mut watcher,
