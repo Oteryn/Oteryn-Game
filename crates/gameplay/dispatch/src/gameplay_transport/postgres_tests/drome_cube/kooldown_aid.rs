@@ -273,9 +273,15 @@ pub(super) async fn run(
         use_with_position: None,
     })
     .map_err(debug)?;
+    effect_clock(harness, 0).await?;
     let cooling = wire::exchange(owner, replayed.retained, std::slice::from_ref(&next)).await?;
     assert_eq!(cooling.results, vec![UseDisposition::Exhausted]);
-    assert!(matches!(cooling.notices.as_slice(), [TutorialNotice::StatusText(_)]));
+    assert_eq!(
+        cooling.notices,
+        vec![TutorialNotice::StatusText(
+            "Kooldown Aid can be used again in 86400 seconds.".into(),
+        )],
+    );
     assert_eq!(next_quantity(harness).await?, 1);
     assert_eq!(snapshot(owner, actor, session).await?, later);
     // Only the isolated fixture's effect clock is changed; session/lease clocks stay current.
