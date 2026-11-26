@@ -1,9 +1,12 @@
-//! PARITY-TOOLS-1 first slice: carried rope → resolved map spot → movement-owner commit.
+//! Carried rope climbs a rope spot or pulls through a resolved open hole.
 use super::*;
 use crate::content::{LogicalCell, NativeEntryMovementCells};
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use oteryn_simulation_determinism::SemanticTimeMicros;
+
+#[path = "rope_pull.rs"]
+mod pull;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn use_rope_tool(
@@ -99,6 +102,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
+        let now = self.owner_now();
         let turn = rope_in_channel(
             &mut runtime,
             &mut states,
@@ -108,7 +112,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent,
             target,
             self.reset_epoch,
-            self.owner_now(),
+            now,
             Some(ground.overlay()),
             Some(&self.states),
             || agent_tool_jams(command, &definition.production_key, tool),
@@ -124,6 +128,59 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .commit_agent_jam(&permit, command, tool, encoded)
                     .await
                     .map(Some);
+            }
+            RopeTurn::Hole(spot) => {
+                match pull::pull(
+                    &mut runtime,
+                    &states,
+                    self.movement_cells(),
+                    map,
+                    &ground,
+                    &self.states,
+                    self.reset_epoch,
+                    spot,
+                    now,
+                ) {
+                    Err(disposition) => disposition,
+                    Ok(pull::Pull::Creature) => UseDisposition::Committed,
+                    Ok(pull::Pull::Player {
+                        actor,
+                        session,
+                        origin,
+                        revision,
+                    }) => {
+                        self.states.chat.close_out_of_range(&runtime, session);
+                        drop((states, runtime));
+                        self.close_departed_door(&permit, actor, session, origin, revision)
+                            .await;
+                        UseDisposition::Committed
+                    }
+                    Ok(pull::Pull::Item { item, from, to }) => {
+                        use crate::gameplay_transport::item_move::LoopMoveResult;
+                        use crate::gameplay_transport::loop_move::{self, SourceItemOrigin};
+
+                        drop((states, runtime));
+                        let _ground_change =
+                            loop_move::GroundChange(Some(&self.states.loop_ground));
+                        match loop_move::relocate_source_item(
+                            self,
+                            &permit,
+                            actor,
+                            command,
+                            item,
+                            SourceItemOrigin::Rope(from),
+                            to,
+                        )
+                        .await
+                        {
+                            LoopMoveResult::Committed => UseDisposition::Committed,
+                            LoopMoveResult::Unknown => return Err(()),
+                            LoopMoveResult::TooFar | LoopMoveResult::Refused(_) => {
+                                UseDisposition::NotPossible
+                            }
+                        }
+                    }
+                }
             }
             RopeTurn::Moved { origin, revision } => {
                 self.states
@@ -252,6 +309,7 @@ fn is_rope_spot(
 enum RopeTurn {
     Refused(UseDisposition),
     Jam,
+    Hole(crate::map::overlay::TilePos),
     Moved {
         origin: MovementLocalPosition,
         revision: u64,
@@ -295,9 +353,9 @@ fn rope_in_channel(
         content_generation: at.content_generation,
         reset_epoch,
     };
-    let spot = match &intent.use_with_map_item {
+    let (spot, placement) = match &intent.use_with_map_item {
         Some(target_intent) => match terrain_target(&map, target_intent, target) {
-            Ok((spot, _)) => spot,
+            Ok(resolved) => resolved,
             Err(_) if matches!(target, Some(ItemKey::Instance(_))) => {
                 return RopeTurn::Refused(UseDisposition::NothingToUse);
             }
@@ -311,8 +369,16 @@ fn rope_in_channel(
     {
         return RopeTurn::Refused(UseDisposition::TooFar);
     }
-    if is_rope_spot(&at.map.overlay, &facts, spot) && jam() {
-        return RopeTurn::Jam;
+    if is_rope_spot(&at.map.overlay, &facts, spot) {
+        if jam() {
+            return RopeTurn::Jam;
+        }
+    } else if placement.is_some_and(|placement| pull::is_hole(&map, placement)) {
+        return if jam() {
+            RopeTurn::Jam
+        } else {
+            RopeTurn::Hole(spot)
+        };
     }
     let spot = LogicalCell {
         x: i32::from(spot.x),

@@ -914,7 +914,13 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                     item_fence: fence,
                 };
                 let result = loop_move::relocate_source_item(
-                    self, permit, actor, command, item, position, to,
+                    self,
+                    permit,
+                    actor,
+                    command,
+                    item,
+                    loop_move::SourceItemOrigin::Door(position),
+                    to,
                 )
                 .await;
                 if result != crate::gameplay_transport::item_move::LoopMoveResult::Committed {
