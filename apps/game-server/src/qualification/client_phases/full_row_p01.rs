@@ -166,6 +166,70 @@ async fn hunt_once(
     full_row_p05::hunt_for_race(client, world, spawns, "oteryn:creature.rat").await
 }
 
+pub(super) async fn prepare_hunter(
+    clients: &SeamClients<'_>,
+    scenario: &str,
+    tag: u8,
+) -> TestResult<DevClientSession> {
+    use oteryn_protocol_oteryn::attack::{
+        AttackIntentDisposition, ChaseMode, FightMode, FightModes,
+    };
+    use oteryn_protocol_oteryn::cyclopedia_character as stats;
+
+    let reason = "ordinary leveling does not fit the timed Bestiary hunts";
+    character_prep::declare_seeded(scenario, "level-80-sorcerer", reason);
+    let mut client = character_prep::Seeded {
+        profile: "p01-sorcerer",
+        reason,
+    }
+    .connect(clients, tag, 1)
+    .await?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            stats::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            stats::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[stats::CharacterTab::GeneralStats as u8, 0, 0, 1],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted
+        || general_stats::validate(&reply.payload, general_stats::selected(&client))?
+            != stats::vocation_id("sorcerer")
+        || reply.payload.first() != Some(&(stats::CharacterTab::GeneralStats as u8))
+    {
+        return Err("P01 requires the admitted Sorcerer GeneralStats view".into());
+    }
+    let xp = u64::from_le_bytes(reply.payload[1..9].try_into()?);
+    let level = u32::from_le_bytes(reply.payload[9..13].try_into()?);
+    if (xp, level) != (7_915_800, 80) {
+        return Err(format!("P01 seeded Sorcerer stats xp={xp} level={level}").into());
+    }
+    let vitals = client
+        .actor_vitals()
+        .ok_or("P01 seeded Sorcerer vitals absent")?;
+    if (vitals.max_health, vitals.max_mana) != (545, 2250) {
+        return Err(format!("P01 seeded Sorcerer max vitals {vitals:?}").into());
+    }
+    let modes = FightModes {
+        fight_mode: FightMode::Offensive,
+        chase: ChaseMode::Chase,
+        secure: true,
+    };
+    let reply = client.session_mut().set_fight_modes(&modes).await?;
+    if reply.disposition != AttackIntentDisposition::Ok
+        || client
+            .session_mut()
+            .combat_state()
+            .is_none_or(|state| state.modes != modes)
+    {
+        return Err(format!("P01 offensive chase refused: {reply:?}").into());
+    }
+    evidence(&format!(
+        "P01_CHECK hunter-profile PASS vocation=sorcerer level={level} xp={xp} max_health=545 max_mana=2250"
+    ));
+    Ok(client)
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -176,7 +240,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xa2).await?;
+    let mut client = prepare_hunter(clients, "P01.full", 0xa2).await?;
     if !client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_BESTIARY_CHARM_PROGRESSION_V1)
