@@ -430,6 +430,18 @@ async fn earn_addon(
     Ok(OUTFIT.into())
 }
 
+// Crystal mounts.lua at 201189f8 defines action 3 as ACTION_NONE.
+fn taming_feedback(text: &str) -> Option<(bool, bool, bool)> {
+    // (unlocked, bear removed, slingshot consumed)
+    match text {
+        "You have tamed the war bear." => Some((true, true, true)),
+        "The bear ran away." => Some((false, true, false)),
+        "Oh no! The slingshot broke." => Some((false, false, true)),
+        "The bear is trying to hit you with its claws." => Some((false, false, false)),
+        _ => None,
+    }
+}
+
 async fn tame_war_bear(
     row: &mut Row,
     client: &mut DevClientSession,
@@ -510,25 +522,30 @@ async fn tame_war_bear(
             .into());
         }
         let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        let system_messages = client
+            .selected_capabilities()
+            .contains(&oteryn_protocol_oteryn::chat::CAPABILITY_CHAT_SYSTEM_MESSAGE_V1);
         let mut outcome = None;
+        let mut observed_feedback = None;
         loop {
             for event in client.take_events() {
                 match event {
                     SessionEvent::Appearance(delta) => apply_appearance(state, delta.value),
                     SessionEvent::ChatLine(delta) => {
-                        if let oteryn_dev_client::ChatLine::Private { speaker_name, text } =
-                            delta.value
-                            && speaker_name == "Game"
-                        {
-                            let observed = match text.as_str() {
-                                "You have tamed the war bear." => Some((true, true, true)),
-                                "The bear ran away." => Some((false, true, false)),
-                                "Oh no! The slingshot broke." => Some((false, false, true)),
-                                "The bear is trying to hit you with its claws." => {
-                                    Some((false, true, true))
-                                }
-                                _ => None,
-                            };
+                        let feedback = match delta.value {
+                            oteryn_dev_client::ChatLine::System { text } if system_messages => {
+                                Some(text)
+                            }
+                            oteryn_dev_client::ChatLine::Private { speaker_name, text }
+                                if !system_messages && speaker_name == "Game" =>
+                            {
+                                Some(text)
+                            }
+                            _ => None,
+                        };
+                        if let Some(text) = feedback {
+                            let observed = taming_feedback(&text);
+                            observed_feedback = Some(text);
                             if let Some(observed) = observed
                                 && outcome.replace(observed).is_some()
                             {
@@ -565,7 +582,7 @@ async fn tame_war_bear(
                 break;
             }
             if tokio::time::Instant::now() >= deadline {
-                return Err(format!("step=taming-attempt need=war-bear-unlock-bear-removal-and-slingshot-consumption observed=unlock-{unlocked}-removed-{removed}").into());
+                return Err(format!("step=taming-attempt need=matching-feedback-unlock-bear-and-slingshot-outcome observed=system-messages-{system_messages}-feedback-{observed_feedback:?}-outcome-{outcome:?}-before-count-{funded}-unlock-{unlocked}-removed-{removed}-count-{}", carried(client, reference)?).into());
             }
             client.service_liveness(Duration::from_millis(25)).await?;
         }
@@ -713,6 +730,22 @@ mod tests {
     fn refusal_uses_a_real_unearned_addon_bit() {
         assert_eq!(unearned_addon(2), 1);
         assert_eq!(unearned_addon(3), 0);
+    }
+
+    #[test]
+    fn taming_requires_each_donor_outcome_to_match_its_effects() {
+        for (feedback, expected) in [
+            ("You have tamed the war bear.", (true, true, true)),
+            ("The bear ran away.", (false, true, false)),
+            ("Oh no! The slingshot broke.", (false, false, true)),
+            (
+                "The bear is trying to hit you with its claws.",
+                (false, false, false),
+            ),
+        ] {
+            assert_eq!(taming_feedback(feedback), Some(expected), "{feedback}");
+        }
+        assert_eq!(taming_feedback("Unrelated system feedback"), None);
     }
 
     #[test]
