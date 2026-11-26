@@ -92,7 +92,8 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         StepDirection::North
     };
     let intent =
-        target_move::encode_target_move_intent(target_move::TargetMoveIntent::Turn(facing))?;
+        target_move::encode_target_move_intent(target_move::TargetMoveIntent::Turn(facing))
+            .map_err(|error| format!("C18a turn encoding failed: {error:?}"))?;
     let turn = client
         .session_mut()
         .gated_command(
