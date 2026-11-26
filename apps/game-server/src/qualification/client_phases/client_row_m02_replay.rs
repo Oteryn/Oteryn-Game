@@ -19,7 +19,8 @@ pub(super) struct Capture {
     pub result_sequence: u64,
     pub last_sequence: u64,
     pub opening_end: u64,
-    pub passage: [(u64, u64); 4],
+    pub passage: [(u64, u64); 6],
+    pub logout: (u64, u64),
     pub setup: [(u64, u64); 3],
     pub setup_end: u64,
     pub capabilities: Vec<u32>,
@@ -41,7 +42,7 @@ impl Capture {
             self.last_sequence
         )
     }
-    fn commands(&self) -> [(u64, u64); 8] {
+    fn commands(&self) -> [(u64, u64); 11] {
         [
             self.setup[0],
             self.setup[1],
@@ -51,6 +52,9 @@ impl Capture {
             self.passage[1],
             self.passage[2],
             self.passage[3],
+            self.passage[4],
+            self.passage[5],
+            self.logout,
         ]
     }
 
@@ -143,7 +147,8 @@ fn verify_identity(binding: &Capture, expected: &str, frames: &[Envelope]) -> Te
         || binding.setup_end >= binding.result_sequence
         || binding.result_sequence >= binding.opening_end
         || binding.opening_end >= binding.passage[0].1
-        || binding.passage[3].1 >= binding.last_sequence
+        || binding.passage[5].1 >= binding.logout.1
+        || binding.logout.1 != binding.last_sequence
         || binding
             .commands()
             .windows(2)
@@ -239,7 +244,23 @@ async fn replay(binding: &Capture, frames: &[Envelope], wire: &[Vec<u8>]) -> Tes
             {
                 return Err("M02 replay setup did not observe the closed gate".into());
             }
+            verify_closed_probe_tile(
+                gate.as_ref(),
+                binding.ordinal,
+                session
+                    .world_entities()
+                    .ok_or("M02 replay requires a visible entity baseline")?
+                    .others()
+                    .map(|entity| entity.position),
+            )?;
             seeded = true;
+        }
+        if sequence < binding.first_sequence {
+            session.apply_qualification_frame(body)?;
+            if session.world_spatial().actor_position == FAR_SIDE {
+                return Err("M02 replay reached the logout tile before the mechanic".into());
+            }
+            continue;
         }
         let event = session.apply_qualification_frame(body)?;
         if sequence == 0 || sequence < binding.first_sequence {
@@ -254,14 +275,20 @@ async fn replay(binding: &Capture, frames: &[Envelope], wire: &[Vec<u8>]) -> Tes
             let payload = if binding.capabilities.contains(&66) {
                 let (payload, refusal) = refusal_detail::split_refusal_detail(result.payload)
                     .map_err(|error| format!("M02 replay refusal detail: {error:?}"))?;
-                if refusal.is_some() && sequence != binding.setup[0].1 {
-                    return Err("M02 committed result contains refusal detail".into());
+                let expected = (sequence == binding.setup[0].1)
+                    .then_some(refusal_detail::RefusalDetail::NotPossible);
+                if refusal != expected {
+                    return Err("M02 replay result has unexpected refusal detail".into());
                 }
                 payload
             } else {
                 result.payload
             };
-            let valid_disposition = if sequence == binding.result_sequence {
+            let valid_disposition = if sequence == binding.logout.1 {
+                oteryn_protocol_oteryn::logout::decode_logout_result(payload)
+                    .map_err(|error| format!("M02 replay logout: {error:?}"))?
+                    == oteryn_protocol_oteryn::logout::LogoutResult::Accepted
+            } else if sequence == binding.result_sequence {
                 oteryn_protocol_oteryn::world_object::decode_use_result(payload)
                     .map_err(|error| format!("M02 replay USE result: {error:?}"))?
                     == UseDisposition::Committed
@@ -317,10 +344,22 @@ async fn replay(binding: &Capture, frames: &[Envelope], wire: &[Vec<u8>]) -> Tes
             &mut opening,
             sequence > binding.setup_end,
         )?;
+        if sequence < binding.setup[0].1 {
+            verify_closed_probe_tile(
+                gate.as_ref(),
+                binding.ordinal,
+                session
+                    .world_entities()
+                    .ok_or("M02 replay lost its visible entities")?
+                    .others()
+                    .map(|entity| entity.position),
+            )?;
+        }
     }
     if !seeded || frames.next().is_some() {
         return Err("M02 original frame stream is incomplete".into());
     }
+    verify_relog_position(session.world_spatial().actor_position)?;
     verify_open_order(arrival, opening)?;
     if opening.is_some_and(|sequence| sequence > binding.opening_end) {
         return Err("M02 gate first opened during passage".into());
@@ -378,9 +417,10 @@ fn m02_requires_exact_capture_identity() -> TestResult {
         character: [0; 16],
         first_sequence: 10,
         result_sequence: 16,
-        last_sequence: 26,
+        last_sequence: 31,
         opening_end: 17,
-        passage: [(8, 18), (9, 20), (10, 22), (11, 24)],
+        passage: [(8, 18), (9, 20), (10, 22), (11, 24), (12, 26), (13, 28)],
+        logout: (14, 31),
         setup: [(4, 10), (5, 11), (6, 13)],
         setup_end: 14,
         capabilities: vec![],
@@ -391,7 +431,7 @@ fn m02_requires_exact_capture_identity() -> TestResult {
         ordinal: 1,
     };
     let expected = binding.identity();
-    let mut frames: Vec<_> = (10..=26)
+    let mut frames: Vec<_> = (10..=31)
         .map(|server_sequence| Envelope {
             command_id: binding.command_at(server_sequence),
             game_session_id: binding.game_session_id.clone(),
