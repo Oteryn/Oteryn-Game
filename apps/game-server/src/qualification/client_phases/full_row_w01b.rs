@@ -18,6 +18,11 @@ use oteryn_dev_client::{
 };
 
 const ROW: &str = "W01b";
+const SPAWN: TilePos = TilePos {
+    x: 32491,
+    y: 32169,
+    floor: -7,
+};
 
 struct Progress {
     step: &'static str,
@@ -154,6 +159,37 @@ async fn wait_until(
     Ok(())
 }
 
+async fn walk_first_attempt(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, from, direction)
+            .filter(|to| *to != from)
+            .ok_or("W01b route step has no distinct authored landing")?;
+        let outcome = client.step(direction).await?;
+        let observed = tile(client.world_spatial().actor_position)?;
+        if outcome.status != CommandStatus::Accepted
+            || outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || observed != expected
+        {
+            return Err(format!(
+                "W01b first STEP {direction:?} from={from:?} expected={expected:?} observed={observed:?} reply={outcome:?}"
+            )
+            .into());
+        }
+        verdict::Harness::global().progress("walk");
+        client
+            .service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms)))
+            .await?;
+        client.take_events();
+    }
+    Ok(())
+}
+
 async fn logout(client: &mut DevClientSession) -> TestResult {
     let reply = client.session_mut().logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -177,35 +213,38 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     let clients = &dedicated.clients(clients);
     let mut client = character_prep::w01b_rat_hunter("W01b.full", clients, 0xb1).await?;
     progress.begin("initial-spawn");
-    travel_to_spawn(
-        &mut client,
-        world,
-        &metadata.spawns,
-        "oteryn:creature.rat",
-    )
-    .await?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let target = client
-        .world_entities()
-        .and_then(|entities| {
-            entities
-                .iter()
-                .filter(|entity| is_rat(entity))
-                .min_by_key(|entity| {
-                    tile(entity.position)
-                        .map_or(u16::MAX, |position| distance(position, here))
-                })
-        })
-        .ok_or("step=initial-spawn no live creature reached by rat route")?;
-    let target_at = tile(target.position)?;
-    let target = target.entity;
-    let (spawn, respawn_ms) = rat_points(&metadata.spawns)
-        .filter(|(point, _)| distance(*point, target_at) <= 8)
-        .min_by_key(|(point, _)| distance(*point, here))
-        .ok_or("step=initial-spawn live routed creature has no nearby authored rat point")?;
+    let spawn = SPAWN;
+    let mut authored = rat_points(&metadata.spawns).filter(|(point, _)| *point == spawn);
+    let (_, respawn_ms) = authored.next().ok_or("W01b authored Rat point is missing")?;
+    if authored.next().is_some() {
+        return Err("W01b authored Rat point is ambiguous".into());
+    }
+    let entry = tile(client.world_spatial().actor_position)?;
+    let path = route(world, entry, |at| {
+        distance(at, spawn) == 1
+            && world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|cell| !cell.protection_zone())
+    })
+    .filter(|path| !path.is_empty())
+    .ok_or("W01b has no distinct route from admission to its authored point")?;
+    walk_first_attempt(&mut client, world, &path).await?;
+    let target = visible_rat_at(&client, spawn).ok_or("no live Rat on the authored spawn cell")?;
+    let view = client.world_entities().ok_or("W01b entity view absent before attack")?;
+    let pre_attack = view.get(&target).ok_or("W01b target missing before attack")?;
+    if !matches!(pre_attack.detail, EntityDetail::Actor { health_percent: 100, .. }) {
+        return Err(format!("W01b Rat must start at full health: {pre_attack:?}").into());
+    }
+    let prior_corpses: Vec<_> = view
+        .iter()
+        .filter(|entity| entity.kind == EntityKind::Corpse)
+        .map(|entity| entity.entity)
+        .collect();
     progress.pass("initial-spawn", (spawn, respawn_ms, target));
 
     progress.begin("kill-command");
+    client.take_events();
     let attack = client.session_mut().attack_target(Some(&target)).await?;
     if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
         return Err(format!("ATTACK_TARGET reply={attack:?}").into());
@@ -215,41 +254,46 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut damaged = false;
-    let mut last = target_at;
+    let mut removed = false;
+    let mut last = spawn;
+    let mut corpse = None;
     let corpse = loop {
         for event in pump(&mut client).await? {
-            if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event
-                && let Some(entity) = delta.value.update.iter().find(|entry| entry.entity == target)
-            {
-                last = tile(entity.position)?;
-                damaged |= matches!(entity.detail, EntityDetail::Actor { health_percent, .. } if health_percent < 100);
+            let SessionEvent::WorldSpatialEntities(delta) = event else {
+                continue;
+            };
+            if delta.server_sequence <= attack.result_server_sequence {
+                continue;
             }
-        }
-        let corpse = client.world_entities().and_then(|entities| {
-            entities.iter().find(|entity| {
+            if let Some(updated) = delta.value.update.iter().find(|entry| entry.entity == target) {
+                last = tile(updated.position)?;
+                damaged |= matches!(updated.detail, EntityDetail::Actor { health_percent, .. } if health_percent < 100);
+            }
+            removed |= delta.value.leave.contains(&target);
+            if let Some(entered) = delta.value.enter.iter().find(|entity| {
                 entity.kind == EntityKind::Corpse
                     && tile(entity.position).is_ok_and(|position| position == last)
-            })
-        });
-        if let Some(corpse) = corpse {
-            break corpse.entity;
+                    && !prior_corpses.contains(&entity.entity)
+            }) {
+                corpse = Some(entered.entity);
+            }
+        }
+        let view = client.world_entities().ok_or("W01b entity view absent after attack")?;
+        if damaged && removed && view.get(&target).is_none()
+            && let Some(new_corpse) = corpse
+            && view.get(&new_corpse).is_some()
+        {
+            break new_corpse;
         }
         if tokio::time::Instant::now() >= deadline {
-            let live = client.world_entities().and_then(|entities| entities.get(&target));
             return Err(format!(
-                "ATTACK_TARGET accepted but corpse/removal delta timed out: damaged={damaged} last={last:?} target={live:?} attacker={:?}",
+                "ATTACK_TARGET accepted but corpse/removal delta timed out: damaged={damaged} removed={removed} corpse={corpse:?} last={last:?} target={:?} attacker={:?}",
+                view.get(&target),
                 client.world_spatial().actor_position
             )
             .into());
         }
     };
-    if !damaged
-        || client
-            .world_entities()
-            .is_some_and(|entities| entities.get(&target).is_some())
-    {
-        return Err("kill lacked damage delta or killed actor remained live".into());
-    }
     progress.pass("kill-deltas", (target, corpse, last));
 
     progress.begin("no-early-respawn");
@@ -272,9 +316,10 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     let deadline = no_early_respawn_until + Duration::from_secs(10);
     let nearby_replacement = loop {
         let events = pump(&mut client).await?;
-        if let Some(replacement) = entered_rat_at(events, spawn)
-            && replacement != target
-        {
+        if let Some(replacement) = entered_rat_at(events, spawn) {
+            if replacement == target {
+                return Err("killed Rat generation re-entered at the authored point".into());
+            }
             break replacement;
         }
         if tokio::time::Instant::now() >= deadline {
@@ -293,7 +338,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     let from = tile(client.world_spatial().actor_position)?;
     let away = route(world, from, |at| distance(at, spawn) >= 20)
         .ok_or("no legitimate walking route outside spawn interest")?;
-    walk(&mut client, world, &away).await?;
+    walk_first_attempt(&mut client, world, &away).await?;
     progress.pass("leave-interest", tile(client.world_spatial().actor_position)?);
     // Keep answering liveness while the interval runs out; a bare sleep lets
     // the server drop the session as unresponsive.
@@ -307,7 +352,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         distance(at, spawn) <= 1
     })
     .ok_or("no legitimate return route to rat spawn")?;
-    walk(&mut client, world, &back).await?;
+    walk_first_attempt(&mut client, world, &back).await?;
     progress.begin("replacement-delta");
     wait_until(
         &mut client,
@@ -322,26 +367,32 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     progress.pass("replacement-delta", replacement);
 
     progress.begin("logout");
+    let saved = tile(client.world_spatial().actor_position)?;
+    let old_session = client.join_snapshot().game_session_id;
+    if saved == entry {
+        return Err("W01b logout position must differ from first admission".into());
+    }
     logout(&mut client).await?;
-    progress.pass("logout", "Accepted");
     drop(client);
+    wait_character_released(clients, 0).await?;
+    progress.pass("logout", (old_session, saved));
     progress.begin("fresh-admission");
     let mut fresh = connect_character(clients, 0xb2, 0).await?;
+    let restored = tile(fresh.world_spatial().actor_position)?;
+    if fresh.join_snapshot().game_session_id == old_session || restored != saved {
+        return Err(format!("W01b fresh admission position={restored:?} expected={saved:?}").into());
+    }
     progress.begin("fresh-admission-route");
     let path = route(world, tile(fresh.world_spatial().actor_position)?, |at| {
         distance(at, spawn) <= 1
     })
     .ok_or("fresh admission cannot route to rat spawn")?;
-    walk(&mut fresh, world, &path).await?;
+    walk_first_attempt(&mut fresh, world, &path).await?;
     progress.begin("fresh-admission-state");
     wait_until(
         &mut fresh,
         tokio::time::Instant::now() + Duration::from_secs(10),
-        |client| {
-            client
-                .world_entities()
-                .is_some_and(|entities| entities.get(&replacement).is_some())
-        },
+        |client| visible_rat_at(client, spawn) == Some(replacement),
     )
     .await?;
     if fresh
@@ -353,7 +404,9 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     progress.pass("fresh-admission-state", replacement);
     progress.begin("final-logout");
     logout(&mut fresh).await?;
-    progress.pass("final-logout", "Accepted");
+    drop(fresh);
+    wait_character_released(clients, 0).await?;
+    progress.pass("final-logout", "released");
     Ok(())
 }
 
