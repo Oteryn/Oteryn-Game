@@ -8,12 +8,14 @@ use crate::durability::character_last_position::{
     LastPositionCell, LastPositionRecord, LastVitals,
 };
 use crate::durability::fresh_admission::FreshAdmissionStore;
-use crate::durability::house_scope_handoff::HouseId;
-use crate::durability::house_transfer::HouseTransferRequest;
+use crate::durability::house_scope_handoff::{HouseEntryRefusal, HouseId};
+use crate::durability::house_transfer::{HouseTransferOutcome, HouseTransferRequest};
 use crate::foundation::{
     CharacterLease, LocalPosition, RuntimeScopeRefV1, ScopeOwnershipGeneration,
 };
-use oteryn_protocol_oteryn::house_transfer::{self as wire, HouseTransferAck};
+use oteryn_protocol_oteryn::house_transfer::{
+    self as wire, HouseTransferAck, HouseTransferRefusal as Refusal,
+};
 #[path = "house_transfer/admission.rs"]
 mod admission;
 #[path = "house_transfer/movement.rs"]
@@ -24,6 +26,19 @@ mod session_views;
 /// A refusal carries an empty payload. None requires recovery because the source
 /// or the outcome of the handoff can no longer be proved.
 pub(super) type TransferResult = Option<(Option<AdmittedSession>, Vec<u8>)>;
+
+#[cfg(test)]
+#[derive(Default)]
+pub(super) struct HouseCheckoutBarrier {
+    pub(super) ready: tokio::sync::Notify,
+    pub(super) attempt: tokio::sync::Notify,
+    pub(super) busy: tokio::sync::Notify,
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static HOUSE_CHECKOUT_BARRIER: std::sync::Arc<HouseCheckoutBarrier>;
+}
 
 /// A new command stream does not make the same physical player active again
 /// or replay its already delivered server messages.
@@ -50,9 +65,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: u64,
         body: &[u8],
     ) -> TransferResult {
-        let refuse = || Some((None, Vec::new()));
+        let refusal = |reason: Refusal| Some((None, reason.encode().to_vec()));
+        let refuse = || refusal(Refusal::Unavailable);
         let Ok(intent) = wire::decode_house_transfer_intent(body) else {
-            return refuse();
+            return refusal(Refusal::InvalidIntent);
         };
         let (Some(actor), Some(controller), Some(fence)) = (
             admitted.runtime_actor,
@@ -154,12 +170,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             admitted.game_session_id,
             self.owner_now(),
         );
-        if spells.is_dead(actor)
-            || spells.has_pending_spell_commit(actor, admitted.game_session_id)
-            || locks.pve_in_fight_until.is_some()
-            || locks.pvp == super::combat_lock_fact::PvpLockSource::LiveBlocked
+        if spells.is_dead(actor) || spells.has_pending_spell_commit(actor, admitted.game_session_id)
         {
             return refuse();
+        }
+        if locks.pve_in_fight_until.is_some()
+            || locks.pvp == super::combat_lock_fact::PvpLockSource::LiveBlocked
+        {
+            return refusal(Refusal::InCombat);
         }
         let (lease, position, origin) = if intent.exit {
             let Ok(state) = runtime.house_actor_state(actor, admitted.game_session_id) else {
@@ -224,7 +242,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let origin = current.position();
             let Some(position) = self.house_door_destination(&intent.house, origin) else {
-                return refuse();
+                return refusal(Refusal::NotAtEntrance);
             };
             (
                 lease,
@@ -325,34 +343,71 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .ok()?;
             Some(token)
         };
-        let committed = self
-            .root
-            .commit_house_transfer(
-                self.character,
-                self.holder,
-                request,
-                capabilities.current_check(),
-            )
+        #[cfg(test)]
+        let barrier = HOUSE_CHECKOUT_BARRIER.try_with(Clone::clone).ok();
+        #[cfg(test)]
+        if let Some(barrier) = &barrier {
+            barrier.ready.notify_one();
+            barrier.attempt.notified().await;
+        }
+        // Retry only checkout. Once the transaction has started, its result
+        // stays outside the retry path and failure requires a source readback.
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        let committed = budget
+            .retry_command_guard(async || {
+                let attempt = self
+                    .root
+                    .commit_house_transfer(
+                        self.character,
+                        self.holder,
+                        request.clone(),
+                        capabilities.current_check(),
+                    )
+                    .await;
+                #[cfg(test)]
+                if matches!(
+                    attempt,
+                    Err(crate::durability::DurabilityError::RootUnavailable)
+                ) && let Some(barrier) = &barrier
+                {
+                    barrier.busy.notify_one();
+                }
+                attempt
+            })
             .await;
+        drop(budget);
         let (ack, payload) = match committed {
-            Ok(committed) => committed,
-            Err(_) => {
-                let (source, _) = FreshAdmissionStore::from_root(self.root.clone())
-                    .current_session_at(admitted.game_session_id)
+            Ok(HouseTransferOutcome::Committed(ack, payload)) => (ack, payload),
+            result => {
+                let store = FreshAdmissionStore::from_root(self.root.clone());
+                let (source, _) = super::AdmissionRetryBudget::for_command(self.root)
+                    .retry_command_guard(async || {
+                        store.current_session_at(admitted.game_session_id).await
+                    })
                     .await
                     .ok()?;
-                if source.session_state() == crate::foundation::GameSessionState::Active
-                    && super::item_fence_of(source) == Some(fence)
-                    && source.current_transport() == Some(controller.transport)
+                if source.session_state() != crate::foundation::GameSessionState::Active
+                    || super::item_fence_of(source) != Some(fence)
+                    || source.current_transport() != Some(controller.transport)
                 {
-                    if let Some(token) = transition {
-                        runtime
-                            .lift_player_fence(actor, admitted.game_session_id, token)
-                            .ok()?;
-                    }
-                    return refuse();
+                    return None;
                 }
-                return None;
+                if let Some(token) = transition {
+                    runtime
+                        .lift_player_fence(actor, admitted.game_session_id, token)
+                        .ok()?;
+                }
+                let reason = match result {
+                    Ok(HouseTransferOutcome::Refused(reason)) => match reason {
+                        HouseEntryRefusal::NoAccess => Refusal::NoAccess,
+                        HouseEntryRefusal::InCombat => Refusal::InCombat,
+                        HouseEntryRefusal::Busy => Refusal::Busy,
+                        HouseEntryRefusal::HouseClosed => Refusal::HouseClosed,
+                        HouseEntryRefusal::NoRoom => Refusal::NoRoom,
+                    },
+                    _ => Refusal::Unavailable,
+                };
+                return refusal(reason);
             }
         };
         // The native handoff retains the authenticated source selection. A new

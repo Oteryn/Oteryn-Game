@@ -338,6 +338,17 @@ pub(super) fn encode(
         | Dispatch::Highscores(HighscoresReply::Terminal(_) | HighscoresReply::Rejected)
         | Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
     };
+    let fallback = super::house_transfer::refusal_payload(
+        command.command_type,
+        session
+            .selected_capabilities
+            .command_selected(command.command_type),
+        status,
+        &result_payload,
+    );
+    let payload = fallback
+        .as_ref()
+        .map_or(result_payload.as_slice(), |bytes| bytes.as_slice());
     let result = if let Dispatch::Achievements(AccountAchievementsReply::Terminal(error))
     | Dispatch::Highscores(HighscoresReply::Terminal(error))
     | Dispatch::CharacterInfo(
@@ -358,7 +369,7 @@ pub(super) fn encode(
             session.sequence,
             command.command_id,
             status,
-            &result_payload,
+            payload,
         )
     };
     let Ok(result) = result else {
