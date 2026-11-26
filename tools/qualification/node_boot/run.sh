@@ -1562,6 +1562,9 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   sleep 6
   local qualification=node_boot_seam_against_running_node
   local test_env=()
+  if [[ -n "${E08_CAPTURE_DIR:-}" ]]; then
+    test_env+=("NODE_BOOT_E08_CAPTURE_DIR=$E08_CAPTURE_DIR")
+  fi
   if [[ "${NODE_BOOT_D150_LEGACY:-0}" == 1 ]]; then
     test_env+=("NODE_BOOT_D150_LEGACY=1")
   fi
@@ -1835,6 +1838,49 @@ if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
   exit "$?"
 fi
 
+e08_client_selected() {
+  [[ "$NODE_BOOT_WORLD" == 1 ]] || return 1
+  local groups=${NODE_BOOT_E2E_ONLY:-}
+  case ",${groups//[[:space:]]/}," in
+    ,,|*,rows,*) ;;
+    *) return 1 ;;
+  esac
+  python3 - "${OTERYN_E2E_ROW_BATCH-0:15}" <<'PY_E08_BATCH'
+import re
+import sys
+
+batch = sys.argv[1]
+if batch == "all":
+    sys.exit(0)
+if not re.fullmatch(r"\+?[0-9]+:\+?[0-9]+", batch):
+    sys.exit(1)
+start, length = map(int, batch.split(":"))
+sys.exit(not (start <= 152 and 152 - start < length < 2**64))
+PY_E08_BATCH
+}
+
+e08_client_replay() {
+  local test=depot_search::e2e_e08::e08_real_server_payloads_replay_into_depot_search_panel
+  if ! grep -q '^SEAM_EVIDENCE e2e_capture scenario=E08\.client status=CAPTURED ' \
+    "$WORK/stage-$seam_stage_name.log"; then
+    echo 'SEAM_EVIDENCE e2e_all scenario=E08.client status=FAIL evidence=missing-live-capture'
+    return 1
+  fi
+  if ! E2E_ALL_CAPTURE_DIR="$E08_CAPTURE_DIR" cargo +1.100.0 test --locked \
+    -p oteryn-client-ui --lib "$test" -- --exact > "$WORK/e08-replay.log" 2>&1 \
+    || ! grep -Fxq "test $test ... ok" "$WORK/e08-replay.log"; then
+    cat "$WORK/e08-replay.log"
+    echo 'SEAM_EVIDENCE e2e_all scenario=E08.client status=FAIL evidence=client-replay-failed'
+    return 1
+  fi
+  cat "$WORK/e08-replay.log"
+  echo 'SEAM_EVIDENCE e2e_all scenario=E08.client status=PASS evidence=fresh-depot-search-client-replay'
+}
+
+E08_CAPTURE_DIR=
+if e08_client_selected; then
+  E08_CAPTURE_DIR="$(mktemp -d "$WORK/e08-capture.XXXXXX")"
+fi
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
@@ -1861,6 +1907,9 @@ else
   fi
   stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
+fi
+if [[ -n "${E08_CAPTURE_DIR:-}" ]]; then
+  stage e08_client_replay "$seam_stage_name" -- e08_client_replay
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then

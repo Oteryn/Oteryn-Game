@@ -50,6 +50,48 @@ def bash(script, env=None, cwd=None):
 KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
+class E08ReplayTests(unittest.TestCase):
+    def test_selection_covers_single_range_and_all(self):
+        script = function("e08_client_selected") + "\ne08_client_selected"
+        for batch, expected in (("152:1", 0), ("150:3", 0), ("all", 0),
+                                ("65:1", 1), ("150:2", 1), ("152:0", 1), ("invalid", 1)):
+            with self.subTest(batch=batch):
+                result = bash(script, {"NODE_BOOT_WORLD": "1", "NODE_BOOT_E2E_ONLY": "rows",
+                                       "OTERYN_E2E_ROW_BATCH": batch})
+                self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+
+    def test_replay_requires_live_capture_and_executed_test(self):
+        with tempfile.TemporaryDirectory() as work:
+            stage_log = Path(work, "stage-seam_stages.log")
+            stage_log.touch()
+            script = function("e08_client_replay") + """
+seam_stage_name=seam_stages
+cargo() {
+  [[ "$E2E_ALL_CAPTURE_DIR" == "$E08_CAPTURE_DIR" ]] || return 1
+  case "$REPLAY_OUTCOME" in
+    fail) return 1 ;;
+    empty) echo 'running 0 tests' ;;
+    pass) printf 'test %s ... ok\\n' "$7" ;;
+  esac
+}
+e08_client_replay
+"""
+            env = {"WORK": work, "E08_CAPTURE_DIR": work, "REPLAY_OUTCOME": "pass"}
+            result = bash(script, env)
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn("evidence=missing-live-capture", result.stdout)
+            stage_log.write_text(
+                "SEAM_EVIDENCE e2e_capture scenario=E08.client status=CAPTURED evidence=live\n"
+            )
+            for outcome in ("fail", "empty", "pass"):
+                with self.subTest(outcome=outcome):
+                    result = bash(script, {**env, "REPLAY_OUTCOME": outcome})
+                    self.assertEqual(result.returncode, int(outcome != "pass"),
+                                     result.stdout + result.stderr)
+                    self.assertEqual("scenario=E08.client status=PASS" in result.stdout,
+                                     outcome == "pass")
+
+
 class KnobTests(unittest.TestCase):
     def preflight_bin(self, temporary):
         bin_dir = Path(temporary, 'bin')

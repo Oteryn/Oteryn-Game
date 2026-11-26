@@ -1,19 +1,19 @@
 //! E08 client replay capture: deposit a carried item at an authored depot locker, then capture the
 //! real Depot Search SEARCH, DETAIL, RETRIEVE(all) and empty-RETRIEVE replies. Client owner:
 //! `apply_result` in `crates/client-ui/src/features/0153-depot-search/protocol.rs`.
-use super::full_row_e08::{carried_count, restored};
+use super::full_row_e08::{carried_count, restored, to_locker};
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::item_view::ItemHandle;
 use oteryn_protocol_oteryn::{CommandStatus, depot, depot_search as wire};
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("E08_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
+    for directory in ["E2E_ALL_CAPTURE_DIR", "NODE_BOOT_E08_CAPTURE_DIR"] {
+        if let Some(root) = std::env::var_os(directory) {
+            std::fs::write(Path::new(&root).join(name), bytes)?;
+        }
     }
+    Ok(())
 }
 
 async fn search_command(
@@ -32,7 +32,8 @@ async fn search_command(
     if response.status != CommandStatus::Accepted {
         return Err(format!("depot search status {:?}", response.status).into());
     }
-    let reply = wire::decode_reply(&response.payload).map_err(|error| format!("decode {error:?}"))?;
+    let reply =
+        wire::decode_reply(&response.payload).map_err(|error| format!("decode {error:?}"))?;
     Ok((reply, response.payload))
 }
 
@@ -44,7 +45,11 @@ async fn depot_intent(
         depot::encode_depot_intent(intent).map_err(|error| format!("depot encode {error:?}"))?;
     let response = client
         .session_mut()
-        .gated_command(depot::CAPABILITY_DEPOT_V1, depot::COMMAND_TYPE_DEPOT_INTENT, &payload)
+        .gated_command(
+            depot::CAPABILITY_DEPOT_V1,
+            depot::COMMAND_TYPE_DEPOT_INTENT,
+            &payload,
+        )
         .await?;
     if response.status != CommandStatus::Accepted {
         return Err(format!("depot status {:?}", response.status).into());
@@ -90,11 +95,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )?;
     let definitions = provisioning::item_index()?;
     let mut client = connect_character(clients, 0x3b, 1).await?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        near_locker(world, at)
-    })
-    .ok_or("no reachable authored depot locker")?;
-    walk(&mut client, world, &path).await?;
+    to_locker(&mut client, world).await?;
     let item = client
         .inventory()
         .and_then(|inventory| inventory.entries.first())
@@ -120,6 +121,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if browse.outcome != depot::DepotOutcome::Opened || browse.town.is_none() {
         return Err("depot browse did not open".into());
     }
+    let original_count = carried_count(&client, item.item_definition_ref);
+    let deposited_units = item.count.get();
     let moved = depot_intent(
         &mut client,
         depot::DepotIntent {
@@ -135,14 +138,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     wait_carried(&mut client, |client| !carried(client, item.handle)).await?;
     let deposited_count = carried_count(&client, item.item_definition_ref);
+    if deposited_count + u64::from(deposited_units) != original_count {
+        return Err("deposit-inventory-count-mismatch".into());
+    }
 
-    let (found, found_bytes) = search_command(&mut client, wire::Request::Search { client_id }).await?;
+    let (found, found_bytes) =
+        search_command(&mut client, wire::Request::Search { client_id }).await?;
     let row = found.results.first().ok_or("search returned no row")?;
     let tier = row.tiers.first().ok_or("search row has no tier")?;
     if found.outcome != wire::Outcome::Found
         || found.retrieved != 0
         || row.client_id != client_id
-        || row.depot == 0
+        || found.results.len() != 1
+        || row.depot != deposited_units
+        || row.stash != 0
+        || row.inbox != 0
+        || row.tiers.len() != 1
+        || row.tiers[0].count != deposited_units
     {
         return Err(format!("search reply {found:?}").into());
     }
@@ -156,7 +168,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         },
     )
     .await?;
-    if detail.outcome != wire::Outcome::Detailed || detail.results.len() != 1 {
+    if detail.outcome != wire::Outcome::Detailed
+        || detail.retrieved != 0
+        || detail.results.as_slice() != std::slice::from_ref(row)
+    {
         return Err(format!("detail reply {detail:?}").into());
     }
     let (retrieved, retrieved_bytes) = search_command(
@@ -183,7 +198,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         },
     )
     .await?;
-    if empty.outcome != wire::Outcome::NotFound || empty.retrieved != 0 {
+    if empty.outcome != wire::Outcome::NotFound
+        || empty.retrieved != 0
+        || !empty.results.is_empty()
+        || carried_count(&client, item.item_definition_ref) != original_count
+    {
         return Err(format!("empty retrieve reply {empty:?}").into());
     }
 
@@ -201,17 +220,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         empty.outcome,
         empty.retrieved
     );
-    capture("e08-search.bin", &found_bytes);
-    capture("e08-detail.bin", &detail_bytes);
-    capture("e08-retrieve.bin", &retrieved_bytes);
-    capture("e08-empty.bin", &empty_bytes);
-    capture("e08-expected.txt", expected.as_bytes());
+    capture("e08-search.bin", &found_bytes)?;
+    capture("e08-detail.bin", &detail_bytes)?;
+    capture("e08-retrieve.bin", &retrieved_bytes)?;
+    capture("e08-empty.bin", &empty_bytes)?;
+    capture("e08-expected.txt", expected.as_bytes())?;
     let _ = client.session_mut().logout().await;
-    Ok(format!("item={client_id} depot={} retrieved={}", first.depot, retrieved.retrieved))
+    Ok(format!(
+        "item={client_id} depot={} retrieved={}",
+        first.depot, retrieved.retrieved
+    ))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=E08.client status=CAPTURED evidence={observed}"
         )),

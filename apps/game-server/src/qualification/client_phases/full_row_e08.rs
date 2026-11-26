@@ -173,11 +173,33 @@ pub(super) async fn depot_intent(
         .map_err(|error| format!("depot-decode:{error:?}").into())
 }
 
-async fn to_locker(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+pub(super) async fn to_locker(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
     let path = route(world, from, |at| near_locker(world, at))
         .ok_or("no-reachable-authored-depot-locker")?;
-    walk(client, world, &path).await
+    let mut pace = Duration::ZERO;
+    for direction in path {
+        if !pace.is_zero() {
+            client.service_liveness(pace).await?;
+        }
+        let before = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, before, direction);
+        let outcome = client.step(direction).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || Some(actual) != expected
+        {
+            return Err(format!(
+                "depot-step:{direction:?}:from={before:?}:expected={expected:?}:actual={actual:?}:outcome={outcome:?}"
+            )
+            .into());
+        }
+        pace = Duration::from_millis(u64::from(outcome.step_wait_ms));
+        verdict::Harness::global().progress("walk");
+        client.take_events();
+    }
+    Ok(())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -235,6 +257,8 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     if browse.outcome != depot::DepotOutcome::Opened || browse.town.is_none() {
         return Err("browse-did-not-open".into());
     }
+    let original_count = carried_count(&client, item.item_definition_ref);
+    let deposited_units = item.count.get();
     let moved = depot_intent(
         &mut client,
         depot::DepotIntent {
@@ -251,6 +275,9 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     }
     wait_carried(&mut client, |client| !carried(client, item.handle)).await?;
     let deposited_count = carried_count(&client, item.item_definition_ref);
+    if deposited_count + u64::from(deposited_units) != original_count {
+        return Err("deposit-inventory-count-mismatch".into());
+    }
 
     journey.at("2-search");
     let found = command(&mut client, wire::Request::Search { client_id }).await?;
@@ -259,7 +286,12 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     if found.outcome != wire::Outcome::Found
         || found.retrieved != 0
         || row.client_id != client_id
-        || row.depot == 0
+        || found.results.len() != 1
+        || row.depot != deposited_units
+        || row.stash != 0
+        || row.inbox != 0
+        || row.tiers.len() != 1
+        || row.tiers[0].count != deposited_units
     {
         return Err("search-result-mismatch".into());
     }
@@ -271,6 +303,8 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let detail = command(&mut client, wire::Request::Detail { client_id, tier }).await?;
     journey.saw(&detail);
     if detail.outcome != wire::Outcome::Detailed
+        || detail.retrieved != 0
+        || detail.results.as_slice() != std::slice::from_ref(row)
         || detail.results.len() != 1
         || detail.results[0].client_id != client_id
         || detail.results[0].depot + detail.results[0].stash + detail.results[0].inbox != tier_count
