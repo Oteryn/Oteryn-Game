@@ -3,12 +3,14 @@
 //! `crates/session/src/domain_dispatch.rs` through `Session::apply_state_delta` and exposed by
 //! `Session::actor_vitals` in `session_access.rs`. The session owns domain 3 and does not retain
 //! raw delta bytes, so each capture is the applied vitals value encoded by the production codec.
+use super::full_row_c08::{poison_status, poison_tick_fact, travel_to_poison_spider, walk_c08};
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::actor_spell::{
     ActorVitals, SpellCastDisposition, SpellTarget, encode_actor_vitals,
 };
 use oteryn_protocol_oteryn::actor_spell_catalog as catalogue;
+use oteryn_protocol_oteryn::analyser::{AnalyserFact, AttributedFact};
 
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let stage_capture = std::env::var_os("E2E_C08_CAPTURE_DIR");
@@ -39,20 +41,54 @@ fn line(vitals: &ActorVitals) -> String {
     )
 }
 
-/// The next ActorVitals delta whose health is strictly below `above`.
-async fn next_damage(client: &mut DevClientSession, above: u32, seconds: u64) -> TestResult<ActorVitals> {
+/// The next health decrease must match the attributed hit or condition tick.
+async fn next_damage(
+    client: &mut DevClientSession,
+    above: u32,
+    seconds: u64,
+    expected: impl Fn(&AttributedFact) -> bool,
+) -> TestResult<ActorVitals> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(seconds);
+    let mut observed: Option<ActorVitals> = None;
+    let mut amount = None;
     loop {
         client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {
-            if let SessionEvent::ActorVitals(delta) = event
-                && delta.value.health < above
-            {
-                return Ok(delta.value);
+            match event {
+                SessionEvent::ActorVitals(delta) if delta.value.health < above => {
+                    if observed.is_some_and(|vitals| vitals.health != delta.value.health) {
+                        return Err(
+                            "multiple health decreases before C08 damage attribution".into()
+                        );
+                    }
+                    observed = Some(delta.value);
+                }
+                SessionEvent::AnalyserAttributedFacts(delta) => {
+                    for fact in delta.value.iter().filter(|fact| expected(fact)) {
+                        if let AnalyserFact::DamageInput { value, .. } = fact.fact {
+                            if amount.replace(value.get()).is_some() {
+                                return Err(
+                                    "multiple C08 damage facts before vitals attribution".into()
+                                );
+                            }
+                        }
+                    }
+                }
+                _ => {}
             }
         }
+        if let (Some(vitals), Some(amount)) = (observed, amount) {
+            if above - vitals.health != amount {
+                return Err(format!(
+                    "C08 attributed damage {amount} did not match health {above}->{}",
+                    vitals.health
+                )
+                .into());
+            }
+            return Ok(vitals);
+        }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("no poison damage delta below health {above}").into());
+            return Err(format!("no attributed C08 damage below health {above}").into());
         }
     }
 }
@@ -67,13 +103,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let (_account, mut client) = character_prep::connect_c08(clients, 0x30, "Poison Replay Caster").await?;
-    super::full_row_c08::travel_to_poison_spider(&mut client, world, &metadata.spawns).await?;
+    let (_account, mut client) =
+        character_prep::connect_c08(clients, 0x30, "Poison Replay Caster").await?;
+    let spider = travel_to_poison_spider(&mut client, world, &metadata.spawns).await?;
     let before = *client.actor_vitals().ok_or("C08 initial vitals absent")?;
     client.session_mut().attack_target(None).await?;
     client.take_events();
-    let direct = next_damage(&mut client, before.health, 30).await?;
-    let delayed = next_damage(&mut client, direct.health, 15).await?;
+    let direct = next_damage(&mut client, before.health, 30, |fact| {
+        fact.attacker == Some(spider)
+    })
+    .await?;
+    let delayed = next_damage(&mut client, direct.health, 15, poison_tick_fact).await?;
+    if !poison_status(&mut client).await? {
+        return Err("C08 Poison Spider damage did not leave an active poison condition".into());
+    }
 
     let snapshot = client
         .session_mut()
@@ -84,7 +127,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .into_iter()
         .find(|entry| entry.words == "exana pox" && entry.available)
         .ok_or("C08 exana pox not served as available")?;
-    let mana_before = client.actor_vitals().ok_or("C08 pre-cast vitals absent")?.mana;
+    let mana_before = client
+        .actor_vitals()
+        .ok_or("C08 pre-cast vitals absent")?
+        .mana;
     let cast = client
         .cast_spell(
             std::num::NonZeroU32::new(entry.cast_index).ok_or("C08 zero cast index")?,
@@ -104,6 +150,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .into());
     }
 
+    if poison_status(&mut client).await? {
+        return Err("C08 poison remained active after Cure Poison".into());
+    }
+
     let mut expected = String::new();
     for (name, vitals) in [
         ("before", &before),
@@ -118,6 +168,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         expected.push_str(&line(vitals));
     }
     capture("c08-expected.txt", expected.as_bytes())?;
+    let safe = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        is_logout_rest_tile(world, at)
+    })
+    .ok_or("C08 replay cleanup has no reachable logout tile")?;
+    walk_c08(&mut client, world, &safe).await?;
+
     // A normal InFight refusal carries the remaining combat hold. Other refusals fail.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
@@ -126,7 +182,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         match reply.result {
             Some(LogoutResult::Accepted) => break,
             Some(LogoutResult::InFight { retry_after_ms }) => {
-                let ready = tokio::time::Instant::now() + Duration::from_millis(retry_after_ms.into());
+                let ready =
+                    tokio::time::Instant::now() + Duration::from_millis(retry_after_ms.into());
                 if ready >= deadline {
                     return Err("C08 combat hold exceeds logout deadline".into());
                 }
@@ -146,7 +203,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     character_prep::declare_seeded("C08.client", "level-10-sorcerer", "Cure Poison eligibility");
-    match verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=C08.client status=CAPTURED evidence={observed}"
         )),

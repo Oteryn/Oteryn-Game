@@ -291,6 +291,24 @@ WORK=.
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertEqual(Path(work, 'world-compile.json').read_text().strip(), command)
 
+    def test_c08_replay_refuses_missing_duplicate_or_failed_live_verdicts(self):
+        gate = section('    if [[ "$(grep -c', '    local replay_log')
+        script = 'set -eu\ncheck() {\n' + gate + '}\ncheck\n'
+        captured = 'SEAM_EVIDENCE e2e_all scenario=C08.client status=CAPTURED evidence=live\n'
+        failed = 'SEAM_EVIDENCE e2e_all scenario=C08.client status=FAIL cause=assertion\n'
+        with tempfile.TemporaryDirectory() as work:
+            for log, eligible in [
+                ('', False),
+                (captured, True),
+                (captured + captured, False),
+                (failed, False),
+                (captured + failed, False),
+            ]:
+                with self.subTest(log=log):
+                    Path(work, 'live.log').write_text(log)
+                    result = bash(script, {'c08_capture': work})
+                    self.assertEqual(result.returncode, 0 if eligible else 1, result.stderr)
+
     def test_c08_replay_uses_a_fresh_directory_for_each_selected_world_batch(self):
         setup = section('  local c08_capture=', '  local staged_manifest=')
         script = ('set -eu\ncheck() {\n' + setup

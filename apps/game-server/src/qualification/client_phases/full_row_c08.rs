@@ -88,7 +88,7 @@ async fn next_health_change(
     }
 }
 
-async fn poison_status(client: &mut DevClientSession) -> TestResult<bool> {
+pub(super) async fn poison_status(client: &mut DevClientSession) -> TestResult<bool> {
     Ok(poison_remaining(client).await?.is_some())
 }
 
@@ -316,7 +316,7 @@ pub(super) async fn travel_to_poison_spider(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
-) -> TestResult {
+) -> TestResult<oteryn_dev_client::EntityRef> {
     let from = tile(client.world_spatial().actor_position)?;
     let points: Vec<_> = spawns
         .sources
@@ -379,14 +379,14 @@ pub(super) async fn travel_to_poison_spider(
         })
         .ok_or("C08 selected Poison Spider unreachable")?;
         let Some(direction) = path.first() else {
-            return Ok(());
+            return Ok(spider);
         };
         walk_c08(client, world, &[*direction]).await?;
     }
     Err("C08 could not approach the selected Poison Spider within the route budget".into())
 }
 
-async fn walk_c08(
+pub(super) async fn walk_c08(
     client: &mut DevClientSession,
     world: &BundleWorld,
     path: &[StepDirection],
@@ -449,7 +449,7 @@ async fn resumed_poison_tick(client: &mut DevClientSession, world: &BundleWorld)
     wait_poison_tick(client, "poison-persistence", Some(site)).await
 }
 
-fn poison_tick_fact(fact: &oteryn_protocol_oteryn::analyser::AttributedFact) -> bool {
+pub(super) fn poison_tick_fact(fact: &oteryn_protocol_oteryn::analyser::AttributedFact) -> bool {
     use oteryn_protocol_oteryn::{analyser::{AnalyserFact, AnalyserDamageSource}, damage_element::DamageElement};
     fact.attacker.is_none() && matches!(fact.fact, AnalyserFact::DamageInput {
         element: DamageElement::Earth,

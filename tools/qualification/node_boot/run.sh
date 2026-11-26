@@ -1626,6 +1626,10 @@ PY_C08_SELECTED
   fi
   (
     cd "$test_dir"
+    if [[ -n "$c08_capture" ]]; then
+      exec > >(tee "$c08_capture/live.log")
+      c08_tee=$!
+    fi
     env "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \
       NODE_BOOT_SPELL_MANIFEST="$staged_manifest" \
       NODE_BOOT_CONTROL_SOCKET="$BASE/run/control.sock" \
@@ -1641,8 +1645,17 @@ PY_C08_SELECTED
       WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
       WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
       "${test_command[@]}"
+    if [[ -n "$c08_capture" ]]; then
+      exec 1>&-
+      wait "$c08_tee"
+    fi
   )
   if [[ -n "$c08_capture" ]]; then
+    if [[ "$(grep -c '^SEAM_EVIDENCE e2e_all scenario=C08.client status=CAPTURED ' "$c08_capture/live.log")" != 1 ]] ||
+        grep -q '^SEAM_EVIDENCE e2e_all scenario=C08.client status=FAIL ' "$c08_capture/live.log"; then
+      echo 'SEAM_EVIDENCE C08_CLIENT_REPLAY refused=live-row-did-not-complete'
+      return 1
+    fi
     local replay_log="$c08_capture/replay.log"
     if ! E2E_ALL_CAPTURE_DIR="$c08_capture" cargo +1.100.0 test --locked -p oteryn-session --lib \
         tests::e2e_c08::e2e_c08_poison_damage_and_dispel_replay -- --exact > "$replay_log" 2>&1 ||
