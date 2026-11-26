@@ -1,18 +1,17 @@
 //! Audited Inbox and corpse input mints for the I07 qualification account.
 use super::*;
 use crate::durability::{
-    character_inbox::{
-        RewardClaimInboxMintOutput, RewardClaimInboxMintRequest, RewardClaimInboxPlan,
-    },
+    character_authority::CharacterAuthorityRecord,
+    character_inbox::{RewardClaimInboxMintOutput, RewardClaimInboxMintRequest},
+    character_progression::CurrentCharacterGameplayFence,
     item_mint::{
         CORPSE_MATERIALIZATION_PURPOSE_KEY, CorpseContainerPlacement, CorpseLootMintRequest,
         GroundPlacement, ItemMintCause, ItemMintOutcome, ItemMintRequest, TypedDefinitionRef,
     },
-    item_transfer::CurrentCharacterItemFence,
     spell_owner_commit::SpellLanePermit,
+    store::DeliveryPlan,
 };
 use crate::foundation::{CommandId, CommandRef};
-use sha2::{Digest, Sha256};
 
 pub(super) async fn seed(
     root: &DurabilityRoot,
@@ -22,18 +21,21 @@ pub(super) async fn seed(
         crate::foundation::AuthenticatedTransportRefV1,
     >,
     native: &NativeGameplayState,
-    character: crate::domain::CharacterId,
+    record: &CharacterAuthorityRecord,
     spawn: SpawnOwners<'_>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let character = record.character_id;
     let scope = current.current_runtime_scope();
-    let fence = CurrentCharacterItemFence {
+    let gameplay_fence = CurrentCharacterGameplayFence {
         character_id: character,
         game_session_id: current.current_game_session_id(),
         connection_generation: current.current_connection_generation(),
         character_lease_generation: current.current_character_lease().generation(),
         runtime_scope: scope,
         scope_ownership_generation: current.current_scope_generation(),
+        expected_character_revision: record.revision,
     };
+    let fence = gameplay_fence.item_fence();
     let inventory = root
         .read_item_use_inventory(authority, proof, fence)
         .await
@@ -57,54 +59,53 @@ pub(super) async fn seed(
     transaction_id[15] ^= 0xe1;
     let mut item_id = *fence.game_session_id.as_bytes();
     item_id[15] ^= 0xe2;
-    let source = RewardClaimInboxPlan {
-        command: CommandRef::new(fence.game_session_id, CommandId::new(u64::MAX - 700)?),
-        character_id: character,
-        world_id: scope.world_id(),
-        channel_id: scope.channel_id().ok_or("I07 fixture needs a channel")?,
-        transaction_id,
-        source_binding: Sha256::digest([transaction_id, item_id].concat()).into(),
-        item_instance_ids: vec![item_id],
-    };
-    let pouch = item(23721)?;
-    let pouch =
-        oteryn_gameplay_items::item_ref_admission::generation_inbox_item_facts(native, &pouch)
-            .map_err(qualification_build::debug)?;
-    let mut candidate = root
-        .prepare_reward_claim_inbox_mint(
+    let mut fulfilment_id = *fence.game_session_id.as_bytes();
+    fulfilment_id[15] ^= 0xe3;
+    let fulfilment = uuid_text(&fulfilment_id);
+    let pouch = oteryn_gameplay_items::item_ref_admission::generation_inbox_item_facts(
+        native,
+        &item(23721)?,
+    )
+    .map_err(qualification_build::debug)?;
+    // Store delivery is a fixture input. Its production writer creates Inbox custody and
+    // the matching receipt atomically. The player still assigns and uses the pouch over the wire.
+    let receipt = root
+        .apply_store_delivery(
             authority,
             proof,
-            fence,
-            &source,
-            RewardClaimInboxMintRequest {
-                claim: TypedDefinitionRef {
-                    family: "RewardClaim".into(),
-                    production_key: fixture_gear_claim(fence.game_session_id, "i07-pouch"),
-                    revision_ref: "qualification-v1".into(),
+            transaction_id,
+            DeliveryPlan {
+                account_id: *record.account_id.as_bytes(),
+                character_id: *character.as_bytes(),
+                world_id: *scope.world_id().as_bytes(),
+                fulfilment_unit_id: fulfilment.clone(),
+                item_instance_id: item_id,
+                purchase_request_id: None,
+                command: CommandRef::new(fence.game_session_id, CommandId::new(u64::MAX - 700)?),
+                mint: RewardClaimInboxMintRequest {
+                    claim: TypedDefinitionRef {
+                        family: "RewardClaim".into(),
+                        production_key: fixture_gear_claim(fence.game_session_id, "i07-pouch"),
+                        revision_ref: "qualification-v1".into(),
+                    },
+                    content_revision: inventory.content_revision.clone(),
+                    ruleset_revision: inventory.ruleset_revision.clone(),
+                    sim_revision: "qualification-v1".into(),
+                    outputs: vec![RewardClaimInboxMintOutput {
+                        source_line: 0,
+                        item: pouch,
+                        quantity: 1,
+                        key_number: None,
+                    }],
                 },
-                content_revision: inventory.content_revision.clone(),
-                ruleset_revision: inventory.ruleset_revision.clone(),
-                sim_revision: "qualification-v1".into(),
-                outputs: vec![RewardClaimInboxMintOutput {
-                    source_line: 0,
-                    item: pouch,
-                    quantity: 1,
-                    key_number: None,
-                }],
             },
+            gameplay_fence,
         )
         .await
         .map_err(qualification_build::debug)?;
-    root.commit_reward_claim_inbox_mint(
-        authority,
-        proof,
-        fence,
-        &mut candidate,
-        &mut (),
-        move |tx, _| Box::pin(async move { tx.deliver(item_id).await }),
-    )
-    .await
-    .map_err(qualification_build::debug)?;
+    if receipt.result != "COMMITTED" || receipt.fulfilment_unit_id != fulfilment {
+        return Err("I07 Store fixture did not commit its pouch delivery".into());
+    }
 
     let cause = |death_slot, purpose: &str, ordinal| {
         ItemMintCause::for_test_scope(

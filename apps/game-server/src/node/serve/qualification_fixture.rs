@@ -830,7 +830,7 @@ async fn prepare_build(
         }
         grant_premium(root, premium, *record.account_id.as_bytes(), None).await?;
         let spawn = spawn.ok_or("I07 fixture requires a live channel runtime")?;
-        return i07::seed(root, authority, proof, &current, native, character, spawn).await;
+        return i07::seed(root, authority, proof, &current, native, &record, spawn).await;
     }
     #[cfg(feature = "qualification-spawn")]
     if let Some(item) = named_item(profile) {
