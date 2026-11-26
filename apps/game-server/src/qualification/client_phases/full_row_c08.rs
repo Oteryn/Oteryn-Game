@@ -379,7 +379,7 @@ pub(super) async fn travel_to_poison_spider(
                 .tile(at.x, at.y, at.floor)
                 .is_some_and(|tile| !tile.protection_zone())
                 && points.iter().any(|&(floor, x, y)| {
-                    at.floor == floor && at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 4
+                    at.floor == floor && at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 2
                 })
         },
         |at| !occupied.contains(&at),
@@ -427,7 +427,7 @@ pub(super) async fn travel_to_poison_spider(
             return Ok(spider);
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("C08 selected Poison Spider did not approach".into());
+            return Err(format!("C08 selected Poison Spider did not approach: player={here:?} spider={target:?}").into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
