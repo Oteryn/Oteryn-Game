@@ -4,7 +4,7 @@ use oteryn_dev_client::native_session::AppearanceUpdate;
 use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, EntityRef, SessionEvent};
 use oteryn_protocol_oteryn::appearance::CAPABILITY_FORGE_CREATURE_V1;
 use oteryn_protocol_oteryn::{
-    attack::AttackIntentDisposition, item_forge, item_view as items, quick_loot,
+    attack::AttackIntentDisposition, forge_preview, item_view as items, quick_loot,
 };
 use std::num::NonZeroU32;
 
@@ -120,7 +120,10 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
         character_prep::grant_premium(&client).await?;
         evidence("P19 FIXTURE premium=granted");
-        let before = rewards(&mut client, sliver).await?;
+        let before = rewards(&mut client).await?;
+        if sliver_count(&client, sliver)? != before.slivers {
+            return Err("P19 pre-combat backpack and Forge sliver counts disagree".into());
+        }
         client.take_events();
         evidence(&format!(
             "P19 FIXTURE classification={classification} placement={position:?}"
@@ -193,16 +196,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             return Err(format!("P19 first attack stop refused: {stopped:?}").into());
         }
         quick_loot_corpse(&mut client, corpse, stacks == 15).await?;
-        if stacks == 15 {
-            tokio::time::timeout(Duration::from_secs(5), async {
-                while sliver_count(&client, sliver)? <= before.slivers {
-                    client.service_liveness(Duration::from_millis(100)).await?;
-                }
-                TestResult::Ok(())
-            })
-            .await??;
-        }
-        let after = rewards(&mut client, sliver).await?;
+        let after = rewards(&mut client).await?;
         let looted = after
             .slivers
             .checked_sub(before.slivers)
@@ -237,8 +231,8 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
                 "P19 fresh admission did not restore the saved position in a new session".into(),
             );
         }
-        let restored = rewards(&mut client, sliver).await?;
-        if restored != after {
+        let restored = rewards(&mut client).await?;
+        if restored != after || sliver_count(&client, sliver)? != restored.slivers {
             return Err(format!(
                 "P19 fresh rewards mismatch: expected={after:?} observed={restored:?}"
             )
@@ -320,29 +314,46 @@ async fn move_first_attempt(
     Ok(())
 }
 
-#[derive(Debug, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, PartialEq, Eq)]
 struct Rewards {
-    #[serde(rename = "current_dust")]
     dust: u64,
-    #[serde(rename = "dust_limit")]
     limit: u64,
-    #[serde(skip)]
     slivers: u64,
 }
 
-async fn rewards(client: &mut DevClientSession, sliver: NonZeroU32) -> TestResult<Rewards> {
+async fn rewards(client: &mut DevClientSession) -> TestResult<Rewards> {
+    let request = forge_preview::Request {
+        nonce: 1,
+        selection: forge_preview::Selection::Browse { after: 0 },
+    };
+    let bytes = request
+        .encode()
+        .ok_or("P19 invalid Forge resource request")?;
     let reply = client
         .session_mut()
         .gated_command(
-            item_forge::CAPABILITY_ITEM_FORGE_V1,
-            item_forge::COMMAND_TYPE_FORGE_DUST_QUERY,
-            &[],
+            forge_preview::CAPABILITY_FORGE_PREVIEW_V1,
+            forge_preview::COMMAND_TYPE_FORGE_PREVIEW,
+            &bytes,
         )
         .await?;
-    require_mechanic_acceptance(reply.status, "P19 Forge dust balance")?;
-    let mut result: Rewards = serde_json::from_slice(&reply.payload)?;
-    result.slivers = sliver_count(client, sliver)?;
-    Ok(result)
+    require_mechanic_acceptance(reply.status, "P19 Forge resources")?;
+    let reply =
+        forge_preview::Reply::decode(&reply.payload).ok_or("P19 malformed Forge resource reply")?;
+    let forge_preview::Payload::Page(page) = reply.payload else {
+        return Err("P19 Forge resource page absent".into());
+    };
+    if reply.nonce != request.nonce
+        || page.after != 0
+        || page.resources.dust > page.resources.dust_limit
+    {
+        return Err("P19 invalid Forge resource page".into());
+    }
+    Ok(Rewards {
+        dust: u64::from(page.resources.dust),
+        limit: u64::from(page.resources.dust_limit),
+        slivers: page.resources.slivers,
+    })
 }
 
 fn sliver_count(client: &DevClientSession, sliver: NonZeroU32) -> TestResult<u64> {
