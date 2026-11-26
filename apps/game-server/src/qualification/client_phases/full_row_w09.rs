@@ -3,6 +3,7 @@ use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_gameplay_items::concoctions::{ALL, Concoction};
 use oteryn_gameplay_items::drome_cube::DROME_CUBE_KEY;
+use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::{tutorial_notices::TutorialNotice, world_object as wire};
 use std::collections::BTreeMap;
 use std::num::NonZeroU32;
@@ -67,6 +68,31 @@ fn cube_reward(
     (expected == *actual).then_some(reward)
 }
 
+async fn cast_light(client: &mut DevClientSession, spell: NonZeroU32) -> TestResult {
+    let before = client
+        .actor_vitals()
+        .copied()
+        .ok_or("W09 caster vitals missing")?;
+    let expected_mana = before
+        .mana
+        .checked_sub(20)
+        .ok_or("W09 insufficient mana for Light")?;
+    let cast = client.cast_spell(spell, SpellTarget::None, false).await?;
+    if cast.status != CommandStatus::Accepted
+        || cast.disposition != SpellCastDisposition::Cast
+        || cast
+            .actor_vitals_delta
+            .as_ref()
+            .map(|delta| delta.value.mana)
+            != Some(expected_mana)
+    {
+        return Err(
+            format!("W09 Light did not spend 20 mana: before={before:?} cast={cast:?}").into(),
+        );
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let cube_id = character_prep::item_id(DROME_CUBE_KEY)?;
     let aid_id = Concoction::KooldownAid.item_id();
@@ -84,15 +110,32 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if expected.contains_key(&cube) || expected.contains_key(&aid) {
         return Err("W09 requires a fresh dedicated character".into());
     }
+    let preparation_session = client.join_snapshot().game_session_id;
     character_prep::declare_seeded(
         "W09.full",
-        "one Drome Cube and two Kooldown Aids",
-        "no authored player acquisition route",
+        "level-8 sorcerer, one Drome Cube and two Kooldown Aids",
+        "ordinary leveling exceeds the row budget and the inputs have no authored acquisition route",
     );
+    request_fixture_control(
+        uuid_text(preparation_session.as_bytes()),
+        "--profile",
+        "w09-kooldown".into(),
+    )
+    .await?;
     character_prep::grant_item(&client, cube_id, 1).await?;
     character_prep::grant_item(&client, aid_id, 2).await?;
     logout(&mut client).await?;
     let mut client = connect_character(&scope, 0xd2, 0).await?;
+    if client.join_snapshot().game_session_id == preparation_session {
+        return Err("W09 preparation reused its original session".into());
+    }
+    let level = full_e2ef7::player_level(&mut client).await?;
+    let vitals = client.actor_vitals().ok_or("W09 seeded vitals missing")?;
+    if (level, vitals.max_health, vitals.max_mana) != (8, 185, 90) {
+        return Err(
+            format!("W09 expected level-8 vitals 185/90: level={level} vitals={vitals:?}").into(),
+        );
+    }
     expected.extend([(cube, 1), (aid, 2)]);
     if quantities(&client)? != expected {
         return Err("W09 fresh admission did not serve exactly the seeded items".into());
@@ -100,8 +143,36 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     let committed = (CommandStatus::Accepted, wire::UseDisposition::Committed);
     let missing = (CommandStatus::Accepted, wire::UseDisposition::NothingToUse);
+    let book = native_spell_book()?;
+    let light = crate::qualification::client_spell_journey::spell_index(book, "utevo lux")?;
+    let natural_cooldown = Duration::from_micros(
+        book.indexed(light)
+            .ok_or("W09 Light missing from native book")?
+            .cooldown_micros,
+    );
+    let first_cast = tokio::time::Instant::now();
+    cast_light(&mut client, light).await?;
+    let before = client
+        .actor_vitals()
+        .copied()
+        .ok_or("W09 caster vitals missing")?;
+    let blocked = client.cast_spell(light, SpellTarget::None, false).await?;
+    if blocked.status != CommandStatus::Accepted
+        || blocked.disposition != SpellCastDisposition::CoolingDown
+        || blocked.actor_vitals_delta.is_some()
+        || client.actor_vitals().copied() != Some(before)
+    {
+        return Err(format!(
+            "W09 Light pre-state was not a resource-free cooldown refusal: {blocked:?}"
+        )
+        .into());
+    }
     client.take_events();
     use_item(&mut client, aid, committed).await?;
+    cast_light(&mut client, light).await?;
+    if first_cast.elapsed() >= natural_cooldown {
+        return Err("W09 Light recast did not precede natural cooldown expiry".into());
+    }
     expected.insert(aid, 1);
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let mut saw_reset = false;
@@ -136,12 +207,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     evidence(&format!(
         "W09_CHECK reset-notice=observed cube-reward-ref={reward}"
     ));
+    let used_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     let mut fresh = connect_character(&scope, 0xd2, 0).await?;
+    if fresh.join_snapshot().game_session_id == used_session {
+        return Err("W09 durable verification reused the USE session".into());
+    }
     if quantities(&fresh)? != settled {
         return Err("W09 fresh admission did not serve the settled inventory".into());
     }
     use_item(&mut fresh, cube, missing).await?;
+    if quantities(&fresh)? != settled {
+        return Err("W09 missing Cube refusal changed inventory".into());
+    }
     use_item(
         &mut fresh,
         aid,
@@ -151,15 +229,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if quantities(&fresh)? != settled {
         return Err("W09 refused Kooldown Aid consumed the second unit".into());
     }
+    let refused_session = fresh.join_snapshot().game_session_id;
     logout(&mut fresh).await?;
-    evidence("W09_CHECK durable-inventory=verified cooldown-refusal=observed");
+    let mut verified = connect_character(&scope, 0xd2, 0).await?;
+    if verified.join_snapshot().game_session_id == refused_session
+        || quantities(&verified)? != settled
+    {
+        return Err("W09 fresh admission did not preserve inventory through both refusals".into());
+    }
+    logout(&mut verified).await?;
+    evidence(
+        "W09_CHECK spell-reset=paid-recast durable-inventory=verified cooldown-refusal=observed",
+    );
     Ok(())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    let (result, detail, _, _) = logout_retrying_busy(client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("W09 logout refused: {detail}").into());
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("W09 logout refused: {reply:?}").into());
     }
     Ok(())
 }
