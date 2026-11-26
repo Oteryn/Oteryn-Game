@@ -158,7 +158,7 @@ pub(super) async fn replay_lamp(owner:&ComposedFreshAdmission<'_,'_,'_>,actor:Ex
     command:UseCommand,input:HirelingLampInput)->Result<Option<UseDisposition>,()> {
     if !resolve_pending_lamp(owner,actor,command.game_session_id).await{return Err(())}
     let reference=reference(command).ok_or(())?;
-    match owner.root.plain_use_receipt_exists(crate::durability::PlainUseReceipt::Hireling,reference).await {
+    match owner.probe_plain_use_receipt(crate::durability::PlainUseReceipt::Hireling,reference).await {
         Ok(false)=>return Ok(None),
         Ok(true)=>{},
         Err(_)=>return Ok(Some(super::use_receipt_refused(command,"hireling_existence").disposition)),

@@ -67,9 +67,15 @@ pub(super) async fn apply(
     let Some(_permit) = admission.spell_lane_permit().await else {
         return rejected();
     };
-    let Ok(Some(fence)) = admission.current_quest_fence(command.game_session_id).await else {
-        return rejected();
-    };
+    let holder_budget =
+        crate::gameplay_transport::AdmissionRetryBudget::for_command(admission.root);
+    let fence =
+        match super::npc_gameplay_fence(admission, command, "cake_brutus_fence", &holder_budget)
+            .await
+        {
+            Ok(fence) => fence,
+            Err(disposition) => return NpcTalkOutcome::only(disposition),
+        };
     if fence.item_fence() != expected {
         return rejected();
     }

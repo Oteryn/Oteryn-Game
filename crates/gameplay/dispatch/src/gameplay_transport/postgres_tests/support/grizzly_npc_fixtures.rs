@@ -404,6 +404,24 @@ pub(super) fn scenario(case: u8) -> TestResult {
             admitted.continuity.selected_capabilities.as_slice(),
             &[3, 16]
         );
+        if matches!(case, 7 | 8) {
+            wire::talk_with_busy_holder(&mut owner, &mut admitted, npc, case == 8).await?;
+            assert_eq!(value(&owner, &authority, quest::JOIN_STORAGE).await?, 1);
+            let joined_by: Vec<String> = sqlx::query_scalar(
+                "SELECT cause_ordinal::text FROM game_character_quest_receipts \
+                 WHERE cause_kind='command' AND cause_id=encode($1,'hex')::uuid \
+                   AND transition_key=$2",
+            )
+            .bind(admitted.game_session_id.as_bytes().as_slice())
+            .bind(quest::GrizzlyAction::Join.transition_key())
+            .fetch_all(&h.pool)
+            .await?;
+            assert_eq!(joined_by, if case == 8 { ["3"] } else { ["2"] });
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         wire::talk(&mut owner, &mut admitted, npc, &[(1, "hi"), (2, "yes")]).await?;
         assert_eq!(value(&owner, &authority, quest::JOIN_STORAGE).await?, 1);
         assert_eq!(

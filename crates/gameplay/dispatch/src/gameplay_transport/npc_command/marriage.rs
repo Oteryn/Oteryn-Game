@@ -160,9 +160,14 @@ pub(super) async fn replay(
         command.game_session_id,
         CommandId::new(command.command_id).ok()?,
     );
-    match admission
-        .root
-        .reconcile_npc_marriage(admission.character, fence.character_id, reference)
+    let budget = crate::gameplay_transport::AdmissionRetryBudget::for_command(admission.root);
+    match budget
+        .retry_command_guard(async || {
+            admission
+                .root
+                .reconcile_npc_marriage(admission.character, fence.character_id, reference)
+                .await
+        })
         .await
     {
         Ok(Some(receipt)) => {
@@ -192,6 +197,9 @@ pub(super) async fn replay(
             }
         }
         Ok(None) => None,
+        Err(error) if intent.is_some() && super::npc_holder_busy(&error) => Some(
+            NpcTalkOutcome::only(super::busy_disposition(command, "marriage_receipt")),
+        ),
         Err(_) => Some(NpcTalkOutcome {
             unknown: true,
             ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
@@ -234,9 +242,18 @@ pub(super) async fn apply(
         .revision_sequencer
         .acquire(pending.fence.character_id)
         .await;
-    let Ok(Some(fence)) = admission.current_quest_fence(command.game_session_id).await else {
-        return unknown();
-    };
+    let holder_budget =
+        crate::gameplay_transport::AdmissionRetryBudget::for_command(admission.root);
+    let fence =
+        match super::npc_gameplay_fence(admission, command, "marriage_fence", &holder_budget).await
+        {
+            Ok(fence) => fence,
+            Err(NpcIntentDisposition::RateLimited) => {
+                restore_prompt(admission, command, pending);
+                return NpcTalkOutcome::only(NpcIntentDisposition::RateLimited);
+            }
+            Err(_) => return unknown(),
+        };
     if fence.item_fence() != pending.fence {
         return rejected();
     }
@@ -247,7 +264,7 @@ pub(super) async fn apply(
         actor,
         command.game_session_id,
         &intent,
-    ) != Some(pending.context)
+    ) != Some(pending.context.clone())
     {
         return rejected();
     }
@@ -302,22 +319,40 @@ pub(super) async fn apply(
     };
     let weights = super::super::item_ref_admission::NativeItemWeights(native)
         .with_wheel(admission.premium_coordinator);
-    match slot
-        .commit_npc_marriage(
+    use crate::durability::{DurabilityError, character_progression::CharacterProgressionError};
+    match super::retry_npc_checkout(&holder_budget, async || {
+        slot.commit_npc_marriage(
             admission.root,
             admission.character,
             admission.holder,
             fence,
-            request,
+            request.clone(),
             &weights,
         )
         .await
+    })
+    .await
     {
         Ok(MarriageOutcome::Committed(receipt)) => completed(&intent, &receipt),
         Ok(MarriageOutcome::Refused(line)) => NpcConversations::bank_reply(&intent, line),
-        Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
-            _,
-        )) => unknown(),
+        Err(CharacterProgressionError::Unavailable(DurabilityError::RootUnavailable)) => {
+            restore_prompt(admission, command, pending);
+            NpcTalkOutcome::only(super::busy_disposition(command, "marriage_write"))
+        }
+        Err(CharacterProgressionError::Unavailable(_)) => unknown(),
         Err(_) => rejected(),
+    }
+}
+
+fn restore_prompt(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    command: UseCommand,
+    pending: Pending,
+) {
+    if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
+        && let Some(state) = sessions.get_mut(&command.game_session_id)
+        && state.marriage.is_none()
+    {
+        state.marriage = Some(pending);
     }
 }

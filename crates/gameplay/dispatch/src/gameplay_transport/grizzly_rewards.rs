@@ -9,19 +9,24 @@ use crate::durability::reward_claim_mint::{
     RewardClaimMintError, RewardClaimMintRequest, RewardClaimRefusal,
 };
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
-use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+pub(super) enum GrizzlyRewardDelivery {
+    NoChange,
+    NoRoom,
+    RefreshInventory,
+}
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Called after an accepted Grizzly utterance, with its spell lane released. Full
     /// bags/capacity retain the durable entitlement, retried by a later utterance even
-    /// after relog. `Committed` requests the ordinary inventory refresh.
+    /// after relog. Refresh inventory only if the mint may have changed custody.
     pub(super) async fn deliver_grizzly_reward(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
-    ) -> Option<UseDisposition> {
+    ) -> GrizzlyRewardDelivery {
         let Some(expected) = command.item_fence else {
-            return Some(UseDisposition::Rejected);
+            return GrizzlyRewardDelivery::NoChange;
         };
         let pending = match self
             .root
@@ -29,23 +34,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(Some(pending)) => pending,
-            Ok(None) => return None,
-            Err(_) => return Some(UseDisposition::Rejected),
+            Ok(None) => return GrizzlyRewardDelivery::NoChange,
+            Err(_) => return GrizzlyRewardDelivery::NoChange,
         };
         let Some(_permit) = self.spell_lane_permit().await else {
-            return Some(UseDisposition::Rejected);
+            return GrizzlyRewardDelivery::NoChange;
         };
         let Ok(Some(fence)) = self.current_quest_fence(command.game_session_id).await else {
-            return Some(UseDisposition::Rejected);
+            return GrizzlyRewardDelivery::NoChange;
         };
         if fence.item_fence() != expected {
-            return Some(UseDisposition::Rejected);
+            return GrizzlyRewardDelivery::NoChange;
         }
         let Some(native) = self
             .active_generation
             .and_then(|generation| generation.native_gameplay())
         else {
-            return Some(UseDisposition::Rejected);
+            return GrizzlyRewardDelivery::NoChange;
         };
         let item = {
             let runtime = self.runtime.lock().await;
@@ -66,14 +71,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             && lease.generation() == fence.character_lease_generation
                     })
             {
-                return Some(UseDisposition::Rejected);
+                return GrizzlyRewardDelivery::NoChange;
             }
             let Some(index) = pinned_index(&runtime, self.active_generation) else {
-                return Some(UseDisposition::Rejected);
+                return GrizzlyRewardDelivery::NoChange;
             };
             let key = format!("oteryn:item.tibia.i{}", pending.item_source_id);
             let Some(revision) = index.revision(&key) else {
-                return Some(UseDisposition::Rejected);
+                return GrizzlyRewardDelivery::NoChange;
             };
             let Ok(item) = generation_item_facts(
                 native,
@@ -83,7 +88,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     revision_ref: revision.into(),
                 },
             ) else {
-                return Some(UseDisposition::Rejected);
+                return GrizzlyRewardDelivery::NoChange;
             };
             item
         };
@@ -93,14 +98,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(Some(bag)) => bag,
-            Ok(None) => return Some(UseDisposition::NoRoom),
-            Err(_) => return Some(UseDisposition::Rejected),
+            Ok(None) => return GrizzlyRewardDelivery::NoRoom,
+            Err(_) => return GrizzlyRewardDelivery::NoChange,
         };
         let Ok(backpack) = generation_item_facts(native, &bag.backpack.definition) else {
-            return Some(UseDisposition::Rejected);
+            return GrizzlyRewardDelivery::NoChange;
         };
         let Ok(id) = CommandId::new(command.command_id) else {
-            return Some(UseDisposition::Rejected);
+            return GrizzlyRewardDelivery::NoChange;
         };
         let request = RewardClaimMintRequest {
             backpack_outputs: false,
@@ -141,37 +146,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.character,
                 self.holder,
                 fence.item_fence(),
-                request.clone(),
+                request,
                 &NativeItemWeights(native),
             )
             .await;
-        Some(match outcome {
+        match outcome {
             Ok(_) => {
                 self.states.loop_ground.invalidate();
-                UseDisposition::Committed
+                GrizzlyRewardDelivery::RefreshInventory
             }
+            Err(RewardClaimMintError::Unavailable(
+                crate::durability::DurabilityError::RootUnavailable,
+            )) => GrizzlyRewardDelivery::NoChange,
             Err(RewardClaimMintError::Unavailable(_)) => {
-                // The transaction may already have minted the Item. Invalidating a
-                // projection grants nothing; the next inventory read remains durable.
+                // An ambiguous mint can have changed custody. Read the authoritative inventory.
                 self.states.loop_ground.invalidate();
-                if self
-                    .root
-                    .reconcile_grizzly_reward(self.character, fence.character_id, request)
-                    .await
-                    .is_ok_and(|receipt| receipt.is_some())
-                {
-                    self.states.loop_ground.invalidate();
-                    UseDisposition::Committed
-                } else {
-                    UseDisposition::Rejected
-                }
+                GrizzlyRewardDelivery::RefreshInventory
             }
             Err(RewardClaimMintError::Refused(
                 RewardClaimRefusal::MainBackpackFull
                 | RewardClaimRefusal::CarryingCapacity
                 | RewardClaimRefusal::NoMainBackpack,
-            )) => UseDisposition::NoRoom,
-            Err(_) => UseDisposition::Rejected,
-        })
+            )) => GrizzlyRewardDelivery::NoRoom,
+            Err(_) => GrizzlyRewardDelivery::NoChange,
+        }
     }
 }

@@ -8,7 +8,7 @@ use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_use::drome_cube::DromeCubeError;
 use crate::durability::item_use::{ItemUseError, ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
 use crate::foundation::{CommandId, CommandRef, ExactActorRef, GameSessionId};
-use crate::gameplay_transport::connection::{AdmissionRefusal, UseCommand, UseOutcome};
+use crate::gameplay_transport::connection::{UseCommand, UseOutcome};
 use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, pinned_index};
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::{AdmissionRetryBudget, ComposedFreshAdmission};
@@ -40,28 +40,6 @@ fn refusal(error: &DromeCubeError) -> UseDisposition {
     }
 }
 
-async fn retry_owner_read<T>(
-    budget: &AdmissionRetryBudget<'_>,
-    mut read: impl AsyncFnMut() -> Result<T, ItemUseError>,
-) -> Result<T, ItemUseError> {
-    use crate::durability::DurabilityError;
-
-    loop {
-        let result = read().await;
-        if !matches!(
-            result,
-            Err(ItemUseError::Unavailable(
-                DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded
-            ))
-        ) || !budget
-            .retries_unavailable(AdmissionRefusal::Unavailable)
-            .await
-        {
-            return result;
-        }
-    }
-}
-
 fn log_probe_failure(command: UseCommand, stage: &'static str) {
     crate::gameplay_transport::operator_event(&format!(
         "event=drome_use_probe_failed stage={stage} command_id={}",
@@ -85,7 +63,12 @@ async fn probe_read<T>(
     stage: &'static str,
     read: impl AsyncFnMut() -> Result<T, ItemUseError>,
 ) -> Result<T, ProbeFailure> {
-    match tokio::time::timeout_at(deadline, retry_owner_read(budget, read)).await {
+    match tokio::time::timeout_at(
+        deadline,
+        crate::gameplay_transport::item_ref_admission::retry_use_read(budget, read),
+    )
+    .await
+    {
         Ok(Ok(value)) => Ok(value),
         Ok(Err(_)) | Err(_) => Err(ProbeFailure::Refused(stage)),
     }
@@ -121,9 +104,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let deadline = tokio::time::Instant::now() + PROBE_TIMEOUT;
         let (kooldown, cube) = if let Some(key) = key {
             (key == KOOLDOWN_AID_KEY, key == DROME_CUBE_KEY)
-        } else if matches!(source, Some(ItemKey::Instance(_))) {
-            // A live instance without a published definition may be a current candidate.
-            (true, true)
         } else {
             let Some(fence) = command.item_fence else {
                 return Ok(None);
@@ -158,15 +138,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
             } else {
                 let kooldown = self
-                    .root
-                    .plain_use_receipt_exists(PlainUseReceipt::KooldownAid, reference)
+                    .probe_plain_use_receipt(PlainUseReceipt::KooldownAid, reference)
                     .await;
                 let cube = self
-                    .root
-                    .plain_use_receipt_exists(PlainUseReceipt::DromeCube, reference)
+                    .probe_plain_use_receipt(PlainUseReceipt::DromeCube, reference)
                     .await;
                 match (kooldown, cube) {
-                    (Ok(kooldown), Ok(cube)) => (kooldown, cube),
+                    (Ok(true), Ok(cube)) => (true, cube),
+                    (Ok(false), Ok(true)) => (false, true),
+                    (Ok(false), Ok(false)) => {
+                        let source =
+                            crate::gameplay_transport::item_ref_admission::UseSourceHint::new(
+                                source,
+                            );
+                        match source.definition(self, command, "drome_candidate").await {
+                            Ok(definition) => {
+                                let key =
+                                    definition.map(|definition| definition.production_key.as_str());
+                                (key == Some(KOOLDOWN_AID_KEY), key == Some(DROME_CUBE_KEY))
+                            }
+                            Err(refusal) => return Ok(Some(refusal.into())),
+                        }
+                    }
                     (Err(_), _) => {
                         return Ok(Some(crate::gameplay_transport::use_receipt_refused(
                             command,

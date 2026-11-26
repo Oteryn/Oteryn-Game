@@ -135,20 +135,45 @@ pub(super) async fn use_gourmet(
         .disposition))
     };
     match owner
-        .root
-        .plain_use_receipt_exists(crate::durability::PlainUseReceipt::Gourmet, reference)
+        .probe_plain_use_receipt(crate::durability::PlainUseReceipt::Gourmet, reference)
         .await
     {
         Ok(false) => {}
-        Ok(true) => match owner
-            .root
-            .read_gourmet_use_receipt(owner.character, fence, command.command_id, wire)
+        Ok(true) => {
+            let budget = crate::gameplay_transport::AdmissionRetryBudget::for_command(owner.root);
+            match crate::gameplay_transport::item_ref_admission::retry_use_read(
+                &budget,
+                async || {
+                    owner
+                        .root
+                        .read_gourmet_use_receipt(owner.character, fence, command.command_id, wire)
+                        .await
+                },
+            )
+            .await
+            {
+                Ok(true) => return Some(Ok(UseDisposition::Committed)),
+                Ok(false) | Err(_) => return refused("gourmet_replay"),
+            }
+        }
+        Err(_) => return refused("gourmet_existence"),
+    }
+    if let UseSource::Handle(item @ ItemKey::Instance(_)) = *source {
+        let source = crate::gameplay_transport::item_ref_admission::UseSourceHint::new(Some(item));
+        match source
+            .candidate(owner, command, "gourmet_candidate", |definition| {
+                is_gourmet_key(&definition.production_key)
+            })
             .await
         {
-            Ok(true) => return Some(Ok(UseDisposition::Committed)),
-            Ok(false) | Err(_) => return refused("gourmet_replay"),
-        },
-        Err(_) => return refused("gourmet_existence"),
+            Ok(true) => {}
+            Ok(false) => return None,
+            Err(refusal) => {
+                return Some(Err(
+                    crate::gameplay_transport::connection::UseOutcome::from(refusal).disposition,
+                ));
+            }
+        }
     }
     // A new definition hotkey can decline this action before a carried-tree read.
     if let UseSource::Definition(id) = source {
@@ -163,24 +188,13 @@ pub(super) async fn use_gourmet(
         }
     }
     let inventory = match fence.runtime_scope {
-        RuntimeScopeRefV1::Channel { .. } => owner
-            .root
-            .read_item_use_inventory(owner.character, owner.holder, fence)
-            .await
-            .ok(),
-        RuntimeScopeRefV1::Instance { .. } => owner
-            .root
-            .read_hireling_use_inventory(
-                owner.character,
-                owner.holder,
-                fence,
-                *owner.channel_id.as_bytes(),
-            )
-            .await
-            .ok(),
+        RuntimeScopeRefV1::Channel { .. } => owner.read_use_inventory(fence).await.map_err(|_| ()),
+        RuntimeScopeRefV1::Instance { .. } => {
+            owner.read_house_use_inventory(fence).await.map_err(|_| ())
+        }
     };
-    let Some(inventory) = inventory else {
-        return Some(Err(UseDisposition::Rejected));
+    let Ok(inventory) = inventory else {
+        return refused("gourmet_inventory");
     };
     let native = owner.active_generation?.native_gameplay()?;
     let source_id = match source {

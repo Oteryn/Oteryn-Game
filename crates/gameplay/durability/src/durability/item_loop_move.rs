@@ -2149,7 +2149,7 @@ impl DurabilityRoot {
         .bind(item.as_slice())
         .bind(character_id.as_bytes().as_slice())
         .bind(ITEM_LOOP_DEPTH_MAX);
-        self.read_gameplay_existence(query, deadline).await
+        self.read_gameplay_scalar(query, deadline).await
     }
 
     pub async fn read_current_item_loop_container(

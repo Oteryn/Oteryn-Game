@@ -1,7 +1,7 @@
 //! REWARD-CHEST-WIRE-1: carried reward containers use CRAFT-1's fenced consume/mint owner.
 //! Outer None delegates an ordinary item; inner None is an unknown outcome.
 use super::connection::{UseCommand, UseOutcome};
-use super::item_ref_admission::NativeItemWeights;
+use super::item_ref_admission::{NativeItemWeights, UseSourceHint};
 use super::{ComposedFreshAdmission, item_view::ItemKey};
 use crate::durability::item_craft::{
     BLUE_PRESENT, EventContainerReplaySource, ItemCraftRequest, REWARD_BAG_INSTANCE_INTENT_TAG,
@@ -20,7 +20,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         intent: &UseIntent,
-        source: Option<ItemKey>,
+        source: &UseSourceHint,
     ) -> Result<Option<UseOutcome>, ()> {
         let Some(fence) = command.item_fence else {
             return Ok(None);
@@ -31,14 +31,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         let encoded = encode_item_use_intent(intent).map_err(|_| ())?;
         let historical = match self
-            .root
-            .plain_use_receipt_exists(crate::durability::PlainUseReceipt::Craft, command_ref)
+            .probe_plain_use_receipt(crate::durability::PlainUseReceipt::Craft, command_ref)
             .await
         {
             Ok(false) => None,
-            Ok(true) => match self
-                .root
-                .read_event_container_command_source(self.character, fence, command_ref)
+            Ok(true) => match super::AdmissionRetryBudget::for_command(self.root)
+                .retry_command_guard(async || {
+                    self.root
+                        .read_event_container_command_source(self.character, fence, command_ref)
+                        .await
+                })
                 .await
             {
                 Ok(source) => source,
@@ -63,14 +65,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let id = if let Some(EventContainerReplaySource::Wire(id)) = historical {
             id
         } else {
-            let Some(ItemKey::Instance(id)) = source else {
+            let Some(ItemKey::Instance(id)) = source.key else {
                 return Ok(None);
             };
-            let inventory = match self
-                .root
-                .read_item_use_inventory(self.character, self.holder, fence)
+            match source
+                .candidate(self, command, "reward_bag_candidate", |definition| {
+                    legacy_conversion_rule(&definition.production_key).is_some()
+                        || (definition.production_key == BLUE_PRESENT
+                            && self.bundle_map().is_some())
+                })
                 .await
             {
+                Ok(true) => {}
+                Ok(false) => return Ok(None),
+                Err(refusal) => return Ok(Some(refusal.into())),
+            }
+            let inventory = match self.read_use_inventory(fence).await {
                 Ok(inventory) => inventory,
                 Err(crate::durability::item_use::ItemUseError::AuthorityRejected) => {
                     return Ok(Some(UseOutcome::rejected()));
@@ -111,7 +121,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             id
         };
         match self
-            .use_reward_bag_request(actor, command, id, encoded)
+            .use_reward_bag_request(actor, command, id, encoded, source)
             .await
         {
             Some(Some(outcome)) => Ok(Some(outcome)),
@@ -124,9 +134,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         command: UseCommand,
-        item: ItemKey,
+        source: &UseSourceHint,
     ) -> Option<Option<UseOutcome>> {
-        let ItemKey::Instance(id) = item else {
+        let Some(ItemKey::Instance(id)) = source.key else {
             return None;
         };
         self.use_reward_bag_request(
@@ -134,6 +144,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command,
             id,
             [REWARD_BAG_INSTANCE_INTENT_TAG, id.as_slice()].concat(),
+            source,
         )
         .await
     }
@@ -146,6 +157,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         id: [u8; 16],
         intent: Vec<u8>,
+        source: &UseSourceHint,
     ) -> Option<Option<UseOutcome>> {
         let native = self.active_generation?.native_gameplay()?;
         let fence = command.item_fence?;
@@ -160,8 +172,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let reference = CommandRef::new(command.game_session_id, command_id);
         let historical = match self
-            .root
-            .plain_use_receipt_exists(crate::durability::PlainUseReceipt::Craft, reference)
+            .probe_plain_use_receipt(crate::durability::PlainUseReceipt::Craft, reference)
             .await
         {
             Ok(present) => present,
@@ -172,6 +183,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )));
             }
         };
+        if !historical {
+            match source
+                .candidate(self, command, "reward_craft_candidate", |definition| {
+                    is_reward_bag(&definition.production_key)
+                })
+                .await
+            {
+                Ok(true) => {}
+                Ok(false) => return None,
+                Err(refusal) => return Some(Some(refusal.into())),
+            }
+        }
         let Some(permit) = self.spell_lane_permit().await else {
             return Some(Some(super::use_receipt_refused(
                 command,
@@ -190,18 +213,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         if historical {
-            match self
-                .root
-                .craft_item(
-                    &permit,
-                    self.character,
-                    self.holder,
-                    fence,
-                    request.clone(),
-                    native,
-                    &content,
-                    true,
-                )
+            let budget = super::AdmissionRetryBudget::for_command(self.root);
+            match budget
+                .retry_command_guard(async || {
+                    self.root
+                        .craft_item(
+                            &permit,
+                            self.character,
+                            self.holder,
+                            fence,
+                            request.clone(),
+                            native,
+                            &content,
+                            true,
+                        )
+                        .await
+                })
                 .await
             {
                 Ok(Some(result)) => return outcome(result),
@@ -213,13 +240,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        let inventory = match self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
-            .await
-        {
+        let inventory = match self.read_use_inventory(fence).await {
             Ok(inventory) => inventory,
-            Err(_) => return outcome(UseDisposition::Rejected),
+            Err(_) => {
+                return Some(Some(super::use_receipt_refused(
+                    command,
+                    "reward_craft_inventory",
+                )));
+            }
         };
         let carried = inventory
             .backpack
