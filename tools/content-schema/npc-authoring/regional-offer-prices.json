@@ -257,7 +257,7 @@
       "source_path": "data-global/npc/messenger_of_santa.lua",
       "sha256": "cb91c928e0d5dfd8dbf4cd327667a2456be8bcc57461e226cde3af36260939b1",
       "exclude_items": [
-        "oteryn:item.tibia.i2812",
+        "oteryn:item.tibia.i10208",
         "oteryn:item.tibia.i6489",
         "oteryn:item.tibia.i6510"
       ],
@@ -305,7 +305,7 @@
           "line": 58
         },
         {
-          "item": "oteryn:item.tibia.i10208",
+          "item": "oteryn:item.tibia.i2812",
           "direction": "SellToPlayer",
           "price": 50,
           "line": 59

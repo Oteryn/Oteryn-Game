@@ -5,11 +5,11 @@
   "inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "ba7039d7be5e7bd7e14b59bc802f17f43f1ca5d6b5f6abaaa3493e3ff0103bb2"
+      "sha256": "a12779d1aeb59e03be9945de1ed2faf743b41b984c0bf2685599db44040c9d15"
     },
     {
       "path": "content/items/definitions/srx1-item-updates.json",
-      "sha256": "05a4721bff1163ed66aeb175d6481adf007e1d0614f63b656ef6b381e26b2568"
+      "sha256": "b215c84d8e2fdd3a9b86efc52ab12f63a818ef6f4b48fbec6030d33fddfa6946"
     },
     {
       "path": "content/items/definitions/starting-loadout-profiles.json",
@@ -1036,6 +1036,7 @@
     "oteryn:item.tibia.i27721",
     "oteryn:item.tibia.i2773",
     "oteryn:item.tibia.i27847",
+    "oteryn:item.tibia.i2812",
     "oteryn:item.tibia.i2822",
     "oteryn:item.tibia.i2823",
     "oteryn:item.tibia.i28476",
@@ -3545,9 +3546,12 @@
     "oteryn:item.tibia.i648",
     "oteryn:item.tibia.i6484",
     "oteryn:item.tibia.i6487",
+    "oteryn:item.tibia.i6488",
     "oteryn:item.tibia.i649",
     "oteryn:item.tibia.i6496",
     "oteryn:item.tibia.i6498",
+    "oteryn:item.tibia.i6504",
+    "oteryn:item.tibia.i6509",
     "oteryn:item.tibia.i6510",
     "oteryn:item.tibia.i6511",
     "oteryn:item.tibia.i652",
