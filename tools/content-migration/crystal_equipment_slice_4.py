@@ -6,9 +6,11 @@ import argparse
 import copy
 import hashlib
 import json
+import re
 import subprocess
 import xml.etree.ElementTree as ET
 from collections import Counter
+from decimal import Decimal
 from pathlib import Path
 
 import quest_batch3_item_profiles as crystal
@@ -17,7 +19,7 @@ from build_activity_source_world import source_top_orders
 from grizzly_shop_profiles import accepted_first
 from imbuement_item_profiles import apply_equipment_audit
 from import_cyclopedia_global import apply_profile_weights, apply_stats, load_capture
-from item_spell_augments import parse_item_spell_augments
+from item_spell_augments import KINDS, parse_item_spell_augments
 from lower_elemental_magic_modifier_packet import native_order
 from nrwicked_profiles import REWARD_IDS
 from protected_loot_yields import ARBAZILOTH_HARD_ITEMS
@@ -54,7 +56,7 @@ SOURCE_FILES = {
 }
 GLOBAL_FALLBACK = {
     50259: ["mantra"],
-    51268: ["speed", "spell_augments"],
+    51268: ["speed"],
     51666: ["weapon_type", "defense", "extra_defense"],
     52964: ["fire_resistance"],
     53233: ["mantra"],
@@ -63,6 +65,29 @@ GLOBAL_FALLBACK = {
 
 def item_key(identifier):
     return f"oteryn:item.tibia.i{identifier}"
+
+
+def global_augments(text):
+    """The Global dialog reports percentages and signed cooldown seconds."""
+    augments = []
+    for entry in text.split(", "):
+        spell, effect = entry.lower().split(" -> ")
+        match = re.fullmatch(r"([+-]\d+(?:\.\d+)?)(%|s) (.+)", effect)
+        if match is None:
+            raise ValueError(f"Unsupported Global spell augment: {entry}")
+        number, unit, label = match.groups()
+        kind = KINDS[label]
+        cooldown = kind == "cooldown"
+        value = abs(Decimal(number)) * (1000 if cooldown else 100)
+        if (
+            unit != ("s" if cooldown else "%")
+            or not number.startswith("-" if cooldown else "+")
+            or value != int(value)
+            or not 0 < value <= (86400000 if cooldown else 100000)
+        ):
+            raise ValueError(f"Invalid Global spell augment: {entry}")
+        augments.append({"spell": spell, "kind": kind, "value": int(value)})
+    return augments
 
 
 def complete_arbaziloth_policy(prior, source):
@@ -265,10 +290,9 @@ def capture(root, directory):
             (root / "content/items/taxonomy/items.json").read_bytes()
         )["records"]
     }
+    details = load_capture(root)
     fallback = {
-        row["id"]: row["basic"]
-        for row in map(json.loads, (root / GLOBAL).read_text().splitlines())
-        if row["id"] in GLOBAL_FALLBACK
+        identifier: details[identifier]["basic"] for identifier in GLOBAL_FALLBACK
     }
     selected_xml = ET.Element("items")
     selected_xml.extend(
@@ -355,16 +379,12 @@ def capture(root, directory):
             always_on_top_order=top_orders[identifier],
         )
         if identifier not in EXISTING:
-            augments = parse_item_spell_augments(nodes[identifier], "crystal")
-            if identifier == 51268 and not augments:
-                if (
-                    fallback[identifier]["Augments"]
-                    != "Brutal Strike -> +33% base damage"
-                ):
-                    raise ValueError("Norcferatu goretrampers augment fallback drift")
-                augments = [
-                    {"spell": "brutal strike", "kind": "base_damage", "value": 3300}
-                ]
+            text = details.get(identifier, {}).get("basic", {}).get("Augments")
+            augments = (
+                global_augments(text)
+                if text
+                else parse_item_spell_augments(nodes[identifier], "crystal")
+            )
             record["attributes"]["spell_augments"] = augments
         weapon = attrs.get("weapontype")
         pattern = equipment_pattern(attrs)
@@ -520,6 +540,12 @@ def apply(root, document, order):
         for row in document["records"]
     }
     details = load_capture(root)
+    catalog = json.loads(
+        (root / "content/abilities/definitions/player-spells.json").read_bytes()
+    )
+    spell_names = {
+        entry["bundle"]["spell"]["name"].lower() for entry in catalog["bundles"]
+    }
     for identifier, record in zip(ids, records, strict=True):
         key = item_key(identifier)
         prior = by_key.get(key)
@@ -529,6 +555,9 @@ def apply(root, document, order):
             if prior is not None or record["authoring"].get("ranged") is not None:
                 raise ValueError(f"Unexpected area ammunition policy: {identifier}")
             continue
+        for augment in record["attributes"]["spell_augments"]:
+            if augment["spell"] not in spell_names:
+                raise ValueError(f"Unknown spell augment on {identifier}: {augment}")
         if key in ARBAZILOTH_KEYS:
             if prior is None:
                 raise ValueError(f"Missing prior Arbaziloth equipment: {identifier}")

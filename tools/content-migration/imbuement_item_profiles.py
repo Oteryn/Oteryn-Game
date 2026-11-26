@@ -377,6 +377,30 @@ def apply_equipment_audit(root, document):
         )
 
 
+def apply_client_socket_counts(document, capture):
+    """Keep the donor family restrictions and take these counts from Global."""
+    from crystal_equipment_quarter_1 import known
+
+    ids = {43864, 43865, 43866, 51260, 51261, 51262, 51263, 51264, 51269}
+    for record in document["records"]:
+        identifier = int(record["production_binding"]["external_id"])
+        if identifier not in ids:
+            continue
+        count = int(capture[identifier]["basic"]["Imbuement Slots"])
+        if not 1 <= count <= 3:
+            raise ValueError(f"Invalid Global imbuement slot count: {identifier}")
+        semantics = record["semantics"]
+        allowance = semantics.get("imbuement", {}).get("value", {})
+        semantics["imbuement"] = known(
+            {
+                "allowed_family_tiers": {"state": "UNKNOWN"},
+                "excluded_families": {"state": "UNKNOWN"},
+                **allowance,
+                "slot_count": known(count),
+            }
+        )
+
+
 def apply_crystal_audit(root, *providers, require_all=True):
     """Apply the two audited cohorts to their already admitted Item owners."""
     facts = json.loads((root / AUDIT_FACTS).read_bytes())

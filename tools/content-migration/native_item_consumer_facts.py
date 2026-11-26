@@ -6,10 +6,12 @@ import json
 import re
 import subprocess
 import xml.etree.ElementTree as ET
+from collections import Counter
 from pathlib import Path
 
 from authored_static_item_constructors import definitions
 from grizzly_shop_profiles import accepted_first
+from import_cyclopedia_global import apply_stats, load_capture
 
 ROOT = Path(__file__).resolve().parents[2]
 PATH = "tools/content-schema/native-gameplay/item-consumer-facts.json"
@@ -21,7 +23,9 @@ CRYSTAL = "201189f871d23597b82caf88fd611454a2ddefb8"
 XML_SHA = "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
 DOORS_SHA = "6b22b5c4c213ef5a3f18fab43ea61acca7be227c06eb99bbc25d1a8d3e75112c"
 CRYSTAL_MARKET = "docs/agents/evidence/OTV2-20261031-item-market-crystal-parity-v1.json"
+CLIENT_SHA = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
 PREFIX = "oteryn:item.tibia.i"
+CHARGED_RING = f"{PREFIX}50147"
 UNKNOWN = {"state": "UNKNOWN"}
 
 
@@ -78,6 +82,35 @@ def crystal_names(xml, doors):
     return names
 
 
+def newly_admitted_marketability(root, prior, train):
+    from engine_items import load_appearance_objects
+
+    raw = (root / f"content/assets/files/appearances-{CLIENT_SHA}.dat").read_bytes()
+    if hashlib.sha256(raw).hexdigest() != CLIENT_SHA:
+        raise ValueError("Global Item appearance bank digest differs")
+    appearances = load_appearance_objects(raw)
+    facts = {}
+    for key, row in sorted(train.items()):
+        if (
+            not key.startswith(PREFIX)
+            or not row["admission"]["materializable"]
+            or prior.get(key, {}).get("admission", {}).get("materializable")
+        ):
+            continue
+        identifier = int(key.removeprefix(PREFIX))
+        binding = row["production_binding"]
+        if (
+            binding["external_id"] != str(identifier)
+            or binding["disposition"] != "EXACT"
+        ):
+            continue
+        if identifier in appearances:
+            flags = appearances[identifier]["flags"]
+            if not flags.get("flags.container"):
+                facts[key] = flags.get("market.trade_as_object_id") == identifier
+    return facts
+
+
 def capture(root, xml, doors):
     def at(revision):
         return published_items(
@@ -115,7 +148,12 @@ def capture(root, xml, doors):
         "previous_release": PREDECESSOR,
         "train": TRAIN,
         "crystal_revision": CRYSTAL,
+        "client_appearance_sha256": CLIENT_SHA,
         "marketable_items": lost_marketability,
+        "newly_admitted_marketability": newly_admitted_marketability(
+            root, prior, train
+        ),
+        "charged_ring_transform": prior[CHARGED_RING]["semantics"]["use_transform"],
         "display_names": missing_names,
     }
 
@@ -127,6 +165,7 @@ def apply(root, items, loot_admissions):
         packet["previous_release"] != PREDECESSOR
         or packet["train"] != TRAIN
         or packet["crystal_revision"] != CRYSTAL
+        or packet["client_appearance_sha256"] != CLIENT_SHA
         or market_items != sorted(set(market_items))
         or not set(market_items) <= loot_admissions
     ):
@@ -136,6 +175,12 @@ def apply(root, items, loot_admissions):
     records = {
         row["production_definition"]["production_key"]: row for row in items["records"]
     }
+    # Global shows a three-hour lifetime. Crystal equips through 50148. The
+    # historical transform keeps the timed equip gate closed until the active
+    # form and decay target can be hosted together.
+    records[CHARGED_RING]["semantics"]["use_transform"] = packet[
+        "charged_ring_transform"
+    ]
     for key in market_items:
         row = records[key]
         definition = canonical[key]
@@ -153,6 +198,25 @@ def apply(root, items, loot_admissions):
         if not marketable(row):
             raise ValueError(
                 f"Published loot trade restriction conflicts with native facts: {key}"
+            )
+    for key, eligible in packet["newly_admitted_marketability"].items():
+        row = records.get(key)
+        if row is None or not row["admission"]["materializable"]:
+            continue
+        semantics = row["semantics"]
+        if semantics.get("container", {}).get("state") == "KNOWN":
+            continue
+        trade = semantics.get("trade_restrictions", {}).get("value", {})
+        if eligible != marketable(row):
+            semantics["trade_restrictions"] = known(
+                {
+                    "account_binding_policy": UNKNOWN,
+                    "character_binding_policy": UNKNOWN,
+                    "tradeable": UNKNOWN,
+                    "vocations": UNKNOWN,
+                    **trade,
+                    "marketable": known(eligible),
+                }
             )
     for key, name in packet["display_names"].items():
         row = records[key]
@@ -174,6 +238,24 @@ def apply(root, items, loot_admissions):
                     "name": known(name),
                 }
             )
+
+    apply_equipment_details(root, items, records)
+
+
+def apply_equipment_details(root, items, records):
+    from imbuement_item_profiles import apply_client_socket_counts
+
+    capture = load_capture(root)
+    apply_client_socket_counts(items, capture)
+    counts = Counter()
+    for identifier in (9020, 22127, 22129, 22130, 22132):
+        basic = capture[identifier]["basic"]
+        requirements = {
+            field: basic[field]
+            for field in ("Body Position", "Required Level", "Vocations")
+            if field in basic
+        }
+        apply_stats(records[f"{PREFIX}{identifier}"], requirements, counts)
 
 
 if __name__ == "__main__":

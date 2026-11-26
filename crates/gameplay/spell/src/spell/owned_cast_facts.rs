@@ -423,7 +423,8 @@ impl OwnedCastFacts {
         if require_cast_access && spell.learning_required && learned.is_none() {
             return Err(OwnedFactsError::UnavailableLearning);
         }
-        let needs_attack = spell.needs_weapon || uses_attack_formula(spell);
+        let skill_formula = uses_attack_formula(spell);
+        let needs_attack = spell.needs_weapon || skill_formula;
         let mut attack = None;
         let mut shield = None;
         // Source-defined first shield is left hand then right. The snapshot is the actual owner.
@@ -481,12 +482,8 @@ impl OwnedCastFacts {
                             ranged.and_then(|profile| self.ranged_skill_attack(content, profile))
                         {
                             damage.total_attack()
-                        } else if needs_attack
-                            && matches!(ranged, Some(ProjectV2RangedWeapon::Distance { .. }))
-                        {
-                            // Crystal ValueCallback uses the no-weapon inputs if the
-                            // launcher has no usable projectile.
-                            attack = Some((0, 7, 0.0, false));
+                        } else if matches!(ranged, Some(ProjectV2RangedWeapon::Distance { .. })) {
+                            // A launcher without a usable projectile supplies no attack.
                             continue;
                         } else {
                             u32::try_from(value.0)
@@ -517,17 +514,16 @@ impl OwnedCastFacts {
                 }
             }
         }
-        let unarmed_equipment_attack = matches!(&spell.execution, super::Execution::NativeProfile(profile)
-            if profile.spell()["execution"]["native_behavior"]["key"] == "equipment_attack"
-                && profile.spell()["execution"]["native_behavior"]["parameters"]["input"]["unarmed"].is_object());
-        if needs_attack && attack.is_none() && !unarmed_equipment_attack {
+        if spell.needs_weapon && attack.is_none() {
             return Err(OwnedFactsError::UnavailableEquipment);
         }
         if spell.needs_shield && shield.is_none() {
             return Err(OwnedFactsError::UnavailableEquipment);
         }
+        // Crystal COMBAT_FORMULA_SKILL initializes these inputs before looking up the weapon.
+        let unarmed_attack = if skill_formula { 7 } else { 0 };
         let (attack_skill, attack_value, attack_factor, melee_weapon) =
-            attack.unwrap_or((0, 0, 0.0, false));
+            attack.unwrap_or((0, unarmed_attack, 0.0, false));
         let harmony = if spell.harmony_role == Some(super::HarmonyRole::Spender) {
             if let Some(monk) = &state.monk {
                 let stage = if self.has_current_wheel(now) {
