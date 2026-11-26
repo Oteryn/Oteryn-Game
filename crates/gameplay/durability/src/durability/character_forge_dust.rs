@@ -1,7 +1,7 @@
 //! The forge dust balance and its immutable ledger (FORGE-1a, migration 0059; IMBUE-FORGE-0 §9,
 //! stored as BANK-0 §3).
 //!
-//! Dust is a Character balance (0 to the exact D1230 `dust_limit`, 100+20*n). A
+//! Dust is a Character balance (0 to its unlocked `dust_limit`). A
 //! source calls [`spend_forge_dust_in_transaction`] or [`gain_forge_dust_in_transaction`] inside
 //! its own fenced Character transaction, under its own cause occurrence, TransactionId, receipt
 //! and DUR-03 admission: an entry is not a receipt and not a forge operation. The composition
@@ -76,7 +76,7 @@ pub enum ForgeDustEntryKind {
     Spend,
     /// Native Forge dust-to-sliver conversion, composed with its item outputs.
     Convert,
-    /// D1230: one debit and one +20 transition; only the native Forge receipt owner writes it.
+    /// One debit and one +1 transition; only the native Forge receipt owner writes it.
     LimitRaise,
 }
 
@@ -418,7 +418,7 @@ fn kind_text(kind: ForgeDustEntryKind) -> &'static str {
 }
 
 fn limit_i16(limit: DustLimit) -> i16 {
-    // The exact D1230 stages, 100 through 4600, always fit.
+    // Global and persisted legacy dust limits always fit.
     i16::try_from(limit.get()).unwrap_or(i16::MAX)
 }
 
@@ -1090,11 +1090,13 @@ fn dust_limit_receipt_from_row(
             before: balance(row, "balance_before", "dust_limit_before")?,
             after: balance(row, "balance_after", "dust_limit_after")?,
         };
-        let plan = entry
-            .before
-            .raise_limit()
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
-        if plan.after != entry.after || plan.amount != entry.amount || envelope_sha256.is_none() {
+        if !dust_audit::matches_limit_raise(
+            &frozen.ruleset_revision,
+            entry.before,
+            entry.after,
+            entry.amount,
+        ) || envelope_sha256.is_none()
+        {
             return Err(DurabilityError::InvalidStoredState);
         }
         Some(entry)

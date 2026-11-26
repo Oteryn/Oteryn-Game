@@ -23,7 +23,11 @@ fn forge_postgres_convergence_fusion_preserves_insufficient_gold_refusal_and_rep
 }
 
 #[test]
-fn forge_postgres_transfer_charges_result_tier_price_and_replays_consumed_source() -> TestResult {
+fn forge_transfer_prices_by_donor_tier_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run("forge-transfer", || {
         support::scenario(Case::Items(Operation::Transfer))
     })

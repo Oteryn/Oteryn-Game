@@ -83,6 +83,32 @@ pub(in super::super) async fn exchange_pair(
         } else {
             entries.get(second).ok_or("shown donor")?.handle
         });
+        if request.operation == Operation::Transfer && selection.second_from_backpack.is_none() {
+            use protocol::forge_preview as preview;
+            let selection = preview::Selection::Pair {
+                operation: request.operation,
+                first: request.first_item.ok_or("receiver handle")?,
+                second: request.second_item.ok_or("donor handle")?,
+                boost: false,
+                protect: false,
+            };
+            let reply = super::super::forge_preview_fixtures::read(
+                &mut client,
+                current.continuity.connection_generation,
+                &mut command,
+                1,
+                selection,
+            )
+            .await?;
+            let preview::Payload::Quote(quote) = reply.payload else {
+                return Err("transfer pair quote".into());
+            };
+            assert_eq!(
+                (quote.cost.gold, quote.cost.dust, quote.cost.cores),
+                (20_000_000, 100, 1)
+            );
+            assert_eq!(quote.target_tier, 1);
+        }
         let payload = request.encode().ok_or("canonical shown-handle request")?;
         let result = support::send_command(
             &mut client,
