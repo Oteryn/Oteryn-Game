@@ -131,10 +131,9 @@ impl TryFrom<ForgeRequest<'_>> for ForgeQuote {
                     .transfer_target_tier(source)
                     .map_err(ForgeRuleError::Shape)?;
                 check_slots(request.target.slot, request.source.slot)?;
-                // Crystal player.cpp:10843-10846 indexes both by RESULT tier.
-                // Canary 47dfd51:11603 instead charges donor-tier gold.
+                // TibiaWiki Equipment Upgrade, revision 1205481: gold follows the donor tier.
                 let price = price(request.target.profile.classification, tier.get())?;
-                (tier, tier.get(), price.transfer_cores, 100)
+                (tier, request.source.tier.get(), price.transfer_cores, 100)
             }
             ForgeOperation::ConvergenceTransfer => {
                 let tier = target

@@ -116,8 +116,9 @@ fn valid_reply(proof: &Proof) -> bool {
             result["first_tier"].is_null() && result["second_tier"].is_null()
         }
         && result["dust_limit"].as_u64().is_some_and(|limit| {
-            (100..=4600).contains(&limit)
-                && (limit - 100).is_multiple_of(20)
+            u16::try_from(limit)
+                .ok()
+                .is_some_and(|limit| crate::domain::forge_dust::DustLimit::new(limit).is_ok())
                 && result["dust"].as_u64().is_some_and(|dust| dust <= limit)
         })
         && result["gold_spent"].as_u64() == Some(proof.gold_spent)
@@ -140,7 +141,8 @@ pub(crate) fn decode(proof: &[u8]) -> std::result::Result<Proof, AuditError> {
         || value.inputs_hash.len() != 32
         || value.outputs_hash.len() != 32
         || value.stash_hash.len() != 32
-        || value.ruleset != storage::RULESET
+        || !(value.ruleset == storage::RULESET
+            || (value.operation == 3 && value.ruleset == DUST_LIMIT_RULESET_REVISION))
         || value.simulation_revision != 1
         || value.rolls[0] >= 100
         || value.rolls[1] >= 100

@@ -5,6 +5,13 @@ use oteryn_simulation_determinism::{
 };
 
 pub(super) const RULESET: &str = "crystal-201189f-forge-v1";
+
+pub(super) fn ruleset(operation: Operation) -> &'static str {
+    match operation {
+        Operation::Transfer | Operation::DustLimit => DUST_LIMIT_RULESET_REVISION,
+        _ => RULESET,
+    }
+}
 // Crystal game.cpp:11018 and config.lua.dist:469: uiActionsDelay - 10.
 const ACTION_DELAY_MS: i64 = 490;
 
@@ -177,7 +184,7 @@ pub(super) async fn insert(
         resolved_items,
         expected_dust_upgrade_count,
         exhausted,
-        ruleset: RULESET.into(),
+        ruleset: ruleset(request.operation).into(),
         simulation_revision: oteryn_simulation_determinism::active_profile()
             .revision()
             .get(),
@@ -193,6 +200,9 @@ pub(super) async fn insert(
         reserved.entry = legacy.entry_id;
         reserved.occurred_at = legacy.occurred_at_unix_ms;
         reserved.content = legacy.content_digest;
+        if legacy.ruleset_revision != DUST_LIMIT_RULESET_REVISION {
+            reserved.ruleset = RULESET.into();
+        }
         reserved.world = legacy.world_id;
         reserved.channel = legacy.channel_id;
         reserved.simulation_revision = legacy.simulation_profile_revision;

@@ -149,12 +149,12 @@ pub async fn audit_forge_dust_ledger(
             }
             ForgeDustEntryKind::LimitRaise => {
                 entry.lost == 0
-                    && entry
-                        .before
-                        .raise_limit()
-                        .ok()
-                        .map(|raise| (raise.after, raise.amount))
-                        == Some((entry.after, entry.amount))
+                    && (matches_limit_raise(
+                        DUST_LIMIT_RULESET_REVISION,
+                        entry.before,
+                        entry.after,
+                        entry.amount,
+                    ) || entry.before.matches_legacy_raise(entry.after, entry.amount))
             }
         };
         if !consistent {
@@ -194,9 +194,23 @@ use crate::domain::forge_dust::DustLimit;
 use prost::Message;
 use sha2::{Digest, Sha256};
 
-/// D1230 is the complete ruleset of this material-free operation. An update is a new
-/// bound revision, never a reinterpretation of a retained occurrence.
-pub const DUST_LIMIT_RULESET_REVISION: &str = "D1230";
+/// Current ruleset for newly reserved Dust Limit purchases.
+pub const DUST_LIMIT_RULESET_REVISION: &str = "global-forge-v2";
+
+pub(super) fn matches_limit_raise(
+    ruleset: &str,
+    before: ForgeDustBalance,
+    after: ForgeDustBalance,
+    amount: u32,
+) -> bool {
+    match ruleset {
+        DUST_LIMIT_RULESET_REVISION => before
+            .raise_limit()
+            .is_ok_and(|raise| raise.after == after && raise.amount == amount),
+        "D1230" => before.matches_legacy_raise(after, amount),
+        _ => false,
+    }
+}
 /// Exact proposed closed shape: no item participant; two value effects (debit and limit).
 pub const DUST_LIMIT_VALUE_LINES_MAX: u32 = 2;
 pub const DUST_LIMIT_HISTORY_ROWS_MAX: i64 = 1_000;
@@ -280,11 +294,9 @@ pub fn check_forge_dust_limit(value: &OneItemForgeDustLimitV1) -> Result<(), Aud
     }
     let before = audit_balance(value.before.as_ref())?;
     let after = audit_balance(value.after.as_ref())?;
-    let plan = before.raise_limit().map_err(|_| AuditError::InvalidInput)?;
-    if plan.after != after || plan.amount != value.dust_burned
+    if !matches_limit_raise(&value.ruleset_revision, before, after, value.dust_burned)
         || value.previous_entry_id.is_none() // a positive balance requires an earlier gain
         || value.content_digest.len() != 32 || value.content_digest.iter().all(|b| *b == 0)
-        || value.ruleset_revision != DUST_LIMIT_RULESET_REVISION
         || value.simulation_profile_revision == 0
         || value.command_id == 0 || value.connection_generation == 0
         || value.character_lease_generation == 0 || value.scope_ownership_generation == 0

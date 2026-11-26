@@ -347,12 +347,11 @@ fn forge_reference_conversions_and_d1230_dust_cap() -> Result<(), String> {
         .map_err(|e| format!("{e:?}"))?;
         assert_eq!((after.slivers, after.cores), (after_slivers, after_cores));
     }
-    // D1230 overrides the old Canary max225: retain the accepted +20 progression.
     for (stage, limit, cost) in [
         (0, 100, Some(25)),
-        (1, 120, Some(26)),
-        (224, 4580, Some(249)),
-        (225, 4600, None),
+        (1, 101, Some(26)),
+        (224, 324, Some(249)),
+        (225, 325, None),
     ] {
         let policy = ForgeDustLimit::new(stage).map_err(|e| format!("{e:?}"))?;
         assert_eq!(policy.current_limit(), Ok(limit));
@@ -390,7 +389,7 @@ fn convergence_is_class_four_guaranteed_and_uses_global_prices() -> Result<(), F
             resources: ForgeResources {
                 dust: ForgeDustBalance::new(
                     160,
-                    DustLimit::from_upgrade_count(3)
+                    DustLimit::from_upgrade_count(60)
                         .map_err(|_| ForgeRuleError::InsufficientDust)?,
                 )
                 .map_err(|_| ForgeRuleError::InsufficientDust)?,

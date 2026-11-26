@@ -21,7 +21,7 @@ async fn assets(h: &Harness) -> TestResult<serde_json::Value> {
         .fetch_one(&h.pool).await?)
 }
 
-async fn read(
+pub(super) async fn read(
     client: &mut tokio::io::DuplexStream,
     generation: u64,
     command: &mut u64,
@@ -113,7 +113,7 @@ pub(super) async fn exercise(
                 page.resources.cores,
                 page.resources.slivers
             ),
-            (1000, 1000, 2, 17)
+            (300, 300, 2, 17)
         );
         let swords = page
             .items
