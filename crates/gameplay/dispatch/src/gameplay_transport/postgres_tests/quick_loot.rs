@@ -1,5 +1,6 @@
 //! QUICKLOOT: production router, item owner, replay and real PostgreSQL custody.
-use super::fixture::{Harness, debug, id, run};
+use super::fixture::{Harness, debug, id};
+use super::kill_reward_e2e_fixtures::scenario_thread;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::item_mint::*;
 use crate::foundation::{CommandStatus, MovementLocalPosition};
@@ -11,13 +12,14 @@ use oteryn_protocol_oteryn::quick_loot::*;
 
 #[test]
 fn quick_loot_postgres_dispatch_assignment_transfer_replay_and_fences() -> TestResult {
-    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-loot", scenario)
+    scenario_thread::run_async(scenario(Case::Bulk))
 }
 
 fn request(action: QuickLootAction) -> QuickLootRequest {
     QuickLootRequest {
         action,
         corpse: None,
+        selected_item: None,
         category: None,
         recipient: None,
         recipient_id: None,
@@ -29,17 +31,32 @@ fn request(action: QuickLootAction) -> QuickLootRequest {
 
 #[test]
 fn quick_loot_pouch_postgres_dispatch_unlimited_slots_coin_only_and_weight() -> TestResult {
-    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-pouch", || {
-        scenario_with_pouch(true)
+    scenario_thread::run_async(scenario(Case::GoldPouch))
+}
+
+#[test]
+fn quick_loot_selected_item_accepts_and_refuses_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario_thread::run("quick-loot-selected", move || {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(scenario(Case::SelectedItem)(admin))
     })
 }
 
-fn scenario() -> TestResult {
-    scenario_with_pouch(false)
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Case {
+    Bulk,
+    GoldPouch,
+    SelectedItem,
 }
 
-fn scenario_with_pouch(pouch: bool) -> TestResult {
-    run(async |admin| {
+fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
+    async move |admin| {
+        let pouch = case == Case::GoldPouch;
         let harness = Harness::create_with_admission_seed(admin, "quick_loot", true, false).await?;
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -323,6 +340,14 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
             crate::durability::map_item_mint_audit::map_item_spatial_position(9, 0, 7)
                 .try_into()
                 .map_err(|_| "far cell")?;
+        if case == Case::SelectedItem {
+            selected_item_cases(&owner, &mut admitted, &harness.pool, corpse_id, &items, [near, far])
+                .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         fixture_corpse(&harness.pool, corpse_id, far, id(41), 0).await?;
         assert_eq!(
             wire_requests(&owner, &mut admitted, &[(3, click)]).await?[0],
@@ -600,7 +625,72 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
         drop(authority);
         drop(seal);
         harness.cleanup().await
-    })
+    }
+}
+
+async fn selected_item_cases(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    pool: &sqlx::PgPool,
+    corpse: [u8; 16],
+    items: &[[u8; 16]],
+    [near, far]: [[u8; 10]; 2],
+) -> TestResult {
+    let [untouched, selected] = items else {
+        return Err("selected-item fixture expected two loot entries".into());
+    };
+    let click = |item| QuickLootRequest {
+        corpse: Some(corpse),
+        selected_item: Some(item),
+        ..request(QuickLootAction::Click)
+    };
+
+    for (cell, top, item, reason) in [
+        (near, id(41), id(71), "item outside this corpse"),
+        (far, id(41), *selected, "corpse out of range"),
+        (near, id(99), *selected, "corpse loot rights"),
+    ] {
+        fixture_corpse(pool, corpse, cell, top, 0).await?;
+        let command_id = admitted.continuity.next_command_id;
+        assert_eq!(
+            wire_requests(owner, admitted, &[(command_id, click(item))]).await?,
+            vec![(CommandStatus::Rejected, QuickLootResult { items: Vec::new() })],
+            "{reason}"
+        );
+        assert_eq!(corpse_items(pool, corpse).await?, items, "{reason}");
+    }
+
+    fixture_corpse(pool, corpse, near, id(41), 0).await?;
+    let command_id = admitted.continuity.next_command_id;
+    assert_eq!(
+        wire_requests(owner, admitted, &[(command_id, click(*selected))]).await?,
+        vec![(CommandStatus::Accepted, QuickLootResult {
+            items: vec![QuickLootItemResult { item: *selected, accepted: true }]
+        })]
+    );
+    assert_eq!(corpse_items(pool, corpse).await?, [*untouched]);
+    let backpack: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(parent_item_instance_id) FROM game_item_container_entries
+         WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(selected.as_slice())
+    .fetch_one(pool)
+    .await?;
+    assert_eq!(backpack, id(70));
+    Ok(())
+}
+
+async fn corpse_items(pool: &sqlx::PgPool, corpse: [u8; 16]) -> TestResult<Vec<[u8; 16]>> {
+    let rows: Vec<Vec<u8>> = sqlx::query_scalar(
+        "SELECT uuid_send(item_instance_id) FROM game_item_corpse_container_entries
+         WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal",
+    )
+    .bind(corpse.as_slice())
+    .fetch_all(pool)
+    .await?;
+    rows.into_iter()
+        .map(|row| row.try_into().map_err(|_| "corpse entry UUID".into()))
+        .collect()
 }
 
 async fn quick_loot_destination_management(

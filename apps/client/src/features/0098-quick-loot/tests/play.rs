@@ -58,6 +58,7 @@ fn cp02_quick_loot_native_session_scenario() -> Result<(), Box<dyn std::error::E
         let request = QuickLootRequest {
             action: QuickLootAction::FilterAdd,
             corpse: None,
+            selected_item: None,
             category: None,
             recipient: None,
             recipient_id: None,

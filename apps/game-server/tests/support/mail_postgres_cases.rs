@@ -690,6 +690,7 @@ async fn assign_minted_gold_pouch(
                 input: QuickLootInput::Legacy(QuickLootRequest {
                     action: QuickLootAction::Assign,
                     corpse: None,
+                    selected_item: None,
                     category: None,
                     recipient: Some(QuickLootRecipient::GoldPouch),
                     recipient_id: Some(pouch),
