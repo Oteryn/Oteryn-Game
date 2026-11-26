@@ -1,6 +1,8 @@
 use super::*;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
-use crate::foundation::{MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements};
+use crate::foundation::{
+    ChannelId, MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements,
+};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::npc_command::NpcTalkOutcome;
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
