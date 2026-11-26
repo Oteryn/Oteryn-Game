@@ -40,7 +40,7 @@ fn carried(client: &DevClientSession, definition: std::num::NonZeroU32) -> u64 {
     })
 }
 
-async fn unlocked(clients: &SeamClients<'_>, grant: &str) -> TestResult<bool> {
+async fn unlock_count(clients: &SeamClients<'_>, grant: &str) -> TestResult<i64> {
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let count: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_account_appearance_unlocks u JOIN game_character_roots r ON r.account_id = u.account_id WHERE r.character_id = encode($1, 'hex')::uuid AND u.unlock_key = $2",
@@ -50,7 +50,7 @@ async fn unlocked(clients: &SeamClients<'_>, grant: &str) -> TestResult<bool> {
     .fetch_one(&mut database)
     .await?;
     database.close().await?;
-    Ok(count > 0)
+    Ok(count)
 }
 
 async fn use_construction_item(
@@ -121,7 +121,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 .iter()
                 .all(|(_, ingredient)| carried(client, *ingredient) == count)
     };
-    if !matches_count(&client, 0) || unlocked(clients, grant).await? {
+    if !matches_count(&client, 0) || unlock_count(clients, grant).await? != 0 {
         return Err("step=fixture observed=ingredient-or-unlock-already-present".into());
     }
     for &(id, _) in &ingredients {
@@ -135,6 +135,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(
             "step=fixture observed=expected-exactly-one-served-unit-of-each-ingredient".into(),
         );
+    }
+    if unlock_count(clients, grant).await? != 0 {
+        return Err("step=fixture observed=unlock-present-before-use".into());
     }
     let handle = client
         .inventory()
@@ -150,8 +153,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(format!("step=use item={ITEM} observed={status:?}/{disposition:?}").into());
     }
-    if !unlocked(clients, grant).await? {
-        return Err("step=use observed=committed-without-unlock".into());
+    if unlock_count(clients, grant).await? != 1 {
+        return Err("step=use observed=committed-without-exactly-one-unlock".into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while !matches_count(&client, 0) {
@@ -164,10 +167,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_character(clients, 0xcd, 0).await?;
-    let durable = unlocked(clients, grant).await;
+    let durable = unlock_count(clients, grant).await;
     let debited = matches_count(&fresh, 0);
     logout(&mut fresh).await?;
-    if !durable? || !debited {
+    if durable? != 1 || !debited {
         return Err(format!("step=fresh observed=unlock-or-debit-lost;debited={debited}").into());
     }
     Ok(())
