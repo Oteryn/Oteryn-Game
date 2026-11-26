@@ -1371,6 +1371,14 @@ impl DurabilityRoot {
                             }
                             outcomes.push(ItemMintOutcome::AlreadyCommitted(decode_receipt(&row)?));
                         }
+                        if let Some((death, work)) = achievement {
+                            // A retained corpse may predate the achievement roster.
+                            // Replaying loot is historical; creating work needs the live fence.
+                            if !fence_is_live(&mut tx, &frozen.request.cause.death, &node).await? {
+                                return Ok(Err(ItemMintError::AuthorityRejected));
+                            }
+                            work.retain(&mut tx, death).await?;
+                        }
                         tx.commit(deadline).await?;
                         return Ok(Ok(outcomes));
                     }

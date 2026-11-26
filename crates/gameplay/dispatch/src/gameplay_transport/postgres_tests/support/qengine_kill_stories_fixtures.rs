@@ -42,6 +42,18 @@ pub(super) async fn queue_death(
     creature: &str,
     command: u64,
 ) -> TestResult<crate::foundation::ExactActorRef> {
+    queue_death_with_departure(owner, admitted, creature, command, None).await
+}
+
+pub(super) async fn queue_death_with_departure(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    creature: &str,
+    command: u64,
+    departed_top_damager: Option<
+        crate::durability::character_progression::CurrentCharacterGameplayFence,
+    >,
+) -> TestResult<crate::foundation::ExactActorRef> {
     use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
     use crate::gameplay_transport::kill_reward::KillSink;
     let actor = admitted.runtime_actor.ok_or("actor")?;
@@ -75,6 +87,51 @@ pub(super) async fn queue_death(
         let lease = runtime
             .bound_attacker_lease(actor, session)
             .map_err(debug)?;
+        if let Some(fence) = departed_top_damager {
+            use crate::foundation::{CharacterId, CharacterLease};
+            let departed = fence.game_session_id;
+            let character = CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?;
+            let reservation = runtime.reserve_fresh_session(departed).map_err(debug)?;
+            let attacker = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime
+                .initialize_pinned_test_position(
+                    attacker,
+                    MovementLocalPosition { x: at.x - 1, ..at },
+                )
+                .map_err(debug)?;
+            runtime
+                .bind_attacker_lease(
+                    attacker,
+                    departed,
+                    CharacterLease::new(character, fence.character_lease_generation)
+                        .map_err(debug)?,
+                )
+                .map_err(debug)?;
+            let health = runtime.companion_snapshot(target).map_err(debug)?.health;
+            runtime
+                .borrow_exact_actor_commit_at(now)
+                .commit_damage_for_bound_attacker(
+                    target,
+                    attacker,
+                    CommandRef::new(departed, CommandId::new(command).map_err(debug)?),
+                    0,
+                    crate::foundation::OwnerDamageCommand {
+                        target: creature.as_bytes(),
+                        occurrence: departed.as_bytes(),
+                        binding: b"m25-departed-top-damager",
+                        damage: health - 1,
+                    },
+                )
+                .map_err(debug)?;
+            runtime.remove_test_actor(attacker).map_err(debug)?;
+            assert!(
+                runtime
+                    .borrow_combat_death()
+                    .top_damage_contributor(target)
+                    .map_err(debug)?
+                    .is_gone()
+            );
+        }
         let health = runtime.companion_snapshot(target).map_err(debug)?.health;
         runtime
             .borrow_exact_actor_commit_at(now)

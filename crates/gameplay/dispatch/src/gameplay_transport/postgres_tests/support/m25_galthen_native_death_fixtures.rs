@@ -141,7 +141,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
-    takeover: bool,
+    name: &str,
 ) -> TestResult {
     // The shared quest scenario replaces the admitted runtime. Rebind only
     // its current durable Character lease before exercising native combat.
@@ -171,10 +171,27 @@ pub(super) async fn exercise(
         .ok_or("active native policies")?
         .install_companion_policies(&mut *owner.runtime.lock().await)
         .map_err(debug)?;
-    if takeover {
+    let mitmah = "oteryn:creature.mitmah_vanguard";
+    if name.ends_with("-xp") || name.ends_with("-departed") {
+        return assert_mitmah_award_after_reward_settlement(
+            owner,
+            admitted,
+            h,
+            mitmah,
+            name.ends_with("-xp"),
+        )
+        .await;
+    }
+    if name.ends_with("-takeover") || name.ends_with("-idle") {
         return assert_mitmah_reward_grant_boundary(
-            owner, admitted, h, "oteryn:creature.mitmah_vanguard", 60_010, true,
-        ).await;
+            owner,
+            admitted,
+            h,
+            mitmah,
+            60_010,
+            Some(name.ends_with("-idle")),
+        )
+        .await;
     }
     for (index, (creature, gate, stage)) in [
         ("oteryn:creature.ahau", "s4", "s5"),
@@ -186,7 +203,8 @@ pub(super) async fn exercise(
         let command = 60000 + u64::try_from(index)? * 10;
         assert_eq!(value(h, gate).await?, 0);
         if stage == "s8" {
-            assert_mitmah_reward_grant_boundary(owner, admitted, h, creature, command, false).await?;
+            assert_mitmah_reward_grant_boundary(owner, admitted, h, creature, command, None)
+                .await?;
         } else {
             death(owner, admitted, creature, command).await?;
         }
@@ -254,7 +272,7 @@ async fn assert_mitmah_reward_grant_boundary(
     h: &Harness,
     creature: &str,
     command: u64,
-    takeover: bool,
+    takeover: Option<bool>,
 ) -> TestResult {
     use crate::gameplay_transport::kill_reward::DrainOutcome;
 
@@ -328,8 +346,8 @@ async fn assert_mitmah_reward_grant_boundary(
     sqlx::query("DROP TRIGGER reject_mitmah_award ON game_account_achievement_grant_requests")
         .execute(&h.pool)
         .await?;
-    if takeover {
-        return assert_mitmah_award_after_takeover(owner, admitted, h).await;
+    if let Some(idle) = takeover {
+        return assert_mitmah_award_after_takeover(owner, admitted, h, idle).await;
     }
     // Discard the process-local kill queue before retrying under the same generation.
     *owner.states.attack.lock().await = Default::default();
@@ -348,6 +366,7 @@ async fn assert_mitmah_award_after_takeover(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,
+    idle: bool,
 ) -> TestResult {
     use crate::durability::runtime_scope_assignment::{
         AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor, OperationKey,
@@ -403,15 +422,214 @@ async fn assert_mitmah_award_after_takeover(
     ).await.is_err());
     assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_boss_death_achievement_pending")
         .fetch_one(&h.pool).await?, 1, "the old owner must leave the pending row intact");
+    if idle {
+        let content = owner.runtime.lock().await.content_pin().clone();
+        let fact = successor.fact();
+        let runtime = crate::foundation::ChannelRuntimeV1::from_committed_scope_assignment(
+            scope,
+            fact.node_id(),
+            fact.registration_revision(),
+            generation.get(),
+            moved.assignment.source_revision,
+            &moved.assignment.decision_identity,
+            2,
+            content,
+        )
+        .map_err(debug)?;
+        assert!(runtime.positioned_actor_census().map_err(debug)?.is_empty());
+        serve_idle_successor(owner, h, &successor, tokio::sync::Mutex::new(runtime)).await?;
+    } else {
     assert!(!h.root.reconcile_boss_death_achievement(
         owner.character, &successor, scope, generation,
     ).await?);
     assert!(h.root.reconcile_boss_death_achievement(
         owner.character, &successor, scope, generation,
     ).await?);
+    }
     assert_eq!(sqlx::query_scalar::<_, String>(
         "SELECT account_id::text FROM game_account_achievements
          WHERE achievement_key='oteryn:achievement/museum_goer'",
     ).fetch_all(&h.pool).await?, [seller]);
+    Ok(())
+}
+
+async fn assert_mitmah_award_after_reward_settlement(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    creature: &str,
+    xp_failure: bool,
+) -> TestResult {
+    use crate::gameplay_transport::kill_reward::DrainOutcome;
+
+    if xp_failure {
+        sqlx::raw_sql(
+            "CREATE FUNCTION reject_mitmah_xp() RETURNS trigger LANGUAGE plpgsql AS $$
+             BEGIN
+                 RAISE EXCEPTION 'injected Mitmah XP failure';
+             END $$;
+             CREATE TRIGGER reject_mitmah_xp BEFORE INSERT ON game_party_kill_xp_receipts
+                 FOR EACH ROW EXECUTE FUNCTION reject_mitmah_xp()",
+        )
+        .execute(&h.pool)
+        .await?;
+    }
+    let departed = if xp_failure {
+        None
+    } else {
+        h.seed_pvp_target().await?;
+        super::appearance_change_postgres_fixtures::observer_visibility_tests::admit(h).await?;
+        let session =
+            crate::foundation::GameSessionId::decode(&super::fixture::id(110)).map_err(debug)?;
+        Some(
+            owner
+                .current_quest_fence(session)
+                .await
+                .map_err(debug)?
+                .ok_or("departing top-damager fence")?,
+        )
+    };
+    let target = super::qengine_kill_stories_fixtures::queue_death_with_departure(
+        owner, admitted, creature, 60_010, departed,
+    )
+    .await?;
+    if xp_failure {
+        assert_eq!(
+            owner.drain_kill_rewards(admitted.game_session_id).await,
+            DrainOutcome::Deferred
+        );
+        assert_eq!(museum_grant_count(h).await?, 0);
+        sqlx::query("DROP TRIGGER reject_mitmah_xp ON game_party_kill_xp_receipts")
+            .execute(&h.pool)
+            .await?;
+    }
+    super::qengine_kill_stories_fixtures::drain_deaths(owner, admitted, &[]).await?;
+    assert_eq!(
+        museum_grant_count(h).await?,
+        1,
+        "settled Mitmah death grants the remaining contributor"
+    );
+    let reward_counts: (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_party_kill_xp_receipts WHERE creature_key=$1),
+                (SELECT count(*) FROM game_item_mint_receipts WHERE loot_purpose_key='CORPSE_MATERIALIZATION')",
+    ).bind(creature).fetch_one(&h.pool).await?;
+    assert_eq!(
+        reward_counts,
+        (i64::from(xp_failure), i64::from(xp_failure))
+    );
+    retire_death_actor(owner, target).await
+}
+
+async fn museum_grant_count(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievement_grant_requests
+         WHERE achievement_key='oteryn:achievement/museum_goer'",
+    )
+    .fetch_one(&h.pool)
+    .await?)
+}
+
+async fn serve_idle_successor(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    successor: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+    runtime: tokio::sync::Mutex<crate::foundation::ChannelRuntimeV1>,
+) -> TestResult {
+    use crate::gameplay_transport::{
+        GameplayListenerConfig, GameplaySeamOwners, SeamRooms, quest_log::QuestLogLines,
+        serve_gameplay, source_item_cycle::SOURCE_OWNER_SWEEP_COMPLETE,
+    };
+    use std::time::Duration;
+
+    let listener = tokio::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0)).await?;
+    let tls = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
+    let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(debug)?;
+    let journal = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
+    let quest_log = QuestLogLines::new(journal.content).ok_or("quest log line bounds")?;
+    let stop = oteryn_foundation::CancellationToken::new();
+    let swept = Arc::new(tokio::sync::Notify::new());
+    let mut serving = Box::pin(
+        SOURCE_OWNER_SWEEP_COMPLETE.scope(
+            Arc::clone(&swept),
+            serve_gameplay(
+                &listener,
+                GameplayListenerConfig {
+                    bulletin_source: None,
+                    server_motd: String::new(),
+                    certificates: vec![tls.cert.der().clone()],
+                    private_key: rustls::pki_types::PrivatePkcs8KeyDer::from(
+                        tls.signing_key.serialize_der(),
+                    )
+                    .into(),
+                    max_connections: 1,
+                    max_handshake_units: 1,
+                    entry_deadline: Duration::from_secs(1),
+                },
+                GameplaySeamOwners {
+                    platform_enforcement_enabled: false,
+                    cast: None,
+                    activity_templates: &[],
+                    soulpit_template: None,
+                    gameplay_idle_policy: Default::default(),
+                    store_purchases: Default::default(),
+                    store: None,
+                    emit: owner.emit,
+                    root: owner.root,
+                    character: owner.character,
+                    holder: successor,
+                    evidence: owner.evidence,
+                    world_id: owner.world_id,
+                    channel_id: owner.channel_id,
+                    premium_only: false,
+                    required_capabilities: Arc::clone(&owner.required_capabilities),
+                    runtime: &runtime,
+                    movement_cells: &owner.movement_cells,
+                    door: &owner.door,
+                    chest: owner.chest,
+                    spells: owner.spells,
+                    active_generation: owner.active_generation,
+                    premium_coordinator: None,
+                    rooms: SeamRooms::new(None, None),
+                    achievements: owner.achievements,
+                    npc_talk: None,
+                    imported_charms: owner.imported_charms,
+                    quest_catalogue: owner
+                        .quest_catalogue
+                        .as_ref()
+                        .ok_or("Mitmah quest catalogue")?,
+                    quest_log_content: &quest_log,
+                    last_position_flush: None,
+                },
+                &stop,
+                None,
+            ),
+        ),
+    );
+    for _ in 0..2 {
+        tokio::time::timeout(Duration::from_secs(15), async {
+            tokio::select! {
+                result = &mut serving => Err(format!("successor stopped before an owner sweep: {result:?}")),
+                () = swept.notified() => Ok(()),
+            }
+        }).await??;
+    }
+    assert_eq!(
+        museum_grant_count(h).await?,
+        1,
+        "idle serving must recover the retained boss award"
+    );
+    assert!(
+        runtime
+            .lock()
+            .await
+            .positioned_actor_census()
+            .map_err(debug)?
+            .is_empty()
+    );
+    stop.cancel();
+    tokio::time::timeout(Duration::from_secs(15), serving)
+        .await?
+        .map_err(debug)?;
     Ok(())
 }

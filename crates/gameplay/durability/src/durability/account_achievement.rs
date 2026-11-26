@@ -368,17 +368,7 @@ impl BossDeathAchievementWork {
         for recipient in &self.recipients {
             let character = sqlx::types::Uuid::from_bytes(*recipient.character_id.as_bytes());
             let session = sqlx::types::Uuid::from_bytes(*recipient.session.as_bytes());
-            let account: Option<String> = sqlx::query_scalar(
-                "SELECT account_id::text FROM game_durability_reconnect_sessions
-                 WHERE character_id=$1 AND game_session_id=$2
-                   AND character_lease_generation=$3::text::numeric",
-            )
-            .bind(character)
-            .bind(session)
-            .bind(recipient.lease_generation.to_string())
-            .fetch_optional(&mut **tx)
-            .await?;
-            if let Some(account) = account {
+            if let Some(account) = boss_earning_account(tx, *recipient).await? {
                 recipients.push((
                     character.to_string(),
                     session.to_string(),
@@ -400,6 +390,22 @@ impl BossDeathAchievementWork {
         .await?;
         Ok(())
     }
+}
+
+async fn boss_earning_account(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    recipient: BossDeathAchievementRecipient,
+) -> Result<Option<String>, DurabilityError> {
+    Ok(sqlx::query_scalar(
+        "SELECT account_id::text FROM game_durability_reconnect_sessions
+         WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid
+           AND character_lease_generation=$3::text::numeric",
+    )
+    .bind(recipient.character_id.as_bytes().as_slice())
+    .bind(recipient.session.as_bytes().as_slice())
+    .bind(recipient.lease_generation.to_string())
+    .fetch_optional(&mut **tx)
+    .await?)
 }
 
 async fn qualify_boss_recipient(
@@ -501,6 +507,21 @@ async fn qualify_retained_boss_recipient(
     .is_some())
 }
 
+async fn held_boss_achievements(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    account: &str,
+    awards: &[&str],
+) -> Result<Vec<String>, DurabilityError> {
+    Ok(sqlx::query_scalar(
+        "SELECT achievement_key FROM game_account_achievements
+         WHERE account_id=$1::uuid AND achievement_key=ANY($2)",
+    )
+    .bind(account)
+    .bind(awards)
+    .fetch_all(&mut **tx)
+    .await?)
+}
+
 async fn grant_retained_boss_rewards(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     recipient: RetainedBossRecipient,
@@ -510,14 +531,7 @@ async fn grant_retained_boss_rewards(
 ) -> Result<(), DurabilityError> {
     let character = recipient.lease.character_id;
     let occurrence = Sha256::new().chain_update(character.as_bytes()).chain_update(death).finalize();
-    let held: Vec<String> = sqlx::query_scalar(
-        "SELECT achievement_key FROM game_account_achievements
-         WHERE account_id=$1::uuid AND achievement_key=ANY($2)",
-    )
-    .bind(&recipient.account)
-    .bind(awards)
-    .fetch_all(&mut **tx)
-    .await?;
+    let held = held_boss_achievements(tx, &recipient.account, awards).await?;
     for key in awards.iter().filter(|key| !held.iter().any(|held| held == *key)) {
         let catalogue = embedded_lookup(key)?;
         let AchievementCatalogueLookup::Earnable { revision } = &catalogue else {
@@ -581,7 +595,7 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &super::runtime_scope_assignment::NodeIncarnationProof,
         death: CreatureDeathOccurrenceKey,
-        work: BossDeathAchievementWork,
+        mut work: BossDeathAchievementWork,
     ) -> Result<(), DurabilityError> {
         let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
@@ -609,6 +623,24 @@ impl DurabilityRoot {
             if let Some(row) = row {
                 finish_boss_achievement(&mut tx, &node, scope, Some(generation),
                     &death.native_bytes(), work.boss, decode_boss_roster(&row)?).await?;
+            } else {
+                // A lost commit reply can leave no pending row. Every still-eligible
+                // recipient must already hold the awards on the original earning account.
+                let (_, awards) = work.boss.awards();
+                work.recipients.sort_unstable_by_key(|recipient| *recipient.character_id.as_bytes());
+                for recipient in work.recipients {
+                    if !qualify_boss_recipient(&mut tx, &node, scope, generation, recipient).await? {
+                        continue;
+                    }
+                    let account = boss_earning_account(&mut tx, recipient).await?
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    let held = held_boss_achievements(&mut tx, &account, awards).await?;
+                    for key in awards.iter().filter(|key| !held.iter().any(|held| held == *key)) {
+                        if embedded_lookup(key)? != AchievementCatalogueLookup::Retired {
+                            return Err(DurabilityError::CommitRejected);
+                        }
+                    }
+                }
             }
             commit_semantic_transaction(tx, deadline).await
         })).await
