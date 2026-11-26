@@ -1,4 +1,5 @@
 use crate::play::{Outbox, mailbox::lock};
+use std::time::Instant;
 use oteryn_client_runtime::party::{CommandStatus, PartyResponse, party::COMMAND_TYPE_PARTY_QUERY};
 
 impl Outbox {
@@ -6,7 +7,7 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         mailbox.party_initialized = true;
         if selected {
-            mailbox.party_notice_refresh.finish_query(false);
+            mailbox.party_notice_refresh.cancel_query();
         } else {
             mailbox.party_notice_refresh = Default::default();
         }
@@ -27,6 +28,7 @@ impl Outbox {
     }
 
     pub(in crate::play) fn party_result(&self, response: &PartyResponse) {
+        let received_at = Instant::now();
         let mut mailbox = lock(&self.0);
         let members = |panel: &oteryn_client_ui::party::PartyPanel| {
             panel.state.as_ref().map(|state| {
@@ -55,6 +57,7 @@ impl Outbox {
                         response.status,
                         CommandStatus::Accepted | CommandStatus::DuplicateReplay
                     ),
+                received_at,
             );
         }
         if applied {
@@ -98,7 +101,19 @@ impl Outbox {
                 .await?;
             oteryn_client_runtime::party::shared_response(&outcome, view.view)
         } else {
-            session.party(request).await?
+            let started = Instant::now();
+            let result = session.party(request).await;
+            if request.kind == COMMAND_TYPE_PARTY_QUERY
+                && matches!(
+                    result,
+                    Err(oteryn_session::SessionError::ScopeChanged
+                        | oteryn_session::SessionError::ActivityScopeChanged)
+                )
+            {
+                // The session reads the handoff only after writing this query.
+                lock(&self.0).party_notice_refresh.finish_query(false, started);
+            }
+            result?
         };
         self.party_result(&response);
         Ok(())

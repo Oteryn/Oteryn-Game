@@ -31,7 +31,7 @@ impl PlayLink {
             if self.commands.send(PlayCommand::Party(command.clone())).is_ok() {
                 mailbox.party.pending = Some(command);
             } else {
-                mailbox.party_notice_refresh.finish_query(false);
+                mailbox.party_notice_refresh.cancel_query();
             }
         }
     }

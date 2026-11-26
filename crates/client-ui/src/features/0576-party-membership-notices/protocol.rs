@@ -19,16 +19,27 @@ impl Refresh {
         self.automatic_pending
     }
 
-    /// A refusal, missing roster, or cancelled query leaves the refresh owed.
-    pub fn finish_query(&mut self, accepted: bool) {
+    /// Releases the pending query when its command is discarded or its scope is retired.
+    pub fn cancel_query(&mut self) {
         self.automatic_pending = false;
+        self.newer_notice = false;
+    }
+
+    /// Accounts for a query after a result or a confirmed send interrupted by a handoff.
+    pub fn finish_query(&mut self, accepted: bool, retry_from: Instant) {
+        if self.automatic_pending {
+            if !self.newer_notice {
+                self.attempts_left -= 1;
+            }
+            self.retry_at = Some(retry_from + RETRY_DELAY);
+        }
         if accepted {
             self.retry_at = None;
             if !self.newer_notice {
                 self.attempts_left = 0;
             }
         }
-        self.newer_notice = false;
+        self.cancel_query();
     }
 }
 
@@ -43,21 +54,20 @@ pub fn observed(panel: &PartyPanel, refresh: &mut Refresh, notices: usize) {
     }
 }
 
-/// Takes an attempt when Party is available and idle, keeping the refresh owed until a
-/// successful query result applies. A session without the Party capability drops the refresh.
+/// Reserves a query when Party is available and idle. A session without the Party
+/// capability drops the refresh.
 pub fn take_refresh(panel: &PartyPanel, refresh: &mut Refresh, now: Instant) -> bool {
     if !panel.selected {
         *refresh = Refresh::default();
         return false;
     }
     if panel.pending.is_some()
+        || refresh.automatic_pending
         || refresh.attempts_left == 0
         || refresh.retry_at.is_some_and(|retry_at| now < retry_at)
     {
         return false;
     }
-    refresh.attempts_left -= 1;
-    refresh.retry_at = Some(now + RETRY_DELAY);
     refresh.automatic_pending = true;
     true
 }
@@ -81,7 +91,7 @@ fn notices_owe_one_refresh_until_the_party_query_is_free() {
     panel.pending = None;
     assert!(take_refresh(&panel, &mut refresh, now));
     assert!(!take_refresh(&panel, &mut refresh, now));
-    refresh.finish_query(true);
+    refresh.finish_query(true, now);
     assert!(!take_refresh(&panel, &mut refresh, now + RETRY_DELAY));
     panel.selected = false;
     observed(&panel, &mut refresh, 1);
