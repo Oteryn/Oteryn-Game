@@ -306,7 +306,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_character(clients, 0x44, 0).await?;
     let session = client.join_snapshot().game_session_id;
     let definitions = provisioning::item_index()?;
-    let pair = distinct_dagger_pair(&client, provisioning::item_reference(&definitions, 3267)?)?;
+    let dagger = provisioning::item_reference(&definitions, 3267)?;
+    let pair = distinct_dagger_pair(&client, dagger)?;
 
     let balance = dust(&mut client).await?;
     if balance != (100, 100) {
@@ -450,6 +451,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if inventory != expected_inventory {
         return Err("Forge inventory changed before the refusal checks".into());
     }
+    if super::full_row_p18::dagger_tiers(&mut client, dagger.get()).await? != [0, 0] {
+        return Err("Forge refusal pre-state must contain two tier-zero daggers".into());
+    }
     for (ordinal, (name, operation, expected_reason)) in [
         // The valid, distinct pair is evaluated against the remaining dust.
         ("fusion", Operation::Fusion, "INSUFFICIENT_DUST"),
@@ -480,6 +484,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             || super::full_row_p18::bank_balance(&mut bank, clients).await? != 0
         {
             return Err(format!("{name} refusal changed inventory or Forge balance").into());
+        }
+        if super::full_row_p18::dagger_tiers(&mut client, dagger.get()).await? != [0, 0] {
+            return Err(format!("{name} refusal changed dagger tiers").into());
         }
         frames.push(bytes);
     }
@@ -516,6 +523,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         || super::full_row_p18::bank_balance(&mut bank, clients).await? != 0
     {
         return Err("Forge funded state changed after relog".into());
+    }
+    if super::full_row_p18::dagger_tiers(&mut fresh, dagger.get()).await? != [0, 0] {
+        return Err("Forge refusal changed persisted dagger tiers".into());
     }
     fresh.service_liveness(Duration::from_millis(490)).await?;
     let (_, persisted_history) =

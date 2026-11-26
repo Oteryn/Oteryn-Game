@@ -928,7 +928,7 @@ async fn forge_items(client: &mut DevClientSession) -> TestResult<Vec<preview::I
     Ok(items)
 }
 
-async fn dagger_tiers(client: &mut DevClientSession, definition: u32) -> TestResult<Vec<u8>> {
+pub(super) async fn dagger_tiers(client: &mut DevClientSession, definition: u32) -> TestResult<Vec<u8>> {
     let mut tiers: Vec<_> = forge_items(client)
         .await?
         .into_iter()

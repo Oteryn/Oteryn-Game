@@ -84,6 +84,55 @@ fn read_envelope(file: std::fs::File) -> Result<ForgeEnvelope, Box<dyn std::erro
     })
 }
 
+fn check_paid_confirmation(
+    index: usize,
+    dialog: &crate::item_forge::resource_dialog::ResourceDialog,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::item_forge::resource_dialog::dialog_text;
+    let (operation, resources, expected_text) = if index == 1 {
+        (
+            Operation::DustToSlivers,
+            (true, 100, 40, 100, 100, 0, 3),
+            "Convert dust to slivers?\n\nDust: 100 → 40\nDust limit: 100 → 100\nSlivers: 0 → 3\nCores: 0 → 0",
+        )
+    } else {
+        (
+            Operation::DustLimit,
+            (false, 40, 15, 100, 101, 0, 0),
+            "Raise the dust limit?\n\nDust: 40 → 15\nDust limit: 100 → 101",
+        )
+    };
+    let Some(
+        content @ Content::Confirm {
+            operation: shown,
+            quote: Some(quote),
+        },
+    ) = dialog.content.as_ref()
+    else {
+        return Err("Forge did not display the live confirmation".into());
+    };
+    if *shown != operation
+        || quote.operation != operation
+        || (
+            quote.full_resources,
+            quote.before.dust,
+            quote.after_dust,
+            quote.before.dust_limit,
+            quote.after_limit,
+            quote.before.slivers,
+            quote.after_slivers,
+        ) != resources
+        || (quote.before.cores, quote.after_cores) != (0, 0)
+        || dialog_text(content, 0)
+            != format!(
+                "{expected_text}\n\nThe server checks your current resources when applying the operation."
+            )
+    {
+        return Err(format!("Forge displayed wrong resource confirmation {quote:?}").into());
+    }
+    Ok(())
+}
+
 fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
     type Submitted = (u64, u64, Vec<u8>);
     let file = std::fs::File::open(root.join("p18-requests.json"))?;
@@ -169,34 +218,7 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
                     payload: quote.payload,
                 },
             );
-            let Some(Content::Confirm {
-                operation,
-                quote: Some(review),
-            }) = panel.resource_dialog.content.as_ref()
-            else {
-                return Err("Forge did not display the live confirmation".into());
-            };
-            let expected = if index == 1 {
-                (100, 40, 100, 100)
-            } else {
-                (40, 15, 100, 101)
-            };
-            if *operation != submitted.operation
-                || (
-                    review.before.dust,
-                    review.after_dust,
-                    review.before.dust_limit,
-                    review.after_limit,
-                ) != expected
-                || (index == 1
-                    && (!review.full_resources
-                        || review.before.slivers != 0
-                        || review.after_slivers != 3))
-            {
-                return Err(
-                    format!("Forge displayed wrong resource confirmation {review:?}").into(),
-                );
-            }
+            check_paid_confirmation(index, &panel.resource_dialog)?;
             let serial = panel.resource_dialog.serial;
             let confirmed = panel
                 .confirm_resource(serial, submitted.occurrence)
@@ -445,4 +467,32 @@ fn check_invalid_results(panel: &mut ItemForgePanel, last: &[u8]) {
         panel.feedback.as_deref(),
         Some("Invalid forge reply; refresh to retry")
     );
+}
+
+#[test]
+fn p18_confirmation_rejects_unexpected_core_creation() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::item_forge::resource_dialog::ResourceDialog;
+    use oteryn_client_runtime::forge_preview::{ResourceQuote, Resources};
+
+    let mut dialog = ResourceDialog::default();
+    let mut quote = ResourceQuote {
+        operation: Operation::DustToSlivers,
+        full_resources: true,
+        before: Resources {
+            dust: 100,
+            dust_limit: 100,
+            slivers: 0,
+            cores: 0,
+        },
+        after_dust: 40,
+        after_limit: 100,
+        after_slivers: 3,
+        after_cores: 0,
+    };
+    dialog.offer(quote.operation, Some(quote));
+    check_paid_confirmation(1, &dialog)?;
+    quote.after_cores = 1;
+    dialog.offer(quote.operation, Some(quote));
+    assert!(check_paid_confirmation(1, &dialog).is_err());
+    Ok(())
 }
