@@ -767,14 +767,18 @@ pub(super) async fn reconcile_cask_collision(
         pin
     };
     let retired = projection_read(
-        || {
-            admission.root.read_retired_map_cask_placements(
-                world_id,
-                channel_id,
-                pin.bundle,
-                pin.reset_epoch,
-                base.entry_count(),
-            )
+        admission.root,
+        async || {
+            admission
+                .root
+                .read_retired_map_cask_placements(
+                    world_id,
+                    channel_id,
+                    pin.bundle,
+                    pin.reset_epoch,
+                    base.entry_count(),
+                )
+                .await
         },
         |error| {
             matches!(
