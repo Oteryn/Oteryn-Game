@@ -397,6 +397,27 @@ mod experience_tests {
     use super::*;
 
     #[test]
+    fn pve_death_matches_crystal_level_ten_probe() -> Result<(), PveDeathError> {
+        let input = PveDeathInput::<u8> {
+            level: 10,
+            total_experience: ExactI64::new(9_300),
+            regular_blessings: 0,
+            promotion_benefit_current: false,
+            has_vocation: true,
+            equipment: &[],
+            necklace_is_amulet_of_loss: false,
+        };
+        let outcome = calculate_pve_death(
+            &input,
+            &GameplayDecisionRoot::from_bytes([7; 32]),
+            DecisionOccurrenceId::from_bytes([1; 16]),
+        )?;
+        assert_eq!(outcome.experience_lost.get(), 930);
+        assert_eq!(outcome.experience_after.get(), 8_370);
+        Ok(())
+    }
+
+    #[test]
     fn pve_death_uses_next_level_span_at_every_level() -> Result<(), PveDeathError> {
         let root = GameplayDecisionRoot::from_bytes([7; 32]);
         let occurrence = DecisionOccurrenceId::from_bytes([1; 16]);
