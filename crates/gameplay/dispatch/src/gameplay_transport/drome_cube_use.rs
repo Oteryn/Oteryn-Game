@@ -2,7 +2,6 @@
 //! Historical receipts precede live handles. Every new/retried write re-proves current
 //! authority; a saved PREPARE request is data, never a replacement for the current fences.
 
-use crate::durability::DurabilityError;
 use crate::durability::character_authority::SERVER_BUILD_ID;
 use crate::durability::item_loop_move::ItemLoopContent;
 use crate::durability::item_mint::TypedDefinitionRef;
@@ -12,9 +11,7 @@ use crate::foundation::{CommandId, CommandRef, ExactActorRef, GameSessionId};
 use crate::gameplay_transport::connection::{UseCommand, UseOutcome};
 use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, pinned_index};
 use crate::gameplay_transport::item_view::ItemKey;
-use crate::gameplay_transport::{
-    AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission, operator_event,
-};
+use crate::gameplay_transport::{AdmissionRetryBudget, ComposedFreshAdmission};
 use oteryn_gameplay_items::drome_cube::{DROME_CUBE_KEY, reward, reward_index};
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
@@ -27,41 +24,6 @@ pub(super) use gate::PendingCubeUse;
 #[path = "drome_cube_use/ports.rs"]
 mod ports;
 pub(in crate::gameplay_transport) use ports::{authority_methods, composed_methods};
-
-#[cfg(test)]
-tokio::task_local! {
-    pub(in crate::gameplay_transport) static CUBE_INVENTORY_CHECKOUT_PROBE: std::cell::Cell<Option<std::sync::Arc<crate::gameplay_transport::composed_admission::HolderCheckoutProbe>>>;
-}
-
-async fn retry_read<T>(
-    budget: &AdmissionRetryBudget<'_>,
-    stage: &'static str,
-    mut read: impl AsyncFnMut() -> Result<T, ItemUseError>,
-) -> Result<T, ItemUseError> {
-    // Only a failed checkout is retryable. Preserve unknown receipt outcomes.
-    loop {
-        match read().await {
-            Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
-                if budget
-                    .retries_unavailable(AdmissionRefusal::Unavailable)
-                    .await =>
-            {
-                continue;
-            }
-            result => {
-                if matches!(
-                    result,
-                    Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
-                ) {
-                    operator_event(&format!(
-                        "event=session_durability_failed stage={stage} kind=holder_busy"
-                    ));
-                }
-                return result;
-            }
-        }
-    }
-}
 
 fn outcome(disposition: UseDisposition) -> UseOutcome {
     UseOutcome {
@@ -78,15 +40,179 @@ fn refusal(error: &DromeCubeError) -> UseDisposition {
     }
 }
 
+fn log_probe_failure(command: UseCommand, stage: &'static str) {
+    crate::gameplay_transport::operator_event(&format!(
+        "event=drome_use_probe_failed stage={stage} command_id={}",
+        command.command_id,
+    ));
+}
+
+/// Probe failures can terminalize a refusal. Lost authority and unknown
+/// writes keep their existing close and recovery semantics.
+enum ProbeFailure {
+    Refused(&'static str),
+    Fence(&'static str),
+    UnresolvedWrite,
+}
+
+const PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
+
+async fn probe_read<T>(
+    deadline: tokio::time::Instant,
+    budget: &AdmissionRetryBudget<'_>,
+    stage: &'static str,
+    read: impl AsyncFnMut() -> Result<T, ItemUseError>,
+) -> Result<T, ProbeFailure> {
+    match tokio::time::timeout_at(
+        deadline,
+        crate::gameplay_transport::item_ref_admission::retry_use_read(budget, read),
+    )
+    .await
+    {
+        Ok(Ok(value)) => Ok(value),
+        Ok(Err(_)) | Err(_) => Err(ProbeFailure::Refused(stage)),
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// None delegates an ordinary item. Err means no terminal result may be acknowledged.
-    pub(in crate::gameplay_transport) async fn use_drome_cube_impl(
+    pub(in crate::gameplay_transport) async fn dispatch_drome_use(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
         intent: UseIntent,
         source: Option<ItemKey>,
+        shown_definition: Option<std::num::NonZeroU32>,
     ) -> Result<Option<UseOutcome>, ()> {
+        use crate::durability::item_use::concoction::kooldown_aid::KOOLDOWN_AID_KEY;
+        let definition = match intent.target {
+            UseTarget::ItemByDefinition(definition) => Some(definition),
+            UseTarget::Item(_) => shown_definition,
+            _ => return Ok(None),
+        };
+        // Display definitions select a route. The pinned catalogue establishes
+        // their identity, and the selected owner still checks current custody.
+        // A retired or unresolved handle can still name an exact receipt.
+        let key = if let Some(definition) = definition {
+            let runtime = self.runtime.lock().await;
+            pinned_index(&runtime, self.active_generation)
+                .and_then(|index| index.definition_at(definition))
+                .map(|(key, _)| key)
+        } else {
+            None
+        };
+        use crate::durability::PlainUseReceipt;
+        let deadline = tokio::time::Instant::now() + PROBE_TIMEOUT;
+        let (kooldown, cube) = if let Some(key) = key {
+            (key == KOOLDOWN_AID_KEY, key == DROME_CUBE_KEY)
+        } else {
+            let Some(fence) = command.item_fence else {
+                return Ok(None);
+            };
+            if fence.game_session_id != command.game_session_id {
+                log_probe_failure(command, "item_session_fence");
+                return Err(());
+            }
+            let Ok(id) = CommandId::new(command.command_id) else {
+                return Ok(Some(crate::gameplay_transport::use_receipt_refused(
+                    command,
+                    "drome_command_id",
+                )));
+            };
+            let reference = CommandRef::new(command.game_session_id, id);
+            let retained = {
+                let runtime = self.runtime.lock().await;
+                self.states
+                    .spell_states
+                    .lock()
+                    .await
+                    .item_uses
+                    .gate(&runtime, actor, command.game_session_id)
+                    .and_then(|gate| gate.cube_pending.as_ref())
+                    .filter(|pending| pending.request.command_id == command.command_id)
+                    .map(|pending| pending.request.kind)
+            };
+            if let Some(kind) = retained {
+                (
+                    kind == ItemUseKind::Concoction,
+                    matches!(kind, ItemUseKind::DromeCube { .. }),
+                )
+            } else {
+                let kooldown = self
+                    .probe_plain_use_receipt(PlainUseReceipt::KooldownAid, reference)
+                    .await;
+                let cube = self
+                    .probe_plain_use_receipt(PlainUseReceipt::DromeCube, reference)
+                    .await;
+                match (kooldown, cube) {
+                    (Ok(true), Ok(cube)) => (true, cube),
+                    (Ok(false), Ok(true)) => (false, true),
+                    (Ok(false), Ok(false)) => {
+                        let source =
+                            crate::gameplay_transport::item_ref_admission::UseSourceHint::new(
+                                source,
+                            );
+                        match source.definition(self, command, "drome_candidate").await {
+                            Ok(definition) => {
+                                let key =
+                                    definition.map(|definition| definition.production_key.as_str());
+                                (key == Some(KOOLDOWN_AID_KEY), key == Some(DROME_CUBE_KEY))
+                            }
+                            Err(refusal) => return Ok(Some(refusal.into())),
+                        }
+                    }
+                    (Err(_), _) => {
+                        return Ok(Some(crate::gameplay_transport::use_receipt_refused(
+                            command,
+                            "kooldown_existence",
+                        )));
+                    }
+                    (_, Err(_)) => {
+                        return Ok(Some(crate::gameplay_transport::use_receipt_refused(
+                            command,
+                            "cube_existence",
+                        )));
+                    }
+                }
+            }
+        };
+        let result = async {
+            if kooldown
+                && let Some(outcome) = self
+                    .use_kooldown_aid_impl(actor, command, &intent, source, deadline)
+                    .await?
+            {
+                return Ok(Some(outcome));
+            }
+            if cube {
+                return self
+                    .use_drome_cube_impl(actor, command, intent, source, deadline)
+                    .await;
+            }
+            Ok(None)
+        }
+        .await;
+        match result {
+            Ok(result) => Ok(result),
+            Err(ProbeFailure::Refused(stage)) => {
+                log_probe_failure(command, stage);
+                Ok(Some(outcome(UseDisposition::Rejected)))
+            }
+            Err(ProbeFailure::Fence(stage)) => {
+                log_probe_failure(command, stage);
+                Err(())
+            }
+            Err(ProbeFailure::UnresolvedWrite) => Err(()),
+        }
+    }
+
+    async fn use_drome_cube_impl(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: UseIntent,
+        source: Option<ItemKey>,
+        deadline: tokio::time::Instant,
+    ) -> Result<Option<UseOutcome>, ProbeFailure> {
         if intent.use_with.is_some()
             || intent.use_with_map_item.is_some()
             || intent.use_with_position.is_some()
@@ -100,33 +226,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(fence) = command.item_fence else {
             return Ok(None);
         };
+        if fence.game_session_id != command.game_session_id {
+            return Err(ProbeFailure::Fence("cube_session_fence"));
+        }
         let command_ref = CommandRef::new(
             command.game_session_id,
-            CommandId::new(command.command_id).map_err(|_| ())?,
+            CommandId::new(command.command_id)
+                .map_err(|_| ProbeFailure::Refused("cube_command_id"))?,
         );
-        let binding: [u8; 32] =
-            Sha256::digest(encode_item_use_intent(&intent).map_err(|_| ())?).into();
-        let _permit = self.spell_lane_permit().await.ok_or(())?;
+        let binding: [u8; 32] = Sha256::digest(
+            encode_item_use_intent(&intent).map_err(|_| ProbeFailure::Refused("cube_intent"))?,
+        )
+        .into();
+        let _permit = tokio::time::timeout_at(deadline, self.spell_lane_permit())
+            .await
+            .ok()
+            .flatten()
+            .ok_or(ProbeFailure::Refused("cube_permit"))?;
         let budget = AdmissionRetryBudget::for_command(self.root);
-        match retry_read(&budget, "cube_receipt", async || {
+        if let Some(receipt) = probe_read(deadline, &budget, "cube_receipt", async || {
             self.root
                 .read_drome_cube_receipt(self.character, fence, command_ref, binding)
                 .await
         })
-        .await
+        .await?
         {
-            Ok(Some(receipt)) => {
-                if self
-                    .finish_cube(actor, command, UseDisposition::Committed)
-                    .await
-                {
-                    self.cube_notice(command.game_session_id, receipt.reward_index);
-                }
-                return Ok(Some(outcome(UseDisposition::Committed)));
+            if self
+                .finish_cube(actor, command, UseDisposition::Committed)
+                .await
+            {
+                self.cube_notice(command.game_session_id, receipt.reward_index);
             }
-            Ok(None) => {}
-            Err(ItemUseError::Unavailable(_)) => return Err(()),
-            Err(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
+            return Ok(Some(outcome(UseDisposition::Committed)));
         }
         let pending = {
             let runtime = self.runtime.lock().await;
@@ -140,10 +271,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .active_generation
             .and_then(crate::content::ActiveGeneration::native_gameplay)
         else {
-            return if pending.is_some() { Err(()) } else { Ok(None) };
+            return if pending.is_some() {
+                Err(ProbeFailure::Refused("cube_native_content"))
+            } else {
+                Ok(None)
+            };
         };
         let content = NativeItemWeights(native);
         if let Some(pending) = pending.as_ref()
+            && matches!(pending.request.kind, ItemUseKind::DromeCube { .. })
             && pending.request.command_id == command.command_id
         {
             if pending.binding() != Some(binding) {
@@ -151,17 +287,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             // Retry the original UUIDs/quantities/output, never re-PREPARE the next unit.
             // The writer still receives the independently current command fence and content.
-            if !self.cube_actor_live(actor, command.game_session_id).await {
-                return Err(());
-            }
+            self.check_cube_actor(actor, command.game_session_id)
+                .await?;
             return self
                 .commit_cube_attempt(actor, command, pending.request.clone(), &content)
                 .await
-                .map(|result| Some(outcome(result)));
+                .map(|result| Some(outcome(result)))
+                .map_err(|()| ProbeFailure::UnresolvedWrite);
+        }
+        if matches!(intent.target, UseTarget::Item(_)) && source.is_none() {
+            return Ok(None);
         }
         let index = {
             let runtime = self.runtime.lock().await;
-            pinned_index(&runtime, self.active_generation).ok_or(())?
+            pinned_index(&runtime, self.active_generation)
+                .ok_or(ProbeFailure::Refused("cube_content_pin"))?
         };
         let requested = if let UseTarget::ItemByDefinition(wanted) = intent.target {
             let Some((key, revision)) = index.definition_at(wanted) else {
@@ -178,40 +318,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        #[cfg(test)]
-        let probe = CUBE_INVENTORY_CHECKOUT_PROBE
-            .try_with(std::cell::Cell::take)
-            .ok()
-            .flatten();
-        #[cfg(test)]
-        if let Some(probe) = &probe {
-            probe.pause().await;
-        }
-        let inventory = match retry_read(&budget, "cube_inventory", async || {
-            let result = self
-                .root
+        let inventory = probe_read(deadline, &budget, "cube_inventory", async || {
+            self.root
                 .read_item_use_inventory(self.character, self.holder, fence)
-                .await;
-            #[cfg(test)]
-            if matches!(
-                result,
-                Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
-            ) && let Some(probe) = &probe
-            {
-                probe.blocked();
-            }
-            result
+                .await
         })
-        .await
-        {
-            Ok(inventory) => inventory,
-            // History was resolved and this command has not prepared a write.
-            Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable)) => {
-                return Ok(Some(outcome(UseDisposition::Rejected)));
-            }
-            Err(ItemUseError::Unavailable(_)) => return Err(()),
-            Err(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
-        };
+        .await?;
         let Some(bag) = inventory.backpack.as_ref() else {
             return Ok(None);
         };
@@ -231,16 +343,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // One bounded retained Cube attempt per actor; do not overwrite an unknown one.
             return Ok(Some(outcome(UseDisposition::Exhausted)));
         }
-        if !self.cube_actor_live(actor, command.game_session_id).await {
-            return Ok(Some(outcome(UseDisposition::Rejected)));
-        }
+        self.check_cube_actor(actor, command.game_session_id)
+            .await?;
         let reserved = {
             let runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             let gate = states
                 .item_uses
                 .gate(&runtime, actor, command.game_session_id)
-                .ok_or(())?;
+                .ok_or(ProbeFailure::Refused("cube_prepare"))?;
             if let Err(disposition) = gate.admit(command.command_id, self.owner_ms()) {
                 return Ok(Some(outcome(disposition)));
             }
@@ -267,8 +378,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
-        let draw = reward_index(source_id, entry.item.quantity).ok_or(())?;
-        let selected = reward(draw).ok_or(())?;
+        let draw = reward_index(source_id, entry.item.quantity)
+            .ok_or(ProbeFailure::Refused("cube_prepare"))?;
+        let selected = reward(draw).ok_or(ProbeFailure::Refused("cube_prepare"))?;
         let Some(revision) = index.revision(selected.production_key()) else {
             return Ok(Some(outcome(UseDisposition::NothingToUse)));
         };
@@ -314,9 +426,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             content_revision: inventory.content_revision.clone(),
             ruleset_revision: inventory.ruleset_revision.clone(),
             sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
-            transaction_id: crate::operator_files::uuid_v7().map_err(|_| ())?,
-            event_id: crate::operator_files::uuid_v7().map_err(|_| ())?,
-            occurred_at_unix_ms: super::unix_ms()?,
+            transaction_id: crate::operator_files::uuid_v7()
+                .map_err(|_| ProbeFailure::Refused("cube_prepare"))?,
+            event_id: crate::operator_files::uuid_v7()
+                .map_err(|_| ProbeFailure::Refused("cube_prepare"))?,
+            occurred_at_unix_ms: super::unix_ms()
+                .map_err(|()| ProbeFailure::Refused("cube_prepare"))?,
             server_build_id: SERVER_BUILD_ID.into(),
             source_item_instance_id: source_id,
             source_definition: entry.item.definition.clone(),
@@ -329,7 +444,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let gate = states
                 .item_uses
                 .gate(&runtime, actor, command.game_session_id)
-                .ok_or(())?;
+                .ok_or(ProbeFailure::Refused("cube_prepare"))?;
             if let Err(disposition) = gate.prepare_cube(request.clone(), self.owner_ms()) {
                 return Ok(Some(outcome(disposition)));
             }
@@ -337,18 +452,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.commit_cube_attempt(actor, command, request, &content)
             .await
             .map(|result| Some(outcome(result)))
+            .map_err(|()| ProbeFailure::UnresolvedWrite)
     }
 
-    async fn cube_actor_live(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+    async fn check_cube_actor(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Result<(), ProbeFailure> {
         let runtime = self.runtime.lock().await;
-        let states = self.states.spell_states.lock().await;
-        runtime.owner_fence().is_ok()
-            && runtime
+        if runtime.owner_fence().is_err()
+            || !runtime
                 .player_control_facts(actor, session)
                 .is_ok_and(|facts| facts.control_loss.is_none())
-            && !states.is_dead(actor)
-            && states.spell_idle(&runtime, actor, session)
-            && pinned_index(&runtime, self.active_generation).is_some()
+        {
+            return Err(ProbeFailure::Fence("item_actor_fence"));
+        }
+        let states = self.states.spell_states.lock().await;
+        if states.is_dead(actor) || !states.spell_idle(&runtime, actor, session) {
+            return Err(ProbeFailure::Refused("item_actor_unavailable"));
+        }
+        if pinned_index(&runtime, self.active_generation).is_none() {
+            return Err(ProbeFailure::Refused("item_content_pin"));
+        }
+        Ok(())
     }
 
     /// Called only while holding the existing spell/item lane. A retained request is

@@ -163,6 +163,14 @@
       "note": "Node boot diagnostics (NBDIAG, #3057)."
     },
     {
+      "event": "container_view_refused",
+      "level": "info",
+      "span": false,
+      "fields": ["command_id", "error", "reason"],
+      "codes": [],
+      "note": "A read-only container view or page could not be projected."
+    },
+    {
       "event": "control_loss_grace",
       "level": "warn",
       "span": false,
@@ -355,6 +363,14 @@
       "note": "NBTRADE-1: a player trade offer, accept or look refused with Rejected; intent is offer, accept or look, cause names the refusal (refusal_*, durability_*, retry_budget_exhausted, native_gameplay_missing, book_poisoned, other). No player identifiers, payloads or raw errors."
     },
     {
+      "event": "quest_encounter_arrival_refused",
+      "level": "info",
+      "span": false,
+      "fields": ["callback", "destination", "error", "member", "origin"],
+      "codes": [],
+      "note": "An authored encounter arrival failed its movement proof before any member moved."
+    },
+    {
       "event": "release_deferred",
       "level": "warn",
       "span": false,
@@ -537,6 +553,22 @@
       ],
       "codes": [],
       "note": "A bounded structured replacement for legacy transport operator diagnostics."
+    },
+    {
+      "event": "use_dispatch_refused",
+      "level": "info",
+      "span": false,
+      "fields": ["command_id", "reason"],
+      "codes": [],
+      "note": "USE input or read-only view projection was refused before publishing a change."
+    },
+    {
+      "event": "use_dispatch_unresolved",
+      "level": "info",
+      "span": false,
+      "fields": ["command_id", "path"],
+      "codes": [],
+      "note": "The USE route could not establish control or a terminal effect outcome."
     },
     {
       "event": "visibility_refresh_refused",
