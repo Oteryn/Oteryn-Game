@@ -237,16 +237,16 @@ fn accepted_dust_limit_and_next_cost_follow_separately_classified_evidence() {
     assert_eq!(initial.current_limit(), Ok(100));
     let (cost, second) = initial.next_upgrade().unwrap();
     assert_eq!(cost, 25); // GUI/CIPSOFT initial cost.
-    assert_eq!(second.current_limit(), Ok(120));
+    assert_eq!(second.current_limit(), Ok(101));
     assert_eq!(second.next_upgrade().unwrap().0, 26); // PARITY_WIKI general cost.
     for upgrades in 0..225 {
         let current = ForgeDustLimit::new(upgrades).unwrap();
         let (cost, next) = current.next_upgrade().unwrap();
-        assert_eq!(current.current_limit(), Ok(100 + 20 * u32::from(upgrades)));
+        assert_eq!(current.current_limit(), Ok(100 + u32::from(upgrades)));
         assert_eq!(cost, 25 + u32::from(upgrades));
         assert_eq!(
             next.current_limit(),
-            Ok(current.current_limit().unwrap() + 20)
+            Ok(current.current_limit().unwrap() + 1)
         );
     }
 }
@@ -256,7 +256,7 @@ fn wiki_dust_ceiling_refuses_further_upgrades_and_invalid_states() {
     let penultimate = ForgeDustLimit::new(224).unwrap();
     let (last_cost, maximum) = penultimate.next_upgrade().unwrap();
     assert_eq!(last_cost, 249);
-    assert_eq!(maximum.current_limit(), Ok(4600)); // PARITY_WIKI, not a GUI display.
+    assert_eq!(maximum.current_limit(), Ok(325));
     assert_eq!(
         maximum.next_upgrade(),
         Err(ForgeDustError::MaximumLimitReached)

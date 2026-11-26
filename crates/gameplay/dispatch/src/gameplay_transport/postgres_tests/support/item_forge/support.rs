@@ -37,6 +37,7 @@ pub(in super::super) enum Case {
     Conversions,
     CurrentDust,
     DustLimit,
+    DustProgression(u16),
     DustCap,
     Refusals,
     Fences,
@@ -105,7 +106,8 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
                 .current_session_at(deps.admitted.game_session_id)
                 .await?
                 .0;
-        if matches!(case, Case::Preview) {
+        let preview = matches!(case, Case::Preview | Case::Items(Operation::Transfer));
+        if preview {
             deps.runtime
                 .lock()
                 .await
@@ -124,12 +126,10 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
             .bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&h.pool).await?;
         item_look_fixtures::seed_main_backpack(&h, &[]).await?;
         let (dust, limit) = match case {
-            Case::Preview
-            | Case::Items(_)
-            | Case::Integrity
-            | Case::CoreRefusal
-            | Case::MixedFee => (1000, 1000),
+            Case::Preview => (300, 300),
+            Case::Items(_) | Case::Integrity | Case::CoreRefusal | Case::MixedFee => (1000, 1000),
             Case::Refusals => (59, 100),
+            Case::DustProgression(limit) => (i64::from(limit), limit),
             Case::DustCap => {
                 let max = crate::domain::forge_dust::DustLimit::from_upgrade_count(
                     crate::domain::forge_dust::DUST_LIMIT_UPGRADES_MAX,
@@ -149,7 +149,7 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
             &[4, 6, 12, 14, 152],
         )
         .ok_or("forge capabilities")?;
-        if matches!(case, Case::Preview) {
+        if preview {
             assert!(
                 admitted.continuity.selected_capabilities.contains(152),
                 "Preview fixture must negotiate152"
@@ -170,10 +170,12 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
                 "Preview fixture requires its active pinned item index"
             );
         }
-        if matches!(
-            case,
-            Case::Preview | Case::RevisionChanged | Case::DustStageChanged | Case::LegacyBudget
-        ) {
+        if preview
+            || matches!(
+                case,
+                Case::RevisionChanged | Case::DustStageChanged | Case::LegacyBudget
+            )
+        {
             let gameplay = owner
                 .current_quest_fence(admitted.game_session_id)
                 .await
@@ -195,6 +197,9 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
             }
             Case::Conversions => super::conversions(&h, &owner, &mut admitted).await?,
             Case::DustLimit => super::dust_limit(&h, &owner, &mut admitted).await?,
+            Case::DustProgression(limit) => {
+                super::dust_progression(&h, &owner, &mut admitted, limit).await?
+            }
             Case::DustCap => super::dust_cap(&h, &owner, &mut admitted).await?,
             Case::Refusals => super::refusals(&h, &owner, &mut admitted).await?,
             Case::Fences => super::fences(&h, &owner, &mut admitted).await?,

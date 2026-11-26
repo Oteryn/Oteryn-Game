@@ -638,19 +638,21 @@ fn forged_balance_or_chain_is_refused() -> TestResult {
 }
 
 #[test]
-fn dust_limit_check_accepts_d1230_stages_and_rejects_off_stage_limits() -> TestResult {
+fn dust_limit_check_accepts_global_and_grandfathered_limits() -> TestResult {
     run(async |admin| {
         let harness = Harness::create(admin, "limit").await?;
-        // `IMBFORGE0-RL-08`, the CHECK alone: the guards and foreign keys are off. Migration
-        // 0320 installs the D1230 stages `100 + 20*n` for `n` in 0..=225.
+        // Exercise the stored-limit CHECK in isolation. Existing over-cap D1230
+        // stages remain valid for gains and spends at their unlocked limits.
         for (limit, accepted) in [
             (99, false),
             (100, true),
-            (110, false),
-            (120, true),
-            (225, false),
+            (101, true),
+            (225, true),
+            (325, true),
+            (326, false),
+            (340, true),
             (4_600, true),
-            (4_620, false),
+            (4_601, false),
         ] {
             let mut tx = harness.pool.begin().await?;
             tx.execute("SET LOCAL session_replication_role = replica")

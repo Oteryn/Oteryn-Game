@@ -26,11 +26,11 @@ fn value(stage: u16) -> OneItemForgeDustLimitV1 {
         previous_entry_id: Some(id(6)),
         before: Some(OneForgeDustBalanceV1 {
             balance: cost,
-            dust_limit: 100 + 20 * u32::from(stage),
+            dust_limit: 100 + u32::from(stage),
         }),
         after: Some(OneForgeDustBalanceV1 {
             balance: 0,
-            dust_limit: 120 + 20 * u32::from(stage),
+            dust_limit: 101 + u32::from(stage),
         }),
         dust_burned: cost,
         content_digest: vec![7; 32],
@@ -75,6 +75,29 @@ fn all_225_limit_transitions_round_trip_both_registered_type2_tuples() -> Result
     }
     assert_eq!(
         check_forge_dust_limit(&value(225)),
+        Err(AuditError::InvalidInput)
+    );
+    Ok(())
+}
+
+#[test]
+fn historical_limit_raise_remains_readable_after_global_cutover() -> Result<(), AuditError> {
+    let mut historical = value(11);
+    historical.ruleset_revision = "D1230".into();
+    historical.before = Some(OneForgeDustBalanceV1 {
+        balance: 36,
+        dust_limit: 320,
+    });
+    historical.after = Some(OneForgeDustBalanceV1 {
+        balance: 0,
+        dust_limit: 340,
+    });
+    let wire = encode_forge_dust_limit_event(identity(), historical.clone(), Type2EventTuple::V1)?;
+    let (_, decoded) = decode_forge_dust_limit_envelope(&wire)?;
+    assert_eq!(decoded, historical);
+    historical.ruleset_revision = DUST_LIMIT_RULESET_REVISION.into();
+    assert_eq!(
+        check_forge_dust_limit(&historical),
         Err(AuditError::InvalidInput)
     );
     Ok(())
@@ -216,7 +239,7 @@ fn every_paid_stage_debits_exactly_once_and_preserves_gain_spend() -> Result<(),
         assert_eq!(raised.before, before);
         assert_eq!(raised.amount, cost);
         assert_eq!(raised.after.balance(), 0);
-        assert_eq!(raised.after.limit().get(), 100 + 20 * (n + 1));
+        assert_eq!(raised.after.limit().get(), 100 + n + 1);
         assert_eq!(raised.after.limit().upgrade_count(), n + 1);
         let gained = raised.after.gain(u32::MAX)?;
         assert_eq!(gained.after.limit(), raised.after.limit());
@@ -225,7 +248,7 @@ fn every_paid_stage_debits_exactly_once_and_preserves_gain_spend() -> Result<(),
         let short = ForgeDustBalance::new(cost_u16 - 1, limit)?;
         assert_eq!(short.raise_limit(), Err(ForgeDustError::InsufficientDust));
     }
-    let full = ForgeDustBalance::new(4_600, DustLimit::from_upgrade_count(225)?)?;
+    let full = ForgeDustBalance::new(325, DustLimit::from_upgrade_count(225)?)?;
     assert_eq!(full.raise_limit(), Err(ForgeDustError::MaximumLimitReached));
     assert_eq!(
         DustLimit::from_upgrade_count(226),

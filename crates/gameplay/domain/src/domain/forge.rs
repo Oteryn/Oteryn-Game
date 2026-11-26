@@ -157,10 +157,7 @@ impl<'a> ForgeItemShape<'a> {
     }
 }
 
-/// CP D1230 dust policy only; no recipe, account balance, mutation or runtime authority.
-/// GUI/CIPSOFT S1 establish base100, step20 and initial next cost25. The general
-/// cost25+n and maximum225 upgrades (4600) are separately accepted PARITY_WIKI W1.
-/// D1230f: a future GUI shows only current_limit(), never the wiki maximum.
+/// Read-only projection of the shared Global Dust Limit progression.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ForgeDustLimit {
     upgrades: u16,
