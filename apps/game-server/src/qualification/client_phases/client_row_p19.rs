@@ -234,10 +234,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             first.1
         ));
         let previous = client.join_snapshot().game_session_id;
-        let reply = client.session_mut().logout().await?;
-        if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err(format!("P19 logout refused: {reply:?}").into());
-        }
+        full_e2ef5::player_logout(&mut client).await?;
         drop(client);
         client = connect_character(clients, 0x19, 0).await?;
         if client.join_snapshot().game_session_id == previous
@@ -258,9 +255,5 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             }
         }
     }
-    let reply = client.session_mut().logout().await?;
-    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("P19 final logout refused: {reply:?}").into());
-    }
-    Ok(())
+    full_e2ef5::player_logout(&mut client).await
 }
