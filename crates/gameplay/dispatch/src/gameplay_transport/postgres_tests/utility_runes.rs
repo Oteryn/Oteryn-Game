@@ -344,7 +344,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
                     CharacterCastFacts {
                         level: if case == Case::AnimateRat { 27 } else { 50 },
                         max_mana: if case == Case::AnimateRat { 642 } else { 2000 },
-                        magic_level,
+                        magic_level: u32::from(magic_level),
                         ..crate::gameplay_transport::actor_spell::tests::FACTS
                     },
                     (0, 0),
@@ -437,6 +437,9 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             .ok_or("caster")?
             .vitals()
     };
+    if case == Case::AnimateRat {
+        assert_eq!(before.mana, 642);
+    }
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async {
         let end = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS).await;
@@ -591,6 +594,16 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         let body: (i16, i64) = sqlx::query_as("SELECT lifecycle,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(id(180).as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(body, if committed { (2, 0) } else { (1, 1) });
+    }
+    if case == Case::AnimateRat {
+        let (chain, durations): (Vec<i32>, Vec<i64>) = sqlx::query_as(
+            "SELECT game_summer_corpse_chain($1), game_source_corpse_durations_v1($1)",
+        )
+        .bind("oteryn:item.tibia.i5964")
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(chain, [5964, 3994, 3995, 3996]);
+        assert_eq!(durations, [10_000, 300_000, 300_000, 60_000]);
     }
     drop(owner);
     drop(authority);
