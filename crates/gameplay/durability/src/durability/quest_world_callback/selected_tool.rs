@@ -1,5 +1,5 @@
 //! The carried selection accompanies a World turn without changing legacy contexts.
-use super::QuestWorldContext;
+use super::{QuestWorldContext, paid_projection::PaidArrival};
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseTarget};
 use serde::Serialize;
 
@@ -7,6 +7,10 @@ use serde::Serialize;
 pub struct QuestWorldToolContext {
     #[serde(flatten)]
     world: QuestWorldContext,
+    /// Frozen native checkpoint data; the existing receipt binding remains
+    /// compatible with historical callbacks and binds the authored destination.
+    #[serde(skip)]
+    pub(super) paid_arrivals: Vec<PaidArrival>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) selected_tool: Option<SelectedQuestTool>,
 }
@@ -21,11 +25,17 @@ impl From<QuestWorldContext> for QuestWorldToolContext {
     fn from(world: QuestWorldContext) -> Self {
         Self {
             world,
+            paid_arrivals: Vec::new(),
             selected_tool: None,
         }
     }
 }
 impl QuestWorldToolContext {
+    pub fn with_paid_arrivals(mut self, arrivals: Vec<PaidArrival>) -> Self {
+        self.paid_arrivals = arrivals;
+        self
+    }
+
     /// The replay identity of a legacy World claim. Like main's RewardClaim
     /// chest owner, its receipt is keyed by cause and claim; the actor's
     /// movement proof is re-derived by a rebuilt owner and is checked live.
@@ -70,6 +80,7 @@ impl QuestWorldContext {
         }
         Some(QuestWorldToolContext {
             world: self,
+            paid_arrivals: Vec::new(),
             selected_tool: Some(SelectedQuestTool { source, intent }),
         })
     }

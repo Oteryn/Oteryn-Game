@@ -12,6 +12,21 @@ pub(super) struct Plan<P> {
     pub(super) proofs: Vec<P>,
     members: Vec<Member>,
 }
+impl<P: crate::foundation::SourceStepCommitProof> Plan<P> {
+    pub(super) fn paid_arrivals(
+        &self,
+        owner: &ComposedFreshAdmission<'_, '_, '_>,
+        runtime: &ChannelRuntimeV1,
+        states: &ChannelSpellStates,
+    ) -> Option<Vec<PaidArrival>> {
+        self.proofs
+            .iter()
+            .zip(&self.members)
+            .map(|(proof, member)| owner.paid_arrival(runtime, states, member.session, proof))
+            .collect()
+    }
+}
+
 impl<P> Plan<P> {
     pub(super) fn sessions(&self) -> Vec<GameSessionId> {
         self.members.iter().map(|m| m.session).collect()

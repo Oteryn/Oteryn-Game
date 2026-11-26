@@ -24,6 +24,7 @@ mod goblin_elevator;
 mod ground_stack;
 mod mead;
 pub(super) mod monsters;
+mod paid_projection;
 mod party_transfer;
 mod personal_encounter;
 mod personal_trial;
@@ -46,7 +47,7 @@ use super::paced_movement::underwater_drown::underwater;
 use crate::durability::{
     character_progression::CurrentCharacterGameplayFence,
     quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest},
-    quest_world_callback::QuestWorldContext,
+    quest_world_callback::{QuestWorldContext, may_debit, paid_projection::PaidArrival},
     spell_owner_commit::SpellLanePermit,
 };
 use crate::foundation::{
@@ -75,6 +76,7 @@ struct Pending {
     cause: QuestCause,
     origin: Option<MovementPositionSnapshot>,
     context: Option<QuestWorldContext>,
+    paid_arrivals: Vec<PaidArrival>,
     flame: Option<crate::durability::quest_state::rotten_flame::RottenFlameUse>,
     ingress_settled: bool,
     participants: Vec<GameSessionId>,
@@ -145,14 +147,6 @@ impl Drop for PaidCallbackClose<'_> {
             closing.remove(&self.session);
         }
     }
-}
-
-fn pays_for_callback(callback: &Callback) -> bool {
-    !callback.offerings.is_empty()
-        || callback
-            .item_on_target
-            .as_ref()
-            .is_some_and(|input| input.count > 0 && !input.reusable)
 }
 
 impl PendingCallbacks {
@@ -794,7 +788,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     None => return false,
                 },
                 None => context.into(),
-            };
+            }
+            .with_paid_arrivals(pending.paid_arrivals);
             let Ok(Some(fence)) = self.current_quest_fence(pending.session).await else {
                 return false;
             };
@@ -943,9 +938,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_or(true, |records| {
                 records.values().any(|pending| {
                     (pending.session == session || pending.participants.contains(&session))
-                        && self.callback_content().iter().any(|callback| {
-                            callback.key == pending.callback && pays_for_callback(callback)
-                        })
+                        && self
+                            .callback_content()
+                            .iter()
+                            .any(|callback| callback.key == pending.callback && may_debit(callback))
                 })
             })
     }
@@ -957,6 +953,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             true
         }
+    }
+
+    /// Called with the common node input gate quiesced. Enumerate the
+    /// initiators directly so an untracked actor cannot strand a party payment.
+    pub(super) async fn drain_paid_quest_callbacks(&self) -> usize {
+        let sessions = match self.states.quest_callbacks.records.lock() {
+            Ok(records) => records
+                .values()
+                .filter_map(|pending| {
+                    self.callback_content()
+                        .iter()
+                        .any(|callback| callback.key == pending.callback && may_debit(callback))
+                        .then_some(pending.session)
+                })
+                .collect::<Vec<_>>(),
+            Err(_) => return 1,
+        };
+        let mut failed = 0;
+        for session in sessions {
+            if !self.settle_paid_quest_callbacks(session).await {
+                failed += 1;
+            }
+        }
+        failed
     }
 
     fn paid_callback_can_start(
@@ -2023,6 +2043,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         cause,
                         origin: Some(origin),
                         context: None,
+                        paid_arrivals: Vec::new(),
                         flame: None,
                         ingress_settled: false,
                         participants: Vec::new(),
