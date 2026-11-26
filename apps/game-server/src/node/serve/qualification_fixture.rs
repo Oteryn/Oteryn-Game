@@ -1211,7 +1211,8 @@ async fn prepare_items(
         if named == Some((35848, 1)) {
             let record = root
                 .read_current_character(authority, fence.character_id)
-                .await?;
+                .await
+                .map_err(qualification_build::debug)?;
             if uuid_text(record.account_id.as_bytes()) == I17C_ACCOUNT {
                 let weights = FixtureItemContent(native);
                 let request = RewardClaimMintRequest {
