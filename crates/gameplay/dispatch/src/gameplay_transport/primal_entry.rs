@@ -82,6 +82,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
             return Err(ActivityRefusal::ContentUnavailable);
         }
+        let origin_pin = {
+            let runtime = self.runtime.lock().await;
+            let pin = runtime.content_pin();
+            let start = pin.entry_start();
+            crate::foundation::ChannelContentPin::from_activation(
+                pin.world_id(),
+                pin.activation_sequence(),
+                pin.server_artifact_digest(),
+                pin.client_artifact_digest(),
+                pin.frame_binding_digest(),
+                pin.map_revision_digest(),
+                (start.x, start.y, start.floor),
+            )
+        };
+        let world_origin = active
+            .qualify_published_world_context(origin, &origin_pin)
+            .map(|_| (origin, &origin_pin));
         let fence = admitted
             .item_fence
             .ok_or(ActivityRefusal::AuthorityRejected)?;
@@ -96,6 +113,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         fence,
                         active,
                         &template,
+                        world_origin,
                     )
                     .await
             })
