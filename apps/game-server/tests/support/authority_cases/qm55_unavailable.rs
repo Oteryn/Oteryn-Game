@@ -38,19 +38,25 @@ fn qm55_donor_unavailable_missions_have_no_offer_or_durable_personal_progress() 
 
 #[test]
 fn bankrob_no_personal_offer_or_progress() -> f::TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
-            f::runtime().map_err(f::debug)?.block_on(async {
-                let h = f::Harness::create(admin, "bankrob_no_personal", true).await?;
-                eprintln!("bankrob-marker: bankrob_no_personal_offer_or_progress db ready");
-                let result = exercise(&h, true).await;
-                h.cleanup().await?;
-                result
-            }).map_err(f::debug)
+            f::runtime()
+                .map_err(f::debug)?
+                .block_on(async {
+                    let h = f::Harness::create(admin, "bankrob_no_personal", true).await?;
+                    eprintln!("bankrob-marker: bankrob_no_personal_offer_or_progress db ready");
+                    let result = exercise(&h, true).await;
+                    h.cleanup().await?;
+                    result
+                })
+                .map_err(f::debug)
         })?
-        .join().map_err(|_| "Bank Robbery unavailable worker failed")?
+        .join()
+        .map_err(|_| "Bank Robbery unavailable worker failed")?
         .map_err(Into::into)
 }
 
@@ -67,20 +73,40 @@ async fn start_robbery(
         VALUES(encode($1,'hex')::uuid,1,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),to_char(clock_timestamp() AT TIME ZONE 'Europe/Berlin','YYYY-MM'))")
         .bind(world.as_bytes().as_slice()).bind([7u8;32].as_slice()).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,1)")
-        .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
+        .bind(world.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
     let sites = [true; 4];
-    assert!(h.root.poll_bank_robbery(authority, &h.node, scope, generation, 1, sites).await?.is_none());
-    sqlx::query("UPDATE game_bank_robbery_occurrences SET boot_ms=boot_ms-3600000 WHERE reset_epoch=1")
-        .execute(&h.pool).await?;
-    assert!(bank_robbery::with_test_roll("thais",
-        h.root.poll_bank_robbery(authority, &h.node, scope, generation, 1, sites)
-    ).await?.is_some());
+    assert!(
+        h.root
+            .poll_bank_robbery(authority, &h.node, scope, generation, 1, sites)
+            .await?
+            .is_none()
+    );
+    sqlx::query(
+        "UPDATE game_bank_robbery_occurrences SET boot_ms=boot_ms-3600000 WHERE reset_epoch=1",
+    )
+    .execute(&h.pool)
+    .await?;
+    assert!(
+        bank_robbery::with_test_roll(
+            "thais",
+            h.root
+                .poll_bank_robbery(authority, &h.node, scope, generation, 1, sites)
+        )
+        .await?
+        .is_some()
+    );
     Ok(())
 }
 
 async fn exercise(h: &f::Harness, robbery: bool) -> f::TestResult {
     let seal = h.recovery.seal_current().map_err(f::debug)?;
-    let authority = h.root.open_character_authority(&seal).await.map_err(f::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(f::debug)?;
     if robbery {
         start_robbery(h, &authority).await?;
     }
@@ -108,7 +134,10 @@ async fn exercise(h: &f::Harness, robbery: bool) -> f::TestResult {
         "jungle_camp_mini_world_change",
         "kingsday_mini_world_change",
         "lumberjack_mini_world_change",
-    ].into_iter().filter(|quest| (*quest == "bank_robbery_mini_world_change") == robbery) {
+    ]
+    .into_iter()
+    .filter(|quest| (*quest == "bank_robbery_mini_world_change") == robbery)
+    {
         let quest = format!("oteryn:quest.authored.{quest}");
         let authored_bindings::PersonalEventProfile::Unavailable { source, line } =
             authored_bindings::personal_event_profile(&quest).ok_or("missing donor profile")?

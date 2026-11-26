@@ -788,7 +788,7 @@ impl NpcConversations {
     }
 }
 /// Command 7 Bank integration: native retained command first, then the current NPC owner's
-/// conversation, and finally the native Bank writer. No talk text is persisted.
+/// conversation, and finally the native settlement owner.
 pub(super) async fn npc_bank_talk(
     admission: &super::ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -918,7 +918,16 @@ pub(super) async fn npc_bank_talk(
         .filter(|context| bank_robbery::interested(&context.2))
     {
         // Keep the exact live dialogue and actor/range facts through settlement.
-        if let Some(outcome) = bank_robbery::talk(admission, command, &intent, context).await {
+        if let Some(outcome) = bank_robbery::talk(
+            admission,
+            command,
+            &intent,
+            context,
+            _trade_permit.as_ref(),
+            native,
+        )
+        .await
+        {
             return outcome;
         }
     } else {

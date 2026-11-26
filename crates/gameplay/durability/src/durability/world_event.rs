@@ -309,7 +309,6 @@ impl DurabilityRoot {
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
             let world = fence.runtime_scope.world_id();
-            let robbery_announced = bank_robbery::announced(&mut tx, world, expected_epoch).await?;
             if let Err(error) = assert_item_only_fence(&mut tx, &fence, &node).await? {
                 return Ok(Err(error));
             }
@@ -388,9 +387,16 @@ impl DurabilityRoot {
                     state.active = true;
                 }
             }
-            if robbery_announced {
-                if !state.announcement.is_empty() { state.announcement.push(' '); }
-                state.announcement.push_str(bank_robbery::BOARD_LINE);
+            if bank_robbery::announced(&mut tx, world, state.reset_epoch).await? {
+                let line = bank_robbery::BOARD_LINE;
+                let limit = oteryn_protocol_oteryn::world_event::MAX_ANNOUNCEMENT_BYTES;
+                if state.announcement.is_empty() || state.announcement.len() + 1 + line.len() > limit {
+                    // Keep the source line whole, including when this epoch also has seasonal announcements.
+                    state.announcement = line.into();
+                } else {
+                    state.announcement.push(' ');
+                    state.announcement.push_str(line);
+                }
                 state.active = true;
             }
             let bytes = encode_world_event_state(&state).map_err(|_| DurabilityError::InvalidStoredState)?;

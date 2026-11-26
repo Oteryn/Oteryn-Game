@@ -117,6 +117,8 @@ pub(super) async fn talk(
     command: super::super::connection::UseCommand,
     intent: &NpcTalkIntent,
     context: (u64, u64, String),
+    permit: Option<&crate::durability::spell_owner_commit::SpellLanePermit>,
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
 ) -> Option<NpcTalkOutcome> {
     let (_, generation, key) = context;
     let pending = take(admission, command.game_session_id);
@@ -125,6 +127,7 @@ pub(super) async fn talk(
         generation,
         key,
         npc: intent.npc_actor,
+        reset_epoch: admission.reset_epoch,
     };
     let reply = |line: &str| Some(NpcConversations::bank_reply(intent, line.into()));
     let greeting = intent.text.trim_matches(' ').eq_ignore_ascii_case("hi")
@@ -137,10 +140,7 @@ pub(super) async fn talk(
             command.game_session_id,
             CommandId::new(command.command_id).ok()?,
         );
-        let Some(native) = admission
-            .active_generation
-            .and_then(crate::content::ActiveGeneration::native_gameplay)
-        else {
+        let (Some(native), Some(permit)) = (native, permit) else {
             return reply("Sorry, not possible.");
         };
         let weights = super::super::item_ref_admission::NativeItemWeights(native)
@@ -157,6 +157,7 @@ pub(super) async fn talk(
                     text: intent.text.clone(),
                     bag,
                 },
+                permit,
                 &weights,
             )
             .await;

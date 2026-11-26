@@ -8,7 +8,7 @@ use crate::foundation::{
     ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId, MovementLocalPosition,
     NodeId, RuntimeScopeRefV1, ScopeOwnershipGeneration,
 };
-use crate::gameplay_transport::ComposedFreshAdmission;
+use crate::gameplay_transport::{ComposedFreshAdmission, activity_runtime::SharedOwner};
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 use oteryn_gameplay_entities::carrier::RaidSpawnOutcome;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -206,12 +206,12 @@ async fn scenario(
     deps.initialize(&owner).await;
 
     if let Some(bank) = &bank {
-        owner.runtime = &bank.runtime;
+        owner.runtime = SharedOwner::Borrowed(&bank.runtime);
         bank.install(&owner, session)?;
         if hand_in == Some(returns::Case::Announcements) {
             bank.before_robbery(&owner, fence.item_fence()).await?;
         }
-        owner.runtime = &deps.runtime;
+        owner.runtime = SharedOwner::Borrowed(&deps.runtime);
     }
     sqlx::query(
         "UPDATE game_bank_robbery_occurrences SET boot_ms=boot_ms-3600000 WHERE reset_epoch=0",
@@ -251,7 +251,9 @@ async fn scenario(
     .await?;
     let double = save || hand_in.is_some_and(returns::Case::double_loot);
     assert_eq!(mints.len(), if double { 2 } else { 1 });
-    if double { assert_ne!(mints[0], mints[1]); }
+    if double {
+        assert_ne!(mints[0], mints[1]);
+    }
     if save || hand_in.is_some_and(|case| case != returns::Case::Announcements) {
         // A real pickup needs the holder's durable progression level to derive
         // carried capacity. Bind it after the loot-only fight has settled.
@@ -271,10 +273,16 @@ async fn scenario(
         .await
         .map_err(|error| format!("pick up the robbery bag: {error}"))?;
         if hand_in.is_some_and(returns::Case::double_loot) {
-            take_bag(h, &authority, fence.item_fence(),
-                CommandRef::new(session, CommandId::new(5).map_err(debug)?), native,
-                &starter.definition, mints[1].as_slice().try_into().map_err(|_| "bag UUID")?
-            ).await?;
+            take_bag(
+                h,
+                &authority,
+                fence.item_fence(),
+                CommandRef::new(session, CommandId::new(5).map_err(debug)?),
+                native,
+                &starter.definition,
+                mints[1].as_slice().try_into().map_err(|_| "bag UUID")?,
+            )
+            .await?;
         }
         if save {
             save_world(h, &authority, scope, reset_room, selected, item)
@@ -283,12 +291,32 @@ async fn scenario(
         }
     }
     if let (Some(case), Some(bank)) = (hand_in, bank.as_ref()) {
-        owner.runtime = &bank.runtime;
+        owner.runtime = SharedOwner::Borrowed(&bank.runtime);
         let first_bag = mints[0].as_slice().try_into().map_err(|_| "bag UUID")?;
-        let second_bag = mints.get(1).map(|id| id.as_slice().try_into()).transpose().map_err(|_| "bag UUID")?;
-        bank.exercise(case, &mut owner, fence.item_fence(), h, first_bag, second_bag).await?;
+        let second_bag = mints
+            .get(1)
+            .map(|id| id.as_slice().try_into())
+            .transpose()
+            .map_err(|_| "bag UUID")?;
+        bank.exercise(
+            case,
+            &mut owner,
+            fence.item_fence(),
+            h,
+            first_bag,
+            second_bag,
+        )
+        .await?;
         if case == returns::Case::Second {
-            save_world(h, &authority, scope, reset_room, selected, second_bag.ok_or("second bag")?).await?;
+            save_world(
+                h,
+                &authority,
+                scope,
+                reset_room,
+                selected,
+                second_bag.ok_or("second bag")?,
+            )
+            .await?;
         }
     }
     Ok(())
@@ -322,7 +350,8 @@ fn scene(
     let mut manifest = bundle::read(&bytes)?.manifest;
     let board = if hand_in == Some(returns::Case::Announcements) {
         let key = returns::BOARD;
-        let facts = crate::map::boot::native_item_definition(Some(native), key).ok_or("Board Item")?;
+        let facts =
+            crate::map::boot::native_item_definition(Some(native), key).ok_or("Board Item")?;
         let palette = u32::try_from(manifest.palette.len())?;
         manifest.palette.push(bundle::PaletteEntry {
             key: key.into(),
@@ -358,7 +387,11 @@ fn scene(
                     zones: vec![],
                     items: std::iter::once(0)
                         .chain(board.filter(|_| tx == x && ty == y + 1))
-                        .map(|palette| sector::Item { palette, depth: 0, attrs: Default::default() })
+                        .map(|palette| sector::Item {
+                            palette,
+                            depth: 0,
+                            attrs: Default::default(),
+                        })
                         .collect(),
                 });
         }
@@ -386,8 +419,10 @@ fn scene(
     .boot(
         scope.world_id(),
         scope.channel_id().ok_or("channel")?,
-        |key| crate::map::boot::tests::items(key)
-            .or_else(|| crate::map::boot::native_item_definition(Some(native), key)),
+        |key| {
+            crate::map::boot::tests::items(key)
+                .or_else(|| crate::map::boot::native_item_definition(Some(native), key))
+        },
     )?)
 }
 

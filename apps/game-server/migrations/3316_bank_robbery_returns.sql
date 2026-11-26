@@ -110,6 +110,9 @@ BEGIN
           AND r.quantity = 10 AND i.world_id = NEW.world_id
           AND i.definition_production_key = 'oteryn:item.tibia.i3035'
           AND r.claim_revision_ref = 'npc-program-r1'
+          AND r.claim_production_key = 'oteryn:reward-claim.npc-program.' ||
+            encode(sha256(convert_to('oteryn:npc-reward/bank-robbery/' ||
+              replace(NEW.bag_id::text, '-', ''), 'UTF8')), 'hex')
     ) THEN
         RAISE EXCEPTION 'robbery return requires its same-transaction platinum MINT' USING ERRCODE = '23514';
     END IF;
