@@ -43,19 +43,17 @@ async fn dust_setup(
     h: &Harness,
     item: &str,
     quantity: u16,
+    mission_stage: i64,
 ) -> TestResult<EntityRef> {
     use super::qengine_outfit_stories_fixtures::seed_quest_prerequisites;
     use super::{classic_quests_fixtures, quest_world_callbacks_fixtures};
 
     let [npc] = classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.storkus"]).await?;
-    seed_quest_prerequisites(
-        h,
-        owner,
-        admitted,
-        &[(INQUISITION.into(), 6), (VAMPIRE_HUNT.into(), 1)],
-        112,
-    )
-    .await?;
+    let mut prerequisites = vec![(INQUISITION.into(), 6)];
+    if mission_stage != 0 {
+        prerequisites.push((VAMPIRE_HUNT.into(), mission_stage));
+    }
+    seed_quest_prerequisites(h, owner, admitted, &prerequisites, 112).await?;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -88,7 +86,7 @@ pub(super) async fn dust(
     admitted: &mut AdmittedSession,
     h: &Harness,
 ) -> TestResult {
-    let npc = dust_setup(owner, admitted, h, "oteryn:item.tibia.i5905", 20).await?;
+    let npc = dust_setup(owner, admitted, h, "oteryn:item.tibia.i5905", 20, 1).await?;
     let first = admitted.continuity.next_command_id;
     for (offset, (word, expected)) in [
         ("hi", None),
@@ -124,6 +122,7 @@ pub(super) async fn direct_dust(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    mission_stage: i64,
 ) -> TestResult {
     use oteryn_gameplay_quests::quest::reward_callbacks;
     use sqlx::types::Uuid;
@@ -149,7 +148,7 @@ pub(super) async fn direct_dust(
 
     // Leave enough dust for another payment so replay cannot pass for lack of stock.
     let stack = payment.count.checked_mul(2).ok_or("dust stack quantity")?;
-    let npc = dust_setup(owner, admitted, h, &payment.item, stack).await?;
+    let npc = dust_setup(owner, admitted, h, &payment.item, stack, mission_stage).await?;
     let stacks: Vec<(Uuid, i64)> = sqlx::query_as(
         "SELECT item_instance_id, quantity FROM game_item_instances \
          WHERE definition_production_key=$1 AND lifecycle=1 LIMIT 2",
@@ -172,7 +171,7 @@ pub(super) async fn direct_dust(
     let untouched: (i64, i64, i64, i64, i64) = sqlx::query_as(
         "SELECT (SELECT quantity FROM game_item_instances WHERE item_instance_id=$1),
                 (SELECT value FROM game_character_quest_tracks WHERE track_key=$2),
-                (SELECT value FROM game_character_quest_tracks WHERE track_key=$3),
+                coalesce((SELECT value FROM game_character_quest_tracks WHERE track_key=$3), 0),
                 coalesce((SELECT value FROM game_character_quest_tracks WHERE track_key=$4), 0),
                 (SELECT count(*) FROM game_quest_callback_consumptions)",
     )
@@ -182,16 +181,32 @@ pub(super) async fn direct_dust(
     .bind(DUST)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(untouched, (*before, 6, 1, 0, 0), "direct dust shortcut");
+    assert_eq!(
+        untouched,
+        (*before, 6, mission_stage, 0, 0),
+        "direct dust shortcut"
+    );
     assert!(offer.conversation.is_none());
     assert!(!shortcut.inventory_changed);
 
-    for (offset, word) in [(3, "mission"), (4, "yes")] {
-        assert_eq!(
-            talk(owner, admitted, npc, first + offset, word).await?,
-            NpcIntentDisposition::Ok
-        );
-    }
+    let offer = talk_outcome(owner, admitted, npc, first + 3, "my mission").await?;
+    assert_eq!(offer.disposition, NpcIntentDisposition::Ok);
+    assert_eq!(
+        offer.conversation.ok_or("Storkus dust mission offer")?.lines,
+        ["Are you ready to help me hunt vampires?"]
+    );
+    let acceptance = talk_outcome(owner, admitted, npc, first + 4, "yes please").await?;
+    assert_eq!(acceptance.disposition, NpcIntentDisposition::Ok);
+    let accepted_dust: Option<i64> =
+        sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+            .bind(DUST)
+            .fetch_optional(&h.pool)
+            .await?;
+    assert_eq!(
+        accepted_dust,
+        Some(1),
+        "Storkus offered the dust mission but did not start it"
+    );
     let prompt = talk_outcome(owner, admitted, npc, first + 5, "mission").await?;
     assert_eq!(
         prompt.conversation.ok_or("Storkus collection prompt")?.lines,
@@ -241,7 +256,7 @@ pub(super) async fn direct_dust(
     assert_eq!(*remaining, *before - i64::from(payment.count));
     assert_eq!(
         tracks,
-        &[questline.minimum, mission.minimum, dust.set],
+        &[questline.minimum, mission_stage, dust.set],
         "collection leaves the questline and mission ready for the report"
     );
     assert!(*same_xact, "the debit and preserved stage snapshot must commit together");
