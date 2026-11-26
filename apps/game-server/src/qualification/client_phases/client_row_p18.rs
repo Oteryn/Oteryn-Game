@@ -8,17 +8,15 @@ use oteryn_protocol_oteryn::item_forge::{
 };
 use std::num::NonZeroU64;
 
-use oteryn_dev_client::client_runtime::server_mechanic::{
-    CommandStatus as UiStatus, ServerMechanicResponse,
-};
-use oteryn_dev_client::client_ui::item_forge::{
-    ItemForgePanel, apply_result, command, panel_text, reply, request, resource_dialog::Content,
-};
 use oteryn_protocol_oteryn::item_forge::COMMAND_TYPE_FORGE_DUST_QUERY;
 
 type LiveReply = (u64, u64, u32, Vec<u8>, Vec<u8>);
 
-async fn dust(client: &mut DevClientSession) -> TestResult<(u64, u64)> {
+pub(super) async fn dust(client: &mut DevClientSession) -> TestResult<(u64, u64)> {
+    Ok(dust_capture(client).await?.0)
+}
+
+async fn dust_capture(client: &mut DevClientSession) -> TestResult<((u64, u64), LiveReply)> {
     let result = client
         .session_mut()
         .gated_command(CAPABILITY_ITEM_FORGE_V1, COMMAND_TYPE_FORGE_DUST_QUERY, &[])
@@ -27,110 +25,36 @@ async fn dust(client: &mut DevClientSession) -> TestResult<(u64, u64)> {
         return Err(format!("dust query refused: {:?}", result.status).into());
     }
     let body: serde_json::Value = serde_json::from_slice(&result.payload)?;
-    Ok((
+    let balance = (
         body["current_dust"]
             .as_u64()
             .ok_or("dust balance missing")?,
         body["dust_limit"].as_u64().ok_or("dust limit missing")?,
+    );
+    Ok((
+        balance,
+        (
+            result.command_id,
+            result.server_sequence,
+            result.status as u32,
+            result.payload,
+            Vec::new(),
+        ),
     ))
 }
 
-fn replay(root: &Path, session: [u8; 16], frames: &[LiveReply]) -> TestResult {
+fn write_capture(root: &Path, session: [u8; 16], frames: &[LiveReply]) -> TestResult {
     use std::io::Write as _;
-    let path = root.join("p18-live.json");
-    let mut file = std::fs::File::create_new(&path)?;
+    if frames.len() != 8 {
+        return Err(format!(
+            "Forge capture requires eight live frames, got {}",
+            frames.len()
+        )
+        .into());
+    }
+    let mut file = std::fs::File::create_new(root.join("p18-live.json"))?;
     serde_json::to_writer(&mut file, &(session, frames))?;
     file.flush()?;
-    drop(file);
-    let (captured_session, captured): ([u8; 16], Vec<LiveReply>) =
-        serde_json::from_reader(std::fs::File::open(path)?)?;
-    if captured_session != session || captured != frames {
-        return Err("Forge capture session or command sequence mismatch".into());
-    }
-    let mut panel = ItemForgePanel {
-        selected: true,
-        ..Default::default()
-    };
-    for (index, (command_id, server_sequence, status, payload, submitted_bytes)) in
-        captured.into_iter().enumerate()
-    {
-        if status != UiStatus::Accepted as u32
-            || command_id == 0
-            || server_sequence == 0
-            || index > 0
-                && (command_id <= frames[index - 1].0 || server_sequence <= frames[index - 1].1)
-        {
-            return Err(format!("invalid Forge reply metadata at frame {index}").into());
-        }
-        let submitted =
-            Request::decode(&submitted_bytes).ok_or("captured Forge request invalid")?;
-        request(&mut panel, command(submitted_bytes)).ok_or("Forge UI refused submission")?;
-        if !panel.pending || panel.submitted != Some(submitted) {
-            return Err("Forge UI did not track the submitted request".into());
-        }
-        let previous_dialog = panel.resource_dialog.serial;
-        apply_result(
-            &mut panel,
-            &ServerMechanicResponse {
-                command_id,
-                server_sequence,
-                status: UiStatus::Accepted,
-                payload: payload.clone(),
-            },
-        );
-        if panel.pending
-            || panel.submitted.is_some()
-            || panel.retry.is_some()
-            || panel.feedback.is_some()
-            || panel.response != payload
-        {
-            return Err("Forge panel did not consume the live reply".into());
-        }
-        let expected = match (index, &panel.decoded) {
-            (0, Some(reply::Reply::History(rows))) if rows.is_empty() => "No forge operations yet",
-            (1, Some(reply::Reply::Result(_))) => "DustToSlivers: succeeded; attempt applied",
-            (2, Some(reply::Reply::Result(_))) => "DustLimit: succeeded; attempt applied",
-            (3, Some(reply::Reply::Result(_))) => {
-                "Fusion: failed; no changes applied (INVALID_ITEM_HANDLE)"
-            }
-            (4, Some(reply::Reply::Result(_))) => {
-                "DustToSlivers: failed; no changes applied (INSUFFICIENT_DUST)"
-            }
-            (5, Some(reply::Reply::Result(_))) => {
-                "DustLimit: failed; no changes applied (INSUFFICIENT_DUST)"
-            }
-            _ => return Err(format!("unexpected Forge panel decode at frame {index}").into()),
-        };
-        if index != 0 {
-            let body = serde_json::from_slice(&payload)?;
-            match index {
-                1 => check_funded(&body, Operation::DustToSlivers)?,
-                2 => check_funded(&body, Operation::DustLimit)?,
-                3 => check_refusal(&body, "INVALID_ITEM_HANDLE")?,
-                _ => check_refusal(&body, "INSUFFICIENT_DUST")?,
-            }
-        }
-        let dialog_matches = match (&panel.resource_dialog.content, &panel.decoded) {
-            (
-                Some(Content::Exaltation {
-                    receipt,
-                    target: None,
-                    donor: None,
-                }),
-                Some(reply::Reply::Result(decoded)),
-            ) if index == 3 => receipt == decoded,
-            (Some(Content::Result(dialog)), Some(decoded)) if index != 3 => dialog == decoded,
-            _ => false,
-        };
-        if panel.resource_dialog.serial == previous_dialog || !dialog_matches {
-            return Err(
-                format!("Forge dialog did not show the submitted result at frame {index}").into(),
-            );
-        }
-        if panel_text(&panel).lines().nth(3) != Some(expected) {
-            return Err(format!("unexpected Forge panel text at frame {index}").into());
-        }
-    }
     Ok(())
 }
 
@@ -148,17 +72,21 @@ fn occurrence(session: oteryn_protocol_oteryn::GameSessionId, ordinal: u8) -> [u
     value
 }
 
-fn same_item_pair(client: &DevClientSession) -> TestResult<(NonZeroU64, NonZeroU64)> {
+fn distinct_dagger_pair(
+    client: &DevClientSession,
+    definition: std::num::NonZeroU32,
+) -> TestResult<(NonZeroU64, NonZeroU64)> {
     let inventory = client.inventory().ok_or("inventory frame missing")?;
-    let first = inventory
+    let mut daggers = inventory
         .entries
         .iter()
-        .chain(inventory.main_backpack.iter())
-        .chain(inventory.equipment.iter().map(|entry| &entry.item))
-        .next()
-        .ok_or("no carried item handle")?
-        .handle;
-    Ok((first, first))
+        .filter(|entry| entry.item_definition_ref == definition && entry.count.get() == 1);
+    let first = daggers.next().ok_or("first Forge dagger missing")?.handle;
+    let second = daggers.next().ok_or("second Forge dagger missing")?.handle;
+    if first == second || daggers.next().is_some() {
+        return Err("expected exactly two distinct Forge daggers".into());
+    }
+    Ok((first, second))
 }
 
 async fn forge(
@@ -214,29 +142,6 @@ fn check_refusal(body: &serde_json::Value, reason: &str) -> TestResult {
     Ok(())
 }
 
-// Seed only the disposable dedicated character's starting resource. Keep the
-// native chain constraints enabled and let the two wire commands own all spends.
-async fn seed_dust(clients: &SeamClients<'_>) -> TestResult {
-    let [character] = clients.characters else {
-        return Err("funded Forge fixture requires one dedicated character".into());
-    };
-    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
-    let mut tx = sqlx::Connection::begin(&mut connection).await?;
-    let character = uuid_text(character);
-    let entry = uuid_text(&v7(0x44, 0xa1));
-    sqlx::query("INSERT INTO game_character_forge_dust(character_id,balance,dust_limit) VALUES($1::uuid,0,100)")
-        .bind(&character).execute(&mut *tx).await?;
-    sqlx::query("INSERT INTO game_character_forge_dust_entries
-        (entry_id,character_id,kind,cause,cause_occurrence_id,transaction_id,amount,lost_amount,balance_before,balance_after,dust_limit_before,dust_limit_after)
-        VALUES($1::uuid,$2::uuid,'GAIN','creature_kill',$3::uuid,$4::uuid,100,0,0,100,100,100)")
-        .bind(&entry).bind(&character).bind(uuid_text(&v7(0x44, 0xa2)))
-        .bind(uuid_text(&v7(0x44, 0xa3))).execute(&mut *tx).await?;
-    sqlx::query("UPDATE game_character_forge_dust SET balance=100,last_entry_id=$1::uuid WHERE character_id=$2::uuid")
-        .bind(&entry).bind(&character).execute(&mut *tx).await?;
-    tx.commit().await?;
-    Ok(())
-}
-
 fn check_funded(body: &serde_json::Value, operation: Operation) -> TestResult {
     let expected = match operation {
         Operation::DustToSlivers => serde_json::json!({
@@ -258,20 +163,99 @@ fn check_funded(body: &serde_json::Value, operation: Operation) -> TestResult {
     Ok(())
 }
 
+fn check_funded_inventory(
+    before: &oteryn_protocol_oteryn::item_view::CharacterInventory,
+    mut after: oteryn_protocol_oteryn::item_view::CharacterInventory,
+    operation: Operation,
+    sliver: std::num::NonZeroU32,
+) -> TestResult {
+    if operation == Operation::DustToSlivers {
+        after
+            .entries
+            .retain(|entry| entry.item_definition_ref != sliver);
+    }
+    if *before != after {
+        return Err(format!("funded {operation:?} changed unrelated inventory").into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("Forge capture directory missing")?;
     let root = Path::new(&root);
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_P18_ACCOUNT").await?;
     let scope = dedicated.clients(clients);
     let clients = &scope;
-    seed_dust(clients).await?;
+    let mut fixture = connect_character(clients, 0x43, 0).await?;
+    character_prep::grant_item(&fixture, 3267, 2).await?;
+    if fixture.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("Forge dagger fixture logout refused".into());
+    }
+    drop(fixture);
     let mut client = connect_character(clients, 0x44, 0).await?;
     let session = client.join_snapshot().game_session_id;
-    let pair = same_item_pair(&client)?;
+    let definitions = provisioning::item_index()?;
+    let pair = distinct_dagger_pair(&client, provisioning::item_reference(&definitions, 3267)?)?;
 
     let balance = dust(&mut client).await?;
     if balance != (100, 100) {
-        return Err(format!("unexpected Forge pre-state {balance:?}").into());
+        if balance == (0, 100) {
+            let (_, before_history) =
+                forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
+            if before_history != serde_json::json!([]) {
+                return Err("unfunded distinct-pair Fusion requires empty history".into());
+            }
+            client.service_liveness(Duration::from_millis(490)).await?;
+            let before = client
+                .inventory()
+                .cloned()
+                .ok_or("Fusion pre-state inventory missing")?;
+            let (_, refusal) = forge(
+                &mut client,
+                Operation::Fusion,
+                occurrence(session, 9),
+                Some(pair),
+                0,
+            )
+            .await?;
+            check_refusal(&refusal, "INSUFFICIENT_DUST")?;
+            if dust(&mut client).await? != balance || client.inventory() != Some(&before) {
+                return Err("unfunded distinct-pair Fusion changed state".into());
+            }
+            if client.session_mut().logout().await?.result
+                != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+            {
+                return Err("unfunded distinct-pair Fusion logout refused".into());
+            }
+            drop(client);
+            let mut fresh = connect_character(clients, 0x45, 0).await?;
+            let normalize = super::full_row_p18::durable_inventory;
+            if fresh.join_snapshot().game_session_id == session
+                || fresh.inventory().cloned().map(normalize) != Some(normalize(before))
+                || dust(&mut fresh).await? != balance
+            {
+                return Err("unfunded distinct-pair Fusion changed durable state".into());
+            }
+            let (_, history) =
+                forge(&mut fresh, Operation::QueryHistory, [0; 16], None, 50).await?;
+            if history != before_history {
+                return Err("unfunded distinct-pair Fusion wrote a history entry".into());
+            }
+            if fresh.session_mut().logout().await?.result
+                != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+            {
+                return Err("unfunded distinct-pair Fusion relog logout refused".into());
+            }
+            evidence(
+                "P18_CLIENT_DISTINCT_PAIR_CHECK refusal=INSUFFICIENT_DUST durable_unchanged=true",
+            );
+        }
+        return Err(format!(
+            "funded Forge requires 100 earned dust at cap 100; observed {balance:?}"
+        )
+        .into());
     }
     let (history_bytes, history) =
         forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
@@ -283,7 +267,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let mut frames = vec![history_bytes];
     let sliver_key = "oteryn:item.tibia.i37109";
-    let definitions = provisioning::item_index()?;
     let revision = definitions
         .revision(sliver_key)
         .ok_or("Forge sliver definition missing")?;
@@ -299,6 +282,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         (11, Operation::DustLimit, (15, 120)),
     ] {
         client.service_liveness(Duration::from_millis(490)).await?;
+        let before = client
+            .inventory()
+            .cloned()
+            .ok_or("funded inventory missing")?;
         let (frame, body) = forge(
             &mut client,
             operation,
@@ -316,6 +303,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             )
             .into());
         }
+        let after = client
+            .inventory()
+            .cloned()
+            .ok_or("funded inventory missing")?;
+        check_funded_inventory(&before, after, operation, sliver)?;
         applied.push(body);
         frames.push(frame);
     }
@@ -325,8 +317,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .cloned()
         .ok_or("funded inventory missing")?;
     for (ordinal, (name, operation, expected_reason)) in [
-        // A repeated item handle is rejected before a Forge pair can be reserved.
-        ("fusion", Operation::Fusion, "INVALID_ITEM_HANDLE"),
+        // The valid, distinct pair is evaluated against the remaining dust.
+        ("fusion", Operation::Fusion, "INSUFFICIENT_DUST"),
         (
             "dust_to_slivers",
             Operation::DustToSlivers,
@@ -355,7 +347,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         frames.push(bytes);
     }
     client.service_liveness(Duration::from_millis(490)).await?;
-    let (_, final_history) = forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
+    let (populated_history, final_history) =
+        forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
     let expected_history = serde_json::json!([
         {"ordinal":2,"receipt":applied[1]},
         {"ordinal":1,"receipt":applied[0]}
@@ -363,6 +356,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if final_history != expected_history {
         return Err("Forge history does not contain exactly the funded outcomes".into());
     }
+    frames.push(populated_history);
+    let (captured_balance, current_dust) = dust_capture(&mut client).await?;
+    if captured_balance != balance {
+        return Err("Forge current dust changed before logout".into());
+    }
+    frames.push(current_dust);
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
@@ -391,9 +390,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("Forge relog session logout refused".into());
     }
-    replay(root, *session.as_bytes(), &frames)?;
+    write_capture(root, *session.as_bytes(), &frames)?;
     Ok(format!(
-        "live-capture-replayed session={}",
+        "live-capture session={}",
         uuid_text(session.as_bytes())
     ))
 }
@@ -403,7 +402,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         .await
     {
         Ok(Ok(expected)) => evidence(&format!(
-            "e2e_all scenario=P18.client status=PASS evidence={expected}"
+            "e2e_capture scenario=P18.client status=CAPTURED evidence={expected}"
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=P18.client status=FAIL evidence={error}"
@@ -415,6 +414,47 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oteryn_protocol_oteryn::item_view::{CharacterInventory, ItemEntry};
+    use std::num::NonZeroU32;
+
+    #[test]
+    fn funded_inventory_rejects_collateral_additions_and_deletions() -> TestResult {
+        let dagger = ItemEntry {
+            appearance_id: 0,
+            handle: NonZeroU64::MIN,
+            item_definition_ref: NonZeroU32::MIN,
+            count: NonZeroU32::MIN,
+            sub_type: 0,
+        };
+        let sliver = ItemEntry {
+            handle: NonZeroU64::new(2).unwrap(),
+            item_definition_ref: NonZeroU32::new(2).unwrap(),
+            count: NonZeroU32::new(3).unwrap(),
+            ..dagger
+        };
+        let unrelated = ItemEntry {
+            handle: NonZeroU64::new(3).unwrap(),
+            ..dagger
+        };
+        let before = CharacterInventory {
+            entries: vec![dagger],
+            ..Default::default()
+        };
+        for operation in [Operation::DustToSlivers, Operation::DustLimit] {
+            let mut expected = before.clone();
+            if operation == Operation::DustToSlivers {
+                expected.entries.push(sliver);
+            }
+            let definition = sliver.item_definition_ref;
+            check_funded_inventory(&before, expected.clone(), operation, definition)?;
+            let mut added = expected.clone();
+            added.entries.push(unrelated);
+            assert!(check_funded_inventory(&before, added, operation, definition).is_err());
+            expected.entries.remove(0);
+            assert!(check_funded_inventory(&before, expected, operation, definition).is_err());
+        }
+        Ok(())
+    }
 
     #[test]
     fn refusal_rejects_value_bonus_and_missing_result() -> TestResult {

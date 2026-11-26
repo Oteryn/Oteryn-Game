@@ -4,7 +4,8 @@
 //! (decoding through `reply::decode`), projected by `panel_text` in `view.rs`.
 use super::*;
 use crate::item_forge::panel_text;
-use oteryn_client_runtime::cui3::item_forge::Operation;
+use crate::item_forge::resource_dialog::Content;
+use oteryn_client_runtime::cui3::item_forge::{COMMAND_TYPE_FORGE_DUST_QUERY, Operation};
 use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicResponse};
 
 fn value<'a>(text: &'a str, key: &str) -> Result<&'a str, Box<dyn std::error::Error>> {
@@ -26,19 +27,6 @@ fn response(status: CommandStatus, payload: &[u8]) -> ServerMechanicResponse {
 type Replies = (Vec<u8>, Vec<(&'static str, Vec<u8>)>, String);
 
 fn replies() -> Result<Replies, Box<dyn std::error::Error>> {
-    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let root = std::path::Path::new(&root);
-        let read = |name: &str| std::fs::read(root.join(name));
-        return Ok((
-            read("p18-history.bin")?,
-            vec![
-                ("fusion", read("p18-fusion.bin")?),
-                ("dust_to_slivers", read("p18-dust-to-slivers.bin")?),
-                ("dust_limit", read("p18-dust-limit.bin")?),
-            ],
-            std::fs::read_to_string(root.join("p18-expected.txt"))?,
-        ));
-    }
     let json = |text: &str| text.as_bytes().to_vec();
     Ok((
         json("[]"),
@@ -69,9 +57,176 @@ fn operation(name: &str) -> Result<Operation, Box<dyn std::error::Error>> {
     })
 }
 
+fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+    type LiveReply = (u64, u64, u32, Vec<u8>, Vec<u8>);
+    let file = std::fs::File::open(root.join("p18-live.json"))?;
+    let (session, captured): ([u8; 16], Vec<LiveReply>) = serde_json::from_reader(file)?;
+    if session == [0; 16] || captured.len() != 8 {
+        return Err("Forge replay requires eight frames from a live session".into());
+    }
+    let metadata: Vec<_> = captured.iter().map(|frame| (frame.0, frame.1)).collect();
+    let mut panel = ItemForgePanel {
+        selected: true,
+        ..Default::default()
+    };
+    for (index, (command_id, server_sequence, status, payload, submitted_bytes)) in
+        captured.into_iter().enumerate()
+    {
+        if status != CommandStatus::Accepted as u32
+            || command_id == 0
+            || server_sequence == 0
+            || index > 0
+                && (command_id <= metadata[index - 1].0 || server_sequence <= metadata[index - 1].1)
+        {
+            return Err(format!("invalid Forge reply metadata at frame {index}").into());
+        }
+        let submitted = if index == 7 {
+            if !submitted_bytes.is_empty() {
+                return Err("invalid Forge dust query capture".into());
+            }
+            panel.query_current_dust = true;
+            let query = control_request(&mut panel).ok_or("Forge UI refused dust query")?;
+            if query.command_type != COMMAND_TYPE_FORGE_DUST_QUERY || !query.payload.is_empty() {
+                return Err("Forge UI encoded an incorrect dust query".into());
+            }
+            None
+        } else {
+            let submitted =
+                Request::decode(&submitted_bytes).ok_or("captured Forge request invalid")?;
+            request(&mut panel, command(submitted_bytes)).ok_or("Forge UI refused submission")?;
+            Some(submitted)
+        };
+        if !panel.pending || panel.submitted != submitted {
+            return Err("Forge UI did not track the submitted request".into());
+        }
+        let previous_dialog = panel.resource_dialog.serial;
+        apply_result(
+            &mut panel,
+            &ServerMechanicResponse {
+                command_id,
+                server_sequence,
+                status: CommandStatus::Accepted,
+                payload: payload.clone(),
+            },
+        );
+        if panel.pending
+            || panel.submitted.is_some()
+            || panel.retry.is_some()
+            || panel.feedback.is_some()
+            || panel.response != payload
+        {
+            return Err("Forge panel did not consume the live reply".into());
+        }
+        let text = panel_text(&panel);
+        let dialog = panel
+            .resource_dialog
+            .content
+            .as_ref()
+            .ok_or("Forge dialog missing")?;
+        let dialog_text = |row| crate::item_forge::resource_dialog::dialog_text(dialog, row);
+        if index == 7 {
+            if panel.resource_dialog.serial == previous_dialog
+                || dialog_text(0) != "Current dust: 15 / 120"
+                || !text.lines().any(|line| line == "Current dust: 15 / 120")
+            {
+                return Err("Forge current dust dialog rendered incorrect resources".into());
+            }
+            continue;
+        }
+        if index == 6 {
+            let Some(reply::Reply::History(rows)) = &panel.decoded else {
+                return Err("populated Forge history did not decode".into());
+            };
+            let cap = dialog_text(0);
+            let conversion = dialog_text(1);
+            if panel.resource_dialog.serial == previous_dialog
+                || rows.len() != 2
+                || !cap.starts_with("History #2\n")
+                || !cap.contains("Dust after operation: 15 / 120")
+                || !conversion.starts_with("History #1\n")
+                || !conversion.contains("Dust after operation: 40 / 100\nCreated: 3 slivers")
+                || !text
+                    .split_once("History #2\n")
+                    .and_then(|(_, rows)| rows.split_once("History #1\n"))
+                    .is_some_and(|(cap, conversion)| {
+                        cap.contains("Dust: 15 / 120")
+                            && conversion.contains("Dust: 40 / 100")
+                            && conversion.contains("Created: 3 slivers")
+                    })
+            {
+                return Err(
+                    "populated Forge history rendered incorrect resources or entries".into(),
+                );
+            }
+            continue;
+        }
+        for expected in match index {
+            1 => &["Dust after operation: 40 / 100", "Created: 3 slivers"][..],
+            2 => &["Dust after operation: 15 / 120"][..],
+            _ => &[],
+        } {
+            if !dialog_text(0).lines().any(|line| line == *expected) {
+                return Err(format!("Forge dialog missing exact resource line {expected}").into());
+            }
+        }
+        let expected_resources = match index {
+            1 => &["Dust: 40 / 100", "Created: 3 slivers, 0 cores"][..],
+            2 => &["Dust: 15 / 120"][..],
+            _ => &[],
+        };
+        if !expected_resources
+            .iter()
+            .all(|expected| text.lines().any(|line| line == *expected))
+        {
+            return Err(
+                format!("Forge panel rendered incorrect resources at frame {index}").into(),
+            );
+        }
+        let expected = match (index, &panel.decoded) {
+            (0, Some(reply::Reply::History(rows))) if rows.is_empty() => "No forge operations yet",
+            (1, Some(reply::Reply::Result(_))) => "DustToSlivers: succeeded; attempt applied",
+            (2, Some(reply::Reply::Result(_))) => "DustLimit: succeeded; attempt applied",
+            (3, Some(reply::Reply::Result(_))) => {
+                "Fusion: failed; no changes applied (INSUFFICIENT_DUST)"
+            }
+            (4, Some(reply::Reply::Result(_))) => {
+                "DustToSlivers: failed; no changes applied (INSUFFICIENT_DUST)"
+            }
+            (5, Some(reply::Reply::Result(_))) => {
+                "DustLimit: failed; no changes applied (INSUFFICIENT_DUST)"
+            }
+            _ => return Err(format!("unexpected Forge panel decode at frame {index}").into()),
+        };
+        let dialog_matches = match (&panel.resource_dialog.content, &panel.decoded) {
+            (
+                Some(Content::Exaltation {
+                    receipt,
+                    target: None,
+                    donor: None,
+                }),
+                Some(reply::Reply::Result(decoded)),
+            ) if index == 3 => receipt == decoded,
+            (Some(Content::Result(dialog)), Some(decoded)) if index != 3 => dialog == decoded,
+            _ => false,
+        };
+        if panel.resource_dialog.serial == previous_dialog || !dialog_matches {
+            return Err(
+                format!("Forge dialog did not show the submitted result at frame {index}").into(),
+            );
+        }
+        if panel_text(&panel).lines().nth(3) != Some(expected) {
+            return Err(format!("unexpected Forge panel text at frame {index}").into());
+        }
+    }
+    Ok(())
+}
+
 #[test]
 fn e2e_p18_replays_forge_history_and_operation_receipts() -> Result<(), Box<dyn std::error::Error>>
 {
+    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        return replay_live(std::path::Path::new(&root));
+    }
     let (history, operations, expected) = replies()?;
     let mut panel = ItemForgePanel {
         selected: true,

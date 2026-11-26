@@ -182,6 +182,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let dedicated = dedicated.clients(clients);
     let mut fixture = connect_character(&dedicated, 0xd7, 0).await?;
     character_prep::grant_item(&fixture, character_prep::item_id(FUSION_PAIR)?, 2).await?;
+    character_prep::grant_item(&fixture, 3043, 3).await?;
     logout(&mut fixture).await?;
     drop(fixture);
 
@@ -209,6 +210,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("forge fixture expected two single daggers, got {pair_count}").into());
     }
 
+    let coins = [(3031, 1), (3035, 100), (3043, 10_000)]
+        .into_iter()
+        .map(|(id, worth)| {
+            let key = format!("oteryn:item.tibia.i{id}");
+            let revision = definitions
+                .revision(&key)
+                .ok_or("Forge coin definition missing")?;
+            let reference = definitions
+                .definition_ref("Item", &key, revision)
+                .ok_or("Forge coin reference missing")?;
+            Ok((reference, worth))
+        })
+        .collect::<TestResult<Vec<_>>>()?;
+    let gold_before = carried_gold(&client, &coins);
+    if gold_before < 30_000 || dagger_tiers(&mut client, pair_ref.get()).await? != [0, 0] {
+        return Err(
+            "valid-pair Fusion fixture lacks two tier-zero daggers or its gold and dust".into(),
+        );
+    }
+    let initial_dust = super::client_row_p18::dust(&mut client).await?;
+    let mut fusion_outcome = None;
     let mut applied = Vec::new();
     let operations = [
         Operation::Fusion,
@@ -242,7 +264,57 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             0,
         )
         .await?;
-        if validate(&observed)? {
+        let did_apply = validate(&observed)?;
+        if operation == Operation::Fusion {
+            if !did_apply {
+                return Err(format!(
+                    "valid-pair Fusion refused with admitted dust {initial_dust:?}: {}",
+                    observed.body
+                )
+                .into());
+            }
+            let success = observed.body["succeeded"]
+                .as_bool()
+                .ok_or("Fusion success flag missing")?;
+            let bonus = observed.body["bonus"]
+                .as_u64()
+                .ok_or("Fusion bonus missing")?;
+            if (!success && bonus != 0) || bonus > 7 || !observed.body["reason"].is_null() {
+                return Err(format!("invalid Fusion outcome: {}", observed.body).into());
+            }
+            let target = u8::from(success);
+            let source = match bonus {
+                4 | 5 => Some(0),
+                6 => Some(1),
+                _ => None,
+            };
+            let (dust_paid, gold_paid) = (
+                if bonus == 1 { 0 } else { 100 },
+                if bonus == 3 { 0 } else { 25_000 },
+            );
+            let paid = &observed.body["result"];
+            let (first, second) = pair.ok_or("Fusion pair missing")?;
+            if *paid
+                != serde_json::json!({
+                    "first_item":first.get(),"first_tier":target,"second_item":second.get(),"second_tier":source,
+                    "dust":100-dust_paid,"dust_limit":100,"gold_spent":gold_paid,"cores_spent":0,
+                    "slivers_spent":0,"slivers_created":0,"cores_created":0
+                })
+            {
+                return Err(format!("Fusion exact receipt mismatch: {paid}").into());
+            }
+            let mut expected_tiers = vec![target];
+            expected_tiers.extend(source);
+            expected_tiers.sort_unstable();
+            if super::client_row_p18::dust(&mut client).await? != (100 - dust_paid, 100)
+                || carried_gold(&client, &coins) != gold_before - gold_paid
+                || dagger_tiers(&mut client, pair_ref.get()).await? != expected_tiers
+            {
+                return Err("Fusion exact live gold, dust, or dagger tiers mismatch".into());
+            }
+            fusion_outcome = Some((expected_tiers, success, dust_paid, gold_paid));
+        }
+        if did_apply {
             applied.push(operation);
         }
         observations.push(observed);
@@ -258,6 +330,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .inventory()
         .cloned()
         .ok_or("step-6 inventory absent")?;
+    let retained_balance = super::client_row_p18::dust(&mut client).await?;
     logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_character(&dedicated, 0xd9, 0).await?;
@@ -266,12 +339,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step-7 fresh admission session/inventory durability mismatch".into());
     }
+    let (expected_tiers, succeeded, dust_paid, gold_paid) =
+        fusion_outcome.ok_or("funded valid-pair Fusion was never exercised")?;
+    if dagger_tiers(&mut fresh, pair_ref.get()).await? != expected_tiers
+        || super::client_row_p18::dust(&mut fresh).await? != retained_balance
+    {
+        return Err("Fusion dagger tiers or Forge balance did not persist across relog".into());
+    }
     let fresh_history = command(&mut fresh, Operation::QueryHistory, [0; 16], None, 50).await?;
     logout(&mut fresh).await?;
     validate_history("step-7", &fresh_history, &applied_observations)?;
     if fresh_history.body != history.body {
         return Err(format!("step-7 fresh HISTORY mismatch: {fresh_history:?}").into());
     }
+    evidence(&format!(
+        "P18_FUSION_CHECK status=PASS succeeded={succeeded} dust_paid={dust_paid} gold_paid={gold_paid} durable_dagger_tiers={expected_tiers:?}"
+    ));
     if applied.len() != 7 {
         let refused = observations
             .iter()
@@ -353,11 +436,7 @@ async fn preview(
     Ok(reply.payload)
 }
 
-async fn quoted_pair(
-    client: &mut DevClientSession,
-    operation: Operation,
-    definition: Option<u32>,
-) -> TestResult<Option<(NonZeroU64, NonZeroU64)>> {
+async fn forge_items(client: &mut DevClientSession) -> TestResult<Vec<preview::Item>> {
     let mut items = Vec::new();
     let mut after = 0;
     loop {
@@ -376,6 +455,33 @@ async fn quoted_pair(
             _ => return Err("step=forge-preview cursor did not advance".into()),
         }
     }
+    Ok(items)
+}
+
+async fn dagger_tiers(client: &mut DevClientSession, definition: u32) -> TestResult<Vec<u8>> {
+    let mut tiers: Vec<_> = forge_items(client)
+        .await?
+        .into_iter()
+        .filter(|item| item.definition_ref == definition)
+        .map(|item| item.tier)
+        .collect();
+    tiers.sort_unstable();
+    Ok(tiers)
+}
+
+fn carried_gold(client: &DevClientSession, coins: &[(std::num::NonZeroU32, u64)]) -> u64 {
+    coins
+        .iter()
+        .map(|&(definition, worth)| super::full_e2ef7::units(client, definition) * worth)
+        .sum()
+}
+
+async fn quoted_pair(
+    client: &mut DevClientSession,
+    operation: Operation,
+    definition: Option<u32>,
+) -> TestResult<Option<(NonZeroU64, NonZeroU64)>> {
+    let items = forge_items(client).await?;
     for first in items
         .iter()
         .filter(|item| definition.is_none_or(|id| item.definition_ref == id))
