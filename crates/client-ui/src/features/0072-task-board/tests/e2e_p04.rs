@@ -11,6 +11,7 @@ struct Captured {
     refused: GatedCommandResult,
     readmission: GatedCommandResult,
     expected: String,
+    master: Option<[GatedCommandResult; 3]>,
 }
 
 fn fixture() -> Result<Captured, Error> {
@@ -38,15 +39,10 @@ fn fixture() -> Result<Captured, Error> {
         active: None,
         lists: Vec::new(),
     };
-    let shop = vec![task_board::full::ShopOffer {
-        index: 0,
-        kind: 2,
-        price: 100_000,
-        primary: 1_907,
-        secondary: 0,
-        addon: 0,
-        bought: false,
-    }];
+    let shop = shop_oracle()?
+        .into_iter()
+        .map(|(offer, _)| offer)
+        .collect::<Vec<_>>();
     let reply = |refusal: u8| Reply {
         weekly_results: None,
         refusal,
@@ -64,7 +60,8 @@ fn fixture() -> Result<Captured, Error> {
         query: result(CommandStatus::Accepted, &encode(&reply(0))?),
         refused: result(CommandStatus::Accepted, &encode(&reply(3))?),
         readmission: result(CommandStatus::Accepted, &encode(&reply(0))?),
-        expected: "period=2913\npoints=40\nbounty_points=7\nsoulseals=2\nstarted=false\nkills=0\ndeliveries=0\nshop_count=1\nshop_first=0,2,100000\nrefusal=3\n".into(),
+        master: None,
+        expected: "period=2913\npoints=40\nbounty_points=7\nsoulseals=2\nstarted=false\nkills=0\ndeliveries=0\nshop_count=24\nrefusal=3\n".into(),
     })
 }
 
@@ -73,39 +70,60 @@ fn captured() -> Result<Captured, Error> {
         std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("live capture directory is required")?;
     let path = std::path::Path::new(&path);
     let binding = std::env::var("E2E_P04_BINDING")?;
-    let mut fields = binding.split(';');
-    let mut field = |key: &str| -> Result<&str, Error> {
-        fields
-            .next()
-            .and_then(|entry| entry.split_once('='))
-            .filter(|(name, _)| *name == key)
-            .map(|(_, value)| value)
-            .ok_or_else(|| format!("missing replay binding {key}").into())
-    };
-    let session = field("session")?;
-    let after_session = field("readmission")?;
-    if !is_uuid7(session) || !is_uuid7(after_session) || session == after_session {
-        return Err("P04 requires two distinct UUIDv7 sessions".into());
-    }
-    let query = read_live_result(&path.join("p04-query.json"), session, field("query")?)?;
-    let refused = read_live_result(&path.join("p04-refused.json"), session, field("refused")?)?;
-    let readmission = read_live_result(
-        &path.join("p04-readmission.json"),
-        after_session,
-        field("after")?,
+    let (below, at) = binding.split_once(";at=").ok_or("missing Master binding")?;
+    let mut sessions = std::collections::BTreeSet::new();
+    let [query, refused, readmission] = read_boundary(
+        path,
+        below
+            .strip_prefix("below=")
+            .ok_or("missing refusal binding")?,
+        ["p04-query.json", "p04-refused.json", "p04-readmission.json"],
+        &mut sessions,
     )?;
-    assert_eq!(fields.next(), None);
-    assert_eq!(query.command_id.checked_add(1), Some(refused.command_id));
-    assert!(refused.server_sequence > query.server_sequence);
-    for frame in [&query, &refused, &readmission] {
-        assert_eq!(frame.status, CommandStatus::Accepted);
-    }
+    let master = read_boundary(
+        path,
+        at,
+        [
+            "p04-master-query.json",
+            "p04-master-start.json",
+            "p04-master-readmission.json",
+        ],
+        &mut sessions,
+    )?;
     Ok(Captured {
         query,
         refused,
         readmission,
+        master: Some(master),
         expected: std::fs::read_to_string(path.join("p04-expected.txt"))?,
     })
+}
+
+fn read_boundary<'a>(
+    path: &std::path::Path,
+    binding: &'a str,
+    names: [&str; 3],
+    sessions: &mut std::collections::BTreeSet<&'a str>,
+) -> Result<[GatedCommandResult; 3], Error> {
+    let fields: Vec<_> = binding.split(',').collect();
+    let [session, after, qid, qseq, sid, sseq, aid, aseq] = fields.as_slice() else {
+        return Err("invalid P04 boundary binding".into());
+    };
+    if ![session, after]
+        .into_iter()
+        .all(|id| is_uuid7(id) && sessions.insert(*id))
+    {
+        return Err("P04 requires four distinct UUIDv7 sessions".into());
+    }
+    let query = read_live_result(&path.join(names[0]), session, &format!("{qid},{qseq}"))?;
+    let start = read_live_result(&path.join(names[1]), session, &format!("{sid},{sseq}"))?;
+    let relog = read_live_result(&path.join(names[2]), after, &format!("{aid},{aseq}"))?;
+    assert_eq!(query.command_id.checked_add(1), Some(start.command_id));
+    assert!(start.server_sequence > query.server_sequence);
+    for frame in [&query, &start, &relog] {
+        assert_eq!(frame.status, CommandStatus::Accepted);
+    }
+    Ok([query, start, relog])
 }
 
 fn is_uuid7(value: &str) -> bool {
@@ -193,6 +211,112 @@ fn verify_route(cmd: &oteryn_client_runtime::raw_feature::FeatureCommand) {
     assert_eq!((cmd.capability, cmd.kind), (72, 89));
 }
 
+fn shop_oracle() -> Result<Vec<(task_board::full::ShopOffer, &'static str)>, Error> {
+    include_str!("p04_shop_oracle.txt")
+        .lines()
+        .map(|line| {
+            let fields: Vec<_> = line.splitn(7, ',').collect();
+            let [index, kind, primary, secondary, addon, price, name] = fields.as_slice() else {
+                return Err("malformed P04 shop oracle".into());
+            };
+            Ok((
+                task_board::full::ShopOffer {
+                    index: index.parse()?,
+                    kind: kind.parse()?,
+                    primary: primary.parse()?,
+                    secondary: secondary.parse()?,
+                    addon: addon.parse()?,
+                    price: price.parse()?,
+                    bought: false,
+                },
+                *name,
+            ))
+        })
+        .collect()
+}
+
+fn verify_rendered_shop(text: &str, reply: &Reply) -> Result<(), Error> {
+    let expected = shop_oracle()?;
+    if !reply
+        .shop
+        .iter()
+        .eq(expected.iter().map(|(offer, _)| offer))
+    {
+        return Err("P04 decoded shop differs from the authored catalogue".into());
+    }
+    let (_, shop) = text
+        .split_once("\nTask shop\n")
+        .ok_or("missing P04 shop heading")?;
+    let (shop, _) = shop
+        .split_once("\nBounty Talisman upgrade paths\n")
+        .ok_or("missing P04 shop terminator")?;
+    let expected = expected.into_iter().map(|(offer, label)| {
+        let availability = match u64::from(offer.price).checked_sub(reply.points) {
+            Some(shortfall) if shortfall > 0 => format!("{shortfall} points short"),
+            _ => "Available — server confirms purchase".into(),
+        };
+        format!("Shop {} — {label}\n  Reward {} / {} (addon {})\n  {} task points — {availability}\n",
+            offer.index + 1, offer.primary, offer.secondary, offer.addon, offer.price)
+    }).collect::<String>();
+    if shop != expected {
+        return Err("P04 rendered shop differs from the authored offer sequence".into());
+    }
+    Ok(())
+}
+
+fn verify_master_replay(
+    [query, start, after]: [GatedCommandResult; 3],
+    baseline: &Reply,
+) -> Result<(), Error> {
+    let mut panel = TaskBoardPanel {
+        selected: true,
+        ..TaskBoardPanel::default()
+    };
+    let request = full_request(&mut panel, FullIntent::Refresh).ok_or("Master query request")?;
+    verify_route(&request);
+    assert_eq!(
+        decode_request(&request.payload).map_err(|e| format!("{e:?}"))?,
+        task_board::full::Request::query()
+    );
+    apply_full_result(&mut panel, &query);
+    assert_eq!(panel.weekly.as_ref(), Some(baseline));
+    let request =
+        full_request(&mut panel, FullIntent::StartWeekly(3)).ok_or("Master start request")?;
+    verify_route(&request);
+    let sent = decode_request(&request.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!((sent.action, sent.selection), (5, 3));
+    apply_full_result(&mut panel, &start);
+    let active = panel.weekly.as_ref().ok_or("started Master board")?;
+    assert_eq!(
+        (
+            active.refusal,
+            active.weekly.started,
+            active.weekly.difficulty
+        ),
+        (0, true, 3)
+    );
+    assert_eq!(active.weekly.kills.len(), 6);
+    assert_eq!(active.weekly.deliveries.len(), 6);
+    assert!(panel.feedback.is_none());
+    let mut fresh = TaskBoardPanel {
+        selected: true,
+        ..TaskBoardPanel::default()
+    };
+    let request =
+        full_request(&mut fresh, FullIntent::Refresh).ok_or("Master readmission query request")?;
+    verify_route(&request);
+    assert_eq!(
+        decode_request(&request.payload).map_err(|e| format!("{e:?}"))?,
+        task_board::full::Request::query()
+    );
+    apply_full_result(&mut fresh, &after);
+    assert_eq!(fresh.weekly.as_ref(), Some(active));
+    assert!(!fresh.pending);
+    assert!(fresh.feedback.is_none());
+    assert_eq!(panel_text(&fresh), panel_text(&panel));
+    Ok(())
+}
+
 fn verify_replay(captured: Captured) -> Result<(), Error> {
     let e = captured.expected.as_str();
     let mut panel = TaskBoardPanel {
@@ -237,36 +361,7 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
         value(e, "deliveries")?
     );
     assert_eq!(weekly.shop.len().to_string(), value(e, "shop_count")?);
-    let first: Vec<&str> = value(e, "shop_first")?.split(',').collect();
-    let offer = weekly.shop.first().ok_or("shop offer")?;
-    assert_eq!(
-        [
-            offer.index.to_string(),
-            offer.kind.to_string(),
-            offer.price.to_string()
-        ],
-        [first[0], first[1], first[2]]
-    );
-    assert_eq!(
-        (offer.primary, offer.secondary, offer.addon, offer.bought),
-        (1907, 0, 0, false)
-    );
-    let shop_header = "Shop 1 — Feral Trapper (Base Outfit)";
-    let reward = "  Reward 1907 / 0 (addon 0)";
-    let affordability = if offer.bought {
-        "Already owned".to_owned()
-    } else if weekly.points >= u64::from(offer.price) {
-        "Available — server confirms purchase".to_owned()
-    } else {
-        format!("{} points short", u64::from(offer.price) - weekly.points)
-    };
-    let price_line = format!("  {} task points — {affordability}", first[2]);
-    let at = lines
-        .iter()
-        .position(|line| *line == shop_header)
-        .ok_or("shop header line")?;
-    assert_eq!(lines.get(at + 1).copied(), Some(reward));
-    assert_eq!(lines.get(at + 2).copied(), Some(price_line.as_str()));
+    verify_rendered_shop(&text, &weekly)?;
 
     // StartWeekly above the character’s level is refused and the weekly state stays the same.
     let start = full_request(&mut panel, FullIntent::StartWeekly(3)).ok_or("start request")?;
@@ -302,12 +397,36 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
     assert_eq!(fresh.feedback, None);
     assert_eq!(fresh.weekly.as_ref(), Some(&weekly));
 
+    if let Some(master) = captured.master {
+        verify_master_replay(master, &weekly)?;
+    }
     assert_invalid_results(&mut panel, &refused)
 }
 
 #[test]
 fn p04_unit_projection_checks_rendering_and_invalid_results() -> Result<(), Error> {
     verify_replay(fixture()?)
+}
+
+#[test]
+fn p04_shop_oracle_rejects_omitted_or_reordered_rendered_offers() -> Result<(), Error> {
+    let mut panel = TaskBoardPanel {
+        selected: true,
+        ..TaskBoardPanel::default()
+    };
+    full_request(&mut panel, FullIntent::Refresh).ok_or("query request")?;
+    apply_full_result(&mut panel, &fixture()?.query);
+    let board = panel.weekly.as_ref().ok_or("query board")?;
+    let rendered = panel_text(&panel);
+    verify_rendered_shop(&rendered, board)?;
+    let missing = rendered
+        .lines()
+        .filter(|line| !line.starts_with("Shop 24 — "))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(verify_rendered_shop(&missing, board).is_err());
+    assert!(verify_rendered_shop(&rendered.replace("Shop 2 —", "Shop 3 —"), board).is_err());
+    Ok(())
 }
 
 #[test]

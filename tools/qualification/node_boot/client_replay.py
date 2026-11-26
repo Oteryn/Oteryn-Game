@@ -106,10 +106,11 @@ def capture_names(row, source):
 
 P04_TEST = "e2e_p04_replays_query_and_refused_start_weekly"
 UUID7 = r"[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+P04_FRAME = r"[1-9][0-9]*"
+P04_BOUNDARY = rf"{UUID7},{UUID7}(?:,{P04_FRAME}){{6}}"
 P04_BINDING = re.compile(
     r"^SEAM_EVIDENCE e2e_capture scenario=P04[.]client status=CAPTURED evidence="
-    rf"(?P<binding>session={UUID7};readmission={UUID7};query=[1-9][0-9]*,[1-9][0-9]*;"
-    r"refused=[1-9][0-9]*,[1-9][0-9]*;after=[1-9][0-9]*,[1-9][0-9]*);",
+    rf"(?P<binding>below={P04_BOUNDARY};at={P04_BOUNDARY});",
     re.MULTILINE,
 )
 
@@ -137,7 +138,8 @@ def replay_targets():
     )]
     targets["e2e_p04"] = [(
         "oteryn-client-ui", P04_TEST,
-        {"p04-query.json", "p04-refused.json", "p04-readmission.json", "p04-expected.txt"},
+        {"p04-query.json", "p04-refused.json", "p04-readmission.json", "p04-expected.txt",
+         "p04-master-query.json", "p04-master-start.json", "p04-master-readmission.json"},
     )]
     return targets
 

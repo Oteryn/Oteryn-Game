@@ -326,7 +326,7 @@ WORK=.
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 29)
+        self.assertEqual(len(accounts), 31)
         self.assertEqual(len(set(accounts)), len(accounts))
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 
@@ -700,18 +700,20 @@ class P04ReplayTests(unittest.TestCase):
                 self.assertEqual(result.returncode, expected, result.stderr)
 
     def test_p04_shared_replay_rejects_substitute_cargo(self):
-        binding = ('session=01890f4c-3b2a-7c01-8d11-9a321b7c0004;'
-                   'readmission=01890f4c-3b2a-7c01-8d11-9a321b7c0005;'
-                   'query=1,10;refused=2,12;after=1,9')
+        binding = ('below=01890f4c-3b2a-7c01-8d11-9a321b7c0004,'
+                   '01890f4c-3b2a-7c01-8d11-9a321b7c0005,1,10,2,12,1,9;'
+                   'at=01890f4c-3b2a-7c01-8d11-9a321b7c0006,'
+                   '01890f4c-3b2a-7c01-8d11-9a321b7c0007,1,10,2,12,1,9')
         marker = ('SEAM_EVIDENCE e2e_capture scenario=P04.client status=CAPTURED '
                   f'evidence={binding};period=20780;\n')
-        names = ('p04-query.json', 'p04-refused.json', 'p04-readmission.json', 'p04-expected.txt')
+        names = ('p04-query.json', 'p04-refused.json', 'p04-readmission.json', 'p04-expected.txt',
+                 'p04-master-query.json', 'p04-master-start.json', 'p04-master-readmission.json')
         test = 'e2e_p04_replays_query_and_refused_start_weekly'
         for evidence, count, missing, cause, invoked in [
             (marker, 1, None, 'replay-not-run', False),
             (marker, 0, None, 'replay-not-run', False),
             (marker, 1, 'p04-readmission.json', 'capture-missing', False),
-            (marker.replace('after=1,9;', ''), 1, None, 'capture-missing', False),
+            (marker.replace(',1,9;period', ';period'), 1, None, 'capture-missing', False),
             (marker * 2, 1, None, 'server-failed', False),
             ('', 1, None, 'replay-not-run', False),
         ]:

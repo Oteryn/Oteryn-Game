@@ -3634,6 +3634,14 @@ pub(super) async fn connect_character(
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     wait_character_released(clients, index).await?;
+    connect_character_once(clients, tag, index).await
+}
+
+async fn connect_character_once(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    index: usize,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
     let token = if requires_platform_grant(&clients.accounts[index]) {
         platform_row_grant(clients, index).await?
     } else {

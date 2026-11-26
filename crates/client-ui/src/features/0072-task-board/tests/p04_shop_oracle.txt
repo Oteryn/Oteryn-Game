@@ -1,0 +1,24 @@
+0,2,1907,0,0,100000,Feral Trapper (Base Outfit)
+1,2,1907,0,1,35000,Feral Trapper (Addon 1)
+2,2,1907,0,2,35000,Feral Trapper (Addon 2)
+3,2,1282,0,0,100000,Falconer (Base Outfit)
+4,2,1282,0,1,35000,Falconer (Addon 1)
+5,2,1282,0,2,35000,Falconer (Addon 2)
+6,1,1908,0,0,145000,Tidal Seawater Predator (Mount)
+7,1,1909,0,0,145000,Ashen Coast Predator (Mount)
+8,1,1910,0,0,145000,Crimson Bay Predator (Mount)
+9,1,1281,0,0,145000,Antelope (Mount)
+10,0,36753,0,0,135000,Falcon Pet
+11,0,31465,0,0,75000,Cerberus Champion Puppy
+12,0,32753,0,0,80000,Hellflayer Trophy
+13,0,32756,0,0,80000,Golden Hunter Trophy
+14,0,36748,0,0,80000,Brachiodemon Trophy
+15,0,36749,0,0,50000,Many Faces Trophy
+16,0,32752,0,0,15000,Sea Serpent Trophy
+17,0,32755,0,0,15000,Silver Hunter Trophy
+18,0,32754,0,0,3000,Bronze Hunter Trophy
+19,0,32751,0,0,3000,Gozzler Trophy
+20,0,32918,0,0,37500,Demon Doll
+21,0,32943,0,0,37500,Vexclaw Doll
+22,3,32795,32796,0,35000,Bone Bed
+23,4,0,0,0,100,Bonus Promotion
