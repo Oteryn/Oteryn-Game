@@ -24,6 +24,44 @@ pub enum LogoutReply {
     Unknown,
 }
 
+/// A release checkpoint that could not settle before the lease transaction.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum ReleaseRetryStage {
+    Drome,
+    Death,
+    TimedItems,
+    ItemEffects,
+    Fence,
+    WheelGift,
+    Monk,
+    SpellTraining,
+    Gourmet,
+    Conditions,
+    KillRewards,
+    Familiar,
+    OfflineTraining,
+}
+
+impl ReleaseRetryStage {
+    fn label(self) -> &'static str {
+        match self {
+            Self::Drome => "drome_sync",
+            Self::Death => "death_save",
+            Self::TimedItems => "timed_items",
+            Self::ItemEffects => "item_effects",
+            Self::Fence => "fence_wait",
+            Self::WheelGift => "wheel_gift",
+            Self::Monk => "monk_save",
+            Self::SpellTraining => "training_save",
+            Self::Gourmet => "gourmet_checkpoint",
+            Self::Conditions => "condition_save",
+            Self::KillRewards => "kill_rewards",
+            Self::Familiar => "familiar_save",
+            Self::OfflineTraining => "offline_training",
+        }
+    }
+}
+
 pub(super) struct LogoutZones {
     pub(super) no_logout: bool,
     pub(super) protection_zone: Option<bool>,
@@ -342,23 +380,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         Ok(match step {
-            ReleaseAttempt::Done(GraceExpiryResult::Released) => {
+            Ok(ReleaseAttempt::Done(GraceExpiryResult::Released)) => {
                 LogoutReply::Result(LogoutResult::Accepted)
             }
             // The session is not this logout's to end, and its fence is lifted.
-            ReleaseAttempt::Done(GraceExpiryResult::NotApplicable) => {
+            Ok(ReleaseAttempt::Done(GraceExpiryResult::NotApplicable)) => {
                 operator_event("event=logout_busy stage=release_not_applicable");
                 LogoutReply::Result(LogoutResult::Busy)
             }
             // A refused fence, or a committed release whose actor could not be removed: the
             // lifecycle reconciles from the row.
-            ReleaseAttempt::Done(GraceExpiryResult::Unknown) => {
+            Ok(ReleaseAttempt::Done(GraceExpiryResult::Unknown)) => {
                 operator_event("event=logout_unknown stage=release_attempt kind=unknown");
                 LogoutReply::Unknown
             }
-            ReleaseAttempt::Retry => match self.settle_unended(&store, actor, &mut hold).await {
+            Err(stage) => match self.settle_unended(&store, actor, &mut hold).await {
                 UnendedSettle::Lifted => {
-                    operator_event("event=logout_busy stage=release_retry_lifted");
+                    operator_event(&format!(
+                        "event=logout_busy stage=release_retry_lifted retry_stage={}",
+                        stage.label()
+                    ));
                     LogoutReply::Result(LogoutResult::Busy)
                 }
                 UnendedSettle::Terminal => {
@@ -379,7 +420,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     LogoutReply::Unknown
                 }
             },
-            ReleaseAttempt::Unknown => {
+            Ok(ReleaseAttempt::Unknown | ReleaseAttempt::Retry) => {
                 self.states.fence_holders.keep(hold);
                 operator_event("event=logout_unknown stage=release_attempt kind=unknown");
                 LogoutReply::Unknown

@@ -278,6 +278,7 @@
       "level": "info",
       "span": false,
       "fields": [
+        "retry_stage",
         "stage"
       ],
       "codes": [],
