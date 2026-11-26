@@ -19,6 +19,8 @@ use std::time::Duration;
 
 use tokio::sync::Mutex;
 
+const PEER_ACCOUNT: u8 = 63;
+
 pub(super) fn run_party_list() -> TestResult {
     run_case(None, true)
 }
@@ -31,21 +33,45 @@ fn run_case(extra: Option<(&'static str, &'static str)>, party_list: bool) -> Te
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
+    run_with_admin(
+        admin,
+        extra.map_or("party_buffs", |(key, _)| key),
+        extra,
+        party_list,
+        false,
+    )
+}
+
+#[cfg(oteryn_pg_shard_primary)]
+pub(super) fn run_party_spell_logout(admin: String) -> TestResult {
+    run_with_admin(
+        admin,
+        "party_spell_logout",
+        Some(("protect_party", "paladin")),
+        false,
+        true,
+    )
+}
+
+fn run_with_admin(
+    admin: String,
+    tag: &'static str,
+    extra: Option<(&'static str, &'static str)>,
+    party_list: bool,
+    logout_after_cast: bool,
+) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
             fixture::runtime().map_err(debug)?.block_on(async move {
                 let started = std::time::Instant::now();
-                let h = Harness::create(admin, extra.map_or("party_buffs", |(key, _)| key), false)
-                    .await
-                    .map_err(debug)?;
-                let result = scenario(&h, extra, party_list)
+                let h = Harness::create(admin, tag, false).await.map_err(debug)?;
+                let result = scenario(&h, extra, party_list, logout_after_cast)
                     .await
                     .map_err(|error| error.to_string());
                 h.cleanup().await.map_err(debug)?;
                 eprintln!(
-                    "POSTGRES_EXECUTED case={} elapsed={:.3}s",
-                    extra.map_or("party_buffs", |(key, _)| key),
+                    "POSTGRES_EXECUTED case={tag} elapsed={:.3}s",
                     started.elapsed().as_secs_f64()
                 );
                 result
@@ -113,7 +139,12 @@ fn open_party_world(
     .map_err(debug)?)
 }
 
-async fn scenario(h: &Harness, extra: Option<(&str, &str)>, party_list: bool) -> TestResult {
+async fn scenario(
+    h: &Harness,
+    extra: Option<(&str, &str)>,
+    party_list: bool,
+    logout_after_cast: bool,
+) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
@@ -122,7 +153,7 @@ async fn scenario(h: &Harness, extra: Option<(&str, &str)>, party_list: bool) ->
         crate::world_party_runtime_postgres_cases::committed_fresh_player(h, 60, 62, 70, now)
             .await?;
     let second =
-        crate::world_party_runtime_postgres_cases::committed_fresh_player(h, 61, 63, 71, now)
+        crate::world_party_runtime_postgres_cases::committed_fresh_player(h, 61, PEER_ACCOUNT, 71, now)
             .await?;
     let third =
         crate::world_party_runtime_postgres_cases::committed_fresh_player(h, 62, 64, 72, now)
@@ -340,7 +371,9 @@ async fn scenario(h: &Harness, extra: Option<(&str, &str)>, party_list: bool) ->
     let (consumer, clock, activation, _) =
         crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(62));
     let (_, _, _, member_premium) =
-        crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(63));
+        crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(
+            id(PEER_ACCOUNT),
+        );
     consumer.prove_for_test(member_premium);
     h.root
         .latch_premium_activation(
@@ -448,6 +481,38 @@ async fn scenario(h: &Harness, extra: Option<(&str, &str)>, party_list: bool) ->
     if extra.is_some_and(|(key, _)| key == "c11_monk") {
         return super::monk_virtues_fixtures::scenario(&mut owner, h, &players).await;
     }
+    let logout_peer = if logout_after_cast {
+        let (actor, session) = players[1];
+        let fence = owner
+            .current_quest_fence(session)
+            .await
+            .map_err(debug)?
+            .ok_or("peer fence")?;
+        assert!(owner.track_restored(
+            session,
+            actor,
+            &crate::gameplay_transport::last_position::AdmissionPosition::FirstLogin,
+            fence,
+        ));
+        let mut continuity = SessionContinuity::FRESH;
+        continuity.connection_generation = fence.connection_generation.get();
+        continuity.next_command_id = 2; // The peer's party accept used command 1.
+        Some(AdmittedSession {
+            game_session_id: session,
+            world_id: world,
+            channel_id: channel,
+            runtime_actor: Some(actor),
+            first_entry: FirstEntryOutcome::Positioned,
+            controller: Some(crate::gameplay_transport::connection::ControllerBinding {
+                account_id: id(PEER_ACCOUNT),
+                transport: second.current_transport().ok_or("peer transport")?,
+            }),
+            continuity,
+            item_fence: Some(fence.item_fence()),
+        })
+    } else {
+        None
+    };
     // Each eligible vocation casts on its own session; both nearby actors receive both buffs.
     let casts = extra.map_or_else(
         || vec![(20, "protect_party", 0), (21, "enlighten_party", 1)],
@@ -481,6 +546,19 @@ async fn scenario(h: &Harness, extra: Option<(&str, &str)>, party_list: bool) ->
             oteryn_protocol_oteryn::actor_spell::SpellCastDisposition::Cast,
             "{key}"
         );
+        if let Some(peer) = logout_peer {
+            check_logout_after_cast(&owner, peer).await?;
+            let committed: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_spell_item_receipts
+                 WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2)",
+            )
+            .bind(players[caster].1.as_bytes().as_slice())
+            .bind(i64::try_from(number)?)
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(committed, "the party cast must have a durable receipt");
+            return Ok(());
+        }
         let runtime = owner.runtime.lock().await;
         let states = owner.states.spell_states.lock().await;
         for (index, (actor, session)) in players.iter().copied().enumerate() {
@@ -564,6 +642,60 @@ async fn scenario(h: &Harness, extra: Option<(&str, &str)>, party_list: bool) ->
     if party_list {
         super::party_list_fixtures::check(&owner, &players).await?;
     }
+    Ok(())
+}
+
+async fn check_logout_after_cast(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    peer: AdmittedSession,
+) -> TestResult {
+    use crate::durability::fresh_admission::FreshAdmissionStore;
+    use crate::foundation::GameSessionState;
+    use crate::gameplay_transport::connection::{FreshAdmissionAuthority, LogoutReply};
+    use crate::gameplay_transport::logout::{
+        LOGOUT_RELEASE_PROBE, LogoutReleaseProbe, ReleaseRetryStage,
+    };
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+
+    let probe = std::sync::Arc::new(LogoutReleaseProbe::default());
+    let logout = LOGOUT_RELEASE_PROBE.scope(
+        probe.clone(),
+        owner.logout_command(peer, peer.continuity.next_command_id),
+    );
+    let holder = async {
+        probe.before_conditions.notified().await;
+        // Keep a real semantic pass checked out until logout observes the contention.
+        let held = owner.root.try_issue_semantic_pass()?;
+        probe.resume_conditions.notify_one();
+        probe.retry_observed.notified().await;
+        assert_eq!(
+            probe.first_retry.get(),
+            Some(&ReleaseRetryStage::Conditions)
+        );
+        held.run(|_, _| Box::pin(async { Ok(()) })).await
+    };
+    let (reply, returned) = tokio::time::timeout(Duration::from_secs(10), async {
+        tokio::join!(logout, holder)
+    })
+    .await
+    .map_err(|_| "party spell peer logout did not settle condition-save contention")?;
+    returned?;
+    assert_eq!(reply, LogoutReply::Result(LogoutResult::Accepted));
+
+    let session = peer.game_session_id;
+    let current = FreshAdmissionStore::from_root(owner.root.clone())
+        .current_session(session)
+        .await?;
+    assert_eq!(current.session_state(), GameSessionState::Terminal);
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .player_control_facts(peer.runtime_actor.ok_or("logout peer actor")?, session)
+            .is_err(),
+        "the peer must leave the Channel after the durable release"
+    );
     Ok(())
 }
 
