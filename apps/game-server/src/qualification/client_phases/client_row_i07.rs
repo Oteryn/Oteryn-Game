@@ -31,7 +31,15 @@ fn request(action: QuickLootAction) -> QuickLootRequest {
     }
 }
 
+fn write_capture(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    use std::io::Write as _;
+    std::fs::File::create_new(path)?.write_all(bytes)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let capture_dir = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .ok_or("I07 requires a fresh E2E_ALL_CAPTURE_DIR")?;
+    let capture_dir = Path::new(&capture_dir);
     let index = provisioning::item_index()?;
     let skip_reference = provisioning::item_reference(&index, 3031)?.get();
     let accept_reference = provisioning::item_reference(&index, 3350)?.get();
@@ -48,7 +56,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     pouch.recipient_id = Some([7; 16]);
     pouch.fallback_to_main = true;
     let requests = [skip, accept, pouch, request(QuickLootAction::LootAll)];
-    let capture_dir = std::env::var_os("E2E_ALL_CAPTURE_DIR");
     let mut item_count = 0;
     for (index, request) in requests.into_iter().enumerate() {
         let payload = encode_quick_loot_request(&request).map_err(|error| format!("{error:?}"))?;
@@ -74,23 +81,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 .items
                 .len();
         }
-        if let Some(path) = capture_dir.as_deref().map(Path::new) {
-            let key = index + 1;
-            std::fs::write(path.join(format!("i07-{key}-request.bin")), &payload)?;
-            std::fs::write(
-                path.join(format!("i07-{key}-status.bin")),
-                (reply.status as u32).to_be_bytes(),
-            )?;
-            std::fs::write(path.join(format!("i07-{key}.bin")), &reply.payload)?;
-        }
-    }
-    if let Some(path) = capture_dir.as_deref().map(Path::new) {
-        std::fs::write(
-            path.join("i07-expected.txt"),
-            format!(
-                "skip={skip_reference} accept={accept_reference} confirmed=2 results={item_count}\n"
-            ),
+        let key = index + 1;
+        write_capture(
+            &capture_dir.join(format!("i07-{key}-request.bin")),
+            &payload,
         )?;
+        write_capture(
+            &capture_dir.join(format!("i07-{key}-status.bin")),
+            &(reply.status as u32).to_be_bytes(),
+        )?;
+        write_capture(&capture_dir.join(format!("i07-{key}.bin")), &reply.payload)?;
     }
+    write_capture(
+        &capture_dir.join("i07-expected.txt"),
+        format!(
+            "skip={skip_reference} accept={accept_reference} confirmed=2 results={item_count}\n"
+        )
+        .as_bytes(),
+    )?;
     Ok(())
 }
