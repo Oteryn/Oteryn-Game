@@ -587,7 +587,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         )
         .await?;
     require_filters(&mut database, character, true, &expected_filters[..2]).await?;
-    let unassigned_pouch = route(None, QuickLootRecipient::GoldPouch, Some(pouch), false);
+    let unassigned_pouch = route(None, QuickLootRecipient::GoldPouch, Some(fulfilment), false);
     capture.probe(&mut client, 3, unassigned_pouch, &[]).await?;
     let (fallback, assigned, recipient): (bool, bool, Option<Vec<u8>>) = sqlx::query_as(
         "SELECT fallback_to_main, unassigned_gold_pouch, uuid_send(unassigned_container_id)

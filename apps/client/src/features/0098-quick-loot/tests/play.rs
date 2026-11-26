@@ -396,7 +396,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     let unassigned_pouch = route(
         None,
         QuickLootRecipient::GoldPouch,
-        Some(expected.pouch),
+        Some(expected.fulfilment),
         false,
     );
     let steps: [ReplayStep<'_>; 20] = [
@@ -466,16 +466,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         ),
         (click.clone(), &[], None),
         (Action::Select(skip), &[], None),
-        (
-            route(
-                None,
-                QuickLootRecipient::GoldPouch,
-                Some(expected.pouch),
-                false,
-            ),
-            &[],
-            None,
-        ),
+        (unassigned_pouch, &[], None),
         (
             Action::LootAll,
             &[
