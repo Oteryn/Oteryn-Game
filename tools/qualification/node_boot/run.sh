@@ -1554,6 +1554,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
     test_env+=("NODE_BOOT_CAST_EVIDENCE_LOG=$node_log" "NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
+    test_env+=("NODE_BOOT_NPC_DATA=$BASE/npc-data")
     local extra_accounts
     extra_accounts="$(IFS=,; echo "${EXTRA_WORLD_ACCOUNTS[*]}")"
     test_env+=("NODE_BOOT_EXTRA_WORLD_ACCOUNTS=$extra_accounts" "NODE_BOOT_EXIVA_ACCOUNT_ID=$EXIVA_ACCOUNT_ID")

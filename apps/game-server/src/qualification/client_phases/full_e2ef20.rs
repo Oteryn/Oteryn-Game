@@ -156,17 +156,13 @@ pub(super) async fn qualification_npc_talk_book(
     client: &mut DevClientSession,
 ) -> TestResult<crate::gameplay_transport::NpcTalkBook> {
     route_work(client, || {
-        let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let pin = std::fs::read(repo.join("deploy/synology-game/npc-data.pin.json"))
-            .map_err(|error| error.to_string())?;
-        let pin: serde_json::Value =
-            serde_json::from_slice(&pin).map_err(|error| error.to_string())?;
-        let digest = pin["project_sha256"]
-            .as_str()
-            .ok_or("NPC pin is missing the project digest")?;
-        let catalogue =
-            crate::content::load_data_only_npc_catalogue(&repo.join("content/world"), digest)
-                .map_err(|error| error.to_string())?;
+        let staged = std::path::PathBuf::from(required("NODE_BOOT_NPC_DATA").map_err(|error| error.to_string())?);
+        let digest = std::fs::read_to_string(staged.join("PROJECT_SHA256")).map_err(|error| error.to_string())?;
+        let catalogue = crate::content::load_data_only_npc_catalogue(
+            &staged.join("content/world"),
+            digest.trim(),
+        )
+        .map_err(|error| error.to_string())?;
         let model = catalogue
             .service_model_for_project()
             .map_err(|error| error.to_string())?;
