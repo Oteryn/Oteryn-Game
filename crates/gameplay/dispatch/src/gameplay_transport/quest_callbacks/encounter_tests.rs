@@ -23,6 +23,7 @@ fn engenc_personal_encounter_pending_requires_original_command_and_physical_fenc
         cause,
         origin: None,
         context: None,
+        paid_arrivals: Vec::new(),
         ingress_settled: false,
         participants: Vec::new(),
         flame: None,

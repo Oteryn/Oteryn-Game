@@ -8,6 +8,7 @@ mod ground_read;
 pub(crate) mod ground_stack;
 #[path = "quest_world_callback_npc_input.rs"]
 mod npc_input;
+pub mod paid_projection;
 mod selected_tool;
 mod tool_reads;
 mod vampire_coffin;
@@ -34,7 +35,11 @@ use super::{
     spell_owner_commit::SpellLanePermit,
 };
 use oteryn_gameplay_quests::quest::npc_rules::legacy_defaults;
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position, VampireCoffinKind};
+use oteryn_gameplay_quests::quest::{
+    carried_step::recipe,
+    native_rules::NativeRule,
+    world_callbacks::{Callback, ItemOnTarget, Position, VampireCoffinKind},
+};
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 
@@ -213,6 +218,24 @@ fn read_only_pin_allows(
         || legacy_defaults(catalogue, quest, &stored.definition_hash).is_some()
         || (quest == "oteryn:quest.children_of_the_revolution_quest"
             && stored.definition_hash == CHILDREN_MAIN_ERA_HASH))
+}
+
+/// Keep the source occurrence live across session release whenever its writer
+/// can debit a physical input. Conditional recipes reserve the same release
+/// window until the exact branch of their receipt is known.
+pub fn may_debit(callback: &Callback) -> bool {
+    recipe(&callback.key).is_some()
+        || !callback.offerings.is_empty()
+        || !callback.effects.carried_inputs.is_empty()
+        || callback.item_on_target.as_ref().is_some_and(|input| {
+            spends_source(input)
+                || !input.ingredients.is_empty()
+                || matches!(callback.native_rule, Some(NativeRule::IceSealPaint { .. }))
+        })
+}
+
+fn spends_source(input: &ItemOnTarget) -> bool {
+    input.count > 0 && !input.reusable
 }
 
 struct Input {
@@ -678,6 +701,12 @@ pub(super) async fn consume(
         tx, permit, fence, request, callback, changes, context, command, world_id, channel_id,
     )
     .await?;
+    if consumed
+        && may_debit(callback)
+        && !paid_projection::write_arrivals(tx, fence, callback, context).await?
+    {
+        return Ok(false);
+    }
     if consumed && coffin == Some(VampireCoffinKind::Weakened) {
         return vampire_coffin::record_encounter(tx, fence.character_id).await;
     }
@@ -860,7 +889,7 @@ async fn consume_inputs(
                 ice_islands_seals::consumes_paint(seal, changes)
                     .map_err(|_| DurabilityError::InvalidStoredState)?
             }
-            _ => !required.reusable,
+            _ => spends_source(required),
         };
         if consume {
             inputs.push(input);

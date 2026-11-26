@@ -153,6 +153,11 @@ pub async fn serve_gameplay(
         .register_current_runtime()
         .await
         .map_err(|_| GameplayServeError::OwnerUnavailable)?;
+    if let Some(map) = authority.bundle_map() {
+        Box::pin(authority.restore_paid_quest_scene(map))
+            .await
+            .ok_or(GameplayServeError::OwnerUnavailable)?;
+    }
     for template in owners.activity_templates {
         authority
             .activity_runtimes

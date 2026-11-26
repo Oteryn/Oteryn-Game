@@ -45,7 +45,8 @@ fn scenario_case(
     let sarina_vine = name.starts_with("thieves-guild-sarina-vine-");
     let vampire_coffin = super::super::inquisition_coffin_recovery_fixtures::matches(name);
     let dread_lord_retirement = name == "dreamer-dread-lord-scroll/retirement";
-    let name = if dread_lord_retirement {
+    let dread_lord_rebuild = name == "dreamer-dread-lord-scroll/rebuild";
+    let name = if dread_lord_retirement || dread_lord_rebuild {
         "dreamer-dread-lord-scroll"
     } else {
         name
@@ -96,6 +97,9 @@ fn scenario_case(
     let shared_gate = name.starts_with("l6-tomb-gate-");
     let shared_switch = name.starts_with("l6-tomb-switch-");
     let tomb_native = name.starts_with("l6-tomb-native-");
+    let (name, carried_control_loss) = name
+        .strip_suffix("/control-loss")
+        .map_or((name, false), |name| (name, true));
     let carried_step = name.starts_with("l6-tomb-carried-") || tomb_native;
     let mead = name == "l6/waterskin-of-mead";
     let outlaw_treasure = name == "outlaw-camp-treasure";
@@ -2400,6 +2404,7 @@ fn scenario_case(
                 fence.item_fence(),
                 &callback,
                 dread_lord_retirement,
+                dread_lord_rebuild,
             ))
             .await?;
         } else if m07_dreamer {
@@ -2783,6 +2788,21 @@ fn scenario_case(
                     )
                     .await?;
                 }
+            }
+            if carried_control_loss {
+                Box::pin(super::super::l6_carried_step_fixtures::control_loss(
+                    &owner,
+                    &mut admitted,
+                    &h,
+                    deps.actor,
+                    fence,
+                    stateless_destination.ok_or("source branch destination")?,
+                ))
+                .await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
             }
             Box::pin(super::stateless::exercise(
                 &owner,

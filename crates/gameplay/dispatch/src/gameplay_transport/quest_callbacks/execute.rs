@@ -75,7 +75,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if self.scene_receipt_pending(map, key) {
             return UseDisposition::Rejected;
         }
-        if pays_for_callback(callback)
+        if may_debit(callback)
             && !self.paid_callback_can_start(session, session, |pending| {
                 pending.cause == cause && pending.callback == callback.key
             })
@@ -756,6 +756,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     cause,
                     origin: None,
                     context: None,
+                    paid_arrivals: Vec::new(),
                     flame: None,
                     ingress_settled: false,
                     participants: Vec::new(),
@@ -794,7 +795,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         placement,
                         object_revision: expected_revision,
                         context,
-                        success_prepared: success.is_some(),
+                        success: success
+                            .as_ref()
+                            .and_then(|proof| self.paid_arrival(runtime, states, session, proof)),
                         missing_prepared: missing.is_some(),
                     },
                 )
@@ -916,6 +919,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     cause,
                     origin: None,
                     context: None,
+                    paid_arrivals: Vec::new(),
                     flame: None,
                     ingress_settled: false,
                     participants: Vec::new(),
@@ -1195,6 +1199,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return UseDisposition::Rejected;
             };
+            let paid_arrivals = if !may_debit(callback) {
+                Vec::new()
+            } else if let Some(plan) = &party {
+                let Some(arrivals) = plan.paid_arrivals(self, runtime, states) else {
+                    return UseDisposition::Rejected;
+                };
+                arrivals
+            } else if let Some(proof) = &teleport {
+                let Some(arrival) = self.paid_arrival(runtime, states, session, proof) else {
+                    return UseDisposition::Rejected;
+                };
+                vec![arrival]
+            } else {
+                Vec::new()
+            };
             let context = QuestWorldContext {
                 map_revision: crate::map::overlay::map_revision(map.overlay.base()),
                 content_revision: format!(
@@ -1218,6 +1237,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     cause,
                     origin: None,
                     context: None,
+                    paid_arrivals: Vec::new(),
                     flame: None,
                     ingress_settled: false,
                     participants: party.as_ref().map_or_else(Vec::new, |plan| plan.sessions()),
@@ -1230,15 +1250,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // that exact binding instead of the replaying caller's tool.
                 if record.context.is_none() {
                     record.selected_tool = selected_tool.cloned();
+                    record.paid_arrivals = paid_arrivals;
                 }
                 (
                     record.context.get_or_insert(context).clone(),
                     record.selected_tool.clone(),
+                    record.paid_arrivals.clone(),
                 )
             } else {
                 return UseDisposition::Rejected;
             };
-            let (context, selected_tool) = context;
+            let (context, selected_tool, paid_arrivals) = context;
             let context = if let Some((source, intent)) = selected_tool {
                 let Some(context) = context.with_selected_tool(source, intent) else {
                     return UseDisposition::Rejected;
@@ -1247,6 +1269,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 context.into()
             };
+            let context = context.with_paid_arrivals(paid_arrivals);
             let reward_weights = self
                 .active_generation
                 .and_then(|g| g.native_gameplay())

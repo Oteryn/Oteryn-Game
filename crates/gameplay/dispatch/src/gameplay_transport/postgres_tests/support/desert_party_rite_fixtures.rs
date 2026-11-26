@@ -37,6 +37,10 @@ const START: TilePos = TilePos {
 };
 
 pub(super) fn scenario(earned: bool) -> TestResult {
+    scenario_with_shutdown(earned, false)
+}
+
+pub(super) fn scenario_with_shutdown(earned: bool, shutdown: bool) -> TestResult {
     run(async |admin| {
         let h =
             Harness::create_with_admission_seed(admin, "desert_party_rite", false, false).await?;
@@ -497,7 +501,28 @@ pub(super) fn scenario(earned: bool) -> TestResult {
         for (_, session) in &members {
             assert!(owner.has_pending_quest_callback(*session));
         }
-        assert!(owner.reconcile_quest_callbacks(members[0].1).await);
+        if shutdown {
+            use crate::gameplay_transport::last_position::{AdmissionPosition, LastPositionFlush};
+            for ((actor, session), station) in members.iter().zip(&party.stations) {
+                let fence = current(&owner, *session).await?;
+                let cell = h.root.read_character_last_position(&authority, &h.node, fence)
+                    .await.map_err(debug)?.ok_or("paid landing must be durable before projection")?.record.cell;
+                let landing = super::quest_world_callbacks_fixtures::local(station.to);
+                assert_eq!((cell.x, cell.y, cell.floor), (landing.x, landing.y, landing.floor));
+                assert!(owner.track_restored(
+                    *session,
+                    *actor,
+                    &AdmissionPosition::FirstLogin,
+                    current(&owner, *session).await?,
+                ));
+            }
+            let flush = LastPositionFlush::default();
+            flush.request();
+            Box::pin(flush.serve(&owner)).await;
+            tokio::time::timeout(std::time::Duration::from_secs(1), flush.done()).await?;
+        } else {
+            assert!(owner.reconcile_quest_callbacks(members[0].1).await);
+        }
         for ((actor, session), station) in members.iter().zip(&party.stations) {
             assert_eq!(
                 owner
@@ -516,16 +541,44 @@ pub(super) fn scenario(earned: bool) -> TestResult {
             owner.bundle_map().ok_or("map")?.facts.object_revision(key),
             8
         );
-        assert_eq!(
-            pull(&owner, &mut admitted, successful_command, &target(7)).await?,
-            UseDisposition::Committed,
-            "exact original command replays the reconciled outcome"
-        );
-        assert_eq!(burns(&h).await?, 5);
-        assert_eq!(
-            owner.bundle_map().ok_or("map")?.facts.object_revision(key),
-            8
-        );
+        if shutdown {
+            let pin = owner.runtime.lock().await.content_pin().clone();
+            let mut rebuilt = ChannelRuntimeV1::from_committed_assignment(
+                admitted.world_id,
+                admitted.channel_id,
+                crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
+                1,
+                2,
+                2,
+                "runtime-scope-assignment:2",
+                8,
+                pin,
+            ).map_err(debug)?;
+            for ((_, session), station) in members.iter().zip(&party.stations) {
+                let decided = owner.read_admission_position(current(&owner, *session).await?)
+                    .await.map_err(debug)?;
+                let reservation = rebuilt.reserve_fresh_session(*session).map_err(debug)?;
+                let actor = rebuilt.commit_fresh_session(reservation).map_err(debug)?;
+                owner.initialize_admitted_position(&mut rebuilt, actor, *session, &decided)
+                    .await.map_err(debug)?;
+                assert_eq!(
+                    rebuilt.read_actor_position(actor).map_err(debug)?.position(),
+                    super::quest_world_callbacks_fixtures::local(station.to),
+                    "first entry after rebuilding the Channel uses the paid landing",
+                );
+            }
+        } else {
+            assert_eq!(
+                pull(&owner, &mut admitted, successful_command, &target(7)).await?,
+                UseDisposition::Committed,
+                "exact original command replays the reconciled outcome"
+            );
+            assert_eq!(burns(&h).await?, 5);
+            assert_eq!(
+                owner.bundle_map().ok_or("map")?.facts.object_revision(key),
+                8
+            );
+        }
         let receipts: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
         )

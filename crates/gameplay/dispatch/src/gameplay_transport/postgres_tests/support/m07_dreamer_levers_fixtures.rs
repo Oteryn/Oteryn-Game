@@ -116,18 +116,21 @@ pub(super) async fn exercise_dread_lord(
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     callback: &Callback,
     retire: bool,
+    rebuild: bool,
 ) -> TestResult {
     let [offering] = callback.offerings.as_slice() else { return Err("diamond offering".into()) };
     let [rank, _claim] = callback.storage.as_slice() else { return Err("rank and claim guards".into()) };
     let [resting_lever, active_lever] = callback.lever.ok_or("source lever")?;
-    let ground_outputs = |owner: &ComposedFreshAdmission<'_, '_, '_>| -> TestResult<usize> {
-        let map = owner.bundle_map().ok_or("map")?;
-        Ok(map.facts.movement_item_entries().iter().filter(|(position, entry)| {
+    let count_outputs = |map: &crate::map::boot::BundleMap| {
+        map.facts.movement_item_entries().iter().filter(|(position, entry)| {
             (position.x, position.y, position.floor) ==
                 (offering.position.x, offering.position.y, offering.position.floor)
                 && entry.facts.appearance_id == 7845
                 && !entry.facts.pickupable
-        }).count())
+        }).count()
+    };
+    let ground_outputs = |owner: &ComposedFreshAdmission<'_, '_, '_>| -> TestResult<usize> {
+        Ok(count_outputs(owner.bundle_map().ok_or("map")?))
     };
     let before_mints: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources")
         .fetch_one(&harness.pool).await?;
@@ -177,6 +180,25 @@ pub(super) async fn exercise_dread_lord(
     assert!(owner.has_pending_quest_callback(admitted.game_session_id));
     assert_eq!(counts(harness).await?.1, before.1 + 1);
     assert_eq!(ground_outputs(owner)?, 0);
+
+    if rebuild {
+        use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+        use crate::map::boot::BundleCollisionIndexExt;
+        let native = owner.active_generation.and_then(|active| active.native_gameplay())
+            .ok_or("native gameplay")?;
+        let rebuilt = dread_lord_world(native, callback)?;
+        let cells = rebuilt.movement_cells(owner.movement_cells()).map_err(debug)?;
+        let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+            return Err("rebuilt Dread Lord map".into());
+        };
+        let map = index.map();
+        assert_eq!(count_outputs(map), 0);
+        owner.restore_paid_quest_scene(map).await.ok_or("paid scene recovery")?;
+        assert_eq!(count_outputs(map), 1, "the claim's scene survives a rebuilt map");
+        assert_eq!(counts(harness).await?.1, before.1 + 1);
+        assert_eq!(ground_outputs(owner)?, 0, "the old map never published the scroll");
+        return Ok(());
+    }
 
     // Supply a new diamond so the second Dread Lord would otherwise be eligible.
     super::quest_world_callbacks_fixtures::offering(owner, fence, offering, 90004).await?;
