@@ -71,19 +71,17 @@ fn time_line_minute(text: &str) -> Option<u32> {
         .then_some(hours * 60 + minutes)
 }
 
-fn clock_tick() -> TestResult<u64> {
-    use crate::world_clock::{DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS, TIBIAN_MINUTE_MS, now_utc_ms};
+fn clock_elapsed_ms() -> TestResult<u64> {
+    use crate::world_clock::{DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS, now_utc_ms};
     let now = now_utc_ms().ok_or("step=clock observed=utc-unavailable")?;
     Ok(now
         .checked_sub(DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS)
-        .ok_or("step=clock observed=before-world-epoch")?
-        / TIBIAN_MINUTE_MS)
+        .ok_or("step=clock observed=before-world-epoch")?)
 }
 
 fn minute_in_command(minute: u32, first: u64, last: u64) -> bool {
     let day = u64::from(oteryn_protocol_oteryn::world_clock::TIBIAN_MINUTES_PER_DAY);
-    last.checked_sub(first).is_some_and(|span| span <= 3)
-        && (first..=last).any(|tick| tick % day == u64::from(minute))
+    first == last && first % day == u64::from(minute)
 }
 
 fn carried(
@@ -111,7 +109,7 @@ fn carried_in(
 async fn use_target(
     client: &mut DevClientSession,
     target: UseTarget,
-) -> TestResult<(CommandStatus, UseDisposition)> {
+) -> TestResult<(CommandStatus, UseDisposition, u64)> {
     let payload = world_object::encode_item_use_intent(&UseIntent {
         target,
         use_with: None,
@@ -122,51 +120,91 @@ async fn use_target(
     let reply = client.session_mut().world_context_use(&payload).await?;
     let disposition = world_object::decode_use_result(&reply.payload)
         .map_err(|error| format!("step=use observed=reply-decode:{error:?}"))?;
-    Ok((reply.status, disposition))
+    Ok((reply.status, disposition, reply.server_sequence))
 }
 
 async fn read_time(
     client: &mut DevClientSession,
     handle: oteryn_dev_client::ItemHandle,
 ) -> TestResult<u32> {
-    let before = client.last_server_sequence();
+    use crate::world_clock::TIBIAN_MINUTE_MS;
+    let before = client
+        .inventory()
+        .cloned()
+        .ok_or("step=use missing inventory")?;
+    // Start early in one clock tick so its exact minute is unambiguous.
+    while clock_elapsed_ms()? % TIBIAN_MINUTE_MS > 250 {
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
     client.take_events();
-    let first = clock_tick()?;
-    let (status, disposition) = use_target(client, UseTarget::Item(handle)).await?;
-    let last = clock_tick()?;
+    let first = clock_elapsed_ms()? / TIBIAN_MINUTE_MS;
+    let (status, disposition, reply) = use_target(client, UseTarget::Item(handle)).await?;
+    let last = clock_elapsed_ms()? / TIBIAN_MINUTE_MS;
     if status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(
             format!("step=use observed=status:{status:?},disposition:{disposition:?}").into(),
         );
     }
+    let mut minute = None;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop {
-        for event in client.take_events() {
-            if let oteryn_dev_client::SessionEvent::ChatLine(delta) = event
-                && let ChatLine::Private { speaker_name, text } = delta.value
-                && speaker_name == "Game"
-                && text.starts_with("The time is ")
-            {
-                let minute =
-                    time_line_minute(&text).ok_or("step=chat observed=invalid-clock-format")?;
-                if delta.server_sequence <= before || !minute_in_command(minute, first, last) {
-                    return Err(format!(
-                        "step=chat observed=minute:{minute},sequence:{} expected=command-ticks:{first}..={last},sequence-after:{before}",
-                        delta.server_sequence
-                    ).into());
-                }
-                evidence(&format!(
-                    "G09_CHECK step=clock status=PASS minute={minute} sequence={}",
-                    delta.server_sequence
-                ));
-                return Ok(minute);
-            }
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("step=chat observed=no-server-time-line;needed=The-time-is-H:MM".into());
-        }
+    while tokio::time::Instant::now() < deadline {
+        observe_use(client, &before, &mut minute, reply, first, last)?;
         client.service_liveness(Duration::from_millis(50)).await?;
     }
+    observe_use(client, &before, &mut minute, reply, first, last)?;
+    let observed = minute.ok_or("step=chat observed=no-server-time-line")?;
+    logout(client).await?;
+    observe_use(client, &before, &mut minute, reply, first, last)?;
+    evidence(&format!(
+        "G09_CHECK step=clock status=PASS minute={observed} reply_sequence={reply}"
+    ));
+    Ok(observed)
+}
+
+fn observe_use(
+    client: &mut DevClientSession,
+    before: &CharacterInventory,
+    minute: &mut Option<u32>,
+    reply: u64,
+    first: u64,
+    last: u64,
+) -> TestResult {
+    for event in client.take_events() {
+        match event {
+            oteryn_dev_client::SessionEvent::ChatLine(delta) => {
+                if let ChatLine::Private { speaker_name, text } = delta.value
+                    && speaker_name == "Game"
+                    && text.starts_with("The time is")
+                {
+                    check_clock_line(minute, &text, delta.server_sequence, reply, first, last)?;
+                }
+            }
+            oteryn_dev_client::SessionEvent::Inventory(delta) if &delta.value != before => {
+                return Err("step=use observed=inventory-changed-during-use-or-logout".into());
+            }
+            _ => {}
+        }
+    }
+    if client.inventory() != Some(before) {
+        return Err("step=use observed=inventory-changed-after-exchange".into());
+    }
+    Ok(())
+}
+
+fn check_clock_line(
+    observed: &mut Option<u32>,
+    text: &str,
+    sequence: u64,
+    reply: u64,
+    first: u64,
+    last: u64,
+) -> TestResult {
+    let minute = time_line_minute(text).ok_or("step=chat observed=invalid-clock-format")?;
+    if observed.is_some() || sequence <= reply || !minute_in_command(minute, first, last) {
+        return Err(format!("step=chat observed=minute:{minute},sequence:{sequence},duplicate:{} expected=command-ticks:{first}..={last},sequence-after:{reply}", observed.is_some()).into());
+    }
+    *observed = Some(minute);
+    Ok(())
 }
 
 pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -252,12 +290,21 @@ fn is_lubo(
 }
 
 fn purchase_inventory_matches(
+    before: &CharacterInventory,
     inventory: &CharacterInventory,
     watch: std::num::NonZeroU32,
     gold: std::num::NonZeroU32,
     remaining_gold: u64,
 ) -> bool {
-    matches!(carried_in(inventory, watch).as_slice(), [(_, 1)])
+    let unrelated = |state: &CharacterInventory| {
+        let mut state = state.clone();
+        state.entries.retain(|entry| {
+            entry.item_definition_ref != watch && entry.item_definition_ref != gold
+        });
+        state
+    };
+    unrelated(before) == unrelated(inventory)
+        && matches!(carried_in(inventory, watch).as_slice(), [(_, 1)])
         && carried_in(inventory, gold)
             .iter()
             .map(|(_, count)| u64::from(*count))
@@ -297,6 +344,13 @@ async fn talk(
     })
     .map_err(|error| format!("step=talk-{text} encode={error:?}"))?;
     npc_command(client, npc::COMMAND_TYPE_NPC_TALK_INTENT, &payload).await
+}
+
+fn lubo_greeting_matches(lines: &[String]) -> bool {
+    lines
+        == [
+            "Welcome to my adventurer shop, Pocket Watch Player! What do you need? Ask me for a {trade} to look at my wares.",
+        ]
 }
 
 async fn buy_watch(
@@ -428,7 +482,7 @@ async fn buy_watch(
         .map_err(|error| format!("step=seller observed=conversation-delta-decode:{error:?}"))?;
     if delta.server_sequence <= greeting
         || conversation.open.map(|open| open.0) != Some(actor)
-        || conversation.lines.iter().all(|line| line.trim().is_empty())
+        || !lubo_greeting_matches(&conversation.lines)
     {
         return Err("step=seller observed=missing-new-lubo-greeting".into());
     }
@@ -461,6 +515,10 @@ async fn buy_watch(
     if !carried(client, watch).is_empty() || gold_balance(client, gold) != funded_gold {
         return Err("step=buy observed=inventory-changed-before-purchase".into());
     }
+    let before = client
+        .inventory()
+        .cloned()
+        .ok_or("step=buy missing inventory")?;
     client.take_events();
     let payload = npc::encode_npc_trade_intent(&npc::NpcTradeIntent {
         npc_actor: actor,
@@ -474,13 +532,20 @@ async fn buy_watch(
     let purchase = npc_command(client, npc::COMMAND_TYPE_NPC_TRADE_INTENT, &payload).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        if client.take_events().into_iter().any(|event| {
-            matches!(event, oteryn_dev_client::SessionEvent::Inventory(delta)
-                if delta.server_sequence > purchase
-                    && purchase_inventory_matches(&delta.value, watch, gold, remaining_gold))
-        }) && client.inventory().is_some_and(|inventory| {
-            purchase_inventory_matches(inventory, watch, gold, remaining_gold)
-        }) {
+        if let Some(delta) = client
+            .take_events()
+            .into_iter()
+            .find_map(|event| match event {
+                oteryn_dev_client::SessionEvent::Inventory(delta) => Some(delta),
+                _ => None,
+            })
+        {
+            if delta.server_sequence <= purchase
+                || !purchase_inventory_matches(&before, &delta.value, watch, gold, remaining_gold)
+                || client.inventory() != Some(&delta.value)
+            {
+                return Err("step=buy observed=incorrect-first-inventory-delta".into());
+            }
             evidence(&format!(
                 "G09_CHECK step=buy status=PASS watch={WATCH} price={PRICE} gold_before={funded_gold} gold_after={remaining_gold}"
             ));
@@ -541,7 +606,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let previous_session = client.join_snapshot().game_session_id;
     let purchased_at = client.world_spatial().actor_position;
-    logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_character(clients, 0xcf, 0).await?;
     if fresh.join_snapshot().game_session_id == previous_session
@@ -558,7 +622,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .await
         .map_err(|error| verdict::context("step=fresh-clock".into(), error))?;
     let after = carried(&fresh, definition);
-    logout(&mut fresh).await?;
     if second_minute == first_minute {
         return Err("step=fresh observed=clock-did-not-advance".into());
     }
@@ -649,7 +712,14 @@ mod tests {
             }],
             ..Default::default()
         };
-        assert!(!purchase_inventory_matches(&event_value, watch, gold, 49));
+        let before = event_value.clone();
+        assert!(!purchase_inventory_matches(
+            &before,
+            &event_value,
+            watch,
+            gold,
+            49
+        ));
         event_value.entries.push(ItemEntry {
             appearance_id: 0,
             handle: NonZeroU64::new(2).ok_or("watch handle")?,
@@ -657,11 +727,41 @@ mod tests {
             count: NonZeroU32::MIN,
             sub_type: 0,
         });
-        assert!(!purchase_inventory_matches(&event_value, watch, gold, 49));
+        assert!(!purchase_inventory_matches(
+            &before,
+            &event_value,
+            watch,
+            gold,
+            49
+        ));
         event_value.entries[0].count = NonZeroU32::new(49).ok_or("remaining gold")?;
-        assert!(purchase_inventory_matches(&event_value, watch, gold, 49));
+        assert!(purchase_inventory_matches(
+            &before,
+            &event_value,
+            watch,
+            gold,
+            49
+        ));
+        let mut unexpected = event_value.clone();
+        unexpected.entries.push(ItemEntry {
+            item_definition_ref: NonZeroU32::MIN,
+            ..event_value.entries[1]
+        });
+        assert!(!purchase_inventory_matches(
+            &before,
+            &unexpected,
+            watch,
+            gold,
+            49
+        ));
         event_value.entries.pop();
-        assert!(!purchase_inventory_matches(&event_value, watch, gold, 49));
+        assert!(!purchase_inventory_matches(
+            &before,
+            &event_value,
+            watch,
+            gold,
+            49
+        ));
         Ok(())
     }
 
@@ -701,11 +801,30 @@ mod tests {
 
     #[test]
     fn clock_match_is_bounded_and_wraps_at_midnight() {
-        assert!(minute_in_command(1439, 1439, 1440));
-        assert!(minute_in_command(0, 1439, 1440));
+        assert!(minute_in_command(1439, 1439, 1439));
+        assert!(minute_in_command(0, 1440, 1440));
+        assert!(!minute_in_command(0, 1439, 1440));
         assert!(!minute_in_command(1, 1439, 1440));
         assert!(!minute_in_command(0, 1439, 1443));
         assert!(!minute_in_command(0, 1440, 1439));
+    }
+
+    #[test]
+    fn clock_rejects_pre_reply_wrong_and_duplicate_lines() -> TestResult {
+        let mut seen = None;
+        assert!(check_clock_line(&mut seen, "The time is 0:05.", 10, 10, 5, 5).is_err());
+        assert!(check_clock_line(&mut seen, "The time is 0:06.", 11, 10, 5, 5).is_err());
+        check_clock_line(&mut seen, "The time is 0:05.", 11, 10, 5, 5)?;
+        assert!(check_clock_line(&mut seen, "The time is 0:06.", 12, 10, 5, 5).is_err());
+        assert!(check_clock_line(&mut seen, "The time is 0:05.", 12, 10, 5, 5).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn greeting_rejects_nonblank_substitution() {
+        assert!(!lubo_greeting_matches(&[
+            "Welcome, Pocket Watch Player!".into()
+        ]));
     }
 
     #[test]
