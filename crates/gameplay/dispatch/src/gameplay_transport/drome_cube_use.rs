@@ -10,7 +10,6 @@ use crate::durability::item_use::drome_cube::DromeCubeError;
 use crate::durability::item_use::{ItemUseError, ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
 use crate::foundation::{CommandId, CommandRef, ExactActorRef, GameSessionId};
 use crate::gameplay_transport::connection::{UseCommand, UseOutcome};
-use crate::gameplay_transport::item_craft::retry_item_use_holder;
 use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, pinned_index};
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::{AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission};
@@ -26,6 +25,41 @@ pub(super) use gate::PendingCubeUse;
 #[path = "drome_cube_use/ports.rs"]
 mod ports;
 pub(in crate::gameplay_transport) use ports::{authority_methods, composed_methods};
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static CUBE_INVENTORY_CHECKOUT_PROBE: std::cell::Cell<Option<std::sync::Arc<super::composed_admission::HolderCheckoutProbe>>>;
+}
+
+async fn retry_read<T>(
+    budget: &AdmissionRetryBudget<'_>,
+    stage: &'static str,
+    mut read: impl AsyncFnMut() -> Result<T, ItemUseError>,
+) -> Result<T, ItemUseError> {
+    // Only a failed checkout is retryable. Preserve unknown receipt outcomes.
+    loop {
+        match read().await {
+            Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
+                if budget
+                    .retries_unavailable(super::AdmissionRefusal::Unavailable)
+                    .await =>
+            {
+                continue;
+            }
+            result => {
+                if matches!(
+                    result,
+                    Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
+                ) {
+                    super::operator_event(&format!(
+                        "event=session_durability_failed stage={stage} kind=holder_busy"
+                    ));
+                }
+                return result;
+            }
+        }
+    }
+}
 
 fn outcome(disposition: UseDisposition) -> UseOutcome {
     UseOutcome {
@@ -82,8 +116,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let binding: [u8; 32] =
             Sha256::digest(encode_item_use_intent(&intent).map_err(|_| ())?).into();
         let _permit = self.spell_lane_permit().await.ok_or(())?;
-        let retry = AdmissionRetryBudget::for_command(self.root);
-        match retry_item_use_holder(&retry, async || {
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        match retry_read(&budget, "cube_receipt", async || {
             self.root
                 .read_drome_cube_receipt(self.character, fence, command_ref, binding)
                 .await
@@ -153,14 +187,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let inventory = match retry_item_use_holder(&retry, async || {
-            self.root
+        #[cfg(test)]
+        let probe = CUBE_INVENTORY_CHECKOUT_PROBE
+            .try_with(std::cell::Cell::take)
+            .ok()
+            .flatten();
+        #[cfg(test)]
+        if let Some(probe) = &probe {
+            probe.pause().await;
+        }
+        let inventory = match retry_read(&budget, "cube_inventory", async || {
+            let result = self
+                .root
                 .read_item_use_inventory(self.character, self.holder, fence)
-                .await
+                .await;
+            #[cfg(test)]
+            if matches!(
+                result,
+                Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
+            ) && let Some(probe) = &probe
+            {
+                probe.blocked();
+            }
+            result
         })
         .await
         {
             Ok(inventory) => inventory,
+            // History was resolved and this command has not prepared a write.
+            Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable)) => {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
             Err(ItemUseError::Unavailable(_)) => return Err(()),
             Err(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
         };
