@@ -1159,3 +1159,45 @@ fn reading_map_non_distance_item_keeps_existing_look() {
         );
     });
 }
+
+#[test]
+fn butterfly_ground_items_show_their_source_name() {
+    let world = WorldId::decode(&id(1)).unwrap();
+    let (controller, _) = activated_with_loot_tables(world, None);
+    let generation = controller.active().unwrap();
+    let pinned = runtime(generation, true);
+    let index = pinned_index(&pinned, Some(generation)).unwrap();
+
+    for appearance_id in [4378, 4991, 4992, 4993] {
+        let definition = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: format!("oteryn:item.tibia.i{appearance_id}"),
+            revision_ref: "definition-r1".into(),
+        };
+        let item = ViewItem {
+            appearance_id,
+            key: ItemKey::Instance(id(3)),
+            item_definition_ref: index
+                .definition_ref("Item", &definition.production_key, &definition.revision_ref)
+                .unwrap(),
+            count: NonZeroU32::MIN,
+            sub_type: 0,
+        };
+        let mut views = SessionItemView::resume(Default::default()).with_map_view();
+        let target = views
+            .map_view(&[item.key], |table| Ok(table.handle(&item.key)))
+            .unwrap()
+            .unwrap();
+        let observed = ObservedLookItem {
+            item,
+            definition: &definition,
+            look_distance: 1,
+        };
+        let result =
+            examine_observed_item(&pinned, Some(generation), &views, target, Some(observed));
+        let ItemLookOutcome::Text(text) = result else {
+            panic!("ground item {appearance_id} cannot be examined: {result:?}");
+        };
+        assert_eq!(text.lines().next(), Some("You see dead butterfly."));
+    }
+}

@@ -1911,6 +1911,10 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     native_manifest = json.loads(generated[NATIVE_MANIFEST])
     starting_loadout_profiles.write_fragment(generated, native_manifest, starter_items["records"])
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
+    # Complete the consumer facts after equipment and loot settle Item custody.
+    import native_item_consumer_facts
+
+    native_item_consumer_facts.apply(root, items, loot_admissions)
     # The complete source closure must fit native_gameplay's Item-profile input
     # bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
