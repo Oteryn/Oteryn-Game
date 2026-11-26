@@ -196,9 +196,11 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     );
 
     let refused = send(&mut client, 5, 3).await?;
+    let mut unchanged = refused.clone();
+    unchanged.refusal = 0;
     journey.check(
         2,
-        refused.refusal != 0 && refused.weekly == initial.weekly,
+        refused.refusal == 3 && unchanged == initial,
         (&refused.refusal, &refused.weekly),
     );
 
@@ -232,6 +234,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let reference = std::num::NonZeroU32::new(u32::from(task.item))
         .ok_or("weekly-delivery has a zero item definition")?;
     let required = u32::from(task.required);
+    let bag = provisioning::item_reference(&provisioning::item_index()?, DELIVERY_BAG)?;
     let inventory_before = u32::from(task.current);
     let missing = required.saturating_sub(inventory_before);
     if missing != 0 {
@@ -247,7 +250,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     }) {
         return Err("weekly-delivery did not recognize the exact carried fixture items".into());
     }
-    if carried_delivery_count(&mut client, reference).await? != inventory_funded {
+    if carried_delivery_count(&mut client, reference, bag).await? != inventory_funded {
         return Err("weekly-delivery carried inventory differs from the required items".into());
     }
     let delivered = send(&mut client, 6, u16::try_from(index)?).await?;
@@ -264,7 +267,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     if delivered.refusal == 0 {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
         loop {
-            let consumed = carried_delivery_count(&mut client, reference).await?;
+            let consumed = carried_delivery_count(&mut client, reference, bag).await?;
             if consumed == inventory_funded - required {
                 break;
             }
@@ -423,6 +426,7 @@ async fn open_delivery_bag(
 async fn carried_delivery_count(
     client: &mut oteryn_dev_client::DevClientSession,
     reference: std::num::NonZeroU32,
+    bag_reference: std::num::NonZeroU32,
 ) -> TestResult<u32> {
     let inventory = delivery_inventory(client)?;
     let mut count = inventory
@@ -434,7 +438,7 @@ async fn carried_delivery_count(
     let bags: Vec<_> = inventory
         .entries
         .iter()
-        .filter(|entry| entry.item_definition_ref.get() == DELIVERY_BAG)
+        .filter(|entry| entry.item_definition_ref == bag_reference)
         .map(|entry| entry.handle)
         .collect();
     for bag in bags {
