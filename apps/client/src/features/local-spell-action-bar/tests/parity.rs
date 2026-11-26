@@ -65,11 +65,11 @@ fn multi_action_uses_first_ready_spell_through_play_queue_and_persists()
         }
         view.cast(std::num::NonZeroU32::MIN);
         view.tick(&link).map_err(|_| "tick")?;
-        if let Some(index) = expected {
-            assert!(
-                matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == index)
-            );
-        }
+        use oteryn_session::SpellCastDisposition::{Cast, CoolingDown};
+        let attempts = (1..=expected.unwrap_or(3))
+            .map(|index| (index, if Some(index) == expected { Cast } else { CoolingDown }))
+            .collect::<Vec<_>>();
+        parity_multiaction::run_spell_multiaction(&outbox, commands.try_recv()?, &attempts)?;
         assert!(commands.try_recv().is_err());
     }
     let fixture = tempfile::tempdir()?;
@@ -642,9 +642,12 @@ fn multiaction_skips_unaffordable_mana_and_soul_in_labels_and_activation()
         assert!(link.spell_slot_labels()[0].contains("Next 1/2: Expensive"));
         view.cast(std::num::NonZeroU32::MIN);
         view.tick(&link).map_err(|_| "tick")?;
-        assert!(
-            matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 1)
-        );
+        parity_multiaction::run_spell_multiaction(
+            &outbox,
+            commands.try_recv()?,
+            &[(1, oteryn_session::SpellCastDisposition::Cast)],
+        )?;
+        assert!(commands.try_recv().is_err());
     }
     Ok(())
 }
