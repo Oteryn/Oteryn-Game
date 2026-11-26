@@ -1,7 +1,10 @@
 //! Captures two live admissions and the first-attempt logout between them.
 use super::*;
 use oteryn_dev_client::native_session::{Admission, Session};
-use oteryn_protocol_oteryn::world_map::{STATE_DOMAIN_WORLD_MAP_VIEW, in_window};
+use oteryn_protocol_oteryn::world_map::{
+    STATE_DOMAIN_WORLD_MAP_VIEW, VIEW_HEIGHT, VIEW_LEFT, VIEW_TOP, VIEW_WIDTH,
+    WorldMapViewSnapshot, in_window,
+};
 use std::pin::Pin;
 use std::sync::Mutex;
 use std::task::{Context, Poll};
@@ -139,9 +142,71 @@ fn envelope(
     }))?)
 }
 
+fn viewport_ground(
+    world: &BundleWorld,
+    map: &WorldMapViewSnapshot,
+    expected: ActorPosition,
+) -> TestResult<Vec<(i16, i32, i32)>> {
+    if map.header.origin != expected || map.header.first_visible_floor != expected.floor {
+        return Err(format!(
+            "N07d wrong viewport: expected={expected:?} actual={:?}",
+            map.header
+        )
+        .into());
+    }
+    let mut ground = Vec::new();
+    for x in expected.x - VIEW_LEFT..expected.x - VIEW_LEFT + VIEW_WIDTH {
+        for y in expected.y - VIEW_TOP..expected.y - VIEW_TOP + VIEW_HEIGHT {
+            let at = tile(ActorPosition {
+                x,
+                y,
+                floor: expected.floor,
+            })?;
+            if world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| tile.stored_ground_speed() > 0)
+            {
+                ground.push((expected.floor, x, y));
+            }
+        }
+    }
+    let observed = map
+        .tiles
+        .iter()
+        .filter(|tile| {
+            tile.ground_speed > 0
+                && tile.position.floor >= map.header.first_visible_floor
+                && in_window(expected, tile.position)
+        })
+        .map(|tile| (tile.position.floor, tile.position.x, tile.position.y))
+        .collect::<std::collections::BTreeSet<_>>();
+    if !ground.iter().copied().eq(observed.iter().copied()) || ground.is_empty() {
+        return Err(format!("N07d viewport ground differs from pinned World: origin={expected:?} expected={} actual={}", ground.len(), observed.len()).into());
+    }
+    Ok(ground)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let capture_dir = required("E2E_ALL_CAPTURE_DIR")?;
     let root = Path::new(&capture_dir);
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
+    let origin = ActorPosition {
+        x: i32::from(TOWN.x),
+        y: i32::from(TOWN.y),
+        floor: -i16::from(TOWN.floor),
+    };
+    let destination = ActorPosition {
+        x: origin.x + 1,
+        ..origin
+    };
     let (mut client, incoming) = admit(clients, 0x3d).await?;
     let first_id = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let first_capture = envelope(
@@ -161,18 +226,44 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("empty world-map snapshot payload".into());
     }
     let header = map.header;
-    // Server-observed walkable ground inside the visible window (the cells the minimap remembers).
-    let walkable = map
-        .tiles
+    let initial_ground = viewport_ground(world, &map, origin)?;
+    if client.world_spatial().actor_position != origin {
+        return Err("N07d initial spatial position differs from town".into());
+    }
+    let walkable = initial_ground.len();
+    let step = client
+        .step(oteryn_protocol_oteryn::world_spatial::StepDirection::East)
+        .await?;
+    if step.status != oteryn_protocol_oteryn::CommandStatus::Accepted
+        || client.world_spatial().actor_position != destination
+    {
+        return Err(format!("N07d first-attempt east step failed: {step:?}").into());
+    }
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while !client
+            .world_map_snapshot()
+            .is_some_and(|map| map.header.origin == destination)
+        {
+            client.wait_for_events(Duration::from_secs(5)).await?;
+        }
+        Ok::<_, oteryn_dev_client::SessionError>(())
+    })
+    .await??;
+    let step_capture = envelope(
+        &first_id,
+        step.command_id,
+        step.result_server_sequence,
+        captured_bytes(&incoming)?,
+    )?;
+    let moved = client
+        .world_map_snapshot()
+        .ok_or("N07d moved viewport missing")?;
+    let moved_ground = viewport_ground(world, &moved, destination)?;
+    if !initial_ground
         .iter()
-        .filter(|tile| {
-            tile.ground_speed > 0
-                && tile.position.floor >= header.first_visible_floor
-                && in_window(header.origin, tile.position)
-        })
-        .count();
-    if walkable == 0 {
-        return Err("admitted map snapshot has no walkable ground".into());
+        .any(|&(floor, x, y)| !in_window(destination, ActorPosition { floor, x, y }))
+    {
+        return Err("N07d step left no previously observed ground outside relog viewport".into());
     }
     let expected = format!(
         "revision={}\norigin={},{},{}\nfirst_visible_floor={}\nreset_epoch={}\ntiles={}\nwalkable={walkable}\n",
@@ -202,6 +293,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if first_id == second_id {
         return Err("N07d relog retained the old session".into());
     }
+    let relog_map = relogged
+        .world_map_snapshot()
+        .ok_or("N07d relogged viewport missing")?;
+    if relogged.world_spatial().actor_position != destination
+        || viewport_ground(world, &relog_map, destination)? != moved_ground
+    {
+        return Err("N07d relog did not retain the exact destination viewport".into());
+    }
     let second_capture = envelope(
         &second_id,
         relogged.next_command_id(),
@@ -214,6 +313,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         uuid_text(&clients.characters[1])
     );
     std::fs::write(root.join("n07d-admission.json"), first_capture)?;
+    std::fs::write(root.join("n07d-step.json"), step_capture)?;
+    std::fs::write(
+        root.join("n07d-ground.json"),
+        serde_json::to_vec(&(initial_ground, moved_ground))?,
+    )?;
     std::fs::write(root.join("n07d-logout.json"), logout_capture)?;
     std::fs::write(root.join("n07d-relog.json"), second_capture)?;
     std::fs::write(root.join("n07d-snapshot.bin"), &row.payload)?;

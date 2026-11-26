@@ -103,11 +103,8 @@ fn binding(map: &WorldMapViewSnapshot) -> ([u8; 32], [u8; 32], u64) {
 }
 
 fn replay() -> Result<(), Error> {
-    // The named replay is selected by the qualification wrapper with a fresh capture directory.
-    // The separate coordinate regression below exercises the comparator in ordinary unit runs.
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return Ok(());
-    };
+    let root =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("N07d live capture directory is required")?;
     let root = std::path::Path::new(&root);
     let expected = std::fs::read_to_string(root.join("n07d-expected.txt"))?;
     if root.as_os_str() != value(&expected, "capture_dir")? {
@@ -115,20 +112,27 @@ fn replay() -> Result<(), Error> {
     }
     let first: Envelope =
         serde_json::from_slice(&std::fs::read(root.join("n07d-admission.json"))?)?;
+    let step: Envelope = serde_json::from_slice(&std::fs::read(root.join("n07d-step.json"))?)?;
     let logout: Envelope = serde_json::from_slice(&std::fs::read(root.join("n07d-logout.json"))?)?;
     let second: Envelope = serde_json::from_slice(&std::fs::read(root.join("n07d-relog.json"))?)?;
     let terrain = std::fs::read(root.join("n07d-snapshot.bin"))?;
+    let ground: (BTreeSet<CellPosition>, BTreeSet<CellPosition>) =
+        serde_json::from_slice(&std::fs::read(root.join("n07d-ground.json"))?)?;
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
-        .block_on(verify(first, logout, second, terrain, &expected))
+        .block_on(verify(
+            first, step, logout, second, terrain, ground, &expected,
+        ))
 }
 
 async fn verify(
     first: Envelope,
+    step: Envelope,
     logout: Envelope,
     second: Envelope,
     terrain: Vec<u8>,
+    ground: (BTreeSet<CellPosition>, BTreeSet<CellPosition>),
     expected: &str,
 ) -> Result<(), Error> {
     let first_id = id(value(expected, "first_session")?)?;
@@ -144,13 +148,17 @@ async fn verify(
             .payload
             .len()
             .max(second.payload.len())
-            .max(logout.payload.len()),
+            .max(logout.payload.len())
+            .max(step.payload.len()),
     );
     let first_wire = first.payload.clone();
+    let step_wire = step.payload.clone();
     let logout_wire = logout.payload.clone();
     let first_peer = tokio::spawn(async move {
         read_frame(&mut peer).await?;
         peer.write_all(&first_wire).await?;
+        read_frame(&mut peer).await?;
+        peer.write_all(&step_wire).await?;
         read_frame(&mut peer).await?;
         peer.write_all(&logout_wire).await?;
         Ok::<_, Error>(())
@@ -162,16 +170,8 @@ async fn verify(
     assert_eq!(snapshot.revision.to_string(), value(expected, "revision")?);
     assert_eq!(snapshot.payload, terrain);
     let expected_map = decode_world_map_snapshot(&terrain).map_err(|error| format!("{error:?}"))?;
-    let walkable: BTreeSet<_> = expected_map
-        .tiles
-        .iter()
-        .filter(|tile| {
-            tile.ground_speed > 0
-                && tile.position.floor >= expected_map.header.first_visible_floor
-                && in_window(expected_map.header.origin, tile.position)
-        })
-        .map(|tile| (tile.position.floor, tile.position.x, tile.position.y))
-        .collect();
+    let (walkable, moved_ground) = ground;
+    assert_eq!(map_ground(&expected_map), walkable);
     assert!(!walkable.is_empty());
     let map = session
         .world_map_snapshot()
@@ -192,24 +192,76 @@ async fn verify(
     assert_eq!(map.tiles.len().to_string(), value(expected, "tiles")?);
 
     let cache = tempfile::tempdir()?;
-    let mut minimap = Minimap::default();
-    minimap.root = Some(cache.path().to_path_buf());
-    minimap.bind_world(world_text);
-    assert!(minimap.cells.is_empty());
-    minimap.observe(&map);
-    assert_eq!(
-        minimap.cells.len().to_string(),
-        value(expected, "walkable")?
-    );
-    assert_remembered_cells(&minimap, &walkable);
-    let remembered = minimap.cells.clone();
-    minimap.observe(&map);
-    assert_eq!(minimap.cells, remembered);
-    check_markers(&mut minimap, origin.x, origin.y, origin.floor)?;
-    assert_eq!(minimap.cells, remembered);
-    minimap.save()?;
-    drop(minimap);
+    let open = |session: &Session<DuplexStream>| -> Result<crate::play::PlayView, Error> {
+        let mut view = crate::play::PlayView::from_join(session.join_snapshot())?;
+        super::lock(&view.minimap).root = Some(cache.path().to_path_buf());
+        view.bind_minimap_world(world_text);
+        view.set_preference_character(*character.as_bytes());
+        assert!(super::lock(&view.minimap).cells.is_empty());
+        Ok(view.with_join_scene(session)?)
+    };
+    let mut view = open(&session)?;
+    assert_projected_ground(&view, &walkable);
+    {
+        let minimap = super::lock(&view.minimap);
+        assert_eq!(
+            minimap.cells.len().to_string(),
+            value(expected, "walkable")?
+        );
+        assert_remembered_cells(&minimap, &walkable);
+    }
+    let initial = super::lock(&view.minimap).cells.clone();
+    view.set_live_map(&map)?;
+    assert_eq!(super::lock(&view.minimap).cells, initial);
 
+    let movement = session
+        .step(oteryn_protocol_oteryn::world_spatial::StepDirection::East)
+        .await?;
+    step.check(
+        &first_id,
+        movement.command_id,
+        movement.result_server_sequence,
+    )?;
+    assert_eq!(movement.status, CommandStatus::Accepted);
+    let destination = oteryn_session::ActorPosition {
+        x: origin.x + 1,
+        ..origin
+    };
+    assert_eq!(session.world_spatial().actor_position, destination);
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while !session
+            .world_map_snapshot()
+            .is_some_and(|map| map.header.origin == destination)
+        {
+            session.wait_for_events(Duration::from_secs(5)).await?;
+        }
+        Ok::<_, oteryn_session::SessionError>(())
+    })
+    .await??;
+    let moved = session
+        .world_map_snapshot()
+        .ok_or("N07d missing moved map")?;
+    assert_eq!(moved.header.origin, destination);
+    assert_eq!(map_ground(&moved), moved_ground);
+    view.set_live_map(&moved)?;
+    let retained: BTreeSet<_> = walkable
+        .iter()
+        .copied()
+        .filter(|&(floor, x, y)| {
+            !in_window(destination, oteryn_session::ActorPosition { floor, x, y })
+        })
+        .collect();
+    assert!(
+        !retained.is_empty(),
+        "N07d needs ground that the relog viewport cannot reconstruct"
+    );
+    let union: BTreeSet<_> = moved_ground.union(&retained).copied().collect();
+    let remembered = super::lock(&view.minimap).cells.clone();
+    let cache_path = super::lock(&view.minimap)
+        .path()
+        .ok_or("N07d missing live cache binding")?;
+    assert!(!cache_path.exists(), "N07d needs to exercise save on exit");
+    assert_remembered_cells(&super::lock(&view.minimap), &union);
     let outcome = session.logout().await?;
     assert_eq!(outcome.status, CommandStatus::Accepted);
     assert_eq!(
@@ -223,6 +275,11 @@ async fn verify(
     )?;
     first_peer.await??;
     drop(session);
+    drop(view);
+    assert!(
+        cache_path.is_file(),
+        "N07d live view exit did not save exploration"
+    );
 
     let (client, mut peer) = tokio::io::duplex(second.payload.len());
     let second_wire = second.payload.clone();
@@ -238,15 +295,52 @@ async fn verify(
         .ok_or("N07d missing relogged map")?;
     assert_eq!(binding(&map), binding(&relogged_map));
 
-    // Read production cache storage before observing a single cell from the new session.
-    let mut reopened = Minimap::default();
-    reopened.root = Some(cache.path().to_path_buf());
-    reopened.bind_world(world_text);
-    reopened.binding = Some(binding(&relogged_map));
-    assert!(reopened.cells.is_empty());
-    reopened.load()?;
-    assert_eq!(reopened.cells, remembered);
+    assert_eq!(relogged.world_spatial().actor_position, destination);
+    assert_eq!(relogged_map.header.origin, destination);
+    assert_eq!(relogged_map.header.first_visible_floor, destination.floor);
+    assert_eq!(map_ground(&relogged_map), moved_ground);
+    // Production join restores cells outside the new viewport. Applying the new
+    // snapshot alone cannot create them, so they discriminate restoration from rebuild.
+    let reopened = open(&relogged)?;
+    assert_projected_ground(&reopened, &moved_ground);
+    let mut minimap = super::lock(&reopened.minimap);
+    assert_eq!(minimap.cells, remembered);
+    check_markers(&mut minimap, origin.x, origin.y, origin.floor)?;
+    assert_eq!(minimap.cells, remembered);
     Ok(())
+}
+
+fn map_ground(map: &WorldMapViewSnapshot) -> BTreeSet<CellPosition> {
+    map.tiles
+        .iter()
+        .filter(|tile| {
+            tile.ground_speed > 0
+                && tile.position.floor >= map.header.first_visible_floor
+                && in_window(map.header.origin, tile.position)
+        })
+        .map(|tile| (tile.position.floor, tile.position.x, tile.position.y))
+        .collect()
+}
+
+fn assert_projected_ground(view: &crate::play::PlayView, expected: &BTreeSet<CellPosition>) {
+    let memory = &view.scene.minimap_memory;
+    assert!(memory.binding.is_some());
+    assert_eq!(memory, &view.local.preferences.minimap);
+    let ground: BTreeSet<_> = memory
+        .tiles
+        .iter()
+        .filter(|tile| tile.3 > 0)
+        .map(|&(x, y, floor, _)| (floor, x, y))
+        .collect();
+    assert_eq!(&ground, expected);
+    let world = view.local.world();
+    let minimap = super::lock(&view.minimap);
+    for key in expected {
+        assert_eq!(
+            minimap.cells.get(key),
+            Some(world.minimap_colors.get(key).unwrap_or(&55))
+        );
+    }
 }
 
 fn check_markers(minimap: &mut Minimap, x: i32, y: i32, floor: i16) -> Result<(), Error> {
