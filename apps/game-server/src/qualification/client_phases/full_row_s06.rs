@@ -315,8 +315,8 @@ async fn approach_taming_spawn(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
-    creature: &str,
-) -> TestResult {
+    departed: &[TilePos],
+) -> TestResult<(oteryn_dev_client::EntityRef, TilePos)> {
     let from = tile(client.world_spatial().actor_position)?;
     let points: Vec<_> = spawns
         .sources
@@ -326,17 +326,27 @@ async fn approach_taming_spawn(
                 spawns
                     .creatures
                     .get(point.creature as usize)
-                    .filter(|definition| definition.key == creature)
-                    .map(|_| (point.x, point.y, source.floor))
+                    .filter(|definition| definition.key == BEAR)
+                    .map(|_| TilePos {
+                        x: point.x,
+                        y: point.y,
+                        floor: source.floor,
+                    })
+                    .filter(|point| !departed.contains(point))
             })
         })
         .collect();
+    let nearby = |at: TilePos, point: TilePos, distance| {
+        at.floor == point.floor && at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) <= distance
+    };
     let path = find_route(
         from,
         |at| {
-            points.iter().any(|&(x, y, floor)| {
-                at.floor == floor && at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 1
-            })
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+                && points.iter().any(|&point| nearby(at, point, 1))
         },
         |at, direction| {
             destination(world, at, direction).filter(|next| {
@@ -346,10 +356,47 @@ async fn approach_taming_spawn(
         },
     )
     .map_err(|visited| {
-        format!("no walkable route to {creature} among {visited} compiled tiles from {from:?}")
+        format!("no walkable route to an authored bear among {visited} tiles from {from:?}")
     })?;
     walk(client, world, &path).await?;
-    travel_to_spawn(client, world, spawns, creature).await
+    let here = tile(client.world_spatial().actor_position)?;
+    let anchor = points
+        .into_iter()
+        .find(|&point| nearby(here, point, 1))
+        .ok_or("bear route terminated outside the authored spawn")?;
+    let target = client
+        .world_entities()
+        .and_then(|entities| {
+            entities.iter().find(|entry| {
+                entry.kind == oteryn_dev_client::EntityKind::Creature
+                    && entry
+                        .display_name
+                        .as_ref()
+                        .and_then(|name| name.as_str().ok())
+                        .is_some_and(|name| name.eq_ignore_ascii_case("bear"))
+                    && tile(entry.position).is_ok_and(|position| nearby(position, anchor, 4))
+            })
+        })
+        .map(|entry| entry.entity)
+        .ok_or("authored bear spawn has no visible bear")?;
+    // Keep the exact first observed creature as it moves during the approach.
+    for _ in 0..32 {
+        let here = tile(client.world_spatial().actor_position)?;
+        let position = client
+            .world_entities()
+            .and_then(|entities| entities.get(&target))
+            .ok_or("authored bear disappeared before taming")?
+            .position;
+        let position = tile(position)?;
+        if nearby(here, position, 1) {
+            return Ok((target, anchor));
+        }
+        let path = route(world, here, |at| nearby(at, position, 1))
+            .ok_or("visible bear is unreachable")?;
+        let step = path.first().ok_or("bear approach did not advance")?;
+        walk(client, world, &[*step]).await?;
+    }
+    Err("could not approach the authored bear within the route budget".into())
 }
 
 async fn earn_addon(
@@ -464,6 +511,7 @@ async fn tame_war_bear(
         );
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let mut departed = Vec::new();
     for attempt in 1..=20 {
         if tokio::time::Instant::now() >= deadline {
             break;
@@ -472,7 +520,7 @@ async fn tame_war_bear(
         if funded == 0 {
             return Err("step=taming-attempt need=remaining-fixture-slingshot".into());
         }
-        approach_taming_spawn(client, world, &spawns, BEAR)
+        let (target, anchor) = approach_taming_spawn(client, world, &spawns, &departed)
             .await
             .map_err(|error| {
                 verdict::context(
@@ -480,28 +528,6 @@ async fn tame_war_bear(
                     error,
                 )
             })?;
-        let here = client.world_spatial().actor_position;
-        let target = client
-            .world_entities()
-            .and_then(|entities| {
-                entities.iter().find(|entry| {
-                    entry.kind == oteryn_dev_client::EntityKind::Creature
-                        && entry.position.floor == here.floor
-                        && entry
-                            .position
-                            .x
-                            .abs_diff(here.x)
-                            .max(entry.position.y.abs_diff(here.y))
-                            <= 1
-                        && entry
-                            .display_name
-                            .as_ref()
-                            .and_then(|name| name.as_str().ok())
-                            .is_some_and(|name| name.eq_ignore_ascii_case("bear"))
-                })
-            })
-            .map(|entry| entry.entity)
-            .ok_or("step=taming-attempt need=adjacent-server-identified-bear")?;
         client.take_events();
         let payload = world_object::encode_item_use_intent(&world_object::UseIntent {
             target: world_object::UseTarget::ItemByDefinition(reference),
@@ -575,6 +601,9 @@ async fn tame_war_bear(
                         ),
                     );
                     return Ok(funded - 1);
+                }
+                if removed {
+                    departed.push(anchor);
                 }
                 evidence(&format!(
                     "S06_TAMING_OUTCOME attempt={attempt} removed={removed} consumed={consumed} unlocked=false"
