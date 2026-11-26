@@ -150,8 +150,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
         return Err(format!("step=field-cast observed={disposition:?} need=Committed-and-field-delta").into());
     }
-    let placed = field_frame(&mut client, target, field, true, cast_sequence, Duration::from_secs(5)).await?;
-    inventory_count(&mut client, reference, before_count - 1).await?;
+    let placed = cast_deltas(&mut client, target, field, reference, before_count - 1, cast_sequence).await?;
     check("attack-rune", placed);
 
     use oteryn_protocol_oteryn::condition_status as condition;
@@ -264,10 +263,52 @@ async fn use_rune(client: &mut DevClientSession, reference: std::num::NonZeroU32
     Ok((disposition, reply.server_sequence))
 }
 
-async fn inventory_count(client: &mut DevClientSession, reference: std::num::NonZeroU32, expected: u64) -> TestResult<u64> {
+async fn cast_deltas(
+    client: &mut DevClientSession,
+    at: ActorPosition,
+    field: std::num::NonZeroU32,
+    rune: std::num::NonZeroU32,
+    expected_count: u64,
+    cast_sequence: u64,
+) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop { for event in client.take_events() { if let SessionEvent::Inventory(delta) = event && quantity(client, reference)? == expected { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step=inventory-delta observed={} need={expected}", quantity(client, reference)?).into()); } client.service_liveness(Duration::from_millis(20)).await?; }
+    let mut placed = None;
+    let mut paid = false;
+    loop {
+        for event in client.take_events() {
+            match event {
+                SessionEvent::WorldMap(delta) if delta.server_sequence > cast_sequence => {
+                    if delta.value.tiles.iter().any(|tile| {
+                        tile.position == at && tile.items.iter().any(|item| {
+                            item.definition == MapDefinition::Item(field)
+                        })
+                    }) {
+                        placed = Some(delta.server_sequence);
+                    }
+                }
+                SessionEvent::Inventory(delta) if delta.server_sequence > cast_sequence => {
+                    let count = delta.value.entries.iter()
+                        .filter(|entry| entry.item_definition_ref == rune)
+                        .map(|entry| u64::from(entry.count.get()))
+                        .sum::<u64>();
+                    if count != expected_count {
+                        return Err(format!("step=inventory-delta observed={count} need={expected_count}").into());
+                    }
+                    paid = true;
+                }
+                _ => {}
+            }
+        }
+        if let Some(sequence) = placed.filter(|_| paid) {
+            return Ok(sequence);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step=field-cast observed=placement:{placed:?}/debit:{paid} need=both-pushed-deltas").into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+    }
 }
+
 async fn later_frame(client: &mut DevClientSession) -> TestResult { client.service_liveness(Duration::from_millis(100)).await.map_err(Into::into) }
 fn field_actor_interferes(
     entry: &oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity,
