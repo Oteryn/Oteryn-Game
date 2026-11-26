@@ -582,23 +582,32 @@ pub(super) async fn party_skull_query(
 ) -> TestResult<Vec<u8>> {
     let client = bot.client()?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-    loop {
-        let reply = client
-            .session_mut()
-            .gated_command(
-                party_skull::CAPABILITY_PARTY_SKULL_V1,
-                party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY,
-                payload,
-            )
-            .await?;
-        if reply.status == CommandStatus::Accepted {
-            return Ok(reply.payload);
+    tokio::time::timeout_at(deadline, async {
+        loop {
+            let reply = client
+                .session_mut()
+                .gated_command(
+                    party_skull::CAPABILITY_PARTY_SKULL_V1,
+                    party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY,
+                    payload,
+                )
+                .await?;
+            if reply.status == CommandStatus::Accepted {
+                return Ok(reply.payload);
+            }
+            if reply.status != CommandStatus::Rejected
+                || reply.payload != oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL
+            {
+                return Err(format!(
+                    "party skull query payload={payload:?};reply={reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_skull.rs:75"
+                )
+                .into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
         }
-        if reply.status != CommandStatus::Rejected || tokio::time::Instant::now() >= deadline {
-            return Err(format!("party skull query payload={payload:?};reply={reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_skull.rs:75").into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-    }
+    })
+    .await
+    .map_err(|_| "party skull query exchange deadline")?
 }
 
 pub(super) async fn party(

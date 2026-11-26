@@ -464,7 +464,7 @@ Owner decision 2026-11-25.
 - A main-red fix never travels in a content train.
 - **Hotfix merge without waiting for CI** (owner 2026-11-26). This is the
   second exception to root `AGENTS.md` "merge only a head whose own CI is
-  green" and to *Merge conditions* 1-2. A fix of a red `main` merges as soon as
+  green" and to *Merge conditions* 1-3 (no wait for `game-gate`, PostgreSQL legs or `heavy-gate`); conditions 4 and 5 still hold. A fix of a red `main` merges as soon as
   all of these hold on its current head:
   - The PR targets `main` and the GitHub PR `additions + deletions` is at most
     20.

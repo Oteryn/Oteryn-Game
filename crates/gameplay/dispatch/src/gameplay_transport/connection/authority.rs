@@ -1222,8 +1222,13 @@ pub trait FreshAdmissionAuthority {
     fn observe_party_icons(
         &self,
         _admitted: AdmittedSession,
-    ) -> impl Future<Output = Option<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>>> {
-        std::future::ready(None)
+    ) -> impl Future<
+        Output = Result<
+            Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
+            crate::durability::DurabilityError,
+        >,
+    > {
+        std::future::ready(Err(crate::durability::DurabilityError::Unavailable))
     }
 
     /// GUILD-EMBLEM-1: every positioned player's guild emblem relative to this session's
@@ -1249,8 +1254,13 @@ pub trait FreshAdmissionAuthority {
     fn observe_pvp_status(
         &self,
         _admitted: AdmittedSession,
-    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::party_skull::PvpStatus>> {
-        std::future::ready(None)
+    ) -> impl Future<
+        Output = Result<
+            oteryn_protocol_oteryn::party_skull::PvpStatus,
+            crate::durability::DurabilityError,
+        >,
+    > {
+        std::future::ready(Err(crate::durability::DurabilityError::Unavailable))
     }
 
     /// PARTY-1: basic session-fenced membership commands and own-state query.
@@ -1803,8 +1813,9 @@ pub trait FreshAdmissionAuthority {
         _game_session_id: GameSessionId,
         _command_id: u64,
         _modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
-    ) -> impl Future<Output = AttackIntentDisposition> {
-        async { AttackIntentDisposition::Rejected }
+    ) -> impl Future<Output = Result<AttackIntentDisposition, crate::durability::DurabilityError>>
+    {
+        async { Ok(AttackIntentDisposition::Rejected) }
     }
 
     fn observe_expert_modes(
