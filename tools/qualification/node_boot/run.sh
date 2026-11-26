@@ -918,14 +918,17 @@ if [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
   local_premium_dir="$WORK/portal/certs"
   cat "$local_premium_dir/clients/premium.pem" "$local_premium_dir/clients/premium.key" > "$WORK/profile-b-client.pem"
   secret_to "$SERVICE_UID" "$WORK/profile-b-client.pem" "$BASE/node/secrets/profile-b-client.pem"
-  NODE_GAMEPLAY_ENV+=("OTERYN_PLATFORM_PROFILE_B_AUTHORITY_ENABLED=true"
-    "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
-    "OTERYN_PLATFORM_STREAMS_URL=https://localhost:$WP5_PORT"
-    "OTERYN_PLATFORM_STREAMS_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
   if NODE_BOOT_E2E_ONLY="${NODE_BOOT_E2E_ONLY:-}" w15c_batch_selected; then
+    # The Platform pin provides one Premium identity. Use it on the snapshot
+    # client only, as Game requires distinct identities across stream clients.
     NODE_GAMEPLAY_ENV+=("OTERYN_PREMIUM_SNAPSHOT_URL=https://localhost:$WP5_PORT"
       "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
       "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
+  else
+    NODE_GAMEPLAY_ENV+=("OTERYN_PLATFORM_PROFILE_B_AUTHORITY_ENABLED=true"
+      "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
+      "OTERYN_PLATFORM_STREAMS_URL=https://localhost:$WP5_PORT"
+      "OTERYN_PLATFORM_STREAMS_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
   fi
 fi
 fi # NODE_BOOT_REUSE_STACK == 0
