@@ -54,6 +54,8 @@ const C06_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-00000000001c";
 const S02_KNIGHT_ACCOUNT: &str = "01934f10-7c00-7000-8000-0000000000b1";
 #[cfg(feature = "qualification-spawn")]
 const S02_SORCERER_ACCOUNT: &str = "01934f10-7c00-7000-8000-0000000000b2";
+#[cfg(feature = "qualification-spawn")]
+const S06_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000020";
 
 #[cfg(feature = "qualification-spawn")]
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
@@ -801,7 +803,7 @@ async fn prepare_build(
             (
                 "premium",
                 KNIGHT_ACCOUNT | MONK_ACCOUNT | HASTE_ACCOUNT | CHALLENGE_ACCOUNT | LIGHT_ACCOUNT
-                | PARTY_CASTER_ACCOUNT,
+                | PARTY_CASTER_ACCOUNT | S06_ACCOUNT,
             ) => {
                 if !config
                     .premium_activation
