@@ -11,11 +11,13 @@ use crate::gameplay_transport::connection::{AdmissionRefusal, FreshAdmissionAuth
 use crate::gameplay_transport::{AdmissionRetryBudget, SeamRooms};
 use crate::spell::cast::CharacterCastFacts;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent, SpellTarget};
+use oteryn_protocol_oteryn::presentation as cooldown_wire;
 use std::num::NonZeroU32;
 
 const BLANK: &str = "oteryn:item.tibia.i3147";
 const MISSILE: &str = "oteryn:item.tibia.i3198";
 const WAND: &str = "oteryn:item.tibia.i25760";
+const CAST_TIME_MS: u64 = 1_000;
 
 #[derive(Clone, Copy)]
 enum Case {
@@ -23,6 +25,7 @@ enum Case {
     MissingBag,
     MissingReagent,
     WandInventory,
+    WandCooldowns,
 }
 
 #[test]
@@ -42,6 +45,15 @@ fn conjure_wand_publishes_one_inventory_delta_and_debits_mana_once() -> TestResu
     };
     drop(admin);
     large_stack(|| scenarios(&[Case::WandInventory], false))
+}
+
+#[test]
+fn conjure_publishes_spell_and_group_cooldown_cue() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    large_stack(|| scenarios(&[Case::WandCooldowns], false))
 }
 
 #[test]
@@ -80,7 +92,7 @@ async fn scenario(
 ) -> TestResult {
     let full = matches!(case, Case::FullBag);
     let missing_reagent = matches!(case, Case::MissingReagent);
-    let wand = matches!(case, Case::WandInventory);
+    let wand = matches!(case, Case::WandInventory | Case::WandCooldowns);
     let h = Harness::create_with_admission_seed(admin, "magic2_conjure", true, false).await?;
     eprintln!("POSTGRES_STARTED MAGIC-2 conjure full={full}");
     prepare_current_session(&h).await?;
@@ -125,11 +137,17 @@ async fn scenario(
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(Some(room), Some(room));
+    if matches!(case, Case::WandCooldowns) {
+        owner.states.test_owner_time.store(
+            CAST_TIME_MS * 1_000 + 1,
+            std::sync::atomic::Ordering::Relaxed,
+        );
+    }
     let formula = native.training_formula().ok_or("training formula")?;
     let (vocation_key, vocation) = match case {
         Case::FullBag | Case::MissingReagent => ("druid", crate::spell::Vocation::Druid),
         Case::MissingBag => ("paladin", crate::spell::Vocation::Paladin),
-        Case::WandInventory => ("sorcerer", crate::spell::Vocation::Sorcerer),
+        Case::WandInventory | Case::WandCooldowns => ("sorcerer", crate::spell::Vocation::Sorcerer),
     };
     let build =
         convert_vocation(formula, &DurableBuildState::default(), vocation_key).map_err(debug)?;
@@ -208,7 +226,7 @@ async fn scenario(
     let intent = find(match case {
         Case::FullBag | Case::MissingReagent => 3198,
         Case::MissingBag => 3447,
-        Case::WandInventory => 25760,
+        Case::WandInventory | Case::WandCooldowns => 25760,
     })?;
     assert!(
         AdmissionRetryBudget::for_root(&session, &h.root)
@@ -243,7 +261,14 @@ async fn scenario(
             .definition_ref("Item", WAND, "definition-r1")
             .ok_or("wand definition")?;
         assert_eq!(quantity(&h, WAND).await?, 0);
-        assert_wand_on_wire(&owner, admitted, intent, wand_ref).await?;
+        assert_wand_on_wire(
+            &owner,
+            admitted,
+            intent,
+            wand_ref,
+            matches!(case, Case::WandCooldowns),
+        )
+        .await?;
         assert_eq!(quantity(&h, WAND).await?, 1, "one wand in the backpack");
         assert_eq!(
             receipt_count(&h).await?,
@@ -367,9 +392,10 @@ async fn assert_wand_on_wire(
     mut admitted: crate::gameplay_transport::connection::AdmittedSession,
     intent: SpellCastIntent,
     wand: NonZeroU32,
+    check_cooldowns: bool,
 ) -> TestResult {
     use crate::gameplay_transport::capabilities::SelectedCapabilities;
-    use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
+    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
     use oteryn_protocol_oteryn::{
         ClientCommandValue, CommandStatus, MessageType, actor_spell, decode_command_result,
@@ -378,14 +404,22 @@ async fn assert_wand_on_wire(
     };
     use tokio::io::AsyncWriteExt;
 
-    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+    let mut requested = vec![
+        item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
+        CAPABILITY_WORLD_SPATIAL_ENTITIES,
+    ];
+    if check_cooldowns {
+        requested.push(cooldown_wire::CAPABILITY_PRESENTATION_V1);
+    }
+    // This fixture starts at the admitted connection boundary. Its canary map
+    // uses the legacy floor frame, so install the production presentation offer
+    // explicitly when exercising the independently negotiated cooldown domain.
+    let offered = crate::gameplay_transport::native_cue_offer::offered(
         owner.offered_capabilities(),
-        &[
-            item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
-            CAPABILITY_WORLD_SPATIAL_ENTITIES,
-        ],
-    )
-    .ok_or("inventory capability selection")?;
+        check_cooldowns,
+    );
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(&offered, &requested).ok_or("capability selection")?;
     let actor = admitted.runtime_actor.ok_or("caster")?;
     let before = owner
         .observe_vitals(actor, admitted.game_session_id)
@@ -394,38 +428,48 @@ async fn assert_wand_on_wire(
         .1;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async {
-        serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
         drop(server);
+        end
     };
     let driving = async {
-        loop {
-            let frame = read_frame(&mut client).await?;
-            if decode_wire_envelope(&frame).map_err(debug)?.message_type()
-                == MessageType::SnapshotCommit
-            {
-                break;
-            }
-        }
+        let initial = read_join_cooldowns(&mut client).await?;
+        assert_eq!(initial.is_some(), check_cooldowns);
+        assert!(initial.is_none_or(|value| value.entries.is_empty()));
         let command_id = admitted.continuity.next_command_id;
-        let command = encode_client_command(
-            admitted.continuity.connection_generation,
-            &ClientCommandValue {
-                command_id,
-                command_type: actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
-                payload: &actor_spell::encode_spell_cast_intent(&intent),
-            },
-        )
-        .map_err(debug)?;
+        let payload = actor_spell::encode_spell_cast_intent(&intent);
+        let cast_command = |command_id| {
+            encode_client_command(
+                admitted.continuity.connection_generation,
+                &ClientCommandValue {
+                    command_id,
+                    command_type: actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+                    payload: &payload,
+                },
+            )
+            .map_err(debug)
+        };
+        let command = cast_command(command_id)?;
         write_frame(&mut client, &command).await?;
         let mut results = 0;
         let mut inventories = Vec::new();
         let mut mana = Vec::new();
+        let mut cooldowns = Vec::new();
         loop {
             let frame = read_frame(&mut client).await?;
             let envelope = decode_wire_envelope(&frame).map_err(debug)?;
             match envelope.message_type() {
                 MessageType::CommandResult => {
                     let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                    if results == 2 {
+                        assert_eq!(result.command_id, command_id + 1);
+                        assert_eq!(result.status, CommandStatus::Accepted);
+                        assert_eq!(
+                            actor_spell::decode_spell_cast_result(result.payload).map_err(debug)?,
+                            SpellCastDisposition::CoolingDown
+                        );
+                        break;
+                    }
                     assert_eq!(result.command_id, command_id);
                     assert_eq!(
                         result.status,
@@ -440,14 +484,25 @@ async fn assert_wand_on_wire(
                         SpellCastDisposition::Cast
                     );
                     results += 1;
-                    if results == 2 {
+                    if results == 1 {
+                        write_frame(&mut client, &command).await?;
+                    } else if check_cooldowns {
+                        write_frame(&mut client, &cast_command(command_id + 1)?).await?;
+                    } else {
                         break;
                     }
-                    write_frame(&mut client, &command).await?;
                 }
                 MessageType::StateDelta => {
                     let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
                     match delta.domain_id {
+                        cooldown_wire::STATE_DOMAIN_ACTOR_COOLDOWNS => {
+                            assert_eq!((delta.base_revision, delta.new_revision), (0, 1));
+                            assert_eq!(delta.delta_type, cooldown_wire::DELTA_TYPE_ACTOR_COOLDOWNS_V1);
+                            cooldowns.push(
+                                cooldown_wire::decode_actor_cooldowns(delta.payload)
+                                    .map_err(debug)?,
+                            );
+                        }
                         item_view::STATE_DOMAIN_CHARACTER_INVENTORY => {
                             inventories.push(
                                 item_view::decode_character_inventory(delta.payload)
@@ -468,6 +523,30 @@ async fn assert_wand_on_wire(
             }
         }
         client.shutdown().await?;
+        if check_cooldowns {
+            use cooldown_wire::{ActorCooldown, ActorCooldownKind};
+            let [cue] = cooldowns.as_slice() else {
+                return Err("expected one committed cooldown delta and none on duplicate replay".into());
+            };
+            assert_eq!(cue.server_now_ms, CAST_TIME_MS);
+            assert_eq!(
+                cue.entries,
+                [
+                    ActorCooldown {
+                        kind: ActorCooldownKind::Spell,
+                        id: intent.spell.get(),
+                        expires_at_ms: cue.server_now_ms + 1_800_000,
+                    },
+                    ActorCooldown {
+                        kind: ActorCooldownKind::Group,
+                        id: 3, // S9 Support group.
+                        expires_at_ms: cue.server_now_ms + 2_000,
+                    },
+                ]
+            );
+        } else {
+            assert!(cooldowns.is_empty(), "presentation capability was not selected");
+        }
         assert_eq!(mana, [before.mana - 250], "one debit of exactly 250 mana");
         assert_eq!(
             inventories.len(),
@@ -487,14 +566,76 @@ async fn assert_wand_on_wire(
             1,
             "one Wand of Darkness in the caster's published backpack"
         );
-        Ok(())
+        Ok(cooldowns.pop())
     };
-    let ((), result): ((), TestResult) =
+    let (end, result): (_, TestResult<Option<cooldown_wire::ActorCooldowns>>) =
         tokio::time::timeout(std::time::Duration::from_secs(45), async {
             tokio::join!(serving, driving)
         })
         .await?;
-    result
+    if let Some(live) = result? {
+        let ConnectionEnd::AdmittedThenDisconnected(resumed) = end else {
+            return Err("expected disconnect with a resumable session".into());
+        };
+        owner.states.test_owner_time.store(
+            (CAST_TIME_MS + 500) * 1_000 + 1,
+            std::sync::atomic::Ordering::Relaxed,
+        );
+        let (mut server, mut client) = tokio::io::duplex(1 << 20);
+        let serving = async {
+            serve_admitted(&mut server, resumed, owner, IDLE_LIVENESS).await;
+            drop(server);
+        };
+        let driving = async {
+            let snapshot = read_join_cooldowns(&mut client)
+                .await?
+                .ok_or("resume omitted the negotiated cooldown domain")?;
+            client.shutdown().await?;
+            assert_eq!(snapshot.server_now_ms, live.server_now_ms + 500);
+            assert_eq!(snapshot.entries, live.entries, "resume keeps the original deadlines");
+            Ok(())
+        };
+        let ((), result): ((), TestResult) =
+            tokio::time::timeout(std::time::Duration::from_secs(45), async {
+                tokio::join!(serving, driving)
+            })
+            .await?;
+        result?;
+    }
+    Ok(())
+}
+
+async fn read_join_cooldowns(
+    client: &mut tokio::io::DuplexStream,
+) -> TestResult<Option<cooldown_wire::ActorCooldowns>> {
+    use crate::gameplay_transport::tcp_tls::read_frame;
+    use oteryn_protocol_oteryn::{
+        MessageType, decode_snapshot_body, decode_snapshot_chunk_framing, decode_wire_envelope,
+    };
+
+    let mut body = Vec::new();
+    loop {
+        let frame = read_frame(client).await?;
+        let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+        match envelope.message_type() {
+            MessageType::SnapshotChunk => {
+                let (_, bytes) = decode_snapshot_chunk_framing(envelope.payload()).map_err(debug)?;
+                body.extend_from_slice(bytes);
+            }
+            MessageType::SnapshotCommit => break,
+            _ => (),
+        }
+    }
+    let domains = decode_snapshot_body(&body).map_err(debug)?;
+    let Some(domain) = domains
+        .iter()
+        .find(|domain| domain.domain_id == cooldown_wire::STATE_DOMAIN_ACTOR_COOLDOWNS)
+    else {
+        return Ok(None);
+    };
+    assert_eq!(domain.revision, 0);
+    assert_eq!(domain.snapshot_type, cooldown_wire::SNAPSHOT_TYPE_ACTOR_COOLDOWNS_V1);
+    Ok(Some(cooldown_wire::decode_actor_cooldowns(domain.payload).map_err(debug)?))
 }
 
 async fn receipt_count(h: &Harness) -> TestResult<i64> {
