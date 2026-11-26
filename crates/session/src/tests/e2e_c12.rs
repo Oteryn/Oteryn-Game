@@ -15,7 +15,8 @@ use std::rc::Rc;
 use std::task::{Context, Poll};
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
-const FRAME_LIMIT: u64 = 1024 * 1024;
+#[path = "../../../../tools/qualification/c12_frame_capture.rs"]
+mod frame_capture;
 
 struct Witness {
     prior: [u8; 16],
@@ -133,10 +134,19 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
     let witness = read_witness(root, &expected)?;
     let path = root.join("c12-wire.bin");
     let size = path.metadata()?.len();
-    if !(1..=FRAME_LIMIT).contains(&size) {
+    if !(1..=frame_capture::FRAME_LIMIT as u64).contains(&size) {
         return Err("C12 wire capture size outside bounds".into());
     }
     let bytes = std::fs::read(path)?;
+    let frames = root.join("c12-frames.json");
+    if !(1..=16 * frame_capture::FRAME_LIMIT as u64).contains(&frames.metadata()?.len()) {
+        return Err("C12 #3521 envelope capture size outside bounds".into());
+    }
+    let captured: Vec<frame_capture::Envelope> = serde_json::from_slice(&std::fs::read(frames)?)?;
+    let session = oteryn_protocol_oteryn::GameSessionId::decode(&witness.session)?;
+    if captured != frame_capture::envelopes(&bytes, session)? {
+        return Err("C12 #3521 envelopes do not match the original server frames".into());
+    }
     if !(1..bytes.len()).contains(&witness.before_bytes) {
         return Err("C12 cast boundary outside the original transcript".into());
     }
@@ -316,6 +326,24 @@ fn c12_capture_provenance_refuses_stale_or_mismatched_fields() -> Result<(), Box
         current.replace(" 305 305 70 210 ", " 305 305 120 210 "),
     ] {
         assert!(read_witness(run, &invalid).is_err());
+    }
+    Ok(())
+}
+
+#[test]
+fn c12_capture_requires_exact_envelope_keys() -> Result<(), BoxError> {
+    let json = r#"{"command_id":7,"game_session_id":"01a21811-6e5d-7a07-8802-f8f24863df69","payload":[0,255],"server_sequence":9,"status":1}"#;
+    let captured: frame_capture::Envelope = serde_json::from_str(json)?;
+    assert_eq!(
+        serde_json::to_value(&captured)?,
+        serde_json::from_str::<serde_json::Value>(json)?
+    );
+    for invalid in [
+        json.replace(r#","status":1"#, ""),
+        json.replace(r#""status":1"#, r#""status":1,"status":1"#),
+        json.replace(r#""status":1"#, r#""status":1,"extra":0"#),
+    ] {
+        assert!(serde_json::from_str::<frame_capture::Envelope>(&invalid).is_err());
     }
     Ok(())
 }

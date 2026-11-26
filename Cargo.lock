@@ -5750,6 +5750,8 @@ name = "oteryn-session"
 version = "0.1.0"
 dependencies = [
  "oteryn-protocol-oteryn",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 

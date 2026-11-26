@@ -110,6 +110,13 @@ def replay_targets():
         for path in (ROOT / package / "src").rglob("e2e_*.rs"):
             module = path.stem
             source = path.read_text()
+            if path == ROOT / "crates/session/src/tests/e2e_c12.rs":
+                targets.setdefault(module, []).append((
+                    "oteryn-session",
+                    "e2e_c12_replays_augmented_cast_payload_and_refuses_invalid_payload",
+                    {"c12-expected.txt", "c12-frames.json", "c12-wire.bin"},
+                ))
+                continue
             if "E2E_ALL_CAPTURE_DIR" not in source:
                 continue
             tests = re.findall(r"#\[test\]\s*fn (\w+)\(", source)

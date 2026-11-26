@@ -13,7 +13,9 @@ use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
-const FRAME_LIMIT: usize = 1024 * 1024;
+#[path = "../../../../../tools/qualification/c12_frame_capture.rs"]
+mod frame_capture;
+
 const COMMAND_BUDGET: Duration = Duration::from_secs(8);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -240,7 +242,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let bytes = received
         .lock()
         .map_err(|_| "C12 capture lock unavailable")?;
+    let frames = frame_capture::envelopes(&bytes, id)
+        .map_err(|error| error as Box<dyn std::error::Error>)?;
+    let frames = serde_json::to_vec(&frames)?;
     write_packet(&root, "c12-wire.bin", &bytes)?;
+    write_packet(&root, "c12-frames.json", &frames)?;
     write_packet(&root, "c12-expected.txt", expected.as_bytes())?;
     evidence(&format!(
         "C12_CAPTURE session={session_id} command={command} result_sequence={result_sequence} delta_sequence={sequence}"
@@ -278,7 +284,7 @@ impl<S: AsyncRead + Unpin> AsyncRead for WireCapture<S> {
                 .received
                 .lock()
                 .map_err(|_| io::Error::other("C12 capture lock unavailable"))?;
-            if bytes.len() > FRAME_LIMIT.saturating_sub(received.len()) {
+            if bytes.len() > frame_capture::FRAME_LIMIT.saturating_sub(received.len()) {
                 return Poll::Ready(Err(io::Error::other("C12 capture exceeds bounds")));
             }
             received.extend_from_slice(bytes);
