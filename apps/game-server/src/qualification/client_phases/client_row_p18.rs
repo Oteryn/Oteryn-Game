@@ -296,6 +296,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let clients = &scope;
     let mut fixture = connect_character(clients, 0x43, 0).await?;
     character_prep::grant_item(&fixture, 3267, 2).await?;
+    character_prep::grant_item(&fixture, 3043, 3).await?;
+    evidence("FIXTURE row=P18.client input=carried_fusion_gold gold=30000");
     if fixture.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
@@ -453,6 +455,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     if super::full_row_p18::dagger_tiers(&mut client, dagger.get()).await? != [0, 0] {
         return Err("Forge refusal pre-state must contain two tier-zero daggers".into());
+    }
+    let selection = wire::Selection::Pair {
+        operation: Operation::Fusion,
+        first: pair.0,
+        second: pair.1,
+        boost: false,
+        protect: false,
+    };
+    let wire::Payload::Quote(quote) =
+        super::full_row_p18::preview(&mut client, selection).await?
+    else {
+        return Err("distinct Fusion daggers did not produce a live pair quote".into());
+    };
+    if quote.selection != selection
+        || (quote.cost.dust, quote.cost.gold, quote.cost.cores) != (100, 25_000, 0)
+        || (quote.resources.dust, quote.resources.carried_gold, quote.resources.bank_gold)
+            != (15, 30_000, 0)
+    {
+        return Err(format!("Forge refusal pre-state has an incorrect quote: {quote:?}").into());
     }
     for (ordinal, (name, operation, expected_reason)) in [
         // The valid, distinct pair is evaluated against the remaining dust.

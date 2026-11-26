@@ -370,6 +370,17 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
         if panel_text(&panel).lines().nth(3) != Some(expected) {
             return Err(format!("unexpected Forge panel text at frame {index}").into());
         }
+        let refusal_dialog = match index {
+            3 => Some("Fuse item pair\nNot applied\nServer reason: INSUFFICIENT_DUST"),
+            4 => Some("Convert dust to slivers: Not applied\nNot enough dust"),
+            5 => Some("Raise the dust limit: Not applied\nNot enough dust"),
+            _ => None,
+        };
+        if refusal_dialog.is_some_and(|expected| dialog_text(0) != expected) {
+            return Err(
+                format!("Forge refusal dialog rendered incorrect text at frame {index}").into(),
+            );
+        }
         if index == 5 {
             check_invalid_results(&mut panel.clone(), &payload);
         }

@@ -987,7 +987,7 @@ fn eligible_pair(operation: Operation, first: &preview::Item, second: &preview::
     }
 }
 
-async fn preview(
+pub(super) async fn preview(
     client: &mut DevClientSession,
     selection: preview::Selection,
 ) -> TestResult<preview::Payload> {
