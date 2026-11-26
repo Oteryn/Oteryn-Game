@@ -667,6 +667,9 @@ echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres
 ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
 
 # Use the merged native producer for every shard; the PHP producer is retired.
+if [[ "$NODE_BOOT_WORLD" == 1 ]] && NODE_BOOT_E2E_ONLY="${NODE_BOOT_E2E_ONLY:-}" w15c_batch_selected; then
+  export NODE_BOOT_W15C_PLATFORM_REVISION="$NODE_BOOT_PLATFORM_PIN"
+fi
 game_platform_start
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
   seed_mp_accounts
