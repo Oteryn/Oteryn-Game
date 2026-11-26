@@ -5,6 +5,11 @@ use crate::durability::item_use::ItemUseError;
 use oteryn_gameplay_domain::domain::condition::ConflictKey;
 use oteryn_gameplay_foundation::foundation::condition::ConditionStore;
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static BUSY_LOGOUT_CONDITION_READS: std::cell::Cell<u32>;
+}
+
 fn has_world_cake_regeneration(conditions: &ConditionStore<String>) -> bool {
     conditions
         .get(ConflictKey::Recovery)
@@ -91,7 +96,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> bool {
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let Ok((current, _)) = store.current_session_at(session).await else {
+        #[cfg(test)]
+        let held = BUSY_LOGOUT_CONDITION_READS
+            .try_with(|remaining| {
+                if remaining.get() == 0 {
+                    return None;
+                }
+                remaining.set(remaining.get() - 1);
+                Some(self.root.try_issue_semantic_pass())
+            })
+            .ok()
+            .flatten();
+        let current = store.current_session_at(session).await;
+        #[cfg(test)]
+        if let Some(held) = held {
+            assert!(matches!(
+                current,
+                Err(crate::durability::DurabilityError::RootUnavailable)
+            ));
+            assert!(held.is_ok());
+            if let Ok(held) = held {
+                assert!(held.run(|_, _| Box::pin(async { Ok(()) })).await.is_ok());
+            }
+        }
+        let Ok((current, _)) = current else {
             return false;
         };
         let Some(fence) = item_fence_of(current) else {
