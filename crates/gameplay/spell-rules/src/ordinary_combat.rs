@@ -4,7 +4,22 @@ use crate::dispatch_plans::geometry::{self, TileFlags};
 use oteryn_gameplay_combat_rules::chain::{
     CHAIN_PATH_SEARCH_TILES, ChainCreature, ChainWorld, TilePosition,
 };
+use oteryn_gameplay_combat_rules::pvp::{
+    PvpActor, PvpRelation, PvpTarget, WorldPvpType, check_pvp_legality,
+};
 use std::collections::{BTreeMap, BTreeSet};
+
+/// Summons of party and guild allies stay protected. For other players, use
+/// the owner's PvP relation and skull with the tile occupied by the summon.
+pub fn summon_owner_allows_hit(
+    world: WorldPvpType,
+    caster: &PvpActor,
+    owner: &PvpTarget,
+    relation: &PvpRelation,
+) -> bool {
+    relation.same_party_or_guild == Some(false)
+        && check_pvp_legality(world, caster, owner, relation).is_ok()
+}
 
 #[derive(Debug)]
 pub struct World<D> {

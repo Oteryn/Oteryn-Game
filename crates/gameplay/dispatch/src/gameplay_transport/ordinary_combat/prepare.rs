@@ -721,6 +721,116 @@ async fn qualify_targets(
             }
         }
     }
+    let mut legal_summons = BTreeSet::new();
+    // Use the ordinary PvP spell lane. Delayed chain hits have a separate owner.
+    if basic_pvp {
+        let summon_candidates: Vec<_> = creatures
+            .iter()
+            .filter_map(|summon| {
+                let master = summon.state.master?;
+                let summon_tile = tiles.get(&tile(summon.position))?;
+                let (_, _, owner) = players.iter().find(|(player, session, _)| {
+                    *player == master.actor && *session == master.session
+                })?;
+                (master.actor != actor
+                    && summon.health > 0
+                    && summon.state.policy.flags.attackable
+                    && owner.vitals().health > 0
+                    && !states.is_dead(master.actor)
+                    && !runtime
+                        .actor_staff_visibility(master.actor)
+                        .is_ok_and(|f| f.0)
+                    && !runtime.is_tibiadrome(master.actor)
+                    && summon_tile.present
+                    && !summon_tile.floor_change
+                    && !summon_tile.solid
+                    && !summon_tile.protection)
+                    .then_some((
+                        summon.actor,
+                        summon.position,
+                        master,
+                        owner.character_facts().level,
+                    ))
+            })
+            .collect();
+        if !caster_protection
+            && !runtime.is_tibiadrome(actor)
+            && !runtime.actor_staff_visibility(actor).is_ok_and(|f| f.0)
+            && !summon_candidates.is_empty()
+        {
+            use crate::durability::pvp_live::read_live_pvp_in_transaction;
+            use crate::spell::world_execution::qualified_combat_tile_in_transaction;
+            use oteryn_gameplay_combat_rules::pvp::{PvpActor, PvpTarget};
+
+            let source_tile = qualified_combat_tile_in_transaction(
+                tx,
+                authority,
+                room,
+                runtime,
+                objects,
+                position.position(),
+            )
+            .await
+            .map_err(|_| SpellCastDisposition::TargetIllegal)?;
+            let source = states
+                .get(runtime, actor, authority.game_session_id())
+                .ok_or(SpellCastDisposition::TargetIllegal)?;
+            let source_tile = (source_tile.protection_zone(), source_tile.no_pvp_zone());
+            for (summon, summon_position, master, level) in summon_candidates {
+                let Ok(facts) = read_live_pvp_in_transaction(
+                    tx,
+                    root,
+                    authority,
+                    runtime,
+                    actor,
+                    master.actor,
+                    master.session,
+                )
+                .await
+                else {
+                    continue;
+                };
+                let Ok(target_tile) = qualified_combat_tile_in_transaction(
+                    tx,
+                    authority,
+                    room,
+                    runtime,
+                    objects,
+                    summon_position,
+                )
+                .await
+                else {
+                    continue;
+                };
+                let attacker = PvpActor {
+                    level: source.character_facts().level,
+                    in_protection_zone: source_tile.0,
+                    on_no_pvp_tile: source_tile.1,
+                    post_login_immune: facts.post_login_immune,
+                    black_skull: facts.actor_black,
+                    secure_mode: pvp_modes.modes.secure,
+                    expert_mode: crate::gameplay_transport::pvp_expert::effective_mode(
+                        pvp_modes.expert,
+                        facts.actor_black,
+                    ),
+                };
+                let owner = PvpTarget {
+                    level,
+                    in_protection_zone: target_tile.protection_zone(),
+                    on_no_pvp_tile: target_tile.no_pvp_zone(),
+                    marked: facts.marked,
+                };
+                if oteryn_gameplay_spell_rules::ordinary_combat::summon_owner_allows_hit(
+                    facts.world,
+                    &attacker,
+                    &owner,
+                    &facts.relation,
+                ) {
+                    legal_summons.insert(u64::from(summon.actor_local_id()));
+                }
+            }
+        }
+    }
     let legal = chain_creatures
         .iter()
         .filter(|c| {
@@ -741,6 +851,7 @@ async fn qualify_targets(
                             && !t.protection
                             && !caster_protection
                     })
+                    || legal_summons.contains(&c.id)
                     || pvp_targets
                         .iter()
                         .any(|(a, _)| u64::from(a.actor_local_id()) == c.id)

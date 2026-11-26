@@ -81,6 +81,109 @@ async fn target(
     Ok(())
 }
 
+async fn join_party(pool: &sqlx::PgPool) -> TestResult {
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,3)")
+        .bind(id(80).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,1,1,encode($4,'hex')::uuid),(encode($2,'hex')::uuid,encode($3,'hex')::uuid,2,1,encode($4,'hex')::uuid)")
+        .bind(id(41).as_slice()).bind(id(101).as_slice()).bind(id(80).as_slice()).bind(id(43).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn leave_party(pool: &sqlx::PgPool) -> TestResult {
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DELETE FROM game_party_members")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DELETE FROM game_parties")
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn summon_protection(
+    client: &mut DuplexStream,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    pool: &sqlx::PgPool,
+    victim: ExactActorRef,
+) -> TestResult {
+    use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+
+    join_party(pool).await?;
+    wait_live(client, Duration::from_millis(10_100)).await?;
+    set(client, 1, modes(ExpertMode::RedFist)).await?;
+    delta(client, modes(ExpertMode::RedFist)).await?;
+    let victim_session = GameSessionId::decode(&id(110)).map_err(debug)?;
+    let (summon, at, health) = {
+        let mut runtime = owner.runtime.lock().await;
+        owner.active_generation
+            .and_then(|generation| generation.native_gameplay())
+            .ok_or("native generation")?
+            .install_companion_policies(&mut runtime)
+            .map_err(debug)?;
+        let mut at = runtime.read_actor_position(victim).map_err(debug)?.position();
+        at.y += 1;
+        let prepared = runtime
+            .prepare_companion_spawn(
+                victim, victim_session, "oteryn:creature.dragon", at, None, None, 1, 0, true,
+            )
+            .map_err(debug)?;
+        let summon = runtime.install_companion_spawn(prepared).map_err(debug)?;
+        let health = runtime.companion_snapshot(summon).map_err(debug)?.health;
+        (summon, at, health)
+    };
+
+    let spell = (1..=owner.spells.source_len())
+        .find_map(|i| {
+            std::num::NonZeroU32::new(u32::try_from(i).ok()?).filter(|index| {
+                owner.spells.source_indexed(*index).is_some_and(|(s, active)| {
+                    active && s.key == "candidate:spell/flame_strike"
+                })
+            })
+        })
+        .ok_or("flame strike")?;
+    let cast = actor_spell::SpellCastIntent {
+        spell,
+        target: actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
+            x: at.x,
+            y: at.y,
+            floor: at.floor.abs(),
+        }),
+        aim_at_target: true,
+    };
+    for (command_id, expected) in [
+        (2, actor_spell::SpellCastDisposition::Rejected),
+        (3, actor_spell::SpellCastDisposition::Cast),
+    ] {
+        if command_id == 3 {
+            leave_party(pool).await?;
+        }
+        let result = command(
+            client,
+            command_id,
+            actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+            &actor_spell::encode_spell_cast_intent(&cast),
+        )
+        .await?;
+        assert_eq!(actor_spell::decode_spell_cast_result(&result).map_err(debug)?, expected);
+        let after = owner.runtime.lock().await.companion_snapshot(summon).map_err(debug)?.health;
+        if expected == actor_spell::SpellCastDisposition::Rejected {
+            assert_eq!(after, health);
+        } else {
+            assert!(after < health, "the unrelated summon takes damage");
+        }
+    }
+    Ok(())
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn drive(
     client: &mut DuplexStream,
@@ -92,43 +195,60 @@ pub(super) async fn drive(
     entity: EntityRef,
     scenario: i16,
 ) -> TestResult {
+    if scenario == 15 {
+        return summon_protection(client, owner, pool, victim).await;
+    }
     if scenario == 14 {
-        // Constraint fixture only; the companion party-skull case joins through real commands.
-        let mut tx = pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx)
-            .await?;
-        sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,3)")
-            .bind(id(80).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,1,1,encode($4,'hex')::uuid),(encode($2,'hex')::uuid,encode($3,'hex')::uuid,2,1,encode($4,'hex')::uuid)")
-            .bind(id(41).as_slice()).bind(id(101).as_slice()).bind(id(80).as_slice()).bind(id(43).as_slice()).execute(&mut *tx).await?;
-        tx.commit().await?;
+        join_party(pool).await?;
         wait_live(client, Duration::from_millis(10_100)).await?;
         set(client, 1, modes(ExpertMode::RedFist)).await?;
         delta(client, modes(ExpertMode::RedFist)).await?;
         target(client, 2, Some(&entity), Rejected).await?;
-        let before = health(owner, victim).await?;
         assert_eq!(
             sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_pvp_harm")
                 .fetch_one(pool)
                 .await?,
             0
         );
+        super::super::fixture::pvp_source_death_fixture::seed_root(pool, 41, 60, 42).await?;
+        let enemy = {
+            let mut runtime = owner.runtime.lock().await;
+            let reservation = runtime
+                .reserve_fresh_session(GameSessionId::decode(&id(112)).map_err(debug)?)
+                .map_err(debug)?;
+            let enemy = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime.initialize_first_entry_position(enemy).map_err(debug)?;
+            enemy
+        };
+        for (character, player, command_id, expected) in [
+            (41, actor, 3, Rejected),
+            (101, victim, 4, Accepted),
+        ] {
+            sqlx::query(
+                "INSERT INTO game_character_pvp_aggression
+                 (attacker,target,until_at,scope_generation,attacker_placement,target_placement)
+                 VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,
+                        clock_timestamp()+interval '60 seconds',1,$3,$4)",
+            )
+            .bind(id(character).as_slice())
+            .bind(id(60).as_slice())
+            .bind(player.placement_identity().as_slice())
+            .bind(enemy.placement_identity().as_slice())
+            .execute(pool)
+            .await?;
+            target(client, command_id, Some(&entity), expected).await?;
+        }
+        target(client, 5, None, Accepted).await?;
+        sqlx::query("UPDATE game_character_pvp_aggression SET until_at=clock_timestamp()")
+            .execute(pool)
+            .await?;
+        target(client, 6, Some(&entity), Rejected).await?;
+        let before = health(owner, victim).await?;
         // Counterfactual: the same real attack against a non-member is unjustified.
-        let mut tx = pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx)
-            .await?;
-        sqlx::query("DELETE FROM game_party_members")
-            .execute(&mut *tx)
-            .await?;
-        sqlx::query("DELETE FROM game_parties")
-            .execute(&mut *tx)
-            .await?;
-        tx.commit().await?;
-        target(client, 3, Some(&entity), Accepted).await?;
+        leave_party(pool).await?;
+        target(client, 7, Some(&entity), Accepted).await?;
         wait_live(client, Duration::from_secs(3)).await?;
-        target(client, 4, None, Accepted).await?;
+        target(client, 8, None, Accepted).await?;
         assert!(health(owner, victim).await? < before);
         let (harm,ledger):(i64,i64)=sqlx::query_as("SELECT (SELECT sum(damage)::bigint FROM game_character_pvp_harm),(SELECT sum((b->>'damage')::bigint)::bigint FROM game_character_pvp_ledger l CROSS JOIN LATERAL jsonb_array_elements(l.buckets) b)").fetch_one(pool).await?;
         assert!(harm > 0);
@@ -138,7 +258,7 @@ pub(super) async fn drive(
         );
         assert!(
             sqlx::query_scalar::<_, bool>(
-                "SELECT bool_and(unjustified) FROM game_character_pvp_harm"
+                "SELECT bool_and(unjustified = (command_id = 7)) FROM game_character_pvp_harm"
             )
             .fetch_one(pool)
             .await?

@@ -256,7 +256,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
         );
         let mut deps =
             Dependencies::with_content(cp.clone(), room.clone(), native.spell_book().clone())?;
-        if mode == 13 {
+        if matches!(mode, 13..=15) {
             let mut runtime = crate::foundation::ChannelRuntimeV1::from_committed_assignment(
                 world,
                 deps.admitted.channel_id,

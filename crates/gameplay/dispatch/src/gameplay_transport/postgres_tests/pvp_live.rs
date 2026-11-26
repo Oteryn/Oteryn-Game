@@ -55,3 +55,13 @@ fn pvp_expert_optional_world_ignores_expert_choice() -> TestResult {
 fn pvp_expert_white_hand_reads_party_and_guild_aggressors() -> TestResult {
     super::item_look_fixtures::large_stack(|| scenario(13))
 }
+
+#[test]
+fn pvp_expert_party_friendly_fire_requires_a_current_common_enemy() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(14))
+}
+
+#[test]
+fn ordinary_spell_protects_party_summon_but_can_hit_unrelated_summon() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(15))
+}
