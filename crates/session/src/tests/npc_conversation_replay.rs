@@ -143,14 +143,6 @@ pub(super) fn built_window(
 }
 
 pub(super) fn replay(row: &str, frames: Vec<Frame>) -> Result<(), BoxError> {
-    replay_with_trade_details(row, frames, false)
-}
-
-pub(super) fn replay_with_trade_details(
-    row: &str,
-    frames: Vec<Frame>,
-    trade_details: bool,
-) -> Result<(), BoxError> {
     // Captured server sequences interleave other domains; only their order is replayed.
     if frames
         .windows(2)
@@ -176,16 +168,10 @@ pub(super) fn replay_with_trade_details(
                 block_on(async move {
                     let (client, mut server) = tokio::io::duplex(64 * 1024);
                     let joining = tokio::spawn(async move {
-                        let mut capabilities = vec![npc_service::CAPABILITY_NPC_SERVICE_V1];
-                        if trade_details {
-                            capabilities.push(
-                                oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1,
-                            );
-                        }
                         join_peer_with(
                             &mut server,
                             CLIENT_SUPPORTED_CAPABILITIES,
-                            &capabilities,
+                            &[npc_service::CAPABILITY_NPC_SERVICE_V1],
                             &[],
                             (1, spatial(0)),
                             &[
@@ -200,11 +186,8 @@ pub(super) fn replay_with_trade_details(
                                     npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW,
                                     window_join,
                                     npc_service::SNAPSHOT_TYPE_NPC_TRADE_WINDOW_V1,
-                                    npc_service::encode_npc_trade_window_for(
-                                        &Default::default(),
-                                        trade_details,
-                                    )
-                                    .map_err(|error| format!("{error:?}"))?,
+                                    npc_service::encode_npc_trade_window(&Default::default())
+                                        .map_err(|error| format!("{error:?}"))?,
                                 ),
                             ],
                         )

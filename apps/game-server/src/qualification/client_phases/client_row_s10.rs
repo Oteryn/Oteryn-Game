@@ -310,10 +310,11 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
             identity(actor),
             lines.join("\u{1f}")
         ));
+        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
         capture(
             capture_dir,
-            "s10-trade-details.txt",
-            if details { b"1" } else { b"0" },
+            "s10-session.txt",
+            format!("session={session} trade_details={details}\n").as_bytes(),
         )?;
         capture(capture_dir, "s10-expected.txt", expected.as_bytes())?;
         Ok(format!("offers={}", window.offers.len()))
