@@ -194,6 +194,7 @@ fn bag_count(client: &DevClientSession, definition: std::num::NonZeroU32) -> Opt
 }
 
 async fn equip_corridor_weapon(client: &mut DevClientSession) -> TestResult {
+    use oteryn_dev_client::client_runtime::inventory::MoveRequest;
     use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome};
     let definition = provisioning::item_reference(&provisioning::item_index()?, WEAPON_ID)?;
     let source = client
@@ -216,11 +217,13 @@ async fn equip_corridor_weapon(client: &mut DevClientSession) -> TestResult {
         return Err("P11 fixture sword already equipped".into());
     }
     let result = client
-        .move_item(&oteryn_dev_client::ItemMoveIntent {
+        .session_mut()
+        .move_item_counted(MoveRequest {
             source,
             destination: oteryn_dev_client::ItemMoveDestination::Equipment(
                 EquipmentSlot::RightHand,
             ),
+            count: None,
         })
         .await?;
     if result.outcome != ItemMoveOutcome::Moved {
