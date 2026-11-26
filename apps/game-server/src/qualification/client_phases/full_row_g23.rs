@@ -1,21 +1,24 @@
-//! G23 wheel presentation and gem presentation (capability 148, commands 6119 and 6121).
-//! 1. Admit the node-boot character; request the wheel presentation for an empty draft at the
-//!    stored revisions (revision 0..=3 are probed because the client does not know the stored
-//!    revision before the first allocation). The server must echo the request, name its
-//!    catalogue and vocation and list the graph nodes; an ineligible character must say why.
-//! 2. Request the gem presentation at the stored atelier revision: the modifier catalogue must be
-//!    non-empty and carry the same catalogue identity as the wheel reply.
-//!
-//! The gem projection needs a stored atelier state, which only the first gem action creates.
+//! G23 checks Wheel and Gem presentations on a freshly promoted Premium Knight.
+//! Admission initializes the starter gems. Compare their committed identities and
+//! catalogue after logout and fresh admission.
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::CommandStatus;
-use oteryn_protocol_oteryn::{gem_presentation as gem, wheel_presentation as wheel};
+use oteryn_protocol_oteryn::{
+    atelier, gem_presentation as gem, wheel as allocation, wheel_presentation as wheel,
+};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    character_prep::declare_seeded(
+        "G23.full",
+        "knight-level-51,premium,promotion-fee-gold",
+        "qualify for Wheel and Atelier without leveling within the row budget",
+    );
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "wheel-and-gem-presentation-validated".to_owned()),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
@@ -57,7 +60,6 @@ async fn send(
     Ok((reply.status, reply.payload))
 }
 
-
 async fn finish(client: &mut DevClientSession) -> TestResult {
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -73,108 +75,177 @@ fn consistent(eligible: bool, reason: &str, nodes: usize, catalogue: &str, vocat
     nodes > 0 && !catalogue.is_empty() && !vocation.is_empty() && (eligible || !reason.is_empty())
 }
 
-async fn wheel_reply(client: &mut DevClientSession) -> TestResult<wheel::Reply> {
-    let mut observed = Vec::new();
-    for revision in 0..=3u64 {
-        let request = wheel::Request {
-            nonce: 1,
-            wheel_revision: revision,
-            atelier_revision: 0,
-            points: [0; 36],
-            vessels: [None; 4],
-        };
-        let payload = request
-            .encode()
-            .ok_or("step=wheel observed=request-encode")?;
-        let (status, reply) = send(
-            client,
-            CAPABILITY,
-            wheel::COMMAND_TYPE_WHEEL_PRESENTATION,
-            &payload,
-        )
-        .await?;
-        if status != CommandStatus::Accepted {
-            observed.push(format!("{revision}:{status:?}"));
-            continue;
-        }
-        let reply = wheel::Reply::decode(&reply).ok_or("step=wheel observed=decode-failed")?;
-        if reply.request != request {
-            return Err("step=wheel observed=request-not-echoed".into());
-        }
-        return Ok(reply);
-    }
-    Err(format!(
-        "step=wheel observed={} needed=stored-wheel-revision",
-        observed.join(",")
+async fn presentations(client: &mut DevClientSession) -> TestResult<(wheel::Reply, gem::Reply)> {
+    let query = allocation::WheelAllocationRequest {
+        action: 0,
+        occurrence: [0; 16],
+        expected_revision: 0,
+        points: [0; allocation::WHEEL_SLOTS],
+        vessels: None,
+    };
+    let (status, bytes) = send(
+        client,
+        CAPABILITY,
+        allocation::COMMAND_TYPE_WHEEL_ALLOCATION,
+        &allocation::encode_wheel_request(&query)
+            .map_err(|e| format!("wheel query encode: {e:?}"))?,
     )
-    .into())
-}
-
-async fn gem_reply(client: &mut DevClientSession) -> TestResult<gem::Reply> {
-    let mut observed = Vec::new();
-    for revision in 0..=3u64 {
-        let request = gem::Request { nonce: 2, revision };
-        let payload = request.encode().ok_or("step=gem observed=request-encode")?;
-        let (status, reply) = send(
-            client,
-            gem::CAPABILITY_GEM_PRESENTATION_V1,
-            gem::COMMAND_TYPE_GEM_PRESENTATION,
-            &payload,
-        )
-        .await?;
-        if status != CommandStatus::Accepted {
-            observed.push(format!("{revision}:{status:?}"));
-            continue;
-        }
-        let reply = gem::Reply::decode(&reply).ok_or("step=gem observed=decode-failed")?;
-        if reply.request != request {
-            return Err("step=gem observed=request-not-echoed".into());
-        }
-        return Ok(reply);
+    .await?;
+    let alloc = allocation::decode_wheel_reply(&bytes)
+        .map_err(|e| format!("wheel query status={status:?} decode={e:?}"))?;
+    if status != CommandStatus::Accepted
+        || alloc.refused
+        || alloc.points != query.points
+        || alloc.vessels.is_some_and(|vessels| vessels != [None; 4])
+    {
+        return Err(format!("step=wheel-query observed={status:?}/{alloc:?}").into());
     }
-    Err(format!(
-        "step=gem observed={} needed=character-atelier-state",
-        observed.join(",")
-    )
-    .into())
-}
 
-async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> TestResult {
-    let wheel = wheel_reply(client).await?;
-    if !consistent(
-        wheel.eligible,
-        &wheel.reason,
-        wheel.nodes.len(),
-        &wheel.catalogue,
-        &wheel.vocation,
-    ) {
-        return Err(format!(
-            "step=wheel observed=eligible:{}-reason:{}-nodes:{}",
+    let (status, bytes) = send(
+        client,
+        CAPABILITY,
+        atelier::COMMAND_TYPE_ATELIER_QUERY,
+        &atelier::encode_query(),
+    )
+    .await?;
+    let state = atelier::decode_reply(&bytes)
+        .map_err(|e| format!("atelier query status={status:?} decode={e:?}"))?;
+    if status != CommandStatus::Accepted || state.refused || state.gems.len() != 8 {
+        return Err(format!("step=atelier-query observed={status:?}/{state:?}").into());
+    }
+
+    let request = wheel::Request {
+        nonce: 1,
+        wheel_revision: alloc.revision,
+        atelier_revision: state.revision,
+        points: alloc.points,
+        vessels: alloc.vessels.unwrap_or([None; 4]),
+    };
+    let (status, bytes) = send(
+        client,
+        CAPABILITY,
+        wheel::COMMAND_TYPE_WHEEL_PRESENTATION,
+        &request.encode().ok_or("wheel presentation encode")?,
+    )
+    .await?;
+    if status != CommandStatus::Accepted {
+        return Err(format!("step=wheel observed={status:?}").into());
+    }
+    let wheel = wheel::Reply::decode(&bytes).ok_or("wheel presentation decode")?;
+    if wheel.request != request
+        || !consistent(
             wheel.eligible,
-            wheel.reason,
-            wheel.nodes.len()
+            &wheel.reason,
+            wheel.nodes.len(),
+            &wheel.catalogue,
+            &wheel.vocation,
         )
-        .into());
+        || !wheel.eligible
+        || wheel.available != 1
+        || wheel.vocation != "knight"
+    {
+        return Err(format!("step=wheel observed={wheel:?}").into());
     }
-    let gem = gem_reply(client).await?;
-    if gem.modifiers.is_empty() || gem.catalogue != wheel.catalogue || gem.vocation.is_empty() {
+
+    let request = gem::Request {
+        nonce: 2,
+        revision: state.revision,
+    };
+    let (status, bytes) = send(
+        client,
+        gem::CAPABILITY_GEM_PRESENTATION_V1,
+        gem::COMMAND_TYPE_GEM_PRESENTATION,
+        &request.encode().ok_or("gem presentation encode")?,
+    )
+    .await?;
+    if status != CommandStatus::Accepted {
+        return Err(format!("step=gem observed={status:?} revision={}", state.revision).into());
+    }
+    let gem = gem::Reply::decode(&bytes).ok_or("gem presentation decode")?;
+    let mut ids: Vec<_> = state.gems.iter().map(|gem| gem.id).collect();
+    ids.sort_unstable();
+    if gem.request != request
+        || gem.modifiers.len() != 69
+        || gem.catalogue != wheel.catalogue
+        || gem.vocation != wheel.vocation
+        || gem.qualified_gems != ids
+    {
         return Err(format!(
-            "step=gem observed=modifiers:{}-catalogue:{}-wheel-catalogue:{}",
+            "step=gem observed=modifiers:{}-catalogue:{}-wheel-catalogue:{}-qualified:{}",
             gem.modifiers.len(),
             gem.catalogue,
-            wheel.catalogue
+            wheel.catalogue,
+            gem.qualified_gems.len()
         )
         .into());
     }
-    Ok(())
+    Ok((wheel, gem))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0x88).await?;
-    let outcome = verdict::observe(body(&mut client, clients)).await;
-    let closed = verdict::observe(finish(&mut client)).await;
-    outcome?;
-    closed
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_G23_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    let mut client = connect_character(clients, 0x88, 0).await?;
+    let original = client.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(original.as_bytes()),
+        "--profile",
+        "g23-knight".into(),
+    )
+    .await?;
+    character_prep::grant_item(&client, 3043, 2).await?;
+    character_prep::grant_premium(&client).await?;
+    finish(&mut client).await?;
+    drop(client);
+
+    let mut client = connect_character(clients, 0x88, 0).await?;
+    let promoted_session = client.join_snapshot().game_session_id;
+    if original == promoted_session {
+        return Err("fixture relog reused session".into());
+    }
+    let world = full_e2ef7::qualification_world(clients)?;
+    let bundle = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bundle, |_, _| Ok(()))?;
+    let king = full_row_p20::approach_npc(
+        &mut client,
+        world,
+        &metadata.npcs,
+        "oteryn:npc.king_tibianus",
+    )
+    .await?;
+    if full_row_p20::talk(&mut client, king, "hi")
+        .await?
+        .is_empty()
+        || full_row_p20::talk(&mut client, king, "promotion").await?
+            != ["Do you want to be promoted for 20000 gold coins?"]
+        || full_row_p20::talk(&mut client, king, "yes").await? != ["You are now promoted."]
+    {
+        return Err("step=promotion observed=dialogue-refused".into());
+    }
+    finish(&mut client).await?;
+    drop(client);
+
+    let mut client = connect_character(clients, 0x88, 0).await?;
+    let initial_session = client.join_snapshot().game_session_id;
+    if promoted_session == initial_session {
+        return Err("promotion relog reused session".into());
+    }
+    let before = verdict::observe(presentations(&mut client)).await;
+    let close = verdict::observe(finish(&mut client)).await;
+    let before = before?;
+    close?;
+    drop(client);
+
+    let mut client = connect_character(clients, 0x88, 0).await?;
+    let fresh_session = client.join_snapshot().game_session_id;
+    let after = verdict::observe(presentations(&mut client)).await;
+    let close = verdict::observe(finish(&mut client)).await;
+    if after? != before || fresh_session == initial_session {
+        return Err("step=relog observed=presentation-or-session-mismatch".into());
+    }
+    close?;
+    evidence("G23_CHECK status=PASS points=1 starter_gems=8 modifiers=69 durable_after_relog=1");
+    Ok(())
 }
 
 #[cfg(test)]
