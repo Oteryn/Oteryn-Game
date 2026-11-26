@@ -706,6 +706,17 @@ class CloudRunSummaryTests(unittest.TestCase):
                     f'SEAM_EVIDENCE e2e_all scenario={scenario} status=PASS'
                 ))
 
+    def test_i07_full_batch_rejects_empty_phase(self):
+        replay = load('client_replay')
+        selected, _ = replay.selected_rows('307:1')
+        self.assertEqual(selected, {'I07.full'})
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp, 'rows.log')
+            log.write_text('')
+            self.assertEqual(replay.main(log, '307:1', validate=True), 1)
+            log.write_text('SEAM_EVIDENCE e2e_all scenario=I07.full status=PASS seconds=1.235\n')
+            self.assertEqual(replay.main(log, '307:1', validate=True), 0)
+
     def test_legacy_greet_ten_selector_requires_one_verdict(self):
         replay = load('client_replay')
         with tempfile.TemporaryDirectory() as tmp, patch.object(replay, 'PHASES', Path(tmp)):

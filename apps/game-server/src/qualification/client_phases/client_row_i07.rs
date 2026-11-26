@@ -330,6 +330,19 @@ impl Capture<'_> {
             )
             .into());
         }
+        if self.directory.is_none()
+            && matches!(
+                request.action,
+                QuickLootAction::Click | QuickLootAction::LootAll
+            )
+        {
+            evidence(&format!(
+                "I07_FULL_ACTION action={:?} probe={key} status={:?} checked_item_outcomes={}",
+                request.action,
+                reply.status,
+                expected.len()
+            ));
+        }
         if let Some(directory) = self.directory {
             write_capture(&directory.join(format!("i07-{key}-request.bin")), &payload)?;
             write_capture(
@@ -443,6 +456,9 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         return Err("I07 requires both fixture corpses on the admitted floor and tile".into());
     };
     let corpse_id = corpse.as_slice().try_into()?;
+    if capture_dir.is_none() {
+        evidence("I07_FULL_INPUT corpses=2 source=qualification_fixture");
+    }
     let before = placements(&mut database, Storage::Corpse, character, corpse).await?;
     let stacked_before = placements(&mut database, Storage::Corpse, character, stacked).await?;
     let ([coin, armor, filtered, spare], [other, listed]) =
