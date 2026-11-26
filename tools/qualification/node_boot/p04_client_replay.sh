@@ -12,8 +12,11 @@ if batch == "all":
     raise SystemExit(0)
 if not re.fullmatch(r"[+]?[0-9]+:[+]?[0-9]+", batch):
     raise SystemExit(1)
-start, count = map(int, batch.split(":"))
+digits = [part.lstrip("+").lstrip("0") or "0" for part in batch.split(":")]
 limit = 2 * sys.maxsize + 1
+if any(len(part) > len(str(limit)) for part in digits):
+    raise SystemExit(1)
+start, count = map(int, digits)
 raise SystemExit(0 if start <= 159 and 159 - start < count <= limit else 1)
 PY_SELECT
 }

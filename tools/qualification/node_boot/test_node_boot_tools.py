@@ -691,6 +691,8 @@ class CloudRunSummaryTests(unittest.TestCase):
                 p04_selected ''
                 if p04_selected core; then exit 1; fi
             done
+            zeros=$(printf '%05000d' 0)
+            OTERYN_E2E_ROW_BATCH="${zeros}159:${zeros}1" p04_selected rows
             for OTERYN_E2E_ROW_BATCH in 159:0 158:1 160:1 59:1; do
                 if p04_selected rows; then exit 1; fi
             done
