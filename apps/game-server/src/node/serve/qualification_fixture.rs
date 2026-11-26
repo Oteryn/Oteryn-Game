@@ -875,6 +875,10 @@ async fn prepare_build(
     )
     .await?;
     #[cfg(feature = "qualification-spawn")]
+    if profile == "c07-sorcerer" {
+        prepare_c07_magic(root, authority, proof, &current, native, deadline).await?;
+    }
+    #[cfg(feature = "qualification-spawn")]
     if spell_build(profile).is_some() {
         return Ok(());
     }
@@ -889,6 +893,60 @@ async fn prepare_build(
         None,
     )
     .await
+}
+
+#[cfg(feature = "qualification-spawn")]
+async fn prepare_c07_magic(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    current: &crate::foundation::GameSessionAuthoritySnapshot<
+        crate::foundation::AuthenticatedTransportRefV1,
+    >,
+    native: &NativeGameplayState,
+    deadline: tokio::time::Instant,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::durability::character_build::{BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState};
+    use crate::durability::character_progression::CurrentCharacterGameplayFence;
+    use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
+
+    let character = crate::domain::CharacterId::from_bytes(
+        *current.current_character_lease().character_id().as_bytes(),
+    ).map_err(qualification_build::debug)?;
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut slot = sequencer.acquire(character).await;
+    let record = qualification_build::retry_holder(
+        Some(root), deadline, qualification_build::authority_busy,
+        async || root.read_current_character(authority, character).await,
+    ).await.map_err(qualification_build::debug)?;
+    let before = qualification_build::retry_holder(
+        Some(root), deadline, qualification_build::progression_busy,
+        async || root.read_character_build_state(authority, character).await,
+    ).await.map_err(qualification_build::debug)?;
+    if before.vocation() != "sorcerer" || before.magic() != (0, 0) {
+        return Err("C07 magic preparation requires an untrained sorcerer".into());
+    }
+    let formula = native.training_formula().ok_or("C07 training formula absent")?;
+    let after = DurableBuildState::new(before.vocation(), (1, 0), before.skills())
+        .map_err(qualification_build::debug)?;
+    let occurrence = BuildOccurrence::from_bytes(fixture_occurrence(
+        character.as_bytes(), "c07-sorcerer", b"magic",
+    )).map_err(qualification_build::debug)?;
+    let fence = CurrentCharacterGameplayFence {
+        character_id: character,
+        game_session_id: current.current_game_session_id(),
+        connection_generation: current.current_connection_generation(),
+        character_lease_generation: current.current_character_lease().generation(),
+        runtime_scope: current.current_runtime_scope(),
+        scope_ownership_generation: current.current_scope_generation(),
+        expected_character_revision: record.revision,
+    };
+    slot.commit_build(
+        root, authority, proof, fence,
+        BuildChangeRequest { occurrence, cause: BuildCause::Training, before, after, pruned_stance: None },
+        formula, None,
+    ).await.map_err(qualification_build::debug)?;
+    Ok(())
 }
 
 #[cfg(feature = "qualification-spawn")]
