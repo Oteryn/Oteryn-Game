@@ -3,7 +3,7 @@
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
-use oteryn_protocol_oteryn::CommandStatus;
+use oteryn_protocol_oteryn::{CommandStatus, item_view::CharacterInventory};
 use oteryn_protocol_oteryn::{forge_preview as wire, item_forge::Operation};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -13,7 +13,8 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
-            "forge-preview-page-effects-resources-pair-quote-and-relog".to_owned(),
+            "forge-preview-exact-outcomes-and-unchanged-custody-after-each-request-and-relog"
+                .to_owned(),
         ),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
         Err(_) => ("FAIL", "step=journey-observed=timeout".to_owned()),
@@ -103,12 +104,82 @@ async fn preview(
     Ok(reply.payload)
 }
 
-async fn carried_gold(clients: &SeamClients<'_>) -> TestResult<i64> {
-    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
-    Ok(sqlx::query_scalar("SELECT COALESCE((SELECT sum(i.quantity * CASE i.definition_production_key WHEN 'oteryn:item.tibia.i3031' THEN 1 WHEN 'oteryn:item.tibia.i3035' THEN 100 WHEN 'oteryn:item.tibia.i3043' THEN 10000 ELSE 0 END)::bigint FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid AND i.lifecycle=1),0)")
-        .bind(clients.characters[0].as_slice())
-        .fetch_one(&mut connection)
-        .await?)
+#[derive(Debug, PartialEq, Eq, sqlx::FromRow)]
+struct ForgeCustody {
+    backpack: String,
+    items: serde_json::Value,
+    dust: Option<serde_json::Value>,
+    gold: i64,
+    slivers: i64,
+    swords: i64,
+    entry_count: i64,
+}
+
+async fn forge_custody(
+    connection: &mut sqlx::PgConnection,
+    character: &[u8; 16],
+) -> TestResult<ForgeCustody> {
+    let custody: ForgeCustody = sqlx::query_as(
+        "WITH backpack AS (
+            SELECT item_instance_id FROM game_item_container_slots
+            WHERE character_id = encode($1, 'hex')::uuid
+        ), entries AS (
+            SELECT i.item_instance_id, e.placement_ordinal, i.quantity, i.lifecycle,
+                   i.definition_production_key AS definition, COALESCE(t.tier, 0) AS tier
+            FROM backpack b
+            JOIN game_item_container_entries e ON e.parent_item_instance_id = b.item_instance_id
+            JOIN game_item_instances i ON i.item_instance_id = e.item_instance_id
+            LEFT JOIN game_item_tiers t ON t.item_instance_id = i.item_instance_id
+            WHERE e.character_id = encode($1, 'hex')::uuid
+            ORDER BY e.placement_ordinal
+            LIMIT 101
+        )
+        SELECT b.item_instance_id::text AS backpack,
+               COALESCE(jsonb_agg(to_jsonb(e) ORDER BY e.placement_ordinal)
+                   FILTER (WHERE e.item_instance_id IS NOT NULL), '[]'::jsonb) AS items,
+               (SELECT to_jsonb(d) FROM game_character_forge_dust d
+                   WHERE d.character_id = encode($1, 'hex')::uuid) AS dust,
+               COALESCE(sum(e.quantity * CASE e.definition
+                   WHEN 'oteryn:item.tibia.i3031' THEN 1
+                   WHEN 'oteryn:item.tibia.i3035' THEN 100
+                   WHEN 'oteryn:item.tibia.i3043' THEN 10000 ELSE 0 END)
+                   FILTER (WHERE e.lifecycle = 1), 0)::bigint AS gold,
+               COALESCE(sum(e.quantity) FILTER (WHERE e.lifecycle = 1
+                   AND e.definition = 'oteryn:item.tibia.i37109'), 0)::bigint AS slivers,
+               count(*) FILTER (WHERE e.lifecycle = 1 AND e.quantity = 1 AND e.tier = 0
+                   AND e.definition = 'oteryn:item.tibia.i3264') AS swords,
+               count(e.item_instance_id) AS entry_count
+        FROM backpack b LEFT JOIN entries e ON TRUE
+        GROUP BY b.item_instance_id",
+    )
+    .bind(character.as_slice())
+    .fetch_one(connection)
+    .await?;
+    if custody.entry_count > 100 {
+        return Err("step=custody backpack exceeds snapshot bound".into());
+    }
+    Ok(custody)
+}
+
+async fn preview_unchanged(
+    client: &mut DevClientSession,
+    nonce: u64,
+    selection: wire::Selection,
+    inventory: &CharacterInventory,
+    connection: &mut sqlx::PgConnection,
+    character: &[u8; 16],
+    custody: &ForgeCustody,
+) -> TestResult<wire::Payload> {
+    let reply = preview(client, nonce, selection).await?;
+    if client.inventory() != Some(inventory)
+        || forge_custody(connection, character).await? != *custody
+    {
+        return Err(format!(
+            "step=preview nonce={nonce} changed inventory or durable Forge custody"
+        )
+        .into());
+    }
+    Ok(reply)
 }
 
 /// Two distinct positions holding the same definition at the same tier, neither a container.
@@ -130,17 +201,21 @@ fn identical_pair(keys: &[(u32, u8, bool)]) -> Option<(usize, usize)> {
 const SWORD: u16 = 3264;
 const SLIVER: u32 = 37109;
 const SLIVERS_PER_CORE: u64 = 50;
+const GOLD_COIN: u32 = 3031;
+const CARRIED_GOLD: u32 = 17;
 
-async fn browse(
-    client: &mut DevClientSession,
-    clients: &SeamClients<'_>,
+fn browse(
+    client: &DevClientSession,
+    reply: wire::Payload,
+    custody: &ForgeCustody,
 ) -> TestResult<(wire::Page, [wire::Item; 2], wire::Item)> {
-    let wire::Payload::Page(page) =
-        preview(client, 1, wire::Selection::Browse { after: 0 }).await?
-    else {
+    let wire::Payload::Page(page) = reply else {
         return Err("step=browse observed=not-a-page".into());
     };
-    let gold = carried_gold(clients).await?;
+    if page.after != 0 || page.next.is_some() {
+        return Err("step=browse expected the complete first candidate page".into());
+    }
+    let gold = custody.gold;
     if i64::try_from(page.resources.carried_gold)? != gold {
         return Err(format!(
             "step=browse observed=carried-gold:{}-sql:{gold}",
@@ -193,36 +268,48 @@ async fn browse(
 
 async fn body(
     client: &mut DevClientSession,
-    clients: &SeamClients<'_>,
+    connection: &mut sqlx::PgConnection,
+    character: &[u8; 16],
+    custody: &ForgeCustody,
 ) -> TestResult<wire::Resources> {
-    let (page, [first, second], bag) = browse(client, clients).await?;
-    match preview(client, 2, wire::Selection::Effects(first.handle)).await? {
+    let inventory = client
+        .inventory()
+        .ok_or("step=preview missing inventory")?
+        .clone();
+    macro_rules! read_preview {
+        ($nonce:expr, $selection:expr) => {
+            preview_unchanged(
+                client, $nonce, $selection, &inventory, connection, character, custody,
+            )
+            .await?
+        };
+    }
+    let reply = read_preview!(1, wire::Selection::Browse { after: 0 });
+    let (page, [first, second], bag) = browse(client, reply, custody)?;
+    match read_preview!(2, wire::Selection::Effects(first.handle)) {
         wire::Payload::Effects(effects)
             if effects.item == first && effects.tiers == ["0", "1 (0.50% Onslaught)"] => {}
         other => return Err(format!("step=effects observed={other:?}").into()),
     }
-    let refused = preview(client, 3, wire::Selection::Effects(bag.handle)).await?;
+    let refused = read_preview!(3, wire::Selection::Effects(bag.handle));
     if refused != wire::Payload::Refused {
         return Err(format!("step=container-effects observed={refused:?}").into());
     }
-    if page.resources.dust != 0 || page.resources.slivers != SLIVERS_PER_CORE {
+    if page.resources.dust != 0
+        || page.resources.slivers != SLIVERS_PER_CORE
+        || page.resources.cores != 0
+    {
         return Err(format!(
             "step=resources wrong fixture balances: {:?}",
             page.resources
         )
         .into());
     }
-    let refused = preview(client, 4, wire::Selection::Resource(Operation::DustLimit)).await?;
+    let refused = read_preview!(4, wire::Selection::Resource(Operation::DustLimit));
     if refused != wire::Payload::Refused {
         return Err(format!("step=empty-dust-limit observed={refused:?}").into());
     }
-    match preview(
-        client,
-        5,
-        wire::Selection::Resource(Operation::SliversToCores),
-    )
-    .await?
-    {
+    match read_preview!(5, wire::Selection::Resource(Operation::SliversToCores)) {
         wire::Payload::Resource(quote)
             if quote.operation == Operation::SliversToCores
                 && quote.full_resources
@@ -240,7 +327,7 @@ async fn body(
         boost: false,
         protect: false,
     };
-    match preview(client, 6, selection).await? {
+    match read_preview!(6, selection) {
         wire::Payload::Quote(quote)
             if quote.selection == selection
                 && quote.first == first
@@ -265,7 +352,7 @@ async fn body(
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     character_prep::declare_seeded(
         "G20.full",
-        "two-tier-zero-swords,50-slivers",
+        "two-tier-zero-swords,50-slivers,17-gold",
         "Forge preview",
     );
     let owner = character_prep::dedicated_character(clients, "NODE_BOOT_Q_G20_ACCOUNT").await?;
@@ -278,6 +365,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     for amount in [20, 19, 11] {
         character_prep::grant_item(&client, SLIVER, amount).await?;
     }
+    character_prep::grant_item(&client, GOLD_COIN, CARRIED_GOLD).await?;
     finish(&mut client).await?;
     drop(client);
 
@@ -286,7 +374,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if active == session {
         return Err("step=fixture-relog reused original session".into());
     }
-    let outcome = verdict::observe(body(&mut client, &clients)).await;
+    let character = &clients.characters[0];
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let custody = forge_custody(&mut connection, character).await?;
+    if custody.gold != i64::from(CARRIED_GOLD)
+        || custody.slivers != i64::try_from(SLIVERS_PER_CORE)?
+        || custody.swords != 2
+    {
+        return Err("step=pre-state expected two tier-zero swords, 50 slivers and 17 gold".into());
+    }
+    let outcome = verdict::observe(body(&mut client, &mut connection, character, &custody)).await;
     let closed = verdict::observe(finish(&mut client)).await;
     let resources = outcome?;
     closed?;
@@ -296,7 +393,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if fresh.join_snapshot().game_session_id == active {
         return Err("step=read-only-relog reused original session".into());
     }
-    let durable = verdict::observe(browse(&mut fresh, &clients)).await;
+    let inventory = fresh
+        .inventory()
+        .ok_or("step=relog missing inventory")?
+        .clone();
+    let durable = verdict::observe(preview_unchanged(
+        &mut fresh,
+        1,
+        wire::Selection::Browse { after: 0 },
+        &inventory,
+        &mut connection,
+        character,
+        &custody,
+    ))
+    .await;
+    let durable = durable.and_then(|reply| browse(&fresh, reply, &custody));
     let closed = verdict::observe(finish(&mut fresh)).await;
     if durable?.0.resources != resources {
         return Err("step=read-only-relog Forge previews changed resources".into());
