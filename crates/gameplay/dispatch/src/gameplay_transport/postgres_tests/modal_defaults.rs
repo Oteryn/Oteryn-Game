@@ -1,4 +1,4 @@
-//! The real connection handler supplies the keyboard descriptor consumed by the client.
+//! The real login and modal router supply the configured notice and keyboard descriptor.
 use super::fixture::{Harness, debug};
 use super::kill_reward_e2e_fixtures::scenario_thread::run_async;
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -7,10 +7,12 @@ use crate::gameplay_transport::{
     connection::FirstEntryOutcome,
 };
 use oteryn_client_ui::server_modal::{self as ui, Panel};
+use oteryn_protocol_oteryn::server_modal::{self as wire, input::decode_reply_with_input};
 use oteryn_session::{CommandStatus, GatedCommandResult};
 #[test]
 fn modal_defaults_real_dispatch_to_client_keyboard_model() -> TestResult {
-    run_async(async |admin| {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    run_async(async move |_| {
         let h = Harness::create_with_admission_seed(admin, "modal_defaults", true, false).await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -31,7 +33,8 @@ fn modal_defaults_real_dispatch_to_client_keyboard_model() -> TestResult {
         )?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = controller.active();
-        owner.server_motd = "The server owns this notice and its confirmation button.";
+        let configured_motd = "The server owns this notice and its confirmation button.";
+        owner.server_motd = configured_motd;
         deps.initialize(&owner).await;
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
@@ -100,6 +103,28 @@ fn modal_defaults_real_dispatch_to_client_keyboard_model() -> TestResult {
         assert_eq!(
             panel.active.as_ref().ok_or("notice")?.title,
             "Server notice"
+        );
+        assert_eq!(
+            panel.active.as_ref().ok_or("notice")?.message,
+            configured_motd
+        );
+        assert!(admitted.continuity.server_motd_sent);
+
+        // The exchange closes the physical connection, then establishes another one
+        // through the snapshot path with this same GameSession's delivery receipt.
+        let next_id = admitted.continuity.next_command_id;
+        let (status, payload) = super::cyclopedia_fixtures::support::exchange(
+            &owner,
+            &mut admitted,
+            next_id,
+            wire::COMMAND_TYPE_SERVER_MODAL_QUERY,
+            &[],
+        )
+        .await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(
+            decode_reply_with_input(&payload).map_err(debug)?,
+            (wire::Reply::None, None)
         );
         drop(owner);
         drop(authority);

@@ -740,7 +740,18 @@ install_owned root -m 0600 "$WORK/ops.toml" "$BASE/ops/ops.toml"
 # revision are refused at boot, as D3 requires.
 DESCRIPTOR_INSTALLED_AT="$(date +%s)"
 write_node_config() { # launch-file
-  cat > "$WORK/node.toml" <<TOML
+  # Pass the operator's text through the same root TOML key as a deployed node.
+  : > "$WORK/node.toml"
+  if [[ -n "${NODE_BOOT_SERVER_MOTD:-}" ]]; then
+    python3 - "$NODE_BOOT_SERVER_MOTD" >> "$WORK/node.toml" <<'PY_MOTD'
+import json
+import sys
+
+text = json.dumps(sys.argv[1], ensure_ascii=False).replace(chr(127), r"\u007f")
+print(f"server_motd = {text}")
+PY_MOTD
+  fi
+  cat >> "$WORK/node.toml" <<TOML
 qualification_fixture = true
 [listener]
 address = "127.0.0.1:${NODE_BOOT_GAME_PORT:-17181}"

@@ -17,6 +17,7 @@ struct Entry {
     terminal_replies: bool,
     selection: Option<super::rules::Selection>,
     notification: Option<Dialog>,
+    login_notice: Option<Dialog>,
     submitted: Option<Answer>,
     /// Capability 490: dialog replies carry their input block on this connection.
     input_replies: bool,
@@ -255,6 +256,17 @@ impl ModalHub {
         Some(())
     }
 
+    pub(super) fn queue_login_notice(&self, root: Root, dialog: Dialog) {
+        if !dialog.valid() {
+            return;
+        }
+        if let Ok(mut state) = self.state.lock()
+            && (state.entries.contains_key(&root) || state.entries.len() < 256)
+        {
+            state.entries.entry(root).or_default().login_notice = Some(dialog);
+        }
+    }
+
     pub(super) fn notify(&self, root: Root, dialog: Dialog) -> Option<()> {
         let mut state = self.state.lock().ok()?;
         state.entries.get_mut(&root)?.notification = Some(dialog);
@@ -294,7 +306,10 @@ impl ModalHub {
                     .get_mut(&root)
                     .and_then(|entry| entry.notification.take());
                 let notice = notification.is_none();
-                let Some(mut dialog) = notification.or_else(|| offer.take()) else {
+                let Some(mut dialog) = notification
+                    .or_else(|| state.entries.get_mut(&root)?.login_notice.take())
+                    .or_else(|| offer.take())
+                else {
                     return Reply::None.encode().ok();
                 };
                 dialog.id = 1;
