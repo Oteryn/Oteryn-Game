@@ -25,6 +25,12 @@ fn distance(a: ActorPosition, b: ActorPosition) -> u32 {
     a.x.abs_diff(b.x).max(a.y.abs_diff(b.y))
 }
 
+fn closes_distance(before: ActorPosition, after: ActorPosition, player: ActorPosition) -> bool {
+    before.floor == after.floor
+        && after.floor == player.floor
+        && distance(after, player) < distance(before, player)
+}
+
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
@@ -67,6 +73,8 @@ struct Segment {
     initial: String,
     deltas: Vec<Vec<u8>>,
     trace: Vec<String>,
+    target_position: Option<ActorPosition>,
+    closing_step: Option<(ActorPosition, ActorPosition, ActorPosition)>,
 }
 
 impl Segment {
@@ -91,6 +99,8 @@ impl Segment {
             initial: text_of(view.get(&target)),
             deltas: Vec::new(),
             trace: Vec::new(),
+            target_position: view.get(&target).map(|entity| entity.position),
+            closing_step: None,
         })
     }
 
@@ -103,6 +113,7 @@ impl Segment {
             value.enter = value.enter.into_iter().map(plain).collect();
             value.update = value.update.into_iter().map(plain).collect();
             let line = if value.leave.contains(&self.target) {
+                self.target_position = None;
                 "absent".to_owned()
             } else if let Some(entity) = value
                 .enter
@@ -110,6 +121,14 @@ impl Segment {
                 .chain(&value.update)
                 .find(|entity| entity.entity == self.target)
             {
+                let player = value.actor_position;
+                let after = entity.position;
+                if let Some(before) = self.target_position
+                    && closes_distance(before, after, player)
+                {
+                    self.closing_step.get_or_insert((before, after, player));
+                }
+                self.target_position = Some(after);
                 text_of(Some(entity))
             } else {
                 "same".to_owned()
@@ -199,12 +218,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let player = client.world_spatial().actor_position;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
     let chased = loop {
-        if let Some(entity) = target_state(&client, target.entity)
-            && entity.position != start
-            && entity.position.floor == start.floor
-            && distance(entity.position, player) < distance(start, player)
-        {
-            break entity.position;
+        if let Some((before, after, observed_player)) = chase.closing_step {
+            let current = target_state(&client, target.entity)
+                .ok_or("W01a client capture: rat vanished after chase")?;
+            evidence(&format!(
+                "W01A_CLIENT_CHECK chase PASS from={before:?} to={after:?} player={observed_player:?}"
+            ));
+            break current.position;
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
@@ -302,5 +322,34 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=W01a.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=W01a.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn chase_uses_the_player_position_in_the_movement_delta() {
+        let before = ActorPosition {
+            x: 32387,
+            y: 32252,
+            floor: 8,
+        };
+        let after = ActorPosition { x: 32388, ..before };
+        let observed_player = ActorPosition {
+            x: 32389,
+            y: 32251,
+            ..before
+        };
+        let end_of_retreat = ActorPosition { y: 32255, ..after };
+        assert!(closes_distance(before, after, observed_player));
+        assert!(!closes_distance(before, after, end_of_retreat));
+        assert!(!closes_distance(after, before, observed_player));
+        assert!(!closes_distance(
+            before,
+            after,
+            ActorPosition { floor: 7, ..observed_player }
+        ));
     }
 }
