@@ -746,10 +746,20 @@ impl PendingPlayerField {
         runtime: &ChannelRuntimeV1,
         states: &ChannelSpellStates,
     ) {
-        if let Some(current) = states.get(runtime, self.actor, self.session) {
-            self.before.cooldowns = current.cooldowns.clone();
-            self.next.cooldowns = current.cooldowns.clone();
-            self.condition_next.cooldowns = current.cooldowns.clone();
+        let key = oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY;
+        if let Some(deadline) = states
+            .get(runtime, self.actor, self.session)
+            .and_then(|current| current.cooldowns.group_ready_at(key))
+        {
+            // Rebase the live predecessor and the retained inputs used to retry the hit.
+            self.before.cooldowns.groups.insert(key.into(), deadline);
+            self.condition_next
+                .cooldowns
+                .groups
+                .insert(key.into(), deadline);
+            if self.death.is_none() {
+                self.next.cooldowns.groups.insert(key.into(), deadline);
+            }
         }
     }
     pub(super) fn matches_current(
