@@ -610,6 +610,63 @@ class PgObserveTests(unittest.TestCase):
 
 
 class CloudRunSummaryTests(unittest.TestCase):
+    def test_selected_batch_requires_its_own_unique_verdict(self):
+        cases = [
+            ('0:0', '', 'empty-batch'),
+            ('900:1', '', 'empty-batch'),
+            ('184', '', 'malformed-batch'),
+            ('1:1', '', 'missing-verdict'),
+            ('1:1', 'SEAM_EVIDENCE e2e_all scenario=C12.full status=PASS\n', 'missing-verdict'),
+            ('1:1', 'SEAM_EVIDENCE e2e_all scenario=C03.full status=PASS\n' * 2, 'duplicate-verdict'),
+            ('1:1', 'SEAM_EVIDENCE e2e_all scenario=C03.full status=PASS\n', ''),
+            ('184:1', 'SEAM_EVIDENCE e2e_capture scenario=S18.client status=CAPTURED\n', ''),
+        ]
+        for batch, evidence, cause in cases:
+            with self.subTest(batch=batch, cause=cause), tempfile.TemporaryDirectory() as tmp:
+                log = Path(tmp) / 'node.log'
+                log.write_text(evidence)
+                result = subprocess.run(
+                    [sys.executable, str(HERE / 'client_replay.py'), '--validate', str(log)],
+                    env={**os.environ, 'OTERYN_E2E_ROW_BATCH': batch},
+                    capture_output=True, text=True,
+                )
+                self.assertEqual(result.returncode, int(bool(cause)), result.stderr)
+                if cause:
+                    self.assertIn(f'cause={cause}', result.stdout)
+                self.assertEqual(result.stderr, '')
+
+    def test_world_seam_stage_rejects_invalid_batch_and_missing_verdict(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            (work / 'vars').touch()
+            stage_test = textwrap.dedent('''\
+                set -euo pipefail
+                declare -a ORDER
+                declare -A STATUS
+                VARS="$WORK/vars"
+                NODE_BOOT_WORLD=1
+                NODE_BOOT_SPELLS=0
+                evidence() { :; }
+                start_runtime_diagnostics() { :; }
+                stop_runtime_diagnostics() { :; }
+                pg_observability_dump() { :; }
+                ''')
+            stage_test += '\n'.join(function(name) for name in ('stage_rows', 'known_rows', 'stage'))
+            stage_test += '\nstage seam_stages -- true\nprintf "STAGE_STATUS=%s\\n" "${STATUS[seam_stages]}"\n'
+            for batch, cause in (
+                ('0:0', 'empty-batch'),
+                ('invalid', 'malformed-batch'),
+                ('1:1', 'missing-verdict scenario=C03.full'),
+            ):
+                with self.subTest(batch=batch):
+                    result = bash(stage_test, env={
+                        'WORK': tmp, 'GAME_SOURCE': str(HERE.parents[2]),
+                        'NODE_BOOT_E2E_ONLY': 'rows', 'OTERYN_E2E_ROW_BATCH': batch,
+                    })
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn(f'NODE_BOOT_ROW_BATCH=FAIL cause={cause}', result.stdout)
+                    self.assertIn('STAGE_STATUS=FAIL(row batch)', result.stdout)
+
     def test_client_replay_verdicts(self):
         cases = [
             (False, 0, 1, 'PASS', 'FAIL cause=capture-missing', False),

@@ -1129,6 +1129,14 @@ stage() { # name prerequisite... -- function
   echo "::endgroup::"
   if [[ $rc == 0 ]]; then
     STATUS[$name]=PASS
+    # Explicit row batches must report every selected row even when Rust exits 0.
+    local groups=",${NODE_BOOT_E2E_ONLY:-},"
+    groups=${groups//[[:space:]]/}
+    if [[ "$name" == seam_stages && "$NODE_BOOT_WORLD" == 1 ]] &&
+      [[ "$groups" == *,rows,* || ( "$groups" == ,, && ${OTERYN_E2E_ROW_BATCH+x} ) ]] &&
+      ! python3 "$GAME_SOURCE/tools/qualification/node_boot/client_replay.py" --validate "$WORK/stage-$name.log"; then
+      STATUS[$name]="FAIL(row batch)"
+    fi
     # A FAIL row fails its stage even when the stage process exits 0, unless the row is
     # listed in known_fail_rows.txt (debt that every run prints).
     local known_fail="$GAME_SOURCE/tools/qualification/node_boot/known_fail_rows.txt" new_rows known_hit stale_rows

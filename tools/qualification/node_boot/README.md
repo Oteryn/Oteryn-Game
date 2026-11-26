@@ -144,7 +144,9 @@ at the path reported on stderr. It exits nonzero if any group fails. For a
 `rows` batch, the wrapper gives the server a fresh capture directory and runs
 each selected client row's named replay against that directory. A client row
 requires successful server evidence and exactly one passing replay test. Its
-`SEAM_EVIDENCE` verdict names the replay and any failure cause.
+`SEAM_EVIDENCE` verdict names the replay and any failure cause. Node boot
+rejects a malformed or empty explicit row batch and requires exactly one
+server verdict for every selected scenario.
 
 ## Parallel stacks, the single-row loop and diagnostics
 
