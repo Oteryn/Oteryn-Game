@@ -6,15 +6,7 @@ pub(super) async fn check(
     target: EntityRef,
     leader_id: [u8; 16],
 ) -> TestResult {
-    let selected = SelectedCapabilities::select(
-        owner.offered_capabilities(),
-        &[6, 21, 42, 92, CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1],
-    )
-    .filter(|caps| caps.contains(CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1))
-    .ok_or("party membership notice offer")?;
-    for peer in &mut *admitted {
-        peer.continuity.selected_capabilities = selected;
-    }
+    select_notices(owner, admitted)?;
     let [leader, invitee, bystander] = admitted else {
         return Err("expected three live peers".into());
     };
@@ -187,4 +179,127 @@ impl Peer {
         }
         Ok(())
     }
+}
+
+fn select_notices(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut [AdmittedSession],
+) -> TestResult {
+    let selected = SelectedCapabilities::select(
+        owner.offered_capabilities(),
+        &[6, 21, 42, 92, CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1],
+    )
+    .filter(|caps| caps.contains(CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1))
+    .ok_or("party membership notice offer")?;
+    for peer in &mut *admitted {
+        peer.continuity.selected_capabilities = selected;
+    }
+    Ok(())
+}
+
+pub(super) async fn check_fanout(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut [AdmittedSession],
+    target: EntityRef,
+    [leader_id, member_id]: [[u8; 16]; 2],
+    h: &Harness,
+) -> TestResult {
+    select_notices(owner, admitted)?;
+    let [leader, member, ..] = admitted else {
+        return Err("expected two live peers".into());
+    };
+    let (mut leader_server, mut a) = Peer::new(*leader);
+    let (mut member_server, mut b) = Peer::new(*member);
+    // No liveness probe may drive delivery during the scenario.
+    let policy = crate::gameplay_transport::connection::LivenessPolicy {
+        interval: Duration::from_secs(60),
+        missed_limit: 3,
+    };
+    let driving = async move {
+        a.ready().await?;
+        b.ready().await?;
+        a.command(Some(PartyIntent::Invite(target))).await?;
+        let invitations = b.command(None).await?.invitations;
+        let [invitation] = invitations.as_slice() else {
+            return Err("expected one invitation".into());
+        };
+        b.command(Some(PartyIntent::Accept(invitation.handle))).await?;
+
+        for (peer, character, change) in [
+            (&mut a, member_id, PartyMembershipChange::Joined),
+            (&mut b, leader_id, PartyMembershipChange::Invited),
+        ] {
+            assert_notice(peer, character, change).await?;
+        }
+        assert_notice(&mut b, member_id, PartyMembershipChange::Joined).await?;
+
+        // Keep the actor's foreground turn through the leave result so the
+        // test can acquire the holder before the background drains.
+        let foreground = h.root.foreground_demand()?;
+        b.command(Some(PartyIntent::Leave)).await?;
+        let held = h.root.try_issue_semantic_pass()?;
+        drop(foreground);
+        wait_for_busy_drain(h, member_id).await?;
+        drop(held);
+
+        for peer in [&mut a, &mut b] {
+            assert_notice(peer, member_id, PartyMembershipChange::Left).await?;
+            assert_notice(peer, leader_id, PartyMembershipChange::Disbanded).await?;
+            assert!(peer.command(None).await?.members.is_empty());
+            assert!(peer.notices.is_empty(), "duplicate Party notice");
+        }
+        // Any second copy left in the mailboxes would be emitted on the next
+        // delivery turn. Check the durable queues in addition to wire order.
+        let remaining: i64 = sqlx::query_scalar("SELECT count(*) FROM game_party_membership_notices")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(remaining, 0);
+        Ok::<(), Box<dyn std::error::Error>>(())
+    };
+    let (result, leader_end, member_end) = tokio::time::timeout(Duration::from_secs(45), async {
+        tokio::join!(
+            // Once the leave result arrives, the driver can claim the holder
+            // before polling either serving future for its next dispatch turn.
+            biased;
+            driving,
+            serve_admitted(&mut leader_server, *leader, owner, policy),
+            serve_admitted(&mut member_server, *member, owner, policy),
+        )
+    }).await?;
+    result?;
+    for end in [leader_end, member_end] {
+        assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+    }
+    Ok(())
+}
+
+async fn assert_notice(
+    peer: &mut Peer,
+    character: [u8; 16],
+    change: PartyMembershipChange,
+) -> TestResult {
+    let handle = crate::gameplay_transport::party_command::party_member_handle(peer.session, character)
+        .ok_or("party notice handle")?;
+    let notice = peer.notice(change as u8, &format!("{change:?}")).await?;
+    assert_eq!(notice.member_handle, handle, "{change:?} subject");
+    Ok(())
+}
+
+async fn wait_for_busy_drain(h: &Harness, member_id: [u8; 16]) -> TestResult {
+    let pending: Option<i32> = sqlx::query_scalar(
+        "SELECT cardinality(events) FROM game_party_membership_notices
+         WHERE character_id = encode($1, 'hex')::uuid",
+    )
+    .bind(member_id.as_slice())
+    .fetch_optional(&h.pool)
+    .await?;
+    assert_eq!(pending, Some(2), "committed Left and Disbanded remain queued");
+    tokio::time::timeout(Duration::from_secs(4), async {
+        while !h.root.has_ready_demand() {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .map_err(|_| "Party delivery did not attempt checkout during the holder outage")?;
+    Ok(())
 }
