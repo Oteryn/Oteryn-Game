@@ -51,10 +51,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .gate(&runtime, actor, command.game_session_id)
                 .and_then(|gate| gate.cube_pending.clone())
         };
-        match self
-            .root
-            .read_kooldown_aid_receipt(self.character, fence, command_ref, binding)
-            .await
+        let retry = AdmissionRetryBudget::for_command(self.root);
+        match retry_item_use_holder(&retry, async || {
+            self.root
+                .read_kooldown_aid_receipt(self.character, fence, command_ref, binding)
+                .await
+        })
+        .await
         {
             Ok(true) => {
                 self.finish_kooldown_aid(actor, command, binding, UseDisposition::Committed)
@@ -110,10 +113,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => None,
         };
-        let inventory = match self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
-            .await
+        let inventory = match retry_item_use_holder(&retry, async || {
+            self.root
+                .read_item_use_inventory(self.character, self.holder, fence)
+                .await
+        })
+        .await
         {
             Ok(inventory) => inventory,
             Err(ItemUseError::Unavailable(_)) => return Err(()),
@@ -230,10 +235,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command.game_session_id,
             CommandId::new(command.command_id).map_err(|_| ())?,
         );
-        let written = self
-            .root
-            .commit_kooldown_aid(self.character, self.holder, fence, request, binding)
-            .await;
+        let retry = AdmissionRetryBudget::for_command(self.root);
+        let written = retry_item_use_holder(&retry, async || {
+            self.root
+                .commit_kooldown_aid(self.character, self.holder, fence, request.clone(), binding)
+                .await
+        })
+        .await;
         #[cfg(test)]
         if matches!(
             &written,
@@ -252,11 +260,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                 {
                     Ok(true) => UseDisposition::Committed,
-                    Err(ItemUseError::Unavailable(_)) => {
-                        self.mark_cube_unknown(actor, command).await;
-                        return Err(());
-                    }
-                    _ if matches!(error, ItemUseError::Unavailable(_)) => {
+                    _ if item_use_commit_unknown(&error) => {
+                        // The write may have committed even when its receipt is unavailable.
                         self.mark_cube_unknown(actor, command).await;
                         return Err(());
                     }
