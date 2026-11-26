@@ -135,12 +135,12 @@ fn answer(selected: bool, dialog_id: u32, button_id: u8) -> TestResult<Vec<u8>> 
 const ACKNOWLEDGE: u8 = 1;
 const CANCEL: u8 = 2;
 
-fn require_notice(reply: wire::Reply, defaults_selected: bool) -> TestResult<wire::Dialog> {
+fn require_notice(reply: wire::Reply, defaults_selected: bool, expected_motd: &str) -> TestResult<wire::Dialog> {
     let wire::Reply::Dialog(dialog) = reply else {
         return Err("step=query observed=no-dialog needed=non-empty-server-motd".into());
     };
     if dialog.title != "Server notice"
-        || dialog.message != "Welcome to the Crystal Server!"
+        || dialog.message != expected_motd
     {
         return Err("step=query observed=unexpected-dialog needed=configured-server-motd".into());
     }
@@ -170,9 +170,9 @@ fn require_modal_capabilities(client: &DevClientSession) -> TestResult {
     gate(client, wire::CAPABILITY_SERVER_MODAL_DEFAULTS_V1)
 }
 
-async fn body(client: &mut DevClientSession) -> TestResult<u32> {
+async fn body(client: &mut DevClientSession, expected_motd: &str) -> TestResult<u32> {
     require_modal_capabilities(client)?;
-    let dialog = require_notice(query(client).await?, true)?;
+    let dialog = require_notice(query(client).await?, true, expected_motd)?;
     match query(client).await? {
         wire::Reply::Dialog(again) if again == dialog => {}
         other => return Err(format!("step=repeat observed={other:?}").into()),
@@ -235,14 +235,14 @@ async fn body(client: &mut DevClientSession) -> TestResult<u32> {
     Ok(dialog.id)
 }
 
-async fn cancel_after_relogin(client: &mut DevClientSession, prior_id: u32) -> TestResult {
+async fn cancel_after_relogin(client: &mut DevClientSession, prior_id: u32, expected_motd: &str) -> TestResult {
     require_modal_capabilities(client)?;
     let stale = answer(true, prior_id, ACKNOWLEDGE)?;
     let (status, payload) = send(client, CAPABILITY, wire::COMMAND_TYPE_SERVER_MODAL_ANSWER, &stale).await?;
     if status != CommandStatus::Rejected || !payload.is_empty() {
         return Err("step=relogin observed=stale-answer-not-rejected".into());
     }
-    let dialog = require_notice(query(client).await?, true)?;
+    let dialog = require_notice(query(client).await?, true, expected_motd)?;
     if dialog.id == prior_id {
         return Err("step=relogin observed=stale-dialog-id".into());
     }
@@ -267,13 +267,17 @@ async fn cancel_after_relogin(client: &mut DevClientSession, prior_id: u32) -> T
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let expected_motd = std::env::var("NODE_BOOT_SERVER_MOTD")?;
+    if expected_motd.is_empty() {
+        return Err("step=fixture observed=empty-configured-server-motd".into());
+    }
     let mut client = connect_world(clients, 0x76).await?;
-    let outcome = verdict::observe(body(&mut client)).await;
+    let outcome = verdict::observe(body(&mut client, &expected_motd)).await;
     let closed = verdict::observe(finish(&mut client)).await;
     let prior_id = outcome?;
     closed?;
     let mut client = connect_world(clients, 0x76).await?;
-    let outcome = verdict::observe(cancel_after_relogin(&mut client, prior_id)).await;
+    let outcome = verdict::observe(cancel_after_relogin(&mut client, prior_id, &expected_motd)).await;
     let closed = verdict::observe(finish(&mut client)).await;
     outcome?;
     closed
@@ -296,10 +300,14 @@ mod tests {
             image: None,
         };
         assert_eq!(
-            require_notice(wire::Reply::Dialog(notice.clone()), true)?,
+            require_notice(wire::Reply::Dialog(notice.clone()), true, "Welcome to the Crystal Server!")?,
             notice
         );
-        assert!(require_notice(wire::Reply::None, true).is_err());
+        assert!(require_notice(wire::Reply::None, true, "Welcome to the Crystal Server!").is_err());
+        assert!(require_notice(wire::Reply::Dialog(notice.clone()), true, "Distinct configured notice").is_err());
+        let mut alternate = notice.clone();
+        alternate.message = "Distinct configured notice".into();
+        assert_eq!(require_notice(wire::Reply::Dialog(alternate.clone()), true, "Distinct configured notice")?, alternate);
         let mut swapped = notice.clone();
         swapped.buttons.swap(0, 1);
         let mut relabeled = notice.clone();
@@ -311,13 +319,13 @@ mod tests {
         let mut wrong_cancel = notice.clone();
         wrong_cancel.cancel_button = Some(1);
         for malformed in [swapped, relabeled, wrong_id, wrong_default, wrong_cancel] {
-            assert!(require_notice(wire::Reply::Dialog(malformed), true).is_err());
+            assert!(require_notice(wire::Reply::Dialog(malformed), true, "Welcome to the Crystal Server!").is_err());
         }
         let mut legacy = notice;
         legacy.default_button = None;
-        assert!(require_notice(wire::Reply::Dialog(legacy.clone()), true).is_err());
+        assert!(require_notice(wire::Reply::Dialog(legacy.clone()), true, "Welcome to the Crystal Server!").is_err());
         assert_eq!(
-            require_notice(wire::Reply::Dialog(legacy.clone()), false)?,
+            require_notice(wire::Reply::Dialog(legacy.clone()), false, "Welcome to the Crystal Server!")?,
             legacy
         );
         Ok(())
