@@ -2,8 +2,8 @@
 //!
 //! Concrete player scenario derived from the C01 audit/matrix row and the
 //! ATTACK owner (`gameplay_transport/attack.rs`):
-//! 1. Admit the ordinary node-boot character, earn payment from real hunts if
-//!    needed, and equip an acquired club and chain armor.
+//! 1. Admit the dedicated node-boot character, walk to Sam, and equip a
+//!    fixture-supplied club and chain armor through the wire.
 //! 2. For offensive, balanced, and defensive mode, send SET_FIGHT_MODES with
 //!    STAND and then CHASE; after every accepted reply require the exact combat
 //!    state delta, send ATTACK_TARGET, and observe a lower target-HP delta.
@@ -203,11 +203,23 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }).ok_or("step=equipment observed=no-playable-route-to-Sam")?;
     walk(&mut client, world, &sam).await?;
     let definitions = provisioning::item_index()?;
+    for (id, _) in MELEE_KIT {
+        character_prep::grant_item(&client, id, 1).await?;
+    }
+    let kit_session = client.join_snapshot().game_session_id;
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=equipment-fixture-logout observed={logout:?}").into());
+    }
+    drop(client);
+    let mut client = connect_world(clients, 0xc3)
+        .await
+        .map_err(|error| admission_error("equipment-fixture-relog", error))?;
+    if client.join_snapshot().game_session_id == kit_session {
+        return Err("step=equipment-fixture-relog observed=reused-session".into());
+    }
     for (id, slot) in MELEE_KIT {
-        let key = format!("oteryn:item.tibia.i{id}");
-        let reference = full_e2ef7::acquire(&mut client, world, &definitions, &key, 1)
-            .await
-            .map_err(|error| format!("step=equipment item={id} observed={error} need=earned-melee-kit"))?;
+        let reference = provisioning::item_reference(&definitions, id)?;
         if client.inventory().is_some_and(|inventory| inventory.equipment.iter().any(
             |entry| entry.slot == slot && entry.item.item_definition_ref == reference
         )) {
@@ -281,8 +293,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }).ok_or("step=relog observed=no-reachable-protection-zone need=safe-combat-logout")?;
     walk(&mut client, world, &safe).await?;
     let old_session = client.join_snapshot().game_session_id;
-    if logout_retrying_busy(&mut client).await?.0 != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("step=relog observed=logout-refused".into());
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=relog observed={logout:?}").into());
     }
     drop(client);
     let mut fresh = connect_world(clients, 0xc2)
