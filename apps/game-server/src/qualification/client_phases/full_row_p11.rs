@@ -718,10 +718,24 @@ async fn connect_knight(
         .session_mut()
         .gated_command(command.capability, command.kind, &command.payload)
         .await?;
+    let sword = if leader { 350 } else { 10 };
     if !panel::apply_result(&mut view, &reply)
-        || view.general.as_ref().map(|stats| stats.level) != Some(level)
+        || view
+            .general
+            .as_ref()
+            .map(|stats| (stats.level, stats.skills[2]))
+            != Some((level, sword))
     {
-        return Err(format!("P11 seeded Knight expected level {level}; reply={reply:?}").into());
+        return Err(format!(
+            "P11 seeded Knight expected level {level} and sword skill {sword}; reply={reply:?}"
+        )
+        .into());
+    }
+    if leader {
+        evidence(&format!(
+            "FIXTURE_P11 character={} sword_skill={sword} verified_after_admission=true",
+            uuid_text(&clients.characters[index]),
+        ));
     }
     let vitals = fresh
         .actor_vitals()
