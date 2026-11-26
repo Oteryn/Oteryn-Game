@@ -45,6 +45,18 @@ def build():
         'vocations': native.K([]), 'level': native.K(0),
         'compatibility_rule': dict(native.NA),
     }])})
+    # Crystal 201189f8 and the pinned Canary XML both identify the novice
+    # spellbook as off-hand equipment, allowing weapon selection to skip it.
+    if native.attrs(index[21400]).get('weapontype') != 'spellbook':
+        raise ValueError('NEWHAVEN_STARTER_SPELLBOOK_TYPE')
+    spellbook = next(row for row in records if row['authoring']['item']['key'] == 'candidate:item/21400')
+    spellbook['semantics']['weapon'] = native.K({
+        'weapon_type': native.K('SPELLBOOK'),
+        **{field: dict(native.U) for field in (
+            'attack', 'defense', 'extra_defense', 'range', 'hit_chance',
+            'max_hit_chance', 'ammunition', 'elemental',
+        )},
+    })
     bound = native.bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records},
                                  bindings, set(index))
     return {

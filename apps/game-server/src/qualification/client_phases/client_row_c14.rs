@@ -36,6 +36,8 @@ async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
     }
 
     let mut client = connect_character(clients, 0xc1, 0).await?;
+    let session = client.join_snapshot().game_session_id;
+    let before_sequence = client.last_server_sequence();
     let reply = client
         .session_mut()
         .gated_command(
@@ -44,7 +46,7 @@ async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
             &[],
         )
         .await?;
-    if reply.status != CommandStatus::Accepted {
+    if reply.status != CommandStatus::Accepted || reply.server_sequence <= before_sequence {
         return Err(format!("C14 skill-display reply was {reply:?}").into());
     }
     let display = skill_display::SkillDisplay::decode(&reply.payload)
@@ -53,17 +55,15 @@ async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
         .session_mut()
         .spell_catalog()?
         .ok_or("C14 spell catalog was absent")?;
-    let catalog_payload = client
+    let catalog_snapshot = client
         .session_mut()
         .gated_snapshot(actor_spell_catalog::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
-        .ok_or("C14 raw spell-catalog snapshot was absent")?
-        .payload
-        .clone();
+        .ok_or("C14 raw spell-catalog snapshot was absent")?;
 
     let expected_display = expected(&display, &catalog.entries);
     for (file, bytes) in [
         ("c14-skill-display.bin", reply.payload.as_slice()),
-        ("c14-spell-catalog.bin", catalog_payload.as_slice()),
+        ("c14-spell-catalog.bin", catalog_snapshot.payload.as_slice()),
         ("c14-expected.txt", expected_display.as_bytes()),
     ] {
         std::fs::OpenOptions::new()
@@ -72,6 +72,10 @@ async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
             .open(path.join(file))?
             .write_all(bytes)?;
     }
+    evidence(&format!(
+        "C14_CLIENT_CAPTURE session={session:?} skill_sequence={} catalog_revision={} level={} experience={}",
+        reply.server_sequence, catalog_snapshot.revision, display.level, display.experience,
+    ));
     Ok(())
 }
 

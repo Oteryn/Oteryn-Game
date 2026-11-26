@@ -6,6 +6,14 @@ PATH = 'tools/content-schema/native-gameplay/newhaven-starter-item-profiles.json
 IDS = {34017, 21348, 21400, 21350, 50166}
 
 
+def apply_spellbook_weapon_type(item_records, root):
+    """Project the starter profile's weapon type without changing legacy item stats."""
+    key = 'oteryn:item.tibia.i21400'
+    profiles = json.loads((root / PATH).read_bytes())['records']
+    profile = next(row for row in profiles if row['production_definition']['production_key'] == key)
+    item = next(row for row in item_records if row['identity']['key'] == key)
+    item['semantics']['weapon']['value']['weapon_type'] = profile['semantics']['weapon']['value']['weapon_type']
+
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     overlay = json.loads((root / PATH).read_bytes())
     records = overlay['records']

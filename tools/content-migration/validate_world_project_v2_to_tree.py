@@ -1700,6 +1700,9 @@ def _main() -> int:
     from healing_global_overrides import apply_definitions as apply_global_potions
 
     apply_global_potions(effective_items)
+    from newhaven_starter_profiles import apply_spellbook_weapon_type
+
+    apply_spellbook_weapon_type(effective_items, ROOT)
     require(
         migrated_items == effective_items and expected_start == expected_item_count,
         "ITEM_DEFINITION_ROUNDTRIP",

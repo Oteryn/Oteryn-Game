@@ -472,6 +472,9 @@ def materialize_item_tree(reference, declarations, editor, sources):
     from healing_global_overrides import apply_definitions as apply_global_potions
 
     apply_global_potions(item_records)
+    from newhaven_starter_profiles import apply_spellbook_weapon_type
+
+    apply_spellbook_weapon_type(item_records, ROOT)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []

@@ -25,6 +25,18 @@ class NewhavenStarterProfilesTests(unittest.TestCase):
             self.assertGreater(profile['semantics']['physical']['value']['weight']['value'], 0)
 
 
+    def test_novice_spellbook_type_matches_item_shard_and_native_provider(self):
+        key = 'oteryn:item.tibia.i21400'
+        expected = {'state': 'KNOWN', 'value': 'SPELLBOOK'}
+        items = json.loads((ROOT / 'content/items/definitions/items-10500-10999.json').read_bytes())
+        native = json.loads((ROOT / 'content/items/definitions/starting-loadout-profiles.json').read_bytes())
+        item = next(row['definition'] for row in items['records']
+                    if row['definition']['identity']['key'] == key)
+        profile = next(row for row in native['records']
+                       if row['production_definition']['production_key'] == key)
+        for entry in (item, profile):
+            self.assertEqual(entry['semantics']['weapon']['value']['weapon_type'], expected)
+
     def test_duplicate_profile_refuses_before_changing_generated_bytes(self):
         overlay = json.loads((ROOT / starter.PATH).read_bytes())
         planned = {'profiles': json.dumps({'records': [overlay['records'][0]]}).encode(), 'manifest': b'{}'}

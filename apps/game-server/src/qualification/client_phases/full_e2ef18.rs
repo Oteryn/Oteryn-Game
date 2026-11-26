@@ -303,9 +303,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .and_then(|entities| entities.iter().find(|entry| entry.entity.identity == *entities.own_identity()))
         .copied()
         .ok_or("step=non-attackable-refusal observed=own-entity-absent")?;
+    let before_refusal_position = client.world_spatial().actor_position;
     let refusal = client.session_mut().attack_target(Some(&own.entity)).await?;
-    if refusal.disposition == AttackIntentDisposition::Ok {
-        return Err("step=non-attackable-refusal observed=accepted-player-self need=refusal".into());
+    let after_refusal = progress(&mut client).await?;
+    if refusal.disposition != AttackIntentDisposition::TargetNotACreature
+        || client.world_spatial().actor_position != before_refusal_position
+        || after_refusal.stats.level != baseline.stats.level
+        || after_refusal.stats.experience != baseline.stats.experience
+        || after_refusal.skills != baseline.skills
+    {
+        return Err(format!("step=non-attackable-refusal observed={refusal:?}/{after_refusal:?} need=TargetNotACreature-and-unchanged-position-xp-level-skills").into());
     }
     row.pass("non-attackable-refusal", format!("reply={:?}", refusal.disposition));
 
