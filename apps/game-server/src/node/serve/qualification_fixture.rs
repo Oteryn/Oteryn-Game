@@ -1214,6 +1214,17 @@ async fn prepare_items(
                 .await?;
             if uuid_text(record.account_id.as_bytes()) == I17C_ACCOUNT {
                 let weights = FixtureItemContent(native);
+                let request = RewardClaimMintRequest {
+                    content_revision: format!(
+                        "sha256:{}",
+                        native
+                            .source_digest()
+                            .iter()
+                            .map(|byte| format!("{byte:02x}"))
+                            .collect::<String>()
+                    ),
+                    ..request
+                };
                 let mut candidate = root
                     .freeze_reward_claim_mint_weighted(authority, proof, fence, request, &weights)
                     .await
