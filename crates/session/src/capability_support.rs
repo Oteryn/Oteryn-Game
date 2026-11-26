@@ -198,6 +198,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::channel_switch::CAPABILITY_SOCIAL_CHANNEL_V1,
     // CORPSE48: domain 11 shows up to 48 corpse entries (requires 4).
     oteryn_protocol_oteryn::item_view::CAPABILITY_CORPSE_CONTAINER_48_V1,
+    quick_loot::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -323,6 +324,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::channel_switch::CAPABILITY_CHANNEL_SWITCH_V1,
     // chsw Channel on Party, VIP and Guild rows (513).
     oteryn_protocol_oteryn::channel_switch::CAPABILITY_SOCIAL_CHANNEL_V1,
+    quick_loot::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {
@@ -416,6 +418,25 @@ mod native_advertisement_tests {
         ServerAcceptedValue, WorldId, decode_wire_envelope, encode_client_bootstrap,
         encode_server_accepted,
     };
+
+    #[test]
+    fn quick_loot_destinations_is_advertised_and_routed() {
+        use super::{gated_routes, quick_loot::*};
+        for capability in [
+            4,
+            CAPABILITY_QUICK_LOOT_V1,
+            CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
+        ] {
+            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
+        }
+        assert!(gated_routes().any(|(id, commands, _)| id
+            == CAPABILITY_QUICK_LOOT_DESTINATIONS_V1
+            && commands
+                == [
+                    COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+                    COMMAND_TYPE_QUICK_LOOT_DISTRIBUTE
+                ]));
+    }
 
     #[test]
     fn native_advertisement_is_bootstrap_encodable_and_dependency_closed()
