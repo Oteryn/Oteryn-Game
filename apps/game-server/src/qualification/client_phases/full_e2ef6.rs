@@ -262,7 +262,7 @@ const RESTING_BONUSES: &[&str] = &[
     "shrine-open-and-claim",
     "duplicate-claim-refused",
     "relog-daily-streak",
-    "earned-seven-day-streak",
+    "resting-tiers-independent-of-streak",
     "player-earned-deficits",
     "resting-double-health-mana",
     "resting-soul-and-stamina",
@@ -281,7 +281,7 @@ fn resting_stamina(payload: &[u8], vocation_selected: bool) -> TestResult<u16> {
     Ok(minutes)
 }
 
-// Independent integer oracle for the packet's earned knight/elite-knight build.
+// Independent integer oracle for the packet's native build.
 // Carries are private: one completed period can credit floor or ceil of the
 // percentage/legacy floor. Doubling applies to that integer credit, before cap.
 fn resting_credit(before: u32, after: u32, maximum: u32, units: u64, multiplier: u64) -> bool {
@@ -396,7 +396,9 @@ fn resting_tiles(world: &BundleWorld, start: TilePos) -> TestResult<(TilePos, Ti
                 outside = destination(world, outside, direction)
                     .ok_or("P10 outside path endpoint unavailable")?;
             }
-            return Ok((inside, outside));
+            if route(world, outside, |at| at == inside).is_some() {
+                return Ok((inside, outside));
+            }
         }
     }
     Err(format!(
@@ -464,8 +466,8 @@ async fn resting_spend(client: &mut DevClientSession, soul: bool) -> TestResult 
     let entries = wire::decode_catalog(&snapshot.payload)
         .map_err(|error| format!("P10 served spell catalogue: {error:?}"))?;
     let spell = entries.iter().find(|entry| entry.available && entry.rune_item.is_none()
-        && if soul { entry.soul > 0 } else { entry.words == "exura" })
-        .ok_or_else(|| format!("P10 player {} deficit blocked: no available learned {} spell in the admitted native catalogue; no vocation, learning, Premium or reagent grant allowed", if soul { "soul" } else { "mana" }, if soul { "soul-consuming" } else { "exura" }))?;
+        && if soul { entry.words == "adori blank" && entry.soul > 0 } else { entry.words == "exura" })
+        .ok_or_else(|| format!("P10 player {} deficit blocked: no available learned {} spell in the admitted native catalogue", if soul { "soul" } else { "mana" }, if soul { "adori blank" } else { "exura" }))?;
     let before = client
         .actor_vitals()
         .copied()
@@ -589,8 +591,102 @@ async fn resting_bonuses(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult<Option<&'static str>> {
-    use oteryn_protocol_oteryn::world_object::UseDisposition;
-    let mut client = connect_world(clients, 0xf2).await?;
+    use oteryn_protocol_oteryn::{rest_status as rest, world_object::UseDisposition};
+
+    async fn resting_status(client: &mut DevClientSession) -> TestResult<rest::RestStatus> {
+        let reply = client.session_mut().gated_command(
+            rest::CAPABILITY_REST_STATUS_V1, rest::COMMAND_TYPE_REST_STATUS_QUERY, &[],
+        ).await?;
+        if reply.status != CommandStatus::Accepted {
+            return Err(format!("P10 native rest status refused: {reply:?}").into());
+        }
+        rest::RestStatus::decode(&reply.payload).ok_or_else(|| "P10 rest status malformed".into())
+    }
+    mod hunt_route {
+        use super::*;
+        include!("qualification_hunt_route.rs");
+    }
+    use hunt_route::*;
+
+    character_prep::declare_seeded(
+        "P10",
+        "dedicated-free-and-premium-births,spell-capable-level,premium",
+        "Free and Premium resting tiers and actual Premium recovery with real deficits",
+    );
+    let free = {
+        let mut characters = clients.characters.to_vec();
+        characters[1] =
+            qualification_character(clients, 1, 0xf1, "Free Resting Journey", "Sorcerer").await?;
+        let clients = &SeamClients {
+            characters: &characters,
+            ..*clients
+        };
+        let mut player = connect_world(clients, 0xf1).await?;
+        let observed: TestResult<rest::RestStatus> = async {
+            let from = tile(player.world_spatial().actor_position)?;
+            let snapshot = world.clone();
+            let (inside, outside) = route_work(&mut player, move || {
+                resting_tiles(&snapshot, from).map_err(|error| error.to_string())
+            })
+            .await?;
+            qualification_hunt_route(
+                &mut player,
+                world,
+                Some(inside),
+                Some(outside),
+                tokio::time::Instant::now() + Duration::from_secs(150),
+            )
+            .await?;
+            let wall = daily_wall(&mut player).await?;
+            let status = resting_status(&mut player).await?;
+            if wall.streak != 0
+                || status.streak != 0
+                || !status.inside_resting_area
+                || status.health_multiplier != 1
+                || status.mana_multiplier != 1
+                || status.stamina
+                || status.soul
+            {
+                return Err(format!("P10 Free resting tier at zero streak differs: {status:?}").into());
+            }
+            Ok(status)
+        }
+        .await;
+        let cleanup = return_and_release(&mut player, world).await;
+        let status = observed?;
+        cleanup?;
+        status
+    };
+    // The profile is authorized for the Light account. In the F6 matrix
+    // that account is already present, but the journey needs a fresh character.
+    let account = required("NODE_BOOT_LIGHT_ACCOUNT_ID")?;
+    let light_slot = clients
+        .accounts
+        .iter()
+        .position(|existing| existing == &account)
+        .ok_or("P10 Light account missing from the F6 matrix")?;
+    let mut accounts = clients.accounts.to_vec();
+    let mut characters = clients.characters.to_vec();
+    accounts.swap(1, light_slot);
+    characters.swap(1, light_slot);
+    let clients = &SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
+    let character =
+        qualification_character(clients, 1, 0xf2, "Resting Journey", "Sorcerer").await?;
+    let mut characters = clients.characters.to_vec();
+    characters[1] = character;
+    let clients = &SeamClients {
+        characters: &characters,
+        ..*clients
+    };
+    let build = character_prep::Seeded {
+        profile: "w20b-light",
+        reason: "available native deficit spells",
+    };
+    let mut client = build.connect(clients, 0xf2, 1).await?;
     let result: TestResult<Option<&'static str>> = async {
         let initial = daily_wall(&mut client).await?;
         if initial.claimed || initial.claim_enabled {
@@ -602,8 +698,23 @@ async fn resting_bonuses(
             return Err("P10 unopened refusal changed daily state or item custody".into());
         }
         row.pass("unopened-claim-refused", initial);
-        let (inside, outside) = resting_tiles(world, tile(client.world_spatial().actor_position)?)?;
-        resting_walk(&mut client, world, inside).await?;
+        let from = tile(client.world_spatial().actor_position)?;
+        let snapshot = world.clone();
+        let (inside, outside) = route_work(&mut client, move || resting_tiles(&snapshot, from).map_err(|error| error.to_string())).await?;
+        qualification_hunt_route(
+            &mut client, world, Some(inside), Some(outside),
+            tokio::time::Instant::now() + Duration::from_secs(150),
+        ).await?;
+        character_prep::grant_premium(&client).await?;
+        relog(&mut client, clients, 0xf3).await?;
+        if daily_wall(&mut client).await? != initial {
+            return Err("P10 Premium admission changed the unclaimed daily wall".into());
+        }
+        let preclaim = resting_status(&mut client).await?;
+        if (preclaim.inside_resting_area, preclaim.streak, preclaim.health_multiplier, preclaim.mana_multiplier, preclaim.stamina, preclaim.soul)
+            != (true, initial.streak, 2, 2, true, true) {
+            return Err(format!("P10 Premium bonuses before the claim differ from RestStatus V1: {preclaim:?}").into());
+        }
         let opened = client.session_mut().use_object(b"oteryn:placement/daily-reward-shrine", 0).await?;
         if opened.disposition != UseDisposition::Committed {
             return Err(format!("P10 real shrine USE refused at {inside:?}: {opened:?}").into());
@@ -629,16 +740,20 @@ async fn resting_bonuses(
             return Err("P10 daily claim/streak/custody did not persist through fresh admission".into());
         }
         row.pass("relog-daily-streak", claimed);
-        if claimed.streak < 7 {
-            return Err(format!("P10 seven-day streak prerequisite blocked: native claimed wall streak={} lane_day={} claimed={}; HP/mana unlock at 2/3, Premium stamina at 4, doubled HP/mana at 5/6 and soul at 7. Real player route permits one claim per committed World server-save epoch; {} further consecutive daily claims are required. This bounded run cannot advance server time/epochs or mint a streak", claimed.streak, claimed.lane_day, claimed.claimed, 7 - claimed.streak).into());
+        let after_claim = resting_status(&mut client).await?;
+        if (after_claim.inside_resting_area, after_claim.streak, after_claim.health_multiplier, after_claim.mana_multiplier, after_claim.stamina, after_claim.soul)
+            != (true, claimed.streak, preclaim.health_multiplier, preclaim.mana_multiplier, preclaim.stamina, preclaim.soul) {
+            return Err(format!("P10 changing streak changed the Premium resting tier: {preclaim:?}->{after_claim:?}").into());
         }
-        row.pass("earned-seven-day-streak", claimed);
+        row.pass("resting-tiers-independent-of-streak", (free, preclaim, after_claim));
         resting_deficits(&mut client, clients, world, spawns, outside).await?;
         let look = self_look(&mut client).await?;
-        let promoted = look.ends_with(", elite knight).");
-        if !promoted && !look.ends_with(", knight).") {
-            return Err(format!("P10 ordinary knight prerequisite blocked: native build={look}").into());
+        if !look.ends_with(", sorcerer).") {
+            return Err(format!("P10 sorcerer prerequisite blocked: native build={look}").into());
         }
+        // Sorcerer percentage and global floors from the native regeneration contract.
+        let health_units = |maximum| (u64::from(maximum) * 8).max(2_500);
+        let mana_units = |maximum| (u64::from(maximum) * 15).max(20_000);
         let initial_vitals = client.actor_vitals().copied().ok_or("P10 deficit vitals missing")?;
         row.pass("player-earned-deficits", (initial_vitals, resting_stamina(&tab(&mut client, 1).await?, general_stats::selected(&client))?));
         resting_walk(&mut client, world, inside).await?;
@@ -664,7 +779,7 @@ async fn resting_bonuses(
                         return Err(format!("P10 unrelated damage/debit/death or cap violation during resting: {previous:?}->{v:?}").into());
                     }
                     if v.health > previous.health && v.health < v.max_health {
-                        let units = (u64::from(v.max_health) * if promoted { 15 } else { 10 }).max(if promoted { 7500 } else { 5000 });
+                        let units = health_units(v.max_health);
                         if !resting_credit(previous.health, v.health, v.max_health, units, 2) {
                             return Err(format!("P10 resting HP gain is not the doubled integer credit: {previous:?}->{v:?}").into());
                         }
@@ -673,14 +788,14 @@ async fn resting_bonuses(
                         health |= u64::from(v.health - previous.health) > units.div_ceil(10_000);
                     }
                     if v.mana > previous.mana && v.mana < v.max_mana {
-                        let units = (u64::from(v.max_mana) * if promoted { 10 } else { 8 }).max(10_000);
+                        let units = mana_units(v.max_mana);
                         if !resting_credit(previous.mana, v.mana, v.max_mana, units, 2) {
                             return Err(format!("P10 resting mana gain is not the doubled integer credit: {previous:?}->{v:?}").into());
                         }
                         mana |= u64::from(v.mana - previous.mana) > units.div_ceil(10_000);
                     }
                     if v.soul > previous.soul {
-                        if v.soul != previous.soul + 1 || started.elapsed() < Duration::from_secs(if promoted { 14 } else { 119 }) {
+                        if v.soul != previous.soul + 1 || started.elapsed() < Duration::from_secs(119) {
                             return Err(format!("P10 soul cadence/credit differs: {previous:?}->{v:?} elapsed={:?}", started.elapsed()).into());
                         }
                         soul = true;
@@ -718,6 +833,14 @@ async fn resting_bonuses(
         }
         row.pass("relog-bonus-state", (client.actor_vitals(), stamina_after));
         resting_deficits(&mut client, clients, world, spawns, outside).await?;
+        if daily_wall(&mut client).await? != claimed {
+            return Err("P10 outside admission changed the saved daily wall".into());
+        }
+        let outside_status = resting_status(&mut client).await?;
+        if (outside_status.inside_resting_area, outside_status.streak, outside_status.health_multiplier, outside_status.mana_multiplier, outside_status.stamina, outside_status.soul)
+            != (false, claimed.streak, 0, 0, false, false) {
+            return Err(format!("P10 RestStatus V1 outside active resting area: {outside_status:?}").into());
+        }
         let mut previous_outside = client.actor_vitals().copied().ok_or("P10 outside vitals absent")?;
         let mut base_health = false;
         let mut base_mana = false;
@@ -739,14 +862,14 @@ async fn resting_bonuses(
                     }
                     if v.health > previous_outside.health && v.health < v.max_health {
                         if !resting_credit(previous_outside.health, v.health, v.max_health,
-                            (u64::from(v.max_health) * if promoted { 15 } else { 10 }).max(if promoted { 7500 } else { 5000 }), 1) {
+                            health_units(v.max_health), 1) {
                             return Err(format!("P10 resting HP multiplier leaked outside: {previous_outside:?}->{v:?}").into());
                         }
                         base_health = true;
                     }
                     if v.mana > previous_outside.mana && v.mana < v.max_mana {
                         if !resting_credit(previous_outside.mana, v.mana, v.max_mana,
-                            (u64::from(v.max_mana) * if promoted { 10 } else { 8 }).max(10_000), 1) {
+                            mana_units(v.max_mana), 1) {
                             return Err(format!("P10 resting mana multiplier leaked outside: {previous_outside:?}->{v:?}").into());
                         }
                         base_mana = true;
@@ -769,7 +892,7 @@ async fn resting_bonuses(
         }
         row.pass("outside-bonuses-stop", (outside, outside_soul, outside_stamina));
         let started = resting_reentry(&mut client, world, inside).await?;
-        let interval = if promoted { 15 } else { 120 };
+        let interval = 120;
         let deadline = tokio::time::Instant::now() + Duration::from_secs(interval + 10);
         loop {
             client.service_liveness(Duration::from_millis(50)).await?;
@@ -786,9 +909,13 @@ async fn resting_bonuses(
                 return Err(format!("P10 no renewed resting soul credit after reentry: soul={outside_soul} interval={interval}").into());
             }
         }
-        // The current server has only a PZ proxy, so even all accessible lifecycle
-        // observations cannot prove correct membership in the narrower resting area.
-        Ok(Some("crates/gameplay/dispatch/src/gameplay_transport/composed_admission/vitals.rs:137"))
+        let reentered = resting_status(&mut client).await?;
+        if (reentered.inside_resting_area, reentered.streak, reentered.health_multiplier, reentered.mana_multiplier, reentered.stamina, reentered.soul)
+            != (true, claimed.streak, 2, 2, true, true) {
+            return Err(format!("P10 RestStatus V1 after PZ reentry: {reentered:?}").into());
+        }
+        row.pass("resting-area-classification", (outside_status, reentered));
+        Ok(None)
     }.await;
     let cleanup = return_and_release(&mut client, world).await;
     match (result, cleanup) {
@@ -951,6 +1078,23 @@ async fn temple_respawn(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
+    mod hunt_route {
+        use super::*;
+        include!("qualification_hunt_route.rs");
+    }
+    use hunt_route::*;
+
+    character_prep::declare_seeded(
+        "C20d",
+        "dedicated-character-birth",
+        "isolated custody and progression",
+    );
+    let mut characters = clients.characters.to_vec();
+    characters[1] = qualification_character(clients, 1, 0xe3, "Temple Journey", "Knight").await?;
+    let clients = &SeamClients {
+        characters: &characters,
+        ..*clients
+    };
     let mut client = connect_world(clients, 0xe3).await?;
     let result: TestResult = async {
         // death() has a route-less no-op path; that path cannot qualify this row.
@@ -2060,10 +2204,51 @@ async fn item_loss(
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult {
+    mod hunt_route {
+        use super::*;
+        include!("qualification_hunt_route.rs");
+    }
+    use hunt_route::*;
+
+    character_prep::declare_seeded(
+        "C20b",
+        "dedicated-character-birth",
+        "isolated custody and progression",
+    );
+    let mut characters = clients.characters.to_vec();
+    characters[1] = qualification_character(clients, 1, 0xc4, "Custody Journey", "Knight").await?;
+    let clients = &SeamClients {
+        characters: &characters,
+        ..*clients
+    };
     let mut client = connect_world(clients, 0xc4).await?;
     let result: TestResult = async {
         if !blessings(&mut client).await?.is_empty() { return Err("unprotected item-loss prerequisite blocked: ordinary Character has held blessings".into()); }
-        earn_death_prerequisites(&mut client, world, spawns, 9, 1).await?;
+        let definitions = provisioning::item_index()?;
+        let coins = [
+            provisioning::item_reference(&definitions, 3031)?,
+            provisioning::item_reference(&definitions, 3035)?,
+            provisioning::item_reference(&definitions, 3043)?,
+        ];
+        qualification_acquire(
+            &mut client,
+            world,
+            tokio::time::Instant::now() + Duration::from_secs(150),
+            async |client| {
+                let level = progress(client).await?.1;
+                let inventory = client.inventory().ok_or("loss prerequisite inventory missing")?;
+                Ok(level >= 9 && inventory.entries.iter().any(|item| coins.contains(&item.item_definition_ref)))
+            },
+            async |client, deadline| {
+                let before = progress(client).await?.0;
+                tokio::time::timeout_at(deadline, client_hunt::hunt(client)).await
+                    .map_err(|_| "C20b level 9 acquisition reached the 150 s deadline")??;
+                if progress(client).await?.0 <= before {
+                    return Err("C20b hunt produced no earned XP".into());
+                }
+                Ok(())
+            },
+        ).await?;
         row.pass("earned-loss-eligible-level", progress(&mut client).await?);
         let index = provisioning::item_index()?;
         // Exercise AoL first so the unprotected death can be terminal: no invented
@@ -2692,12 +2877,71 @@ async fn blessing_death(
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult {
+    mod hunt_route {
+        use super::*;
+        include!("qualification_hunt_route.rs");
+    }
+    use hunt_route::*;
+
+    character_prep::declare_seeded(
+        "C20c",
+        "dedicated-character-birth",
+        "isolated custody and progression",
+    );
+    let mut characters = clients.characters.to_vec();
+    characters[1] = qualification_character(clients, 1, 0xa3, "Blessing Journey", "Knight").await?;
+    characters[0] =
+        qualification_character(clients, 0, 0xa0, "Blessing Challenger", "Knight").await?;
+    let clients = &SeamClients {
+        characters: &characters,
+        ..*clients
+    };
+    let mut victim = connect_character(clients, 0xa0, 0).await?;
+    let prepared: TestResult = async {
+        qualification_acquire(
+            &mut victim,
+            world,
+            tokio::time::Instant::now() + Duration::from_secs(150),
+            async |client| Ok(progress(client).await?.1 >= 8),
+            async |client, deadline| {
+                let before = progress(client).await?.0;
+                tokio::time::timeout_at(deadline, client_hunt::hunt(client))
+                    .await
+                    .map_err(|_| "C20c level 8 acquisition reached the 150 s deadline")??;
+                if progress(client).await?.0 <= before {
+                    return Err("C20c hunt produced no earned XP".into());
+                }
+                Ok(())
+            },
+        )
+        .await?;
+        Ok(())
+    }
+    .await;
+    let release = release_fighter(&mut victim).await;
+    prepared.and(release)?;
     adventurer_journey(row, clients, world, spawns, npcs, 0xa0).await?;
     let mut client = connect_world(clients, 0xa3).await?;
     let result: TestResult = async {
         // Level 21 permanently excludes Adventurer, so the Twist case cannot
         // accidentally PASS by observing KeepAll from the low-level exemption.
-        earn_death_prerequisites(&mut client, world, spawns, 21, 0).await?;
+        qualification_acquire(
+            &mut client,
+            world,
+            tokio::time::Instant::now() + Duration::from_secs(150),
+            async |client| {
+                Ok(progress(client).await?.1 >= 21)
+            },
+            async |client, deadline| {
+                let before = progress(client).await?.0;
+                tokio::time::timeout_at(deadline, client_hunt::hunt(client)).await
+                    .map_err(|_| "C20c level 21 acquisition reached the 150 s deadline")??;
+                if progress(client).await?.0 <= before {
+                    return Err("C20c hunt produced no earned XP".into());
+                }
+                Ok(())
+            },
+        ).await?;
         if !blessings(&mut client).await?.is_empty() {
             observed_death(&mut client, world, spawns).await?;
             if blessings(&mut client).await? != [TWIST.2] && !blessings(&mut client).await?.is_empty() {

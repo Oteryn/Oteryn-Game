@@ -388,12 +388,13 @@ pub(super) async fn walk_bot_to_logout(
 ) -> TestResult {
     let (before, remaining) = bots.split_at_mut(index);
     let (bot, after) = remaining.split_first_mut().ok_or("logout walker missing")?;
+    let world = world.clone();
     let result = while_servicing_liveness(
         async {
             walk_with_landing_budget(
                 bot.client()?,
                 path,
-                |at, direction| destination(world, at, direction),
+                move |at, direction| destination(&world, at, direction),
                 Some(STEP_BUDGET),
             )
             .await
