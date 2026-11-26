@@ -2,7 +2,9 @@ use super::*;
 use crate::content::{
     ProjectV2AuthoringProfileData, native_gameplay::test_support::activated_with_loot_tables,
 };
-use crate::durability::native_world_items::{DurableCorpseReservation, SpellGroundTarget};
+use crate::durability::native_world_items::{
+    DurableCorpseReservation, QualifiedItemDefinition, SpellGroundTarget,
+};
 use crate::foundation::{ChannelId, NodeId, WorldId};
 use crate::spell::Execution;
 
@@ -82,9 +84,10 @@ fn animate_dead_prepares_the_production_skeleton_with_both_namesakes_installed()
     let item = native
         .item_policy(&corpse_ref.key, &corpse_ref.revision)
         .ok_or("corpse Item policy")?;
+    let item = QualifiedItemDefinition::from_native_policy(item)?;
     let corpse = DurableCorpseReservation {
         item_instance_id: id(5),
-        definition: item.record().production_definition.clone(),
+        definition: item.definition,
         state_revision: 1,
         top_down_ordinal: 1,
         placement: address.placement(id(6).to_vec()),
