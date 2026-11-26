@@ -412,6 +412,25 @@ fn shared_added_source(
         .then_some((pos, entry.facts))
 }
 
+// The shared claim proof authorizes a retained UID at the callback's exact
+// selector. An object with a different action keeps that action's owner.
+fn matches_legacy_chest_uid(
+    map: &BundleMap,
+    callback: &Callback,
+    key: u64,
+    appearance: u16,
+) -> bool {
+    map.facts.quest_callback_source_bound(key)
+        && map.facts.action_at(key).is_none()
+        && !map.facts.base_hidden(key)
+        && world_callbacks::legacy_world_source_unique(callback).is_ok_and(|unique| {
+            unique.is_some_and(|uid| {
+                map.facts
+                    .quest_callback_matches(key, Some(uid), None, Some(appearance))
+            })
+        })
+}
+
 pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     if callback.effects.loot_merchant
         || oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some()
@@ -470,6 +489,7 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                         || map
                             .facts
                             .quest_callback_native_object(key, id, binding.appearance)
+                        || matches_legacy_chest_uid(map, callback, key, binding.appearance)
                 });
         // Counterpart adapters retain a separately authoritative legacy route.
         // Native-only selectors must never become an unconstrained fallback.
@@ -637,9 +657,13 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
             || selector.appearance.is_some()
             || callback.trigger == Trigger::Use
             || ordinal == 0)
-        && map
+        && (map
             .facts
             .quest_callback_matches(key, selector.unique, selector.action, None)
+            || (selector.action.is_some()
+                && selector.appearance.is_some_and(|appearance| {
+                    matches_legacy_chest_uid(map, callback, key, appearance)
+                })))
         && (map
             .facts
             .quest_callback_matches(key, None, None, selector.appearance)
