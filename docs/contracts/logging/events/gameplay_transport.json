@@ -347,6 +347,19 @@
       "note": "NBTRADE-1: a player trade offer, accept or look refused with Rejected; intent is offer, accept or look, cause names the refusal (refusal_*, durability_*, retry_budget_exhausted, native_gameplay_missing, book_poisoned, other). No player identifiers, payloads or raw errors."
     },
     {
+      "event": "quest_teleport_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "callback",
+        "source",
+        "destination",
+        "error"
+      ],
+      "codes": [],
+      "note": "Quest USE teleport preparation refusal with its callback key, map positions and typed movement error."
+    },
+    {
       "event": "release_deferred",
       "level": "warn",
       "span": false,

@@ -874,9 +874,6 @@ where
             && !(item_selected
                 && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. }))
     });
-    for (index, event) in events.iter_mut().enumerate() {
-        event.decision_ordinal = u32::try_from(index + 1).map_err(|_| ServeEnd::Disconnected)?;
-    }
     if !events.is_empty() {
         let payload =
             wire::encode_presentation_batch(&events).map_err(|_| ServeEnd::Disconnected)?;

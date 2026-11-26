@@ -36,7 +36,9 @@ impl From<oteryn_protocol_oteryn::analyser::AnalyserDamageSource> for HitSource 
 }
 
 /// The client-visible spatial reference of an exact actor (`visible_entities` generation).
-fn entity_ref(actor: ExactActorRef) -> oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+pub(super) fn entity_ref(
+    actor: ExactActorRef,
+) -> oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
     oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
         identity: actor.placement_identity(),
         generation: actor.actor_local_generation(),
