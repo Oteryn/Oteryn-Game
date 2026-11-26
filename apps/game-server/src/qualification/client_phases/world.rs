@@ -969,6 +969,9 @@ pub(super) async fn logout_once(
     .await
 }
 
+// Compatibility for inherited row callers. Observe the first logout reply.
+use logout_once as logout_retrying_busy;
+
 /// Fixture setup and cleanup can wait for an explicit transient Busy reply.
 pub(super) async fn fixture_logout_retrying_busy(
     client: &mut oteryn_dev_client::DevClientSession,
