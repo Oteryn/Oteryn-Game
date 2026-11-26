@@ -173,15 +173,10 @@ async fn buy_watch(
         ChannelId::decode(&clients.channel)?,
     )?;
     let here = tile(client.world_spatial().actor_position)?;
-    let path = route(world, here, |at| {
-        at != home
-            && within(
-                at,
-                home,
-                npc::TALK_RANGE_TILES - u32::from(LUBO_WANDER_RADIUS),
-            )
-    })
-    .ok_or("step=seller observed=no-route-to-lubo")?;
+    // Keep the original three-tile approach. The live actor check below uses
+    // Lubo's actual position, which can differ from the authored placement.
+    let path = route(world, here, |at| at != home && within(at, home, 3))
+        .ok_or("step=seller observed=no-route-to-lubo")?;
     for direction in path {
         let before = tile(client.world_spatial().actor_position)?;
         let outcome = client.step(direction).await?;
@@ -390,37 +385,33 @@ mod tests {
     use super::*;
 
     #[test]
-    fn lubo_approach_covers_the_wander_radius_on_the_same_floor() {
+    fn lubo_wander_and_talk_range_are_independent() {
         let home = TilePos {
             x: 10,
             y: 10,
             floor: -7,
         };
-        let wander = u32::from(LUBO_WANDER_RADIUS);
-        let approach = npc::TALK_RANGE_TILES - wander;
         let player = TilePos {
-            x: home.x - approach as u16,
+            x: home.x - 3,
+            ..home
+        };
+        let moved = TilePos {
+            x: home.x + 1,
             ..home
         };
         let furthest = TilePos {
             x: home.x + LUBO_WANDER_RADIUS,
-            y: home.y + LUBO_WANDER_RADIUS,
             ..home
         };
+        let wander = u32::from(LUBO_WANDER_RADIUS);
+        assert!(within(moved, home, wander));
+        assert!(within(moved, player, npc::TALK_RANGE_TILES));
         assert!(within(furthest, home, wander));
-        assert!(within(furthest, player, npc::TALK_RANGE_TILES));
-        assert!(!within(
-            TilePos {
-                x: furthest.x + 1,
-                ..furthest
-            },
-            home,
-            wander
-        ));
+        assert!(!within(furthest, player, npc::TALK_RANGE_TILES));
         assert!(!within(
             TilePos {
                 floor: home.floor - 1,
-                ..furthest
+                ..moved
             },
             home,
             wander
