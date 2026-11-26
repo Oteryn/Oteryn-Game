@@ -37,6 +37,8 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
 mod bank_robbery;
+#[cfg(test)]
+pub(super) use bank_robbery::ROBBERY_DIALOGUE_OBSERVED;
 #[path = "benevola.rs"]
 mod benevola;
 mod cake;
@@ -920,6 +922,7 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         if let Some(outcome) = bank_robbery::talk(
             admission,
+            actor,
             command,
             &intent,
             context.clone(),
@@ -1493,16 +1496,34 @@ pub(super) async fn resume_bank_talk(
             npc_key,
             npc_identity,
             npc_generation,
-        }) => Some(NpcConversations::bank_reply(
-            &NpcTalkIntent {
+        }) => {
+            let intent = NpcTalkIntent {
                 npc_actor: EntityRef {
                     identity: npc_identity,
                     generation: npc_generation,
                 },
                 text: String::new(),
-            },
-            bank_robbery::clue(&npc_key).into(),
-        )),
+            };
+            let runtime = admission.runtime.lock().await;
+            let mut reply =
+                NpcConversations::bank_reply(&intent, bank_robbery::clue(&npc_key).into());
+            if !admission
+                .states
+                .npc_conversations
+                .current_npc(
+                    &admission.states.chat,
+                    &runtime,
+                    actor,
+                    command.game_session_id,
+                    &intent,
+                )
+                .is_some_and(|(_, _, key)| key == npc_key)
+                && let Some(conversation) = reply.conversation.as_mut()
+            {
+                conversation.open = None;
+            }
+            Some(reply)
+        }
         Err(_) => Some(held_bank_outcome()),
     }
 }
