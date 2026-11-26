@@ -2,6 +2,7 @@
 use super::*;
 use crate::durability::item_craft::{MapHarvestOperand, MapHarvestRequest};
 use crate::durability::terrain_tool::{MapMutation, TerrainScope};
+use crate::gameplay_transport::session_ingress::UseReceipt;
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_items::event_planting as fishing;
 use oteryn_protocol_oteryn::world_object::{WorldObjectTarget, encode_item_use_intent};
@@ -55,6 +56,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn use_map_harvest(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: &UseIntent,
+        target: Target<'_>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.mark_use_receipt(command, Some(UseReceipt::Harvest));
+        let result = self.try_map_harvest(actor, command, intent, target).await;
+        // Keep the owner on uncertainty and clear it on fallthrough.
+        if matches!(result, Ok(None)) {
+            self.mark_use_receipt(command, None);
+        }
+        result
+    }
+
+    async fn try_map_harvest(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
