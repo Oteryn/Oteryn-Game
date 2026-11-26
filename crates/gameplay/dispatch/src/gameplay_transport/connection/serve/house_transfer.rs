@@ -493,6 +493,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     authority,
                     services.cooldowns.as_ref(),
                     &mut admitted.continuity,
+                    None,
                 )?
             } else {
                 Vec::new()

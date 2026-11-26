@@ -809,7 +809,7 @@ fn registry_binds_the_presentation_wire_ids_and_limits() -> Result<(), Box<dyn s
             let entries = domain[section].as_array().expect(section);
             assert_eq!(
                 entries.len(),
-                if domain_id == STATE_DOMAIN_WORLD_PRESENTATION {
+                if domain_id == STATE_DOMAIN_WORLD_PRESENTATION || section == "delta_types" {
                     2
                 } else {
                     1
@@ -855,6 +855,23 @@ fn registry_binds_the_presentation_wire_ids_and_limits() -> Result<(), Box<dyn s
         (
             DELTA_TYPE_ACTOR_COOLDOWNS_V1,
             "ACTOR_COOLDOWNS_DELTA_V1",
+            "ActorCooldownsV1",
+            MAX_ACTOR_COOLDOWNS_BYTES,
+        ),
+        (
+            SNAPSHOT_TYPE_ACTOR_COOLDOWNS_V1,
+            "ACTOR_COOLDOWNS_SNAPSHOT_V1",
+            "ActorCooldownsV1",
+            MAX_ACTOR_COOLDOWNS_BYTES,
+        ),
+    );
+
+    types(
+        STATE_DOMAIN_ACTOR_COOLDOWNS,
+        "ACTOR_COOLDOWNS",
+        (
+            DELTA_TYPE_ACTOR_COOLDOWNS_WITH_VITALS_V1,
+            "ACTOR_COOLDOWNS_WITH_VITALS_DELTA_V1",
             "ActorCooldownsV1",
             MAX_ACTOR_COOLDOWNS_BYTES,
         ),

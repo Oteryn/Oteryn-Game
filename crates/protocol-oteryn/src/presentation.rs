@@ -49,6 +49,8 @@ pub const SNAPSHOT_TYPE_WORLD_PRESENTATION_V1: u32 = 1;
 pub const STATE_DOMAIN_ACTOR_COOLDOWNS: u32 = 20;
 /// Delta type 1 `ACTOR_COOLDOWNS_DELTA_V1`.
 pub const DELTA_TYPE_ACTOR_COOLDOWNS_V1: u32 = 1;
+/// Delta type 2 uses the same payload and requires the next frame to be ACTOR_VITALS.
+pub const DELTA_TYPE_ACTOR_COOLDOWNS_WITH_VITALS_V1: u32 = 2;
 /// Snapshot type 1 `ACTOR_COOLDOWNS_SNAPSHOT_V1`.
 pub const SNAPSHOT_TYPE_ACTOR_COOLDOWNS_V1: u32 = 1;
 

@@ -11,6 +11,12 @@
       "name": "ACTOR_COOLDOWNS_DELTA_V1",
       "payload_schema": "docs/contracts/protocol-oteryn/v1/presentation_v1.proto#ActorCooldownsV1",
       "max_payload_bytes": 65552
+    },
+    {
+      "id": 2,
+      "name": "ACTOR_COOLDOWNS_WITH_VITALS_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/presentation_v1.proto#ActorCooldownsV1",
+      "max_payload_bytes": 65552
     }
   ],
   "snapshot_types": [

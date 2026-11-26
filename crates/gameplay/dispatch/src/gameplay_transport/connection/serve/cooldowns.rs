@@ -11,7 +11,7 @@ pub(super) fn snapshot<A: FreshAdmissionAuthority>(
     rows: &mut [ItemViewSnapshotDomain],
 ) -> Result<(), ServeEnd> {
     if let Some(feed) = feed {
-        let deadlines = std::mem::take(&mut feed.snapshot);
+        let deadlines = feed.take_snapshot().ok_or(ServeEnd::Disconnected)?;
         let row = rows
             .iter_mut()
             .find(|row| row.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS)
@@ -27,11 +27,15 @@ pub(super) fn frames<A: FreshAdmissionAuthority>(
     authority: &A,
     feed: Option<&CooldownFeed>,
     next: &mut SessionContinuity,
+    cast_revision: Option<u64>,
 ) -> Result<Vec<Vec<u8>>, ServeEnd> {
     let generation = next.connection_generation;
-    let Some(committed) = feed.and_then(|feed| feed.take(generation)) else {
+    let Some(committed) = feed.and_then(|feed| feed.take(generation, cast_revision)) else {
         return Ok(Vec::new());
     };
+    let rescued = committed
+        .rescued
+        .filter(|(revision, _)| next.vitals_revision != 0 && *revision > next.vitals_revision);
     let mut frames = Vec::new();
     if !committed.deadlines.is_empty() {
         let revision = next
@@ -51,7 +55,11 @@ pub(super) fn frames<A: FreshAdmissionAuthority>(
                 wire::STATE_DOMAIN_ACTOR_COOLDOWNS,
                 next.cooldown_revision,
                 revision,
-                wire::DELTA_TYPE_ACTOR_COOLDOWNS_V1,
+                if rescued.is_some() {
+                    wire::DELTA_TYPE_ACTOR_COOLDOWNS_WITH_VITALS_V1
+                } else {
+                    wire::DELTA_TYPE_ACTOR_COOLDOWNS_V1
+                },
                 &payload,
             )
             .map_err(|_| ServeEnd::Disconnected)?,
@@ -59,10 +67,7 @@ pub(super) fn frames<A: FreshAdmissionAuthority>(
         next.server_sequence = sequence;
         next.cooldown_revision = revision;
     }
-    if let Some((revision, value)) = committed.rescued
-        && next.vitals_revision != 0
-        && revision > next.vitals_revision
-    {
+    if let Some((revision, value)) = rescued {
         let (sequence, frame) = vitals_delta(
             generation,
             next.server_sequence,
@@ -119,6 +124,7 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         authority,
         session.cooldowns.as_ref(),
         &mut session.admitted.continuity,
+        None,
     )?;
     session.sequence = session.admitted.continuity.server_sequence;
     write_batch(stream, &frames, None).await

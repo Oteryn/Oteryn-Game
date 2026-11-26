@@ -160,7 +160,9 @@ message ActorCooldownV1 {
 
 // StateDomainSnapshot.payload of domain 20, snapshot type 1 (every running cooldown, at admission,
 // reconnect and channel transfer) and StateDelta.payload of delta type 1 (the entries changed at a
-// PRIMARY COMMIT). Own actor only. At most
+// PRIMARY COMMIT). Delta type 2 carries the same entries for a Gift of Life rescue. The very
+// next frame must be a domain 3 ACTOR_VITALS delta, with the next sequence and the same connection
+// generation. The client validates and publishes both updates together. Own actor only. At most
 // one entry per {kind, id}; a repeated key fails closed.
 message ActorCooldownsV1 {
   // Snapshots carry the channel runtime's monotonic clock at encode time. Deltas use zero and

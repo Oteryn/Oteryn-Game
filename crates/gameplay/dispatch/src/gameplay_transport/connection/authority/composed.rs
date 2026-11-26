@@ -1678,12 +1678,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let runtime = self.runtime.lock().await;
-        self.states.spell_states.lock().await.house_vitals(
-            &runtime,
-            actor,
-            admitted.game_session_id,
-            fence,
-        )
+        let states = self.states.spell_states.lock().await;
+        let session = admitted.game_session_id;
+        if !states.current_cooldown_transport(actor, session, fence.connection_generation.get()) {
+            return None;
+        }
+        states.house_vitals(&runtime, actor, session, fence)
     }
 
     /// One cast as one Channel-owner work item (`SPELL-RL-01` = 1), under the same runtime lock

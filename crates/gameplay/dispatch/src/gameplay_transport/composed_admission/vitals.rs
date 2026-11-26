@@ -45,6 +45,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let ready = house || self.prepare_channel_vitals(actor, session).await;
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
+        if !states.current_cooldown_transport(
+            actor,
+            session,
+            admitted.continuity.connection_generation,
+        ) {
+            return (None, None);
+        }
         let cooldowns = states.subscribe_cooldowns(&runtime, actor, admitted, self.spells);
         let vitals = if house {
             admitted
@@ -100,6 +107,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let deadline = self.cake_regeneration_deadline();
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
+        if !states.current_cooldown_transport(actor, session, fence.connection_generation.get()) {
+            return None;
+        }
         if ready
             && self
                 .active_generation

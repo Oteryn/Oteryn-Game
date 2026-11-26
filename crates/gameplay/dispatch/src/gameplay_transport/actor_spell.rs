@@ -136,6 +136,9 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) elite_bounties: Vec<(ExactActorRef, GameSessionId, String)>,
     pub(super) hunting_stamina: Vec<super::hunting_stamina::LiveStamina>,
     pub(in crate::gameplay_transport) owner_wake: std::sync::Arc<tokio::sync::Notify>,
+    pub(super) cooldown_generations: std::collections::BTreeMap<
+        [u8; 16], (ExactActorRef, GameSessionId, u64),
+    >,
     pub(super) cooldown_subscribers: std::collections::BTreeMap<[u8; 16], super::spell_cooldowns::Subscriber>,
     pub(in crate::gameplay_transport) actors: Vec<(ExactActorRef, GameSessionId, PlayerSpellState)>,
     pub(in crate::gameplay_transport) charm_states: Vec<(
@@ -346,6 +349,7 @@ impl Default for ChannelSpellStates {
             analyser: Default::default(),
             owner_wake: Default::default(),
             actors: Vec::new(),
+            cooldown_generations: Default::default(),
             cooldown_subscribers: Default::default(),
             charm_states: Vec::new(),
             spell_timers: Default::default(),
@@ -690,6 +694,10 @@ impl ChannelSpellStates {
                 || runtime
                     .house_player_control_facts(*present, *session)
                     .is_ok()
+        });
+        self.cooldown_generations.retain(|_, (actor, session, _)| {
+            runtime.player_control_facts(*actor, *session).is_ok()
+                || runtime.house_player_control_facts(*actor, *session).is_ok()
         });
         self.gourmet_checkpoints.retain(|(present, session, _, _)| {
             runtime.player_control_facts(*present, *session).is_ok()
