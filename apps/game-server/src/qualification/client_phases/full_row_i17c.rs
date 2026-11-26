@@ -146,8 +146,7 @@ async fn acquire(
         .session_mut()
         .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
         .await?;
-    let window = wire::decode_npc_trade_window(&delta.payload)
-        .map_err(|error| format!("trade window decode: {error:?}"))?;
+    let window = super::full_row_i14::decode_trade_window(client.selected_capabilities(), &delta.payload)?;
     let (offer_index, offer) = window
         .offers
         .iter()
