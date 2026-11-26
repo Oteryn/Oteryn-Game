@@ -379,13 +379,38 @@ async fn kill_and_observe_clear(
     client: &mut DevClientSession,
     target: EntityRef,
 ) -> TestResult<[u8; 16]> {
+    // Resolve the expected identity while the exact creature is alive. The
+    // fixture supplies the expectation; only live frames can prove the kill.
+    let identity: String = target
+        .identity
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    let answer = request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--inspect-damage",
+        format!("{identity} {}", target.generation),
+    )
+    .await?;
+    let mut fields = answer.split_ascii_whitespace();
+    let (Some("damage"), Some("0"), Some(corpse), None) =
+        (fields.next(), fields.next(), fields.next(), fields.next())
+    else {
+        return Err(format!("P19 expected untouched fixture creature, got {answer:?}").into());
+    };
+    let expected_corpse = crate::node::operator_files::hex_bytes::<16>(corpse)
+        .map_err(|_| "P19 invalid expected corpse identity")?;
+    evidence(&format!(
+        "P19 FIXTURE target={identity} expected_corpse={corpse}"
+    ));
     let entities = client.world_entities().ok_or("P19 spatial view absent")?;
-    let mut position = entities
-        .get(&target)
-        .ok_or("P19 target absent before attack")?
-        .position;
-    let existing: std::collections::BTreeSet<_> =
-        entities.iter().map(|entity| entity.entity).collect();
+    if entities.get(&target).is_none()
+        || entities
+            .iter()
+            .any(|entity| entity.entity.identity == expected_corpse)
+    {
+        return Err("P19 expected a live target and no matching corpse before attack".into());
+    }
     client.take_events();
     let attack = client.session_mut().attack_target(Some(&target)).await?;
     require_mechanic_acceptance(attack.status, "P19 attack")?;
@@ -395,7 +420,7 @@ async fn kill_and_observe_clear(
     tokio::time::timeout(Duration::from_secs(55), async {
         let mut left = false;
         let mut cleared = None;
-        let mut corpse = None;
+        let mut observed_corpse = false;
         loop {
             for event in client.wait_for_events(Duration::from_secs(55)).await? {
                 match event {
@@ -417,14 +442,6 @@ async fn kill_and_observe_clear(
                         }
                     }
                     SessionEvent::WorldSpatialEntities(delta) => {
-                        if let Some(entity) = delta
-                            .value
-                            .update
-                            .iter()
-                            .find(|entry| entry.entity == target)
-                        {
-                            position = entity.position;
-                        }
                         if delta.value.leave.contains(&target) {
                             left = true;
                             evidence(&format!(
@@ -432,30 +449,39 @@ async fn kill_and_observe_clear(
                                 delta.server_sequence
                             ));
                         }
-                        if left {
-                            for entity in delta.value.enter.iter().chain(&delta.value.update) {
-                                if entity.kind == EntityKind::Corpse
-                                    && entity.position == position
-                                    && !existing.contains(&entity.entity)
-                                    && let (EntityDetail::Object {
-                                        item_handle: Some(_),
-                                        ..
-                                    }
-                                    | EntityDetail::ObjectWithAppearance {
-                                        item_handle: Some(_),
-                                        ..
-                                    }) = entity.detail
-                                {
-                                    corpse = Some(entity.entity.identity);
-                                }
-                            }
+                        if !observed_corpse
+                            && delta
+                                .value
+                                .enter
+                                .iter()
+                                .chain(&delta.value.update)
+                                .any(|entity| {
+                                    entity.kind == EntityKind::Corpse
+                                        && entity.entity.identity == expected_corpse
+                                        && matches!(
+                                            entity.detail,
+                                            EntityDetail::Object {
+                                                item_handle: Some(_),
+                                                ..
+                                            } | EntityDetail::ObjectWithAppearance {
+                                                item_handle: Some(_),
+                                                ..
+                                            }
+                                        )
+                                })
+                        {
+                            observed_corpse = true;
+                            evidence(&format!(
+                                "P19 exact corpse={corpse} sequence={}",
+                                delta.server_sequence
+                            ));
                         }
                     }
                     _ => {}
                 }
             }
-            if let (Some(handle), Some(_)) = (corpse, cleared) {
-                return TestResult::Ok(handle);
+            if left && cleared.is_some() && observed_corpse {
+                return TestResult::Ok(expected_corpse);
             }
         }
     })
