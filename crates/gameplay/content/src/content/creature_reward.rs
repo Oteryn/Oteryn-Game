@@ -92,7 +92,7 @@ pub struct CreatureRewardTable {
     rows: HashMap<String, Result<Arc<CreatureRewardRow>, NoSettlementReason>>,
     bosses: HashMap<String, BosstiaryBoss>,
     reward_boss_corpses: HashMap<String, Arc<CreatureRewardRow>>,
-    forge_sliver: Option<LootDefinitionRef>,
+    forge_sliver: Option<LootTableEntry>,
     daily_boss_equipment: HashSet<String>,
     encounter_facts: BTreeMap<String, CreatureEncounterFacts>,
     admitted_source_items: HashMap<u32, LootDefinitionRef>,
@@ -235,7 +235,7 @@ impl CreatureRewardTable {
     }
 
     /// The existing corpse loot admission owns the materializable Forge resource too.
-    pub fn forge_sliver(&self) -> Option<&LootDefinitionRef> {
+    pub fn forge_sliver(&self) -> Option<&LootTableEntry> {
         self.forge_sliver.as_ref()
     }
     #[cfg(any(test, feature = "test-support"))]
@@ -319,6 +319,8 @@ pub struct SectionItemFacts {
     #[serde(default)]
     pub stackable: bool,
     #[serde(default)]
+    pub stack_maximum: Option<std::num::NonZeroU32>,
+    #[serde(default)]
     pub creature_product: bool,
 }
 
@@ -369,7 +371,7 @@ fn lower_loot_entries(
     }
     let mut lowered = Vec::with_capacity(entries.len());
     for entry in entries {
-        // The native Item profile is shared, but Stampede alone admits this drop.
+        // A shared native Item profile grants this drop only to source-bound tables.
         if !admits_tusk_shield && entry.item.key == "oteryn:item.tibia.i3443" {
             continue;
         }
@@ -398,8 +400,10 @@ fn lower_loot_entries(
                 container_capacity: facts.container_capacity,
                 charges: facts.charges,
                 stackable: facts.stackable,
+                corpse_stack_maximum: facts.stack_maximum,
                 subtype: entry.subtype,
                 unique: entry.unique,
+                direct_corpse_drop: false,
                 creature_product: facts.creature_product,
                 gut_bonus_hundredths: 0,
                 rated_probability_ppm: None,
@@ -655,7 +659,18 @@ impl CreatureRewardTable {
             .items
             .iter()
             .find(|facts| facts.item.key == "oteryn:item.tibia.i37109" && facts.materializable)
-            .map(|facts| facts.item.lower());
+            .map(|facts| LootTableEntry {
+                item: facts.item.lower(),
+                min_count: 1,
+                max_count: 1,
+                probability_ppm: None,
+                details: oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
+                    stackable: facts.stackable,
+                    corpse_stack_maximum: facts.stack_maximum,
+                    direct_corpse_drop: true,
+                    ..Default::default()
+                },
+            });
         let admitted_source_items = section
             .items
             .iter()
@@ -778,27 +793,42 @@ fn source_questpc7_corpse_capacity(creature: &str, corpse: &SectionRef) -> Optio
     }
 }
 
-fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
+fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef, private_reward: bool) -> bool {
     corpse.family == "Item"
         && corpse.revision == "definition-r1"
         && matches!(
-            (creature, corpse.key.as_str()),
+            (creature, corpse.key.as_str(), private_reward),
             (
+                "oteryn:creature.glitterscale",
+                "oteryn:item.tibia.i11589",
+                true
+            ) | (
                 "oteryn:creature.symbol_of_hatred",
-                "oteryn:item.tibia.i33792"
-            ) | ("oteryn:creature.hateful_soul", "oteryn:item.tibia.i33793")
-                | ("oteryn:creature.weeping_soul", "oteryn:item.tibia.i33876")
-                | ("oteryn:creature.poor_soul", "oteryn:item.tibia.i33891")
-                | (
-                    "oteryn:creature.aspect_of_power",
-                    "oteryn:item.tibia.i33949"
-                )
-                | (
-                    "oteryn:creature.necromantic_focus",
-                    "oteryn:item.tibia.i33984"
-                )
+                "oteryn:item.tibia.i33792",
+                false
+            ) | (
+                "oteryn:creature.hateful_soul",
+                "oteryn:item.tibia.i33793",
+                false
+            ) | (
+                "oteryn:creature.weeping_soul",
+                "oteryn:item.tibia.i33876",
+                false
+            ) | (
+                "oteryn:creature.poor_soul",
+                "oteryn:item.tibia.i33891",
+                false
+            ) | (
+                "oteryn:creature.aspect_of_power",
+                "oteryn:item.tibia.i33949",
+                false
+            ) | (
+                "oteryn:creature.necromantic_focus",
+                "oteryn:item.tibia.i33984",
+                false
+            )
                 // Crystal's first Explorer Society specimen is the fresh purple corpse.
-                | ("oteryn:creature.purple_butterfly", "oteryn:item.tibia.i4992")
+                | ("oteryn:creature.purple_butterfly", "oteryn:item.tibia.i4992", false)
         )
 }
 
@@ -834,9 +864,8 @@ fn verified_source_corpses(
                 if value.weight == F::Known(0) && value.movable == F::Known(false) && value.pickupable == F::Known(false))
             && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(48));
         let source_plain = matches!(definition.production_key.as_str(),
-            "oteryn:item.tibia.i33792" | "oteryn:item.tibia.i33793" | "oteryn:item.tibia.i33876"
-            | "oteryn:item.tibia.i33891" | "oteryn:item.tibia.i33949" | "oteryn:item.tibia.i33984"
-            | "oteryn:item.tibia.i4992")
+            "oteryn:item.tibia.i11589" | "oteryn:item.tibia.i33792" | "oteryn:item.tibia.i33793" | "oteryn:item.tibia.i33876"
+            | "oteryn:item.tibia.i33891" | "oteryn:item.tibia.i33949" | "oteryn:item.tibia.i33984" | "oteryn:item.tibia.i4992")
             && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
             && record.semantics.container == F::NotApplicable;
         let questpc7_capacity = match definition.production_key.as_str() {
@@ -860,6 +889,21 @@ fn verified_source_corpses(
 fn source_bestiary_stars(profile: &ProjectV2CreatureAuthoring) -> Option<u8> {
     let name = &profile.details.as_ref()?.display_name;
     oteryn_gameplay_domain::domain::soulpit::source_monster(name).map(|monster| monster.stars)
+}
+
+fn source_tusk_shield_pair(creature: &str, loot: &SectionRef) -> bool {
+    loot.revision == "definition-r1"
+        && matches!(
+            (creature, loot.key.as_str()),
+            (
+                "oteryn:creature.animated_clomp",
+                "oteryn:loot.creature.animated_clomp"
+            ) | ("oteryn:creature.clomp", "oteryn:loot.creature.clomp")
+                | (
+                    "oteryn:creature.terrified_elephant",
+                    "oteryn:loot.creature.terrified_elephant"
+                )
+        )
 }
 
 struct CorpseAdmission<'a> {
@@ -923,8 +967,7 @@ fn row(
         .as_ref()
         .is_some_and(|details| details.system_eligibility.reward_boss);
     let source_plain = verified_source_corpses.contains(&corpse.key)
-        && source_plain_corpse_pair(creature, &corpse)
-        && !private_reward;
+        && source_plain_corpse_pair(creature, &corpse, private_reward);
     if !source_plain {
         items
             .get(&corpse)
@@ -973,11 +1016,30 @@ fn row(
             let allow_unavailable_yields = !source_plain
                 && algorithm == LootSelectionAlgorithm::IndependentBernoulliPpm
                 && !is_boss(profile);
-            let admits_tusk_shield = creature == "oteryn:creature.terrified_elephant"
-                && reference.key == "oteryn:loot.creature.terrified_elephant"
-                && reference.revision == "definition-r1";
+            let admits_tusk_shield = source_tusk_shield_pair(creature, reference);
+            // Keep the exact source roll in the Loot section, but exclude this
+            // fixed scenery from Zamulosh's private Item settlement.
+            let carried_entries;
+            let entries = if private_reward
+                && creature == "oteryn:creature.zamulosh"
+                && reference.key == "oteryn:loot.creature.zamulosh"
+                && reference.revision == "definition-r1"
+            {
+                carried_entries = table
+                    .entries
+                    .iter()
+                    .filter(|entry| {
+                        entry.item.key != "oteryn:item.tibia.i22555"
+                            || entry.item.revision != "definition-r1"
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>();
+                carried_entries.as_slice()
+            } else {
+                table.entries.as_slice()
+            };
             let entries = lower_loot_entries(
-                &table.entries,
+                entries,
                 items,
                 0,
                 admits_tusk_shield,
@@ -989,7 +1051,8 @@ fn row(
             )
         }
     };
-    if source_plain && !loot_table.entries.is_empty() {
+    // Private rewards go to personal chests. Ordinary loot needs corpse storage.
+    if source_plain && !private_reward && !loot_table.entries.is_empty() {
         return Err(NoSettlementReason::CorpseItemInadmissible);
     }
     Ok(CreatureRewardRow {
@@ -1028,6 +1091,24 @@ fn boss_metadata(profile: &ProjectV2CreatureAuthoring, key: &str) -> Option<Boss
 #[cfg(test)]
 mod tusk_shield_tests {
     use super::*;
+
+    #[test]
+    fn clomps_keep_the_donor_tusk_shield_roll() -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, section) = super::protected_loot_tests::documents()?;
+        let rewards = CreatureRewardTable::from_pin(&creatures, Some(&section));
+        for creature in ["oteryn:creature.animated_clomp", "oteryn:creature.clomp"] {
+            let reward = rewards.row(creature).map_err(NoSettlementReason::as_str)?;
+            let shield = reward
+                .loot_table
+                .entries
+                .iter()
+                .find(|entry| entry.item.production_key == "oteryn:item.tibia.i3443")
+                .ok_or("Clomp Tusk Shield missing")?;
+            assert_eq!(shield.probability_ppm, Some(4_000));
+            assert_eq!((shield.min_count, shield.max_count), (1, 1));
+        }
+        Ok(())
+    }
 
     #[test]
     fn ordinary_elephant_cannot_roll_tusk_shield() -> Result<(), Box<dyn std::error::Error>> {
@@ -1122,6 +1203,7 @@ mod private_loot_capacity_tests {
             ordinary_corpse_only: false,
             charges: None,
             stackable: false,
+            stack_maximum: None,
             creature_product: false,
         };
         assert!(
@@ -1234,6 +1316,7 @@ mod private_loot_tests {
             ordinary_corpse_only: false,
             charges: None,
             stackable: false,
+            stack_maximum: None,
             creature_product: false,
         };
         assert!(
@@ -1451,6 +1534,267 @@ mod protected_loot_tests {
     }
 
     #[test]
+    fn slice_three_tables_load_every_qualified_yield() -> Result<(), Box<dyn std::error::Error>> {
+        fn missing_yields<'a>(
+            entries: &'a [SectionLootEntry],
+            admitted: &HashSet<&SectionRef>,
+            missing: &mut Vec<&'a str>,
+        ) {
+            for entry in entries {
+                if !admitted.contains(&entry.item) {
+                    missing.push(&entry.item.key);
+                }
+                missing_yields(&entry.children, admitted, missing);
+            }
+        }
+
+        let (creatures, _) = documents()?;
+        let section = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let bindings: HashMap<_, _> = section
+            .creature_loot
+            .iter()
+            .map(|row| (row.creature.key.as_str(), row.loot.as_ref()))
+            .collect();
+        let tables: HashMap<_, _> = section
+            .tables
+            .iter()
+            .map(|table| (&table.identity, table.entries.as_slice()))
+            .collect();
+        let admitted = section
+            .items
+            .iter()
+            .filter(|fact| fact.materializable)
+            .map(|fact| &fact.item)
+            .collect();
+        let mut missing = Vec::new();
+        let mut incomplete_tables = Vec::new();
+        let creatures = include_str!(
+            "../../../../../tools/content-schema/native-gameplay/cloot3-creatures.txt"
+        );
+        assert_eq!(creatures.lines().count(), 321);
+        for creature in creatures.lines() {
+            let table = bindings
+                .get(creature)
+                .and_then(|table| *table)
+                .ok_or_else(|| format!("missing loot binding for {creature}"))?;
+            let entries = tables
+                .get(table)
+                .ok_or_else(|| format!("missing table for {creature}"))?;
+            let previous = missing.len();
+            missing_yields(entries, &admitted, &mut missing);
+            if missing.len() != previous {
+                incomplete_tables.push(creature);
+            }
+        }
+        // Zamulosh's exact stone wall is immovable and requires a settlement
+        // destination the carried-loot loader does not support.
+        assert_eq!(missing, ["oteryn:item.tibia.i22555"]);
+        assert_eq!(incomplete_tables, ["oteryn:creature.zamulosh"]);
+        for creature in [
+            "oteryn:creature.ratmiral_blackwhiskers",
+            "oteryn:creature.tentugly_s_head",
+            "oteryn:creature.the_dread_maiden",
+        ] {
+            let reference = bindings[creature].ok_or("missing boss loot binding")?;
+            assert!(
+                tables[reference]
+                    .iter()
+                    .all(|entry| entry.item.key != "oteryn:item.tibia.i51302")
+            );
+        }
+        let thawing = bindings["oteryn:creature.thawing_dragon_lord"]
+            .ok_or("missing Thawing Dragon Lord binding")?;
+        assert!(tables[thawing].iter().any(|entry| {
+            entry.item.key == "oteryn:item.tibia.i7441"
+                && entry.probability_ppm == Some(55_600)
+                && (entry.min_count, entry.max_count) == (1, 1)
+        }));
+        Ok(())
+    }
+
+    #[test]
+    fn loot_slice_one_loads_materializable_yields() -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, _) = documents()?;
+        let section = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let bindings: HashMap<_, _> = section
+            .creature_loot
+            .iter()
+            .map(|row| (row.creature.key.as_str(), row.loot.as_ref()))
+            .collect();
+        let tables: HashMap<_, _> = section
+            .tables
+            .iter()
+            .map(|row| (&row.identity, row))
+            .collect();
+        let items: HashMap<_, _> = section.items.iter().map(|row| (&row.item, row)).collect();
+        let selected: Vec<_> = include_str!(
+            "../../../../../tools/content-schema/native-gameplay/loot-slice-1-creatures.txt"
+        )
+        .lines()
+        .collect();
+        assert_eq!(selected.len(), 323);
+        assert!(selected.windows(2).all(|pair| pair[0] < pair[1]));
+        let native_items = serde_json::from_slice(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))?;
+        let rewards = CreatureRewardTable::from_pin_with_native_corpses(
+            &creatures,
+            Some(&section),
+            Some(&native_items),
+        );
+        let mut refused = Vec::new();
+        let mut settled = 0;
+        for creature in selected {
+            let reference =
+                bindings[creature].ok_or_else(|| format!("{creature}: missing loot"))?;
+            let entries = &tables[reference].entries;
+            match lower_loot_entries(
+                entries,
+                &items,
+                0,
+                source_tusk_shield_pair(creature, reference),
+                false,
+            ) {
+                Ok(lowered) => {
+                    assert_eq!(lowered.len(), entries.len(), "{creature}");
+                    if matches!(
+                        creature,
+                        "oteryn:creature.crazed_dwarf" | "oteryn:creature.dwarf"
+                    ) {
+                        // Letter 3505 finding: both Dwarfs must admit their corpse before rolling loot.
+                        let row = rewards.row(creature).map_err(|reason| {
+                            format!("{creature}: Letter reward row refused: {reason:?}")
+                        })?;
+                        assert_eq!(
+                            row.loot_table
+                                .entries
+                                .iter()
+                                .filter(
+                                    |entry| entry.item.production_key == "oteryn:item.tibia.i3505"
+                                )
+                                .count(),
+                            1,
+                            "{creature}: expected one materializable Letter roll"
+                        );
+                    }
+                    match rewards.row(creature) {
+                        Ok(row) => {
+                            assert_eq!(row.loot_table.entries, lowered, "{creature}");
+                            settled += 1;
+                        }
+                        Err(
+                            NoSettlementReason::CorpseItemMissing
+                            | NoSettlementReason::CorpseItemInadmissible,
+                        ) => {}
+                        Err(reason) => refused.push((creature, reason)),
+                    }
+                }
+                Err(reason) => refused.push((creature, reason)),
+            }
+        }
+        assert!(refused.is_empty(), "unavailable loot: {refused:?}");
+        assert!(settled > 0, "expected pre-existing corpse admission");
+        let reference = bindings["oteryn:creature.general_murius"]
+            .ok_or("General Murius loot binding missing")?;
+        let horn = lower_loot_entries(&tables[reference].entries, &items, 0, false, false)
+            .map_err(NoSettlementReason::as_str)?
+            .into_iter()
+            .find(|entry| entry.item.production_key == "oteryn:item.tibia.i11472")
+            .ok_or("Minotaur horn missing")?;
+        assert!(horn.details.stackable);
+        assert_eq!((horn.min_count, horn.max_count), (1, 2));
+        for (creature, id, chance) in [
+            ("animated_clomp", 3443, 4_000),
+            ("clomp", 3443, 4_000),
+            ("corrupted_ghost", 3565, 30_400),
+            ("corrupted_ghost", 266, 213_900),
+            ("corrupted_ghost", 268, 200_100),
+            ("corrupted_skeleton", 266, 262_800),
+            ("dharalion", 3103, 79_200),
+        ] {
+            let key = format!("oteryn:creature.{creature}");
+            let reference = bindings[key.as_str()].ok_or("corrected loot binding missing")?;
+            let item = format!("oteryn:item.tibia.i{id}");
+            let matches: Vec<_> = tables[reference]
+                .entries
+                .iter()
+                .filter(|entry| entry.item.key == item)
+                .collect();
+            assert_eq!(matches.len(), 1, "{creature}: {item} source roll count");
+            let entry = matches[0];
+            assert_eq!(entry.probability_ppm, Some(chance), "{creature}: {item}");
+            assert_eq!((entry.min_count, entry.max_count), (1, 1));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn corrupted_skeleton_settlement_keeps_the_corrected_potion()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, section) = documents()?;
+        let rewards = CreatureRewardTable::from_pin(&creatures, Some(&section));
+        let reward = rewards
+            .row("oteryn:creature.corrupted_skeleton")
+            .map_err(NoSettlementReason::as_str)?;
+        assert!(reward.loot_table.entries.iter().any(|entry| {
+            entry.item.production_key == "oteryn:item.tibia.i266"
+                && entry.probability_ppm == Some(262_800)
+        }));
+        Ok(())
+    }
+
+    #[test]
+    fn glitterscale_pins_flexible_dragon_scale() -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, _) = documents()?;
+        let loot = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let creature = "oteryn:creature.glitterscale";
+        let reference = loot
+            .creature_loot
+            .iter()
+            .find(|row| row.creature.key == creature)
+            .and_then(|row| row.loot.as_ref())
+            .ok_or("Glitterscale must bind the Crystal loot table")?;
+        let table = loot
+            .tables
+            .iter()
+            .find(|table| &table.identity == reference)
+            .ok_or("Glitterscale loot table missing")?;
+        assert_eq!(table.algorithm, "IndependentBernoulliPpm");
+        let items = loot.items.iter().map(|row| (&row.item, row)).collect();
+        let entries = lower_loot_entries(&table.entries, &items, 0, false, false)
+            .map_err(NoSettlementReason::as_str)?;
+        assert_eq!(entries.len(), 1);
+        let entry = &entries[0];
+        assert_eq!(entry.item.production_key, "oteryn:item.tibia.i11550");
+        assert_eq!((entry.min_count, entry.max_count), (1, 1));
+        assert_eq!(entry.probability_ppm, Some(700_000));
+        assert_eq!(
+            CreatureRewardTable::from_pin(&creatures, Some(&loot)).row(creature),
+            Err(NoSettlementReason::CorpseItemInadmissible)
+        );
+        let native_items = serde_json::from_slice(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))?;
+        let rewards = CreatureRewardTable::from_pin_with_native_corpses(
+            &creatures,
+            Some(&loot),
+            Some(&native_items),
+        );
+        let reward = rewards.row(creature).map_err(NoSettlementReason::as_str)?;
+        assert_eq!(reward.loot_table.entries, entries);
+        Ok(())
+    }
+
+    #[test]
     fn arbaziloth_loads_admitted_crystal_loot() -> Result<(), Box<dyn std::error::Error>> {
         let (creatures, _) = documents()?;
         let loot = LootTablesSection::decode(
@@ -1554,6 +1898,47 @@ mod protected_loot_tests {
 }
 
 #[cfg(test)]
+pub(super) fn expected_zamulosh_private_loot(
+    source: &SectionLootTable,
+    items: &[SectionItemFacts],
+) -> Result<Vec<SectionLootEntry>, &'static str> {
+    assert_eq!(
+        (
+            source.identity.family.as_str(),
+            source.identity.key.as_str(),
+            source.identity.revision.as_str(),
+        ),
+        ("Loot", "oteryn:loot.creature.zamulosh", "definition-r1")
+    );
+    let wall = SectionRef {
+        family: "Item".into(),
+        key: "oteryn:item.tibia.i22555".into(),
+        revision: "definition-r1".into(),
+    };
+    let (scenery, carried): (Vec<_>, Vec<_>) = source
+        .entries
+        .iter()
+        .cloned()
+        .partition(|entry| entry.item == wall);
+    let [entry] = scenery.as_slice() else {
+        return Err("Zamulosh must retain exactly one source Stone Wall roll");
+    };
+    assert_eq!(
+        (entry.min_count, entry.max_count, entry.probability_ppm),
+        (1, 1, Some(5_000))
+    );
+    assert!(entry.children.is_empty());
+    assert!(
+        !items
+            .iter()
+            .find(|facts| facts.item == wall)
+            .ok_or("Zamulosh Stone Wall custody facts")?
+            .materializable
+    );
+    Ok(carried)
+}
+
+#[cfg(test)]
 mod protected_loot_sweep {
     use super::*;
 
@@ -1636,9 +2021,17 @@ mod protected_loot_sweep {
             let (Ok(row), Some(reference)) = (table.row(key), &binding.loot) else {
                 continue;
             };
+            let source = authored[reference];
+            let carried;
+            let expected = if key == "oteryn:creature.zamulosh" {
+                carried = expected_zamulosh_private_loot(source, &loot.items)?;
+                carried.as_slice()
+            } else {
+                source.entries.as_slice()
+            };
             let mut pruned = Vec::new();
             has_pruned_protected(
-                &authored[reference].entries,
+                expected,
                 &row.loot_table.entries,
                 bosses.contains(key),
                 &mut pruned,

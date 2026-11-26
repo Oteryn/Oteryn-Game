@@ -31,6 +31,9 @@ pub use native_step::NativeArenaStep;
 pub use native_timeout::NativeArenaTimeout;
 mod pit_lease;
 pub(in crate::durability) mod pit_reset;
+pub use pit_reset::{ArenaPitResetItem, ArenaPitResetOutcome};
+mod projection;
+pub use projection::ArenaProjection;
 pub(in crate::durability) mod terminal;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -122,6 +125,7 @@ pub struct MatchRead {
     pub now_ms: i64,
     pub replay: Option<Vec<u8>>,
     pub dead: bool,
+    pub relocation_pending: bool,
 }
 
 /// Native movement and client commands occupy disjoint durable cause domains.
@@ -263,16 +267,20 @@ impl DurabilityRoot {
                         return Ok(Err(error));
                     }
                     let state = load_state(&mut tx, fence).await?;
+                    let relocation_pending =
+                        projection::pending_relocation(&mut tx, fence, &state).await?;
                     let masks = claimed_masks(&mut tx, fence).await?;
                     let now_ms = now(&mut tx).await?;
-                    let replay = replay_origin(&mut tx, fence, cause, &payload, origin.as_deref()).await?;
-                    let dead: bool = matches!(state.phase,1|2) && sqlx::query_scalar::<_,bool>("SELECT EXISTS(SELECT 1 FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid AND committed_character_revision>$2::text::numeric)")
-                        .bind(fence.character_id.as_bytes().as_slice()).bind(state.entry_revision.to_string()).fetch_one(&mut *tx).await?;
-                    let pit_owned = !matches!(state.phase,1|2) || (!dead &&
-                        (pit_lease::owned(&mut tx,fence,&state,now_ms).await?
-                         || pit_lease::claim(&mut tx,fence,&state,now_ms).await?));
+                    let replay =
+                        replay_origin(&mut tx, fence, cause, &payload, origin.as_deref()).await?;
+                    let dead = dead_since_entry(&mut tx, fence.character_id, &state).await?;
+                    let pit_owned = !matches!(state.phase, 1 | 2)
+                        || (!dead
+                            && (pit_lease::owned(&mut tx, fence, &state, now_ms).await?
+                                || pit_lease::claim(&mut tx, fence, &state, now_ms).await?));
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(MatchRead {
+                        relocation_pending,
                         pit_owned,
                         state,
                         masks,
@@ -326,6 +334,17 @@ impl DurabilityRoot {
             }
             let prior=load_state(&mut tx,fence).await?;
             if prior!=request.before {return Ok(Err(CharacterProgressionError::ConflictingOccurrence));}
+            let explicit_leave = request.native_origin.is_none()
+                && oteryn_protocol_oteryn::arena::decode_match_request(&request.payload).ok()
+                    == Some(oteryn_protocol_oteryn::arena::ArenaAction::Leave);
+            if prior.rank > 0 && request.after.rank == 0
+                && !explicit_leave
+                && (prior.session != *fence.game_session_id.as_bytes()
+                    || prior.scope_generation != fence.scope_ownership_generation.get())
+                && projection::pending_relocation(&mut tx,fence,&prior).await?
+                && !dead_since_entry(&mut tx, fence.character_id, &prior).await? {
+                return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
+            }
             let now_ms=now(&mut tx).await?;
             // Crystal201189f svargrond_arena.lua:259-313: callbacks cannot
             // shorten the original timer; the deciding durable clock owns it.
@@ -403,6 +422,20 @@ impl DurabilityRoot {
             tx.commit(deadline).await?;Ok(Ok(bytes))
         })).await?
     }
+}
+
+async fn dead_since_entry(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: crate::domain::CharacterId,
+    state: &MatchState,
+) -> Result<bool, DurabilityError> {
+    Ok(matches!(state.phase, 1 | 2) && sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM game_character_death_receipts
+         WHERE character_id=encode($1,'hex')::uuid AND committed_character_revision>$2::text::numeric)"
+    )
+    .bind(character.as_bytes().as_slice())
+    .bind(state.entry_revision.to_string())
+    .fetch_one(&mut **tx).await?)
 }
 
 pub(super) async fn load_state(
@@ -505,12 +538,46 @@ pub(super) async fn save_origin(
     let cause = cause.into();
     let command = cause.command();
     let payload = cause.bind(payload);
+    let relocation = projection::RelocationKind::committed(before, after);
+    save_receipt(
+        tx,
+        fence,
+        command.game_session_id(),
+        cause.ordinal(),
+        &payload,
+        before,
+        after,
+        reply,
+        origin,
+    )
+    .await?;
+    if let Some(kind) = relocation {
+        projection::record_relocation(tx, fence, cause, kind).await?;
+    }
+    Ok(())
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "records the exact receipt and its state predecessor"
+)]
+async fn save_receipt(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    session: crate::foundation::GameSessionId,
+    ordinal: String,
+    payload: &[u8],
+    before: &MatchState,
+    after: &MatchState,
+    reply: &[u8],
+    origin: Option<&[u8]>,
+) -> Result<(), DurabilityError> {
     let before = serde_json::to_value(before).map_err(|_| DurabilityError::InvalidStoredState)?;
     let after = serde_json::to_value(after).map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query("INSERT INTO game_arena_match_receipts(character_id,game_session_id,command_id,payload,before_state,after_state,reply,native_origin_binding) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8)")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal()).bind(&payload).bind(before).bind(&after).bind(reply).bind(origin).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(session.as_bytes().as_slice()).bind(&ordinal).bind(payload).bind(before).bind(&after).bind(reply).bind(origin).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO game_character_arena_matches(character_id,body,game_session_id,command_id) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4::text::numeric) ON CONFLICT(character_id) DO UPDATE SET body=EXCLUDED.body,game_session_id=EXCLUDED.game_session_id,command_id=EXCLUDED.command_id")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(after).bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal()).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(after).bind(session.as_bytes().as_slice()).bind(ordinal).execute(&mut **tx).await?;
     Ok(())
 }
 

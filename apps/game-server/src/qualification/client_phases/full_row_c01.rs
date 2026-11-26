@@ -281,7 +281,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }).ok_or("step=relog observed=no-reachable-protection-zone need=safe-combat-logout")?;
     walk(&mut client, world, &safe).await?;
     let old_session = client.join_snapshot().game_session_id;
-    if logout_retrying_busy(&mut client).await?.0 != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+    if logout_once(&mut client).await?.0 != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("step=relog observed=logout-refused".into());
     }
     drop(client);

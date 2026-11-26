@@ -335,6 +335,16 @@ class LootTablesTests(unittest.TestCase):
         self.assertTrue(items['oteryn:item.tibia.i3607']['materializable'])
         self.assertTrue(items['oteryn:item.tibia.i37109']['materializable'])
 
+        # Crystal Lloyd rolls 3100 (lloyd.lua:78), and Item::CreateItem
+        # normalizes it to the inactive ring (src/items/item.cpp:56,107-109).
+        lloyd = next(t for t in document['tables'] if t['identity']['key'] == 'oteryn:loot.creature.lloyd')
+        healing_rings = [
+            (entry['item']['key'], entry['probability_ppm'], entry['min_count'], entry['max_count'])
+            for entry in lloyd['entries']
+            if entry['item']['key'] in ('oteryn:item.tibia.i3098', 'oteryn:item.tibia.i3100')
+        ]
+        self.assertEqual(healing_rings, [('oteryn:item.tibia.i3098', 1_000_000, 1, 1)])
+
     def write(self, directory, creatures, loot, items):
         base = Path(directory)
         for name, family, records in (('creatures', 'Creature', creatures), ('loot', 'Loot', loot), ('items', 'Item', items)):
