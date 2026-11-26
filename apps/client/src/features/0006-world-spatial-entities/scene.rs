@@ -9,6 +9,11 @@ impl Scene {
     }
 
     #[cfg(bevy_shell)]
+    pub(crate) fn item_rotatable(&self, appearance: u16) -> bool {
+        self.cache.item_rotatable(appearance)
+    }
+
+    #[cfg(bevy_shell)]
     pub(crate) fn smart_item_action(
         &self,
         id: u16,
@@ -152,7 +157,14 @@ impl Scene {
         self.own_draws = None;
         self.names.clear();
         self.name_entities.clear();
-        if !entries.is_empty() {
+        // A live map stack can be actionable before spatial appearances arrive.
+        let prepare_presentation = !entries.is_empty()
+            || cfg!(bevy_shell)
+                && self
+                    .visible
+                    .iter()
+                    .any(|target| matches!(target.item, Some(crate::play::GroundItem::Map { .. })));
+        if prepare_presentation {
             self.cache.begin(self.world.atlas(), root);
         }
         self.cache.retain_outfit_actors(entries);
@@ -331,7 +343,7 @@ impl Scene {
                 }
             }
         }
-        if !entries.is_empty() {
+        if prepare_presentation {
             self.presentation_atlas = Some(self.cache.image()?);
         }
         self.tiles = TileBatch::from_cells(

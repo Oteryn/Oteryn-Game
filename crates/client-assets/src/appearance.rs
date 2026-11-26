@@ -111,6 +111,8 @@ struct FlagsMsg {
     hang: Option<bool>,
     #[prost(message, optional, tag = "21")]
     hook: Option<HookMsg>,
+    #[prost(bool, optional, tag = "22")]
+    rotate: Option<bool>,
     #[prost(message, optional, tag = "23")]
     light: Option<LightMsg>,
     #[prost(message, optional, tag = "30")]
@@ -167,6 +169,7 @@ pub struct Appearance {
     pub light: Option<(u8, u8)>,
     pub minimap_color: Option<u8>,
     pub multi_use: bool,
+    pub rotatable: bool,
     pub usable: bool,
     pub container: bool,
     pub unpassable: bool,
@@ -382,6 +385,7 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
         }),
         minimap_color: flags.automap.and_then(|map| u8::try_from(map.color?).ok()),
         multi_use: flags.multiuse.unwrap_or(false),
+        rotatable: flags.rotate.unwrap_or(false),
         usable: [
             flags.usable,
             flags.forceuse,

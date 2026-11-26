@@ -1,8 +1,26 @@
 // UI cells share the scene's verified assets and packed atlas.
 impl PresentationCache {
     pub(super) fn container_flag(&self, appearance: u16) -> Option<bool> {
-        let assets = self.assets.as_ref()?.lock().unwrap_or_else(PoisonError::into_inner);
-        assets.index.get(u32::from(appearance)).map(|item| item.container)
+        let assets = self
+            .assets
+            .as_ref()?
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        assets
+            .index
+            .get(u32::from(appearance))
+            .map(|item| item.container)
+    }
+
+    pub(super) fn item_rotatable(&self, appearance: u16) -> bool {
+        self.assets.as_ref().is_some_and(|assets| {
+            assets
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .index
+                .get(u32::from(appearance))
+                .is_some_and(|item| item.rotatable)
+        })
     }
 
     pub(super) fn prepare_item(&mut self, item: &oteryn_session::ItemEntry) {

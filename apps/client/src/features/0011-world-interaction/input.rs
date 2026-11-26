@@ -109,6 +109,22 @@ impl PlayView {
         }
         (!menu.entries.is_empty()).then_some(menu)
     }
+    #[cfg(bevy_shell)]
+    pub(crate) fn world_context_can_rotate(&self, menu: &Menu) -> bool {
+        use oteryn_client_runtime::world_interaction::Target;
+        use oteryn_session::world_map::MapOrigin;
+
+        // Ordinary USE rotates a base object by its server-issued placement and revision.
+        let Some(crate::play::GroundItem::Map { item, .. }) =
+            menu.tile.and_then(|tile| self.scene.item_target_at(tile))
+        else {
+            return false;
+        };
+        matches!(menu.target, Target::Object(_))
+            && matches!(item.origin, MapOrigin::BaseOrdinal { .. })
+            && self.scene.item_rotatable(item.appearance_id)
+    }
+
     pub fn world_context_choose(&self, link: &PlayLink, menu: &Menu, action: Action) -> bool {
         let prefer_item = matches!(action, Action::Use | Action::UseWith | Action::UseRune);
         if !menu.entries.iter().any(|(_, entry)| *entry == action)

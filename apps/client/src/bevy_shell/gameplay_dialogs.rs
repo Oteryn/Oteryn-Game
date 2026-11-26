@@ -256,19 +256,18 @@ impl HostOwner {
             );
         }
     }
-    /// Tibia Global offers Rotate and Wrap/Unwrap on a clicked item; the session's house
-    /// furniture lists (capabilities 445 and 207) then name the eligible furniture.
+    /// Rotate acts on the clicked placement. Wrap/Unwrap opens the house furniture list.
     fn furniture(&self, menu: Option<&Menu>) -> (bool, bool) {
         use oteryn_client_ui::world_interaction::menu::Target;
-        let Some(play) = self.play.as_ref().filter(|_| {
-            menu.is_some_and(|menu| matches!(menu.target, Target::Item(_) | Target::Object(_)))
-        }) else {
+        let (Some(play), Some(menu)) = (self.play.as_ref(), menu) else {
             return (false, false);
         };
-        let rotation = play.link.house_rotation_panel();
+        if !matches!(menu.target, Target::Item(_) | Target::Object(_)) {
+            return (false, false);
+        }
         let wrap = play.link.house_furniture_panel();
         (
-            rotation.selected && !rotation.pending,
+            play.view.world_context_can_rotate(menu),
             wrap.selected && !wrap.pending,
         )
     }
@@ -450,11 +449,19 @@ impl HostOwner {
                         return false;
                     }
                     match choice {
-                        Choice::Rotate if rotate => play.link.house_rotation_open(),
-                        Choice::Wrap if wrap => play.link.house_furniture_open(),
-                        _ => return false,
+                        Choice::Rotate if rotate => menu.as_deref().is_some_and(|menu| {
+                            play.view.world_context_choose(
+                                &play.link,
+                                menu,
+                                oteryn_client_runtime::world_interaction::Action::Use,
+                            )
+                        }),
+                        Choice::Wrap if wrap => {
+                            play.link.house_furniture_open();
+                            true
+                        }
+                        _ => false,
                     }
-                    true
                 })
             }
             _ => false,
