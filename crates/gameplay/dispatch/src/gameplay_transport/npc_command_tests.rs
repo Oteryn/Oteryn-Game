@@ -120,6 +120,78 @@ fn native_focus_without_literal_greeting_is_wire_encodable() {
 }
 
 #[test]
+fn lubo_shop_focus_and_paradox_topic_emit_distinct_npc_deltas() {
+    use crate::foundation::decode_wire_envelope;
+    use crate::gameplay_transport::connection::npc_conversation_delta;
+    use oteryn_protocol_oteryn::decode_state_delta;
+    use oteryn_protocol_oteryn::npc_service::{
+        STATE_DOMAIN_NPC_CONVERSATION, decode_npc_conversation,
+    };
+
+    let key = "oteryn:npc.lubo";
+    let catalogue = crate::content::NpcDataCatalogue::load(
+        &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+        std::ffi::OsStr::new("world"),
+        crate::content::npc_catalogue_preproduction_limits(),
+    )
+    .expect("committed NPC catalogue");
+    let model = catalogue
+        .service_model_for_project()
+        .expect("service model");
+    let book = NpcTalkBook::from_model_with_native_quests(&model, &[key]);
+    let (runtime, actor, session, npc) = fixture_for(2, key);
+    let chat = chat_with(session, Arc::new(book));
+    let conversations = NpcConversations::default();
+    let say = |text, micros| {
+        conversations.talk(
+            &chat,
+            &runtime,
+            actor,
+            session,
+            &intent(npc, text),
+            at(micros),
+        )
+    };
+
+    let unfocused = say("crunor's cottage", BASE);
+    assert_eq!(unfocused.disposition, NpcIntentDisposition::NoConversation);
+    assert!(unfocused.conversation.is_none());
+
+    // TibiaWiki Lubo transcript and the Fandom Paradox Tower Quest spoiler.
+    for (revision, text, expected) in [
+        (
+            0,
+            "hello",
+            "Welcome to my adventurer shop, Aela! What do you need?",
+        ),
+        (
+            1,
+            "crunor's cottage",
+            "Ah yes, I remember my grandfather talking about that name. This house used to be an inn a long time ago. My family bought it from some of these flower guys.",
+        ),
+    ] {
+        let outcome = say(text, BASE + (revision + 1) * 300_000);
+        assert_eq!(outcome.disposition, NpcIntentDisposition::Ok, "{text}");
+        let mut conversation = outcome.conversation.expect("conversation update");
+        for line in &mut conversation.lines {
+            *line = oteryn_gameplay_npc::quest_greetings::render_player_name(line, "Aela");
+        }
+        let (_, frame, _) =
+            npc_conversation_delta(1, revision, revision, &conversation).expect("NPC delta");
+        let envelope = decode_wire_envelope(&frame).expect("envelope");
+        let delta = decode_state_delta(envelope.payload()).expect("state delta");
+        assert_eq!(delta.domain_id, STATE_DOMAIN_NPC_CONVERSATION);
+        assert_eq!(
+            (delta.base_revision, delta.new_revision),
+            (revision, revision + 1)
+        );
+        let decoded = decode_npc_conversation(delta.payload).expect("NPC conversation");
+        assert_eq!(decoded.open, Some((npc, NpcConversationState::Open)));
+        assert_eq!(decoded.lines, [expected], "{text}");
+    }
+}
+
+#[test]
 fn a_conversation_opens_answers_and_closes() {
     let (runtime, actor, session, npc) = fixture(2);
     let conversations = NpcConversations::default();
