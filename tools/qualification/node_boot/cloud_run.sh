@@ -136,14 +136,7 @@ for group in "$@"; do
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
-  if [[ "$group" == rows ]]; then
-    E2E_ALL_CAPTURE_DIR="$capture_dir" python3 tools/qualification/node_boot/client_replay.py "$log" \
-      | tee -a "$log"
-    replay_pipeline=("${PIPESTATUS[@]}")
-    if (( replay_pipeline[0] != 0 || replay_pipeline[1] != 0 )); then
-      status=1
-    fi
-  fi
+  # run.sh owns the single replay and propagates its failure through status.
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1
 done
