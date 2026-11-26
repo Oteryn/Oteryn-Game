@@ -294,17 +294,49 @@ async fn relog(
     tag: u8,
 ) -> TestResult<DevClientSession> {
     logout(client).await?;
-    connect_world(clients, tag).await
+    connect_character(clients, tag, 0).await
+}
+
+async fn funded_character(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
+    const GOLD: u64 = 15 + 950 + 10 * 3 + 400;
+    character_prep::declare_seeded(
+        "I17c.full",
+        "1395 carried gold units",
+        "authored shield, sword, arrow and quiver purchases",
+    );
+    let mut client = connect_character(clients, 0xe3, 0).await?;
+    let original_session = client.join_snapshot().game_session_id;
+    let session = uuid_text(original_session.as_bytes());
+    // Top up the 50 starter gold using the existing bounded item profiles.
+    for profile in ["item-3035-13", "item-3031-20", "item-3031-15", "item-3031-10"] {
+        request_fixture_control(session.clone(), "--profile", profile.into()).await
+            .map_err(|error| format!("I17c funding fixture {profile}: {error}"))?;
+    }
+    let client = relog(&mut client, clients, 0xe3).await?;
+    if client.join_snapshot().game_session_id == original_session {
+        return Err("I17c funding read reused the original session".into());
+    }
+    let gold = quantity(&client, reference(3031)?)?;
+    let platinum = quantity(&client, reference(3035)?)?;
+    if gold != 95 || platinum != 13 || gold + platinum * 100 != GOLD {
+        return Err(format!(
+            "I17c served funds: gold={gold} platinum={platinum}; expected 95 gold and 13 platinum"
+        ).into());
+    }
+    evidence(&format!("I17C_CHECK served_gold_units={GOLD} gold={gold} platinum={platinum}"));
+    Ok(client)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_I17C_ACCOUNT").await?;
+    let clients = &identity.clients(clients);
     let world = open_world(clients).await?;
     use oteryn_dev_client::ItemMoveOutcome as Out;
     let shield = reference(3412)?;
     let sword = reference(3265)?;
     let quiver = reference(35562)?;
     let arrow = reference(3447)?;
-    let mut client = connect_world(clients, 0xe3).await?;
+    let mut client = funded_character(clients).await?;
     let shield_base = quantity(&client, shield)?;
     buy(&mut client, world, 3412, 1).await?;
     buy(&mut client, world, 3265, 1).await?;
