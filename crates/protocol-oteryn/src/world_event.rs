@@ -24,7 +24,6 @@ fn validate(state: &WorldEventState) -> WireResult<()> {
         return Err(WorldEventWireError::LimitExceeded);
     }
     if state.active == state.announcement.is_empty()
-        || (state.active && state.reset_epoch == 0)
         || state.announcement.chars().any(char::is_control)
     {
         return Err(WorldEventWireError::Malformed);
@@ -99,6 +98,11 @@ mod tests {
                 reset_epoch: 0,
                 active: false,
                 announcement: String::new(),
+            },
+            WorldEventState {
+                reset_epoch: 0,
+                active: true,
+                announcement: "Several banks in major coastal towns are being robbed!".into(),
             },
             WorldEventState {
                 reset_epoch: u64::MAX,

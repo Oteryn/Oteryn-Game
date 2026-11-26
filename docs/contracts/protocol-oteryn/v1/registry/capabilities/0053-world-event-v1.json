@@ -9,5 +9,5 @@
   ],
   "state_domains": [],
   "offered": true,
-  "offer_gate": "Built-in Oteryn gathering announcement, supported by default and bundle Worlds. Epoch zero inactive; missing nonzero-epoch decision fails closed. No map layers or player activation."
+  "offer_gate": "Server-owned gathering and World occurrence announcements, supported by default and bundle Worlds. World occurrences can announce during epoch zero. Missing nonzero-epoch reset decisions fail closed. No map layers or player activation."
 }

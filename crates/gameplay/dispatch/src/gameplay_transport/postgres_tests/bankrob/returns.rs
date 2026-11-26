@@ -665,9 +665,9 @@ impl Bank {
                 .fetch_one(&h.pool)
                 .await?;
         use crate::world_party_runtime_postgres_cases::{
-            FreshPlayerOwners, committed_fresh_player_owned,
+            FreshPlayerOwners, committed_fresh_player_from_source_owned,
         };
-        let peer = committed_fresh_player_owned(
+        let (peer, _) = committed_fresh_player_from_source_owned(
             &FreshPlayerOwners {
                 root: h.root.clone(),
                 node: h.node.clone(),
@@ -677,8 +677,10 @@ impl Bank {
             64,
             71,
             now,
+            Some("platform-test"),
         )
-        .await?;
+        .await
+        .map_err(|error| format!("Bank Robbery peer Fresh admission: {error}"))?;
         let peer_fence = crate::gameplay_transport::item_fence_of(peer).ok_or("peer fence")?;
         initialize_peer_progression(owner, peer_fence).await?;
         super::super::item_look_fixtures::seed_character_backpack(

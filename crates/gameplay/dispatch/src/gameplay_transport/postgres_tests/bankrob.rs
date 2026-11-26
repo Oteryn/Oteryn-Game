@@ -144,7 +144,17 @@ async fn scenario(
         assert!(reset_room.movement_cells().house_tiles().is_known_empty());
     }
     record_epoch(h, scope, reset_room).await?;
-    let fresh = prepare_current_session(h).await?;
+    use super::house_transfer_fixtures::{RecoverySource, prepare_owned_session_request};
+    let platform_source = if hand_in == Some(returns::Case::Synchronized) {
+        Some(RecoverySource::start(h).await?)
+    } else {
+        None
+    };
+    let fresh = if platform_source.is_some() {
+        prepare_owned_session_request(h).await?
+    } else {
+        prepare_current_session(h).await?
+    };
     let generation = ScopeOwnershipGeneration::new(1).map_err(debug)?;
     let sites = projection::loaded(&cells)?;
     assert!(
