@@ -139,8 +139,36 @@ fn check_state(sent: &Sent, members: &[(&str, bool)], inviter: Option<&str>) -> 
     Ok(())
 }
 
+async fn expect_notices(
+    client: &mut DevClientSession,
+    expected: &[runtime::party::PartyMembershipChange],
+) -> TestResult {
+    let mut seen = Vec::new();
+    tokio::time::timeout(Duration::from_secs(12), async {
+        let mut events = client.take_events();
+        loop {
+            for event in events {
+                if let oteryn_dev_client::SessionEvent::PartyMembershipNotice(delta) = event {
+                    seen.push(delta.value.change);
+                    evidence(&format!("S01_NOTICE change={:?} sequence={}", delta.value.change, delta.server_sequence));
+                }
+            }
+            if !expected.starts_with(&seen) {
+                return Err(format!("S01 party notice mismatch: expected={expected:?} observed={seen:?}").into());
+            }
+            if seen == expected {
+                return Ok(());
+            }
+            events = client.wait_for_events(Duration::from_secs(12)).await?;
+        }
+    })
+    .await
+    .map_err(|_| format!("S01 party notice deadline: expected={expected:?} observed={seen:?}"))?
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     use oteryn_protocol_oteryn::logout::LogoutResult;
+    use runtime::party::PartyMembershipChange::{Disbanded, Invited, Joined, Left};
 
     let mut leader = connect_character(clients, 0x47, 0).await?;
     let mut peer = connect_character(clients, 0x48, 1).await?;
@@ -162,11 +190,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
 
     send(&mut leader, Some(PartyIntent::Invite(own(&peer)?))).await?;
+    expect_notices(&mut peer, &[Invited]).await?;
     let invited = send(&mut peer, None).await?;
     check_state(&invited, &[], Some("Packet One"))?;
     let invitation = &invited.result.invitations[0];
 
     let joined = send(&mut peer, Some(PartyIntent::Accept(invitation.handle))).await?;
+    expect_notices(&mut leader, &[Joined]).await?;
+    expect_notices(&mut peer, &[Joined]).await?;
     let before_pass = [("Packet One", true), ("Packet Two", false)];
     check_state(&joined, &before_pass, None)?;
 
@@ -193,6 +224,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &[],
         None,
     )?;
+    expect_notices(&mut leader, &[Left, Disbanded]).await?;
+    expect_notices(&mut peer, &[Left, Disbanded]).await?;
     check_state(&send(&mut peer, None).await?, &[], None)?;
     for client in [&mut leader, &mut peer] {
         let logout = client.session_mut().logout().await?;
