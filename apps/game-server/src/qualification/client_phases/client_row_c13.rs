@@ -69,7 +69,40 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut owner = connect_world(clients, 0x2d).await?;
+    const CASTER_LEVEL: u32 = 200;
+    const SEED_REASON: &str = "Ordinary leveling exceeds the client capture budget";
+    character_prep::declare_seeded("C13.client", "level-200 sorcerer", SEED_REASON);
+    let owner_identity =
+        character_prep::dedicated_character(clients, "NODE_BOOT_F5_C13_ACCOUNT").await?;
+    let owner_clients = owner_identity.clients(clients);
+    let mut owner = character_prep::Seeded {
+        profile: "f5-c13",
+        reason: SEED_REASON,
+    }
+    .connect(&owner_clients, 0x2d, 0)
+    .await?;
+    let level = full_e2ef7::player_level(&mut owner).await?;
+    let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        "sorcerer",
+        CASTER_LEVEL,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    )
+    .ok_or("C13.client caster has no source vitals")?;
+    if level != CASTER_LEVEL
+        || !owner.actor_vitals().is_some_and(|vitals| {
+            (vitals.max_health, vitals.max_mana) == (max_health, max_mana)
+        })
+    {
+        return Err(format!(
+            "C13.client caster preparation mismatch: level={level} vitals={:?}",
+            owner.actor_vitals()
+        )
+        .into());
+    }
+    evidence(&format!(
+        "C13_CHECK caster-preparation PASS level={level} max_health={max_health} max_mana={max_mana}"
+    ));
     let mut observer = connect_character(clients, 0x2e, 0).await?;
     if !FIELD_CAPABILITIES
         .iter()
