@@ -4029,11 +4029,16 @@ async fn kill_rat_for_corpse(
     client.take_events();
     select_monster(client, Some(target.entity)).await?;
     if let Some(spell) = opening_spell {
-        use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
-        let outcome = client.cast_spell(spell, SpellTarget::AttackTarget, false).await?;
+        use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget, SpellTargetPosition};
+        // The strike's held-target mode can resolve to the facing tile. Use
+        // the live Rat's exact tile so a diagonal approach cannot miss it.
+        let position = creature(client, target.entity)?.position;
+        let target = SpellTarget::Position(SpellTargetPosition { x: position.x, y: position.y, floor: position.floor });
+        let outcome = client.cast_spell(spell, target, false).await?;
         if outcome.disposition != SpellCastDisposition::Cast {
             return Err(format!("C16c Rat Energy Strike refused: {outcome:?}").into());
         }
+        evidence(&format!("C16C_STRIKE target={position:?} sequence={}", outcome.result_server_sequence));
     }
     let until = tokio::time::Instant::now() + Duration::from_secs(75);
     let mut damage = false;
