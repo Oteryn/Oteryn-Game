@@ -21,7 +21,7 @@ use oteryn_protocol_oteryn::{attack as attacks, boss_encounter as boss, hazard};
 const PRIMAL: &str = "oteryn:boss.the_primal_menace";
 
 #[derive(Debug)]
-struct StepFailure {
+pub(super) struct StepFailure {
     step: u8,
     observed: String,
     need: &'static str,
@@ -86,7 +86,7 @@ fn rejected(step: u8, reply: (CommandStatus, Vec<u8>)) -> StepResult {
 
 // Staging is limited to the offline dedicated qualification character. Reuse
 // its world and map identity from the preceding real logout.
-async fn stage_primal_challenger(clients: &SeamClients<'_>) -> TestResult {
+pub(super) async fn stage_primal_challenger(clients: &SeamClients<'_>) -> TestResult {
     wait_character_released(clients, 0).await?;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
     let character = clients.characters[0].as_slice();
@@ -116,10 +116,16 @@ async fn stage_primal_challenger(clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 }
 
-async fn enter_primal(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+async fn enter_primal(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    first_chair_only: bool,
+) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
     let path = route(world, from, |at| {
-        at.floor == -14 && at.y == 32752 && (33548..=33552).contains(&at.x)
+        at.floor == -14
+            && at.y == 32752
+            && (33548..=if first_chair_only { 33548 } else { 33552 }).contains(&at.x)
     })
     .ok_or_else(|| format!("no native route from {from:?} to the authored Primal lever"))?;
     if path.is_empty() {
@@ -180,7 +186,7 @@ async fn enter_primal(client: &mut DevClientSession, world: &BundleWorld) -> Tes
     Ok(())
 }
 
-async fn journey(clients: &SeamClients<'_>) -> StepResult {
+pub(super) fn primal_world(clients: &SeamClients<'_>) -> StepResult<&'static BundleWorld> {
     let bytes = std::fs::read(
         required("NODE_BOOT_WORLD_BUNDLE")
             .map_err(|error| failed_error(1, error, "the node-boot compiled world bundle"))?,
@@ -194,86 +200,26 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         .map_err(|error| failed_error(1, error, "the node-boot world pin"))?,
     )
     .map_err(|error| failed_error(1, error, "a valid node-boot world pin"))?;
-    let world = load_world(
+    load_world(
         bytes,
         &pin,
         WorldId::decode(&clients.world).map_err(|error| failed(1, error, "a valid world id"))?,
         ChannelId::decode(&clients.channel)
             .map_err(|error| failed(1, error, "a valid channel id"))?,
     )
-    .map_err(|error| failed_error(1, error, "the production world loader to accept the bundle"))?;
-    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W10_ACCOUNT")
-        .await
-        .map_err(|error| failed_error(1, error, "a dedicated Primal challenger"))?;
-    let clients = &dedicated.clients(clients);
-    character_prep::declare_seeded("W10", "level=500", "authored Primal admission minimum");
-    let seed = character_prep::Seeded {
-        profile: "w10-primal",
-        reason: "authored Primal admission minimum",
-    };
-    let mut admitted = seed
-        .connect(clients, 0xd0, 0)
-        .await
-        .map_err(|error| failed_error(1, error, "level-500 dedicated admission"))?;
-    let (logout, detail, _, _) = logout_retrying_busy(&mut admitted)
-        .await
-        .map_err(|error| failed_error(1, error, "a durable staging logout"))?;
-    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(failed(1, detail, "an accepted staging logout"));
-    }
-    drop(admitted);
-    stage_primal_challenger(clients).await.map_err(|error| {
-        failed_error(
-            1,
-            error,
-            "offline dedicated staging beside the Primal lever",
-        )
-    })?;
-    let mut client = connect_character(clients, 0xd0, 0)
-        .await
-        .map_err(|error| failed_error(1, error, "ordinary admission beside the Primal lever"))?;
-    if tile(client.world_spatial().actor_position).is_ok_and(|at| {
-        at == (TilePos {
-            x: 33548,
-            y: 32751,
-            floor: -14,
-        })
-    }) {
-        evidence(
-            "W10_CHECK step=1 status=PASS admission=dedicated-level-500 position=primal-lobby",
-        );
-    } else {
-        return Err(failed(
-            1,
-            format!("{:?}", client.world_spatial().actor_position),
-            "the staged actor position in the served admission",
-        ));
-    }
+    .map_err(|error| failed_error(1, error, "the production world loader to accept the bundle"))
+}
 
-    accepted(
-        1,
-        command(&mut client, None)
-            .await
-            .map_err(|error| failed_error(1, error, "a Hazard query reply"))?,
-        [1, 1],
-    )?;
-    accepted(
-        2,
-        command(&mut client, Some(1))
-            .await
-            .map_err(|error| failed_error(2, error, "a Hazard selection reply"))?,
-        [1, 1],
-    )?;
-    rejected(
-        2,
-        command(&mut client, Some(2))
-            .await
-            .map_err(|error| failed_error(2, error, "a locked-level refusal"))?,
-    )?;
-
-    enter_primal(&mut client, world).await.map_err(|error| {
-        failed_error(3, error, "the authored Primal lever and instance handoff")
-    })?;
+pub(super) async fn defeat_primal(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    first_chair_only: bool,
+) -> StepResult<ActorPosition> {
+    enter_primal(client, world, first_chair_only)
+        .await
+        .map_err(|error| {
+            failed_error(3, error, "the authored Primal lever and instance handoff")
+        })?;
     let at = client.world_spatial().actor_position;
     let spawn_deadline = tokio::time::Instant::now() + Duration::from_secs(20);
     let target = loop {
@@ -350,6 +296,82 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         .attack_target(None)
         .await
         .map_err(|error| failed_error(3, error, "an attack-stop reply"))?;
+
+    Ok(at)
+}
+
+async fn journey(clients: &SeamClients<'_>) -> StepResult {
+    let world = primal_world(clients)?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W10_ACCOUNT")
+        .await
+        .map_err(|error| failed_error(1, error, "a dedicated Primal challenger"))?;
+    let clients = &dedicated.clients(clients);
+    character_prep::declare_seeded("W10", "level=500", "authored Primal admission minimum");
+    let seed = character_prep::Seeded {
+        profile: "w10-primal",
+        reason: "authored Primal admission minimum",
+    };
+    let mut admitted = seed
+        .connect(clients, 0xd0, 0)
+        .await
+        .map_err(|error| failed_error(1, error, "level-500 dedicated admission"))?;
+    let (logout, detail, _, _) = logout_retrying_busy(&mut admitted)
+        .await
+        .map_err(|error| failed_error(1, error, "a durable staging logout"))?;
+    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(failed(1, detail, "an accepted staging logout"));
+    }
+    drop(admitted);
+    stage_primal_challenger(clients).await.map_err(|error| {
+        failed_error(
+            1,
+            error,
+            "offline dedicated staging beside the Primal lever",
+        )
+    })?;
+    let mut client = connect_character(clients, 0xd0, 0)
+        .await
+        .map_err(|error| failed_error(1, error, "ordinary admission beside the Primal lever"))?;
+    if tile(client.world_spatial().actor_position).is_ok_and(|at| {
+        at == (TilePos {
+            x: 33548,
+            y: 32751,
+            floor: -14,
+        })
+    }) {
+        evidence(
+            "W10_CHECK step=1 status=PASS admission=dedicated-level-500 position=primal-lobby",
+        );
+    } else {
+        return Err(failed(
+            1,
+            format!("{:?}", client.world_spatial().actor_position),
+            "the staged actor position in the served admission",
+        ));
+    }
+
+    accepted(
+        1,
+        command(&mut client, None)
+            .await
+            .map_err(|error| failed_error(1, error, "a Hazard query reply"))?,
+        [1, 1],
+    )?;
+    accepted(
+        2,
+        command(&mut client, Some(1))
+            .await
+            .map_err(|error| failed_error(2, error, "a Hazard selection reply"))?,
+        [1, 1],
+    )?;
+    rejected(
+        2,
+        command(&mut client, Some(2))
+            .await
+            .map_err(|error| failed_error(2, error, "a locked-level refusal"))?,
+    )?;
+
+    let at = defeat_primal(&mut client, world, false).await?;
 
     accepted(
         4,

@@ -1,7 +1,4 @@
-//! W10 client replay capture: the real Hazard query reply (`[unlocked, selected]`), the level-1
-//! selection reply and the locked level-2 refusal. The consumer is `apply_result` in
-//! `crates/client-ui/src/features/0117-boss-encounter/protocol.rs` (hazard summary in
-//! `protocol/auxiliary.rs`).
+//! Live Hazard unlock, selection, refusal and durable reload evidence.
 use super::*;
 use oteryn_dev_client::client_runtime::boss_encounter as wire;
 use std::io::Write;
@@ -27,33 +24,155 @@ async fn hazard(
         .await?)
 }
 
+async fn probe(
+    client: &mut oteryn_dev_client::DevClientSession,
+    root: &Path,
+    name: &str,
+    request: &[u8],
+    status: CommandStatus,
+    expected: &[u8],
+) -> TestResult {
+    let session = client.join_snapshot().game_session_id;
+    let reply = hazard(client, request).await?;
+    if client.join_snapshot().game_session_id != session
+        || reply.status != status
+        || reply.payload != expected
+    {
+        return Err(
+            format!("Hazard {name} expected {status:?}/{expected:?}, got {reply:?}").into(),
+        );
+    }
+    capture(root, &format!("w10-{name}.request.bin"), request)?;
+    capture(root, &format!("w10-{name}.bin"), &reply.payload)?;
+    let binding = serde_json::json!({
+        "session_id": uuid_text(session.as_bytes()),
+        "command_id": reply.command_id,
+        "server_sequence": reply.server_sequence,
+        "status": reply.status as u32,
+    });
+    capture(
+        root,
+        &format!("w10-{name}.status.json"),
+        &serde_json::to_vec(&binding)?,
+    )
+}
+
+async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("W10.client first logout refused: {:?}", reply.result).into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("missing live capture directory")?;
     let root = Path::new(&root);
-    let mut client = connect_world(clients, 0x05).await?;
-    let query = hazard(&mut client, &[]).await?;
-    let select = hazard(&mut client, &[1]).await?;
-    let locked = hazard(&mut client, &[2]).await?;
-    for (name, reply) in [("query", &query), ("select", &select)] {
-        if reply.status != CommandStatus::Accepted || reply.payload != [1, 1] {
-            return Err(format!("hazard {name} reply={reply:?}").into());
-        }
-    }
-    if locked.status != CommandStatus::Rejected || !locked.payload.is_empty() {
-        return Err(format!("locked hazard level was not refused: {locked:?}").into());
-    }
-    capture(root, "w10-query.bin", &query.payload)?;
-    capture(root, "w10-select.bin", &select.payload)?;
-    let expected = format!(
-        "query_unlocked={}\nquery_selected={}\nselect_unlocked={}\nselect_selected={}\n",
-        query.payload[0], query.payload[1], select.payload[0], select.payload[1]
+    let world = full_row_w10::primal_world(clients)?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W10_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    character_prep::declare_seeded(
+        "W10.client",
+        "level=500",
+        "authored Primal admission minimum",
     );
-    capture(root, "w10-expected.txt", expected.as_bytes())?;
-    Ok(expected.replace('\n', ";"))
+    let mut client = connect_character(clients, 0xd0, 0).await?;
+    let session = client.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(session.as_bytes()),
+        "--profile",
+        "w10-primal".into(),
+    )
+    .await?;
+    logout(&mut client).await?;
+    drop(client);
+    full_row_w10::stage_primal_challenger(clients).await?;
+    let mut client = connect_character(clients, 0xd1, 0).await?;
+    if client.join_snapshot().game_session_id == session
+        || tile(client.world_spatial().actor_position)?
+            != (TilePos {
+                x: 33548,
+                y: 32751,
+                floor: -14,
+            })
+    {
+        return Err(
+            "Primal challenger did not freshly admit at the authored lobby approach".into(),
+        );
+    }
+    probe(
+        &mut client,
+        root,
+        "initial",
+        &[],
+        CommandStatus::Accepted,
+        &[1, 1],
+    )
+    .await?;
+    full_row_w10::defeat_primal(&mut client, world, true).await?;
+    probe(
+        &mut client,
+        root,
+        "query",
+        &[],
+        CommandStatus::Accepted,
+        &[2, 1],
+    )
+    .await?;
+    probe(
+        &mut client,
+        root,
+        "select",
+        &[2],
+        CommandStatus::Accepted,
+        &[2, 2],
+    )
+    .await?;
+    probe(
+        &mut client,
+        root,
+        "locked",
+        &[3],
+        CommandStatus::Rejected,
+        &[],
+    )
+    .await?;
+    probe(
+        &mut client,
+        root,
+        "unchanged",
+        &[],
+        CommandStatus::Accepted,
+        &[2, 2],
+    )
+    .await?;
+    let session = client.join_snapshot().game_session_id;
+    logout(&mut client).await?;
+    drop(client);
+    let mut client = connect_character(clients, 0xd2, 0).await?;
+    if client.join_snapshot().game_session_id == session {
+        return Err("Hazard durability check reused the original game session".into());
+    }
+    probe(
+        &mut client,
+        root,
+        "relog",
+        &[],
+        CommandStatus::Accepted,
+        &[2, 2],
+    )
+    .await?;
+    capture(
+        root,
+        "w10-expected.txt",
+        b"query_unlocked=2\nquery_selected=1\nselect_unlocked=2\nselect_selected=2\n",
+    )?;
+    logout(&mut client).await?;
+    Ok("hazard=2/1->2/2;level3=rejected;unchanged=2/2;relog=2/2".into())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+    match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
         .await
     {
         Ok(Ok(observed)) => evidence(&format!(
