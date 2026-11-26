@@ -6,18 +6,23 @@
 //! 3. Press Save Wheel: the server must confirm the imported points with a revision advance.
 //! 4. Log out, freshly admit, refresh: the durable allocation must equal the imported build.
 //! 5. Reset the Wheel through the panel and confirm the zero allocation (cleanup, same route).
+use super::full_row_p20::{approach_npc, talk};
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::wheel_allocation;
 use oteryn_dev_client::client_ui::wheel_allocation::{Intent, WheelPanel, apply_result, request};
+use oteryn_protocol_oteryn::atelier::v2::CAPABILITY_GEM_ATELIER_V2;
 use oteryn_protocol_oteryn::wheel::CAPABILITY_WHEEL_ALLOCATION_V1;
 
 const CORE_SLOT: usize = 20;
 const POINTS: u16 = 10;
+const LEVEL: u32 = 60;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "named-build-code-saved-and-durable".to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -57,10 +62,11 @@ async fn press(
 }
 
 fn admitted_panel(client: &DevClientSession) -> WheelPanel {
+    let capabilities = client.selected_capabilities();
+    let selected = capabilities.contains(&CAPABILITY_WHEEL_ALLOCATION_V1);
     WheelPanel {
-        selected: client
-            .selected_capabilities()
-            .contains(&CAPABILITY_WHEEL_ALLOCATION_V1),
+        selected,
+        atelier_v2: selected && capabilities.contains(&CAPABILITY_GEM_ATELIER_V2),
         ..WheelPanel::default()
     }
 }
@@ -73,8 +79,70 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
+    character_prep::declare_seeded(
+        "G02",
+        "level-60-sorcerer,Premium,promotion-fee",
+        "ordinary leveling is outside the named Wheel build journey budget",
+    );
+    let mut client = connect_character(clients, 0xdf, 0).await?;
+    request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        "g02-wheel".into(),
+    )
+    .await?;
+    character_prep::grant_item(&client, 3043, 2).await?;
+    character_prep::grant_premium(&client).await?;
+    logout(&mut client).await?;
+    drop(client);
+
+    let mut client = connect_character(clients, 0xe0, 0).await?;
+    let vitals = client
+        .actor_vitals()
+        .ok_or("step=prepare observed=no-vitals")?;
+    let (health, mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        "sorcerer",
+        LEVEL,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    )
+    .ok_or("step=prepare observed=no-level-60-vital-maxima")?;
+    if (vitals.max_health, vitals.max_mana) != (health, mana) {
+        return Err(format!(
+            "step=prepare observed={vitals:?};needed=max-health:{health},max-mana:{mana}"
+        )
+        .into());
+    }
+    evidence(&format!(
+        "G02_CHECK step=derived-vitals level={LEVEL} max_health={health} max_mana={mana}"
+    ));
+    let world = full_e2ef7::qualification_world(clients)?;
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let king = approach_npc(
+        &mut client,
+        world,
+        &metadata.npcs,
+        "oteryn:npc.king_tibianus",
+    )
+    .await?;
+    if talk(&mut client, king, "hi").await?.is_empty()
+        || talk(&mut client, king, "promotion").await?
+            != ["Do you want to be promoted for 20000 gold coins?"]
+        || talk(&mut client, king, "yes").await? != ["You are now promoted."]
+    {
+        return Err("step=prepare observed=promotion-dialogue-did-not-confirm".into());
+    }
+    logout(&mut client).await?;
+    drop(client);
+    connect_character(clients, 0xe1, 0).await
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xe1).await?;
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_G02_ACCOUNT").await?;
+    let clients = &identity.clients(clients);
+    let mut client = prepare(clients).await?;
     let mut panel = admitted_panel(&client);
     if !panel.selected {
         return Err("step=admit observed=wheel-capability-not-selected".into());
@@ -127,7 +195,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     logout(&mut client).await?;
     drop(client);
 
-    let mut fresh = connect_world(clients, 0xe2).await?;
+    let mut fresh = connect_character(clients, 0xe2, 0).await?;
     let mut again = admitted_panel(&fresh);
     press(&mut fresh, &mut again, Intent::Refresh, 3, "fresh-refresh").await?;
     let durable = again
