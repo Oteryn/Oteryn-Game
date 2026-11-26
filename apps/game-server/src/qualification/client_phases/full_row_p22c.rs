@@ -1,6 +1,6 @@
 //! P22c (tracker persistence across login):
-//! 1. Admit the node-boot character, track a race and require the durable tracker row
-//!    (read-only SQL) to exist.
+//! 1. Admit the node-boot character and prove the race is initially absent on the wire and in SQL.
+//!    Track it and require the durable tracker row to exist.
 //! 2. Log out, freshly admit the character and require the tracker read and the durable row to
 //!    still list the race.
 //! 3. Remove it, log out, admit again and require it gone from the read and from the table.
@@ -132,9 +132,23 @@ async fn durable(clients: &SeamClients<'_>) -> TestResult<i64> {
     Ok(rows)
 }
 
+fn expect_rat_untracked_before_add(
+    snapshot: &Option<tr::TrackerSnapshot>,
+    rows: i64,
+) -> TestResult {
+    expect(
+        !has(snapshot, RAT),
+        "read-before-add",
+        "rat-already-tracked",
+    )?;
+    expect(rows == 0, "durable-before-add", rows)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let best = tr::COMMAND_TYPE_BESTIARY_TRACKER;
     let mut client = connect_tracker(clients, 0xd3).await?;
+    let before = read(&mut client, best).await?;
+    expect_rat_untracked_before_add(&before, durable(clients).await?)?;
     let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Add, RAT)).await?;
     expect(
         status == CommandStatus::Accepted && has(&list, RAT),
@@ -236,6 +250,26 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn add_precondition_rejects_existing_rat_in_either_source() {
+        let mut snapshot = Some(tr::TrackerSnapshot {
+            boss: false,
+            entries: Vec::new(),
+        });
+        assert!(expect_rat_untracked_before_add(&snapshot, 0).is_ok());
+        let err = expect_rat_untracked_before_add(&snapshot, 1).unwrap_err();
+        assert!(err.to_string().starts_with("step=durable-before-add;"));
+
+        snapshot.as_mut().unwrap().entries.push(tr::TrackerEntry {
+            creature_key: RAT.to_owned(),
+            kill_count: 0,
+            thresholds: [0; 3],
+            completed: false,
+        });
+        let err = expect_rat_untracked_before_add(&snapshot, 0).unwrap_err();
+        assert!(err.to_string().starts_with("step=read-before-add;"));
+    }
 
     #[test]
     fn token_has_no_whitespace_and_is_bounded() {
