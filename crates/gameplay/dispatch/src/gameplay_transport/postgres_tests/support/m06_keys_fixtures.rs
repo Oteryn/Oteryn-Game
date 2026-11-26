@@ -22,9 +22,60 @@ pub(super) fn source_key_door(x: u16, y: u16, floor: i8, action: u16) -> TestRes
     })
 }
 
+fn authored_door_action(x: u16, y: u16, floor: i8, appearance: u16) -> TestResult<Option<u16>> {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../content/world/placements");
+    let region = std::fs::read(root.join(format!(
+        "region-z{:02}-x{:03}-y{:03}.b3",
+        floor.unsigned_abs(),
+        x / 256,
+        y / 256
+    )))?;
+    let palette: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(root.join("index.json"))?)?;
+    let region = oteryn_world_bundle_compiler::b3::decode_region(
+        &region,
+        oteryn_world_bundle::bundle::TILE_LIMITS,
+        &mut oteryn_world_bundle::sector::Budget {
+            tiles: 65536,
+            entries: 1_000_000,
+        },
+    )?;
+    let door = region
+        .sectors
+        .iter()
+        .flat_map(|(_, _, tiles)| tiles)
+        .filter(|tile| (tile.x, tile.y, tile.house) == (x, y, 0))
+        .flat_map(|tile| &tile.items)
+        .find(|item| {
+            item.depth == 0
+                && palette["palette"][item.palette as usize]["source_item_id"] == appearance
+        })
+        .ok_or("source door placement")?;
+    Ok(door.attrs.action)
+}
+
 pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
     run(async |admin| {
         let level_gate = source.is_some_and(|(_, _, _, action)| action == 1050);
+        let door_appearance = if level_gate {
+            1648
+        } else if source.is_some() {
+            1631
+        } else {
+            1628
+        };
+        let door_action = if let Some((x, y, floor, action)) = source {
+            let authored = authored_door_action(x, y, floor, door_appearance)?;
+            assert_eq!(
+                authored,
+                Some(action),
+                "authored door action at ({x}, {y}, {floor})"
+            );
+            authored
+        } else {
+            Some(4321)
+        };
         let harness =
             Harness::create_with_admission_seed(admin, "m06_keys", !level_gate, false).await?;
         let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
@@ -56,13 +107,6 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
         let (door_x, door_y, door_floor, key_action) = source.unwrap_or((6, 0, -7, 4321));
-        let door_appearance = if level_gate {
-            1648
-        } else if source.is_some() {
-            1631
-        } else {
-            1628
-        };
         let door_key = format!("oteryn:item.tibia.i{door_appearance}");
         let door = door_key.as_str();
         let station_pos = crate::map::overlay::TilePos {
@@ -100,7 +144,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             .items
             .last_mut()
             .ok_or("door entry")?;
-        entry.attrs.action = source.is_none().then_some(4321);
+        entry.attrs.action = door_action;
         if source.is_some() {
             let mut sectors = std::collections::BTreeMap::new();
             for sector in std::mem::take(&mut data.sectors) {

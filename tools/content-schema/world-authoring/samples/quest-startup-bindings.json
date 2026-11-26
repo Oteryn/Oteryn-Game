@@ -156,6 +156,18 @@
     },
     {
       "position": [
+        32190,
+        32432,
+        8
+      ],
+      "item": 1631,
+      "attribute": "action",
+      "action": 3940,
+      "source": "data-global/startup/tables/door_key.lua",
+      "line": 148
+    },
+    {
+      "position": [
         32209,
         32292,
         6
@@ -177,6 +189,30 @@
       "action": 4253,
       "source": "data-global/startup/tables/teleport.lua",
       "line": 5
+    },
+    {
+      "position": [
+        32212,
+        32435,
+        10
+      ],
+      "item": 1648,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
+    },
+    {
+      "position": [
+        32277,
+        32420,
+        10
+      ],
+      "item": 1631,
+      "attribute": "action",
+      "action": 3980,
+      "source": "data-global/startup/tables/door_key.lua",
+      "line": 153
     },
     {
       "position": [

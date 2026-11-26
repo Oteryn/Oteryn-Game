@@ -35,8 +35,17 @@ SPECS = (
     ("teleport.lua", "TeleportUnique", 35020, "unique"),
 )
 
+FIBULA_DOORS = {
+    "Storage.Quest.Key.ID3940": ([32190, 32432, 8], 1631),
+    1050: ([32212, 32435, 10], 1648),
+    "Storage.Quest.Key.ID3980": ([32277, 32420, 10], 1631),
+}
+
 ADDITIONAL_ACTIONS = (
     ("door_key.lua", "KeyDoorAction", "Storage.Quest.Key.ID3142", "action"),
+    ("door_key.lua", "KeyDoorAction", "Storage.Quest.Key.ID3940", "action"),
+    ("door_key.lua", "KeyDoorAction", "Storage.Quest.Key.ID3980", "action"),
+    ("door_level.lua", "LevelDoorAction", 1050, "action"),
     ("tile_pick.lua", "TilePickAction", 101, "action"),
     *(
         ("item.lua", "ItemAction", aid, "action")
@@ -73,6 +82,8 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
             == selector
         ]
         value = lua_tables.as_python(field["value"])
+        fibula = FIBULA_DOORS.get(selector)
+        start = len(rows)
         for group in value if isinstance(value, list) else [value]:
             if (
                 table == "ItemAction"
@@ -87,6 +98,8 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
             positions = group["itemPos"]
             for position in positions if isinstance(positions, list) else [positions]:
                 cell = [position[k] for k in "xyz"]
+                if fibula is not None and cell != fibula[0]:
+                    continue
                 if table == "TilePickAction" and cell != [32774, 32289, 10]:
                     continue
                 if selector == "Storage.Quest.Key.ID3142":
@@ -112,6 +125,7 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
                 # False selectors target the existing source ground or door.
                 item = (
                     group["itemId"]
+                    or (fibula[1] if fibula is not None else None)
                     or {
                         ("ItemAction", 25018): 104,
                         ("KeyDoorAction", "Storage.Quest.Key.ID3142"): 6248,
@@ -120,6 +134,8 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
                         ("TilePickAction", 101): 355,
                     }[(table, selector)]
                 )
+                if fibula is not None and item != fibula[1]:
+                    raise ValueError(f"Fibula door source item changed: {selector}")
                 rows.append(
                     {
                         "position": cell,
@@ -132,6 +148,8 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
                         "line": field["line"],
                     }
                 )
+        if fibula is not None and len(rows) != start + 1:
+            raise ValueError(f"Fibula door source position changed: {selector}")
     path = "data-global/lib/core/storages.lua"
     raw = (source / path).read_bytes()
     storage = lua_tables.as_python(
@@ -139,6 +157,11 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
     )
     if storage["Quest"]["Key"]["ID4502"] != 4502:
         raise ValueError("Alawar key storage changed")
+    for _, table, selector, _ in specs:
+        if table == "KeyDoorAction" and selector in FIBULA_DOORS:
+            key = selector.rsplit(".", 1)[1]
+            if storage["Quest"]["Key"][key] != int(key.removeprefix("ID")):
+                raise ValueError(f"Fibula key number changed: {key}")
     storage_row = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
     if storage_row not in sources:
         sources.append(storage_row)
