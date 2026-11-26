@@ -248,12 +248,13 @@ async fn equip_fixture_axe(client: &mut DevClientSession, axe: NonZeroU32) -> Te
         .handle;
     evidence("P19 FIXTURE weapon=axe");
     let reply = client
-        .move_item(&items::ItemMoveIntent {
+        .session_mut()
+        .move_item_counted(oteryn_dev_client::client_runtime::inventory::MoveRequest {
             source,
             destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::LeftHand),
+            count: None,
         })
         .await?;
-    require_mechanic_acceptance(reply.status, "P19 equip fixture axe")?;
     if reply.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("P19 fixture axe equip refused: {reply:?}").into());
     }
