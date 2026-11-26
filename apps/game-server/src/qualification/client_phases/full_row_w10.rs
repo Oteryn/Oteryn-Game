@@ -118,6 +118,20 @@ pub(super) async fn stage_primal_challenger(clients: &SeamClients<'_>) -> TestRe
     Ok(())
 }
 
+pub(super) fn assert_primal_vitals(client: &DevClientSession) -> TestResult {
+    let vitals = client
+        .actor_vitals()
+        .ok_or("missing Primal challenger vitals")?;
+    if (vitals.max_health, vitals.max_mana) != (7565, 2550) {
+        return Err(format!(
+            "Primal challenger maxima: health={}, mana={}; expected health=7565, mana=2550",
+            vitals.max_health, vitals.max_mana
+        )
+        .into());
+    }
+    Ok(())
+}
+
 pub(super) async fn enter_primal(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
     let path = route(world, from, |at| {
@@ -336,23 +350,8 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
             "fresh admission after staging logout",
         ));
     }
-    let vitals = client.actor_vitals().ok_or_else(|| {
-        failed(
-            1,
-            "missing_actor_vitals",
-            "derived level-500 knight maxima on the wire",
-        )
-    })?;
-    if (vitals.max_health, vitals.max_mana) != (7565, 2550) {
-        return Err(failed(
-            1,
-            format!(
-                "max_health={},max_mana={}",
-                vitals.max_health, vitals.max_mana
-            ),
-            "level-500 knight maxima of 7565 health and 2550 mana",
-        ));
-    }
+    assert_primal_vitals(&client)
+        .map_err(|error| failed_error(1, error, "derived level-500 knight maxima on the wire"))?;
     if tile(client.world_spatial().actor_position).is_ok_and(|at| {
         at == (TilePos {
             x: 33548,
