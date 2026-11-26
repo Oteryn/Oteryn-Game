@@ -54,11 +54,8 @@ pub(super) async fn observe(
     else {
         return None;
     };
-    let states = owner.states.spell_states.try_lock().ok()?;
     let (ghost, _, _) = runtime.actor_staff_visibility(actor).ok()?;
-    if (ghost && owner.states.staff_world.group(observer) < 4)
-        || states.player_hidden_from(&runtime, observer, actor, owner.owner_now())
-    {
+    if ghost && owner.states.staff_world.group(observer) < 4 {
         return None;
     }
     let facts = runtime.player_control_facts(actor, session).ok()?;

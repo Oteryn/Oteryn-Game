@@ -242,14 +242,6 @@ async fn observe_once(
             skip_entity(&mut skipped, entity, "entity_left_census");
             continue;
         };
-        if states.player_hidden_from(
-            &runtime,
-            observer,
-            *actor,
-            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now),
-        ) {
-            continue;
-        }
         let Some(target_session) = *target_session else {
             let creature = match runtime.companion_snapshot(*actor) {
                 Ok(creature) => creature,
@@ -415,15 +407,12 @@ async fn observe_once(
         {
             return note_none(None, "conditions");
         }
-        // Crystal 201189f8 protocolgame.cpp:9233 and player.cpp:1383-1396: an
-        // invisible player remains observable, but other players receive no outfit.
+        // Staff invisibility can suppress an outfit for peers. Invisible (Utana Vid)
+        // keeps the caster observable to players and uses the regular look projection.
         if empty_outfit
             && target_session != session
-            && (admission.states.staff_world.invisible(*actor)
-                && admission.states.staff_world.group(observer) < 4
-                || player.equipped_invisible()
-                || spell.invisible_at(now)
-                || owned.invisible_at(now))
+            && admission.states.staff_world.invisible(*actor)
+            && admission.states.staff_world.group(observer) < 4
         {
             look = wire::Look::EmptyOutfit;
         } else if let Some(temporary) = spell_look.or(owned_look) {

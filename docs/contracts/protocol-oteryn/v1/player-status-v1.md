@@ -9,7 +9,8 @@ server-message payloads keep their existing wire shape.
 Exactly 24 bytes: the 16-byte spatial placement identity and the unsigned
 64-bit big-endian incarnation from the observing session's world visibility
 view. Both must be nonzero. The server rechecks current player type, exact
-incarnation, view range and privacy rules for invisibility and staff ghosts.
+incarnation, view range and staff ghost visibility. Invisible (Utana Vid)
+keeps the caster's status available to other players in range.
 Queries for one's own actor, unknown targets, or actors outside the observer's
 view are rejected with an empty result.
 

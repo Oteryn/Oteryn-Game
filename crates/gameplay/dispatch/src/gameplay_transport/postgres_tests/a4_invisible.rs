@@ -11,13 +11,18 @@ use crate::durability::character_build::{
 use crate::foundation::{
     ChannelContentPin, CharacterId, CharacterLease, GameSessionId, MovementLocalPosition, WorldId,
 };
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::gameplay_transport::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
 use crate::gameplay_transport::spell_premium_coordinator::{
     SpellPremiumCoordinator, purchase_fixture,
 };
+use crate::gameplay_transport::{
+    capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities},
+    connection::{FreshAdmissionAuthority, prime_player_status_clock, regression_player_status},
+    world_spatial::{EntityRef, SessionVisibility, VisibilityUpdate},
+};
 use oteryn_gameplay_domain::domain::condition::ConflictKey;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent, SpellTarget};
+use oteryn_protocol_oteryn::zones_nologout::{PlayerPresence, PlayerStatus};
 
 #[test]
 fn a4_invisible_postgres_real_dispatch() -> TestResult {
@@ -25,14 +30,14 @@ fn a4_invisible_postgres_real_dispatch() -> TestResult {
 }
 
 #[test]
-fn a4_invisible_postgres_other_player_cannot_see_or_target_caster() -> TestResult {
+fn invisible_caster_stays_visible_to_players_hidden_from_monsters() -> TestResult {
     invisibility_case::<true>()
 }
 
 fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     large_stack(|| {
         run(async |admin| {
             let h = if WITH_OBSERVER {
@@ -43,7 +48,8 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
             prepare_current_session(&h).await?;
             if WITH_OBSERVER {
                 h.seed_appearance_observer().await?;
-                super::appearance_change_postgres_fixtures::observer_visibility_tests::admit(&h).await?;
+                super::appearance_change_postgres_fixtures::observer_visibility_tests::admit(&h)
+                    .await?;
             }
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
@@ -59,7 +65,10 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                 let mut cosmetics = crate::content::native_gameplay::test_support::cosmetics_fixture::cosmetics_test_packet();
                 cosmetics["authoring"]["document"]["content_revision"] = "content-1".into();
                 production_generation_with_cosmetics(
-                    world, "content-1", Some(source), serde_json::to_vec(&cosmetics)?,
+                    world,
+                    "content-1",
+                    Some(source),
+                    serde_json::to_vec(&cosmetics)?,
                 )?
             } else {
                 production_generation_with_source(world, "content-1", Some(source))?
@@ -80,10 +89,10 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                 cp.clone(),
                 room.clone(),
                 native.spell_book().clone(),
-                if WITH_OBSERVER { 3 } else { 2 },
+                if WITH_OBSERVER { 4 } else { 2 },
             )?;
             let (actor, session) = (deps.actor, deps.admitted.game_session_id);
-            {
+            let (rat, guard) = {
                 let mut runtime = deps.runtime.lock().await;
                 runtime
                     .initialize_first_entry_position(actor)
@@ -99,9 +108,9 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                 runtime
                     .install_companion_policies(native.policies().clone())
                     .map_err(debug)?;
-                runtime
+                let rat = runtime
                     .realize_native_qualification_spawn(
-                        cp,
+                        cp.clone(),
                         "oteryn:creature.rat",
                         MovementLocalPosition {
                             x: -2,
@@ -109,8 +118,29 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                             floor: -7,
                         },
                     )
-                    .map_err(debug)?;
-            }
+                    .map_err(debug)?
+                    .actor;
+                let guard = if WITH_OBSERVER {
+                    Some(
+                        runtime
+                            .realize_native_qualification_spawn_for_source(
+                                u16::MAX - 1,
+                                cp,
+                                "oteryn:creature.dwarf_guard",
+                                MovementLocalPosition {
+                                    x: -1,
+                                    y: 12,
+                                    floor: -7,
+                                },
+                            )
+                            .map_err(debug)?
+                            .actor,
+                    )
+                } else {
+                    None
+                };
+                (rat, guard)
+            };
             let (consumer, clock, _activation, _) = purchase_fixture::current(id(40));
             let premium =
                 SpellPremiumCoordinator::new(consumer, Some(clock), None, Some(h.root.clone()));
@@ -175,16 +205,18 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                 .ok_or("spell index")?;
             owner.clock_origin -= std::time::Duration::from_secs(10);
             owner.drain_monster_melee().await;
-            let rat = deps.runtime.lock().await.visible_entities().creatures[0].actor;
-            {
+            let guard_before = {
                 let states = owner.states.spell_states.lock().await;
-                let ai = states
-                    .monster_melee
-                    .creature_ai
-                    .state(rat)
-                    .ok_or("rat AI")?;
-                assert_eq!(ai.target(), Some(actor));
-            }
+                let ai = &states.monster_melee.creature_ai;
+                assert_eq!(ai.state(rat).ok_or("rat AI")?.target(), Some(actor));
+                if let Some(guard) = guard {
+                    let report = ai.last_report_for_test(guard).ok_or("dwarf guard think")?;
+                    assert_eq!(report.target, Some(actor));
+                    Some((guard, report.sequence))
+                } else {
+                    None
+                }
+            };
             let observer = if WITH_OBSERVER {
                 Some(
                     super::appearance_change_postgres_fixtures::observer_visibility_tests::initialize(
@@ -195,14 +227,7 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
             } else {
                 None
             };
-            let status_view = if let Some(observer) = observer {
-                use crate::gameplay_transport::{
-                    capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities},
-                    connection::{prime_player_status_clock, regression_player_status},
-                    world_spatial::{EntityRef, SessionVisibility},
-                };
-                use oteryn_protocol_oteryn::zones_nologout::{PlayerPresence, PlayerStatus};
-
+            let observation = if let Some(observer) = observer {
                 prime_player_status_clock(&owner, deps.admitted);
                 let mut reader = deps.admitted;
                 reader.runtime_actor = Some(observer);
@@ -220,13 +245,33 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                     .ok_or("visible caster")?;
                 let mut view = SessionVisibility::default();
                 view.snapshot(&channel, &mut |_| Ok(())).map_err(debug)?;
+                assert!(view.shows(target), "the caster is initially visible");
                 let visible = regression_player_status(&owner, reader, target, &view)
                     .await
                     .and_then(|bytes| PlayerStatus::decode(&bytes))
                     .ok_or("visible player status")?;
                 assert_eq!(visible.presence, PlayerPresence::Online);
                 assert!(!visible.no_logout, "the pinned caster tile permits logout");
-                Some((reader, target, view))
+                assert!(owner.appearance_available());
+                let appearance = owner
+                    .appearance_observation_projected(
+                        observer,
+                        reader.game_session_id,
+                        true,
+                        vec![target],
+                    )
+                    .await
+                    .ok_or("visible caster appearance")?;
+                let look = appearance
+                    .bindings
+                    .first()
+                    .ok_or("caster look")?
+                    .look
+                    .clone();
+                let attack = owner
+                    .attack_target(observer, reader.game_session_id, 2, Some(target))
+                    .await;
+                Some((observer, reader, target, view, look, attack))
             } else {
                 None
             };
@@ -262,150 +307,86 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
             assert!(!conditions.invisible_at(start + 200_000_000));
             drop(states);
             drop(runtime);
-            if let Some((reader, target, view)) = status_view {
-                assert!(
-                    crate::gameplay_transport::connection::regression_player_status(
-                        &owner, reader, target, &view,
-                    )
-                    .await
-                    .is_none(),
-                    "a published incarnation cannot reveal a newly invisible player's status",
-                );
-            }
-            if let Some(observer) = observer {
-                // SRV6 owner difference: unlike Crystal player.cpp:1383-1396,
-                // another player must receive no invisible player entity.
+            if let Some((observer, reader, target, mut view, look, attack)) = observation {
                 let channel = owner
                     .observe_visible_entities(observer)
                     .await
                     .ok_or("observer visibility")?;
-                let snapshot =
-                    crate::gameplay_transport::world_spatial::SessionVisibility::default()
-                        .snapshot(&channel, &mut |_| Ok(()))
-                        .map_err(debug)?;
-                let (_, bytes) =
-                    crate::gameplay_transport::world_spatial::encode_visibility_snapshot(
-                        &[6],
-                        &snapshot,
-                    )
-                    .map_err(debug)?;
-                let received = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_snapshot(&bytes).map_err(debug)?;
+                match view.refresh(&channel, &mut |_| Ok(())).map_err(debug)? {
+                    VisibilityUpdate::Delta(delta) => assert!(
+                        !delta.leave.contains(&target),
+                        "Invisible must not send a leave for the caster"
+                    ),
+                    VisibilityUpdate::Unchanged => {}
+                    VisibilityUpdate::Snapshot(_) => {
+                        return Err("expected an incremental refresh".into());
+                    }
+                }
                 assert!(
-                    !received.entities.iter().any(|entity| entity.entity.identity
-                        == actor.placement_identity()
-                        && entity.entity.generation == actor.actor_local_generation()),
-                    "the spectator must not receive the invisible player entity"
+                    view.shows(target),
+                    "the observer keeps the caster's incarnation"
                 );
-                let entity = oteryn_protocol_oteryn::appearance::EntityRef {
-                    identity: actor.placement_identity(),
-                    generation: actor.actor_local_generation(),
-                };
-                let observer_session = GameSessionId::decode(&id(110)).map_err(debug)?;
-                assert!(owner.appearance_available());
+                let status = regression_player_status(&owner, reader, target, &view)
+                    .await
+                    .and_then(|bytes| PlayerStatus::decode(&bytes))
+                    .ok_or("invisible caster's player status")?;
+                assert_eq!(status.presence, PlayerPresence::Online);
+                assert!(!status.no_logout);
                 let own = owner
-                    .appearance_observation_projected(actor, session, true, vec![entity])
+                    .appearance_observation_projected(actor, session, true, vec![target])
                     .await
                     .ok_or("own invisible appearance")?;
                 assert!(matches!(
                     own.bindings[0].look,
                     oteryn_protocol_oteryn::appearance::Look::Outfit { .. }
                 ));
-                let projected = owner
-                    .appearance_observation_projected(
-                        observer,
-                        observer_session,
-                        true,
-                        vec![entity],
-                    )
-                    .await
-                    .ok_or("invisible appearance projection")?;
-                assert!(
-                    projected.bindings.is_empty(),
-                    "invisible appearance must not leak to another player"
-                );
-                let legacy = owner
-                    .appearance_observation_projected(
-                        observer,
-                        observer_session,
-                        false,
-                        vec![entity],
-                    )
-                    .await
-                    .ok_or("legacy invisible appearance projection")?;
-                assert!(
-                    legacy.bindings.is_empty(),
-                    "visibility is independent of empty-outfit capability"
-                );
+                for empty_outfit in [false, true] {
+                    let projected = owner
+                        .appearance_observation_projected(
+                            observer,
+                            reader.game_session_id,
+                            empty_outfit,
+                            vec![target],
+                        )
+                        .await
+                        .ok_or("invisible caster appearance")?;
+                    assert_eq!(projected.bindings.first().ok_or("caster look")?.look, look);
+                }
                 assert_eq!(
                     owner
-                        .attack_target(observer, observer_session, 2, Some(entity))
+                        .attack_target(observer, reader.game_session_id, 3, Some(target))
                         .await,
-                    oteryn_protocol_oteryn::attack::AttackIntentDisposition::TargetNotVisible,
-                    "a known entity reference cannot bypass invisibility"
+                    attack,
+                    "Invisible does not change eligibility under the existing PvP rules"
                 );
             }
             owner.clock_origin -= std::time::Duration::from_secs(2);
             owner.drain_monster_melee().await;
             {
                 let states = owner.states.spell_states.lock().await;
-                let ai = states
-                    .monster_melee
-                    .creature_ai
-                    .state(rat)
-                    .ok_or("rat AI")?;
+                let ai = &states.monster_melee.creature_ai;
+                let rat_target = ai.state(rat).ok_or("rat AI")?.target();
                 if WITH_OBSERVER {
                     assert_ne!(
-                        ai.target(),
+                        rat_target,
                         Some(actor),
                         "the rat drops the invisible caster"
                     );
                 } else {
+                    assert_eq!(rat_target, None, "the rat loses its only target");
+                }
+                if let Some((guard, before)) = guard_before {
+                    let report = ai.last_report_for_test(guard).ok_or("dwarf guard think")?;
+                    assert!(
+                        report.sequence > before,
+                        "the guard thinks again after the cast"
+                    );
                     assert_eq!(
-                        ai.target(),
-                        None,
-                        "a rat without sense_invisible loses the caster"
+                        report.target,
+                        Some(actor),
+                        "the guard can target the invisible caster"
                     );
                 }
-            }
-            if let Some(observer) = observer {
-                owner.clock_origin -= std::time::Duration::from_secs(199);
-                let restored = owner
-                    .appearance_observation_projected(
-                        observer,
-                        GameSessionId::decode(&id(110)).map_err(debug)?,
-                        true,
-                        vec![oteryn_protocol_oteryn::appearance::EntityRef {
-                            identity: actor.placement_identity(),
-                            generation: actor.actor_local_generation(),
-                        }],
-                    )
-                    .await
-                    .ok_or("expired invisibility appearance projection")?;
-                assert!(matches!(
-                    restored.bindings[0].look,
-                    oteryn_protocol_oteryn::appearance::Look::Outfit { .. }
-                ));
-                let visible = owner
-                    .observe_visible_entities(observer)
-                    .await
-                    .ok_or("restored entities")?;
-                let snapshot =
-                    crate::gameplay_transport::world_spatial::SessionVisibility::default()
-                        .snapshot(&visible, &mut |_| Ok(()))
-                        .map_err(debug)?;
-                let (_, bytes) =
-                    crate::gameplay_transport::world_spatial::encode_visibility_snapshot(
-                        &[6],
-                        &snapshot,
-                    )
-                    .map_err(debug)?;
-                let received = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_snapshot(&bytes).map_err(debug)?;
-                assert!(
-                    received
-                        .entities
-                        .iter()
-                        .any(|entity| entity.entity.identity == actor.placement_identity())
-                );
             }
             drop(owner);
             drop(authority);

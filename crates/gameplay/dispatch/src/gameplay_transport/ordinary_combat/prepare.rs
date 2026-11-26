@@ -79,22 +79,13 @@ pub(in crate::gameplay_transport) fn aimed_origin(
 /// the caster's floor, as without a seen target, there is none and the cast keeps the facing.
 pub(in crate::gameplay_transport) fn aim_point(
     runtime: &ChannelRuntimeV1,
-    states: &ChannelSpellStates,
     actor: ExactActorRef,
     caster: MovementLocalPosition,
     aim: Aim,
     attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
-    now: SemanticTimeMicros,
 ) -> Result<Option<TilePosition>, SpellCastDisposition> {
     match aim {
-        Aim::Target => Ok(aimed_target_tile(
-            runtime,
-            states,
-            actor,
-            caster,
-            attack_target,
-            now,
-        )),
+        Aim::Target => Ok(aimed_target_tile(runtime, actor, caster, attack_target)),
         Aim::Cursor(p) => cursor_point(caster, p),
     }
 }
@@ -125,15 +116,12 @@ fn in_view(caster: MovementLocalPosition, p: TilePosition) -> bool {
 }
 
 /// WU26-14 TARGET: the tile of the held attack target while it is a visible creature or player the
-/// caster sees on its floor and that is not hidden from it; otherwise none, so the cast keeps the
-/// facing.
+/// caster sees on its floor. Without one, the cast keeps the facing.
 fn aimed_target_tile(
     runtime: &ChannelRuntimeV1,
-    states: &ChannelSpellStates,
     actor: ExactActorRef,
     caster: MovementLocalPosition,
     attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
-    now: SemanticTimeMicros,
 ) -> Option<TilePosition> {
     let held = attack_target?;
     let visible = runtime.visible_entities();
@@ -151,7 +139,7 @@ fn aimed_target_tile(
                 })
                 .map(|p| p.actor)
         })?;
-    if target == actor || states.player_hidden_from(runtime, actor, target, now) {
+    if target == actor {
         return None;
     }
     let seen = runtime.read_actor_position(target).ok()?.position();
@@ -315,8 +303,6 @@ pub(super) async fn prepare_inner(
         actor,
         attack_target,
         &roster,
-        states,
-        now,
     )
     .await?;
     let caster_position = spatial.caster_position;
@@ -328,7 +314,7 @@ pub(super) async fn prepare_inner(
         bindings,
     } = qualify_targets(
         tx, root, authority, runtime, states, room, objects, spell, &targeted, profile, actor,
-        named, pvp_modes, &players, &creatures, spatial, now,
+        named, pvp_modes, &players, &creatures, spatial,
     )
     .await?;
     let PaidPreparation {
@@ -410,8 +396,6 @@ async fn prepare_spatial(
         MovementPositionSnapshot,
         Option<GameSessionId>,
     )],
-    states: &ChannelSpellStates,
-    now: SemanticTimeMicros,
 ) -> Result<SpatialPhase, SpellCastDisposition> {
     let position = runtime
         .read_actor_position(actor)
@@ -449,9 +433,6 @@ async fn prepare_spatial(
                     .flatten()
                 })
                 .ok_or(SpellCastDisposition::TargetIllegal)?;
-            if states.player_hidden_from(runtime, actor, creature, now) {
-                return Err(SpellCastDisposition::TargetIllegal);
-            }
             let seen = runtime
                 .read_actor_position(creature)
                 .map_err(|_| SpellCastDisposition::TargetIllegal)?;
@@ -469,15 +450,7 @@ async fn prepare_spatial(
         Some(aim) => Some(aimed_origin(
             caster_position,
             position.facing().map(direction),
-            aim_point(
-                runtime,
-                states,
-                actor,
-                position.position(),
-                aim,
-                attack_target,
-                now,
-            )?,
+            aim_point(runtime, actor, position.position(), aim, attack_target)?,
         )?),
         None => None,
     };
@@ -673,7 +646,6 @@ async fn qualify_targets(
     players: &[(ExactActorRef, GameSessionId, PlayerSpellState)],
     creatures: &[crate::foundation::CompanionSnapshot],
     spatial: SpatialPhase,
-    now: SemanticTimeMicros,
 ) -> Result<TargetPhase, SpellCastDisposition> {
     let SpatialPhase {
         position,
@@ -767,16 +739,6 @@ async fn qualify_targets(
         None
     };
     let selected_actor = selected.and_then(|c| bindings.iter().find(|b| b.source_id == c.id));
-    // A position or player name cannot bypass direct-target visibility. Untargeted
-    // area effects still resolve their tiles, including unseen occupants.
-    if (profile.header.targeting.needs_target
-        || named.is_some()
-        || intent.target == SpellTarget::AttackTarget)
-        && selected_actor
-            .is_some_and(|target| states.player_hidden_from(runtime, actor, target.actor, now))
-    {
-        return Err(SpellCastDisposition::TargetIllegal);
-    }
     if let (SpellTarget::AttackTarget, Some(target)) = (intent.target, attack_target_tile) {
         let distance = target
             .x
