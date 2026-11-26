@@ -720,6 +720,26 @@ class ClientReplayTests(unittest.TestCase):
                 else:
                     self.assertEqual(result.stdout, '')
 
+    def test_w13_replay_batch_matches_rust_selector(self):
+        for batch, selected in (
+            ('196:1', True),
+            ('+00000000196:+000000001', True),
+            ('196:18446744073709551615', True),
+            ('196:18446744073709551616', False),
+            ('195:1', False),
+            ('196:0', False),
+            ('', False),
+            ('all', True),
+        ):
+            with self.subTest(batch=batch):
+                result = bash(
+                    'source "$REPLAY_HELPER"; selected_client_replays',
+                    {'REPLAY_HELPER': str(HERE / 'client_replay.sh'),
+                     'OTERYN_E2E_ROW_BATCH': batch},
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual('W13.client' in result.stdout, selected)
+
 
 class CloudRunSummaryTests(unittest.TestCase):
     def test_cloud_uses_first_eligible_work_parent(self):

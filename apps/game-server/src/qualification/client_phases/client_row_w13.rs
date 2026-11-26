@@ -5,13 +5,15 @@ use super::*;
 use oteryn_dev_client::client_ui::daily_boost::{self, DailyBoostPanel};
 use oteryn_protocol_oteryn::daily_boost as wire;
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W13_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    use std::io::Write;
+
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(root.join(name))?;
+    file.write_all(bytes)?;
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -53,15 +55,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if refused.status != CommandStatus::Rejected || !refused.payload.is_empty() {
         return Err(format!("malformed query was not refused: {refused:?}").into());
     }
-    capture("w13-boost.bin", &reply.payload);
+    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("capture directory missing")?;
+    let root = Path::new(&root);
+    capture(root, "w13-boost.bin", &reply.payload)?;
     capture(
+        root,
         "w13-expected.txt",
         format!(
             "epoch={}\ncreature={}\nboss={}\n",
             view.reset_epoch, view.creature_key, view.boss_key
         )
         .as_bytes(),
-    );
+    )?;
     Ok(format!(
         "epoch={};creature={};boss={}",
         view.reset_epoch, view.creature_key, view.boss_key
@@ -69,9 +74,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
-            "e2e_all scenario=W13.client status=CAPTURED evidence={observed}"
+            "e2e_capture scenario=W13.client status=CAPTURED evidence={observed}"
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W13.client status=FAIL evidence={error}"

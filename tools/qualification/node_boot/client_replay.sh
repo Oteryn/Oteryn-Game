@@ -19,14 +19,29 @@ replay_client() {
 }
 
 selected_client_replays() {
-  local start length index row package case_name
-  local batch=${OTERYN_E2E_ROW_BATCH:-0:15}
+  local start length index row package case_name value
+  local batch=${OTERYN_E2E_ROW_BATCH-0:15}
   if [[ $batch == all ]]; then
     start=0
     length=197
-  elif [[ $batch =~ ^([0-9]{1,7}):([0-9]{1,7})$ ]]; then
-    start=$((10#${BASH_REMATCH[1]}))
-    length=$((10#${BASH_REMATCH[2]}))
+  elif [[ $batch =~ ^[+]?0*([0-9]+):[+]?0*([0-9]+)$ ]]; then
+    start=${BASH_REMATCH[1]}
+    length=${BASH_REMATCH[2]}
+    # Match the 64-bit Rust selector's overflow check before bounding lengths.
+    local LC_ALL=C
+    for value in "$start" "$length"; do
+      if (( ${#value} > 20 )) ||
+        { (( ${#value} == 20 )) && [[ $value > 18446744073709551615 ]]; }; then
+        return 0
+      fi
+    done
+    # All registered replays are below 197. Avoid signed shell overflow.
+    (( ${#start} <= 3 )) || return 0
+    if (( ${#length} > 3 )); then
+      length=999
+    fi
+    start=$((10#$start))
+    length=$((10#$length))
   else
     return 0
   fi
