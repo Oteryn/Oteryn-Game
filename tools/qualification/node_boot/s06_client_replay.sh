@@ -27,9 +27,10 @@ PY
   fi
 fi
 
+started=$SECONDS
 capture=$(mktemp -d "$work/s06-client.XXXXXX")
 failed() {
-  printf 'SEAM_EVIDENCE e2e_all scenario=S06.client status=FAIL evidence=%s\n' "$1"
+  printf 'SEAM_EVIDENCE e2e_all scenario=S06.client status=FAIL seconds=%d evidence=%s\n' "$((SECONDS - started))" "$1"
   exit 1
 }
 
@@ -50,4 +51,4 @@ if ! E2E_ALL_CAPTURE_DIR="$capture" cargo +1.100.0 test --manifest-path "$root/C
   failed client-replay-failed
 fi
 grep -Fxq "test $test_name ... ok" "$capture/replay.log" || failed client-replay-not-executed
-printf 'SEAM_EVIDENCE e2e_all scenario=S06.client status=PASS evidence=live-outfit-commit-and-addon-refusal-replayed\n'
+printf 'SEAM_EVIDENCE e2e_all scenario=S06.client status=PASS seconds=%d evidence=live-outfit-commit-and-addon-refusal-replayed\n' "$((SECONDS - started))"

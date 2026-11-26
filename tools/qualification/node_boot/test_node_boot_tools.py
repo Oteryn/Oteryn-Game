@@ -408,7 +408,7 @@ class SeamPassThroughTests(unittest.TestCase):
                 capture_output=True, text=True, check=False,
             )
         self.assertNotEqual(log.returncode, 0)
-        self.assertIn('scenario=S06.client status=FAIL evidence=client-replay-not-executed', log.stdout)
+        self.assertRegex(log.stdout, r'scenario=S06\.client status=FAIL seconds=\d+ evidence=client-replay-not-executed')
 
     def test_s06_replay_rejects_a_selected_batch_without_live_capture(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -420,7 +420,7 @@ class SeamPassThroughTests(unittest.TestCase):
                 capture_output=True, text=True, check=False,
             )
         self.assertNotEqual(log.returncode, 0)
-        self.assertIn('scenario=S06.client status=FAIL evidence=live-capture-missing', log.stdout)
+        self.assertRegex(log.stdout, r'scenario=S06\.client status=FAIL seconds=\d+ evidence=live-capture-missing')
 
     def test_s06_replay_preserves_the_unselected_command_result(self):
         with tempfile.TemporaryDirectory() as temp:
