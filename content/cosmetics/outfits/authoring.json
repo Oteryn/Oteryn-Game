@@ -9481,6 +9481,9 @@
         },
         "compatible_provenance": [
           "crystal-9f5a72c-quest-rewards-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -9492,6 +9495,9 @@
         },
         "compatible_provenance": [
           "crystal-9f5a72c-quest-rewards-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -13110,6 +13116,9 @@
         },
         "compatible_provenance": [
           "crystal-item-cosmetics-201189f-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -13121,6 +13130,9 @@
         },
         "compatible_provenance": [
           "crystal-item-cosmetics-201189f-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -16020,6 +16032,9 @@
         "sex": "female",
         "compatible_provenance": [
           "crystal-9f5a72c-quest-rewards-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -16032,6 +16047,9 @@
         "sex": "female",
         "compatible_provenance": [
           "crystal-9f5a72c-quest-rewards-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -16055,6 +16073,9 @@
         "sex": "male",
         "compatible_provenance": [
           "crystal-9f5a72c-quest-rewards-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -16067,6 +16088,9 @@
         "sex": "male",
         "compatible_provenance": [
           "crystal-9f5a72c-quest-rewards-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -24849,6 +24873,9 @@
           },
           "compatible_provenance": [
             "crystal-9f5a72c-quest-rewards-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
@@ -24860,6 +24887,9 @@
           },
           "compatible_provenance": [
             "crystal-9f5a72c-quest-rewards-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
@@ -28478,6 +28508,9 @@
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
@@ -28489,6 +28522,9 @@
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
@@ -31388,6 +31424,9 @@
           "sex": "female",
           "compatible_provenance": [
             "crystal-9f5a72c-quest-rewards-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
@@ -31400,6 +31439,9 @@
           "sex": "female",
           "compatible_provenance": [
             "crystal-9f5a72c-quest-rewards-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
@@ -31423,6 +31465,9 @@
           "sex": "male",
           "compatible_provenance": [
             "crystal-9f5a72c-quest-rewards-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
@@ -31435,6 +31480,9 @@
           "sex": "male",
           "compatible_provenance": [
             "crystal-9f5a72c-quest-rewards-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
