@@ -382,14 +382,6 @@ async fn prepare_spatial(
         None => None,
     };
     if needs_direction && facing.is_none() && aimed.is_none() {
-        // A freshly admitted actor has no facing. Preserve the protection-zone
-        // refusal even when there is no direction to qualify.
-        if saved.is_none() && spell.aggressive {
-            let caster_tile = read_tile(tx, authority, room, runtime, objects, position).await?;
-            if caster_tile.present && caster_tile.protection {
-                return Err(SpellCastDisposition::TargetIllegal);
-            }
-        }
         return reject();
     }
     let facing_direction = match aimed {

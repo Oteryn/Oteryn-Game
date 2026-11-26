@@ -180,7 +180,7 @@ fn a_gated_cast_in_a_protection_zone_is_refused_by_the_gate_not_the_zone() {
 }
 
 #[test]
-fn c04_protection_zone_has_a_target_legality_refusal() {
+fn c04_protection_zone_returns_rejected_disposition() {
     use crate::spell::native_combat::{Direction, ElementalStance, NativeCombatFacts};
 
     let book = book();
@@ -226,7 +226,7 @@ fn c04_protection_zone_has_a_target_legality_refusal() {
             &caster,
         )
         .map(|_| ()),
-        Err(SpellCastDisposition::TargetIllegal)
+        Err(SpellCastDisposition::Rejected)
     );
 }
 

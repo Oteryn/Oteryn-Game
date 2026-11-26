@@ -1264,7 +1264,7 @@ fn a_bundle_world_protection_zone_casts_heal_and_support_and_refuses_aggression(
     // The zone is what refuses the druid's aggressive wave: off the zone it casts.
     assert_eq!(
         cast("Terra Wave").map(|_| ()),
-        Err(SpellCastDisposition::TargetIllegal)
+        Err(SpellCastDisposition::Rejected)
     );
     let open = OperationalCastFacts {
         in_protection_zone: false,

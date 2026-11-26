@@ -186,18 +186,19 @@ pub(super) async fn protection_zone_probe(
             client.take_events();
             continue;
         }
-        let matched = outcome.status == CommandStatus::Accepted
-            && if inside {
-                outcome.disposition == SpellCastDisposition::TargetIllegal
-                    && outcome.actor_vitals_delta.is_none()
-                    && client.actor_vitals().copied() == Some(before)
-            } else {
-                outcome.disposition == SpellCastDisposition::Cast
-                    && outcome.actor_vitals_delta.is_some()
-                    && client
-                        .actor_vitals()
-                        .is_some_and(|after| after.mana < before.mana)
-            };
+        let matched = if inside {
+            outcome.status == CommandStatus::Rejected
+                && outcome.disposition == SpellCastDisposition::Rejected
+                && outcome.actor_vitals_delta.is_none()
+                && client.actor_vitals().copied() == Some(before)
+        } else {
+            outcome.status == CommandStatus::Accepted
+                && outcome.disposition == SpellCastDisposition::Cast
+                && outcome.actor_vitals_delta.is_some()
+                && client
+                    .actor_vitals()
+                    .is_some_and(|after| after.mana < before.mana)
+        };
         if !matched {
             return Err(
                 format!("PZ aggressive cast comparison inside={inside}: {outcome:?}").into(),
