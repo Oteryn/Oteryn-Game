@@ -400,8 +400,8 @@ fn experience_never_drops_below_zero_and_blessings_are_consumed() {
     death.level = 1;
     death.total_experience = ExactI64::new(40);
     let outcome = calculate_pve_death(&death, &ROOT, occurrence(0)).expect("a valid PvE death");
-    assert_eq!(outcome.experience_lost, ExactI64::new(40));
-    assert_eq!(outcome.experience_after, ExactI64::new(0));
+    assert_eq!(outcome.experience_lost, ExactI64::new(4));
+    assert_eq!(outcome.experience_after, ExactI64::new(36));
     assert_eq!(outcome.blessings_consumed, 3);
 
     death.level = 100;
