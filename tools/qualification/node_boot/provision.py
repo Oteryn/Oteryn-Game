@@ -35,7 +35,7 @@ def _request(socket_path, line, limit):
 
 def provision(socket_path, session, profile):
     identifier = uuid.UUID(session)
-    item = NAMED_ITEM.fullmatch(profile)
+    item = NAMED_ITEM.fullmatch(profile.removeprefix("p04-"))
     valid_profile = profile in PROFILES or (item is not None and int(item[1]) <= 0xFFFFFFFF)
     if identifier.version != 7 or str(identifier) != session or not valid_profile:
         raise ValueError("invalid qualification request")

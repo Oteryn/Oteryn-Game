@@ -232,29 +232,23 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let reference = std::num::NonZeroU32::new(u32::from(task.item))
         .ok_or("weekly-delivery has a zero item definition")?;
     let required = u32::from(task.required);
-    let inventory_before = delivery_item_count(&client, reference)?;
+    let inventory_before = u32::from(task.current);
     let missing = required.saturating_sub(inventory_before);
     if missing != 0 {
-        let prior_session = client.join_snapshot().game_session_id;
-        for quantity in delivery_fixture_quantities(missing)? {
-            request_fixture_control_at(
-                "NODE_BOOT_CONTROL_SOCKET",
-                uuid_text(prior_session.as_bytes()),
-                "--profile",
-                format!("item-{reference}-{quantity}"),
-            )
-            .await?;
-        }
-        logout_once(&mut client).await?;
-        drop(client);
-        client = connect_character(clients, 0x9a, 0).await?;
-        if client.join_snapshot().game_session_id == prior_session {
-            return Err("weekly-delivery fixture admission reused its original session".into());
-        }
+        client = fund_delivery(clients, client, reference, missing).await?;
     }
     let inventory_funded = inventory_before + missing;
-    if delivery_item_count(&client, reference)? != inventory_funded {
-        return Err("weekly-delivery fixture did not serve the exact required items".into());
+    let funded = query(&mut client).await?;
+    if !funded.weekly.deliveries.get(index).is_some_and(|funded| {
+        funded.item == task.item
+            && funded.required == task.required
+            && u32::from(funded.current) == inventory_funded
+            && !funded.delivered
+    }) {
+        return Err("weekly-delivery did not recognize the exact carried fixture items".into());
+    }
+    if carried_delivery_count(&mut client, reference).await? != inventory_funded {
+        return Err("weekly-delivery carried inventory differs from the required items".into());
     }
     let delivered = send(&mut client, 6, u16::try_from(index)?).await?;
     journey.check(
@@ -268,10 +262,17 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         (&delivered.refusal, delivered.weekly.deliveries.get(index)),
     );
     if delivered.refusal == 0 {
-        full_row_p05::wait_for_inventory(&mut client, "weekly-delivery consumption", |client| {
-            delivery_item_count(client, reference).ok() == Some(inventory_funded - required)
-        })
-        .await?;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            let consumed = carried_delivery_count(&mut client, reference).await?;
+            if consumed == inventory_funded - required {
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("weekly-delivery left {consumed} carried items").into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+        }
     }
 
     let opened = send(&mut client, 7, 0).await?;
@@ -374,37 +375,113 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 }
 
-fn delivery_fixture_quantities(mut missing: u32) -> TestResult<Vec<u32>> {
-    // The fixture keys its receipt on item and quantity within one admission.
-    // Distinct positive quantities fund one assignment without replaying a grant.
-    let mut quantities = Vec::new();
+const DELIVERY_BAG: u32 = 2854;
+
+fn delivery_inventory(
+    client: &oteryn_dev_client::DevClientSession,
+) -> TestResult<&oteryn_protocol_oteryn::item_view::CharacterInventory> {
+    client
+        .inventory()
+        .ok_or_else(|| "weekly-delivery inventory is absent".into())
+}
+
+async fn open_delivery_bag(
+    client: &mut oteryn_dev_client::DevClientSession,
+    handle: oteryn_protocol_oteryn::item_view::ItemHandle,
+) -> TestResult<oteryn_protocol_oteryn::container_tree::ContainerView> {
+    if let Some(view) = client.session_mut().container_views().and_then(|views| {
+        views
+            .views
+            .iter()
+            .find(|view| view.container_handle == handle)
+    }) {
+        return Ok(view.clone());
+    }
+    let result = client.use_item(handle).await?;
+    if result.status != CommandStatus::Accepted
+        || result.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+    {
+        return Err(format!("delivery bag use refused: {result:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        if let Some(view) = client.session_mut().container_views().and_then(|views| {
+            views
+                .views
+                .iter()
+                .find(|view| view.container_handle == handle)
+        }) {
+            return Ok(view.clone());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("delivery bag view absent".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+}
+
+async fn carried_delivery_count(
+    client: &mut oteryn_dev_client::DevClientSession,
+    reference: std::num::NonZeroU32,
+) -> TestResult<u32> {
+    let inventory = delivery_inventory(client)?;
+    let mut count = inventory
+        .entries
+        .iter()
+        .filter(|entry| entry.item_definition_ref == reference)
+        .map(|entry| entry.count.get())
+        .sum::<u32>();
+    let bags: Vec<_> = inventory
+        .entries
+        .iter()
+        .filter(|entry| entry.item_definition_ref.get() == DELIVERY_BAG)
+        .map(|entry| entry.handle)
+        .collect();
+    for bag in bags {
+        count += open_delivery_bag(client, bag)
+            .await?
+            .entries
+            .iter()
+            .filter(|entry| entry.item_definition_ref == reference)
+            .map(|entry| entry.count.get())
+            .sum::<u32>();
+    }
+    Ok(count)
+}
+
+async fn fund_delivery(
+    clients: &SeamClients<'_>,
+    mut client: oteryn_dev_client::DevClientSession,
+    reference: std::num::NonZeroU32,
+    mut missing: u32,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    let prior = client.join_snapshot().game_session_id;
+    // The fixture pins each filled bag's receipt by item and quantity within
+    // the admission. Distinct quantities therefore represent distinct bags.
     for limit in (1..=20).rev() {
         if missing == 0 {
-            return Ok(quantities);
+            break;
         }
         let quantity = missing.min(limit);
-        quantities.push(quantity);
+        request_fixture_control_at(
+            "NODE_BOOT_CONTROL_SOCKET",
+            uuid_text(prior.as_bytes()),
+            "--profile",
+            format!("p04-item-{reference}-{quantity}"),
+        )
+        .await?;
         missing -= quantity;
     }
     if missing != 0 {
         return Err("weekly-delivery assignment exceeds fixture grant capacity".into());
     }
-    Ok(quantities)
-}
-
-fn delivery_item_count(
-    client: &oteryn_dev_client::DevClientSession,
-    reference: std::num::NonZeroU32,
-) -> TestResult<u32> {
-    let inventory = client
-        .inventory()
-        .ok_or("weekly-delivery inventory is absent")?;
-    Ok(inventory
-        .entries
-        .iter()
-        .filter(|entry| entry.item_definition_ref == reference)
-        .map(|entry| entry.count.get())
-        .sum())
+    logout_once(&mut client).await?;
+    drop(client);
+    let fresh = connect_character(clients, 0x9a, 0).await?;
+    if fresh.join_snapshot().game_session_id == prior {
+        return Err("delivery fixture reused its original admission".into());
+    }
+    Ok(fresh)
 }
 
 async fn logout_once(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
@@ -418,14 +495,6 @@ async fn logout_once(client: &mut oteryn_dev_client::DevClientSession) -> TestRe
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn delivery_fixture_funds_fifty_with_distinct_receipts() {
-        let quantities = delivery_fixture_quantities(50).unwrap();
-        assert_eq!(quantities, [20, 19, 11]);
-        assert_eq!(quantities.iter().sum::<u32>(), 50);
-        assert!(delivery_fixture_quantities(211).is_err());
-    }
 
     #[test]
     fn scenario_commands_use_full_task_board_action_numbers() {
