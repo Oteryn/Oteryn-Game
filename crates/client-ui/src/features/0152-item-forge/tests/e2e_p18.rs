@@ -483,6 +483,7 @@ fn p18_confirmation_rejects_unexpected_core_creation() -> Result<(), Box<dyn std
             dust_limit: 100,
             slivers: 0,
             cores: 0,
+            ..Resources::default()
         },
         after_dust: 40,
         after_limit: 100,
