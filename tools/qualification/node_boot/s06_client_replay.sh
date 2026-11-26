@@ -34,7 +34,7 @@ failed() {
 }
 
 NODE_BOOT_S06_CAPTURE_DIR="$capture" "$@" | tee "$capture/live.log"
-grep -q '^SEAM_EVIDENCE e2e_all scenario=S06\.client status=CAPTURED ' "$capture/live.log" \
+grep -q '^SEAM_EVIDENCE e2e_capture scenario=S06\.client status=CAPTURED ' "$capture/live.log" \
   || failed live-capture-missing
 if grep -Eq '^SEAM_EVIDENCE (e2e_all scenario=S06\.client status=FAIL |QUALIFICATION_CAUSE row=S06\.client |S06_CLIENT_CAPTURE_WRITE_ERROR )' "$capture/live.log"; then
   failed live-capture-failed

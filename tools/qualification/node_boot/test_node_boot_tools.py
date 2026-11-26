@@ -399,7 +399,7 @@ class SeamPassThroughTests(unittest.TestCase):
                 for file in s06-before.bin s06-after.bin s06-commit.bin s06-refusal.bin s06-expected.txt; do
                     printf fixture > "$NODE_BOOT_S06_CAPTURE_DIR/$file"
                 done
-                echo 'SEAM_EVIDENCE e2e_all scenario=S06.client status=CAPTURED evidence=fixture'
+                echo 'SEAM_EVIDENCE e2e_capture scenario=S06.client status=CAPTURED evidence=fixture'
             ''')
             log = subprocess.run(
                 ['bash', str(HERE / 's06_client_replay.sh'), temp, 'bash', '-c', live],
