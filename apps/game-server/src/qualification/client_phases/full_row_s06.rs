@@ -701,10 +701,21 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         format!("committed_revision={committed} selected_revision={selected_revision} sequence={sequence}"),
     );
     let previous = client.join_snapshot().game_session_id;
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    let logout_deadline = tokio::time::Instant::now() + Duration::from_secs(65);
+    while client
+        .session_mut()
+        .combat_state()
+        .is_some_and(|state| state.in_fight)
     {
-        return Err("step=fresh-admission observed=logout-refused".into());
+        if tokio::time::Instant::now() >= logout_deadline {
+            return Err("step=fresh-admission need=wire-combat-state-cleared-before-logout".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+    }
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=fresh-admission observed=logout-{logout:?}").into());
     }
     wait_character_released(clients, 0).await?;
     let mut fresh = connect_character(clients, 0xb7, 0).await?;
@@ -737,7 +748,22 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         || persisted_binding.root_revision != committed
         || persisted_binding.selection_revision != Some(selected_revision)
     {
-        return Err(format!("step=fresh-admission observed=selection-unlock-or-revision-mismatch need=mount-{mount}-root-{committed}-selection-{selected_revision}").into());
+        let option = persisted
+            .catalogue
+            .outfits
+            .iter()
+            .find(|outfit| outfit.key == mounted.outfit_key);
+        return Err(format!(
+            "step=fresh-admission observed=new-session-{}-selected-{:?}-outfit-{:?}-mount-owned-{}-catalogue-root-{}-binding-root-{}-binding-selection-{:?}-look-{:?} need=mount-{mount}-root-{committed}-selection-{selected_revision}",
+            fresh.join_snapshot().game_session_id != previous,
+            persisted.catalogue.selected,
+            option,
+            persisted.catalogue.mounts.contains(&mount),
+            persisted.catalogue.root_revision,
+            persisted_binding.root_revision,
+            persisted_binding.selection_revision,
+            persisted_binding.look,
+        ).into());
     }
     let logout = fresh.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
