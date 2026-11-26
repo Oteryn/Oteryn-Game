@@ -150,11 +150,29 @@ fn command(request: &WheelAllocationRequest) -> TestResult<WheelCommand> {
 async fn send(
     client: &mut DevClientSession,
     request: &WheelAllocationRequest,
-) -> TestResult<(WheelResponse, WheelAllocationReply)> {
-    if request.action != 0 {
+) -> TestResult<(WheelResponse, WheelAllocationReply, u64)> {
+    let requested = command(request)?;
+    let (response, result_sequence) = if requested.mutation {
         client.take_events();
-    }
-    let response = wheel_allocation::send(client.session_mut(), &command(request)?).await?;
+        let result = client
+            .session_mut()
+            .gated_command(
+                wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
+                requested.kind,
+                &requested.payload,
+            )
+            .await?;
+        let mut view =
+            wheel_allocation::send(client.session_mut(), &command(&query_request())?).await?;
+        view.status = result.status;
+        view.payload = result.payload;
+        (view, result.server_sequence)
+    } else {
+        (
+            wheel_allocation::send(client.session_mut(), &requested).await?,
+            0,
+        )
+    };
     if response.status != CommandStatus::Accepted {
         return Err(format!(
             "mechanic command action={} observed status={:?} payload={:?}; need the server Wheel route to accept capability 148 command 161",
@@ -172,7 +190,7 @@ async fn send(
         // WHEEL-ALLOCATION-V1 shares its 490 ms owner interval with Atelier mutations.
         tokio::time::sleep(Duration::from_millis(490)).await;
     }
-    Ok((response, reply))
+    Ok((response, reply, result_sequence))
 }
 
 fn request(
@@ -219,6 +237,7 @@ fn validate_current(response: &WheelResponse, expected: &WheelAllocationReply) -
 async fn next_vitals(
     client: &mut DevClientSession,
     step: &str,
+    result_sequence: u64,
 ) -> TestResult<oteryn_protocol_oteryn::actor_spell::ActorVitals> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
     loop {
@@ -230,10 +249,18 @@ async fn next_vitals(
             verdict::context(format!("step={step} first ActorVitals delta absent"), error)
         })?;
         if let Some(value) = events.into_iter().find_map(|event| match event {
-            oteryn_dev_client::SessionEvent::ActorVitals(delta) => Some(delta.value),
+            oteryn_dev_client::SessionEvent::ActorVitals(delta)
+                if delta.server_sequence > result_sequence =>
+            {
+                Some(delta)
+            }
             _ => None,
         }) {
-            return Ok(value);
+            evidence(&format!(
+                "P06_VITALS step={step} result_sequence={result_sequence} delta_sequence={} max_mana={}",
+                value.server_sequence, value.value.max_mana
+            ));
+            return Ok(value.value);
         }
     }
 }
@@ -247,7 +274,7 @@ async fn relog_vitals(
         return Ok(expected);
     }
     // A freshly delivered fixture entitlement can update the admitted snapshot on the periodic stream.
-    next_vitals(client, step).await
+    next_vitals(client, step, 0).await
 }
 
 async fn own_level(client: &mut DevClientSession) -> TestResult<u32> {
@@ -520,7 +547,7 @@ async fn journey(
             "step 1 observed capability 148 absent; need server Wheel capability selection".into(),
         );
     }
-    let (_, initial) = send(&mut client, &query_request()).await?;
+    let (_, initial, _) = send(&mut client, &query_request()).await?;
     if initial.refused {
         return Err(format!("step 1 Wheel query observed semantic refusal: {initial:?}").into());
     }
@@ -546,7 +573,7 @@ async fn journey(
     }
     let mut partial = [0; 36];
     partial[CORE_SLOT] = 25;
-    let (response, saved_partial) = send(
+    let (response, saved_partial, result_sequence) = send(
         &mut client,
         &request(1, v7(0xd6, 1), initial.revision, partial),
     )
@@ -561,7 +588,7 @@ async fn journey(
         .into());
     }
     validate_current(&response, &saved_partial)?;
-    let partial_vitals = next_vitals(&mut client, "dedication-save").await?;
+    let partial_vitals = next_vitals(&mut client, "dedication-save", result_sequence).await?;
     if partial_vitals.max_mana != baseline.max_mana + 25 * 6 {
         return Err(format!(
             "step 2 dedication save had no max-mana delta: before={baseline:?} after={partial_vitals:?} reply={saved_partial:?}"
@@ -572,7 +599,7 @@ async fn journey(
 
     let mut full = [0; 36];
     full[CORE_SLOT] = 50;
-    let (response, saved_full) = send(
+    let (response, saved_full, result_sequence) = send(
         &mut client,
         &request(1, v7(0xd6, 2), saved_partial.revision, full),
     )
@@ -586,16 +613,23 @@ async fn journey(
         );
     }
     validate_current(&response, &saved_full)?;
-    let full_vitals = next_vitals(&mut client, "conviction-save").await?;
+    let full_vitals = next_vitals(&mut client, "conviction-save", result_sequence).await?;
     if full_vitals.max_mana != partial_vitals.max_mana + 25 * 6 {
         return Err(format!(
             "step 3 full-slot dedication/conviction delta absent: partial={partial_vitals:?} full={full_vitals:?}"
         )
         .into());
     }
-    row.pass("conviction-save", (&saved_full, full_vitals));
+    let conviction = full_row_p07::live_wheel_effects(&mut client, &saved_full, 1).await?;
+    if !conviction
+        .iter()
+        .any(|line| line.starts_with("augmented focus spells: augment stage 1;"))
+    {
+        return Err(format!("step 3 full-slot conviction effect absent: {conviction:?}").into());
+    }
+    row.pass("conviction-save", (&saved_full, full_vitals, conviction));
 
-    let (response, stale) = send(
+    let (response, stale, _) = send(
         &mut client,
         &request(1, v7(0xd6, 3), initial.revision, partial),
     )
@@ -614,7 +648,7 @@ async fn journey(
     logout(&mut client).await?;
     drop(client);
     let mut client = connect_eligible(clients, 0xd7).await?;
-    let (_, reloaded) = send(&mut client, &query_request()).await?;
+    let (_, reloaded, _) = send(&mut client, &query_request()).await?;
     let reloaded_vitals = relog_vitals(&mut client, full_vitals, "fresh-admission-save").await?;
     if reloaded != saved_full || reloaded_vitals != full_vitals {
         return Err(format!(
@@ -635,7 +669,7 @@ async fn journey(
         // capacity demonstrates the server-side budget refusal without forging XP.
         let mut attempted = full;
         attempted[14] = 50;
-        let (response, refused) = send(
+        let (response, refused, _) = send(
             &mut client,
             &request(1, v7(0xd7, 1), reloaded.revision, attempted),
         )
@@ -658,7 +692,7 @@ async fn journey(
         revelation[8] = 75;
         revelation[13] = 75;
         revelation[7] = 50;
-        let (response, revealed) = send(
+        let (response, revealed, result_sequence) = send(
             &mut client,
             &request(1, v7(0xd7, 1), reloaded.revision, revelation),
         )
@@ -679,12 +713,12 @@ async fn journey(
                 format!("step=revelation-effect stage-one projection missing: {active:?}").into(),
             );
         }
-        let vitals = next_vitals(&mut client, "revelation-save").await?;
+        let vitals = next_vitals(&mut client, "revelation-save", result_sequence).await?;
         row.pass("revelation-save", (&revealed, vitals));
         logout(&mut client).await?;
         drop(client);
         client = connect_eligible(clients, 0xd9).await?;
-        let (_, retained) = send(&mut client, &query_request()).await?;
+        let (_, retained, _) = send(&mut client, &query_request()).await?;
         let retained_vitals =
             relog_vitals(&mut client, vitals, "fresh-admission-revelation").await?;
         if retained != revealed || retained_vitals != vitals {
@@ -706,7 +740,7 @@ async fn journey(
     } else {
         reloaded.revision
     };
-    let (response, reset) = send(
+    let (response, reset, result_sequence) = send(
         &mut client,
         &request(2, v7(0xd7, 2), reset_revision, [0; 36]),
     )
@@ -715,7 +749,7 @@ async fn journey(
         return Err(format!("step 7 reset observed reply={reset:?}").into());
     }
     validate_current(&response, &reset)?;
-    let reset_vitals = next_vitals(&mut client, "reset").await?;
+    let reset_vitals = next_vitals(&mut client, "reset", result_sequence).await?;
     if reset_vitals != baseline {
         return Err(format!(
             "step 7 reset did not remove Wheel vitals: baseline={baseline:?} observed={reset_vitals:?}"
@@ -736,7 +770,7 @@ async fn journey(
     logout(&mut client).await?;
     drop(client);
     let mut final_client = connect_eligible(clients, 0xd8).await?;
-    let (_, final_state) = send(&mut final_client, &query_request()).await?;
+    let (_, final_state, _) = send(&mut final_client, &query_request()).await?;
     if final_state != reset || final_client.actor_vitals().copied() != Some(baseline) {
         return Err(format!(
             "step 8 fresh admission lost durable reset: reset={reset:?} query={final_state:?} vitals={:?}",
