@@ -13,11 +13,17 @@ use oteryn_dev_client::client_runtime::account_achievements::{
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::account_achievements as wire;
 
+// The live sword-350 run took 36.5 seconds to remove the first 35% of a demon's
+// health. Allow 150 seconds per target for damage variation and server ticks, then
+// 120 seconds for party setup, the combat lock, the reward and relog.
+const TARGET_DEADLINE: Duration = Duration::from_secs(150);
+pub(super) const JOURNEY_DEADLINE: Duration = Duration::from_secs(420);
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>, core: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let placed_at = std::cell::Cell::new(None);
     let result = verdict::indexed_timeout(
-        Duration::from_secs(90),
+        JOURNEY_DEADLINE,
         verdict::observe(journey(clients, core, &placed_at)),
     )
     .await;
@@ -331,7 +337,7 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
             )
             .into());
         }
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+        let deadline = tokio::time::Instant::now() + TARGET_DEADLINE;
         let mut damaged = false;
         let mut last_health = 100;
         let attack_started = std::time::Instant::now();

@@ -511,7 +511,7 @@ async fn journey(clients: &SeamClients<'_>, core: &SeamClients<'_>) -> TestResul
 pub(super) async fn run_packet(clients: &SeamClients<'_>, core: &SeamClients<'_>) {
     let start = std::time::Instant::now();
     let result = verdict::indexed_timeout(
-        Duration::from_secs(120),
+        full_row_p11::JOURNEY_DEADLINE + Duration::from_secs(30),
         verdict::observe(journey(clients, core)),
     )
     .await;
