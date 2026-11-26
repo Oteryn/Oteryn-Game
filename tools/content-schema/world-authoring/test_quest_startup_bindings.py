@@ -139,6 +139,15 @@ class QuestStartupBindingsTests(unittest.TestCase):
             (((33152, 32866, 8), 2772, "action", 5633),)
         )
 
+    def test_fibula_doors_have_their_source_actions(self):
+        self.assert_native_startup_selectors(
+            (
+                ((32190, 32432, 8), 1631, "action", 3940),
+                ((32212, 32435, 10), 1648, "action", 1050),
+                ((32277, 32420, 10), 1631, "action", 3980),
+            )
+        )
+
     def test_native_startup_selectors_match_exact_source_items(self):
         self.assert_native_startup_selectors((*EXPECTED, *NIGHTMARE))
 
