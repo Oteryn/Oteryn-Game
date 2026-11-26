@@ -640,6 +640,9 @@ fn ground_and_walkable_border_items_do_not_block_an_npc_cell() -> TestResult {
     Ok(())
 }
 
+#[path = "npcs/cq16_shadows_npcs.rs"]
+mod cq16_shadows_npcs;
+
 #[path = "npcs/journey.rs"]
 mod journey;
 
@@ -666,3 +669,9 @@ mod qb_outfit_npcs;
 
 #[path = "npcs/travel_origins.rs"]
 mod travel_origins;
+
+#[path = "npcs/regional_placements.rs"]
+mod regional_placements;
+
+#[path = "npcs/regional_population.rs"]
+mod regional_population;

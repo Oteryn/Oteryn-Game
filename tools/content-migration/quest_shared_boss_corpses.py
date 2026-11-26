@@ -2,10 +2,15 @@
 BODIES = {
     'an_observer_eye': 5995,
     'arbaziloth': 50029,
+    'arachir_the_ancient_one': 8109,
     'armenius_creature': 6006,
+    'diblis_the_fair': 8109,
     'grand_mother_foulscale': 5973,
     'orshabaal': 5995,
+    'sir_valorcrest': 8109,
+    'the_pale_count': 18953,
     'the_weakened_count': 6006,
+    'zevelon_duskbringer': 8109,
 }
 
 

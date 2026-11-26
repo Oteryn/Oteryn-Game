@@ -18,6 +18,14 @@ KEY = 'oteryn:item.tibia.i7934'
 BLOODY_TEAR = 'oteryn:item.tibia.i32594'
 
 
+class SelectedChestProfiles(unittest.TestCase):
+    def test_selected_source_charge_bags_retain_their_native_item_closure(self):
+        keys = profiles.requested_keys(ROOT)
+        self.assertLessEqual({f'oteryn:item.tibia.i{item}' for item in (
+            2853, 2859, 2971, 3048, 3056, 3083, 3085, 3424,
+        )}, keys)
+
+
 class QuestCallbackProfiles(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -367,6 +375,14 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.assertTrue({'oteryn:item.tibia.i3466','oteryn:item.tibia.i2992'} <= expected)
         # Draconia adds the one-charge ice rapier and serpent sword to full bags.
         self.assertTrue({'oteryn:item.tibia.i3284', 'oteryn:item.tibia.i3297'} <= expected)
+        # Fire Axe's chest bag holds the dragon necklace. The separate pile of
+        # bones grants the axe through the direct reward path.
+        self.assertIn('oteryn:item.tibia.i3085', expected)
+        axe = 'oteryn:item.tibia.i3320'
+        self.assertNotIn(axe, expected)
+        self.assertTrue(rows[axe]['admission']['materializable'])
+        self.assertIn('CharacterInventory', rows[axe]['admission']['legal_destinations'])
+        self.assertEqual(rows[axe]['production_binding']['target']['key'], axe)
         # QA-REWARD-CHESTS-1 qualifies the Fire Axe quest's exact three bag children.
         fire_axe, = fire_axe_placements
         self.assertEqual(fire_axe['root']['key'], 'oteryn:item.tibia.i2853')

@@ -40,6 +40,46 @@ class CorpseLootAdmissionTests(unittest.TestCase):
         self.assertFalse(facts['oteryn:item.tibia.i3056']['stackable'])
         self.assertTrue(facts['oteryn:item.tibia.i11472']['stackable'])
 
+    def test_vampire_lord_token_reaches_the_native_reward_lottery(self):
+        _, creatures = full.read(full.CREATURE_PROFILES)
+        document = json.loads(full.loot_tables(creatures))
+        facts = {row['item']['key']: row for row in document['items']}
+        token = 'oteryn:item.tibia.i8192'
+        self.assertTrue(facts[token]['materializable'])
+        self.assertTrue(facts[token]['stackable'])
+        self.assertEqual(facts['oteryn:item.tibia.i8109']['container_capacity'], 10)
+        vampire_lords = {'arachir_the_ancient_one', 'diblis_the_fair', 'sir_valorcrest',
+                         'the_pale_count', 'zevelon_duskbringer'}
+        tables = {row['identity']['key'].rsplit('.', 1)[1]: row for row in document['tables']
+                  if any(entry['item']['key'] == token for entry in row['entries'])}
+        self.assertEqual(set(tables), vampire_lords)
+        for lord, table in tables.items():
+            for entry in table['entries']:
+                self.assertTrue(facts[entry['item']['key']]['materializable'],
+                                (lord, entry['item']['key']))
+        diblis = tables['diblis_the_fair']
+        self.assertEqual([(entry['probability_ppm'], entry['min_count'], entry['max_count'])
+                          for entry in diblis['entries'] if entry['item']['key'] == token],
+                         [(1000000, 1, 1)])
+
+    def test_both_counts_drop_a_materializable_storkus_ring(self):
+        _, creatures = full.read(full.CREATURE_PROFILES)
+        document = json.loads(full.loot_tables(creatures))
+        ring = 'oteryn:item.tibia.i7924'
+        facts = {row['item']['key']: row for row in document['items']}
+        tables = {row['identity']['key']: row for row in document['tables']}
+        bindings = {row['creature']['key']: row['loot'] for row in document['creature_loot']}
+        for count in ('the_count', 'the_weakened_count'):
+            with self.subTest(count=count):
+                table = tables[bindings[f'oteryn:creature.{count}']['key']]
+                drops = [row for row in table['entries'] if row['item']['key'] == ring]
+                self.assertEqual([(1_000_000, 1, 1)], [
+                    (drop["probability_ppm"], drop["min_count"], drop["max_count"])
+                    for drop in drops
+                ])
+                self.assertTrue(facts[ring]['materializable'])
+                self.assertFalse(facts[ring].get("stackable", False))
+
     def test_arbaziloth_stackable_drops_preserve_their_rolled_quantity(self):
         _, creatures = full.read(full.CREATURE_PROFILES)
         document = json.loads(full.loot_tables(creatures))

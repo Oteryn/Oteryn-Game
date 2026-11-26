@@ -9,6 +9,10 @@ pub(super) mod elemental;
 
 pub(super) trait RespawnWake: OwnerClock {
     fn sleep_until(&self, due: SemanticTimeMicros) -> impl Future<Output = ()> + Send;
+
+    fn world_clock_utc_ms(&self) -> Option<u64> {
+        crate::world_clock::now_utc_ms()
+    }
 }
 
 pub(super) struct MonotonicRespawnWake {
@@ -273,7 +277,7 @@ pub(super) async fn drive(
                 return Err(RespawnExit::StaleOwner);
             };
             let now = wake.now().get();
-            job.pass(&mut runtime, now)?;
+            job.pass(&mut runtime, now, wake.world_clock_utc_ms())?;
             job.next_owner_window(now)
                 .ok_or(RespawnExit::ClockExhausted)
         };

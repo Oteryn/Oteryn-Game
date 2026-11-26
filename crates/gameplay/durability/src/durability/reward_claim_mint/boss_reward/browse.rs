@@ -35,7 +35,7 @@ impl DurabilityRoot {
                 if now >= expiry {
                     page.status = BossRewardCollectionStatus::Expired;
                 } else {
-                    let rows = sqlx::query("SELECT item_ordinal,definition_family,definition_production_key,definition_revision_ref,quantity FROM game_boss_reward_items WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND death_id=encode($3,'hex')::uuid AND item_ordinal>$4 AND collected_transaction_id IS NULL AND NOT expired ORDER BY item_ordinal LIMIT 65")
+                    let rows = sqlx::query("SELECT item_ordinal,definition_family,definition_production_key,definition_revision_ref,quantity FROM game_boss_reward_items WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND death_id=encode($3,'hex')::uuid AND item_ordinal>$4 AND parent_item_ordinal IS NULL AND collected_transaction_id IS NULL AND NOT expired ORDER BY item_ordinal LIMIT 65")
                         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(death.as_slice()).bind(i32::from(after_ordinal)).fetch_all(&mut *tx).await?;
                     page.more = rows.len() > BOSS_REWARD_PAGE_SIZE;
                     for row in rows.into_iter().take(BOSS_REWARD_PAGE_SIZE) {

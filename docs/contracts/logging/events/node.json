@@ -59,6 +59,50 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "bank_robbery_boot",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "state",
+        "error"
+      ],
+      "codes": [],
+      "note": "Bank Robbery boot repair will retry."
+    },
+    {
+      "event": "bank_robbery_config",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "state",
+        "error"
+      ],
+      "codes": [],
+      "note": "Bank Robbery supervision refused invalid site configuration."
+    },
+    {
+      "event": "bank_robbery_poll",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "state",
+        "error"
+      ],
+      "codes": [],
+      "note": "Bank Robbery occurrence polling will retry."
+    },
+    {
+      "event": "bank_robbery_projection",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "state",
+        "error"
+      ],
+      "codes": [],
+      "note": "Bank Robbery spawn projection will retry."
+    },
+    {
       "event": "boot_failed",
       "level": "info",
       "span": false,
