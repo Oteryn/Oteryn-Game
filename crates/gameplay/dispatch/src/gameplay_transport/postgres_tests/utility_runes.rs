@@ -89,9 +89,9 @@ fn utility_runes_animate_real_dispatch_refuses_black_skull() -> TestResult {
 }
 
 fn scenario(case: Case) -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(move || {
@@ -190,18 +190,19 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             assert!(!policy.convinceable);
         }
         let target_key = policy.definition_key.clone();
-        let skeleton = native
+        // Install both actual Skeleton variants from the live manifest.
+        let skeletons = native
             .policies()
             .policies()
             .iter()
-            .find(|p| p.definition_key == "oteryn:creature.skeleton")
-            .ok_or("Skeleton policy")?
-            .as_ref()
-            .clone();
+            .filter(|p| p.display_name.eq_ignore_ascii_case("Skeleton"));
+        let mut policies = vec![policy];
+        policies.extend(skeletons.map(|p| p.as_ref().clone()));
+        assert_eq!(policies.len(), 3, "both Skeleton variants must be installed");
         let policies =
             crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(
                 native.source_digest(),
-                vec![policy, skeleton],
+                policies,
             )
             .map_err(debug)?;
         runtime
@@ -564,7 +565,10 @@ async fn run_case(admin: String, case: Case) -> TestResult {
                 "oteryn:creature.rat"
             }
         );
-        if !animate {
+        if animate {
+            assert_eq!(owned[0].state.policy.definition_revision, "definition-r1");
+            assert_eq!(owned[0].state.policy.display_name, "Skeleton");
+        } else {
             assert_eq!(owned[0].actor, target_actor);
         }
     }
