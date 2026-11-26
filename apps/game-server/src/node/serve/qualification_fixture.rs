@@ -90,7 +90,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let allowed = allowed
         || spell_build(profile).is_some()
         || named_item(profile).is_some()
-        || profile == "premium";
+        || matches!(profile, "premium" | "s10-rashid");
     allowed.then_some((session, profile))
 }
 
@@ -769,6 +769,10 @@ async fn prepare_build(
     )
     .map_err(|error| format!("qualification character: {error:?}"))?;
     #[cfg(feature = "qualification-spawn")]
+    if profile == "s10-rashid" {
+        return prepare_s10_quest(root, authority, proof, &current, character, deadline).await;
+    }
+    #[cfg(feature = "qualification-spawn")]
     if matches!(
         profile,
         "premium"
@@ -969,6 +973,108 @@ fn fixture_occurrence(character: &[u8; 16], vocation: &str, phase: &[u8]) -> [u8
     result[6] = (result[6] & 0x0f) | 0x70;
     result[8] = (result[8] & 0x3f) | 0x80;
     result
+}
+
+#[cfg(feature = "qualification-spawn")]
+async fn prepare_s10_quest(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    current: &crate::foundation::GameSessionAuthoritySnapshot<
+        crate::foundation::AuthenticatedTransportRefV1,
+    >,
+    character: crate::domain::CharacterId,
+    deadline: tokio::time::Instant,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::durability::character_progression::CurrentCharacterGameplayFence;
+    use crate::durability::quest_state::{
+        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+    };
+    use crate::foundation::{CommandId, CommandRef};
+    use oteryn_gameplay_quests::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
+        QuestTransition,
+    };
+    if current.session_state() != crate::foundation::GameSessionState::Active
+        || current.current_transport().is_none()
+    {
+        return Err("S10 fixture requires an active admission".into());
+    }
+    let record = qualification_build::retry_holder(
+        Some(root),
+        deadline,
+        qualification_build::authority_busy,
+        async || root.read_current_character(authority, character).await,
+    )
+    .await
+    .map_err(qualification_build::debug)?;
+    if uuid_text(record.account_id.as_bytes()) != "01934f10-7c00-7000-8000-000000000020" {
+        return Err("S10 fixture requires q_s10".into());
+    }
+    let interpretation = root
+        .read_character_root_interpretation(authority, character)
+        .await
+        .map_err(qualification_build::debug)?
+        .ok_or("S10 fixture interpretation unavailable")?;
+    let [_, _, content_revision, _] = interpretation.revisions();
+    let quest = "oteryn:quest.the_travelling_trader_quest";
+    let track = "oteryn:quest-progress/chosen/travelling-trader/stage";
+    let key = "oteryn:quest-transition/fixture/rashid-shop-access";
+    let catalogue = std::sync::Arc::new(
+        QuestStateCatalogue::new(
+            content_revision,
+            vec![QuestTrack {
+                key: track.into(),
+                quest: quest.into(),
+                initial: -1,
+                min: -1,
+                max: 13,
+            }],
+            vec![QuestTransition {
+                world_change: None,
+                key: key.into(),
+                quest: quest.into(),
+                completes: true,
+                experience: None,
+                effects: vec![QuestEffect {
+                    track: track.into(),
+                    from: QuestComparison::Eq(-1),
+                    effect: QuestEffectKind::Set(13),
+                }],
+            }],
+        )
+        .map_err(qualification_build::debug)?,
+    );
+    let session = current.current_game_session_id();
+    let fence = CurrentCharacterGameplayFence {
+        character_id: character,
+        game_session_id: session,
+        connection_generation: current.current_connection_generation(),
+        character_lease_generation: current.current_character_lease().generation(),
+        runtime_scope: current.current_runtime_scope(),
+        scope_ownership_generation: current.current_scope_generation(),
+        expected_character_revision: record.revision,
+    };
+    let outcome = root
+        .commit_character_quest_transition(
+            authority,
+            proof,
+            fence,
+            QuestTransitionRequest {
+                transition_key: key.into(),
+                cause: QuestCause::Command(CommandRef::new(
+                    session,
+                    CommandId::new(900).map_err(qualification_build::debug)?,
+                )),
+            },
+            catalogue,
+        )
+        .await
+        .map_err(qualification_build::debug)?;
+    if !matches!(outcome, QuestTransitionOutcome::Committed(_)) {
+        return Err(format!("S10 fixture quest transition: {outcome:?}").into());
+    }
+    Ok(())
 }
 
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item
