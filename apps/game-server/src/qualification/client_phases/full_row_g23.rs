@@ -223,14 +223,11 @@ async fn strict_walk(
 async fn open_castle_door(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    y: u16,
+    door: TilePos,
+    approach: TilePos,
+    direction: StepDirection,
 ) -> TestResult {
-    let door = TilePos {
-        x: 32308,
-        y,
-        floor: -7,
-    };
-    strict_walk(client, world, TilePos { y: y + 1, ..door }).await?;
+    strict_walk(client, world, approach).await?;
     if !world.facts().doors().at(door) {
         return Err(format!("step=castle-door missing door at {door:?}").into());
     }
@@ -245,7 +242,7 @@ async fn open_castle_door(
         )
         .into());
     }
-    strict_step(client, StepDirection::North, door).await
+    strict_step(client, direction, door).await
 }
 
 async fn promotion_line(
@@ -291,9 +288,32 @@ async fn promotion_line(
 }
 
 async fn promote(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    // The authored castle entrance has two closed doors on its west passage.
-    open_castle_door(client, world, 32183).await?;
-    open_castle_door(client, world, 32180).await?;
+    // From the street, pass the gate into the west passage and climb to the King.
+    let ground = |x, y| TilePos { x, y, floor: -7 };
+    open_castle_door(
+        client,
+        world,
+        ground(32310, 32188),
+        ground(32311, 32188),
+        StepDirection::West,
+    )
+    .await?;
+    open_castle_door(
+        client,
+        world,
+        ground(32308, 32183),
+        ground(32308, 32184),
+        StepDirection::North,
+    )
+    .await?;
+    open_castle_door(
+        client,
+        world,
+        ground(32308, 32180),
+        ground(32308, 32181),
+        StepDirection::North,
+    )
+    .await?;
     strict_walk(
         client,
         world,
