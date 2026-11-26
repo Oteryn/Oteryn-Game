@@ -157,6 +157,11 @@ fn srx3_activity_scope_instance_return_resets_session_sequence_and_command_strea
                         session.join_snapshot().world_spatial.actor_position.x,
                         position
                     );
+                    let spatial = session
+                        .admission_snapshot(STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY)
+                        .ok_or("missing activity admission spatial snapshot")?;
+                    assert_eq!(spatial.revision, 1);
+                    assert_eq!(spatial.payload, encode_world_spatial(session.world_spatial()));
                     assert_eq!(session.next_command_id(), 1);
                     assert_eq!(
                         session.step(StepDirection::North).await?.disposition,

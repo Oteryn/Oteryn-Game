@@ -20,6 +20,7 @@ pub(super) struct SnapshotState {
     pub(super) open_container: Option<OpenContainer>,
     pub(super) inventory_revision: u64,
     pub(super) container_revision: u64,
+    pub(super) admission_snapshots: Option<Arc<[GatedSnapshot]>>,
     pub(super) gated_snapshots: Vec<GatedSnapshot>,
     pub(super) gated_revisions: Vec<(u32, u64)>,
     pub(super) appearance: Option<appearance_state::AppearanceState>,
@@ -378,6 +379,20 @@ impl SnapshotState {
                 .is_some_and(|value| value.content_generation != old.content_generation)
         {
             return Err(SessionError::ContentGenerationMismatch { domain_id: 1 });
+        }
+        // House handoff clears the baseline but keeps the previous decoded state for validation.
+        if state.admission_snapshots.is_none() {
+            state.admission_snapshots = Some(
+                domains
+                    .iter()
+                    .map(|domain| GatedSnapshot {
+                        domain_id: domain.domain_id,
+                        snapshot_type: domain.snapshot_type,
+                        revision: domain.revision,
+                        payload: domain.payload.to_vec(),
+                    })
+                    .collect(),
+            );
         }
         Ok(state)
     }

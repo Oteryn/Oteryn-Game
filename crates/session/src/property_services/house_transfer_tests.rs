@@ -108,6 +108,28 @@ fn pc04_house_transfer_handoff_restarts_the_command_namespace() -> Result<(), Bo
                     .map_err(|e| format!("{e:?}"))?;
                     session.gated_command(86, 102, &payload).await?;
                     assert!(session.raw_world_entity_deltas().is_empty());
+                    let spatial = session.admission_snapshot(STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY);
+                    let scope = session.admission_snapshot(wire::STATE_DOMAIN_HOUSE_SCOPE);
+                    if exit {
+                        let (snapshot_type, payload) = entity_snapshot(vec![]);
+                        assert_eq!(
+                            spatial,
+                            Some(&GatedSnapshot {
+                                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                                snapshot_type,
+                                revision: 1,
+                                payload,
+                            })
+                        );
+                        assert!(scope.is_none());
+                    } else {
+                        assert!(spatial.is_none());
+                        assert_eq!(
+                            scope,
+                            session.gated_snapshot(wire::STATE_DOMAIN_HOUSE_SCOPE)
+                        );
+                        assert!(scope.is_some());
+                    }
                     assert_eq!(session.next_command_id, 1);
                     assert_eq!(session.last_server_sequence, if exit { 0 } else { 1 });
                 }
