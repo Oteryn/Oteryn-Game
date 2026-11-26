@@ -29,6 +29,43 @@ const FAREWELLS: [&str; 3] = ["bye", "farewell", "goodbye"];
 /// Words that ask what the NPC offers.
 const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
+// TibiaWiki Lubo transcript; the Fandom archive's Paradox Tower spoiler also records
+// this greeting and the cottage conversation. The native callback owns "stable".
+const LUBO: &str = "oteryn:npc.lubo";
+const LUBO_GREET: &str = "Welcome to my adventurer shop, |PLAYERNAME|! What do you need?";
+
+fn lubo_story_keywords() -> Vec<crate::content::ProjectV2DialogueKeyword> {
+    [
+        (
+            "crunor's cottage",
+            "Ah yes, I remember my grandfather talking about that name. This house used to be an inn a long time ago. My family bought it from some of these flower guys.",
+        ),
+        (
+            "flower guys",
+            "Oh, I mean druids of course. They sold the cottage to my family after some of them died in an accident or something like that.",
+        ),
+        (
+            "accident",
+            "As far as I can remember the story, a pet escaped its stable behind the inn. It got somehow involved with powerful magic at a ritual and was transformed in some way.",
+        ),
+    ]
+    .into_iter()
+    .map(|(trigger, reply)| crate::content::ProjectV2DialogueKeyword {
+        key: trigger.into(),
+        triggers: vec![trigger.into()],
+        reply: vec![reply.into()],
+        fallback: false,
+        links: Vec::new(),
+        only_focus: true,
+        only_unfocus: false,
+        reset: false,
+        ungreet: false,
+        move_up: None,
+        children: Vec::new(),
+    })
+    .collect()
+}
+
 const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/chosen-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/classic-missions.json"),
@@ -665,15 +702,49 @@ impl NpcTalkBook {
                 // branches; dispatch owns every confirmation and durable write.
                 (greeting.into(), "Farewell.".into(), None, Vec::new())
             } else if let Some(messages) = reward_messages {
-                // Stateful exchanges now have a real consumer in dispatch.
-                // Open only their source-authored greeting; no scripted branch
-                // or unconfirmed item/storage effect is admitted by this book.
-                (
-                    messages.greet.clone(),
-                    messages.farewell.clone(),
-                    None,
-                    Vec::new(),
-                )
+                // An authored focus message takes precedence over quest contact copy.
+                // Dispatch still owns the stateful exchanges.
+                let authored_greeting = npc.bank_dialogue.as_ref().and_then(|dialogue| {
+                    match dialogue.greet.as_slice() {
+                        [line] if !line.is_empty() => Some(line.as_str()),
+                        _ => None,
+                    }
+                });
+                let greet = match reference.key.as_str() {
+                    LUBO => LUBO_GREET,
+                    // Fandom archive: The Paradox Tower Quest/Spoiler.
+                    "oteryn:npc.oldrak" => {
+                        "Welcome |PLAYERNAME|! Only rarely I can welcome visitors these days."
+                    }
+                    // TibiaWiki Briasol and Fandom The Travelling Trader Quest/Spoiler.
+                    "oteryn:npc.briasol" => {
+                        "Ashari, |PLAYERNAME| and welcome to the Jewel Store of Ab'Dendriel."
+                    }
+                    "oteryn:npc.snake_eye" => "Hi |PLAYERNAME|. Come in and have a drink.",
+                    // Fandom Wrath of the Emperor Quest/Spoiler, mission 9.
+                    "oteryn:npc.zlak" => {
+                        "Ah, ze human everyone iz talking about. Your victory over ze champion waz quite imprezzive. ... Alzough, for many ziz only provez what a huge zreat you blank-zkinz ztill poze."
+                    }
+                    // Fandom The Thieves Guild Quest/Spoiler.
+                    "oteryn:npc.dorian" => "Greetings, |PLAYERNAME|!",
+                    // Fandom The Djinn War faction quest spoilers.
+                    "oteryn:npc.melchior" => {
+                        "Greetings, |PLAYERNAME|. I do not see your face, but I can read a thousand things in your voice!"
+                    }
+                    "oteryn:npc.ubaid" => {
+                        "What? You know the word, |PLAYERNAME|? All right then - I won't kill you. At least, not now."
+                    }
+                    "oteryn:npc.umar" => {
+                        "Whoa? You know the word! Amazing, |PLAYERNAME|! ... I should go and tell Fa'hradin. ... Well. Why are you here anyway, |PLAYERNAME|?"
+                    }
+                    _ => authored_greeting.unwrap_or(&messages.greet),
+                };
+                let keywords = if reference.key == LUBO {
+                    lubo_story_keywords()
+                } else {
+                    Vec::new()
+                };
+                (greet.into(), messages.farewell.clone(), None, keywords)
             } else if reference.key == "oteryn:npc.seymour" {
                 // TIBIAWIKI_STRUCTURED: Present Quest/Spoiler, Seymour transcript.
                 (
@@ -1332,6 +1403,53 @@ mod tests {
                 .contains("student of the arcane arts")
         );
         assert!(!reward_callback_npc("oteryn:npc.unqualified"));
+        Ok(())
+    }
+
+    #[test]
+    fn authored_focus_greetings_take_precedence_over_reward_greetings() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|e| format!("{e:?}"))?;
+        let names = [
+            "a_prisoner",
+            "black_bert",
+            "boozer",
+            "bron",
+            "carina",
+            "charles",
+            "domizian",
+            "eroth",
+            "oswald",
+            "padreia",
+            "para_norbert",
+            "rashid",
+            "rhargu",
+            "servant_sentry",
+            "spectulus",
+            "uzgod",
+            "willard",
+            "zalamon",
+        ];
+        let keys = names.map(|name| format!("oteryn:npc.{name}"));
+        let native_keys = keys.each_ref().map(String::as_str);
+        let book = NpcTalkBook::from_model_with_native_quests(&model, &native_keys);
+        for key in native_keys {
+            let authored = model
+                .npcs()
+                .iter()
+                .find(|(reference, _)| reference.key == key)
+                .and_then(|(_, npc)| npc.bank_dialogue.as_ref())
+                .and_then(|dialogue| dialogue.greet.first())
+                .ok_or_else(|| format!("no authored greeting for {key}"))?;
+            assert_eq!(&book.get(key).ok_or(key)?.greeting_reply, authored, "{key}");
+        }
         Ok(())
     }
 

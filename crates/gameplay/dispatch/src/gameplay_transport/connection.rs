@@ -1590,7 +1590,7 @@ fn npc_update_frames<A: FreshAdmissionAuthority>(
 
 /// The domain 7 delta replacing the whole conversation, from `revision` at the sequence after
 /// `sequence`, with the new revision; `None` on an encoding fault.
-fn npc_conversation_delta(
+pub(super) fn npc_conversation_delta(
     generation: u64,
     sequence: u64,
     revision: u64,
