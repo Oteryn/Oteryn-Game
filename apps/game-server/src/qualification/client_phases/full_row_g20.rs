@@ -201,8 +201,7 @@ fn identical_pair(keys: &[(u32, u8, bool)]) -> Option<(usize, usize)> {
 const SWORD: u16 = 3264;
 const SLIVER: u32 = 37109;
 const SLIVERS_PER_CORE: u64 = 50;
-const GOLD_COIN: u32 = 3031;
-const CARRIED_GOLD: u32 = 17;
+const STARTER_GOLD: i64 = 50;
 
 fn browse(
     client: &DevClientSession,
@@ -352,7 +351,7 @@ async fn body(
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     character_prep::declare_seeded(
         "G20.full",
-        "two-tier-zero-swords,50-slivers,17-gold",
+        "two-tier-zero-swords,50-slivers",
         "Forge preview",
     );
     let owner = character_prep::dedicated_character(clients, "NODE_BOOT_Q_G20_ACCOUNT").await?;
@@ -365,7 +364,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     for amount in [20, 19, 11] {
         character_prep::grant_item(&client, SLIVER, amount).await?;
     }
-    character_prep::grant_item(&client, GOLD_COIN, CARRIED_GOLD).await?;
     finish(&mut client).await?;
     drop(client);
 
@@ -377,11 +375,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let character = &clients.characters[0];
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
     let custody = forge_custody(&mut connection, character).await?;
-    if custody.gold != i64::from(CARRIED_GOLD)
+    if custody.gold != STARTER_GOLD
         || custody.slivers != i64::try_from(SLIVERS_PER_CORE)?
         || custody.swords != 2
     {
-        return Err("step=pre-state expected two tier-zero swords, 50 slivers and 17 gold".into());
+        return Err(format!(
+            "step=pre-state observed swords={} slivers={} gold={} expected swords=2 slivers={SLIVERS_PER_CORE} gold={STARTER_GOLD}",
+            custody.swords, custody.slivers, custody.gold
+        ).into());
     }
     let outcome = verdict::observe(body(&mut client, &mut connection, character, &custody)).await;
     let closed = verdict::observe(finish(&mut client)).await;
