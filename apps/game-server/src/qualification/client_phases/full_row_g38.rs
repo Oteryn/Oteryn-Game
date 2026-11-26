@@ -1,6 +1,5 @@
 //! G38: Windows touch joystick and action hotbar (#3074, O035 and O056).
-//! The Linux client library tests exercise touch translation and receipt pacing.
-//! This row checks the corresponding STEP and USE commands against the served World.
+//! Require live client library touch assertions and served World STEP and USE receipts.
 use super::*;
 use crate::map::door::AuthoredClosedDoor;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
@@ -11,25 +10,54 @@ use oteryn_protocol_oteryn::world_spatial::{
     CAPABILITY_DIAGONAL_MOVEMENT_V1, CAPABILITY_PACED_MOVEMENT_V1,
 };
 
-const SOURCE: &str = concat!(
-    "client_tests:play::tests::touch_controls::{",
-    "touch_joystick_uses_paced_keyboard_steps_and_release_stops,",
-    "touch_hotbar_world_taps_equal_mouse_context_and_follow_keys,",
-    "touch_default_tap_dead_zone_and_contact_ownership,",
-    "negotiated_touch_diagonals_submit_one_diagonal_step_per_receipt}",
-);
+const TOUCH_REPORT: &str = "client_tests:verified-touch";
+
+const TOUCH_TESTS: [&str; 5] = [
+    "touch_overlay_is_hidden_until_touch_and_highlights_the_selected_mode",
+    "touch_joystick_uses_paced_keyboard_steps_and_release_stops",
+    "touch_hotbar_world_taps_equal_mouse_context_and_follow_keys",
+    "touch_default_tap_dead_zone_and_contact_ownership",
+    "negotiated_touch_diagonals_submit_one_diagonal_step_per_receipt",
+];
+
+fn verify_client_touch() -> TestResult {
+    let executable = required("NODE_BOOT_G38_CLIENT_TEST")?;
+    if executable.is_empty() {
+        return Err("step=client-touch;observed=missing-test-executable".into());
+    }
+    let filter = "play::tests::touch_controls::";
+    let output = std::process::Command::new("timeout")
+        .args(["30", &executable, filter, "--test-threads=1"])
+        .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/../client"))
+        .output()?;
+    let stdout = std::str::from_utf8(&output.stdout)?;
+    if !output.status.success() {
+        return Err(format!("step=client-touch;observed={}\n{stdout}", output.status).into());
+    }
+    for case in TOUCH_TESTS {
+        let expected = format!("test {filter}{case} ... ok");
+        if stdout.lines().filter(|line| *line == expected).count() != 1 {
+            return Err(format!("step=client-touch;missing={filter}{case}").into());
+        }
+        evidence(&format!("G38_CHECK client_test={filter}{case} result=ok"));
+    }
+    Ok(())
+}
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    // The shortest door approach was 73 paced steps. At 120s the door had
-    // opened and closed, but fixture restoration was still in progress.
+    // The 73-step approach and return each wait for the server's pacing.
+    // At 180 seconds a live run was still walking back. The progress
+    // watchdog applies throughout both legs.
     let result =
-        verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
+        verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(clients)))
             .await;
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
-            format!("paced-cardinal-and-diagonal-step-receipts;hotbar-use-open-close;{SOURCE}"),
+            format!(
+                "paced-cardinal-and-diagonal-step-receipts;hotbar-use-open-close;{TOUCH_REPORT}"
+            ),
         ),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
@@ -49,7 +77,7 @@ async fn step_receipt(
     direction: StepDirection,
     expected: TilePos,
 ) -> TestResult {
-    let outcome = client.step_retrying(direction).await?;
+    let outcome = client.step(direction).await?;
     if outcome.status != CommandStatus::Accepted
         || outcome.disposition != StepDisposition::Moved
         || outcome.step_wait_ms == 0
@@ -61,6 +89,8 @@ async fn step_receipt(
     {
         return Err(format!("step={direction:?};needed={expected:?};observed={outcome:?}").into());
     }
+    verdict::Harness::global().progress("G38 step receipt");
+    tokio::time::sleep(Duration::from_millis(u64::from(outcome.step_wait_ms))).await;
     Ok(())
 }
 
@@ -113,6 +143,8 @@ async fn hotbar_use(
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     use StepDirection::*;
+
+    verify_client_touch()?;
 
     let world = load_world(
         std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
@@ -284,13 +316,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let at = tile(client.world_spatial().actor_position)?;
     let path =
         route(world, at, |at| at == start).ok_or("step=restore-position;needed=route-to-start")?;
-    walk(&mut client, world, &path).await?;
+    let mut at = at;
+    for direction in path {
+        at = destination(world, at, direction)
+            .ok_or("step=restore-position;observed=missing-landing")?;
+        step_receipt(&mut client, direction, at).await?;
+    }
     if tile(client.world_spatial().actor_position)? != start {
         return Err("step=restore-position;observed=not-at-start".into());
     }
-    let (result, detail, ..) = logout_retrying_busy(&mut client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("step=logout;observed={detail}").into());
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout;observed={logout:?}").into());
     }
     Ok(())
 }
@@ -301,7 +338,7 @@ mod tests {
 
     #[test]
     fn source_token_has_no_spaces() {
-        assert!(SOURCE.starts_with("client_tests:") && !SOURCE.contains(' '));
+        assert!(TOUCH_REPORT.starts_with("client_tests:") && !TOUCH_REPORT.contains(' '));
         assert_eq!(
             token(
                 "a

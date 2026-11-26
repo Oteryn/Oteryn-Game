@@ -1579,6 +1579,11 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S; do
     [[ -z "${!knob+x}" ]] || test_env+=("$knob=${!knob}")
   done
+  if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+    local g38_client_test
+    g38_client_test=$(bash "$GAME_SOURCE/tools/qualification/node_boot/g38_client_test.sh" "$NODE_BOOT_WORLD") || return 1
+    test_env+=("NODE_BOOT_G38_CLIENT_TEST=$g38_client_test")
+  fi
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
   local test_dir="$PWD"
