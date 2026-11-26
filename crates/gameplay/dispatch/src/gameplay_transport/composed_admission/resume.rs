@@ -83,6 +83,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .as_ref()
             .filter(|receipt| receipt.ack.session == *attempt.game_session_id.as_bytes())
             .map(|receipt| !receipt.started);
+        let no_house_transfer = candidate.is_none();
         let transferred = match candidate {
             Some(candidate) => self.recover_transferred_house(candidate, &attempt).await?,
             None => None,
@@ -114,6 +115,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if let Some(pending) = retained_house_input {
             admitted.continuity.house_input_pending = Some(pending);
+        } else if no_house_transfer
+            && admitted.item_fence.is_some_and(|fence| {
+                matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+            })
+        {
+            // The recovery read proved absence. Carry that into the shared
+            // input guard while preserving the separate native Instance check.
+            admitted.continuity.house_input_pending = Some(false);
         }
         // NBGRANT: only the final spell repair was pending on this positioned actor.
         // Complete it under the new controller's current fence before making it playable;
