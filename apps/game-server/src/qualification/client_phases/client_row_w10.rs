@@ -174,11 +174,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &[2, 2],
     )
     .await?;
-    capture(
-        root,
-        "w10-expected.txt",
-        b"query_unlocked=2\nquery_selected=1\nselect_unlocked=2\nselect_selected=2\n",
-    )?;
+    // Keep the replay manifest absent until this journey can provide the original frames.
     logout(&mut client).await?;
     Ok("hazard=2/1->2/2;level3=rejected;unchanged=2/2;relog=2/2".into())
 }
