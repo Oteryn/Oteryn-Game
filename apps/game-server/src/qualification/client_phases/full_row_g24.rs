@@ -292,6 +292,8 @@ async fn settle(
     let seller_before = bank_balance(seller_scope, 0).await?;
     let buyer_before = bank_balance(buyer_scope, 0).await?;
     let inbox_before = inbox(&depot_search(buyer, id).await?);
+    character_prep::grant_premium(buyer).await?;
+    evidence("G24 buyer-premium=fixture-current phase=before-first-placement");
     let offer = market(buyer, market_request(5, definition, [0; 16], 1, PRICE))
         .await?
         .offer;
@@ -529,7 +531,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "g24-bank".into(),
     )
     .await?;
-    character_prep::grant_premium(&client).await?;
     finish(&mut client).await?;
     drop(client);
     let mut client = connect_character(&buyer_scope, 0x8a, 0).await?;
