@@ -287,7 +287,17 @@ async fn move_essence(
 }
 
 async fn facts(h: &Harness) -> TestResult<(i64, i64, i64)> {
-    let tokens = super::questpc7_outfit_items_fixtures::quantity(h, 22516).await?;
+    // The chest grants carried tokens. Boss loot still in world custody is separate.
+    let tokens: i64 = sqlx::query_scalar(
+        "SELECT coalesce(sum(i.quantity), 0)::bigint
+         FROM game_quest_callback_carried(encode($1,'hex')::uuid, encode($2,'hex')::uuid) c
+         JOIN game_item_instances i ON i.item_instance_id=c.item
+         WHERE i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i22516'",
+    )
+    .bind(super::fixture::id(41).as_slice())
+    .bind(super::fixture::id(42).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
     let appearance:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key LIKE 'oteryn:outfit.rift_warrior/quest-grant/%'").fetch_one(&h.pool).await?;
     let achievement:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/hat_hunter'").fetch_one(&h.pool).await?;
     Ok((tokens, appearance, achievement))

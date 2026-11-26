@@ -284,7 +284,7 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    let (result, detail, attempts, timed_out) = logout_retrying_busy(client).await?;
+    let (result, detail, attempts, timed_out) = logout_once(client).await?;
     expect(
         result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
         "logout",

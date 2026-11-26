@@ -488,17 +488,14 @@ fn route_with_landings(
 ) -> Option<Vec<StepDirection>> {
     find_route(from, goal, |at, direction| {
         let next = landing(at, direction)?;
-        (next.x.abs_diff(from.x) <= 160
-            && next.y.abs_diff(from.y) <= 160
-            && next.floor.abs_diff(from.floor) <= 2
-            && available(next))
-        .then_some(next)
+        (map_journey::in_town(next, from) && available(next)).then_some(next)
     })
     .ok()
 }
 
 fn route_around_occupant(
     from: TilePos,
+    center: TilePos,
     occupied: TilePos,
     remaining: &VecDeque<StepDirection>,
     available: impl Fn(TilePos) -> bool,
@@ -507,12 +504,16 @@ fn route_around_occupant(
     let goal = remaining
         .iter()
         .try_fold(occupied, |at, &direction| landing(at, direction))?;
-    route_with_landings(
+    find_route(
         from,
         |at| at == goal,
-        |at| at != occupied && available(at),
-        landing,
+        |at, direction| {
+            let next = landing(at, direction)?;
+            (map_journey::in_town(next, center) && next != occupied && available(next))
+                .then_some(next)
+        },
     )
+    .ok()
 }
 
 fn find_route(
@@ -828,7 +829,7 @@ async fn walk_with_landings(
     path: &[StepDirection],
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
 ) -> TestResult {
-    walk_with_landing_budget(client, path, landing, None).await
+    walk_with_landing_budget(client, path, landing, None, None).await
 }
 
 async fn walk_with_landing_budget(
@@ -836,6 +837,7 @@ async fn walk_with_landing_budget(
     path: &[StepDirection],
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
     step_budget: Option<Duration>,
+    detour_center: Option<TilePos>,
 ) -> TestResult {
     let mut path = VecDeque::from(path.to_vec());
     let mut blocked = std::collections::BTreeSet::new();
@@ -896,6 +898,7 @@ async fn walk_with_landing_budget(
                 && blocked.insert(occupied)
                 && let Some(detour) = route_around_occupant(
                     from,
+                    detour_center.unwrap_or(from),
                     occupied,
                     &path,
                     |at| !blocked.contains(&at) && !visible_blockers.contains(&at),
@@ -934,56 +937,173 @@ pub(super) fn is_logout_rest_tile(world: &BundleWorld, at: TilePos) -> bool {
         .is_some_and(|tile| tile.protection_zone() && !tile.no_logout())
 }
 
-pub(super) async fn logout_retrying_busy(
-    client: &mut oteryn_dev_client::DevClientSession,
-) -> TestResult<(
-    Option<oteryn_protocol_oteryn::logout::LogoutResult>,
-    String,
-    usize,
-    bool,
-)> {
-    logout_retrying_busy_observed(client, None).await
+/// Use on mechanic commands that are expected to succeed on their first attempt.
+pub(super) fn require_mechanic_acceptance(
+    status: oteryn_protocol_oteryn::CommandStatus,
+    operation: &str,
+) -> TestResult {
+    if status == oteryn_protocol_oteryn::CommandStatus::Accepted {
+        Ok(())
+    } else {
+        Err(format!("{operation} refused on first attempt: {status:?}").into())
+    }
 }
 
+type LogoutResult = oteryn_protocol_oteryn::logout::LogoutResult;
+type LogoutAttempt = (Option<LogoutResult>, String);
+type LogoutReport = (Option<LogoutResult>, String, usize, bool);
 type LogoutObserver<'a> = dyn FnMut(usize, &str) + 'a;
 
-pub(super) async fn logout_retrying_busy_observed(
+/// Mechanic and durability checks observe the first command result.
+pub(super) async fn logout_once(
+    client: &mut oteryn_dev_client::DevClientSession,
+) -> TestResult<LogoutReport> {
+    logout_attempts(
+        None,
+        async |_| {
+            let outcome = client.session_mut().logout().await?;
+            Ok((outcome.result, format!("{outcome:?}")))
+        },
+        |_| {},
+    )
+    .await
+}
+
+/// Fixture setup and cleanup can wait for an explicit transient Busy reply.
+pub(super) async fn fixture_logout_retrying_busy(
+    client: &mut oteryn_dev_client::DevClientSession,
+) -> TestResult<LogoutReport> {
+    fixture_logout_retrying_busy_observed(client, None).await
+}
+
+pub(super) async fn fixture_logout_retrying_busy_observed(
     client: &mut oteryn_dev_client::DevClientSession,
     mut observe: Option<&mut LogoutObserver<'_>>,
-) -> TestResult<(
-    Option<oteryn_protocol_oteryn::logout::LogoutResult>,
-    String,
-    usize,
-    bool,
-)> {
-    use oteryn_protocol_oteryn::logout::LogoutResult;
-
+) -> TestResult<LogoutReport> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
-    let mut attempts = 0;
-    loop {
-        attempts += 1;
-        let outcome = client.session_mut().logout().await.map_err(|error| {
-            if let Some(observe) = observe.as_mut() {
-                observe(attempts, &format!("command_error={error}"));
+    logout_attempts(
+        Some(deadline),
+        async |attempt| {
+            if attempt > 1 {
+                client
+                    .service_liveness(Duration::from_millis(250))
+                    .await
+                    .map_err(|error| {
+                        format!("fixture logout Busy retry liveness failed: {error}")
+                    })?;
             }
-            format!("logout attempt {attempts} failed: {error}")
-        })?;
-        if let Some(observe) = observe.as_mut() {
-            observe(attempts, &format!("reply={outcome:?}"));
-        }
-        if outcome.result != Some(LogoutResult::Busy) {
-            return Ok((outcome.result, format!("{outcome:?}"), attempts, false));
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Ok((outcome.result, format!("{outcome:?}"), attempts, true));
-        }
-        client.service_liveness(Duration::from_millis(250)).await
-            .map_err(|error| {
+            let outcome = client.session_mut().logout().await.map_err(|error| {
                 if let Some(observe) = observe.as_mut() {
-                    observe(attempts, &format!("busy_liveness_error={error}"));
+                    observe(attempt, &format!("command_error={error}"));
                 }
-                format!("logout Busy retry liveness failed after attempt {attempts}: {outcome:?}; error={error}")
+                format!("logout attempt {attempt} failed: {error}")
             })?;
+            let detail = format!("{outcome:?}");
+            if let Some(observe) = observe.as_mut() {
+                observe(attempt, &format!("reply={detail}"));
+            }
+            Ok((outcome.result, detail))
+        },
+        |attempt| {
+            evidence(&format!(
+                "FIXTURE_RETRY step=logout reason=busy attempt={attempt}"
+            ));
+        },
+    )
+    .await
+}
+
+async fn logout_attempts(
+    fixture_deadline: Option<tokio::time::Instant>,
+    mut logout: impl AsyncFnMut(usize) -> TestResult<LogoutAttempt>,
+    mut fixture_retry: impl FnMut(usize),
+) -> TestResult<LogoutReport> {
+    let mut attempts = 1;
+    loop {
+        let (result, detail) = logout(attempts).await?;
+        if result != Some(LogoutResult::Busy) {
+            return Ok((result, detail, attempts, false));
+        }
+        let Some(deadline) = fixture_deadline else {
+            return Err(format!("mechanic logout refused Busy on first attempt: {detail}").into());
+        };
+        if tokio::time::Instant::now() >= deadline {
+            return Ok((result, detail, attempts, true));
+        }
+        attempts += 1;
+        fixture_retry(attempts);
+    }
+}
+
+#[cfg(test)]
+mod logout_attempt_tests {
+    use super::*;
+
+    #[test]
+    fn required_mechanic_reply_rejects_nonaccepted_status() {
+        use oteryn_protocol_oteryn::CommandStatus;
+        assert!(require_mechanic_acceptance(CommandStatus::Accepted, "badge-query").is_ok());
+        assert!(require_mechanic_acceptance(CommandStatus::Rejected, "badge-query").is_err());
+        assert!(
+            require_mechanic_acceptance(CommandStatus::DuplicateReplay, "badge-query").is_err()
+        );
+    }
+
+    #[tokio::test]
+    async fn mechanic_busy_stops_after_one_attempt() -> TestResult {
+        let retries = std::cell::Cell::new(0);
+        let outcome = logout_attempts(
+            None,
+            async |attempt| {
+                assert_eq!(attempt, 1);
+                Ok((Some(LogoutResult::Busy), String::new()))
+            },
+            |_| retries.set(retries.get() + 1),
+        )
+        .await;
+        assert!(outcome.is_err());
+        assert_eq!(retries.get(), 0);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn fixture_busy_retry_is_observed_before_the_next_attempt() -> TestResult {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+        let retries = std::cell::Cell::new(0);
+        let outcome = logout_attempts(
+            Some(deadline),
+            async |attempt| {
+                assert_eq!(retries.get(), attempt - 1);
+                let result = if attempt == 1 {
+                    LogoutResult::Busy
+                } else {
+                    LogoutResult::Accepted
+                };
+                Ok((Some(result), String::new()))
+            },
+            |attempt| retries.set(attempt - 1),
+        )
+        .await?;
+        assert_eq!(outcome.0, Some(LogoutResult::Accepted));
+        assert_eq!(outcome.2, 2);
+        assert_eq!(retries.get(), 1);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn expired_fixture_busy_is_not_retried() -> TestResult {
+        let retries = std::cell::Cell::new(0);
+        let outcome = logout_attempts(
+            Some(tokio::time::Instant::now()),
+            async |_| Ok((Some(LogoutResult::Busy), String::new())),
+            |_| retries.set(retries.get() + 1),
+        )
+        .await?;
+        assert_eq!(retries.get(), 0);
+        assert_eq!(outcome.0, Some(LogoutResult::Busy));
+        assert_eq!(outcome.2, 1);
+        assert!(outcome.3);
+        Ok(())
     }
 }
 
@@ -1091,13 +1211,10 @@ pub(super) async fn journeys(
         )
         .into());
     }
-    if groups.runs("rows") && e2e_row_selected(184) {
-        client_row_s18::logout_once(&mut client, "S18 town entry").await?;
-    } else {
-        let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
-        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
-        }
+    let (result, logout, attempts, busy_timed_out) =
+        fixture_logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     drop(client);
     {
@@ -3428,6 +3545,16 @@ async fn profile_journey(
                 format!("profile combat lock did not settle before logout: {logout:?}").into(),
             );
         }
+        if !matches!(
+            logout.result,
+            Some(LogoutResult::Busy | LogoutResult::InFight { .. })
+        ) {
+            return Err(format!("profile fixture logout refused: {logout:?}").into());
+        }
+        evidence(&format!(
+            "FIXTURE_RETRY step=profile-combat-logout reply={:?}",
+            logout.result
+        ));
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
     }
@@ -3438,7 +3565,8 @@ async fn profile_journey(
     })
     .ok_or("profile journey has no return route")?;
     walk(&mut client, world, &back).await?;
-    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
+    let (result, logout, attempts, busy_timed_out) =
+        fixture_logout_retrying_busy(&mut client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("profile journey logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
@@ -3848,9 +3976,10 @@ fn qualification_town_route_detours_around_live_wolf() -> TestResult {
         route_with_landings(from, |at| at == goal, |_| true, landing),
         Some(vec![East, East])
     );
-    let detour = route_around_occupant(from, wolf, &VecDeque::from([East]), |_| true, landing)
-        .ok_or("missing wolf detour")?;
+    let detour =
+        route_around_occupant(from, from, wolf, &VecDeque::from([East]), |_| true, landing)
+            .ok_or("missing wolf detour")?;
     assert_eq!(detour, [North, East, East, South]);
-    assert!(route_around_occupant(from, wolf, &VecDeque::new(), |_| true, landing).is_none());
+    assert!(route_around_occupant(from, from, wolf, &VecDeque::new(), |_| true, landing).is_none());
     Ok(())
 }

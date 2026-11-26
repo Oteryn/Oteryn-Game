@@ -1,6 +1,6 @@
 //! S18 replays complete inbound wire recordings, including each live admission snapshot.
 use super::*;
-use oteryn_protocol_oteryn::{decode_state_delta, decode_wire_envelope};
+use oteryn_protocol_oteryn::{decode_command_result, decode_state_delta, decode_wire_envelope};
 use std::path::Path;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -57,15 +57,35 @@ impl AsyncWrite for RecordedInput<'_> {
 }
 
 async fn replay(
-    wire: &[u8],
+    capture: &[u8],
     expected: &[ChatLine],
 ) -> Result<(JoinSnapshot, ActorPosition), BoxError> {
+    let header_end = capture
+        .iter()
+        .position(|byte| *byte == b'\n')
+        .ok_or("S18 recording missing game session and command provenance")?;
+    let (provenance, wire) = (&capture[..header_end], &capture[header_end + 1..]);
+    let mut claims = std::str::from_utf8(provenance)?.split_ascii_whitespace();
+    let claimed_session = claims.next().ok_or("S18 recording missing game session")?;
+    let mut claimed_commands = claims.peekable();
+    if claimed_commands.peek().is_none() {
+        return Err("S18 recording missing command provenance".into());
+    }
     let mut session = Session::admit(
         RecordedInput(wire),
         admission_with(CLIENT_SUPPORTED_CAPABILITIES)?,
     )
     .await?;
     let joined = session.join_snapshot().clone();
+    let actual_session: String = joined
+        .game_session_id
+        .as_bytes()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    if claimed_session != actual_session {
+        return Err("S18 recorded game session mismatch".into());
+    }
     assert!(
         session
             .chat_log()
@@ -85,6 +105,15 @@ async fn replay(
             assert!(sequence > previous_sequence, "S18 wire sequence regressed");
             previous_sequence = sequence;
         }
+        if envelope.message_type() == MessageType::CommandResult {
+            let outcome = decode_command_result(envelope.payload())?;
+            let receipt = format!("{}:{sequence}", outcome.command_id);
+            if claimed_commands.next() != Some(receipt.as_str()) {
+                return Err(
+                    format!("S18 recorded command or server sequence mismatch: {receipt}").into(),
+                );
+            }
+        }
         if envelope.message_type() == MessageType::StateDelta {
             let event = session.apply_state_delta(sequence, envelope.payload())?;
             if let SessionEvent::ChatLine(applied) = event {
@@ -99,6 +128,9 @@ async fn replay(
                 last_line = Some((sequence, envelope.payload().to_vec()));
             }
         }
+    }
+    if claimed_commands.next().is_some() {
+        return Err("S18 missing recorded command result".into());
     }
     assert_eq!(seen, expected.len(), "S18 recorded chat line count");
     assert!(
@@ -131,29 +163,24 @@ async fn replay(
 }
 
 #[test]
-#[ignore = "live-only replay, run by tools/qualification/e2e_all/run_s18.sh"]
+#[ignore = "live qualification replay"]
 fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
     let root =
         std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("S18 live capture directory required")?;
     let root = Path::new(&root);
-    let head = std::env::var("S18_CAPTURE_HEAD")?;
-    let run = std::env::var("S18_CAPTURE_RUN")?;
-    if head.len() != 40
-        || run.len() != 32
-        || !head
-            .bytes()
-            .chain(run.bytes())
-            .all(|byte| byte.is_ascii_hexdigit())
-    {
-        return Err("S18 replay requires a Git head and unique run token".into());
-    }
+    let run = root
+        .file_name()
+        .and_then(std::ffi::OsStr::to_str)
+        .filter(|name| name.starts_with("captures.") && name.len() == 15)
+        .ok_or("S18 replay requires a fresh cloud capture directory")?;
     let checkout = std::process::Command::new("git")
         .args(["rev-parse", "HEAD"])
         .output()?;
-    if !checkout.status.success() || String::from_utf8(checkout.stdout)?.trim() != head {
-        return Err("S18 replay head differs from the checkout".into());
+    if !checkout.status.success() {
+        return Err("S18 replay head unavailable".into());
     }
-    let binding = format!("{head} {run}\n");
+    let head = String::from_utf8(checkout.stdout)?;
+    let binding = format!("{} {run}\n", head.trim());
     let metadata = String::from_utf8(read_bound(root, "s18-expected.txt", &binding)?)?;
     let identity = value(&metadata, "speaker")?;
     if identity.len() != 32 || !identity.bytes().all(|byte| byte.is_ascii_hexdigit()) {
@@ -179,6 +206,7 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
     let boundary = format!("s18-boundary-{run}");
     let private = format!("s18-private-{run}");
     let outside = format!("s18-outside-{run}");
+    let outside_whisper = format!("s18-outside-whisper-{run}");
     let line = |mode, text: &str| ChatLine::Local {
         speaker,
         speaker_name: name.into(),
@@ -197,6 +225,7 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
         common[2].clone(),
         line(ChatSpeechMode::Whisper, &private),
         line(ChatSpeechMode::Say, &outside),
+        line(ChatSpeechMode::Whisper, &outside_whisper),
     ];
     let listener_lines = [
         common[0].clone(),

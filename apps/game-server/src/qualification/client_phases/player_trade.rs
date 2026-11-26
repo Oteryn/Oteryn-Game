@@ -49,7 +49,7 @@ pub(super) async fn pair(
         .copied()
     else {
         let (result, logout, attempts, busy_timed_out) =
-            client_world::logout_retrying_busy(&mut partner).await?;
+            client_world::fixture_logout_retrying_busy(&mut partner).await?;
         if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err(format!("trade partner logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
         }
@@ -167,7 +167,7 @@ pub(super) async fn pair(
         "mechanic=player_trade completion=committed both_inventories=changed exchanged_definitions=present",
     );
     let (result, logout, attempts, busy_timed_out) =
-        client_world::logout_retrying_busy(&mut partner).await?;
+        client_world::fixture_logout_retrying_busy(&mut partner).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("trade partner logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }

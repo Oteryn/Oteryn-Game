@@ -1,0 +1,12 @@
+{
+  "disposition": "EXACT",
+  "external_id": "51276",
+  "identity_namespace": "ots/item_server_id",
+  "source_key": "oteryn:source.crystalserver",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "target": {
+    "family": "Item",
+    "key": "oteryn:item.tibia.i51276",
+    "revision": "definition-r1"
+  }
+}

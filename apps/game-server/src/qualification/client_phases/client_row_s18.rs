@@ -167,23 +167,16 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-pub(super) async fn logout_once(client: &mut DevClientSession, phase: &str) -> TestResult {
-    logout_recorded(client.session_mut(), phase).await
-}
+type CommandReceipt = (u64, u64);
 
-async fn logout_recorded<S: oteryn_dev_client::native_session::SessionStream>(
-    client: &mut Session<S>,
-    phase: &str,
-) -> TestResult {
+async fn logout_recorded(client: &mut RecordedSession, phase: &str) -> TestResult<CommandReceipt> {
     let outcome = client.logout().await?;
-    if !accepted_logout(outcome.status, outcome.result) {
+    require_mechanic_acceptance(outcome.status, phase)
+        .map_err(|error| format!("{error}: {outcome:?}"))?;
+    if outcome.result != Some(LogoutResult::Accepted) {
         return Err(format!("{phase}: first logout refused: {outcome:?}").into());
     }
-    Ok(())
-}
-
-fn accepted_logout(status: CommandStatus, result: Option<LogoutResult>) -> bool {
-    status == CommandStatus::Accepted && result == Some(LogoutResult::Accepted)
+    Ok((outcome.command_id, outcome.result_server_sequence))
 }
 
 fn check_log(client: &RecordedSession, expected: &[ChatLine], phase: &str) -> TestResult {
@@ -217,6 +210,7 @@ async fn move_listener(
     world: &BundleWorld,
     speaker: TilePos,
     goal: impl Fn(TilePos) -> bool,
+    receipts: &mut Vec<CommandReceipt>,
 ) -> TestResult {
     let from = tile(listener.world_spatial().actor_position)?;
     let path = route_avoiding(world, from, &goal, |at| at != speaker)
@@ -225,12 +219,14 @@ async fn move_listener(
         let from = tile(listener.world_spatial().actor_position)?;
         let expected = destination(world, from, direction).ok_or("S18 route landing absent")?;
         let outcome = listener.step(direction).await?;
-        if outcome.status != CommandStatus::Accepted
-            || outcome.disposition != StepDisposition::Moved
+        require_mechanic_acceptance(outcome.status, "S18 listener step")
+            .map_err(|error| format!("{error}: {outcome:?}"))?;
+        if outcome.disposition != StepDisposition::Moved
             || tile(listener.world_spatial().actor_position)? != expected
         {
             return Err(format!("S18 listener first step failed: from={from:?} direction={direction:?} expected={expected:?} outcome={outcome:?}").into());
         }
+        receipts.push((outcome.command_id, outcome.result_server_sequence));
         tokio::time::sleep(Duration::from_millis(u64::from(outcome.step_wait_ms))).await;
     }
     if !goal(tile(listener.world_spatial().actor_position)?) {
@@ -293,6 +289,9 @@ async fn journey(
     let boundary = format!("s18-boundary-{run}");
     let private = format!("s18-private-{run}");
     let outside = format!("s18-outside-{run}");
+    let outside_whisper = format!("s18-outside-whisper-{run}");
+    let mut speaker_receipts = Vec::new();
+    let mut listener_receipts = Vec::new();
     let mut speaker_expected = Vec::new();
     let mut listener_expected = Vec::new();
 
@@ -312,6 +311,7 @@ async fn journey(
         ),
         (2, ChatSpeechMode::Whisper, private.as_str(), Some("pspsps")),
         (3, ChatSpeechMode::Say, outside.as_str(), None),
+        (3, ChatSpeechMode::Whisper, outside_whisper.as_str(), None),
     ] {
         let goal = |at: TilePos| {
             let dx = at.x.abs_diff(origin.x);
@@ -326,7 +326,7 @@ async fn journey(
         if !goal(tile(listener.world_spatial().actor_position)?) {
             service_while(
                 &mut speaker,
-                move_listener(&mut listener, world, origin, goal),
+                move_listener(&mut listener, world, origin, goal, &mut listener_receipts),
             )
             .await?;
         }
@@ -339,9 +339,12 @@ async fn journey(
                 .await?)
         })
         .await?;
-        if outcome.status != CommandStatus::Accepted || outcome.disposition != ChatDisposition::Ok {
+        require_mechanic_acceptance(outcome.status, "S18 speech")
+            .map_err(|error| format!("{error}: {outcome:?}"))?;
+        if outcome.disposition != ChatDisposition::Ok {
             return Err(format!("speech {mode:?} first command refused: {outcome:?}").into());
         }
+        speaker_receipts.push((outcome.command_id, outcome.result_server_sequence));
         speaker_expected.push(line(mode, text));
         if let Some(heard) = heard {
             listener_expected.push(line(mode, heard));
@@ -373,18 +376,40 @@ async fn journey(
 
     let speaker_session = speaker.join_snapshot().game_session_id;
     let listener_session = listener.join_snapshot().game_session_id;
-    service_while(&mut listener, logout_recorded(&mut speaker, "speaker")).await?;
-    logout_recorded(&mut listener, "listener").await?;
+    speaker_receipts
+        .push(service_while(&mut listener, logout_recorded(&mut speaker, "speaker")).await?);
+    listener_receipts.push(logout_recorded(&mut listener, "listener").await?);
     drop((speaker, listener));
 
     let binding = format!("{head} {run}\n");
-    let save = |role: &str, wire: &WireBytes| -> TestResult {
+    let save = |role: &str,
+                wire: &WireBytes,
+                session: [u8; 16],
+                receipts: &[CommandReceipt]|
+     -> TestResult {
         let mut bytes = binding.as_bytes().to_vec();
+        let mut provenance = hex(&session);
+        for (command, sequence) in receipts {
+            use std::fmt::Write as _;
+            write!(provenance, " {command}:{sequence}")?;
+        }
+        bytes.extend_from_slice(provenance.as_bytes());
+        bytes.push(b'\n');
         bytes.extend_from_slice(&wire.borrow());
         capture(root, &format!("s18-{role}.wire"), &bytes)
     };
-    save("speaker", &speaker_wire)?;
-    save("listener", &listener_wire)?;
+    save(
+        "speaker",
+        &speaker_wire,
+        *speaker_session.as_bytes(),
+        &speaker_receipts,
+    )?;
+    save(
+        "listener",
+        &listener_wire,
+        *listener_session.as_bytes(),
+        &listener_receipts,
+    )?;
     for (index, previous, expected_position, role) in [
         (1, speaker_session, position, "speaker-relog"),
         (0, listener_session, listener_landing, "listener-relog"),
@@ -406,8 +431,9 @@ async fn journey(
             "fresh relog must not show historical speech",
         )
         .await?;
-        logout_recorded(&mut fresh, "relogged character").await?;
-        save(role, &wire)?;
+        let session = *fresh.join_snapshot().game_session_id.as_bytes();
+        let receipt = logout_recorded(&mut fresh, "relogged character").await?;
+        save(role, &wire, session, &[receipt])?;
     }
 
     let expected = format!(
@@ -434,18 +460,20 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
         Duration::from_secs(90),
         verdict::observe(async {
             let root = required("E2E_ALL_CAPTURE_DIR")?;
-            let head = required("S18_CAPTURE_HEAD")?;
-            let run = required("S18_CAPTURE_RUN")?;
-            if head.len() != 40
-                || run.len() != 32
-                || !head
-                    .bytes()
-                    .chain(run.bytes())
-                    .all(|b| b.is_ascii_hexdigit())
-            {
-                return Err("S18 capture requires a Git head and unique run token".into());
+            let checkout = std::process::Command::new("git")
+                .args(["rev-parse", "HEAD"])
+                .output()?;
+            if !checkout.status.success() {
+                return Err("S18 capture head unavailable".into());
             }
-            journey(clients, world, Path::new(&root), &head, &run).await
+            let head = String::from_utf8(checkout.stdout)?;
+            let root = Path::new(&root);
+            let run = root
+                .file_name()
+                .and_then(std::ffi::OsStr::to_str)
+                .filter(|name| name.starts_with("captures.") && name.len() == 15)
+                .ok_or("S18 requires the cloud wrapper's fresh capture directory")?;
+            journey(clients, world, root, head.trim(), run).await
         }),
     )
     .await;
@@ -495,17 +523,5 @@ mod audit_tests {
         }
         assert!(check_lines(std::iter::empty(), &expected, "missing listener echo").is_err());
         assert!(check_lines(expected.iter(), &[], "outside or relog leakage").is_err());
-    }
-
-    #[test]
-    fn rejects_busy_as_the_first_logout_outcome() {
-        assert!(!accepted_logout(
-            CommandStatus::Accepted,
-            Some(LogoutResult::Busy)
-        ));
-        assert!(accepted_logout(
-            CommandStatus::Accepted,
-            Some(LogoutResult::Accepted)
-        ));
     }
 }

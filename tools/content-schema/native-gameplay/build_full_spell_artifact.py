@@ -616,6 +616,19 @@ def native_corpse_capacity(ref: dict, profile: dict, *, reward_boss: bool = Fals
     return capacity if type(capacity) is int and 1 <= capacity <= maximum else None
 
 
+def native_loot_stack_facts(profile: dict) -> dict:
+    stack_class = profile['admission'].get('stack_class')
+    if stack_class not in ('StackCapable', 'NonStackable'):
+        return {}
+    stackable = stack_class == 'StackCapable'
+    result = {'stackable': stackable}
+    stack = known_native(profile.get('semantics', {}).get('stack', {})) or {}
+    maximum = known_native(stack.get('stack_max', {}))
+    if stackable and maximum is not None and maximum != 100:
+        result['stack_maximum'] = maximum
+    return result
+
+
 def native_loot_yield_facts(ref: dict, profile: dict) -> dict | None:
     """Normal yields additionally require admitted carried custody and pickup physics."""
     semantics = native_item_semantics(ref, profile, {'Ground', 'CharacterInventory'})
@@ -642,15 +655,30 @@ def native_loot_yield_facts(ref: dict, profile: dict) -> dict | None:
     elif charges.get('state') != 'NOT_APPLICABLE':
         return None
     fact = {'item': ref, 'materializable': True, 'container_capacity': capacity,
-            'stackable': known_native(known_native(semantics['stack'])['stackable'])}
+            **native_loot_stack_facts(profile)}
     if count:
         fact['charges'] = count
     return fact
 
 
+def loot_item_profiles(profile_raw: bytes, updates_raw: bytes | None = None) -> dict:
+    """Resolve the same Item record revisions that the manifest loader uses."""
+    document = json.loads(profile_raw)
+    if updates_raw is None:
+        return document
+    updates = json.loads(updates_raw)
+    if updates.get('base_sha256') != digest(profile_raw):
+        raise ValueError('Loot Item updates do not match the native Item provider')
+    by_key = {row['production_definition']['production_key']: row for row in document['records']}
+    by_key.update((row['production_definition']['production_key'], row) for row in updates['records'])
+    document['records'] = list(by_key.values())
+    return document
+
+
 def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIONS,
                 loot_definitions: Path = LOOT_DEFINITIONS, item_definitions: Path = ITEM_DEFINITIONS,
-                native_item_profiles: dict | None = None) -> bytes:
+                native_item_profiles: dict | None = None, *,
+                qualify_carried_yields: bool | None = None) -> bytes:
     """The `loot_tables` section (OTERYN_NATIVE_LOOT_TABLES/v1, OTNGP08): one `creature_loot` row per
     pinned Creature profile with its definition's `loot` reference copied as is (`null` for a
     profile with no Creature definition), exactly the referenced loot tables, and the admission
@@ -671,10 +699,13 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
             tables[definition['identity']['key']] = definition
     facts = item_facts(item_definitions)
     quest_yields = set()
+    slice_creatures = set()
+    cloot3_creatures = set()
     # Repository-authored Quest rules bind the complete canonical dataset.
-    if (creature_definitions.resolve() == CREATURE_DEFINITIONS.resolve()
+    canonical_inputs = (creature_definitions.resolve() == CREATURE_DEFINITIONS.resolve()
             and loot_definitions.resolve() == LOOT_DEFINITIONS.resolve()
-            and item_definitions.resolve() == ITEM_DEFINITIONS.resolve()):
+            and item_definitions.resolve() == ITEM_DEFINITIONS.resolve())
+    if canonical_inputs:
         migration_tools = str(ROOT / 'tools/content-migration')
         if migration_tools not in sys.path:
             sys.path.insert(0, migration_tools)
@@ -684,14 +715,46 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         quest_yields = protected_loot_yields.ITEMS
         import quest_loot_profiles
         quest_loot_profiles.apply_loot_facts(facts, ROOT, creatures, tables)
+        import loot_slice_one
+        slice_creatures = loot_slice_one.creatures(ROOT)
+        loot_slice_one.project_tables(definitions, tables, facts)
         import nrwicked_profiles
         nrwicked_profiles.bind_hard_loot(ROOT, creatures, definitions, tables)
+        import cloot3_item_profiles
+        cloot3_creatures = cloot3_item_profiles.creatures(ROOT)
+        # The retained WorldObject i51302 has no corresponding drop in these
+        # exact Crystal Lua tables or their TibiaWiki loot lists.
+        for creature in ('ratmiral_blackwhiskers', 'tentugly_s_head', 'the_dread_maiden'):
+            key = f'oteryn:loot.creature.{creature}'
+            table = tables[key]
+            invalid = cloot3_item_profiles.item_ref(cloot3_item_profiles.INVALID_WORLD_REF)
+            table['entries'] = [entry for entry in table['entries'] if entry['item'] != invalid]
+        # Crystal names the ice cube in Thawing Dragon Lord and resolves the
+        # same ambiguous name to portable i7441 in Moonsnow Magnolia. Tibia
+        # confirms i7441 for the Thawing Dragon Lord drop.
+        thawing = tables['oteryn:loot.creature.thawing_dragon_lord']
+        for entry in thawing['entries']:
+            if entry['item'] == cloot3_item_profiles.item_ref(cloot3_item_profiles.ICE_CUBE_VISUAL):
+                entry['item'] = cloot3_item_profiles.item_ref(cloot3_item_profiles.PORTABLE_ICE_CUBE)
     bindings, named, used = {}, {}, {}
     corpse_refs, yield_keys, corpse_tables = {}, set(), {}
     reward_boss_corpses = set()
+    # Calls supplying a candidate provider may be building intermediate content.
+    # The final composition explicitly qualifies the same closure as a disk read.
+    if qualify_carried_yields is None:
+        qualify_carried_yields = native_item_profiles is None
     profile_path = item_definitions / 'spell-native-profiles.json'
     if native_item_profiles is None:
-        _, native_profiles = read(profile_path) if profile_path.exists() else (b'', {'records': []})
+        updates = profile_path.with_name('srx1-item-updates.json')
+        profile_raw = profile_path.read_bytes() if profile_path.exists() else None
+        # Intermediate Cake composition runs before the SRX-1 supplement is rebuilt.
+        native_profiles = (loot_item_profiles(profile_raw,
+                                              updates.read_bytes() if qualify_carried_yields and updates.exists() else None)
+                           if profile_raw is not None else {'records': []})
+        starter_path = item_definitions / 'starting-loadout-profiles.json'
+        if slice_creatures and starter_path.exists():
+            _, starter_profiles = read(starter_path)
+            native_profiles['records'].extend(starter_profiles['records'])
     else:
         native_profiles = native_item_profiles
     native_by_key = {}
@@ -703,6 +766,10 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         if ref['family'] != 'Item' or fact is None or fact['item'] != ref:
             raise ValueError(f"Item named by the loot section is not an exact Item definition: {ref['key']}")
         named[ref['key']] = fact
+
+    if canonical_inputs and qualify_carried_yields:
+        import cloot2_item_admissions
+        cloot2_item_admissions.apply_loot_facts(ROOT, tables, facts, native_by_key)
 
     if any(record['profile']['target']['key'] == 'oteryn:creature.the_corruptor'
            for record in creatures['records']):
@@ -764,21 +831,53 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
             native = native_loot_yield_facts(facts[key]['item'], profiles[0]) if len(profiles) == 1 else None
             if native is not None:
                 facts[key].update(native)
-    # Complete only these source-qualified corpse rows' existing loot closures.
-    # Ordinary yields retain the stronger Inventory + Ground + pickup admission;
-    # Ground-only corpse admission never authorizes a normal yield.
+    # Complete the selected portable loot and source-qualified corpse closures.
+    # A loot yield requires carried and Ground custody plus pickup physics.
     def admit_yields(entries):
         for entry in entries:
             key = entry['item']['key']
+            fact = facts[key]
             profiles = native_by_key.get(key, [])
-            if not facts[key]['materializable'] and len(profiles) == 1:
+            needs_stack_policy = fact.get('creature_product') and 'stackable' not in fact
+            if len(profiles) == 1 and (not fact['materializable'] or needs_stack_policy):
                 native = native_loot_yield_facts(entry['item'], profiles[0])
                 if native is not None:
-                    facts[key].update(native)
+                    if not fact['materializable']:
+                        fact.update(native)
+                    # Existing creature products may already be materializable
+                    # without publishing their exact native stack policy.
+                    fact.setdefault('stackable', native['stackable'])
             admit_yields(entry.get('children', []))
+    for creature in sorted(slice_creatures & bindings.keys()):
+        reference = bindings[creature]['loot']
+        if reference is None:
+            raise ValueError(f'Selected creature has no loot binding: {creature}')
+        admit_yields(used[reference['key']]['entries'])
     for key, corpses in corpse_tables.items():
         if corpses & qualified_corpses:
             admit_yields(used[key]['entries'])
+    for creature in sorted(cloot3_creatures):
+        binding = bindings.get(creature)
+        if binding is not None and binding['loot'] is not None:
+            admit_yields(used[binding['loot']['key']]['entries'])
+    # Every table reads the same exact carried Item stack policy, including
+    # yields that were materializable before any of the slice admissions.
+    for key in yield_keys:
+        fact = facts[key]
+        profiles = native_by_key.get(key, [])
+        if not fact['materializable'] or len(profiles) != 1:
+            continue
+        profile = profiles[0]
+        ref = fact['item']
+        exact = {'family': ref['family'], 'production_key': ref['key'],
+                 'revision_ref': ref['revision']}
+        admission = profile['admission']
+        if (profile['production_definition'] == exact
+                and admission['materializable'] is True
+                and 'CharacterInventory' in admission['legal_destinations']):
+            stack = native_loot_stack_facts(profile)
+            if stack and (stack['stackable'] or 'stackable' in fact):
+                fact.update(stack)
     # FORGECREATURE: this resource is added by the live fiend's death classification,
     # rather than by every creature's static loot table. Preserve core admission facts.
     sliver = facts.get('oteryn:item.tibia.i37109')
@@ -794,6 +893,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         if len(admitted) != 1:
             raise ValueError('Forge resource requires one exact native Item profile')
         sliver['materializable'] = admitted[0]['admission']['materializable'] is True
+        sliver.update(native_loot_stack_facts(admitted[0]))
         name(sliver['item'])
     if max(len(bindings), len(used), len(named)) > LOOT_RECORDS_MAX:
         raise ValueError('Loot section exceeds its record bound')
@@ -803,7 +903,19 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
              'tables': [{key: table[key] for key in ('identity', 'algorithm', 'entries')} for table in order(used)],
              'items': order(named)}
     body = ',\n'.join(f'"{key}":[\n' + ',\n'.join(line(row) for row in rows) + '\n]' for key, rows in lists.items())
-    return ('{"schema":"OTERYN_NATIVE_LOOT_TABLES/v1",\n' + body + '}\n').encode('utf-8')
+    raw = ('{"schema":"OTERYN_NATIVE_LOOT_TABLES/v1",\n' + body + '}\n').encode('utf-8')
+    if canonical_inputs and native_item_profiles is None and qualify_carried_yields:
+        from register_spell_families import NATIVE_MANIFEST, refine_loot_inputs
+
+        loot_path = LOOT_TABLES.relative_to(ROOT).as_posix()
+        generated = {
+            loot_path: raw,
+            profile_path.resolve().relative_to(ROOT).as_posix(): profile_raw,
+            NATIVE_MANIFEST: (ROOT / NATIVE_MANIFEST).read_bytes(),
+        }
+        refine_loot_inputs(ROOT, generated)
+        return generated[loot_path]
+    return raw
 
 
 def refresh_loot_tables(output: Path = LOOT_TABLES) -> str:
@@ -812,10 +924,15 @@ def refresh_loot_tables(output: Path = LOOT_TABLES) -> str:
     if migration_tools not in sys.path:
         sys.path.insert(0, migration_tools)
     import register_spell_families as registered
+    from srx1_profile_updates import PATH as item_updates
+    from starting_loadout_profiles import FRAGMENT
 
     providers = registered.spell_import.PROVIDER_DESTINATIONS
-    inputs = (providers['item_profiles'], providers['creature_profiles'], registered.NATIVE_MANIFEST)
+    inputs = (providers['item_profiles'], providers['creature_profiles'],
+              registered.NATIVE_MANIFEST, FRAGMENT)
     generated = {path: (ROOT / path).read_bytes() for path in inputs}
+    if (ROOT / item_updates).is_file():
+        generated[item_updates] = (ROOT / item_updates).read_bytes()
     registered.refresh_registered_loot(ROOT, generated)
     raw = generated[LOOT_TABLES.relative_to(ROOT).as_posix()]
     if len(raw) > LIMITS['loot_tables']:
