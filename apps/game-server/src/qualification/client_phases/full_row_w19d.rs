@@ -8,6 +8,8 @@ use oteryn_protocol_oteryn::{appearance, world_object as use_wire};
 use std::collections::BTreeMap;
 use std::num::NonZeroU32;
 
+const SPARKION_TOKEN: u32 = 23538;
+const SPARKION_MOUNT: &str = "oteryn:content.mount.sparkion_mount";
 const ADDON_DOLL: u32 = 6579;
 const AFFLICTED_OUTFIT_PIECE: u32 = 12551;
 const PROBES: [(&str, u32); 2] = [
@@ -24,7 +26,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
-            "afflicted-six-pieces-and-addon-doll-durable".to_owned(),
+            "afflicted-six-pieces-addon-doll-and-sparkion-mount-durable".to_owned(),
         ),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
         Err(_) => ("FAIL", "step=journey-observed=timeout".to_owned()),
@@ -95,21 +97,24 @@ async fn relog(
 }
 
 async fn logout(mut client: DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
-    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("step=logout observed={:?}", reply.result).into());
+    let (result, detail, _, _) = logout_once(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={detail}").into());
     }
     Ok(())
 }
 
-fn outfits(client: &mut DevClientSession) -> TestResult<BTreeMap<String, (u32, u8)>> {
+fn appearance_snapshot(client: &mut DevClientSession) -> TestResult<appearance::Snapshot> {
     let state = client
         .session_mut()
         .gated_snapshot(appearance::STATE_DOMAIN_APPEARANCE)
         .ok_or("step=appearance observed=no-admission-catalogue")?;
-    let snapshot = appearance::Snapshot::decode(&state.payload)
-        .map_err(|error| format!("step=appearance observed={error:?}"))?;
-    Ok(snapshot
+    appearance::Snapshot::decode(&state.payload)
+        .map_err(|error| format!("step=appearance observed={error:?}").into())
+}
+
+fn outfits(client: &mut DevClientSession) -> TestResult<BTreeMap<String, (u32, u8)>> {
+    Ok(appearance_snapshot(client)?
         .catalogue
         .outfits
         .into_iter()
@@ -117,7 +122,11 @@ fn outfits(client: &mut DevClientSession) -> TestResult<BTreeMap<String, (u32, u
         .collect())
 }
 
-async fn commit_use(client: &mut DevClientSession, reference: NonZeroU32) -> TestResult {
+async fn expect_item_use(
+    client: &mut DevClientSession,
+    reference: NonZeroU32,
+    expected: use_wire::UseDisposition,
+) -> TestResult {
     let mut candidates = client
         .inventory()
         .ok_or("step=use observed=no-inventory")?
@@ -132,13 +141,12 @@ async fn commit_use(client: &mut DevClientSession, reference: NonZeroU32) -> Tes
         return Err("step=use observed=ambiguous-handle".into());
     }
     let reply = client.use_item(handle).await?;
-    if reply.status != CommandStatus::Accepted
-        || reply.disposition != use_wire::UseDisposition::Committed
-    {
+    require_mechanic_acceptance(reply.status, "W19d item USE")?;
+    if reply.disposition != expected {
         return Err(format!("step=use reference={reference} observed={reply:?}").into());
     }
     evidence(&format!(
-        "W19D_USE reference={reference} status=Accepted disposition=Committed sequence={}",
+        "W19D_USE reference={reference} status=Accepted disposition={expected:?} sequence={}",
         reply.result_server_sequence
     ));
     Ok(())
@@ -206,6 +214,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_character(&clients, 0xd4, 0).await?;
     let initial_inventory = quantities(&client)?;
     let initial_outfits = outfits(&mut client)?;
+    let initial_mounts = appearance_snapshot(&mut client)?.catalogue.mounts;
     let index = provisioning::item_index()?;
     let reference = |id| provisioning::item_reference(&index, id);
     for (label, id) in PROBES {
@@ -228,7 +237,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             .into());
         }
         client.service_liveness(Duration::from_millis(100)).await?;
-        if quantities(&client)? != initial_inventory || outfits(&mut client)? != initial_outfits {
+        if quantities(&client)? != initial_inventory
+            || outfits(&mut client)? != initial_outfits
+            || appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts
+        {
             return Err(format!("step=refused-use item={label} observed=state-changed").into());
         }
     }
@@ -240,7 +252,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         character_prep::grant_item(&client, id, 1).await?;
     }
     let mut client = relog(client, &clients).await?;
-    if quantities(&client)? != funded || outfits(&mut client)? != initial_outfits {
+    if quantities(&client)? != funded
+        || outfits(&mut client)? != initial_outfits
+        || appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts
+    {
         return Err("step=fund observed=unexpected-carried-items-or-appearance".into());
     }
     let mut expected_outfits = initial_outfits.clone();
@@ -252,9 +267,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             return Err(format!("step=afflicted observed=outfit-already-owned key={key}").into());
         }
     }
+    let afflicted_reference = reference(AFFLICTED_OUTFIT_PIECE)?;
+    expect_item_use(
+        &mut client,
+        afflicted_reference,
+        use_wire::UseDisposition::PremiumRequired,
+    )
+    .await?;
+    let mut client = relog(client, &clients).await?;
+    if quantities(&client)? != funded
+        || outfits(&mut client)? != initial_outfits
+        || appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts
+    {
+        return Err("step=non-premium-afflicted observed=state-changed".into());
+    }
+    evidence("W19D_PREMIUM_REFUSAL_ASSERT disposition=PremiumRequired persisted=unchanged");
     // Current Premium proof is released on logout. Prepare it on the session that uses the pieces.
     character_prep::grant_premium(&client).await?;
-    commit_use(&mut client, reference(AFFLICTED_OUTFIT_PIECE)?).await?;
+    expect_item_use(
+        &mut client,
+        afflicted_reference,
+        use_wire::UseDisposition::Committed,
+    )
+    .await?;
     let mut client = relog(client, &clients).await?;
     for id in AFFLICTED_PIECES {
         funded.remove(&reference(id)?.get());
@@ -272,18 +307,90 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=afflicted changed={changed:?} missing={missing:?}").into());
     }
     let carried = quantities(&client)?;
-    if carried != funded {
+    if carried != funded || appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts {
         return Err(
             format!("step=afflicted observed=carried-{carried:?} expected={funded:?}").into(),
         );
     }
     evidence("W19D_AFFLICTED_ASSERT consumed=12551,12552,12553,12554,12555,12556 outfit=afflicted");
-    commit_use(&mut client, reference(ADDON_DOLL)?).await?;
+    expect_item_use(
+        &mut client,
+        reference(ADDON_DOLL)?,
+        use_wire::UseDisposition::Committed,
+    )
+    .await?;
     let mut client = relog(client, &clients).await?;
     if quantities(&client)? != initial_inventory {
         return Err("step=doll observed=wrong-consumption".into());
     }
-    verify_doll(&cosmetics, &afflicted, &outfits(&mut client)?)?;
+    let after_doll = outfits(&mut client)?;
+    verify_doll(&cosmetics, &afflicted, &after_doll)?;
+    if appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts {
+        return Err("step=outfit-use observed=unexpected-mount-grant".into());
+    }
+    let mut duplicate_inputs = initial_inventory.clone();
+    for id in AFFLICTED_PIECES {
+        duplicate_inputs.insert(reference(id)?.get(), 1);
+        character_prep::grant_item(&client, id, 1).await?;
+    }
+    let mut client = relog(client, &clients).await?;
+    if quantities(&client)? != duplicate_inputs
+        || outfits(&mut client)? != after_doll
+        || appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts
+    {
+        return Err("step=afflicted-duplicate-fund observed=unexpected-state".into());
+    }
+    character_prep::grant_premium(&client).await?;
+    expect_item_use(
+        &mut client,
+        afflicted_reference,
+        use_wire::UseDisposition::Committed,
+    )
+    .await?;
+    let mut client = relog(client, &clients).await?;
+    if quantities(&client)? != duplicate_inputs
+        || outfits(&mut client)? != after_doll
+        || appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts
+    {
+        return Err("step=afflicted-duplicate observed=state-changed".into());
+    }
+    evidence("W19D_AFFLICTED_DUPLICATE_ASSERT persisted=unchanged");
+    let expected_mounts = initial_mounts;
+    if expected_mounts.iter().any(|mount| mount == SPARKION_MOUNT) {
+        return Err("step=mount observed=already-owned".into());
+    }
+    let mut mounted = expected_mounts.clone();
+    mounted.push(SPARKION_MOUNT.to_owned());
+    mounted.sort();
+    let mount_reference = reference(SPARKION_TOKEN)?;
+    let mut mount_inputs = duplicate_inputs.clone();
+    if mount_inputs.insert(mount_reference.get(), 1).is_some() {
+        return Err("step=mount observed=preexisting-token".into());
+    }
+    character_prep::grant_item(&client, SPARKION_TOKEN, 1).await?;
+    let mut client = relog(client, &clients).await?;
+    if quantities(&client)? != mount_inputs
+        || outfits(&mut client)? != after_doll
+        || appearance_snapshot(&mut client)?.catalogue.mounts != expected_mounts
+    {
+        return Err("step=mount-fund observed=unexpected-input-or-appearance".into());
+    }
+    expect_item_use(
+        &mut client,
+        mount_reference,
+        use_wire::UseDisposition::Committed,
+    )
+    .await?;
+    let mut client = relog(client, &clients).await?;
+    let mut observed_mounts = appearance_snapshot(&mut client)?.catalogue.mounts;
+    observed_mounts.sort();
+    if quantities(&client)? != duplicate_inputs
+        || outfits(&mut client)? != after_doll
+        || observed_mounts != mounted
+    {
+        return Err("step=mount observed=unexpected-persisted-outcome".into());
+    }
+    evidence("W19D_MOUNT_ASSERT grant=sparkion_mount consumed=23538");
     logout(client).await
 }
 
