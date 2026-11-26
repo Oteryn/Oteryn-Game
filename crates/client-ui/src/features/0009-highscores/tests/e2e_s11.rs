@@ -47,19 +47,31 @@ fn parse_row(text: &str) -> Result<HighscoreRow, BoxError> {
 
 fn live_reply(
     root: &Path,
-    name: &str,
+    label: &str,
+    expected_session: &str,
     command: &ServerMechanicCommand,
     expected_error: u32,
 ) -> Result<(String, ServerMechanicResponse), BoxError> {
-    let capture: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join(name))?)?;
+    let capture: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(root.join(format!("s11-{label}-wire.json")))?)?;
+    let replay: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(root.join(format!("s11-{label}.json")))?)?;
     assert_eq!(
         capture["run"].as_str(),
         root.file_name().and_then(|name| name.to_str())
     );
-    let session = capture["session"]
-        .as_str()
-        .filter(|session| !session.is_empty())
-        .ok_or("missing live session")?;
+    let session = capture["session"].as_str().ok_or("missing live session")?;
+    assert_eq!(session, expected_session);
+    assert_eq!(session.len(), 36);
+    for (index, byte) in session.bytes().enumerate() {
+        if matches!(index, 8 | 13 | 18 | 23) {
+            assert_eq!(byte, b'-', "malformed admitted session ID");
+        } else {
+            assert!(byte.is_ascii_hexdigit(), "malformed admitted session ID");
+        }
+    }
+    assert_eq!(session.as_bytes()[14], b'7');
+    assert!(matches!(session.as_bytes()[19], b'8' | b'9' | b'a' | b'b'));
     let generation = capture["generation"]
         .as_u64()
         .ok_or("missing live generation")?;
@@ -71,22 +83,27 @@ fn live_reply(
     let envelope = decode_wire_envelope(&result)?;
     assert_eq!(envelope.message_type(), MessageType::CommandResult);
     assert_eq!(envelope.connection_generation(), generation);
-    assert_eq!(
-        Some(envelope.server_sequence()),
-        capture["server_sequence"].as_u64()
-    );
     assert_ne!(envelope.server_sequence(), 0);
     let result = decode_command_result(envelope.payload())?;
-    assert_eq!(Some(result.command_id), capture["command_id"].as_u64());
     assert_eq!(result.command_id, request.command_id);
     assert_eq!(result.error_code, expected_error);
+    assert_eq!(
+        replay,
+        serde_json::json!({
+            "command_id": result.command_id,
+            "game_session_id": expected_session,
+            "payload": result.payload,
+            "server_sequence": envelope.server_sequence(),
+            "status": result.status as u32,
+        })
+    );
     Ok((
         session.to_owned(),
         ServerMechanicResponse {
-            command_id: result.command_id,
+            command_id: serde_json::from_value(replay["command_id"].clone())?,
             status: result.status,
-            server_sequence: envelope.server_sequence(),
-            payload: result.payload.to_vec(),
+            server_sequence: serde_json::from_value(replay["server_sequence"].clone())?,
+            payload: serde_json::from_value(replay["payload"].clone())?,
         },
     ))
 }
@@ -122,13 +139,21 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
     assert_eq!(command.capability, wire::CAPABILITY_HIGHSCORES_V1);
     assert!(panel.pending);
 
-    let (session, response) = live_reply(root, "s11-experience-exchange.json", &command, 0)?;
-    assert_eq!(session, value(expected, "game_session_id")?);
+    let session = value(expected, "game_session_id")?;
+    let (_, before) = live_reply(root, "before", session, &command, 0)?;
+    assert_eq!(before.status, CommandStatus::Accepted);
+    let before_page =
+        wire::decode_highscores_result(&before.payload).map_err(|e| format!("{e:?}"))?;
+    let (_, response) = live_reply(root, "experience", session, &command, 0)?;
+    assert_eq!(before.command_id.checked_add(1), Some(response.command_id));
+    assert!(before.server_sequence < response.server_sequence);
     assert_eq!(response.status, CommandStatus::Accepted);
     assert!(panel.reply.is_none());
     apply_result(&mut panel, &response);
     let page = panel.reply.clone().ok_or("s11 page not stored")?;
     assert!(!panel.pending && panel.feedback.is_none());
+    assert!(before_page.snapshot_id < page.snapshot_id);
+    assert!(before_page.rows != page.rows || before_page.own_row != page.own_row);
     let world = page.world.ok_or("S11 response lacks World details")?;
     let world = world
         .as_bytes()
@@ -176,7 +201,8 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
     let refusal = request(&mut panel, Action::Refresh).ok_or("s11 refusal query not produced")?;
     let (refused_session, refused) = live_reply(
         root,
-        "s11-refused-exchange.json",
+        "refused",
+        session,
         &refusal,
         FoundationProtocolError::NotSupported.code(),
     )?;
@@ -187,10 +213,44 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
     assert!(refused.payload.is_empty());
     assert_eq!(value(expected, "refused")?, "Rejected");
     apply_result(&mut panel, &refused);
+    assert!(!panel.pending);
     assert_eq!(panel.reply, kept);
     assert_eq!(
         panel.feedback.as_deref(),
         Some("Server refused highscores: Rejected. Refresh to retry with the current snapshot.")
+    );
+    panel.category = 13;
+    let loyalty_query =
+        request(&mut panel, Action::Refresh).ok_or("s11 loyalty query not produced")?;
+    let (_, loyalty) = live_reply(root, "loyalty", session, &loyalty_query, 0)?;
+    assert_eq!(refused.command_id.checked_add(1), Some(loyalty.command_id));
+    assert!(refused.server_sequence < loyalty.server_sequence);
+    assert_eq!(loyalty.status, CommandStatus::Accepted);
+    apply_result(&mut panel, &loyalty);
+    let loyalty_page = panel.reply.ok_or("s11 loyalty page not stored")?;
+    assert!(!panel.pending && panel.feedback.is_none());
+    assert_eq!(loyalty_page.category, 13);
+    assert_eq!(loyalty_page.world, page.world);
+    assert_eq!(loyalty_page.page, 1);
+    assert_ne!(loyalty_page.snapshot_id, 0);
+    assert!(loyalty_page.rows.len() <= wire::MAX_HIGHSCORES_PAGE_ROWS);
+
+    let relog_session = value(expected, "relog_session")?;
+    assert_ne!(session, relog_session);
+    let relog_query = oteryn_client_runtime::highscores::command(wire::HighscoresQuery {
+        world: None,
+        details: true,
+        category: 1,
+        vocation: 0,
+        page: 1,
+        snapshot_id: page.snapshot_id,
+    })
+    .map_err(|e| format!("{e:?}"))?;
+    let (_, relog) = live_reply(root, "relog", relog_session, &relog_query, 0)?;
+    assert_eq!(relog.status, CommandStatus::Accepted);
+    assert_eq!(
+        wire::decode_highscores_result(&relog.payload).map_err(|e| format!("{e:?}"))?,
+        page
     );
     Ok(())
 }

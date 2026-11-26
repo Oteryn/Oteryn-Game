@@ -10,10 +10,8 @@ use oteryn_protocol_oteryn::{
 };
 
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
-    for variable in ["NODE_BOOT_S11_CAPTURE_DIR", "E2E_ALL_CAPTURE_DIR"] {
-        if let Some(root) = std::env::var_os(variable) {
-            std::fs::write(Path::new(&root).join(name), bytes)?;
-        }
+    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        std::fs::write(Path::new(&root).join(name), bytes)?;
     }
     Ok(())
 }
@@ -33,23 +31,24 @@ async fn exchange(
     let response = decode_wire_envelope(&exchange.result_frame)?;
     let result = decode_command_result(response.payload())?;
     let session = uuid_text(exchange.game_session_id.as_bytes());
-    for variable in ["NODE_BOOT_S11_CAPTURE_DIR", "E2E_ALL_CAPTURE_DIR"] {
-        if let Some(root) = std::env::var_os(variable) {
-            let root = Path::new(&root);
-            let capture = serde_json::json!({
-                "run": root.file_name().and_then(|name| name.to_str()).ok_or("S11 capture directory has no run name")?,
-                "session": session,
-                "generation": request.connection_generation(),
-                "command_id": result.command_id,
-                "server_sequence": response.server_sequence(),
-                "request": exchange.request_frame,
-                "result": exchange.result_frame,
-            });
-            std::fs::write(
-                root.join(format!("s11-{label}-exchange.json")),
-                serde_json::to_vec(&capture)?,
-            )?;
-        }
+    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        let root = Path::new(&root);
+        let envelope = serde_json::json!({
+            "command_id": result.command_id,
+            "game_session_id": session,
+            "payload": result.payload,
+            "server_sequence": response.server_sequence(),
+            "status": result.status as u32,
+        });
+        let wire_proof = serde_json::json!({
+            "run": root.file_name().and_then(|name| name.to_str()).ok_or("S11 capture directory has no run name")?,
+            "session": session,
+            "generation": request.connection_generation(),
+            "request": exchange.request_frame,
+            "result": exchange.result_frame,
+        });
+        std::fs::write(root.join(format!("s11-{label}.json")), serde_json::to_vec(&envelope)?)?;
+        std::fs::write(root.join(format!("s11-{label}-wire.json")), serde_json::to_vec(&wire_proof)?)?;
     }
     Ok((result.status, exchange.error_code, result.payload.to_vec()))
 }
@@ -232,15 +231,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         row_text(&expected_own),
         refused
     ));
-    capture("s11-page1.bin", &accepted)?;
-    capture("s11-expected.txt", expected.as_bytes())?;
     let (logout, observed, _, _) = logout_once(&mut client).await?;
     if logout != Some(LogoutResult::Accepted) {
         return Err(format!("step=logout observed={observed}").into());
     }
     drop(client);
     let mut rejoined = connect_world(clients, 0x41).await?;
-    if rejoined.session_mut().join_snapshot().game_session_id == session {
+    let relog_session = rejoined.session_mut().join_snapshot().game_session_id;
+    if relog_session == session {
         return Err("S11 relog reused the original session".into());
     }
     let (status, _, after) = exchange(
@@ -262,6 +260,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if logout != Some(LogoutResult::Accepted) {
         return Err(format!("step=relog-logout observed={observed}").into());
     }
+    expected.push_str(&format!("relog_session={}\n", uuid_text(relog_session.as_bytes())));
+    capture("s11-expected.txt", expected.as_bytes())?;
     Ok(format!(
         "snapshot={} rows={} own={}",
         page.snapshot_id,

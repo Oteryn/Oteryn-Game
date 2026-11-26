@@ -458,63 +458,6 @@ class SeamPassThroughTests(unittest.TestCase):
                              result.stderr)
 
 
-class S11ClientReplayTests(unittest.TestCase):
-    def test_batch_selects_only_live_world_s11(self):
-        registry = HERE.parents[2] / 'apps/game-server/src/qualification/client_phases/world.rs'
-        index = int(re.search(r'e2e_row_selected\((\d+)\) \{\s+verdict::indexed\("S11\.client"',
-                              registry.read_text()).group(1))
-        for world, legacy, groups, batch, selected in (
-            ('1', '0', 'rows', f'{index}:1', True),
-            ('1', '0', 'core, rows', f'{index - 1}:2', True),
-            ('1', '0', '', 'all', True),
-            ('1', '0', 'rows', f'{index - 1}:1', False),
-            ('1', '0', 'rows', f'{index + 1}:1', False),
-            ('1', '0', 'rows', '', False),
-            ('1', '0', 'core', 'all', False),
-            ('1', '1', '', 'all', False),
-            ('0', '0', 'rows', 'all', False),
-        ):
-            with self.subTest(world=world, legacy=legacy, groups=groups, batch=batch):
-                result = bash(function('s11_client_selected') + '\ns11_client_selected',
-                              {'NODE_BOOT_WORLD': world, 'NODE_BOOT_D150_LEGACY': legacy,
-                               'NODE_BOOT_E2E_ONLY': groups, 'OTERYN_E2E_ROW_BATCH': batch})
-                self.assertEqual(result.returncode, 0 if selected else 1,
-                                 result.stdout + result.stderr)
-
-    def test_replay_requires_current_capture_and_exact_test_success(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            work = Path(temporary) / 'work'
-            capture = work / 'capture'
-            stale = Path(temporary) / 'stale'
-            capture.mkdir(parents=True)
-            stale.mkdir()
-            for name in ('s11-page1.bin', 's11-expected.txt'):
-                (stale / name).write_text('stale')
-                (work / name).write_text('stale')
-            stage_log = work / 'stage-seam_stages.log'
-            script = (function('s11_client_replay') + '\n'
-                      'cargo() { echo "cargo invoked"; echo "test result: ok. 0 passed;"; }\n'
-                      's11_client_replay')
-            env = {'WORK': str(work), 'E2E_ALL_CAPTURE_DIR': str(stale),
-                   'NODE_BOOT_S11_CAPTURE_DIR': str(capture)}
-            for marker, files, want in (
-                (True, False, 'missing-live-capture'),
-                (False, True, 'missing-live-capture'),
-                (True, True, 'panel-replay-failed'),
-            ):
-                with self.subTest(marker=marker, files=files):
-                    stage_log.write_text('SEAM_EVIDENCE e2e_capture scenario=S11.client '
-                                         'status=CAPTURED evidence=snapshot=1\n' if marker else '')
-                    if files:
-                        for name in ('s11-page1.bin', 's11-expected.txt'):
-                            (capture / name).write_text('current')
-                    result = bash(script, env)
-                    self.assertEqual(result.returncode, 1)
-                    self.assertIn(f'evidence={want}', result.stdout)
-                    self.assertNotIn('status=PASS', result.stdout)
-                    self.assertEqual('cargo invoked' in result.stdout, marker and files)
-
-
 class StageDumpTests(unittest.TestCase):
     def run_stage(self, command):
         with tempfile.TemporaryDirectory() as temp:
@@ -737,6 +680,38 @@ class PgObserveTests(unittest.TestCase):
             self.assertIn(setting, RUN_TEXT)
         self.assertIn('echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres', RUN_TEXT)
         self.assertIn('cp -R "$PG_OBS" "$NODE_BOOT_FAILURE_LOG_DIR/postgres-world', RUN_TEXT)
+
+
+class S11ClientReplayTests(unittest.TestCase):
+    def test_selected_s11_requires_every_frame_and_exactly_one_replay(self):
+        replay = load('client_replay')
+        registry = (replay.PHASES / 'world.rs').read_text()
+        index = int(re.search(r'e2e_row_selected\((\d+)\) \{\s+verdict::indexed\("S11\.client"',
+                              registry).group(1))
+        self.assertEqual(replay.selected_rows(f'{index}:1')[0], {'S11.client'})
+        for adjacent in (index - 1, index + 1):
+            self.assertNotIn('S11.client', replay.selected_rows(f'{adjacent}:1')[0])
+        (package, test, files), = replay.replay_targets()['e2e_s11']
+        self.assertEqual(package, 'oteryn-client-ui')
+        self.assertEqual(len(files), 11)
+        with tempfile.TemporaryDirectory() as temporary:
+            capture = Path(temporary)
+            log = capture / 'rows.log'
+            server = [('e2e_capture', 'CAPTURED')]
+            with patch.object(replay.subprocess, 'run') as run:
+                for name in files - {'s11-relog.json'}:
+                    (capture / name).write_text('current')
+                self.assertEqual(replay.replay_cause('S11', package, test, files, capture, server, log),
+                                 'capture-missing')
+                run.assert_not_called()
+                (capture / 's11-relog.json').write_text('current')
+                for count, want in ((0, 'replay-not-run'), (2, 'replay-failed'), (1, None)):
+                    run.reset_mock()
+                    run.return_value = subprocess.CompletedProcess([], 0,
+                        f'test highscores::e2e_s11::{test} ... ok\n'
+                        f'test result: ok. {count} passed; 0 failed; 0 ignored;')
+                    self.assertEqual(replay.replay_cause('S11', package, test, files, capture, server, log), want)
+                    run.assert_called_once()
 
 
 class CloudRunSummaryTests(unittest.TestCase):
