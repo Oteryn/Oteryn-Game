@@ -175,8 +175,8 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
         let dialog_text = |row| crate::item_forge::resource_dialog::dialog_text(dialog, row);
         if index == 7 {
             if panel.resource_dialog.serial == previous_dialog
-                || dialog_text(0) != "Current dust: 15 / 120"
-                || !text.lines().any(|line| line == "Current dust: 15 / 120")
+                || dialog_text(0) != "Current dust: 15 / 101"
+                || !text.lines().any(|line| line == "Current dust: 15 / 101")
             {
                 return Err("Forge current dust dialog rendered incorrect resources".into());
             }
@@ -191,14 +191,14 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
             if panel.resource_dialog.serial == previous_dialog
                 || rows.len() != 2
                 || !cap.starts_with("History #2\n")
-                || !cap.contains("Dust after operation: 15 / 120")
+                || !cap.contains("Dust after operation: 15 / 101")
                 || !conversion.starts_with("History #1\n")
                 || !conversion.contains("Dust after operation: 40 / 100\nCreated: 3 slivers")
                 || !text
                     .split_once("History #2\n")
                     .and_then(|(_, rows)| rows.split_once("History #1\n"))
                     .is_some_and(|(cap, conversion)| {
-                        cap.contains("Dust: 15 / 120")
+                        cap.contains("Dust: 15 / 101")
                             && conversion.contains("Dust: 40 / 100")
                             && conversion.contains("Created: 3 slivers")
                     })
@@ -211,7 +211,7 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
         }
         for expected in match index {
             1 => &["Dust after operation: 40 / 100", "Created: 3 slivers"][..],
-            2 => &["Dust after operation: 15 / 120"][..],
+            2 => &["Dust after operation: 15 / 101"][..],
             _ => &[],
         } {
             if !dialog_text(0).lines().any(|line| line == *expected) {
@@ -220,7 +220,7 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
         }
         let expected_resources = match index {
             1 => &["Dust: 40 / 100", "Created: 3 slivers, 0 cores"][..],
-            2 => &["Dust: 15 / 120"][..],
+            2 => &["Dust: 15 / 101"][..],
             _ => &[],
         };
         if !expected_resources

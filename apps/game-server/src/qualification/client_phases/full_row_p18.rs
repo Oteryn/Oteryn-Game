@@ -1,24 +1,8 @@
 //! P18 Exaltation Forge full-row journey.
 //!
-//! Concrete player scenario, derived from the P18 audit/matrix row and the
-//! native item-Forge owner (`gameplay_transport/item_forge.rs` and
-//! `durability/item_forge_live`):
-//! 1. Admit the provisioned node-boot character and retain its complete native
-//!    inventory snapshot; this is the only source of session item handles.
-//! 2. Send HISTORY and require an accepted JSON history result.
-//! 3. Provision two class-one daggers on the dedicated account and send FUSION with their handles and require either an
-//!    applied tier/custody/resource delta or an explicit native refusal which
-//!    leaves the complete inventory unchanged.
-//! 4. Send TRANSFER, CONVERGENCE_FUSION, and CONVERGENCE_TRANSFER in the same
-//!    way, checking every reply and the inventory delta/refusal after each.
-//! 5. Send DUST_TO_SLIVERS, SLIVERS_TO_CORES, and DUST_LIMIT; require their
-//!    resource result on success, or an explicit no-delta refusal. This is the
-//!    row's negative path when legitimately earned resources are insufficient.
-//! 6. Query HISTORY again and require the server to describe every applied
-//!    operation (an all-refused run must remain an empty history).
-//! 7. Log out normally, make a fresh admission, and re-check the complete
-//!    inventory plus HISTORY so durable tiers, resources, and receipts cannot
-//!    disappear or be duplicated.
+//! Costs and tiers follow Global's Equipment Upgrade reference:
+//! https://tibia.fandom.com/wiki/Equipment_Upgrade
+//! Each case is prepared offline and submits one live command before relog.
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
@@ -261,24 +245,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     let mut fusion_outcome = None;
-    let mut applied = Vec::new();
-    let operations = [
-        Operation::Fusion,
-        Operation::Transfer,
-        Operation::ConvergenceFusion,
-        Operation::ConvergenceTransfer,
-        Operation::DustToSlivers,
-        Operation::SliversToCores,
-        Operation::DustLimit,
-    ];
+    let operations = [Operation::Fusion];
     let mut observations = Vec::new();
-    let mut missing_pairs = Vec::new();
     for (index, operation) in operations.into_iter().enumerate() {
         let pair = if operation.requires_pair() {
             let preferred = (operation == Operation::Fusion).then_some(pair_ref.get());
             let Some(pair) = quoted_pair(&mut client, operation, preferred).await? else {
-                missing_pairs.push(operation);
-                continue;
+                return Err("seeded Fusion pair missing".into());
             };
             Some(pair)
         } else {
@@ -344,9 +317,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             }
             fusion_outcome = Some((expected_tiers, success, dust_paid, gold_paid));
         }
-        if did_apply {
-            applied.push(operation);
-        }
         observations.push(observed);
     }
     client.service_liveness(Duration::from_millis(490)).await?;
@@ -385,18 +355,433 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     evidence(&format!(
         "P18_FUSION_CHECK status=PASS succeeded={succeeded} dust_paid={dust_paid} gold_paid={gold_paid} durable_dagger_tiers={expected_tiers:?}"
     ));
-    if applied.len() != 7 {
-        let refused = observations
-            .iter()
-            .filter(|value| !value.body["applied"].as_bool().unwrap_or(false))
-            .map(|value| format!("{:?}:{}", value.operation, value.body["reason"]))
-            .collect::<Vec<_>>()
-            .join(",");
-        return Err(format!(
-            "steps-3-5 missing-valid-carried-pair={missing_pairs:?} mechanic-refusals=[{refused}]; need=served-pair-quote-and-ordinary-forge-resources; pair-source:crates/gameplay/items/src/forge.rs:103; dust-source:crates/gameplay/domain/src/domain/forge_creature.rs:93"
-        )
-        .into());
+    let mut failures = Vec::new();
+    if !succeeded {
+        failures.push("Fusion: first attempt rolled a natural failure".to_owned());
     }
+    for (ordinal, case) in CASES.iter().enumerate() {
+        if let Err(error) = run_case(&dedicated, case, 0xe0 + u8::try_from(ordinal)? * 3).await {
+            let failure = format!("{:?}: {error}", case.operation);
+            evidence(&format!("P18_CASE_FAIL {failure}"));
+            failures.push(failure);
+        }
+    }
+    if !failures.is_empty() {
+        return Err(failures.join("; ").into());
+    }
+    Ok(())
+}
+
+struct ForgeCase {
+    operation: Operation,
+    /// (Tibia item ID, input tier), target first.
+    pair: Option<[(u32, u8); 2]>,
+    gold: i64,
+    dust: i64,
+    cores: u64,
+}
+
+const CASES: [ForgeCase; 6] = [
+    ForgeCase {
+        operation: Operation::Transfer,
+        pair: Some([(34091, 0), (28716, 2)]),
+        gold: 20_000_000,
+        dust: 100,
+        cores: 1,
+    },
+    ForgeCase {
+        operation: Operation::DustToSlivers,
+        pair: None,
+        gold: 0,
+        dust: 60,
+        cores: 0,
+    },
+    ForgeCase {
+        operation: Operation::SliversToCores,
+        pair: None,
+        gold: 0,
+        dust: 0,
+        cores: 0,
+    },
+    ForgeCase {
+        operation: Operation::DustLimit,
+        pair: None,
+        gold: 0,
+        dust: 25,
+        cores: 0,
+    },
+    ForgeCase {
+        operation: Operation::ConvergenceFusion,
+        pair: Some([(28717, 0), (34090, 0)]),
+        gold: 55_000_000,
+        dust: 130,
+        cores: 0,
+    },
+    ForgeCase {
+        operation: Operation::ConvergenceTransfer,
+        pair: Some([(43876, 0), (43885, 1)]),
+        gold: 65_000_000,
+        dust: 160,
+        cores: 1,
+    },
+];
+
+type FixtureDb = sqlx::PgConnection;
+
+async fn fixture_dust(tx: &mut FixtureDb, character: &str, spend: i64) -> TestResult<(u64, u64)> {
+    sqlx::query("INSERT INTO game_character_forge_dust(character_id,balance,dust_limit) VALUES($1::uuid,0,100) ON CONFLICT DO NOTHING")
+        .bind(character).execute(&mut *tx).await?;
+    let (mut balance, mut limit): (i64, i16) = sqlx::query_as(
+        "SELECT balance,dust_limit FROM game_character_forge_dust WHERE character_id=$1::uuid FOR UPDATE")
+        .bind(character).fetch_one(&mut *tx).await?;
+    // Historical cap prerequisites must follow the deployed ledger's constraint.
+    // The live DustLimit case separately checks Global's +1 transition.
+    while spend > i64::from(limit) {
+        let cost = 25 + i64::from((limit - 100) / 20);
+        if balance < cost {
+            append_dust(tx, character, balance, limit, cost - balance, "GAIN").await?;
+            balance = cost;
+        }
+        append_dust(tx, character, balance, limit, cost, "LIMIT_RAISE").await?;
+        balance -= cost;
+        limit += 20;
+    }
+    if balance < spend {
+        append_dust(tx, character, balance, limit, spend - balance, "GAIN").await?;
+    } else if balance > spend {
+        append_dust(tx, character, balance, limit, balance - spend, "SPEND").await?;
+    }
+    Ok((u64::try_from(spend)?, u64::try_from(limit)?))
+}
+
+async fn append_dust(
+    tx: &mut FixtureDb,
+    character: &str,
+    before: i64,
+    limit: i16,
+    amount: i64,
+    kind: &str,
+) -> TestResult {
+    sqlx::query(
+        "WITH e AS (
+        INSERT INTO game_character_forge_dust_entries
+          (entry_id,character_id,previous_entry_id,kind,cause,cause_occurrence_id,transaction_id,
+           amount,lost_amount,balance_before,balance_after,dust_limit_before,dust_limit_after)
+        SELECT game_character_uuid_v7(),character_id,last_entry_id,
+           $5,
+           CASE $5 WHEN 'LIMIT_RAISE' THEN 'forge_dust_limit'
+                   WHEN 'SPEND' THEN 'proficiency' ELSE 'creature_kill' END,
+           game_character_uuid_v7(),game_character_uuid_v7(),$4,0,$2,
+           CASE WHEN $5='GAIN' THEN $2+$4 ELSE $2-$4 END,$3,
+           CASE WHEN $5='LIMIT_RAISE' THEN $3+20 ELSE $3 END
+        FROM game_character_forge_dust WHERE character_id=$1::uuid
+        RETURNING entry_id,balance_after,dust_limit_after)
+        UPDATE game_character_forge_dust SET balance=e.balance_after,dust_limit=e.dust_limit_after,
+        last_entry_id=e.entry_id FROM e WHERE character_id=$1::uuid",
+    )
+    .bind(character)
+    .bind(before)
+    .bind(limit)
+    .bind(amount)
+    .bind(kind)
+    .execute(tx)
+    .await?;
+    Ok(())
+}
+
+async fn bank_balance(tx: &mut FixtureDb, clients: &SeamClients<'_>) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT coalesce((SELECT balance FROM game_account_bank_balances
+        WHERE account_id=$1::uuid AND world_id=$2::uuid),0)::bigint",
+    )
+    .bind(&clients.accounts[0])
+    .bind(uuid_text(&clients.world))
+    .fetch_one(tx)
+    .await?)
+}
+
+async fn fixture_bank(
+    tx: &mut FixtureDb,
+    clients: &SeamClients<'_>,
+    character: &str,
+    amount: i64,
+) -> TestResult<i64> {
+    let mut before = bank_balance(tx, clients).await?;
+    // Use the bank PG fixture's seed pattern in this offline fixture transaction.
+    // Every live fee runs in a new session with all triggers active.
+    if amount == 0 {
+        return Ok(before);
+    }
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let mut remaining = amount;
+    while remaining > 0 {
+        let chunk = remaining.min(20_000_000);
+        sqlx::query("WITH op AS (
+          INSERT INTO game_account_bank_operations(operation_occurrence_id,transaction_id,event_id,kind,
+            request_binding,acting_character_id,account_id,world_id,channel_id,runtime_scope_ownership_generation,
+            amount,outcome,occurred_at,envelope_sha256,committed_at,planned_platinum_item_instance_id,
+            planned_gold_item_instance_id,backpack_item_instance_id)
+          SELECT game_character_uuid_v7(),game_character_uuid_v7(),game_character_uuid_v7(),1,
+            sha256('p18 fixture'),$1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::text::numeric,
+            $6,0,1,sha256('p18 fixture'),0,game_character_uuid_v7(),game_character_uuid_v7(),item_instance_id
+          FROM game_item_container_slots WHERE character_id=$1::uuid RETURNING transaction_id),
+          entry AS (
+          INSERT INTO game_account_bank_entries(entry_id,transaction_id,account_id,world_id,kind,
+            amount,balance_before,balance_after,acting_character_id)
+          SELECT game_character_uuid_v7(),transaction_id,$2::uuid,$3::uuid,1,$6,$7,$7+$6,$1::uuid
+          FROM op RETURNING entry_id,balance_after)
+          INSERT INTO game_account_bank_balances(account_id,world_id,balance,last_entry_id)
+          SELECT $2::uuid,$3::uuid,balance_after,entry_id FROM entry
+          ON CONFLICT (account_id,world_id) DO UPDATE
+          SET balance=excluded.balance,last_entry_id=excluded.last_entry_id")
+            .bind(character).bind(&clients.accounts[0]).bind(uuid_text(&clients.world))
+            .bind(uuid_text(&clients.channel)).bind(clients.scope_generation.to_string())
+            .bind(chunk).bind(before).execute(&mut *tx).await?;
+        before += chunk;
+        remaining -= chunk;
+    }
+    sqlx::query("SET LOCAL session_replication_role=origin")
+        .execute(tx)
+        .await?;
+    Ok(before)
+}
+
+async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestResult {
+    let [character] = clients.characters else {
+        return Err("Forge case needs the dedicated character".into());
+    };
+    let character = uuid_text(character);
+    let mut grant = connect_character(clients, tag, 0).await?;
+    if let Some(pair) = case.pair {
+        for (item, _) in pair {
+            character_prep::grant_item(&grant, item, 1).await?;
+        }
+    }
+    if case.cores > 0 {
+        character_prep::grant_item(&grant, 37110, u32::try_from(case.cores)?).await?;
+    }
+    if case.operation == Operation::SliversToCores {
+        for count in [20, 20, 10] {
+            character_prep::grant_item(&grant, 37109, count).await?;
+        }
+    }
+    logout(&mut grant).await?;
+    drop(grant);
+
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let mut tx = sqlx::Connection::begin(&mut db).await?;
+    if let Some(pair) = case.pair {
+        for (item, tier) in pair {
+            if tier > 0 {
+                let result = sqlx::query("INSERT INTO game_item_tiers(item_instance_id,tier)
+                    SELECT i.item_instance_id,$3 FROM game_item_container_entries e
+                    JOIN game_item_instances i USING (item_instance_id)
+                    WHERE e.character_id=$1::uuid AND i.definition_production_key=$2 AND i.lifecycle=1 AND i.quantity=1")
+                    .bind(&character).bind(format!("oteryn:item.tibia.i{item}"))
+                    .bind(i16::from(tier)).execute(&mut *tx).await?;
+                if result.rows_affected() != 1 {
+                    return Err(
+                        format!("expected one item {item} to receive fixture tier {tier}").into(),
+                    );
+                }
+            }
+        }
+    }
+    let funded = fixture_dust(&mut tx, &character, case.dust).await?;
+    let gold = fixture_bank(&mut tx, clients, &character, case.gold).await?;
+    tx.commit().await?;
+    evidence(&format!(
+        "FIXTURE row=P18.full operation={:?} item_id_tier_count={:?} gold_added={} dust={}/{} cores_added={} slivers_added={}",
+        case.operation,
+        case.pair
+            .map(|pair| pair.map(|(item, tier)| (item, tier, 1))),
+        case.gold,
+        funded.0,
+        funded.1,
+        case.cores,
+        if case.operation == Operation::SliversToCores {
+            50
+        } else {
+            0
+        }
+    ));
+
+    let mut client = connect_character(clients, tag + 1, 0).await?;
+    let session = client.join_snapshot().game_session_id;
+    let definitions = provisioning::item_index()?;
+    let coins = [(3031, 1), (3035, 100), (3043, 10_000)]
+        .into_iter()
+        .map(|(id, value)| Ok((provisioning::item_reference(&definitions, id)?, value)))
+        .collect::<TestResult<Vec<_>>>()?;
+    // Native fees consume carried coins before the account's bank balance.
+    let gold_before = gold + i64::try_from(carried_gold(&client, &coins))?;
+    let sliver = provisioning::item_reference(&definitions, 37109)?;
+    let core = provisioning::item_reference(&definitions, 37110)?;
+    let counts = |client: &DevClientSession| {
+        (
+            super::full_e2ef7::units(client, sliver),
+            super::full_e2ef7::units(client, core),
+        )
+    };
+    let (slivers, cores) = counts(&client);
+    if super::client_row_p18::dust(&mut client).await? != funded
+        || bank_balance(&mut db, clients).await? != gold
+        || cores < case.cores
+    {
+        return Err("live admission did not observe exact Forge funding".into());
+    }
+    let mut target_ref = None;
+    let mut donor_ref = None;
+    let mut quote_error = None;
+    let pair = if let Some([target, donor]) = case.pair {
+        let inventory = forge_items(&mut client).await?;
+        let target = (
+            provisioning::item_reference(&definitions, target.0)?.get(),
+            target.1,
+        );
+        let donor = (
+            provisioning::item_reference(&definitions, donor.0)?.get(),
+            donor.1,
+        );
+        target_ref = Some(target.0);
+        donor_ref = Some(donor.0);
+        let find = |identity| {
+            let matches = inventory
+                .iter()
+                .filter(|item| (item.definition_ref, item.tier) == identity)
+                .collect::<Vec<_>>();
+            match matches.as_slice() {
+                [item] => Ok(*item),
+                _ => Err("missing or ambiguous fixture Forge input"),
+            }
+        };
+        let (first, second) = (find(target)?, find(donor)?);
+        if !eligible_pair(case.operation, first, second) {
+            return Err("fixture pair is ineligible".into());
+        }
+        let selection = preview::Selection::Pair {
+            operation: case.operation,
+            first: first.handle,
+            second: second.handle,
+            boost: false,
+            protect: false,
+        };
+        let preview::Payload::Quote(quote) = preview(&mut client, selection).await? else {
+            return Err("exact fixture pair did not receive a quote".into());
+        };
+        if quote.selection != selection {
+            return Err("quote selection mismatch".into());
+        }
+        if (
+            u64::from(quote.cost.dust),
+            quote.cost.gold,
+            u64::from(quote.cost.cores),
+        ) != (
+            u64::try_from(case.dust)?,
+            u64::try_from(case.gold)?,
+            case.cores,
+        ) {
+            quote_error = Some(format!(
+                "Global quote mismatch: expected gold={} dust={} cores={}, observed {:?}",
+                case.gold, case.dust, case.cores, quote.cost
+            ));
+        }
+        Some((first.handle, second.handle))
+    } else {
+        None
+    };
+
+    let history_before = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
+    let history_before = history_before
+        .body
+        .as_array()
+        .ok_or("invalid starting Forge history")?;
+    client.service_liveness(Duration::from_millis(490)).await?;
+    let result = command(&mut client, case.operation, occurrence(session, 1), pair, 0).await?;
+    let (expected_dust, expected_cap) = (
+        funded.0 - u64::try_from(case.dust)?,
+        funded.1 + u64::from(case.operation == Operation::DustLimit),
+    );
+    let (expected_slivers, expected_cores) = match case.operation {
+        Operation::DustToSlivers => (slivers + 3, cores),
+        Operation::SliversToCores => (
+            slivers.checked_sub(50).ok_or("fixture needs 50 slivers")?,
+            cores + 1,
+        ),
+        _ => (slivers, cores - case.cores),
+    };
+    let expected_receipt = if case.operation == Operation::DustLimit {
+        serde_json::json!({"operation":"dust_limit","succeeded":true,"result":{"dust":expected_dust,"dust_limit":expected_cap}})
+    } else {
+        let operation = match case.operation {
+            Operation::Transfer => "transfer",
+            Operation::ConvergenceFusion => "convergence_fusion",
+            Operation::ConvergenceTransfer => "convergence_transfer",
+            Operation::DustToSlivers => "dust_to_slivers",
+            Operation::SliversToCores => "slivers_to_cores",
+            _ => return Err("invalid independent Forge case".into()),
+        };
+        serde_json::json!({
+            "operation":operation,"succeeded":true,"applied":true,"reason":null,"bonus":0,
+            "result":{"first_item":pair.map(|p|p.0.get()),"first_tier":pair.map(|_|1),
+            "second_item":pair.map(|p|p.1.get()),"second_tier":null,
+            "dust":expected_dust,"dust_limit":expected_cap,"gold_spent":case.gold,
+            "cores_spent":case.cores,"slivers_spent":slivers.saturating_sub(expected_slivers),
+            "slivers_created":expected_slivers.saturating_sub(slivers),
+            "cores_created":expected_cores.saturating_sub(cores)}
+        })
+    };
+
+    let retained = client
+        .inventory()
+        .cloned()
+        .ok_or("Forge outcome inventory missing")?;
+    logout(&mut client).await?;
+    drop(client);
+    let mut fresh = connect_character(clients, tag + 2, 0).await?;
+    let persisted = command(&mut fresh, Operation::QueryHistory, [0; 16], None, 50).await?;
+    let history = persisted
+        .body
+        .as_array()
+        .ok_or("invalid relog Forge history")?;
+    let actual_dust = super::client_row_p18::dust(&mut fresh).await?;
+    let actual_gold =
+        bank_balance(&mut db, clients).await? + i64::try_from(carried_gold(&fresh, &coins))?;
+    let actual_counts = counts(&fresh);
+    let inventory_same = fresh.join_snapshot().game_session_id != session
+        && fresh.inventory().cloned().map(durable_inventory) == Some(durable_inventory(retained));
+    let tiers_ok = if let (Some(target), Some(donor)) = (target_ref, donor_ref) {
+        dagger_tiers(&mut fresh, target).await? == [1]
+            && dagger_tiers(&mut fresh, donor).await?.is_empty()
+    } else {
+        true
+    };
+    logout(&mut fresh).await?;
+
+    let observed = &result.body;
+    if quote_error.is_some()
+        || result.status != CommandStatus::Accepted
+        || (case.operation.changes_inventory() && !result.changed)
+        || *observed != expected_receipt
+        || actual_dust != (expected_dust, expected_cap)
+        || actual_gold != gold_before - case.gold
+        || actual_counts != (expected_slivers, expected_cores)
+        || !inventory_same
+        || !tiers_ok
+        || persisted.status != CommandStatus::Accepted
+        || history.len() != history_before.len() + 1
+        || history.get(1..) != Some(history_before.as_slice())
+        || history[0]["receipt"] != expected_receipt
+    {
+        return Err(format!("expected {expected_receipt}, observed {observed}; relog dust={actual_dust:?} gold_delta={} materials={actual_counts:?} tiers_ok={tiers_ok} inventory_same={inventory_same}; {}",
+            gold_before - actual_gold, quote_error.unwrap_or_default()).into());
+    }
+    evidence(&format!(
+        "P18_CASE_CHECK operation={:?} status=PASS relog=true",
+        case.operation
+    ));
     Ok(())
 }
 
