@@ -662,6 +662,14 @@ fn logout_after_peer_guild_lookup_is_accepted_on_first_attempt() -> TestResult {
 }
 
 #[test]
+fn peer_logout_after_committed_party_spell_is_accepted_on_first_attempt() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::party_buffs_fixtures::run_party_spell_logout(admin)
+}
+
+#[test]
 fn logout_fails_closed_when_peer_durability_outlasts_retry_window() -> TestResult {
     logout_during_peer_durability(true)
 }
