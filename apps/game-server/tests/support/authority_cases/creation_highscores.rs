@@ -3,6 +3,7 @@ use super::*;
 use durability::account_achievement::EarnedAchievement;
 use durability::character_progression::{INITIAL_CHARACTER_LEVEL, INITIAL_TOTAL_EXPERIENCE};
 use durability::highscore_snapshot::{AchievementPoints, SnapshotCatalogues, SnapshotRow};
+use foundation::{CharacterId as RankingCharacterId, WorldId as RankingWorldId};
 use oteryn_gameplay_durability::GAME_MIGRATOR;
 use std::sync::Arc;
 
@@ -49,9 +50,10 @@ fn freshly_bootstrapped_character_ranks_with_baseline_progression_postgres() -> 
                     .await?
                     .is_none()
             );
-            let rows = publish(&root, created.character_id).await?;
+            let ranked = RankingCharacterId::decode(created.character_id.as_bytes())?;
+            let rows = publish(&root, ranked).await?;
             assert_eq!(rows.len(), 1);
-            assert_baseline(&rows[0], created.character_id)?;
+            assert_baseline(&rows[0], ranked)?;
             Ok(())
         }
         .await;
@@ -103,14 +105,14 @@ fn upgraded_highscores_publish_saved_and_never_saved_characters_postgres() -> Te
 
         let root = DurabilityRoot::connect_test_runtime(&db.url)?;
         assert!(root.maintain_ready_once().await?);
-        let saved = CharacterId::from_bytes(id(21))?;
+        let saved = RankingCharacterId::decode(&id(21))?;
         let rows = publish(&root, saved).await?;
         assert_eq!(rows.len(), 2);
         assert_eq!(
             (rows[0].character_id, rows[0].level, rows[0].value),
             (saved, 2, (100, 0))
         );
-        assert_baseline(&rows[1], CharacterId::from_bytes(id(22))?)?;
+        assert_baseline(&rows[1], RankingCharacterId::decode(&id(22))?)?;
         Ok(())
     })
 }
@@ -153,8 +155,11 @@ impl AchievementPoints for EmptyAchievements {
     }
 }
 
-async fn publish(root: &DurabilityRoot, asking: CharacterId) -> TestResult<Vec<SnapshotRow>> {
-    let world = WorldId::from_bytes(id(90))?;
+async fn publish(
+    root: &DurabilityRoot,
+    asking: RankingCharacterId,
+) -> TestResult<Vec<SnapshotRow>> {
+    let world = RankingWorldId::decode(&id(90))?;
     root.refresh_highscore_schedule(
         world,
         SnapshotCatalogues::activated(Arc::new(EmptyAchievements)).map_err(|e| format!("{e:?}"))?,
@@ -169,8 +174,8 @@ async fn publish(root: &DurabilityRoot, asking: CharacterId) -> TestResult<Vec<S
         .rows)
 }
 
-fn assert_baseline(row: &SnapshotRow, id: CharacterId) -> TestResult {
-    assert_eq!(row.character_id, id);
+fn assert_baseline(row: &SnapshotRow, character_id: RankingCharacterId) -> TestResult {
+    assert_eq!(row.character_id, character_id);
     assert_eq!(row.level, INITIAL_CHARACTER_LEVEL);
     assert_eq!(row.value, (u64::try_from(INITIAL_TOTAL_EXPERIENCE)?, 0));
     Ok(())
