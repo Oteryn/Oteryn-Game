@@ -61,8 +61,8 @@ fn fixture() -> Result<Captured, Error> {
     let encode = |reply: &Reply| encode_reply(reply).map_err(|e| format!("{e:?}"));
     Ok(Captured {
         query: encode(&reply(0))?,
-        refused: encode(&reply(2))?,
-        expected: "period=2913\npoints=40\nbounty_points=7\nsoulseals=2\nstarted=false\nkills=0\ndeliveries=0\nshop_count=1\nshop_first=0,1,25\nrefusal=2\n".into(),
+        refused: encode(&reply(3))?,
+        expected: "period=2913\npoints=40\nbounty_points=7\nsoulseals=2\nstarted=false\nkills=0\ndeliveries=0\nshop_count=1\nshop_first=0,1,25\nrefusal=3\n".into(),
     })
 }
 
@@ -161,11 +161,11 @@ fn e2e_p04_replays_query_and_refused_start_weekly() -> Result<(), Error> {
         offer.primary, offer.secondary, offer.addon
     );
     let affordability = if offer.bought {
-        "Already owned"
+        "Already owned".to_owned()
     } else if weekly.points >= u64::from(offer.price) {
-        "Available — server confirms purchase"
+        "Available — server confirms purchase".to_owned()
     } else {
-        "points short"
+        format!("{} points short", u64::from(offer.price) - weekly.points)
     };
     let price_line = format!("  {} task points — {affordability}", first[2]);
     let at = lines
@@ -175,7 +175,7 @@ fn e2e_p04_replays_query_and_refused_start_weekly() -> Result<(), Error> {
     assert_eq!(lines.get(at + 1).copied(), Some(reward.as_str()));
     assert_eq!(lines.get(at + 2).copied(), Some(price_line.as_str()));
 
-    // StartWeekly with an unoffered difficulty is refused and the weekly state stays the same.
+    // StartWeekly above the character’s level is refused and the weekly state stays the same.
     let start = full_request(&mut panel, FullIntent::StartWeekly(3)).ok_or("start request")?;
     let sent = decode_request(&start.payload).map_err(|e| format!("{e:?}"))?;
     assert_eq!((sent.action, sent.selection), (5, 3));
@@ -185,16 +185,16 @@ fn e2e_p04_replays_query_and_refused_start_weekly() -> Result<(), Error> {
     );
     assert_eq!(
         panel.feedback,
-        Some("The server refused: task or bounty is not in the required state")
+        Some("The server refused: level too low for this difficulty")
     );
     let refused = panel.weekly.clone().ok_or("weekly state")?;
-    assert_eq!(value(e, "refusal")?, "2");
+    assert_eq!(value(e, "refusal")?, "3");
     assert_eq!(refused.refusal.to_string(), value(e, "refusal")?);
     assert_eq!(refused.weekly, weekly.weekly);
     assert_eq!(refused.points, weekly.points);
     assert!(
         panel_text(&panel)
-            .ends_with("The server refused: task or bounty is not in the required state")
+            .ends_with("The server refused: level too low for this difficulty")
     );
 
     // Undecodable and rejected replies leave the confirmed board untouched.
