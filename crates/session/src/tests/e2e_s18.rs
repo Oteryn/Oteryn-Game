@@ -246,6 +246,11 @@ async fn replay(
             if let SessionEvent::ChatLine(applied) = event {
                 assert_eq!(delta.domain_id, STATE_DOMAIN_CHAT);
                 assert_eq!(
+                    delta.base_revision.checked_add(1),
+                    Some(delta.new_revision),
+                    "S18 chat revision must advance one step"
+                );
+                assert_eq!(
                     (applied.base_revision, applied.new_revision),
                     (delta.base_revision, delta.new_revision),
                 );
@@ -324,6 +329,7 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
     let mut listener_lines = Vec::new();
     for label in [
         "near",
+        "boundary-whisper-two",
         "boundary-north",
         "outside-north",
         "boundary-west",
@@ -332,7 +338,9 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
         "outside-south",
         "boundary-east",
         "outside-east",
+        "boundary-diagonal",
         "other-floor",
+        "below-floor",
     ] {
         for (mode, suffix) in [
             (ChatSpeechMode::Say, "say"),

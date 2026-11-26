@@ -15,21 +15,24 @@ use std::task::{Context, Poll};
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
 type WireBytes = Rc<RefCell<Vec<u8>>>;
-type RecordedSession = Session<RecordingStream<tokio_rustls::client::TlsStream<TcpStream>>>;
+type GameplayTls = tokio_rustls::client::TlsStream<TcpStream>;
+type SharedTls = Rc<RefCell<GameplayTls>>;
+type RecordedSession = Session<RecordingStream<GameplayTls>>;
 
 struct RecordingStream<S> {
-    inner: S,
+    inner: Rc<RefCell<S>>,
     received: WireBytes,
 }
 
 impl<S: AsyncRead + Unpin> AsyncRead for RecordingStream<S> {
     fn poll_read(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buffer: &mut ReadBuf<'_>,
     ) -> Poll<io::Result<()>> {
         let before = buffer.filled().len();
-        let result = std::task::ready!(Pin::new(&mut self.inner).poll_read(cx, buffer));
+        let result =
+            std::task::ready!(Pin::new(&mut *self.inner.borrow_mut()).poll_read(cx, buffer));
         if result.is_ok() {
             let received = &buffer.filled()[before..];
             let mut bytes = self.received.borrow_mut();
@@ -44,24 +47,24 @@ impl<S: AsyncRead + Unpin> AsyncRead for RecordingStream<S> {
 
 impl<S: AsyncWrite + Unpin> AsyncWrite for RecordingStream<S> {
     fn poll_write(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         bytes: &[u8],
     ) -> Poll<io::Result<usize>> {
-        Pin::new(&mut self.inner).poll_write(cx, bytes)
+        Pin::new(&mut *self.inner.borrow_mut()).poll_write(cx, bytes)
     }
-    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Pin::new(&mut self.inner).poll_flush(cx)
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        Pin::new(&mut *self.inner.borrow_mut()).poll_flush(cx)
     }
-    fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Pin::new(&mut self.inner).poll_shutdown(cx)
+    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        Pin::new(&mut *self.inner.borrow_mut()).poll_shutdown(cx)
     }
 }
 
 async fn recorded_character(
     clients: &SeamClients<'_>,
     index: usize,
-) -> TestResult<(RecordedSession, WireBytes)> {
+) -> TestResult<(RecordedSession, WireBytes, SharedTls)> {
     connect_character_using(clients, 0x0b, index, async |request| {
         let received = WireBytes::default();
         let stream = tokio::time::timeout(request.deadline, async {
@@ -75,9 +78,10 @@ async fn recorded_character(
             Ok::<_, Box<dyn std::error::Error>>(stream)
         })
         .await??;
+        let stream = Rc::new(RefCell::new(stream));
         let session = Session::admit(
             RecordingStream {
-                inner: stream,
+                inner: Rc::clone(&stream),
                 received: Rc::clone(&received),
             },
             Admission {
@@ -91,7 +95,7 @@ async fn recorded_character(
             },
         )
         .await?;
-        Ok((session, received))
+        Ok((session, received, stream))
     })
     .await
 }
@@ -203,12 +207,32 @@ fn frame_envelopes(mut wire: &[u8], session: &[u8; 16]) -> TestResult<Vec<serde_
 
 type CommandReceipt = (u64, u64);
 
-async fn logout_recorded(client: &mut RecordedSession, phase: &str) -> TestResult<CommandReceipt> {
+async fn logout_recorded(
+    client: &mut RecordedSession,
+    transport: &SharedTls,
+    phase: &str,
+) -> TestResult<CommandReceipt> {
     let outcome = client.logout().await?;
     require_mechanic_acceptance(outcome.status, phase)
         .map_err(|error| format!("{error}: {outcome:?}"))?;
     if outcome.result != Some(LogoutResult::Accepted) {
         return Err(format!("{phase}: first logout refused: {outcome:?}").into());
+    }
+    let mut byte = [0; 1];
+    let closed = tokio::time::timeout(
+        Duration::from_secs(5),
+        std::future::poll_fn(|cx| {
+            let mut buffer = ReadBuf::new(&mut byte);
+            match Pin::new(&mut *transport.borrow_mut()).poll_read(cx, &mut buffer) {
+                Poll::Ready(result) => Poll::Ready(result.map(|()| buffer.filled().is_empty())),
+                Poll::Pending => Poll::Pending,
+            }
+        }),
+    )
+    .await
+    .map_err(|_| format!("S18 {phase}: server did not close after accepted logout"))??;
+    if !closed {
+        return Err(format!("S18 {phase}: server sent data after accepted logout").into());
     }
     Ok((outcome.command_id, outcome.result_server_sequence))
 }
@@ -298,8 +322,8 @@ async fn journey(
     head: &str,
     run: &str,
 ) -> TestResult<String> {
-    let (mut speaker, speaker_wire) = recorded_character(clients, 1).await?;
-    let (mut listener, listener_wire) =
+    let (mut speaker, speaker_wire, speaker_transport) = recorded_character(clients, 1).await?;
+    let (mut listener, listener_wire, listener_transport) =
         service_while(&mut speaker, recorded_character(clients, 0)).await?;
     let listener_start = listener.world_spatial().actor_position;
     check_log(&speaker, &[], "speaker fresh admission")?;
@@ -334,6 +358,7 @@ async fn journey(
 
     for (dx, dy, dz, label, audible) in [
         (1, -1, 0, "near", true),
+        (2, -1, 0, "boundary-whisper-two", true),
         // The temple aisles give fixed inside and outside probes in each direction.
         (0, -6, 0, "boundary-north", true),
         (0, -7, 0, "outside-north", false),
@@ -343,8 +368,10 @@ async fn journey(
         (0, 7, 0, "outside-south", false),
         (8, 3, 0, "boundary-east", true),
         (9, 3, 0, "outside-east", false),
+        (8, 5, 0, "boundary-diagonal", true),
         // The balcony landing is inside the horizontal window, one native floor above.
         (7, 4, 1, "other-floor", false),
+        (8, -6, -1, "below-floor", false),
     ] {
         let target = TilePos {
             x: origin
@@ -432,10 +459,15 @@ async fn journey(
 
     let speaker_session = speaker.join_snapshot().game_session_id;
     let listener_session = listener.join_snapshot().game_session_id;
-    speaker_receipts
-        .push(service_while(&mut listener, logout_recorded(&mut speaker, "speaker")).await?);
-    listener_receipts.push(logout_recorded(&mut listener, "listener").await?);
-    drop((speaker, listener));
+    speaker_receipts.push(
+        service_while(
+            &mut listener,
+            logout_recorded(&mut speaker, &speaker_transport, "speaker"),
+        )
+        .await?,
+    );
+    listener_receipts.push(logout_recorded(&mut listener, &listener_transport, "listener").await?);
+    drop((speaker, listener, speaker_transport, listener_transport));
 
     let binding = format!("{head} {run}\n");
     let save = |role: &str,
@@ -477,7 +509,7 @@ async fn journey(
         (1, speaker_session, position, "speaker-relog"),
         (0, listener_session, listener_landing, "listener-relog"),
     ] {
-        let (mut fresh, wire) = recorded_character(clients, index).await?;
+        let (mut fresh, wire, transport) = recorded_character(clients, index).await?;
         if fresh.join_snapshot().game_session_id == previous {
             return Err("S18 relog reused the old gameplay session".into());
         }
@@ -495,7 +527,7 @@ async fn journey(
         )
         .await?;
         let session = *fresh.join_snapshot().game_session_id.as_bytes();
-        let receipt = logout_recorded(&mut fresh, "relogged character").await?;
+        let receipt = logout_recorded(&mut fresh, &transport, "relogged character").await?;
         save(role, &wire, session, &[receipt])?;
     }
 
@@ -535,7 +567,7 @@ async fn journey(
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     let started = tokio::time::Instant::now();
     let result = verdict::indexed_timeout(
-        Duration::from_secs(260),
+        Duration::from_secs(300),
         verdict::observe(async {
             let root = required("E2E_ALL_CAPTURE_DIR")?;
             let checkout = std::process::Command::new("git")
