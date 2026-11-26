@@ -5,7 +5,7 @@ use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 
 const SELLER: &str = "oteryn:npc.alexander";
 
-async fn place_buyer(clients: &SeamClients<'_>, at: TilePos) -> TestResult {
+async fn place_buyer(clients: &SeamClients<'_>, at: TilePos, purpose: &str) -> TestResult {
     wait_character_released(clients, 1).await?;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
     let updated = sqlx::query(
@@ -24,7 +24,7 @@ async fn place_buyer(clients: &SeamClients<'_>, at: TilePos) -> TestResult {
         return Err("C16c fixture needs a saved position for the released buyer".into());
     }
     evidence(&format!(
-        "FIXTURE_PLACEMENT row=C16c seller={SELLER} tile={at:?}"
+        "FIXTURE_PLACEMENT row=C16c purpose={purpose} tile={at:?}"
     ));
     Ok(())
 }
@@ -148,7 +148,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
     let origin = tile(client.world_spatial().actor_position)?;
     full_e2ef5::player_logout(&mut client).await?;
     drop(client);
-    place_buyer(clients, at).await?;
+    place_buyer(clients, at, SELLER).await?;
     let mut client = connect_world(clients, 0xd5).await?;
     if tile(client.world_spatial().actor_position)? != at {
         return Err("C16c admission did not restore the buyer beside Alexander".into());
@@ -156,28 +156,51 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
     let rune = buy_rune(&mut client, seller).await?;
     full_e2ef5::player_logout(&mut client).await?;
     drop(client);
-    place_buyer(clients, origin).await?;
+    place_buyer(clients, origin, "hunt-start").await?;
     let mut client = connect_world(clients, 0xd5).await?;
-    let rat = full_e2ef5::wild_rat(&mut client, world, &[]).await?;
-    full_e2ef5::approach_melee(&mut client, world, rat.position).await?;
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+    })
+    .ok_or("C16c has no route to a hunt tile outside protection")?;
+    walk(&mut client, world, &path).await?;
+
+    // Save a nearby observation position before introducing the exact fixture Rat.
     let mut observer = connect_character(clients, 0xd6, 0).await?;
-    let target = tile(rat.position)?;
-    let caster = tile(client.world_spatial().actor_position)?;
-    let path = route(
-        world,
-        tile(observer.world_spatial().actor_position)?,
-        |at| {
-            at != caster
-                && at != target
-                && at.floor == target.floor
-                && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 3
-        },
+    let encounter = client.world_spatial().actor_position;
+    full_e2ef5::with_observer_liveness(
+        &mut client,
+        full_e2ef5::approach_melee(&mut observer, world, encounter),
     )
-    .ok_or("C16c observer cannot approach the hunt")?;
-    full_e2ef5::with_observer_liveness(&mut client, walk(&mut observer, world, &path)).await?;
+    .await?;
     full_e2ef5::with_observer_liveness(&mut client, full_e2ef5::player_logout(&mut observer))
         .await?;
     drop(observer);
+
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(session, "oteryn:creature.rat".into())
+        .await
+        .map_err(|reason| format!("C16c qualification Rat spawn refused: {reason}"))?;
+    let expected = parse_spawned_entity(&answer)?;
+    let rat = verdict::indexed_timeout(Duration::from_secs(10), async {
+        loop {
+            if let Some(rat) = client.world_entities().and_then(|view| view.get(&expected))
+                && rat.kind == EntityKind::Creature
+            {
+                return Ok::<_, Box<dyn std::error::Error>>(*rat);
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+        }
+    })
+    .await
+    .map_err(|_| "C16c fixture Rat was absent from the live spatial stream")??;
+    evidence(&format!(
+        "FIXTURE_PLACEMENT row=C16c rat={expected:?} position={:?}",
+        rat.position
+    ));
+    full_e2ef5::approach_melee(&mut client, world, rat.position).await?;
     client.take_events();
     let attack = client
         .session_mut()
