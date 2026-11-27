@@ -412,6 +412,64 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
     }
 
+    // The Channel item-use gate is deliberately closed under named House custody.
+    // Use the House inventory proof solely to recognize the Stone's refusal.
+    async fn is_house_stone(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        fence: CurrentCharacterItemFence,
+        source: &UseSource,
+    ) -> bool {
+        use crate::durability::quest_state::adventurers_stone::STONE_KEY;
+        let (item, definition) = {
+            let runtime = self.runtime.lock().await;
+            if runtime.house_player_control_facts(actor, session).is_err() {
+                return false;
+            }
+            match source {
+                UseSource::Handle(ItemKey::Instance(item)) => (Some(*item), None),
+                UseSource::Definition(reference) => {
+                    let Some((STONE_KEY, revision)) =
+                        super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+                            .and_then(|index| index.definition_at(*reference))
+                    else {
+                        return false;
+                    };
+                    (None, Some(revision))
+                }
+                UseSource::Handle(_) => return false,
+            }
+        };
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        let Ok(inventory) = budget
+            .retry_command_guard(async || {
+                self.root
+                    .read_house_carried_inventory(
+                        self.character,
+                        self.holder,
+                        fence,
+                        *self.channel_id.as_bytes(),
+                    )
+                    .await
+            })
+            .await
+        else {
+            return false;
+        };
+        inventory
+            .backpack
+            .iter()
+            .flat_map(|bag| &bag.entries)
+            .chain(inventory.nested.iter().map(|(_, entry)| entry))
+            .any(|entry| {
+                let carried = &entry.item;
+                carried.definition.production_key == STONE_KEY
+                    && item.is_none_or(|item| item == carried.item_instance_id)
+                    && definition.is_none_or(|revision| revision == carried.definition.revision_ref)
+            })
+    }
+
     async fn use_carried_item(
         &self,
         actor: ExactActorRef,
@@ -541,6 +599,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(result) = gourmet::use_gourmet(self, actor, command, &source).await {
             return result;
         }
+        if matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) && self.is_house_stone(actor, session, fence, &source).await
+        {
+            return Err(self.refuse_stone(session));
+        }
         // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard, held through the
         // item commit and its effect, so no spell stages or commits a successor of this actor's
         // state meanwhile. `None` is retryable with no side effect while the lane is fenced.
@@ -622,6 +687,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .find(|entry| entry.item.item_instance_id == source)
             .ok_or(UseDisposition::StaleState)?;
+        if entry.item.definition.production_key
+            == crate::durability::quest_state::adventurers_stone::STONE_KEY
+        {
+            return self
+                .use_adventurers_stone(actor, command, fence, source)
+                .await;
+        }
         if entry.item.definition.production_key
             == crate::durability::item_use::temple_scroll::TEMPLE_SCROLL_KEY
         {
