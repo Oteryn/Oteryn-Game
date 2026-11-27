@@ -455,6 +455,18 @@ async fn transfer(
         },
     )
     .await?;
+    if !convergence {
+        let proof: (String, i64) = sqlx::query_as(
+            "SELECT r.ruleset_revision, p.gold_spent
+             FROM game_forge_operations p JOIN game_forge_reservations r
+               USING (character_id, occurrence_id)
+             WHERE p.game_session_id=encode($1,'hex')::uuid AND p.operation=3 AND p.applied",
+        )
+        .bind(admitted.game_session_id.as_bytes().as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(proof, ("global-forge-v2".to_owned(), 20_000_000));
+    }
     Ok(())
 }
 
