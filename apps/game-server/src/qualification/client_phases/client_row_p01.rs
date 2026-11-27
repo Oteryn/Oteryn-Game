@@ -73,6 +73,94 @@ fn kills(reply: &CharmProgressionReply, race: NonZeroU32) -> u32 {
         .map_or(0, |entry| entry.kill_count)
 }
 
+async fn walk_rat_route(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let before = tile(client.world_spatial().actor_position)?;
+        let expected =
+            destination(world, before, direction).ok_or("Rat route step has no landing")?;
+        let step = client.step(direction).await?;
+        if step.status != CommandStatus::Accepted
+            || step.disposition != StepDisposition::Moved
+            || tile(client.world_spatial().actor_position)? != expected
+        {
+            return Err(format!(
+                "Rat route step {direction:?} from {before:?} expected {expected:?}: {step:?}"
+            )
+            .into());
+        }
+        verdict::Harness::global().progress("rat-walk");
+        client.take_events();
+        tokio::time::sleep(Duration::from_millis(u64::from(step.step_wait_ms))).await;
+    }
+    Ok(())
+}
+
+fn same_floor_within(at: TilePos, point: TilePos, distance: u16) -> bool {
+    at.floor == point.floor && at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) <= distance
+}
+
+async fn approach_rat(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    approach: TilePos,
+    spawn: TilePos,
+) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
+    use oteryn_dev_client::EntityKind;
+
+    let from = tile(client.world_spatial().actor_position)?;
+    let path =
+        route(world, from, |at| at == approach).ok_or("authored Rat approach is unreachable")?;
+    walk_rat_route(client, world, &path).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    let target = loop {
+        if let Some(target) = client
+            .world_entities()
+            .and_then(|entities| {
+                entities.iter().find(|entity| {
+                    entity.kind == EntityKind::Creature
+                        && entity
+                            .display_name
+                            .as_ref()
+                            .and_then(|name| name.as_str().ok())
+                            == Some("Rat")
+                        && tile(entity.position).is_ok_and(|at| same_floor_within(at, spawn, 7))
+                })
+            })
+            .copied()
+        {
+            break target;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("no wire-visible Rat near authored spawn {spawn:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+    };
+    let target_position = tile(target.position)?;
+    let path = route(world, approach, |at| {
+        at != target_position && same_floor_within(at, target_position, 1)
+    })
+    .ok_or("selected Rat is unreachable")?;
+    walk_rat_route(client, world, &path).await?;
+    let current = client
+        .world_entities()
+        .and_then(|entities| entities.get(&target.entity))
+        .copied()
+        .ok_or("selected Rat left visibility before the first attack")?;
+    if !same_floor_within(
+        tile(client.world_spatial().actor_position)?,
+        tile(current.position)?,
+        1,
+    ) {
+        return Err("selected Rat moved out of melee reach before the first attack".into());
+    }
+    Ok(current)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -101,12 +189,59 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if initial.outcome != CharmProgressionOutcome::Query || kills(&initial, race) != 0 {
         return Err("P01 client requires a zero-kill Rat baseline".into());
     }
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    if !client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2)
+    {
+        return Err("P01 Rat selection requires wire entity names".into());
+    }
+    let rat_points: Vec<_> = metadata
+        .spawns
+        .sources
+        .iter()
+        .flat_map(|source| {
+            source.points.iter().filter_map(|point| {
+                metadata
+                    .spawns
+                    .creatures
+                    .get(point.creature as usize)
+                    .is_some_and(|entry| entry.key == "oteryn:creature.rat")
+                    .then_some((
+                        TilePos {
+                            x: point.x,
+                            y: point.y,
+                            floor: source.floor,
+                        },
+                        point.respawn_ms,
+                    ))
+            })
+        })
+        .collect();
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+            && rat_points
+                .iter()
+                .any(|(point, _)| at != *point && same_floor_within(at, *point, 1))
+    })
+    .ok_or("no reachable authored Rat spawn")?;
+    let approach = path
+        .iter()
+        .try_fold(from, |at, &direction| destination(world, at, direction))
+        .ok_or("Rat approach route has no landing")?;
+    let &(spawn, respawn_ms) = rat_points
+        .iter()
+        .find(|(point, _)| approach != *point && same_floor_within(approach, *point, 1))
+        .ok_or("Rat approach has no authored spawn")?;
+    let target = approach_rat(&mut client, world, approach, spawn).await?;
     verdict::Harness::global().bounded_wait(
         tokio::time::Instant::now() + Duration::from_secs(125),
         "baseline-rat-combat",
     );
-    client_hunt::hunt_with_corpse_stage(&mut client, Some(corpse_stage)).await?;
+    client_hunt::hunt_named_target(&mut client, target, corpse_stage).await?;
     let before = send(
         &mut client,
         CharmProgressionAction::Query,
@@ -141,12 +276,28 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err(format!("locked ASSIGN reply {refused:?}").into());
     }
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    // Leave this same spawn's view for its authored respawn interval before
+    // the second hunt. A player in view would defer the spawn.
+    let from = tile(client.world_spatial().actor_position)?;
+    let retreat = route(world, from, |at| {
+        at.floor == spawn.floor
+            && (!(-8..=9).contains(&(i32::from(spawn.x) - i32::from(at.x)))
+                || !(-6..=7).contains(&(i32::from(spawn.y) - i32::from(at.y))))
+    })
+    .ok_or("authored Rat spawn has no offscreen waiting tile")?;
+    walk_rat_route(&mut client, world, &retreat).await?;
+    let respawn = tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn_ms));
+    verdict::Harness::global().bounded_wait(respawn, "rat-respawn-outside-view");
+    while tokio::time::Instant::now() < respawn {
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+    }
+    let target = approach_rat(&mut client, world, approach, spawn).await?;
     verdict::Harness::global().bounded_wait(
         tokio::time::Instant::now() + Duration::from_secs(125),
         "captured-rat-combat",
     );
-    client_hunt::hunt_with_corpse_stage(&mut client, Some(corpse_stage)).await?;
+    client_hunt::hunt_named_target(&mut client, target, corpse_stage).await?;
     let after = send(
         &mut client,
         CharmProgressionAction::Query,

@@ -1,7 +1,7 @@
 //! Hunt through network attack, visibility, corpse USE and item-move replies.
 use super::*;
 pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
-    hunt_with_corpse_stage(client, None).await
+    hunt_with_corpse_stage(client, None, None).await
 }
 
 #[derive(Clone, Copy)]
@@ -66,8 +66,17 @@ pub(super) async fn wait_for_corpse_stage(
     }
 }
 
-pub(super) async fn hunt_with_corpse_stage(
+pub(super) async fn hunt_named_target(
     client: &mut oteryn_dev_client::DevClientSession,
+    target: oteryn_dev_client::WorldSpatialEntity,
+    stage: CorpseStage,
+) -> TestResult {
+    hunt_with_corpse_stage(client, Some(target), Some(stage)).await
+}
+
+async fn hunt_with_corpse_stage(
+    client: &mut oteryn_dev_client::DevClientSession,
+    target: Option<oteryn_dev_client::WorldSpatialEntity>,
     stage: Option<CorpseStage>,
 ) -> TestResult {
     use oteryn_dev_client::{EntityDetail, EntityKind};
@@ -82,21 +91,24 @@ pub(super) async fn hunt_with_corpse_stage(
         return Ok(());
     }
     let position = client.world_spatial().actor_position;
-    let target = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entry| {
-                entry.kind == EntityKind::Creature
-                    && entry.position.floor == position.floor
-                    && entry
-                        .position
-                        .x
-                        .abs_diff(position.x)
-                        .max(entry.position.y.abs_diff(position.y))
-                        <= 1
-            })
+    let target = target
+        .or_else(|| {
+            client
+                .world_entities()
+                .and_then(|entities| {
+                    entities.iter().find(|entry| {
+                        entry.kind == EntityKind::Creature
+                            && entry.position.floor == position.floor
+                            && entry
+                                .position
+                                .x
+                                .abs_diff(position.x)
+                                .max(entry.position.y.abs_diff(position.y))
+                                <= 1
+                    })
+                })
+                .copied()
         })
-        .copied()
         .ok_or("hunt route has no visible monster")?;
     let mut old_corpses = Vec::new();
     if stage.is_some() {
