@@ -346,7 +346,8 @@ def compose_placement_palette(placement, activity_registry, soulpit_rows, root=R
 
 
 def compose_terrain_notes(notes):
-    """Both source publishers use the same two exact, idempotent suffixes."""
+    """Keep the optional Bear Cave note immediately before the activity notes."""
+    import classic_quest_ground
     import soulpit_static
 
     notes = re.sub(
@@ -354,7 +355,10 @@ def compose_terrain_notes(notes):
         "",
         notes,
     )
-    return notes.replace(soulpit_static.NOTE, "") + NOTE + soulpit_static.NOTE
+    notes = notes.replace(soulpit_static.NOTE, "")
+    if classic_quest_ground.NOTE in notes:
+        notes = notes.replace(classic_quest_ground.NOTE, "") + classic_quest_ground.NOTE
+    return notes + NOTE + soulpit_static.NOTE
 
 
 def preserved_restore_item_pointer(root=ROOT):
