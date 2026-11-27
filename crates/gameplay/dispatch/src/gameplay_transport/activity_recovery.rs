@@ -58,8 +58,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     };
                     let owner = if holder == "busy" {
                         self.root
-                            .checked_out_semantic_caller()
-                            .map_or_else(|| "none".to_owned(), |caller| caller.to_string())
+                            .checked_out_semantic_pass()
+                            .map_or_else(|| "none".to_owned(), |(caller, _)| caller.to_string())
                     } else {
                         "none".to_owned()
                     };

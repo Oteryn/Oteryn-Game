@@ -799,6 +799,18 @@ fn logout_during_peer_durability(hold_past_retry_window: bool) -> TestResult {
         if hold_past_retry_window {
             assert!(
                 logs.iter().any(|line| {
+                    let mut fields = line.split_whitespace();
+                    fields
+                        .clone()
+                        .any(|word| word == "event=logout_release_retry")
+                        && fields.any(|word| {
+                            word.starts_with("holder=") && word.contains("/battle_filter.rs:")
+                        })
+                }),
+                "a deferred release must name the real competing pass: {logs:?}"
+            );
+            assert!(
+                logs.iter().any(|line| {
                     let has = |field| line.split_whitespace().any(|word| word == field);
                     has("event=logout_busy")
                         && has("stage=release_retry_exhausted")
