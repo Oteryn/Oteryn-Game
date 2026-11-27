@@ -644,6 +644,10 @@ async fn scenario_with_harness(
     {
         assert!(interrupted, "the lethal spell must cross the interrupted COMMIT");
         assert_eq!(target_facts.health, 0);
+        assert!(
+            !owner.states.spell_states.lock().await.has_pending_spell_commit(actor, session),
+            "the cast owner must settle its marker before returning the spell result"
+        );
         let before = runtime.read_actor_position(actor).map_err(debug)?.position();
         drop(runtime);
         use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
