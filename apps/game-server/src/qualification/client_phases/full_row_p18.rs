@@ -487,13 +487,17 @@ async fn fusion_case(
             {
                 return Err(format!("Fusion exact receipt mismatch: {paid}").into());
             }
-            let mut expected_tiers = vec![target];
-            expected_tiers.extend(source);
-            expected_tiers.sort_unstable();
-            if super::client_row_p18::dust(&mut client).await? != (100 - dust_paid, 100)
-                || carried_gold(&client, &coins) != gold_before - gold_paid
-                || bank_balance(&mut bank, dedicated).await? != 0
-                || dagger_tiers(&mut client, pair_ref.get()).await? != expected_tiers
+            // A successful result is checked in its new chest below. Only a
+            // failed Fusion leaves a loose dagger available as a Forge operand.
+            let expected_tiers: &[u8] = if success { &[] } else { &[0] };
+            let live_dust = super::client_row_p18::dust(&mut client).await?;
+            let live_gold = carried_gold(&client, &coins);
+            let live_bank = bank_balance(&mut bank, dedicated).await?;
+            let live_tiers = dagger_tiers(&mut client, pair_ref.get()).await?;
+            if live_dust != (100 - dust_paid, 100)
+                || live_gold != gold_before - gold_paid
+                || live_bank != 0
+                || live_tiers != expected_tiers
                 || client
                     .inventory()
                     .cloned()
@@ -501,7 +505,11 @@ async fn fusion_case(
                     .as_ref()
                     != Some(&before)
             {
-                return Err("Fusion exact live gold, dust, or dagger tiers mismatch".into());
+                return Err(format!(
+                    "Fusion live mismatch: dust={live_dust:?} gold={live_gold} expected_gold={} bank={live_bank} loose_tiers={live_tiers:?} expected_loose_tiers={expected_tiers:?}",
+                    gold_before - gold_paid,
+                )
+                .into());
             }
             fusion_outcome = Some((expected_tiers, success, dust_paid, gold_paid));
         }
@@ -557,7 +565,7 @@ async fn fusion_case(
         return Err(format!("step-7 fresh HISTORY mismatch: {fresh_history:?}").into());
     }
     evidence(&format!(
-        "P18_FUSION_CHECK status=PASS succeeded={succeeded} dust_paid={dust_paid} gold_paid={gold_paid} durable_dagger_tiers={expected_tiers:?}"
+        "P18_FUSION_CHECK status=PASS succeeded={succeeded} dust_paid={dust_paid} gold_paid={gold_paid} loose_dagger_tiers={expected_tiers:?} exact_chest={succeeded} relog=true"
     ));
     observations
         .pop()
