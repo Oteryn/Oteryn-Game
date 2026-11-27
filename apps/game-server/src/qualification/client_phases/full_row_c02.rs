@@ -201,10 +201,7 @@ async fn buy(
 ) -> TestResult<u64> {
     use oteryn_dev_client::client_runtime::npc_shop;
     let key = reference(id)?;
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let catalog: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/services/trade/trade-00000-00324.json"),
-    )?)?;
+    let catalog: serde_json::Value = crate::qualification::authored_trade_catalogue()?;
     let item_key = format!("oteryn:item.tibia.i{id}");
     let sellers: BTreeSet<String> = catalog["records"]
         .as_array()

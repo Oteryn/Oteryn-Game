@@ -9,6 +9,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     collect_quest_items(quests, &mut keys)?;
     let destination = Path::new(&std::env::var("OUT_DIR")?).join("quest-loot-items.txt");
     std::fs::write(destination, keys.into_iter().collect::<Vec<_>>().join("\n"))?;
+    embed_trade_shards()?;
     Ok(())
 }
 
@@ -59,5 +60,48 @@ fn collect_quest_items(
             collect_item_keys(&value, keys);
         }
     }
+    Ok(())
+}
+
+fn embed_trade_shards() -> Result<(), Box<dyn std::error::Error>> {
+    const TRADE_DIRECTORY: &str = "content/services/trade/";
+    let repo = Path::new("../../..");
+    let index_path = repo.join(TRADE_DIRECTORY).join("index.json");
+    emit_cargo_directive("rerun-if-changed", index_path.display());
+    let index: serde_json::Value = serde_json::from_slice(&std::fs::read(index_path)?)?;
+    if index["schema"] != "OTERYN_FAMILY_INDEX/v1" || index["family"] != "Service.Trade" {
+        return Err("invalid trade family index".into());
+    }
+    let shards = index["shards"].as_array().ok_or("trade index shards")?;
+    if shards.is_empty() {
+        return Err("trade family index has no shards".into());
+    }
+    let mut includes = String::from("[\n");
+    let mut names = BTreeSet::new();
+    for shard in shards {
+        let relative_path = shard.as_str().ok_or("trade index shard path")?;
+        let range = relative_path
+            .strip_prefix(TRADE_DIRECTORY)
+            .and_then(|name| name.strip_prefix("trade-"))
+            .and_then(|name| name.strip_suffix(".json"))
+            .and_then(|range| range.split_once('-'));
+        if !range.is_some_and(|(start, end)| {
+            [start, end]
+                .into_iter()
+                .all(|bound| bound.len() == 5 && bound.bytes().all(|byte| byte.is_ascii_digit()))
+        }) || !names.insert(relative_path)
+        {
+            return Err(format!("invalid or duplicate trade shard path: {relative_path}").into());
+        }
+        let path = repo.join(relative_path);
+        emit_cargo_directive("rerun-if-changed", path.display());
+        let include_path = format!("/../../../{relative_path}");
+        includes.push_str(&format!(
+            "    include_str!(concat!(env!(\"CARGO_MANIFEST_DIR\"), {include_path:?})),\n"
+        ));
+    }
+    includes.push(']');
+    let output = Path::new(&std::env::var("OUT_DIR")?).join("trade-shards.rs");
+    std::fs::write(output, includes)?;
     Ok(())
 }

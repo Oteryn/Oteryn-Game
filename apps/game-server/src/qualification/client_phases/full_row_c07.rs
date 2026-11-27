@@ -200,8 +200,7 @@ fn rune_budget(unit_price: u64) -> TestResult<u64> {
 async fn acquire(client: &mut DevClientSession, world: &BundleWorld, npcs: &oteryn_world_bundle::npc::Table, reference: std::num::NonZeroU32) -> TestResult<u64> {
     use oteryn_dev_client::client_runtime::npc_shop;
     use oteryn_protocol_oteryn::npc_service as wire;
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join("content/services/trade/trade-00000-00324.json"))?)?;
+    let trades: serde_json::Value = crate::qualification::authored_trade_catalogue()?;
     let key = format!("oteryn:item.tibia.i{RUNE_ID}");
     let sellers: std::collections::BTreeMap<String, u64> = trades["records"].as_array().ok_or("C07 trade records absent")?.iter().filter_map(|r| {
         let offer = r["declaration"]["offers"].as_array()?.iter().find(|o| o["direction"] == "SellToPlayer" && o["item"]["key"] == key)?;

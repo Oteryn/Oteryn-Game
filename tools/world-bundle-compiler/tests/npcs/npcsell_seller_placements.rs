@@ -1,7 +1,6 @@
-use std::{fs, path::Path};
+use std::path::Path;
 
 use oteryn_world_bundle_compiler::source;
-use serde_json::Value;
 
 use super::*;
 
@@ -22,10 +21,7 @@ fn requested_items_have_sellers_at_their_promotion_cells() -> TestResult {
     let (spawns, _) = realize_spawns(&input, &resolver)?;
     let (table, report) = realize_npcs(&input, &resolver, &spawns)?;
 
-    let trade: Value = serde_json::from_slice(&fs::read(
-        root.join("content/services/trade/trade-00000-00324.json"),
-    )?)?;
-    let services = trade["records"].as_array().ok_or("trade records")?;
+    let services = source::trade_records(root)?;
     let sellers = [
         ("frodo", (32358, 32209, -7), &[3577][..]),
         (

@@ -11,8 +11,7 @@ use std::sync::OnceLock;
 
 const SOURCE: &str = include_str!("../../../../../../content/quests/native-service-access.json");
 // Existing canonical evidence, not a separately authored shop or price table.
-const RETAINED: &str =
-    include_str!("../../../../../../content/services/trade/trade-00000-00324.json");
+const RETAINED: &[&str] = &include!(concat!(env!("OUT_DIR"), "/trade-shards.rs"));
 const HELD_PREFIX: &str = "oteryn:source.npc.trade.held_tuple_";
 
 #[derive(Debug, Deserialize)]
@@ -230,22 +229,31 @@ fn bound_offers() -> Result<&'static BTreeMap<String, Vec<ProjectV2ServiceOffer>
         OnceLock::new();
     OFFERS
         .get_or_init(|| {
-            let source: RetainedDocument =
-                serde_json::from_str(RETAINED).map_err(|_| "native service retained catalogue")?;
+            let mut records = Vec::new();
+            for shard in RETAINED {
+                let source: RetainedDocument =
+                    serde_json::from_str(shard).map_err(|_| "native service retained catalogue")?;
+                records.extend(source.records);
+            }
             let mut offers = BTreeMap::new();
             for rule in &catalogue()?.rules {
-                let declaration = source
-                    .records
-                    .iter()
-                    .find_map(|record| match &record.declaration {
-                        ProjectV2Declaration::Service { identity, .. }
-                            if identity.key == rule.service =>
-                        {
-                            Some(&record.declaration)
-                        }
-                        _ => None,
-                    })
+                let mut declarations =
+                    records
+                        .iter()
+                        .filter_map(|record| match &record.declaration {
+                            ProjectV2Declaration::Service { identity, .. }
+                                if identity.key == rule.service =>
+                            {
+                                Some(&record.declaration)
+                            }
+                            _ => None,
+                        });
+                let declaration = declarations
+                    .next()
                     .ok_or("native service retained declaration absent")?;
+                if declarations.next().is_some() {
+                    return Err("duplicate native service retained declaration");
+                }
                 offers.insert(rule.npc.clone(), retained_offers(declaration, rule)?);
             }
             Ok(offers)

@@ -60,6 +60,12 @@ use tokio_rustls::{TlsConnector, rustls};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+fn authored_trade_catalogue() -> TestResult<serde_json::Value> {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let records = oteryn_world_bundle_compiler::source::trade_records(&root)?;
+    Ok(serde_json::json!({ "records": records }))
+}
+
 use crate::qualification_spell_character as spell_character;
 
 use crate::qualification_wild_spawn as wild_spawn;

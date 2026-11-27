@@ -172,10 +172,7 @@ async fn buy_energy_ring(
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult<items::ItemHandle> {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let catalogue: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/services/trade/trade-00000-00324.json"),
-    )?)?;
+    let catalogue: serde_json::Value = crate::qualification::authored_trade_catalogue()?;
     let key = format!("oteryn:item.tibia.i{ENERGY_RING}");
     let sellers: BTreeSet<String> = catalogue["records"].as_array().ok_or("trade-records-missing")?
         .iter().filter_map(|record| {

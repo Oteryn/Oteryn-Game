@@ -336,10 +336,13 @@ fn itemglob3_global_cyclopedia_values() -> Result<(), Box<dyn std::error::Error>
     assert_eq!(boost["kind"], "SKILL_DISTANCE");
     assert_eq!(boost["parameter"]["value"]["value"], 3);
 
-    let alexander = record(
-        "services/trade/trade-00000-00324.json",
-        "oteryn:service.trade.alexander",
-    )?;
+    let trades = oteryn_world_bundle_compiler::source::trade_records(std::path::Path::new(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/../../.."),
+    ))?;
+    let alexander = trades
+        .iter()
+        .find(|row| row["declaration"]["identity"]["key"] == "oteryn:service.trade.alexander")
+        .ok_or("Alexander trade declaration missing")?;
     let offers = alexander["declaration"]["offers"]
         .as_array()
         .ok_or("Alexander has no trade offers")?;

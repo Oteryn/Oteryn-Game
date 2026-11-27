@@ -862,10 +862,7 @@ async fn shop_quiver(
     use oteryn_protocol_oteryn::npc_service as wire;
     // Both offers occur in these Crystal merchant catalogues. Confirm the
     // selected merchant's current window and prices over the wire before buying.
-    let catalogues: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../content/services/trade/trade-00000-00324.json"),
-    )?)?;
+    let catalogues: serde_json::Value = crate::qualification::authored_trade_catalogue()?;
     let sellers: std::collections::BTreeSet<_> = catalogues["records"]
         .as_array()
         .ok_or("authored trade catalogues absent")?
