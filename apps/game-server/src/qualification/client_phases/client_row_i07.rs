@@ -2,7 +2,8 @@
 use super::*;
 use oteryn_protocol_oteryn::quick_loot::{
     QuickLootAction, QuickLootCategory, QuickLootClickOutcome, QuickLootFilterMode,
-    QuickLootRecipient, QuickLootRequest, decode_quick_loot_result, encode_quick_loot_request,
+    QuickLootRecipient, QuickLootRefusal, QuickLootRequest, decode_quick_loot_refusal,
+    decode_quick_loot_result, encode_quick_loot_request,
 };
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -328,17 +329,22 @@ impl Capture<'_> {
             .into());
         }
         self.previous = (reply.command_id, reply.server_sequence);
-        if request.selected_item.is_some() {
-            let outcome = if expected_status == CommandStatus::Accepted {
-                QuickLootClickOutcome::Moved
+        if expected_status == CommandStatus::Rejected {
+            let reason = if key == 19 {
+                QuickLootRefusal::NotSupported
             } else {
-                QuickLootClickOutcome::Stale
+                QuickLootRefusal::Stale
             };
-            if QuickLootClickOutcome::decode(&reply.payload) != Ok(outcome) {
-                return Err(format!(
-                    "I07 selected Click probe {key} expected {outcome:?}: {reply:?}"
-                )
-                .into());
+            if decode_quick_loot_refusal(&reply.payload) != Ok(reason) {
+                return Err(
+                    format!("I07 probe {key} expected refusal {reason:?}: {reply:?}").into(),
+                );
+            }
+        } else if request.selected_item.is_some() {
+            if QuickLootClickOutcome::decode(&reply.payload) != Ok(QuickLootClickOutcome::Moved) {
+                return Err(
+                    format!("I07 selected Click probe {key} expected Moved: {reply:?}").into(),
+                );
             }
         } else {
             let result =
@@ -1302,19 +1308,23 @@ fn captured_container(delta: CorpseDelta) -> TestResult<serde_json::Value> {
 fn matching_corpse_delta(
     client: &mut oteryn_dev_client::DevClientSession,
     corpse: oteryn_dev_client::ItemHandle,
-) -> Option<CorpseDelta> {
-    client
+) -> TestResult<Option<CorpseDelta>> {
+    let mut matching = client
         .take_events()
         .into_iter()
-        .rev()
-        .find_map(|event| match event {
+        .filter_map(|event| match event {
             oteryn_dev_client::SessionEvent::OpenContainer(delta)
                 if delta.value.container_handle == Some(corpse) =>
             {
                 Some(delta)
             }
             _ => None,
-        })
+        });
+    let first = matching.next();
+    if matching.next().is_some() {
+        return Err("I07 command emitted multiple deltas for the same corpse".into());
+    }
+    Ok(first)
 }
 
 async fn open_primary_corpse(
@@ -1362,7 +1372,7 @@ async fn open_primary_corpse(
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
     loop {
-        if let Some(delta) = matching_corpse_delta(client, *corpse) {
+        if let Some(delta) = matching_corpse_delta(client, *corpse)? {
             let [selected, sibling] = delta.value.entries.as_slice() else {
                 return Err("I07 opened corpse must contain the selected item and sibling".into());
             };
@@ -1391,7 +1401,7 @@ async fn require_corpse_view(
 ) -> TestResult<CorpseDelta> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
     loop {
-        if let Some(delta) = matching_corpse_delta(client, corpse) {
+        if let Some(delta) = matching_corpse_delta(client, corpse)? {
             if !delta
                 .value
                 .entries
