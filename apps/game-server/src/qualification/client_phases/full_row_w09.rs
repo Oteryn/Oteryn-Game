@@ -86,25 +86,27 @@ async fn expected_cube_draws(
          WHERE e.character_id=encode($1,'hex')::uuid
            AND e.parent_item_instance_id=b.item_instance_id
            AND i.definition_production_key=$2 AND i.lifecycle=1
-         LIMIT 2",
+         ORDER BY e.placement_ordinal DESC
+         LIMIT 5",
     )
     .bind(scope.characters[0].as_slice())
     .bind(DROME_CUBE_KEY)
     .fetch_all(&mut connection)
     .await?;
     connection.close().await?;
-    let [(source, 4)] = stacks.as_slice() else {
-        return Err(
-            "W09 fixture requires exactly one four-unit Cube stack in the main backpack".into(),
-        );
-    };
-    let draws = (1_u64..=4)
-        .rev()
-        .map(|quantity| {
-            // Independently calculate the source-unit occurrence used by the Cube contract.
+    if stacks.len() != 4 || stacks.iter().any(|(_, quantity)| *quantity != 1) {
+        return Err(format!(
+            "W09 fixture requires four single-unit Cubes in the main backpack; observed quantities {:?}",
+            stacks.iter().map(|(_, quantity)| quantity).collect::<Vec<_>>()
+        ).into());
+    }
+    let draws = stacks
+        .iter()
+        .map(|(source, quantity)| {
+            // Independently calculate the source-unit occurrence in hotkey display order.
             let mut occurrence = b"oteryn.drome-cube.reward.v1".to_vec();
             occurrence.extend_from_slice(source);
-            occurrence.extend_from_slice(&quantity.to_be_bytes());
+            occurrence.extend_from_slice(&u64::try_from(*quantity)?.to_be_bytes());
             let sample = Sha256::digest(&occurrence)
                 .into_iter()
                 .find(|byte| *byte < 240)
