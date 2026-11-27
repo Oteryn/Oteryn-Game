@@ -315,7 +315,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(current) => current,
             Err(error) => {
                 super::operator_event(&format!("event=rune_session_read_failed error={error:?}"));
-            return if self
+                return if self
                     .states
                     .spell_states
                     .lock()
