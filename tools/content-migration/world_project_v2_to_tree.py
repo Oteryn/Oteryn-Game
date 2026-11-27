@@ -365,6 +365,47 @@ def apply_encounter_corpse_admissions(definitions, root=ROOT):
     questpc2_rotten_loot_items.apply_admissions(definitions, root)
     from outfit_reward_item_profiles import apply_admissions as apply_outfit_item_admissions
     apply_outfit_item_admissions(definitions, root)
+    apply_poison_spider_corpse(definitions, root)
+
+
+def apply_poison_spider_corpse(definitions, root):
+    # Crystal 201189f8 data/items/items.xml:16278-16283. The pinned Canary
+    # replay used by the native corpse provider independently has the same entry.
+    from primal_corpse_items import corpse_definition
+    from quest_corpse_profiles import XML, XML_SHA, grizzly, item_id, world_objects
+
+    number = 5974
+    definition = next(
+        row for row in definitions if row["identity"]["key"] == "oteryn:item.tibia.i5974"
+    )
+    raw = (root / XML).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != XML_SHA:
+        raise ValueError("POISON_SPIDER_CORPSE_XML_PIN")
+    attributes = grizzly.source.attrs(grizzly.source.xml_index(raw)[number])
+    capacity, duration, decay_to = 5, 10, 4029
+    if (attributes["containersize"], attributes["duration"], attributes["decayto"]) != tuple(
+        map(str, (capacity, duration, decay_to))
+    ):
+        raise ValueError("POISON_SPIDER_CORPSE_CRYSTAL_ENTRY_MISMATCH")
+    world = world_objects(root, {number})[number]
+    if (
+        item_id(definition["identity"]) != number
+        or world["provenance"]["item_pointer"] != definition["identity"]
+        or world["kind"] != {"state": "KNOWN", "value": "corpse"}
+        or world["movable"] != {"state": "KNOWN", "value": False}
+    ):
+        raise ValueError("POISON_SPIDER_CORPSE_WORLD_OBJECT")
+    observed = corpse_definition(definition, capacity, duration * 1000, decay_to, False)
+    groups = ("physical", "stack", "container", "temporal")
+    semantics = definition.setdefault("semantics", observed["semantics"])
+    if definition["stack_class"] not in ("Unknown", "NonStackable") or any(
+        grizzly.known_conflict(semantics.get(group, grizzly.source.U), observed["semantics"][group])
+        for group in groups
+    ):
+        raise ValueError("POISON_SPIDER_CORPSE_KNOWN_FACT_CONFLICT")
+    for group in groups:
+        semantics[group] = observed["semantics"][group]
+    definition.update(materializable=True, stack_class="NonStackable")
 
 
 def item_projection_tables(item_records, authoring):
