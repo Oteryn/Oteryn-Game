@@ -42,7 +42,14 @@ impl ActivityHandoffOwner {
         origin: Option<&crate::foundation::ChannelContentPin>,
     ) -> Result<()> {
         let cell = |p: oteryn_gameplay_content::content::LogicalCell| serde_json::json!({"x": p.x, "y": p.y, "floor": p.z});
-        let mut rows = Vec::with_capacity(templates.len());
+        let mut templates: Vec<_> = templates.iter().collect();
+        templates.sort_by_key(|t| (t.boss_key(), *t.room().movement_cells().scope().world_id.as_bytes()));
+        let mut policies = Vec::with_capacity(templates.len());
+        let mut worlds = Vec::with_capacity(templates.len());
+        let mut frames = Vec::with_capacity(templates.len());
+        let mut maps = Vec::with_capacity(templates.len());
+        let mut artifacts = Vec::with_capacity(templates.len());
+        let mut activation_frames = Vec::with_capacity(templates.len());
         for t in templates {
             let policy = serde_json::json!({
                 "boss_key": t.boss_key(), "boss_creature_key": t.creature_key(),
@@ -56,25 +63,19 @@ impl ActivityHandoffOwner {
                 "exit_position": cell(t.exit_position()), "boss_position": cell(t.boss_position()),
                 "reward_key": t.boss_key(), "enabled": true,
             });
-            rows.push((
-                t.boss_key().to_owned(),
-                t.room().movement_cells().scope().world_id,
-                ActivityContentPin {
-                    coordinate_frame_digest: origin.map_or_else(
-                        || t.room().frame_binding().digest(),
-                        |pin| pin.frame_binding_digest(),
-                    ),
-                    map_revision_digest: origin.map_or_else(
-                        || t.room().map_revision_digest(),
-                        |pin| pin.map_revision_digest(),
-                    ),
-                    server_artifact_digest: t.room().compiled().server_digest(),
-                },
-                t.activation_frame_binding_digest(),
-                policy,
-            ));
+            policies.push(policy);
+            worlds.push(t.room().movement_cells().scope().world_id.as_bytes().to_vec());
+            frames.push(origin.map_or_else(
+                || t.room().frame_binding().digest(),
+                |pin| pin.frame_binding_digest(),
+            ).to_vec());
+            maps.push(origin.map_or_else(
+                || t.room().map_revision_digest(),
+                |pin| pin.map_revision_digest(),
+            ).to_vec());
+            artifacts.push(t.room().compiled().server_digest().to_vec());
+            activation_frames.push(t.activation_frame_binding_digest().to_vec());
         }
-        rows.sort_by(|a, b| (&a.0, a.1.as_bytes()).cmp(&(&b.0, b.1.as_bytes())));
         let node = node.clone();
         self.root.try_issue_semantic_pass()?.run(move |holder, deadline| {
             Box::pin(async move {
@@ -83,24 +84,24 @@ impl ActivityHandoffOwner {
                 if !prove_current_incarnation(&mut tx, &node).await? {
                     return Err(DurabilityError::Unavailable);
                 }
-                for (key, world, pin, activation_frame, policy) in rows {
-                    // The global row is only the historical FK identity. It is
-                    // never overwritten or used instead of a scoped publication.
-                    sqlx::query("INSERT INTO game_boss_room_catalogue SELECT r.* FROM jsonb_populate_record(NULL::game_boss_room_catalogue,$1) r ON CONFLICT(boss_key) DO NOTHING")
-                        .bind(&policy).execute(&mut *tx).await?;
-                    let inserted = sqlx::query("INSERT INTO game_boss_room_publications SELECT r.*,encode($2,'hex')::uuid,$3,$4,$5,$6 FROM jsonb_populate_record(NULL::game_boss_room_catalogue,$1) r ON CONFLICT(world_id,boss_key,content_revision,origin_frame_digest,origin_map_digest,server_artifact_digest) DO NOTHING")
-                        .bind(&policy).bind(world.as_bytes().as_slice())
-                        .bind(pin.coordinate_frame_digest.as_slice()).bind(pin.map_revision_digest.as_slice())
-                        .bind(pin.server_artifact_digest.as_slice()).bind(activation_frame.as_slice())
-                        .execute(&mut *tx).await?.rows_affected();
-                    if inserted == 0 {
-                        let equal: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_boss_room_publications p WHERE p.world_id=encode($1,'hex')::uuid AND p.boss_key=$2 AND p.content_revision=$3 AND p.origin_frame_digest=$4 AND p.origin_map_digest=$5 AND p.server_artifact_digest=$6 AND p.activation_frame_digest=$7 AND to_jsonb(p)-ARRAY['world_id','origin_frame_digest','origin_map_digest','server_artifact_digest','activation_frame_digest']=$8)")
-                            .bind(world.as_bytes().as_slice()).bind(&key).bind(policy["content_revision"].as_str())
-                            .bind(pin.coordinate_frame_digest.as_slice()).bind(pin.map_revision_digest.as_slice())
-                            .bind(pin.server_artifact_digest.as_slice()).bind(activation_frame.as_slice()).bind(&policy)
-                            .fetch_one(&mut *tx).await?;
-                        if !equal { return Err(DurabilityError::Unavailable); }
-                    }
+                if !policies.is_empty() {
+                    // The global row is a historical FK identity. Give duplicate keys the
+                    // same deterministic first policy as the original ordered publication.
+                    sqlx::query(
+                        "INSERT INTO game_boss_room_catalogue
+                         SELECT r.* FROM unnest($1::jsonb[]) WITH ORDINALITY AS input(policy, ord)
+                         CROSS JOIN LATERAL jsonb_populate_record(NULL::game_boss_room_catalogue,input.policy) r
+                         ORDER BY input.ord ON CONFLICT (boss_key) DO NOTHING",
+                    ).bind(&policies).execute(&mut *tx).await?;
+                    sqlx::query(PUBLISH_ROOMS)
+                        .bind(&policies).bind(&worlds).bind(&frames).bind(&maps)
+                        .bind(&artifacts).bind(&activation_frames).execute(&mut *tx).await?;
+                    // Every row must match, including preexisting rows and duplicate keys in
+                    // this batch. A disagreement rolls back both inserts.
+                    let equal: bool = sqlx::query_scalar(VALIDATE_ROOMS)
+                        .bind(&policies).bind(&worlds).bind(&frames).bind(&maps)
+                        .bind(&artifacts).bind(&activation_frames).fetch_one(&mut *tx).await?;
+                    if !equal { return Err(DurabilityError::Unavailable); }
                 }
                 commit_semantic_transaction(tx, deadline).await?;
                 Ok(())
@@ -108,3 +109,28 @@ impl ActivityHandoffOwner {
         }).await
     }
 }
+
+const PUBLISH_ROOMS: &str = "
+    INSERT INTO game_boss_room_publications
+    SELECT r.*,encode(i.world,'hex')::uuid,i.frame,i.map,i.artifact,i.activation_frame
+    FROM unnest($1::jsonb[],$2::bytea[],$3::bytea[],$4::bytea[],$5::bytea[],$6::bytea[])
+        WITH ORDINALITY AS i(policy,world,frame,map,artifact,activation_frame,ord)
+    CROSS JOIN LATERAL jsonb_populate_record(NULL::game_boss_room_catalogue,i.policy) r
+    ORDER BY i.ord
+    ON CONFLICT (world_id,boss_key,content_revision,origin_frame_digest,origin_map_digest,server_artifact_digest)
+    DO NOTHING";
+
+const VALIDATE_ROOMS: &str = "
+    SELECT NOT EXISTS (
+      SELECT 1
+      FROM unnest($1::jsonb[],$2::bytea[],$3::bytea[],$4::bytea[],$5::bytea[],$6::bytea[])
+          AS i(policy,world,frame,map,artifact,activation_frame)
+      WHERE NOT EXISTS (
+        SELECT 1 FROM game_boss_room_publications p
+        WHERE p.world_id=encode(i.world,'hex')::uuid AND p.boss_key=i.policy->>'boss_key'
+          AND p.content_revision=i.policy->>'content_revision' AND p.origin_frame_digest=i.frame
+          AND p.origin_map_digest=i.map AND p.server_artifact_digest=i.artifact
+          AND p.activation_frame_digest=i.activation_frame
+          AND to_jsonb(p)-ARRAY['world_id','origin_frame_digest','origin_map_digest','server_artifact_digest','activation_frame_digest']=i.policy
+      )
+    )";
