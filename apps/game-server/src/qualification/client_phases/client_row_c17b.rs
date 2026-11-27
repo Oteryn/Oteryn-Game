@@ -144,10 +144,7 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
     {
         return Err("C17b caster was already invisible before first cast".into());
     }
-    let mana_before = caster
-        .actor_vitals()
-        .ok_or("C17b pre-cast vitals absent")?
-        .mana;
+    let vitals_before = *caster.actor_vitals().ok_or("C17b pre-cast vitals absent")?;
     let spell = full_row_c17b::spell_index(&book)?;
     let cast_sent = tokio::time::Instant::now();
     let (cast, frames) = oteryn_session::test_support::capture_command_results(caster.cast_spell(
@@ -162,21 +159,21 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
         return Err(format!("C17b.client Invisibility cast refused: {cast:?}").into());
     }
     let paid = cast.actor_vitals_delta.as_ref().ok_or("C17b cast has no mana delta")?;
-    if mana_before.checked_sub(440) != Some(paid.value.mana) {
-        return Err("C17b cast did not debit 440 mana".into());
-    }
+    verify_cast_cost(vitals_before, paid.value)?;
     let started = tokio::time::Instant::now();
     let cooldown = caster.cast_spell(spell, SpellTarget::None, false).await?;
     let mut events = caster.take_events();
     full_row_c17b::verify_recast(&cooldown, paid.value, paid.server_sequence, caster.actor_vitals().copied(), &events, started.elapsed())?;
-    use oteryn_protocol_oteryn::presentation::ActorCooldownKind;
+    if caster.actor_vitals() != Some(&paid.value) || events.iter().any(|event| matches!(event,
+        SessionEvent::ActorVitals(delta) if delta.server_sequence > paid.server_sequence)) {
+        return Err("C17b client recast changed vitals without an established regeneration source".into());
+    }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
     let support = support_group_ordinal()?;
     loop {
         events.extend(caster.take_events());
         if let Some(projection) = events.drain(..).find_map(|event| match event {
-            SessionEvent::ActorCooldowns(delta) if delta.server_sequence > cast.result_server_sequence
-                && delta.value.entries.iter().any(|entry| entry.kind == ActorCooldownKind::Spell && entry.id == spell.get()) => Some(delta.value),
+            SessionEvent::ActorCooldowns(delta) if delta.server_sequence > cast.result_server_sequence => Some(delta.value),
             _ => None,
         }) {
             verify_cooldown_projection(&projection, spell.get(), support, cast_sent.elapsed())?;
@@ -187,9 +184,11 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
         }
         caster.service_liveness(Duration::from_millis(25)).await?;
     }
-    let initial = full_row_c17b::invisibility_remaining(&mut caster)
-        .await?
-        .ok_or("C17b cast did not install Invisible")?;
+    use tokio::time::Instant;
+    let initial_sent = Instant::now();
+    let (initial, initial_sequence) = full_row_c17b::invisibility_sample(&mut caster).await?;
+    let initial_received = Instant::now();
+    let initial = initial.ok_or("C17b cast did not install Invisible")?;
     verify_timer("Invisible", u64::try_from(initial)?, 200_000, 195_000, cast_sent.elapsed())?;
     full_row_c17b::require_rat_stops(&mut caster, rat).await?;
     capture
@@ -202,7 +201,6 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
     }
     let caster_session = uuid_text(caster.join_snapshot().game_session_id.as_bytes());
     let position = caster.world_spatial().actor_position;
-    use tokio::time::Instant;
     capture.observe(full_e2ef5::with_observer_liveness(
         &mut observer,
         caster_capture.observe(full_row_c17b::wait_rat_combat_end(&mut caster)),
@@ -214,6 +212,13 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
     )).await?;
     let before_received = Instant::now();
     let before = before.ok_or("C17b Invisible absent before logout")?;
+    if before_sequence <= initial_sequence {
+        return Err("C17b pre-logout condition sample did not advance sequence".into());
+    }
+    let online_min = before_sent - initial_received;
+    let online_max = before_received - initial_sent;
+    evidence(&format!("C17B_CLIENT_ONLINE initial_sequence={initial_sequence} before_sequence={before_sequence} initial_ms={initial} before_ms={before} online_min_us={} online_max_us={}", online_min.as_micros(), online_max.as_micros()));
+    verify_elapsed_condition(initial, before, online_min, online_max)?;
     if observer.take_events().into_iter().any(|event| matches!(event,
         SessionEvent::WorldSpatialEntities(delta) if delta.value.leave.iter().any(|entity| entity.identity == caster_ref.identity)))
         || observer.world_entities().is_none_or(|view| view.get(&caster_ref).is_none()) {
@@ -236,14 +241,14 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
             }
             Ok((durable, logout_sent, logout_received, result.result_server_sequence))
         }))).await?;
-    if durable_vitals.0 >= mana_before {
+    if durable_vitals.0 >= vitals_before.mana {
         return Err("C17b spent mana did not persist until logout".into());
     }
     capture.observe(full_row_c17b::wait_visible(&mut observer, caster_ref, false)).await?;
     // Keep the character definitely offline long enough to distinguish a
     // paused timer from one running across the admission round trips.
     capture.observe(full_e2ef5::with_observer_liveness(&mut observer, caster_capture.observe(async {
-        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+        tokio::time::sleep(std::time::Duration::from_secs(20)).await;
         Ok(())
     }))).await?;
     let login_sent = Instant::now();
@@ -375,6 +380,31 @@ fn verify_timer(label: &str, remaining: u64, duration: u64, floor: u64, elapsed:
     Ok(())
 }
 
+fn verify_cast_cost(
+    before: oteryn_protocol_oteryn::actor_spell::ActorVitals,
+    after: oteryn_protocol_oteryn::actor_spell::ActorVitals,
+) -> TestResult {
+    if before.mana.checked_sub(440) != Some(after.mana) || before.soul != after.soul {
+        return Err(format!("C17b incorrect cast cost mana={}->{} soul={}->{}", before.mana, after.mana, before.soul, after.soul).into());
+    }
+    Ok(())
+}
+
+fn verify_elapsed_condition(
+    before: i64,
+    after: i64,
+    online_min: std::time::Duration,
+    online_max: std::time::Duration,
+) -> TestResult {
+    let min_ms = i64::try_from(online_min.as_millis())?.saturating_sub(1).max(0);
+    let max_ms = i64::try_from(online_max.as_micros().div_ceil(1_000))? + 1;
+    let lost = before.checked_sub(after).ok_or("C17b online condition time overflow")?;
+    if after <= 0 || lost <= 0 || !(min_ms..=max_ms).contains(&lost) {
+        return Err(format!("C17b online timer lost {lost} ms with expected elapsed {min_ms}..={max_ms} ms").into());
+    }
+    Ok(())
+}
+
 fn verify_condition_pause(
     before: i64,
     after: i64,
@@ -418,6 +448,29 @@ mod tests {
         assert!(verify_cooldown_projection(&observation, 1, 3, elapsed).is_err());
         assert!(verify_timer("Invisible", 196_000, 200_000, 195_000, elapsed).is_err());
         assert!(verify_timer("cooldown", 1_500, 2_000, 1_500, elapsed).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn cast_cost_rejects_a_soul_debit_alongside_correct_mana() -> TestResult {
+        use oteryn_protocol_oteryn::actor_spell::ActorVitals;
+        let before = ActorVitals {
+            health: 320, max_health: 320, mana: 850, max_mana: 850,
+            soul: 100, harmony: 0, serene: false,
+        };
+        let paid = ActorVitals { mana: 410, ..before };
+        verify_cast_cost(before, paid)?;
+        assert!(verify_cast_cost(before, ActorVitals { soul: 99, ..paid }).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn online_condition_rejects_a_frozen_or_accelerated_timer() -> TestResult {
+        let min = Duration::from_secs(30);
+        let max = Duration::from_secs(31);
+        verify_elapsed_condition(198_000, 167_500, min, max)?;
+        assert!(verify_elapsed_condition(198_000, 198_000, min, max).is_err());
+        assert!(verify_elapsed_condition(198_000, 155_000, min, max).is_err());
         Ok(())
     }
 
