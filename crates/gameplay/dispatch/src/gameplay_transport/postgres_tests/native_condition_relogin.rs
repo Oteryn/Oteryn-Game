@@ -498,5 +498,5 @@ async fn login_cooldowns(
         .find(|row| row.domain_id == presentation::STATE_DOMAIN_ACTOR_COOLDOWNS)
         .ok_or("login cooldown domain")?;
     assert_eq!(snapshot.snapshot_type, presentation::SNAPSHOT_TYPE_ACTOR_COOLDOWNS_V1);
-    Ok(presentation::decode_actor_cooldowns(snapshot.payload).map_err(debug)?)
+    presentation::decode_actor_cooldowns(snapshot.payload).map_err(debug)
 }
