@@ -111,6 +111,9 @@ async fn gift_remaining_ms(client: &mut DevClientSession) -> TestResult<u64> {
     {
         return Err(format!("W09 Gift of Life status refused or malformed: {reply:?}").into());
     }
+    if reply.payload[0] != 1 {
+        return Err(format!("W09 expected active Gift of Life stage 1, got {}", reply.payload[0]).into());
+    }
     Ok(u64::from_le_bytes(reply.payload[1..].try_into()?))
 }
 
@@ -127,7 +130,7 @@ async fn use_item(
     client: &mut DevClientSession,
     reference: NonZeroU32,
     expected: (CommandStatus, wire::UseDisposition),
-) -> TestResult {
+) -> TestResult<u64> {
     let payload = wire::encode_item_use_intent(&wire::UseIntent {
         target: wire::UseTarget::ItemByDefinition(reference),
         use_with: None,
@@ -156,7 +159,7 @@ async fn use_item(
         )
         .into());
     }
-    Ok(())
+    Ok(reply.server_sequence)
 }
 
 fn cube_reward(
@@ -473,7 +476,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let preparation_session = client.join_snapshot().game_session_id;
     character_prep::declare_seeded(
         "W09.full",
-        "level-50 Premium sorcerer, active Gift of Life timer, four Drome Cubes and two Kooldown Aids",
+        "level-300 Premium Master Sorcerer, Gift of Life timer input, four Drome Cubes and two Kooldown Aids",
         "ordinary leveling exceeds the row budget and the inputs have no authored acquisition route",
     );
     request_fixture_control(
@@ -503,9 +506,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         platform_premium_evidence(&scope, &mut client, None).await?;
     let level = full_e2ef7::player_level(&mut client).await?;
     let vitals = client.actor_vitals().ok_or("W09 seeded vitals missing")?;
-    if (level, vitals.max_health, vitals.max_mana) != (50, 395, 1350) {
+    if (level, vitals.max_health, vitals.max_mana) != (300, 1645, 8850) {
         return Err(format!(
-            "W09 expected level-50 vitals 395/1350: level={level} vitals={vitals:?}"
+            "W09 expected level-300 vitals 1645/8850: level={level} vitals={vitals:?}"
         )
         .into());
     }
@@ -513,6 +516,39 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if quantities(&client)? != expected {
         return Err("W09 fresh admission did not serve exactly the seeded items".into());
     }
+
+    // Global Gift of Life requires a level-300 character and a 250-point green allocation.
+    // https://tibia.fandom.com/wiki/Gift_of_Life
+    use oteryn_protocol_oteryn::wheel;
+    let mut points = [0; 36];
+    points[14] = 50;
+    points[8] = 75;
+    points[13] = 75;
+    points[7] = 50;
+    let allocation = wheel::WheelAllocationRequest {
+        action: 1,
+        occurrence: [0x09, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1],
+        expected_revision: 0,
+        points,
+        vessels: None,
+    };
+    let payload = wheel::encode_wheel_request(&allocation)
+        .map_err(|error| format!("W09 Wheel fixture encoding: {error:?}"))?;
+    let reply = client.session_mut().gated_command(
+        wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
+        wheel::COMMAND_TYPE_WHEEL_ALLOCATION,
+        &payload,
+    ).await?;
+    let saved = wheel::decode_wheel_reply(&reply.payload)
+        .map_err(|error| format!("W09 Wheel fixture reply: {error:?}"))?;
+    if reply.status != CommandStatus::Accepted || saved.refused || saved.revision != 1 || saved.points != points {
+        return Err(format!("W09 Gift of Life allocation failed: {saved:?}").into());
+    }
+    let gift_input = u64::try_from(GIFT_INPUT_MICROS)? / 1_000;
+    if gift_remaining_ms(&mut client).await? != gift_input {
+        return Err("W09 active Gift timer changed outside battle".into());
+    }
+    evidence("FIXTURE row=W09.full input=gift-of-life-allocation-stage-1");
 
     let expected_draws = expected_cube_draws(&scope, &pool).await?;
     let committed = (CommandStatus::Accepted, wire::UseDisposition::Committed);
@@ -553,6 +589,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     assert_cooling_down(&mut client, spell, &expected).await?;
+    let gift_before = gift_remaining_ms(&mut client).await?;
+    if gift_before != gift_input {
+        return Err("W09 Gift timer ticked without a battle sign before Aid".into());
+    }
     // Global: https://www.tibiawiki.com.br/wiki/Master_of_Thunder.
     // Its 30-second stance group survives the live command latency.
     let stance = crate::qualification::client_spell_journey::spell_index(book, "uteta vis")?;
@@ -568,16 +608,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     };
     let mut reset_prestate = [cooldowns[0], stance_spell, support, stance_group];
     reset_prestate.sort_by_key(|entry| (entry.kind, entry.id));
-    let gift_before_sent = tokio::time::Instant::now();
-    let gift_before = gift_remaining_ms(&mut client).await?;
-    let gift_before_received = tokio::time::Instant::now();
-    if !(3_300_000..=3_600_000).contains(&gift_before) {
-        return Err(
-            format!("W09 Gift of Life fixture timer is not active: {gift_before} ms").into(),
-        );
-    }
+    client.take_events();
     let used_at = tokio::time::Instant::now();
-    use_item(&mut client, aid, committed).await?;
+    let aid_sequence = use_item(&mut client, aid, committed).await?;
     let committed_at = tokio::time::Instant::now();
     let reset_until = tokio::time::Instant::now() + Duration::from_secs(5);
     let mut saw_reset = false;
@@ -585,16 +618,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     while !saw_reset || !saw_clear {
         for event in client.take_events() {
             match event {
-                SessionEvent::ActorCooldowns(frame) => {
+                SessionEvent::ActorCooldowns(frame) if frame.server_sequence > aid_sequence => {
                     let expected_clear = reset_prestate
                         .iter()
-                        .filter(|entry| entry.expires_at_ms > frame.value.server_now_ms)
                         .map(|entry| ActorCooldown {
                             expires_at_ms: 0,
                             ..*entry
                         })
                         .collect::<Vec<_>>();
-                    if [cooldowns[0], stance_spell, stance_group]
+                    if reset_prestate
                         .iter()
                         .any(|entry| entry.expires_at_ms <= frame.value.server_now_ms)
                         || frame.value.entries != expected_clear
@@ -604,7 +636,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                     saw_clear = true;
                 }
                 SessionEvent::TutorialNotice(delta)
-                    if matches!(&delta.value,
+                    if delta.server_sequence > aid_sequence && matches!(&delta.value,
                     TutorialNotice::StatusText(text) if text == RESET_NOTICE) =>
                 {
                     saw_reset = true
@@ -626,16 +658,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     expected.insert(aid, 1);
     wait_inventory(&mut client, &expected).await?;
-    let gift_after_sent = tokio::time::Instant::now();
     let gift_after = gift_remaining_ms(&mut client).await?;
-    let min_elapsed = u64::try_from((gift_after_sent - gift_before_received).as_millis())?;
-    let max_elapsed = u64::try_from(gift_before_sent.elapsed().as_millis())?.saturating_add(1);
-    if gift_after == 0
-        || gift_after >= gift_before
-        || !(gift_before.saturating_sub(max_elapsed)..=gift_before.saturating_sub(min_elapsed))
-            .contains(&gift_after)
-    {
-        return Err(format!("W09 Aid changed the Gift of Life deadline: before={gift_before} ms after={gift_after} ms elapsed={min_elapsed}..={max_elapsed} ms").into());
+    if gift_after != gift_before {
+        return Err(format!("W09 Aid changed the paused Gift timer: {gift_before} -> {gift_after} ms").into());
     }
     evidence(&format!(
         "W09_CHECK aid-debit=one gift-before-ms={gift_before} gift-after-ms={gift_after}"
@@ -709,6 +734,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if quantities(&fresh)? != settled {
         return Err("W09 fresh admission did not serve the settled inventory".into());
     }
+    if gift_remaining_ms(&mut fresh).await? != gift_after {
+        return Err("W09 fresh admission changed the persisted Gift of Life remainder".into());
+    }
+    evidence(&format!("W09_CHECK gift-stage=1 paused-and-persisted-ms={gift_after}"));
     use_item(&mut fresh, cube, missing).await?;
     if quantities(&fresh)? != settled {
         return Err("W09 missing Cube refusal changed inventory".into());
