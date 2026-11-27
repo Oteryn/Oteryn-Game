@@ -87,6 +87,7 @@ struct Pending {
     ingress_settled: bool,
     participants: Vec<GameSessionId>,
     projection_target: Option<u64>,
+    tomb_actors: Option<Vec<ExactActorRef>>,
     flame_effect_sent: bool,
     /// The exact carried tool bound into the durable World context, if any.
     selected_tool: Option<([u8; 16], Vec<u8>)>,
@@ -879,37 +880,63 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                 });
             let flame = pending.flame.clone();
-            let outcome = if let Some(input) = pending.flame {
-                slot.commit_rotten_flame_use(
-                    self.root,
-                    self.character,
-                    self.holder,
-                    fence,
-                    input,
-                    std::sync::Arc::clone(catalogue),
-                    &permit,
-                )
-                .await
-            } else {
-                slot.commit_world_callback_with_items_selected(
-                    self.root,
-                    self.character,
-                    self.holder,
-                    fence,
-                    QuestTransitionRequest {
-                        transition_key: pending.callback,
-                        cause: pending.cause,
-                    },
-                    std::sync::Arc::clone(catalogue),
-                    &permit,
-                    context,
-                    self.active_generation
-                        .and_then(|generation| generation.native_gameplay()),
-                    admission,
-                    &self.premium_coordinator,
-                )
-                .await
-            };
+            let outcome =
+                if pending.callback == oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY {
+                    let Some(callback) = self
+                        .callback_content()
+                        .iter()
+                        .find(|c| c.key == pending.callback)
+                    else {
+                        return false;
+                    };
+                    match self
+                        .root
+                        .reconcile_tomb_entry(
+                            self.character,
+                            fence.character_id,
+                            command,
+                            callback,
+                            &context,
+                        )
+                        .await
+                    {
+                        Ok(Some(receipt)) => Ok(QuestTransitionOutcome::AlreadyCommitted(receipt)),
+                        Ok(None) => Ok(QuestTransitionOutcome::Refused(
+                            oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch,
+                        )),
+                        Err(_) => return false,
+                    }
+                } else if let Some(input) = pending.flame {
+                    slot.commit_rotten_flame_use(
+                        self.root,
+                        self.character,
+                        self.holder,
+                        fence,
+                        input,
+                        std::sync::Arc::clone(catalogue),
+                        &permit,
+                    )
+                    .await
+                } else {
+                    slot.commit_world_callback_with_items_selected(
+                        self.root,
+                        self.character,
+                        self.holder,
+                        fence,
+                        QuestTransitionRequest {
+                            transition_key: pending.callback,
+                            cause: pending.cause,
+                        },
+                        std::sync::Arc::clone(catalogue),
+                        &permit,
+                        context,
+                        self.active_generation
+                            .and_then(|generation| generation.native_gameplay()),
+                        admission,
+                        &self.premium_coordinator,
+                    )
+                    .await
+                };
             let disposition = match outcome {
 
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
@@ -2212,6 +2239,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         ingress_settled: false,
                         participants: Vec::new(),
                         projection_target: None,
+                        tomb_actors: None,
                         flame_effect_sent: false,
                         selected_tool: None,
                     });

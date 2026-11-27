@@ -78,6 +78,10 @@ pub(super) struct GroundUseGuard<'a, 'r> {
 }
 
 impl GroundUseGuard<'_, '_> {
+    pub(super) fn affected(&self) -> Option<&[ExactActorRef]> {
+        Some(&self.turn.as_ref()?.0.affected)
+    }
+
     pub(super) fn release(&mut self, runtime: &mut ChannelRuntimeV1) {
         if let Some(turn) = self.turn.take() {
             turn.release(runtime);

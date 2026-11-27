@@ -1,6 +1,21 @@
 use super::super::db::commit_semantic_read;
 use super::*;
 
+pub(super) fn bind_world_context(
+    binding: &mut [u8; 33],
+    context: &super::super::quest_world_callback::QuestWorldToolContext,
+    callback: Option<&oteryn_gameplay_quests::quest::world_callbacks::Callback>,
+) -> Result<()> {
+    let bytes = serde_json::to_vec(&(context, callback))
+        .map_err(|_| CharacterProgressionError::InvalidInput)?;
+    let digest = Sha256::new()
+        .chain_update(*binding)
+        .chain_update(bytes)
+        .finalize();
+    binding[1..].copy_from_slice(&digest);
+    Ok(())
+}
+
 impl DurabilityRoot {
     /// Historical carried USE is answered only by the immutable consumed-instance
     /// proof and its exact ingress; this never reacquires gameplay authority.
@@ -75,6 +90,29 @@ impl DurabilityRoot {
             Ok(Ok(answer))
         })).await?
     }
+    /// A cancelled sundial USE may only recover its original receipt; creating a
+    /// new admission requires the Channel reservation on the staged player and boss.
+    pub async fn reconcile_tomb_entry(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        command: CommandRef,
+        callback: &oteryn_gameplay_quests::quest::world_callbacks::Callback,
+        context: &super::super::quest_world_callback::QuestWorldToolContext,
+    ) -> Result<Option<CommittedQuestTransition>> {
+        if callback.key != oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let request = QuestTransitionRequest {
+            transition_key: callback.key.clone(),
+            cause: QuestCause::Use(command),
+        };
+        let mut binding = request_binding(character, &request);
+        bind_world_context(&mut binding, context, Some(callback))?;
+        self.reconcile_quest_binding(authority, character, request, binding)
+            .await
+    }
+
     /// Resolve an ambiguous quest commit by its receipt key. This proves only what committed and
     /// never reacquires gameplay authority.
     pub async fn reconcile_character_quest_transition(

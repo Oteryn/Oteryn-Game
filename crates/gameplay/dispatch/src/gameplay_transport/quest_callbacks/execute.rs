@@ -771,6 +771,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     participants: Vec::new(),
                     flame_effect_sent: false,
                     projection_target: None,
+                    tomb_actors: None,
                     selected_tool: None,
                 });
                 pending.context.get_or_insert(context).clone()
@@ -934,6 +935,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     participants: Vec::new(),
                     flame_effect_sent: false,
                     projection_target: None,
+                    tomb_actors: None,
                     selected_tool: None,
                 });
                 pending.context.get_or_insert(context).clone()
@@ -1273,6 +1275,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 movement_revision: expected.revision(),
                 party: party_context,
             };
+            let mut tomb_turn = if callback.key
+                == oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY
+            {
+                let QuestCause::Use(command) = cause else {
+                    return UseDisposition::Rejected;
+                };
+                let Some(turn) = self.reserve_tomb_entry(runtime, actor, command, fence, callback)
+                else {
+                    return UseDisposition::Rejected;
+                };
+                Some(turn)
+            } else {
+                None
+            };
             let context = if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                 let record = pending.entry(session).or_insert(Pending {
                     actor,
@@ -1290,8 +1306,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     participants: party.as_ref().map_or_else(Vec::new, |plan| plan.sessions()),
                     flame_effect_sent: false,
                     projection_target: None,
+                    tomb_actors: None,
                     selected_tool: None,
                 });
+                if let Some(actors) = tomb_turn.as_ref().and_then(|turn| turn.affected()) {
+                    if record
+                        .tomb_actors
+                        .as_deref()
+                        .is_some_and(|original| original != actors)
+                    {
+                        pending.remove(&session);
+                        self.schedule_quest_refresh(session);
+                        return UseDisposition::StaleState;
+                    }
+                    record.tomb_actors.get_or_insert_with(|| actors.to_vec());
+                }
                 record.projection_target = projection_target;
                 // The tool is bound with the first durable context. A replay keeps
                 // that exact binding instead of the replaying caller's tool.
@@ -1393,20 +1422,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let release_guards = callback.trigger == Trigger::Use
                 && (callback.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest"
                     || callback.key == oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY);
-            let mut tomb_turn = if callback.key
-                == oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY
-            {
-                let QuestCause::Use(command) = cause else {
-                    return UseDisposition::Rejected;
-                };
-                let Some(turn) = self.reserve_tomb_entry(runtime, actor, command, fence, callback)
-                else {
-                    return UseDisposition::Rejected;
-                };
-                Some(turn)
-            } else {
-                None
-            };
             if release_guards {
                 drop(guards.take());
             }

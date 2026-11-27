@@ -1184,17 +1184,15 @@ impl DurabilityRoot {
             && !soul_step
         {
             // A legacy World claim keeps main's cold-replay identity.
-            let bytes = if legacy_world_claim.is_some() {
-                serde_json::to_vec(&(context.without_actor_movement(), &callback))
+            if legacy_world_claim.is_some() {
+                super::storage::bind_world_context(
+                    &mut binding,
+                    &context.without_actor_movement(),
+                    callback.as_ref(),
+                )?;
             } else {
-                serde_json::to_vec(&(context, &callback))
+                super::storage::bind_world_context(&mut binding, context, callback.as_ref())?;
             }
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
-            let digest = Sha256::new()
-                .chain_update(binding)
-                .chain_update(bytes)
-                .finalize();
-            binding[1..].copy_from_slice(&digest);
         }
         let reward_root = self.clone();
         let recovery = authority
