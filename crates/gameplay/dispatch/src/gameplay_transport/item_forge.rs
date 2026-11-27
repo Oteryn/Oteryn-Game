@@ -200,6 +200,14 @@ fn station_required(request: Request) -> Option<Vec<u8>> {
 
 macro_rules! authority_methods {
     () => {
+        fn use_forge_station(
+            &self,
+            _actor: crate::foundation::ExactActorRef,
+            _command: crate::gameplay_transport::connection::UseCommand,
+            _target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+        ) -> impl std::future::Future<Output = Option<crate::gameplay_transport::connection::UseOutcome>> {
+            async { None }
+        }
         fn item_forge_available(&self) -> bool {
             false
         }
@@ -225,6 +233,14 @@ pub(super) use authority_methods;
 
 macro_rules! composed_methods {
     () => {
+        async fn use_forge_station(
+            &self,
+            actor: crate::foundation::ExactActorRef,
+            command: crate::gameplay_transport::connection::UseCommand,
+            target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+        ) -> Option<crate::gameplay_transport::connection::UseOutcome> {
+            item_forge::use_station(self, actor, command, target).await
+        }
         fn item_forge_available(&self) -> bool {
             self.active_generation
                 .and_then(|generation| generation.native_gameplay())

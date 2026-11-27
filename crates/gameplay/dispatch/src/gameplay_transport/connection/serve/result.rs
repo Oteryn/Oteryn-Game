@@ -101,15 +101,6 @@ pub(super) fn encode(
                 outcome.disposition,
                 outcome.gate_message_id,
             );
-            let disposition = if disposition == UseDisposition::ForgeOpened
-                && !session
-                    .selected_capabilities
-                    .contains(oteryn_protocol_oteryn::item_forge::CAPABILITY_ITEM_FORGE_V1)
-            {
-                UseDisposition::Rejected
-            } else {
-                disposition
-            };
             use oteryn_protocol_oteryn::world_object::{
                 CAPABILITY_GAMEPLAY_OCCURRENCES_V1, CAPABILITY_POTION_UTTERANCE_V1,
                 COMMAND_TYPE_USE_INTENT, encode_use_result_with_utterance,

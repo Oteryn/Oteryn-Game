@@ -361,12 +361,23 @@ pub(in super::super) fn station_cells(
     generation: &crate::content::ActiveGeneration,
 ) -> TestResult<crate::content::NativeEntryMovementCells> {
     use crate::map::{
-        boot::{BootPins, boot, native_item_definition, tests::bundle_with_item_ids},
+        boot::{BootPins, boot, tests::bundle_with_item_ids},
         overlay::{TilePos, map_revision},
     };
 
-    let native = generation.native_gameplay();
-    let item = |key: &str| native_item_definition(native, key);
+    let index = generation
+        .native_gameplay()
+        .and_then(|native| native.item_index())
+        .ok_or("Forge fixture item index")?;
+    let item = |key: &str| {
+        Some(crate::map::facts::ItemDefinition {
+            reference: index.definition_ref("Item", key, index.revision(key)?)?,
+            solid: Some(key == STATION),
+            blocks_projectile: false,
+            pickupable: key == COIN,
+            door: false,
+        })
+    };
     let station = item(STATION).ok_or("station definition")?;
     let coin = item(COIN).ok_or("coin definition")?;
     let (bytes, bundle) = bundle_with_item_ids(
@@ -417,16 +428,17 @@ pub(in super::super) async fn open_fixture_station_at(
     let target = super::super::autowalk_fixtures::object(map.overlay.base().digest(), position, 0)?;
     use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
     let outcome = owner
-        .use_object(
+        .use_forge_station(
             admitted.runtime_actor.ok_or("Forge actor")?,
             UseCommand {
                 game_session_id: admitted.game_session_id,
                 command_id: admitted.continuity.next_command_id,
                 item_fence: admitted.item_fence,
             },
-            target,
+            &target,
         )
-        .await;
+        .await
+        .ok_or("unrecognized Forge station")?;
     assert_eq!(
         outcome.disposition,
         protocol::world_object::UseDisposition::ForgeOpened
