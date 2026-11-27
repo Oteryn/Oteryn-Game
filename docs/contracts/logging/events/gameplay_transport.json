@@ -221,6 +221,14 @@
       "note": "PR3106: listener control-loss result reported only when it changes; kind is recorded, resumed_history, terminal, unknown, not_applicable or refused. No player identifiers, payloads or raw errors."
     },
     {
+      "event": "corpse_read_attempt",
+      "level": "warn",
+      "span": false,
+      "fields": ["attempt", "command_id", "holder", "kind"],
+      "codes": [],
+      "note": "Each corpse read attempt and its kind, including the competing pass call site when known."
+    },
+    {
       "event": "drome_use_probe_failed",
       "level": "info",
       "span": false,
@@ -239,6 +247,14 @@
       "note": "PR3106: post-commit admission continuation awaiting spell repair; phase is spell_facts or automatic_spells. No player identifiers, payloads or raw errors."
     },
     {
+      "event": "ground_projection_read_failed",
+      "level": "warn",
+      "span": false,
+      "fields": ["kind"],
+      "codes": [],
+      "note": "Closed durable read failure kind for a Ground overlay without a current projection."
+    },
+    {
       "event": "hotkey_equip_rejected",
       "level": "info",
       "span": false,
@@ -250,10 +266,18 @@
       "note": "PR3388: hotkey equip (command 348) rejection with the closed rejection stage that produced the existing Rejected reply; wire reply unchanged. Command_id is the client command id. No player identifiers, payloads or raw errors."
     },
     {
+      "event": "item_inventory_read_failed",
+      "level": "warn",
+      "span": false,
+      "fields": ["kind"],
+      "codes": [],
+      "note": "Closed failure kind for the durable inventory read used by join and by committed item view refresh."
+    },
+    {
       "event": "join_prepare_failed",
       "level": "info",
       "span": false,
-      "fields": [],
+      "fields": ["code", "kind", "phase"],
       "codes": [],
       "note": "Seeded from current server code."
     },
@@ -309,12 +333,23 @@
       "note": "NBFIX: closed logout refusal stage; no account, session or authentication material."
     },
     {
+      "event": "logout_release_completed",
+      "level": "info",
+      "span": false,
+      "fields": ["attempt", "command_id", "holder", "kind"],
+      "codes": [],
+      "note": "The non-retry result of the last terminal release attempt before acknowledging logout."
+    },
+    {
       "event": "logout_release_retry",
       "level": "info",
       "span": false,
       "fields": [
-        "stage",
-        "ms"
+        "attempt",
+        "command_id",
+        "holder",
+        "ms",
+        "stage"
       ],
       "codes": [],
       "note": "Closed name of the release prerequisite that deferred logout before the terminal transaction."

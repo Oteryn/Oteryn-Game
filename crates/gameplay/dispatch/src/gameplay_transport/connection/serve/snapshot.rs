@@ -266,7 +266,18 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
             ));
         };
         let reopen = match view.carried_open_corpse() {
-            Some(key) => authority.observe_item_target(actor, key).await,
+            Some(key) => match authority.observe_item_target(actor, key, None).await {
+                Ok(observation) => observation,
+                Err(error) => {
+                    return Err(super::setup::failed(
+                        &format!(
+                            "event=join_prepare_failed phase=corpse_resume kind={}",
+                            crate::gameplay_transport::item_ref_admission::item_transfer_read_reason(&error),
+                        ),
+                        ServeEnd::Disconnected,
+                    ));
+                }
+            },
             None => None,
         };
         let snapshot = view.snapshot(inventory, reopen);

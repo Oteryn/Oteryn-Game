@@ -279,7 +279,7 @@ where
 }
 
 /// Logs the failed join phase with the code the client is sent.
-pub(super) fn failed(event: &'static str, end: ServeEnd) -> ServeEnd {
+pub(super) fn failed(event: &str, end: ServeEnd) -> ServeEnd {
     crate::gameplay_transport::operator_event(&format!(
         "{event} code={}",
         FoundationProtocolError::SessionJoinUnavailable.code()

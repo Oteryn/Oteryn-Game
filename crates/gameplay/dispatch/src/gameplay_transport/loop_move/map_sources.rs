@@ -7,19 +7,19 @@ pub(super) async fn observe(
     fence: Option<CurrentCharacterItemFence>,
     target: ItemKey,
     house_capacity_v2: bool,
-) -> Option<ContainerObservation> {
-    let fence = fence?;
-    let _permit = admission.spell_lane_permit().await?;
+) -> Result<Option<ContainerObservation>, crate::durability::DurabilityError> {
+    let Some(fence) = fence else {
+        return Ok(None);
+    };
+    let Some(_permit) = admission.spell_lane_permit().await else {
+        return Err(crate::durability::DurabilityError::RootUnavailable);
+    };
     let sessions = super::super::FreshAdmissionStore::from_root(admission.root.clone());
-    let current = sessions
-        .current_session_at(fence.game_session_id)
-        .await
-        .ok()?
-        .0;
+    let current = sessions.current_session_at(fence.game_session_id).await?.0;
     if current.session_state() != super::super::GameSessionState::Active
         || super::super::item_fence_of(current) != Some(fence)
     {
-        return Some(ContainerObservation::Gone);
+        return Ok(Some(ContainerObservation::Gone));
     }
     let ItemKey::MapBase {
         bundle_digest,
@@ -27,7 +27,7 @@ pub(super) async fn observe(
         reset_epoch,
     } = target
     else {
-        return None;
+        return Ok(None);
     };
     let source_key = |placement_key| ItemKey::MapBase {
         bundle_digest,
@@ -40,94 +40,108 @@ pub(super) async fn observe(
             .player_control_facts(actor, fence.game_session_id)
             .is_err()
         {
-            return Some(ContainerObservation::Gone);
+            return Ok(Some(ContainerObservation::Gone));
         }
-        let index = pinned_index(&runtime, admission.active_generation)?;
-        (
-            super::super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)?,
-            index,
-        )
+        let Some(index) = pinned_index(&runtime, admission.active_generation) else {
+            return Ok(None);
+        };
+        let Some(at) =
+            super::super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)
+        else {
+            return Ok(None);
+        };
+        (at, index)
     };
     let base = at.map.overlay.base();
     if base.digest() != bundle_digest || reset_epoch != admission.reset_epoch {
-        return Some(ContainerObservation::Gone);
+        return Ok(Some(ContainerObservation::Gone));
     }
-    let (pos, ordinal) = view::placement_of(placement_key)?;
+    let Some((pos, ordinal)) = view::placement_of(placement_key) else {
+        return Ok(None);
+    };
     if !in_reach(
         (at.at.x, at.at.y, at.at.floor),
         (i32::from(pos.x), i32::from(pos.y), i16::from(pos.floor)),
     ) {
-        return Some(ContainerObservation::TooFar);
+        return Ok(Some(ContainerObservation::TooFar));
     }
-    let ground = loop_ground(admission, base, Some(index)).await?;
+    let Some(ground) = loop_ground_result(admission, base, Some(index)).await? else {
+        return Ok(None);
+    };
     let mut ancestor = placement_key;
     loop {
         if ground.taken_sources.contains(&ancestor) {
-            return Some(ContainerObservation::Gone);
+            return Ok(Some(ContainerObservation::Gone));
         }
         let Some(node) = at.map.facts.captured_map_item(ancestor) else {
             break;
         };
         ancestor = node.parent;
     }
-    let node = at.map.facts.captured_map_item(placement_key);
-    let (facts, parent) = if let Some(node) = node {
-        (node.facts, Some(source_key(node.parent)))
-    } else {
-        let tile = base.tile(pos.x, pos.y, pos.floor)?;
-        let id = *tile
-            .ids()
-            .iter()
-            .zip(tile.depths())
-            .filter(|(_, d)| **d == 0)
-            .nth(usize::from(ordinal))?
-            .0;
-        (at.map.facts.base_entry(pos, ordinal, id)?, None)
-    };
-    let MapDefinition::Item(reference) = facts.definition else {
-        return None;
-    };
-    let definition = super::super::item_look::typed_definition(index, reference)?;
-    let native = admission.active_generation?.native_gameplay()?;
-    let children = at.map.facts.captured_map_children(placement_key)?;
-    // A captured immovable source may lack physical container-capacity semantics
-    // (e.g. a dead tree). Its read-only view exposes exactly the captured slots;
-    // it never authorizes insertion or invents a movable container definition.
-    let physical_capacity = generation_item_facts(native, &definition)
-        .ok()
-        .and_then(|facts| facts.container_capacity);
-    let view_limit = if house_capacity_v2 {
-        oteryn_protocol_oteryn::container_tree::MAX_HOUSE_CONTAINER_VIEW_ENTRIES
-    } else {
-        MAX_CONTAINER_VIEW_ENTRIES
-    };
-    let capacity = crate::map::facts::captured_source_capacity(
-        physical_capacity,
-        facts.pickupable,
-        children.len(),
-        view_limit,
-    )?;
-    let entries = children
-        .into_iter()
-        .filter(|child| !ground.taken_sources.contains(&child.placement_key))
-        .map(|child| {
-            let MapDefinition::Item(reference) = child.facts.definition else {
-                return None;
-            };
-            Some(ViewItem {
-                appearance_id: child.facts.appearance_id,
-                key: source_key(child.placement_key),
-                item_definition_ref: reference,
-                count: NonZeroU32::new(child.facts.count)?,
-                sub_type: child.facts.sub_type,
+    let project = || {
+        let node = at.map.facts.captured_map_item(placement_key);
+        let (facts, parent) = if let Some(node) = node {
+            (node.facts, Some(source_key(node.parent)))
+        } else {
+            let tile = base.tile(pos.x, pos.y, pos.floor)?;
+            let id = *tile
+                .ids()
+                .iter()
+                .zip(tile.depths())
+                .filter(|(_, d)| **d == 0)
+                .nth(usize::from(ordinal))?
+                .0;
+            (at.map.facts.base_entry(pos, ordinal, id)?, None)
+        };
+        let MapDefinition::Item(reference) = facts.definition else {
+            return None;
+        };
+        let definition = super::super::item_look::typed_definition(index, reference)?;
+        let native = admission.active_generation?.native_gameplay()?;
+        let children = at.map.facts.captured_map_children(placement_key)?;
+        // A captured immovable source may lack physical container-capacity semantics
+        // (e.g. a dead tree). Its read-only view exposes exactly the captured slots;
+        // it never authorizes insertion or invents a movable container definition.
+        let physical_capacity = generation_item_facts(native, &definition)
+            .ok()
+            .and_then(|facts| facts.container_capacity);
+        let view_limit = if house_capacity_v2 {
+            oteryn_protocol_oteryn::container_tree::MAX_HOUSE_CONTAINER_VIEW_ENTRIES
+        } else {
+            MAX_CONTAINER_VIEW_ENTRIES
+        };
+        let capacity = crate::map::facts::captured_source_capacity(
+            physical_capacity,
+            facts.pickupable,
+            children.len(),
+            view_limit,
+        )?;
+        let entries = children
+            .into_iter()
+            .filter(|child| !ground.taken_sources.contains(&child.placement_key))
+            .map(|child| {
+                let MapDefinition::Item(reference) = child.facts.definition else {
+                    return None;
+                };
+                Some(ViewItem {
+                    appearance_id: child.facts.appearance_id,
+                    key: source_key(child.placement_key),
+                    item_definition_ref: reference,
+                    count: NonZeroU32::new(child.facts.count)?,
+                    sub_type: child.facts.sub_type,
+                })
             })
+            .collect::<Option<Vec<_>>>()?;
+        Some(ContainerObservation::Container {
+            parent,
+            capacity,
+            entries,
         })
-        .collect::<Option<Vec<_>>>()?;
-    let current = sessions
-        .current_session_at(fence.game_session_id)
-        .await
-        .ok()?
-        .0;
+    };
+    let Some(observation) = project() else {
+        return Ok(None);
+    };
+    let current = sessions.current_session_at(fence.game_session_id).await?.0;
     if current.session_state() != super::super::GameSessionState::Active
         || super::super::item_fence_of(current) != Some(fence)
         || admission
@@ -137,13 +151,9 @@ pub(super) async fn observe(
             .player_control_facts(actor, fence.game_session_id)
             .is_err()
     {
-        return Some(ContainerObservation::Gone);
+        return Ok(Some(ContainerObservation::Gone));
     }
-    Some(ContainerObservation::Container {
-        parent,
-        capacity,
-        entries,
-    })
+    Ok(Some(observation))
 }
 
 /// Nested source addresses never become renderable top-level overlay entries.

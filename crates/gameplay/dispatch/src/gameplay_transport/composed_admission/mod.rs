@@ -42,7 +42,9 @@ mod progression;
 mod quest;
 mod release;
 #[cfg(test)]
-pub(super) use release::{CONDITION_RELEASE_PROBE, HolderCheckoutProbe};
+pub(super) use release::{
+    CONDITION_RELEASE_PROBE, HolderCheckoutProbe, OFFLINE_TRAINING_RELEASE_PROBE,
+};
 mod release_deferred;
 mod resume;
 mod spells;

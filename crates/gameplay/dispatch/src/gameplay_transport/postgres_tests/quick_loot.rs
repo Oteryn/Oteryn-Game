@@ -1,6 +1,6 @@
 //! QUICKLOOT: production router, item owner, replay and real PostgreSQL custody.
 use super::fixture::{Harness, debug, id, join_two};
-use super::autowalk_fixtures::{read, send};
+use super::autowalk_fixtures::{command_reply, read, send};
 use super::kill_reward_e2e_fixtures::scenario_thread;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::item_mint::*;
@@ -16,7 +16,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
     EntityDetail, decode_world_spatial_entities_snapshot_with_item_handles,
 };
 use oteryn_protocol_oteryn::{
-    MessageType, decode_command_result, decode_snapshot_chunk, decode_state_delta, decode_wire_envelope,
+    MessageType, decode_snapshot_chunk, decode_state_delta, decode_wire_envelope,
 };
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
@@ -85,6 +85,14 @@ fn gold_pouch_first_assignment_from_fulfilment_id_postgres() -> TestResult {
     run_routed_case(admin, Case::PouchFulfilment)
 }
 
+#[test]
+fn corpse_use_retries_holder_contention_and_refuses_a_failed_read_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_routed_case(admin, Case::CorpseUseRetry)
+}
+
 fn run_routed_case(admin: String, case: Case) -> TestResult {
     scenario_thread::run("quick-loot", move || {
         tokio::runtime::Builder::new_current_thread()
@@ -103,6 +111,7 @@ enum Case {
     FilterReview,
     PouchFulfilment,
     PouchLogout,
+    CorpseUseRetry,
 }
 
 fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
@@ -393,7 +402,7 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                 .map_err(|_| "far cell")?;
         if !matches!(case, Case::Bulk | Case::GoldPouch | Case::PouchLogout) {
             match case {
-                Case::SelectedItem | Case::StaleHandle => {
+                Case::SelectedItem | Case::StaleHandle | Case::CorpseUseRetry => {
                     selected_item_cases(
                         &owner,
                         admitted,
@@ -827,6 +836,11 @@ async fn selected_item_cases(
             .map_err(debug)?;
         creature.corpse_identity()
     };
+    use crate::gameplay_transport::composed_admission::HolderCheckoutProbe;
+    use crate::gameplay_transport::item_ref_admission::CORPSE_USE_CHECKOUT_PROBE;
+    use std::{cell::Cell, sync::Arc, time::Duration};
+
+    let probe = (case == Case::CorpseUseRetry).then(|| Arc::new(HolderCheckoutProbe::default()));
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let drive = async {
         let result: TestResult = async {
@@ -853,6 +867,33 @@ async fn selected_item_cases(
             let [keep, take] = opened.entries.as_slice() else {
                 return Err("open corpse should show both entries".into());
             };
+            if case == Case::CorpseUseRetry {
+                assert_eq!(opened.entries.len(), items.len());
+
+                // Hold the entries table through the second reply. The
+                // checkout succeeds, but the content read cannot meet its
+                // pass deadline. That is a refusal, never stale success.
+                let mut blocker = pool.begin().await?;
+                sqlx::query("LOCK TABLE game_item_corpse_container_entries IN ACCESS EXCLUSIVE MODE")
+                    .execute(&mut *blocker)
+                    .await?;
+                command_id += 1;
+                send(
+                    &mut client,
+                    command_id,
+                    COMMAND_TYPE_USE_INTENT,
+                    &encode_use_item_intent(corpse_handle),
+                )
+                .await?;
+                let (status, payload) = command_reply(&mut client, command_id).await?;
+                assert_eq!(status, CommandStatus::Rejected);
+                assert_eq!(
+                    decode_use_result(&payload).map_err(debug)?,
+                    UseDisposition::Rejected
+                );
+                blocker.rollback().await?;
+                return Ok(());
+            }
             if case == Case::StaleHandle {
                 for handle in [corpse_handle, ItemHandle::MAX] {
                     command_id += 1;
@@ -905,13 +946,28 @@ async fn selected_item_cases(
         client.shutdown().await?;
         result
     };
-    let (end, result) = join_two(
-        serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS),
-        drive,
-    )
-    .await;
+    let serve = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS);
+    let (end, result) = if let Some(probe) = probe {
+        let serve = CORPSE_USE_CHECKOUT_PROBE.scope(Cell::new(Some(Arc::clone(&probe))), serve);
+        let compete = async {
+            probe.contend(owner.root).await?;
+            Ok::<_, Box<dyn std::error::Error>>(())
+        };
+        let (end, (), ()) = tokio::time::timeout(Duration::from_secs(15), async {
+            tokio::try_join!(async { Ok(serve.await) }, drive, compete)
+        })
+        .await??;
+        (end, Ok(()))
+    } else {
+        join_two(serve, drive).await
+    };
     result?;
     assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+    if case == Case::CorpseUseRetry {
+        assert_eq!(corpse_items(pool, corpse).await?, items);
+        eprintln!("POSTGRES_EXECUTED corpse_use_retries_holder_contention_and_refuses_a_failed_read_postgres");
+        return Ok(());
+    }
     if case == Case::StaleHandle {
         return Ok(());
     }
@@ -968,21 +1024,6 @@ async fn snapshot_corpse_handle(
                 return handle.ok_or_else(|| "missing corpse handle".into());
             }
             _ => {}
-        }
-    }
-}
-
-pub(super) async fn command_reply(
-    client: &mut DuplexStream,
-    id: u64,
-) -> TestResult<(CommandStatus, Vec<u8>)> {
-    loop {
-        let frame = read(client).await?;
-        let envelope = decode_wire_envelope(&frame)?;
-        if envelope.message_type() == MessageType::CommandResult {
-            let result = decode_command_result(envelope.payload())?;
-            assert_eq!(result.command_id, id);
-            return Ok((result.status, result.payload.to_vec()));
         }
     }
 }

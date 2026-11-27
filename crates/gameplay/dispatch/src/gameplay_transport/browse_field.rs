@@ -14,55 +14,64 @@ pub(super) async fn observe(
     actor: ExactActorRef,
     fence: Option<CurrentCharacterItemFence>,
     key: ItemKey,
-) -> Option<ContainerObservation> {
-    let ItemKey::BrowseField { x, y, floor } = key else { return None; };
-    let fence = fence?;
+) -> Result<Option<ContainerObservation>, crate::durability::DurabilityError> {
+    let (ItemKey::BrowseField { x, y, floor }, Some(fence)) = (key, fence) else {
+        return Ok(None);
+    };
     let position = WorldTilePosition { x, y, floor };
-    let pos = TilePos { x: u16::try_from(x).ok()?, y: u16::try_from(y).ok()?, floor: i8::try_from(floor.checked_neg()?).ok()? };
+    let (Ok(x), Ok(y), Some(floor)) = (
+        u16::try_from(x), u16::try_from(y), floor.checked_neg().and_then(|floor| i8::try_from(floor).ok()),
+    ) else { return Ok(None); };
+    let pos = TilePos { x, y, floor };
     if !(-15..=0).contains(&pos.floor) || !admission.ensure_source_map_initialized().await {
-        return Some(ContainerObservation::Gone);
+        return Ok(Some(ContainerObservation::Gone));
     }
     // The lane serializes the actor's movement and Ground projection. It is not a
     // durable browse lock: each item move independently proves custody and its fence.
-    let _permit = admission.spell_lane_permit().await?;
-    if !current(admission, fence).await? { return Some(ContainerObservation::Gone); }
+    let Some(_permit) = admission.spell_lane_permit().await else {
+        return Err(crate::durability::DurabilityError::RootUnavailable);
+    };
+    if !current(admission, fence).await? { return Ok(Some(ContainerObservation::Gone)); }
     if admission.states.spell_states.lock().await.is_dead(actor) {
-        return Some(ContainerObservation::Gone);
+        return Ok(Some(ContainerObservation::Gone));
     }
-    let map = admission.bundle_map()?;
+    let Some(map) = admission.bundle_map() else { return Ok(None); };
     let index = {
         let mut runtime = admission.runtime.lock().await;
         if runtime.player_control_facts(actor, fence.game_session_id).is_err() {
-            return Some(ContainerObservation::Gone);
+            return Ok(Some(ContainerObservation::Gone));
         }
-        let at = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)?;
+        let Some(at) = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor) else {
+            return Ok(None);
+        };
         let here = WorldTilePosition { x: at.at.x, y: at.at.y, floor: -at.at.floor };
         match browse_rules::reach(here, position) {
             browse_rules::Reach::Adjacent => {},
-            browse_rules::Reach::Walk | browse_rules::Reach::WrongFloor => return Some(ContainerObservation::TooFar),
+            browse_rules::Reach::Walk | browse_rules::Reach::WrongFloor => return Ok(Some(ContainerObservation::TooFar)),
         }
-        pinned_index(&runtime, admission.active_generation)?
+        pinned_index(&runtime, admission.active_generation)
     };
+    let Some(index) = index else { return Ok(None); };
     if map.overlay.base().tile(pos.x, pos.y, pos.floor).is_none() {
-        return Some(ContainerObservation::Gone);
+        return Ok(Some(ContainerObservation::Gone));
     }
-    let native = admission.active_generation?.native_gameplay()?;
-    let ground = super::loop_move::loop_ground(admission, map.overlay.base(), Some(index)).await?;
+    let Some(native) = admission.active_generation.and_then(|generation| generation.native_gameplay()) else { return Ok(None); };
+    let Some(ground) = super::loop_move::loop_ground_result(admission, map.overlay.base(), Some(index)).await? else { return Ok(None); };
     let facts = map.facts.pinned();
-    let entries = browse_projection::project(ground.overlay(), &ground.facts(&facts), native, index, pos, admission.reset_epoch)?;
-    if entries.len() > usize::from(u16::MAX) { return Some(ContainerObservation::Gone); }
+    let Some(entries) = browse_projection::project(ground.overlay(), &ground.facts(&facts), native, index, pos, admission.reset_epoch) else { return Ok(None); };
+    if entries.len() > usize::from(u16::MAX) { return Ok(Some(ContainerObservation::Gone)); }
     // Durable custody reads may wait while reconnect advances the generation.
     if !current(admission, fence).await?
         || admission.runtime.lock().await.player_control_facts(actor, fence.game_session_id).is_err()
-    { return Some(ContainerObservation::Gone); }
-    let (entries, lease) = admission.states.browse_fields.observe(
+    { return Ok(Some(ContainerObservation::Gone)); }
+    let observed = admission.states.browse_fields.observe(
         map.overlay.base().digest(), admission.reset_epoch, pos, entries,
-    )?;
-    Some(ContainerObservation::BrowseField { position, entries, lease: Some(lease) })
+    );
+    Ok(observed.map(|(entries, lease)| ContainerObservation::BrowseField { position, entries, lease: Some(lease) }))
 }
 
-async fn current(admission: &ComposedFreshAdmission<'_, '_, '_>, fence: CurrentCharacterItemFence) -> Option<bool> {
+async fn current(admission: &ComposedFreshAdmission<'_, '_, '_>, fence: CurrentCharacterItemFence) -> Result<bool, crate::durability::DurabilityError> {
     let session = super::FreshAdmissionStore::from_root(admission.root.clone())
-        .current_session_at(fence.game_session_id).await.ok()?.0;
-    Some(session.session_state() == super::GameSessionState::Active && super::item_fence_of(session) == Some(fence))
+        .current_session_at(fence.game_session_id).await?.0;
+    Ok(session.session_state() == super::GameSessionState::Active && super::item_fence_of(session) == Some(fence))
 }

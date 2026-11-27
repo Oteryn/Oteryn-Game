@@ -60,11 +60,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return None;
         };
-        let backpack = self
-            .root
-            .read_character_backpack(self.character, fence.character_id)
-            .await
-            .ok()??;
+        let backpack = match self.read_use_backpack(fence).await {
+            Ok(backpack) => backpack?,
+            Err(error) => {
+                return Some(super::use_dispatch_refused(
+                    command.command_id,
+                    super::item_ref_admission::durable_view_read_reason(&error),
+                ));
+            }
+        };
         if !backpack.entries.iter().any(|entry| {
             entry.item.item_instance_id == source_id
                 && entry.item.definition.production_key == RUST_REMOVER
