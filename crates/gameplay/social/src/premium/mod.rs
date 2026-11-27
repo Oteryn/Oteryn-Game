@@ -25,6 +25,7 @@
 
 pub mod client;
 pub mod clock;
+mod diagnostics;
 pub mod refresh;
 pub mod snapshot;
 #[cfg(test)]
@@ -34,6 +35,7 @@ use crate::durability::premium_fence::{
     EntitlementState, PremiumAccountRecord, PremiumEvidence, PremiumFenceOutcome, PremiumFenceView,
 };
 use crate::durability::{DurabilityError, DurabilityRoot};
+use diagnostics::{SnapshotTrace, retry_checkout};
 use snapshot::{SnapshotFailure, SnapshotRejection};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -341,27 +343,55 @@ impl PremiumConsumer {
         nonce: &str,
         body: &[u8],
     ) -> IngestOutcome {
+        let mut trace = SnapshotTrace::new(account_id);
         self.lock().entry(account_id).or_default();
         let evidence = match snapshot::validate(body, account_id, nonce) {
-            Ok(evidence) => evidence,
-            Err(SnapshotFailure::Malformed) => {
+            Ok(evidence) => {
+                trace.revision = Some(evidence.authority_revision);
+                trace.validation("valid");
+                evidence
+            }
+            Err(SnapshotFailure::Malformed { revision, reason }) => {
+                trace.revision = revision;
+                let reason = format!("{reason:?}");
+                trace.validation(&reason);
                 self.pull_failed(account_id, ticket);
+                trace.result(&reason, None);
                 return IngestOutcome::Rejected(SnapshotRejection::Malformed);
             }
             Err(SnapshotFailure::Unsupported(failure)) => {
-                // Never ignored, whatever the ticket order: it denies Premium in this process
-                // even when the durable record could not be written.
+                trace.revision = Some(failure.authority_revision);
+                trace.validation("unsupported");
+                // The conflict denies Premium in memory even if its durable recording fails.
                 self.update(account_id, |view| view.conflicting = true);
-                return match root.record_premium_semantic_failure(&failure).await {
-                    Ok(()) => IngestOutcome::Rejected(SnapshotRejection::Unsupported),
-                    Err(_) => IngestOutcome::FenceUnavailable,
+                return match retry_checkout(root, &trace, || {
+                    root.record_premium_semantic_failure(&failure)
+                })
+                .await
+                {
+                    Ok(()) => {
+                        trace.result("unsupported", None);
+                        IngestOutcome::Rejected(SnapshotRejection::Unsupported)
+                    }
+                    Err(error) => {
+                        trace.result("unsupported_fence_failed", Some(&error));
+                        IngestOutcome::FenceUnavailable
+                    }
                 };
             }
         };
         let _publication = self.lock_snapshot_publication(account_id).await;
-        let Ok((outcome, hint)) = root.accept_premium_with_profile_b_hint(&evidence).await else {
-            self.update(account_id, |view| view.quarantine(ticket));
-            return IngestOutcome::FenceUnavailable;
+        let (outcome, hint) = match retry_checkout(root, &trace, || {
+            root.accept_premium_with_profile_b_hint(&evidence)
+        })
+        .await
+        {
+            Ok(accepted) => accepted,
+            Err(error) => {
+                self.update(account_id, |view| view.quarantine(ticket));
+                trace.result("fence_failed", Some(&error));
+                return IngestOutcome::FenceUnavailable;
+            }
         };
         self.update(account_id, |view| {
             view.profile_b_hint_revision = view.profile_b_hint_revision.max(hint);
@@ -379,6 +409,15 @@ impl PremiumConsumer {
                 }
             }
         });
+        trace.result(
+            match outcome {
+                PremiumFenceOutcome::Accepted(_) => "accepted",
+                PremiumFenceOutcome::Replayed(_) => "replayed",
+                PremiumFenceOutcome::Stale(_) => "stale",
+                PremiumFenceOutcome::Conflict(_) => "conflict",
+            },
+            None,
+        );
         match outcome {
             PremiumFenceOutcome::Accepted(_) => IngestOutcome::Accepted,
             PremiumFenceOutcome::Replayed(_) => IngestOutcome::Replayed,
