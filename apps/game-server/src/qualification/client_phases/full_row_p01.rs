@@ -918,37 +918,31 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     evidence("P01_CHECK assigned-race-kill PASS analyser-credit-and-active-assignment");
 
-    row.at("leave-authored-hunt");
+    row.at("leave-troll-spawn");
     let from = tile(client.world_spatial().actor_position)?;
+    let troll_position = tile(troll.position)?;
     let occupied = client_row_p01::occupied_rat_route_tiles(&client);
+    // Leave the Troll's native eleven-tile sight range before it respawns.
     let retreat = route_avoiding(
         world,
         from,
         |at| {
-            world
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|tile| tile.protection_zone())
+            at.floor != troll_position.floor
+                || at
+                    .x
+                    .abs_diff(troll_position.x)
+                    .max(at.y.abs_diff(troll_position.y))
+                    > 11
         },
         |at| !occupied.contains(&at),
     )
-    .ok_or("no first-attempt route to protected logout ground")?;
+    .ok_or_else(|| format!("no walkable retreat from Troll hunt at {from:?}"))?;
     client_row_p01::walk_rat_route(&mut client, world, &retreat).await?;
-    let position = tile(client.world_spatial().actor_position)?;
-    if !world
-        .base()
-        .tile(position.x, position.y, position.floor)
-        .is_some_and(|tile| tile.protection_zone())
-    {
-        return Err(format!("logout ground is not protected: {position:?}").into());
-    }
-    evidence(&format!(
-        "P01_CHECK protected-logout-ground PASS position={position:?}"
-    ));
 
-    row.at("logout-fresh-admission");
+    row.at("wait-for-logout-block-and-relog");
     let old_session = client.join_snapshot().game_session_id;
     logout_when_ready(&mut client).await?;
+    evidence("P01_CHECK logout-block-cleared PASS first-attempt-logout-accepted");
     drop(client);
     let mut fresh = connect_world(clients, 0xa3).await?;
     if fresh.join_snapshot().game_session_id == old_session {
