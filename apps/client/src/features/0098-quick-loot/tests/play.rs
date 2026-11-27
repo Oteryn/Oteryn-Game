@@ -913,6 +913,9 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         assert_eq!(panel.pending, None);
         if matches!(key, 19 | 20) {
             assert_eq!(panel.destinations, before_panel.destinations);
+            assert_eq!(panel.filter_mode, before_panel.filter_mode, "I07 probe {key}");
+            assert_eq!(panel.skipped, before_panel.skipped, "I07 probe {key}");
+            assert_eq!(panel.accepted, before_panel.accepted, "I07 probe {key}");
             assert_eq!(panel.result, before_panel.result);
             assert_eq!(notices(), before);
             assert_eq!(
