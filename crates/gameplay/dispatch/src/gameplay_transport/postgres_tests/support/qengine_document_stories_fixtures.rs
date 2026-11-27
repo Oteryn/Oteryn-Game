@@ -2,6 +2,14 @@ use super::fixture::Harness;
 
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 
+use oteryn_gameplay_quests::quest::world_callbacks::Position;
+
+pub(super) const BONE_MASTER: Position = Position {
+    x: 32793,
+    y: 32225,
+    floor: -14,
+};
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -31,6 +39,7 @@ pub(super) async fn exercise(
     }
     use super::fixture::debug;
     use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+    use oteryn_gameplay_quests::quest::reward_callbacks::participant_key;
     use oteryn_gameplay_quests::quest::{
         QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
     };
@@ -49,20 +58,28 @@ pub(super) async fn exercise(
     let mut tracks = BTreeMap::new();
     let mut transitions = vec![];
     for callback in &callbacks {
-        transitions.push(
-            canonical
-                .transition(&callback.key)
-                .cloned()
-                .ok_or("source transition")?,
+        let keys = std::iter::once(callback.key.clone()).chain(
+            callback
+                .participants
+                .iter()
+                .enumerate()
+                .map(|(index, _)| participant_key(&callback.key, index)),
         );
-        for state in &callback.storage {
-            tracks.insert(
-                state.track.clone(),
-                canonical
-                    .track(&state.track)
-                    .cloned()
-                    .ok_or("source track")?,
-            );
+        for key in keys {
+            let transition = canonical
+                .transition(&key)
+                .cloned()
+                .ok_or("source transition")?;
+            for effect in &transition.effects {
+                tracks.insert(
+                    effect.track.clone(),
+                    canonical
+                        .track(&effect.track)
+                        .cloned()
+                        .ok_or("source track")?,
+                );
+            }
+            transitions.push(transition);
         }
         for required in &callback.requires {
             tracks.insert(
@@ -124,7 +141,30 @@ pub(super) async fn exercise(
     } else {
         "oteryn:npc.the_dream_master"
     };
-    let [npc] = super::classic_quests_fixtures::install(owner, admitted, [npc_key]).await?;
+    let [npc] = if family == "brotherhood" {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let source = oteryn_world_bundle_compiler::source::project_regions(
+            &root,
+            &[(BONE_MASTER.x / 256, BONE_MASTER.y / 256)],
+        )?;
+        let position = source
+            .families
+            .npc_placements
+            .iter()
+            .find(|placement| placement.npc == npc_key)
+            .ok_or("production Bone Master placement")?;
+        let (x, y, floor) = position.cell;
+        let position = Position {
+            x,
+            y,
+            floor: -i8::try_from(floor)?,
+        };
+        assert_eq!(position, BONE_MASTER);
+        super::classic_quests_fixtures::install_positions(owner, admitted, [npc_key], [position])
+            .await?
+    } else {
+        super::classic_quests_fixtures::install(owner, admitted, [npc_key]).await?
+    };
     let find = |stage: &str| {
         callbacks
             .iter()
@@ -152,11 +192,27 @@ pub(super) async fn exercise(
         after, before,
         "absent independent parent cannot create documents"
     );
+    let session_id = admitted.game_session_id;
+    let tower_open = |owner: &ComposedFreshAdmission<'_, '_, '_>| {
+        owner.states.quest_sessions.lock().map_err(debug).map(|sessions| {
+            sessions
+                .get(&session_id)
+                .and_then(|session| session.copy.as_ref())
+                .is_some_and(|copy| copy.meets_door_storage(41014))
+        })
+    };
+    assert!(
+        !tower_open(owner)?,
+        "the refused join cannot unlock Knightwatch Tower"
+    );
     super::qengine_outfit_stories_fixtures::commit_fixture(owner, admitted, parent_key, 9700).await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    super::qengine_outfit_stories_fixtures::earn_level(owner, admitted, authority, 50).await?;
+    // Dread Lord takes 1,500 essences at 1 oz each. The returning Brotherhood
+    // character needs capacity for the full payment, bags and prior rank rewards.
+    let carrying_level = if family == "brotherhood" { 60 } else { 50 };
+    super::qengine_outfit_stories_fixtures::earn_level(owner, admitted, authority, carrying_level).await?;
     let mut bags = vec![];
     let mut ordinal = 700;
     for (stage, item, price) in [
@@ -221,6 +277,13 @@ pub(super) async fn exercise(
             held_essences - i64::from(price),
             "exact source essences consumed, retain supplied surplus"
         );
+        if stage == "join" {
+            owner.refresh_quest_session(session_id, false).await;
+            assert!(
+                tower_open(owner)?,
+                "joining opens both Knightwatch Tower entrances through durable storage"
+            );
+        }
         let replay = super::quest_world_callbacks_fixtures::wire(
             owner,
             admitted,
@@ -245,6 +308,27 @@ pub(super) async fn exercise(
             1,
             "NPC replay cannot duplicate document"
         );
+        if stage == "leader" {
+            let [gift] = callback
+                .give
+                .as_ref()
+                .ok_or("leader reward")?
+                .additional
+                .as_slice()
+            else {
+                return Err("leader exchange must grant the separate donor reward".into());
+            };
+            let gift_id = gift
+                .item
+                .strip_prefix("oteryn:item.tibia.i")
+                .ok_or("leader gift id")?
+                .parse()?;
+            assert_eq!(
+                super::qengine_voucher_stories_fixtures::quantity(h, gift_id).await?,
+                i64::from(gift.count),
+                "leader exchange and replay grant the extra reward exactly once"
+            );
+        }
         if family == "nightmare" {
             super::qengine_voucher_stories_fixtures::use_native(
                 owner,
@@ -257,6 +341,42 @@ pub(super) async fn exercise(
     }
     let key = format!("oteryn:outfit.{family}");
     if family == "brotherhood" {
+        let dread = find("dread-lord")?;
+        let (refused, _, _) =
+            super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, dread, false).await?;
+        assert_eq!(refused, NpcIntentDisposition::Rejected);
+        super::qengine_outfit_stories_fixtures::supply(
+            owner,
+            admitted,
+            h,
+            &dread.take[0],
+            &mut bags,
+            &mut ordinal,
+        )
+        .await?;
+        let before = super::qengine_voucher_stories_fixtures::quantity(h, 6499).await?;
+        let (result, _, _) =
+            super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, dread, false).await?;
+        assert_eq!(result, NpcIntentDisposition::Ok);
+        assert_eq!(
+            super::qengine_voucher_stories_fixtures::quantity(h, 6499).await?,
+            before - 1500
+        );
+        for state in &dread.storage {
+            let value: i64 = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+            )
+            .bind(&state.track)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(value, state.set);
+        }
+        let granted: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_account_achievements WHERE achievement_key='oteryn:achievement/dread_lord')",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(granted);
         super::qengine_voucher_stories_fixtures::use_native(owner, admitted, 769, UseDisposition::Rejected)
             .await?;
         assert_eq!(

@@ -175,7 +175,7 @@ pub(super) async fn trade(
     else {
         return Err(Box::new(NpcTradeStep::rejected()));
     };
-    let Some(_permit) = admission.spell_lane_permit().await else {
+    let Some(permit) = admission.spell_lane_permit().await else {
         return Err(Box::new(NpcTradeStep::Unknown));
     };
     let command_ref = CommandRef::new(session, command_id);
@@ -191,6 +191,10 @@ pub(super) async fn trade(
         .await
     {
         Ok(Some(receipt)) if answers(&receipt, &intent, mode) => {
+            if receipt.npc_key == crate::durability::quest_state::carlos_trade::NPC {
+                drop(permit);
+                admission.refresh_quest_session(session, false).await;
+            }
             return Ok(SoldUnits {
                 units: receipt.quantity,
                 gold: u64::from(receipt.quantity).saturating_mul(receipt.unit_price),
@@ -473,6 +477,7 @@ pub(super) async fn trade(
     {
         return Err(Box::new(NpcTradeStep::rejected()));
     }
+    let carlos_sale = crate::durability::quest_state::carlos_trade::is_food_sale(&request);
     let result = if let Some(selection) = hireling {
         admission
             .root
@@ -523,6 +528,10 @@ pub(super) async fn trade(
             .await
     };
     let outcome = step_of(result);
+    if carlos_sale && outcome.is_ok() {
+        drop(permit);
+        admission.refresh_quest_session(session, false).await;
+    }
     if include_equipped && outcome.is_ok() {
         admission
             .states

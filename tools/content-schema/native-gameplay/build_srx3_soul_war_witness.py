@@ -76,6 +76,11 @@ OUTPUT = ROOT / "tools/content-schema/native-gameplay/srx3-soul-war-witness.json
 
 
 def build():
+    import sys
+    sys.path.insert(0, str(ROOT / "tools/content-migration"))
+    from crystal_creature_parity import read_packet, reviewed_schedule_preimage
+
+    additions = read_packet(ROOT)[0]["schedules"]
     source = json.loads((ROOT / "content/creatures/definitions/spell-native-profiles.json").read_bytes())
     digest = source["source_definitions_sha256"]
     if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
@@ -88,7 +93,8 @@ def build():
         if len(matches) != 1:
             raise ValueError("missing or duplicated native participant: " + key)
         record = matches[0]
-        actual = hashlib.sha256(json.dumps(record, sort_keys=True, separators=(",", ":"),
+        reviewed = reviewed_schedule_preimage(record, additions)
+        actual = hashlib.sha256(json.dumps(reviewed, sort_keys=True, separators=(",", ":"),
                                            ensure_ascii=False).encode()).hexdigest()
         if actual != REVIEWED_PROFILES[key]:
             raise ValueError("native Soul War body changed; source qualification review required: " + key)

@@ -1,8 +1,11 @@
 use super::fixture::Harness;
 
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+use crate::gameplay_transport::item_view::ItemKey;
 
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
+use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
 
 pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,a:&mut AdmittedSession,h:&Harness)->TestResult {
     let version:String=sqlx::query_scalar("SHOW server_version").fetch_one(&h.pool).await?;
@@ -26,5 +29,31 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,a:&mu
     for item in [17672,17673,17674,17675] {
         assert_eq!(super::questpc7_outfit_items_fixtures::quantity(h,item).await?,0,"no fabricated odour or vial transformation");
     }
+    let corpse: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(item_instance_id) FROM game_item_instances
+         WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i12526'",
+    ).fetch_one(&h.pool).await?;
+    let kit = native.item_index().and_then(|index| {
+        index.definition_ref("Item", "oteryn:item.tibia.i17670", "definition-r1")
+    }).ok_or("Rafzan's issued gatherer")?;
+    let command = UseCommand { game_session_id: a.game_session_id, command_id: 11001,
+                               item_fence: a.item_fence };
+    let result = owner.use_quest_tool(
+        a.runtime_actor.ok_or("collector actor")?,
+        command,
+        UseIntent {
+            target: UseTarget::ItemByDefinition(kit),
+            use_with: None,
+            use_with_map_item: Some(MapUseTarget::Item(std::num::NonZeroU64::MIN)),
+            use_with_position: None,
+        },
+        None,
+        Some(ItemKey::Instance(corpse.try_into().map_err(|_| "corpse instance")?)),
+    ).await.map_err(|()| "Rafzan corpse dispatch")?.ok_or("Rafzan gatherer owner")?;
+    assert_eq!(result.disposition, UseDisposition::Committed);
+    assert_eq!(super::questpc7_outfit_items_fixtures::quantity(h,17672).await?,1);
+    let odours = super::questpc7_ferumbras_fixtures::value(owner,a,
+        "oteryn:quest-progress/questpc7/goblin/odours").await?;
+    assert_eq!(odours,1,"the freshly accepted perfume task qualifies the first gas site");
     Ok(())
 }

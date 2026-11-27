@@ -534,9 +534,105 @@ fn boss_spawn_world_points_reach_bundle_at_fixed_cells() -> TestResult {
             checked += 1;
         }
     }
-    // Crystal 201189f8 data-global/world/world-monster.xml:190614–190616
-    // gives Shard of Corruption a fixed 90-second respawn.
-    assert_eq!(checked, 35);
+    // Includes Shard of Corruption from world-monster.xml:190614–190616 and the
+    // Crystal 201189f8 Gorga, Clavius, Adlerauge, and Michael the Stalwart points.
+    assert_eq!(checked, 39);
+    Ok(())
+}
+
+#[test]
+fn crystal_revision_monsters_reach_the_bundle_at_donor_cells() -> TestResult {
+    use oteryn_world_bundle_compiler::source;
+    let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
+    let regions = [
+        (127, 125),
+        (128, 128),
+        (130, 127),
+        (130, 128),
+        (132, 124),
+        (132, 125),
+    ];
+    let project = source::project_regions(root, &regions)?;
+    let (registry, palette) = source::registry(root, &project)?;
+    let (table, report) = realize_spawns(
+        &Input {
+            regions: &project.regions,
+            palette: &palette,
+            identity: Identity::default(),
+            world: source::world_extent(root)?,
+            build_class: BuildClass::NonProduction,
+            draft_areas: Vec::new(),
+            families: &project.families,
+        },
+        &registry,
+    )?;
+    let sources = table
+        .sources
+        .iter()
+        .filter(|source| source.key.starts_with("oteryn:spawn.crystal_201189f8."))
+        .collect::<Vec<_>>();
+    assert_eq!(sources.len(), 386, "Crystal revision source groups");
+    assert_eq!(
+        sources
+            .iter()
+            .map(|source| source.points.len())
+            .sum::<usize>(),
+        674,
+        "Crystal revision map-bound points"
+    );
+    for declared in project
+        .families
+        .spawns
+        .iter()
+        .filter(|row| row.key.starts_with("oteryn:spawn.crystal_201189f8."))
+    {
+        let compiled = sources
+            .iter()
+            .find(|row| row.key == declared.key)
+            .ok_or("Crystal spawn source dropped")?;
+        assert_eq!(compiled.points.len(), declared.points.len());
+        for (point, expected) in compiled.points.iter().zip(&declared.points) {
+            assert_eq!(
+                (point.x, point.y, compiled.floor),
+                (
+                    expected.cell.0,
+                    expected.cell.1,
+                    -i8::try_from(expected.cell.2)?
+                )
+            );
+            assert_eq!(
+                table.creatures[point.creature as usize].key,
+                expected.creature
+            );
+            assert_eq!(point.direction, expected.direction);
+            assert_eq!(point.respawn_ms, expected.respawn_ms);
+            assert_eq!(point.boss_policy, expected.boss_policy);
+        }
+    }
+    for (name, count) in [
+        ("common_beetle", 17),
+        ("gorga", 1),
+        ("grove_guardian", 3),
+        ("herd_weevil", 23),
+        ("rootthing_cocoon", 28),
+    ] {
+        let key = format!("oteryn:creature.{name}");
+        assert_eq!(
+            sources
+                .iter()
+                .flat_map(|source| &source.points)
+                .filter(|point| table.creatures[point.creature as usize].key == key)
+                .count(),
+            count,
+            "{key}"
+        );
+    }
+    let dropped = report
+        .dropped
+        .iter()
+        .filter(|point| point.source.starts_with("oteryn:spawn.crystal_201189f8."))
+        .collect::<Vec<_>>();
+    assert!(dropped.is_empty(), "{dropped:?}");
     Ok(())
 }
 

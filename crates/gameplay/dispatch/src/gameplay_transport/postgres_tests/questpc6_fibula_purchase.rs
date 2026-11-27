@@ -16,3 +16,8 @@ fn questpc6_fibula_purchase_bank_price_exact_key_replay_and_repurchase() -> Test
 fn questpc6_fibula_purchase_full_backpack_rolls_back_bank_fee_and_key() -> TestResult {
     super::qengine_rewards_fixtures::scenario("qengine-rewards-fibula-key-full")
 }
+
+#[test]
+fn questpc6_fibula_simon_donations_buy_exact_key_twice() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-fibula-key-simon")
+}

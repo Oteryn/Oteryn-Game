@@ -36,6 +36,7 @@ use serde::Deserialize;
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
 pub(super) const NAME: &str = "qengine-rewards-questpc4-paradox-full-journey";
+pub(super) const FORFEIT: &str = "qengine-rewards-questpc4-paradox-full-journey-forfeit";
 const QUEST: &str = "oteryn:quest.the_paradox_tower_quest";
 const RIDDLE: &str = "oteryn:quest-progress/quest/u7_24/the_paradox_tower/";
 const TALONS: &str = "oteryn:quest-callback/paradox-tower/talons";
@@ -156,7 +157,7 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
         ))
         .as_slice(),
     ];
-    let mut crops = story::crops()?;
+    let mut crops = story::crops(false)?;
     let start = story::start();
     let expected = |p: Position, ids| ExpectedTile {
         position: (p.x, p.y),
@@ -753,6 +754,7 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
+    forfeit: bool,
 ) -> TestResult {
     let loaded = loader::load_embedded_quest_state("content-1").map_err(debug)?;
     let callbacks = oteryn_gameplay_quests::quest::world_callbacks::load_for(loaded.catalogue())?;
@@ -777,7 +779,10 @@ pub(super) async fn exercise(
         crate::gameplay_transport::quest_log::QuestLogLines::new(log.content)
             .ok_or("Paradox journal bounds")?,
     );
-    let caps = [3, 4, 6, 11, 12, 15, 16, 18];
+    let caps = [
+        3, 4, 6, 11, 12, 15, 16, 18,
+        oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
+    ];
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
             owner.offered_capabilities(),
@@ -828,7 +833,26 @@ pub(super) async fn exercise(
     );
     riddle(owner, admitted, h).await?;
 
+    // The middle approach to the chests forfeits Talons. Approach from the
+    // west before choosing whether to step on the Talon forfeiture tile.
+    tower::walk(owner, admitted, pos(32476, 31905, -1)).await?;
+    tower::walk(owner, admitted, pos(32476, 31901, -1)).await?;
     tower::walk(owner, admitted, pos(32478, 31901, -1)).await?;
+    let marker = format!("{RIDDLE}reward/talon");
+    assert!(matches!(track(h, &marker).await?, None | Some(-1 | 0)));
+    if forfeit {
+        let before = carried(owner, admitted, h).await?;
+        tower::walk(owner, admitted, pos(32478, 31902, -1)).await?;
+        assert_eq!(track(h, &marker).await?, Some(1), "AID 50310 forfeits talons");
+        tower::walk(owner, admitted, pos(32478, 31901, -1)).await?;
+        owner.clock_origin = owner.clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("reward clock")?;
+        assert_eq!(use_wire(owner, admitted, CHEST, 2).await?, UseDisposition::Rejected);
+        assert_eq!(carried(owner, admitted, h).await?, before);
+        assert!(!completed(h).await?);
+        return Ok(());
+    }
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))

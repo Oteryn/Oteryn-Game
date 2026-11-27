@@ -11,15 +11,6 @@
       ]
     },
     {
-      "npc": "oteryn:npc.melchior",
-      "greet": "Welcome, traveler. Is there something you wish to learn?",
-      "farewell": "Farewell.",
-      "walkaway": "Farewell.",
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/melchior.lua:51-55"
-      ]
-    },
-    {
       "npc": "oteryn:npc.one_eyed_joe",
       "greet": "Mind the noises from the caves. They have been getting stranger lately.",
       "farewell": "Farewell.",

@@ -654,23 +654,25 @@ fn global_parity_creature_resistance_precedes_armor_and_mitigation() {
     });
     let constants = AttackConstants::checked_in().unwrap();
     let root = GameplayDecisionRoot::from_bytes([3; 32]);
-    let reduce = |damage, blocked, armor| {
-        oteryn_gameplay_combat_rules::resolution::creature_mitigated(
+    let reduce = |damage, blocked: bool, armor| {
+        oteryn_gameplay_combat_rules::resolution::swing_mitigated_with_block(
             &root,
             constants,
             [1; 16],
             ([2; 16], 1),
             0,
             damage,
-            blocked,
-            0,
+            blocked.then_some((0, 0)),
             armor,
         )
     };
     // 200 -> 100 after resistance -> 99 after armor -> 89 after mitigation.
     assert_eq!(
         drain::creature_melee_damage(&policy, 200, false, 2, reduce),
-        Some((99, 89)),
+        Some((
+            oteryn_gameplay_progression::hit_training::HitBlock::Unblocked,
+            89
+        )),
     );
 }
 
@@ -704,6 +706,7 @@ fn global_parity_legacy_fight_mode_messages_leave_swing_damage_unchanged() {
             weapon: SwingWeapon::Melee {
                 attack: 50,
                 skill: MeleeSkill::Sword,
+                elemental: None,
             },
             item_key: None,
             ranged: None,
@@ -726,6 +729,7 @@ fn global_parity_legacy_fight_mode_messages_leave_swing_damage_unchanged() {
             constants,
             &GameplayDecisionRoot::from_bytes([3; 32]),
             &EquippedOffence::default(),
+            false,
         )
         .unwrap()
     };

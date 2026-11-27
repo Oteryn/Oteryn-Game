@@ -150,7 +150,7 @@ def expected(root=ROOT):
                    "requires_premium": recipe["requirements"]["premium"],
                    "minimum_level": recipe["requirements"]["min_level"],
                    "journal": {"name": definition["display_name"], "objectives": [s["objective"] for s in stages]},
-                   "runtime_enabled": key in {"fire_from_the_earth", "fury_gates", "grimvale", "hive_outpost", "kingsday", "insectoid_invasion"},
+                   "runtime_enabled": key in {"fire_from_the_earth", "fury_gates", "grimvale", "hive_born", "hive_outpost", "kingsday", "insectoid_invasion"},
                    "phase_track": track(key), "tracks": [], "world_callbacks": [],
                    "npc_callbacks": [], "counters": [], "stage_bindings": {},
                    "completion": {"callbacks": [], "counter_track": None, "counter_target": None},
@@ -250,16 +250,10 @@ def expected(root=ROOT):
 
     p = programs["hive_born"]
     progress, active = kills(p, ["crawler", "spidris", "spidris_elite", "kollos"],
-                             10, ["s5"], [33430, 33630, 31150, 31320, 0, 14])
-    npc(p, "ask", "orockle", "hive defence", (-1, 0), 1, ["s1"])
-    npc(p, "permit", "orockle", "personal scent", (1, 1), 3, ["s2", "s3"], participants=[{
-        "quest": "oteryn:quest.hive_native_shared", "storage": [], "state_ops": [{
-            "track": "oteryn:quest-progress/hive/favour",
-            "from": {"kind": "between", "minimum": 50, "maximum": I64_MAX},
-            "effect": {"kind": "add", "value": -50},
-        }],
-    }])
-    world(p, "eastern-inner", position(33599, 31228, 1), 12854, (3, 3), 4, ["s4"],
+                             10, ["s5"], [33430, 33550, 31150, 31230, 0, 14])
+    # Observe the existing seven-day Orockle permit at the inner checkpoints.
+    # The personal route shares the live gates and never charges a second payment.
+    world(p, "eastern-inner", position(33599, 31228, 1), 12854, (0, 0), 4, ["s1", "s2", "s3", "s4"],
           trigger="step_in", writes=[state(active, 0, 0, 1)])
     world(p, "western-inner", position(33494, 31197, 1), 13038, (4, 4), 7, ["s6", "s7"],
           trigger="step_in", guards=[state(progress, 10, 10, 10, preserve=True)],

@@ -28,6 +28,11 @@ fn engitem_goblin_corpse_sampling_is_source_bound_fresh_and_replayed() -> f::Tes
     run(2)
 }
 
+#[test]
+fn engitem_explorer_society_sampling_retires_the_exact_corpse() -> f::TestResult {
+    run(3)
+}
+
 fn run(mode: u8) -> f::TestResult {
     let Some(admin) = f::configured_admin() else {
         return Ok(());
@@ -59,13 +64,24 @@ fn run(mode: u8) -> f::TestResult {
 }
 
 async fn exercise(h: &f::Harness, mode: u8) -> f::TestResult {
-    let callback: RewardCallback = serde_json::from_value(serde_json::json!({
+    let mut callback: RewardCallback = serde_json::from_value(serde_json::json!({
         "key":"oteryn:quest-reward/engitem-tool-custody", "quest":"oteryn:quest.engitem_tool_custody",
         "npc":"oteryn:npc.fixture", "keywords":["yes"], "topic":0,"next_topic":0,
         "storage":[{"track":"oteryn:quest-progress/engitem-tool-custody","minimum":0,"maximum":0,"set":1}],
         "take":[],"give":{"item":"oteryn:item.tibia.i17673","count":1,"contents":[],"additional":[{"item":"oteryn:item.tibia.i17670","count":1},{"item":"oteryn:item.tibia.i17674","count":1},{"item":"oteryn:item.tibia.i17669","count":1}]},
         "outfit":null,"achievement":null,"reply":["Granted."],"sources":["engine fixture"]
     }))?;
+    let explorer = if mode == 3 {
+        let sample = reward_callbacks::load()?.into_iter()
+            .find(|c| c.key == "oteryn:quest-reward/explorer-society/collect/ectoplasm")
+            .ok_or("ectoplasm callback")?;
+        let tool = sample.take.first().ok_or("ectoplasm tool")?;
+        let setup = callback.give.as_mut().ok_or("fixture grant")?;
+        setup.additional.push(tool.clone());
+        Some(sample)
+    } else {
+        None
+    };
     let catalogue = Arc::new(
         QuestStateCatalogue::new(
             "content-1",
@@ -162,7 +178,9 @@ async fn exercise(h: &f::Harness, mode: u8) -> f::TestResult {
         expected,
         "exact replay never remints either tool"
     );
-    if mode == 1 {
+    if let Some(sample) = explorer {
+        corpse::explorer_sample(h, &authority, &pin, native, sample).await?;
+    } else if mode == 1 {
         capture::capture(h, &authority, &pin, native).await?;
     } else if mode == 2 {
         corpse::sample(h, &authority, &pin, native).await?;

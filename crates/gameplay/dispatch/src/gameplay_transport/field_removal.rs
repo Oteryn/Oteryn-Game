@@ -13,7 +13,21 @@ fn is_machete(key: &str) -> bool {
     matches!(
         oteryn_gameplay_world::terrain_tools::TerrainTool::from_production_key(key),
         Some(oteryn_gameplay_world::terrain_tools::TerrainTool::Machete)
-    ) || matches!(key, "oteryn:item.tibia.i9596" | "oteryn:item.tibia.i9598")
+    ) || is_agent_tool(key)
+}
+
+fn is_agent_tool(key: &str) -> bool {
+    matches!(
+        key,
+        "oteryn:item.tibia.i9594" | "oteryn:item.tibia.i9596" | "oteryn:item.tibia.i9598"
+    )
+}
+
+enum FieldUse {
+    Declined,
+    OutOfReach,
+    Removed,
+    Jam,
 }
 
 #[derive(Debug)]
@@ -47,15 +61,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         target: Option<super::item_view::ItemKey>,
     ) -> Option<Option<super::connection::UseOutcome>> {
         use super::item_view::ItemKey;
-        use oteryn_protocol_oteryn::world_object::UseDisposition;
+        use oteryn_protocol_oteryn::world_object::{UseDisposition, UseTarget};
         if intent.use_with_position.is_some()
             || intent.use_with.is_some()
             || intent.use_with_map_item.is_none()
         {
             return None;
         }
-        let Some(ItemKey::Instance(tool)) = source else {
-            return None;
+        let hotkey = match (&intent.target, source) {
+            (UseTarget::ItemByDefinition(definition), _) => Some(*definition),
+            (UseTarget::Item(_), Some(ItemKey::Instance(_))) => None,
+            _ => return None,
         };
         let fence = command.item_fence?;
         // Tool classification reads the durable inventory too. Serialize it with
@@ -68,6 +84,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
             .ok()?;
+        let tool = if let Some(definition) = hotkey {
+            use crate::durability::item_mint::TypedDefinitionRef;
+            let runtime = self.runtime.lock().await;
+            let index = super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
+            let (key, revision) = index.definition_at(definition)?;
+            if !is_agent_tool(key) {
+                return None;
+            }
+            inventory
+                .first_unreserved(
+                    &TypedDefinitionRef {
+                        family: "Item".into(),
+                        production_key: key.into(),
+                        revision_ref: revision.into(),
+                    },
+                    &[],
+                )
+                .ok()?
+        } else {
+            let Some(ItemKey::Instance(tool)) = source else {
+                return None;
+            };
+            tool
+        };
         let bag = inventory.backpack.as_ref()?;
         let carried = bag
             .entries
@@ -79,10 +119,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !is_machete(&tool_item.item.definition.production_key) {
             return None;
         }
-        let binding: [u8; 32] = Sha256::digest(
-            oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).ok()?,
-        )
-        .into();
+        let encoded = oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).ok()?;
+        let binding: [u8; 32] = Sha256::digest(&encoded).into();
         let refused = || {
             Some(Some(super::connection::UseOutcome {
                 disposition: UseDisposition::TargetIllegal,
@@ -113,44 +151,62 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
-        if states.is_dead(actor)
-            || !states.spell_idle(&runtime, actor, command.game_session_id)
-            || !runtime
+        let field_ready = !states.is_dead(actor)
+            && states.spell_idle(&runtime, actor, command.game_session_id)
+            && runtime
                 .player_control_facts(actor, command.game_session_id)
-                .is_ok_and(|facts| facts.control_loss.is_none())
-        {
-            return refused();
-        }
-        let Some(room) = self.rooms().gate_field_step_ingress() else {
-            return refused();
-        };
+                .is_ok_and(|facts| facts.control_loss.is_none());
+        let room = self.rooms().gate_field_step_ingress();
         let Ok(position) = runtime.read_actor_position(actor) else {
             return refused();
         };
         let Ok(pass) = self.root.try_issue_semantic_pass() else {
             return Some(None);
         };
-        let mut context = (self, &runtime, &mut permit, false);
+        let mut context = (
+            self,
+            &runtime,
+            &mut permit,
+            false,
+            tool_item.item.definition.production_key.as_str(),
+        );
         let result = pass.run_with_context(&mut context,|holder,deadline,context|Box::pin(async move {
-            let (owner,runtime,permit,committing)=context;
+            let (owner,runtime,permit,committing,key)=context;
             let mut tx=storage::begin_spell_owner_transaction(holder,deadline).await?;
             let replay:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_field_removals WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND character_id=encode($3,'hex')::uuid AND tool_item_instance_id=encode($4,'hex')::uuid AND intent_binding=$5)").bind(command.game_session_id.as_bytes().as_slice()).bind(command.command_id.to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(tool.as_slice()).bind(binding.as_slice()).fetch_one(&mut *tx).await?;
-            if replay {tx.rollback().await?;return Ok(true)}
-            let wanted = if let Some(ItemKey::Instance(item))=target {
-                let bytes:Option<Vec<u8>>=sqlx::query_scalar("SELECT spatial_position FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND channel_id=encode($3,'hex')::uuid")
+            if replay {tx.rollback().await?;return Ok(FieldUse::Removed)}
+            let field_definition = |key: &str, revision: &str| {
+                matches!(key, "oteryn:item.tibia.i2130" | "oteryn:item.tibia.i3635" | "oteryn:item.tibia.i30224")
+                    && native.item_policy(key, revision).is_some()
+            };
+            let (wanted, field) = if let Some(ItemKey::Instance(item))=target {
+                let ground:Option<(Vec<u8>, String, String)>=sqlx::query_as("SELECT g.spatial_position,i.definition_production_key,i.definition_revision_ref FROM game_item_ground_locations g JOIN game_item_instances i USING (item_instance_id,world_id) WHERE g.item_instance_id=encode($1,'hex')::uuid AND g.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid")
                     .bind(item.as_slice()).bind(runtime.binding().world_id().as_bytes().as_slice()).bind(runtime.binding().channel_id().ok_or(crate::durability::DurabilityError::Unavailable)?.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-                let decoded=crate::durability::spell_items_abi::decode_ground_cell(bytes.as_deref().ok_or(crate::durability::DurabilityError::Unavailable)?)
+                let (bytes, key, revision) = ground.ok_or(crate::durability::DurabilityError::Unavailable)?;
+                let decoded=crate::durability::spell_items_abi::decode_ground_cell(&bytes)
                     .map_err(|_|crate::durability::DurabilityError::Unavailable)?;
-                crate::foundation::MovementLocalPosition{x:decoded.x,y:decoded.y,floor:i16::try_from(decoded.z).map_err(|_|crate::durability::DurabilityError::Unavailable)?}
-            } else { return Ok(false) };
+                (crate::foundation::MovementLocalPosition{x:decoded.x,y:decoded.y,floor:i16::try_from(decoded.z).map_err(|_|crate::durability::DurabilityError::Unavailable)?}, field_definition(&key, &revision))
+            } else { return Ok(FieldUse::Declined) };
             let from=position.position();
-            if from.floor != wanted.floor || from.x.abs_diff(wanted.x)>1 || from.y.abs_diff(wanted.y)>1 { return Ok(false) }
+            if !field {
+                return Ok(FieldUse::Declined);
+            }
+            // Room readiness belongs to field removal. A landed corpse or
+            // another Ground item must still reach its own interaction owner.
+            let room = room.filter(|_| field_ready).ok_or(crate::durability::DurabilityError::Unavailable)?;
+            if from.floor != wanted.floor || from.x.abs_diff(wanted.x)>1 || from.y.abs_diff(wanted.y)>1 {
+                return Ok(FieldUse::OutOfReach);
+            }
             let address=SpellGroundTarget::for_native_tile_read(room,runtime,wanted).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let read=storage::read_standing_player_tile_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,native.source_digest(),&address).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let item=if let Some(ItemKey::Instance(item))=target {
                 read.items().iter().find(|row|row.item_instance_id==item)
             } else { read.items().first() };
-            let Some(item)=item.filter(|row| matches!(row.definition.production_key.as_str(),"oteryn:item.tibia.i2130"|"oteryn:item.tibia.i3635"|"oteryn:item.tibia.i30224") && native.item_policy(&row.definition.production_key,&row.definition.revision_ref).is_some()) else { return Ok(false) };
+            let Some(item)=item.filter(|row| field_definition(&row.definition.production_key, &row.definition.revision_ref)) else { return Ok(FieldUse::Declined) };
+            if super::item_craft::rope::agent_tool_jams(command, key, tool) {
+                tx.rollback().await?;
+                return Ok(FieldUse::Jam);
+            }
             let item=item.item_instance_id;
             crate::durability::field_removal::remove_field_in_transaction(&mut tx,owner.root,&read,item,Some(tool),Some(command.command_id),Some(binding)).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let pending=PendingFieldRemoval{fence,content:native.source_digest(),target:address,item,tool:Some(tool),command:Some(command.command_id),binding:Some(binding)};
@@ -159,28 +215,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             crate::durability::pvp_live::commit_live_pvp_transaction(tx,deadline,&mut window).await?;
             window.install();
             owner.states.loop_ground.invalidate();
-            Ok(true)
+            Ok(FieldUse::Removed)
         })).await;
         match result {
-            Ok(true) => Some(Some(super::connection::UseOutcome {
+            Ok(FieldUse::Jam) => {
+                drop((states, runtime));
+                Some(
+                    self.commit_agent_jam(&permit, command, tool, encoded)
+                        .await
+                        .ok(),
+                )
+            }
+            Ok(FieldUse::Removed) => Some(Some(super::connection::UseOutcome {
                 disposition: UseDisposition::Committed,
                 ..super::connection::UseOutcome::rejected()
             })),
-            // A non-field target must reach the terrain owner (9596 harvests wheat;
-            // 9598 opens the quest cask). mining::dispatch_map_use falls through
-            // only on NothingToUse, so TargetIllegal would hide those uses.
-            Ok(false)
-                if matches!(
-                    tool_item.item.definition.production_key.as_str(),
-                    "oteryn:item.tibia.i9596" | "oteryn:item.tibia.i9598"
-                ) =>
-            {
-                Some(Some(super::connection::UseOutcome {
-                    disposition: UseDisposition::NothingToUse,
-                    ..super::connection::UseOutcome::rejected()
-                }))
+            // Non-field targets retain their skinning, harvest or cask owner.
+            Ok(FieldUse::Declined) if is_agent_tool(&tool_item.item.definition.production_key) => {
+                None
             }
-            Ok(false) => refused(),
+            Ok(FieldUse::Declined | FieldUse::OutOfReach) => refused(),
             Err(_) => {
                 if context.3 {
                     Some(None)

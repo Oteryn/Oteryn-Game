@@ -93,6 +93,9 @@
     "https://tibia.fandom.com/wiki/Steal_From_Thieves_Quest/Spoiler (curid 22844, oldid 1057227): Ahmet mission/yes, Darama oasis box, Quest/yes reward",
     "https://tibia.fandom.com/wiki/Steal_From_Thieves_Quest (curid 20034, oldid 842913): Premium, 100 Brown Mushrooms and 100 gold coins",
     "content/quests/definitions/quests-00200-00299.json#/records/10/definition/oteryn_recipe"
+   ],
+   "failure_reply": [
+    "Come back when you find my bag."
    ]
   }
  ]

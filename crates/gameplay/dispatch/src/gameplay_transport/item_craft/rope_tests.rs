@@ -17,7 +17,7 @@ fn id(n: u8) -> [u8; 16] {
     [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]
 }
 fn index() -> crate::content::item_ref::ItemDefinitionIndex {
-    crate::content::item_ref::ItemDefinitionIndex::decode(br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i2854","definition-r1"],["oteryn:item.tibia.i3003","definition-r1"],["oteryn:item.tibia.i646","definition-r1"]]}"#).unwrap()
+    crate::content::item_ref::ItemDefinitionIndex::decode(br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i2854","definition-r1"],["oteryn:item.tibia.i3003","definition-r1"],["oteryn:item.tibia.i646","definition-r1"],["oteryn:item.tibia.i9594","definition-r1"],["oteryn:item.tibia.i9596","definition-r1"],["oteryn:item.tibia.i9598","definition-r1"]]}"#).unwrap()
 }
 fn inventory() -> crate::durability::item_use::ItemUseInventory {
     use crate::durability::item_transfer::{BackpackEntry, CharacterBackpack, InventoryItem};
@@ -58,12 +58,16 @@ struct Owner {
 }
 impl Owner {
     fn new() -> Self {
+        Self::with_open_level_door(false)
+    }
+
+    fn with_open_level_door(with_door: bool) -> Self {
         use oteryn_world_bundle::sector::{Attrs, Item, Tile};
         use oteryn_world_bundle::writer::{
             self as writer, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
             Terrain, TerrainKind,
         };
-        let manifest = Manifest {
+        let mut manifest = Manifest {
             subareas: Default::default(),
             format: writer::FORMAT.into(),
             min_reader_version: writer::VERSION,
@@ -147,6 +151,40 @@ impl Owner {
             .find(|tile| (tile.x, tile.y) == (10, 11))
             .unwrap()
             .flags = 1;
+        if with_door {
+            manifest.palette.extend([
+                PaletteEntry {
+                    id: 2,
+                    key: "oteryn:item.tibia.i1647".into(),
+                    family: Family::Item,
+                    terrain: None,
+                },
+                PaletteEntry {
+                    id: 3,
+                    key: "oteryn:item.tibia.i1948".into(),
+                    family: Family::Item,
+                    terrain: None,
+                },
+            ]);
+            sectors[0].tiles[0].items.push(Item {
+                palette: 3,
+                depth: 0,
+                attrs: Attrs::default(),
+            });
+            let landing = sectors[1]
+                .tiles
+                .iter_mut()
+                .find(|tile| (tile.x, tile.y) == (10, 11))
+                .unwrap();
+            landing.items.push(Item {
+                palette: 2,
+                depth: 0,
+                attrs: Attrs {
+                    action: Some(1070),
+                    ..Attrs::default()
+                },
+            });
+        }
         let bytes = writer::write(&manifest, &sectors, &Default::default()).unwrap();
         let pins = crate::map::BundlePins {
             digest: writer::read(&bytes).unwrap().digest,
@@ -177,7 +215,20 @@ impl Owner {
             },
             world,
             channel,
-            |_| None,
+            |key| {
+                let (id, door) = match key {
+                    "oteryn:item.tibia.i1647" => (3, true),
+                    "oteryn:item.tibia.i1948" => (4, false),
+                    _ => return None,
+                };
+                Some(crate::map::facts::ItemDefinition {
+                    reference: NonZeroU32::new(id).unwrap(),
+                    solid: Some(false),
+                    pickupable: false,
+                    blocks_projectile: false,
+                    door,
+                })
+            },
         )
         .unwrap();
         let cells = booted.movement_cells(room.movement_cells()).unwrap();
@@ -257,7 +308,7 @@ impl Owner {
             .position()
     }
     fn apply(&self, intent: &UseIntent, target: Option<ItemKey>) -> UseDisposition {
-        rope_in_channel(
+        match rope_in_channel(
             &mut self.runtime.borrow_mut(),
             &mut self.states.borrow_mut(),
             &self.cells,
@@ -272,7 +323,13 @@ impl Owner {
             0,
             SemanticTimeMicros::from_micros(100),
             None,
-        )
+            None,
+            || false,
+        ) {
+            RopeTurn::Refused(disposition) => disposition,
+            RopeTurn::Moved { .. } => UseDisposition::Committed,
+            RopeTurn::Jam | RopeTurn::Hole(_) => panic!("test expects rope-spot ascent"),
+        }
     }
 }
 impl FreshAdmissionAuthority for Owner {
@@ -423,9 +480,15 @@ fn tools_rope_spot_wire_dispatch_moves_and_emits_spatial_delta() -> TestResult {
             use crate::gameplay_transport::capabilities::{
                 OfferedCapability, SelectedCapabilities,
             };
-            for (selected_tool_capability, use_handle) in
-                [(true, false), (true, true), (false, false)]
-            {
+            for (selected_tool_capability, use_handle, tool_id, tool_index) in [
+                (true, false, 3003, 2),
+                (true, true, 3003, 2),
+                (false, false, 3003, 2),
+                (true, false, 646, 3),
+                (true, false, 9594, 4),
+                (true, true, 9596, 5),
+                (true, false, 9598, 6),
+            ] {
                 let owner = Owner::new();
                 let offered = [
                     OfferedCapability {
@@ -467,6 +530,17 @@ fn tools_rope_spot_wire_dispatch_moves_and_emits_spatial_delta() -> TestResult {
                     },
                 };
                 let mut intent = owner.intent(10, 0);
+                owner
+                    .inventory
+                    .borrow_mut()
+                    .backpack
+                    .as_mut()
+                    .unwrap()
+                    .entries[0]
+                    .item
+                    .definition
+                    .production_key = format!("oteryn:item.tibia.i{tool_id}");
+                intent.target = UseTarget::ItemByDefinition(NonZeroU32::new(tool_index).unwrap());
                 if use_handle {
                     // Snapshot allocation: main backpack first, then its one rope entry.
                     intent.target = UseTarget::Item(NonZeroU64::new(2).unwrap());
@@ -675,9 +749,11 @@ fn tools_rope_spot_hidden_target_epoch_and_pz_landing() {
             None,
             0,
             now,
-            Some(&overlay)
+            Some(&overlay),
+            None,
+            || false,
         ),
-        UseDisposition::StaleState
+        RopeTurn::Refused(UseDisposition::StaleState)
     );
     let mut handled = intent;
     handled.use_with_map_item = Some(MapUseTarget::Item(NonZeroU64::new(9).unwrap()));
@@ -697,9 +773,11 @@ fn tools_rope_spot_hidden_target_epoch_and_pz_landing() {
             Some(key),
             0,
             now,
-            None
+            None,
+            None,
+            || false,
         ),
-        UseDisposition::StaleState
+        RopeTurn::Refused(UseDisposition::StaleState)
     );
     assert_eq!(runtime.read_actor_position(owner.actor).unwrap(), before);
     assert!(
@@ -731,4 +809,64 @@ fn tools_rope_spot_hidden_target_epoch_and_pz_landing() {
             floor: 7
         }
     );
+}
+
+#[test]
+fn rope_and_ladder_skip_an_open_level_door_for_an_unqualified_player() {
+    use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+    use crate::foundation::SourceStepCommitProof;
+    use crate::map::boot::BundleCollisionIndexExt;
+    use crate::map::door::DoorEntryRequirement;
+    use crate::map::floor::{
+        CellBlocker, LadderTarget, prepare_bundle_ladder, prepare_bundle_rope,
+    };
+
+    struct Level(u32);
+    impl CellBlocker for Level {
+        fn blocks(&self, _: LogicalCell) -> bool {
+            false
+        }
+        fn admits_door_entry(&self, requirement: DoorEntryRequirement) -> bool {
+            matches!(requirement, DoorEntryRequirement::Level(minimum) if self.0 >= minimum)
+        }
+    }
+    let owner = Owner::with_open_level_door(true);
+    let runtime = owner.runtime.borrow();
+    let source = runtime.read_actor_position(owner.actor).unwrap();
+    let NativeMovementCollisionIndex::Bundle(collision) = owner.cells.index() else {
+        panic!("fixture must use the active bundle");
+    };
+    let spot = LogicalCell { x: 10, y: 10, z: 8 };
+    let key = oteryn_world_bundle::bundle::placement_key(-8, 10, 10, 1).unwrap();
+    let ladder = LadderTarget::Base { key, revision: 0 };
+    for (level, y) in [(69, 9), (70, 11)] {
+        let access = Level(level);
+        let rope = prepare_bundle_rope(
+            &runtime,
+            &owner.cells,
+            owner.actor,
+            owner.session,
+            source,
+            spot,
+            false,
+            &access,
+        )
+        .unwrap();
+        let ladder = prepare_bundle_ladder(
+            &runtime,
+            &owner.cells,
+            collision.map(),
+            owner.actor,
+            owner.session,
+            source,
+            spot,
+            ladder,
+            false,
+            &access,
+        )
+        .unwrap();
+        let expected = MovementLocalPosition { x: 10, y, floor: 7 };
+        assert_eq!(rope.parts().2, expected);
+        assert_eq!(ladder.parts().2, expected);
+    }
 }

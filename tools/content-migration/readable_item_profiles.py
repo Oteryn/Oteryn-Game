@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""READ-WRITE-1a: separate Item reading owner from pinned Canary XML.
+"""Bind distance reading from pinned Canary and Crystal Item XML.
 
 Sealed Item shards and materializable admission remain unchanged. Only explicit
 XML leaves (plus Canary parseWriteables' writeable -> readable assignment) are
@@ -19,6 +19,10 @@ SOURCE = "imports/canary/items-xml/items.xml"
 SOURCE_SHA256 = "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
 REVISION = "47dfd51f45280a59a1d3e50ba7edd573d7234446"
 PATH = "content/items/readable-profiles.json"
+CRYSTAL_CAPTURE = "imports/crystalserver/distance-readable-item-facts.json"
+CRYSTAL_REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
+CRYSTAL_XML_SHA256 = "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+CRYSTAL_CAPTURE_SHA256 = "4e1d121ae0e4bf254e1e951ba5957d9022dc2bee48a567f26470e643bbb6299c"
 IDS = {*range(2012, 2018), *range(2021, 2025), 2597, 2598, 2602, 2605,
        6121, 6122, 10322, 12782, 12783}
 FIELDS = {"allowdistread": "distance_read", "readable": "readable",
@@ -71,6 +75,27 @@ def source_facts(raw):
     return result
 
 
+def capture_crystal(raw):
+    if hashlib.sha256(raw).hexdigest() != CRYSTAL_XML_SHA256:
+        raise ValueError("READABLE_CRYSTAL_XML_DIGEST")
+    rows = {}
+    for item in ET.fromstring(raw).findall("item"):
+        if not any(attr.get("key", "").lower() == "allowdistread" and attr.get("value") == "1"
+                   for attr in item.findall("attribute")):
+            continue
+        low = int(item.get("id", item.get("fromid", "0")))
+        high = int(item.get("id", item.get("toid", str(low))))
+        for item_id in range(low, high + 1):
+            if item_id in rows:
+                raise ValueError("READABLE_CRYSTAL_DUPLICATE_ITEM")
+            rows[item_id] = item.attrib["name"]
+    if len(rows) != 164 or not IDS <= rows.keys():
+        raise ValueError("READABLE_CRYSTAL_SOURCE_SET")
+    return {"source": {"path": "data/items/items.xml", "revision": CRYSTAL_REVISION,
+                       "sha256": CRYSTAL_XML_SHA256},
+            "records": [{"id": item_id, "name": rows[item_id]} for item_id in sorted(rows.keys() - IDS)]}
+
+
 def item_rows(root):
     index = json.loads((root / "content/items/index.json").read_bytes())
     return {r["definition"]["identity"]["key"]: r["definition"]
@@ -80,6 +105,12 @@ def item_rows(root):
 
 def outputs(root=ROOT):
     facts = source_facts((root / SOURCE).read_bytes())
+    raw = (root / CRYSTAL_CAPTURE).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != CRYSTAL_CAPTURE_SHA256:
+        raise ValueError("READABLE_CRYSTAL_CAPTURE_DIGEST")
+    crystal = json.loads(raw)
+    facts.update({row["id"]: {"facts": {"distance_read": True}, "name": row["name"]}
+                  for row in crystal["records"]})
     rows = item_rows(root)
     records = []
     for item_id in sorted(facts):
@@ -87,6 +118,8 @@ def outputs(root=ROOT):
         records.append({"item": item["identity"], **facts[item_id]})
     return {PATH: encode({"schema": "OTERYN_READABLE_ITEM_PROFILES/v1",
                           "source": {"path": SOURCE, "revision": REVISION, "sha256": SOURCE_SHA256},
+                          "crystal_source": {**crystal["source"], "capture": CRYSTAL_CAPTURE,
+                                             "capture_sha256": CRYSTAL_CAPTURE_SHA256},
                           "records": records})}
 
 
@@ -150,14 +183,20 @@ def apply_native(root, generated, profile_path, manifest_path, order, canonical)
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--crystal-xml", type=Path, help="refresh the retained Crystal extraction")
     args = parser.parse_args()
+    if args.crystal_xml:
+        if args.check:
+            parser.error("--crystal-xml writes the Crystal extraction")
+        (ROOT / CRYSTAL_CAPTURE).write_bytes(encode(capture_crystal(args.crystal_xml.read_bytes())))
+        return
     for path, raw in outputs().items():
         if args.check:
             if (ROOT / path).read_bytes() != raw:
                 raise SystemExit("READABLE_PROFILE_DRIFT")
         else:
             (ROOT / path).write_bytes(raw)
-    print(f"PASS readable Item profiles={len(IDS)}; admission unchanged")
+    print("PASS readable Item profiles; admission unchanged")
 
 
 if __name__ == "__main__":

@@ -33,7 +33,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let actor = admitted.runtime_actor?;
-        let icons = self.observe_party_skull(admitted).await?;
+        let icons = self.observe_party_skull(admitted).await.ok()?;
         let shield = icons
             .iter()
             .find(|icon| icon.entity.identity == actor.placement_identity())?

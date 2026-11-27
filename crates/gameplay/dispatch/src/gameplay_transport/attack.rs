@@ -278,6 +278,14 @@ pub struct ChannelAttackStates {
 }
 
 impl ChannelAttackStates {
+    #[cfg(test)]
+    pub(super) fn test_creature_blocks(&self, actor: ExactActorRef) -> Option<u8> {
+        self.blocks
+            .iter()
+            .find(|(target, _)| *target == actor)
+            .map(|(_, budget)| budget.blocks())
+    }
+
     pub const fn kills(&self) -> &super::kill_reward::KillSettlementQueue {
         &self.kills
     }
@@ -1077,6 +1085,7 @@ fn swing_draw(
     )
 }
 
+#[cfg(test)]
 #[allow(clippy::too_many_arguments)]
 fn creature_mitigated(
     root: &GameplayDecisionRoot,
@@ -1530,6 +1539,7 @@ mod weapon_tests {
             weapon_of(&[(5, 3264)]),
             Some(SwingWeapon::Melee {
                 attack: 14,
+                elemental: None,
                 skill: MeleeSkill::Sword
             })
         );
@@ -1537,6 +1547,7 @@ mod weapon_tests {
             weapon_of(&[(6, 3286)]),
             Some(SwingWeapon::Melee {
                 attack: 16,
+                elemental: None,
                 skill: MeleeSkill::Club
             })
         );
@@ -1544,6 +1555,7 @@ mod weapon_tests {
             weapon_of(&[(6, 3289)]),
             Some(SwingWeapon::Melee {
                 attack: 22,
+                elemental: None,
                 skill: MeleeSkill::Fist
             })
         );
@@ -1551,6 +1563,7 @@ mod weapon_tests {
             weapon_of(&[(6, 3412), (5, 3264)]),
             Some(SwingWeapon::Melee {
                 attack: 14,
+                elemental: None,
                 skill: MeleeSkill::Sword
             }),
             "a shield is skipped for the other hand"
@@ -1559,6 +1572,7 @@ mod weapon_tests {
             weapon_of(&[(6, 3286), (5, 3264)]),
             Some(SwingWeapon::Melee {
                 attack: 16,
+                elemental: None,
                 skill: MeleeSkill::Club
             }),
             "the left hand is read first"
@@ -1575,6 +1589,7 @@ mod weapon_tests {
             weapon_of(&[(6, 3447), (5, 3264)]),
             Some(SwingWeapon::Melee {
                 attack: 14,
+                elemental: None,
                 skill: MeleeSkill::Sword
             }),
             "ammunition is skipped"

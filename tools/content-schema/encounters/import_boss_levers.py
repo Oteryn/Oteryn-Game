@@ -106,7 +106,7 @@ GALTHEN_CLOSURES = {
         "47896b61cb0b2d1a4f04c72c9330cce5a4e3a885a1069117eeab5cf5150c170a",
         "data-global/monster/bosses/mitmah_vanguard.lua",
         "bb631589f2d316ad907ed3a2fa0bdfacbae29d0fe9ab1909805e39e6c0e8855e",
-        "d9ecdc5e3241798184e8fd5fbd1269b7f4ebe2ba771dabc798e942fb9277a568",
+        "2184b4687acb891810e04276c9d126aa1cb3d7dacfa04ff93e0337feaaf69cbe",
         None,
     ),
 }

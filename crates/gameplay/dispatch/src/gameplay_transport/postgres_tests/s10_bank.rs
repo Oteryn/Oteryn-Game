@@ -12,26 +12,42 @@ use std::sync::Arc;
 
 #[test]
 fn s10_eva_postgres_bank_deposit_and_withdraw() -> TestResult {
+    run_bank_case("eva")
+}
+
+#[test]
+fn crystal_adrian_postgres_bank_deposit_and_withdraw() -> TestResult {
+    run_bank_case("adrian")
+}
+
+#[test]
+fn crystal_flavius_postgres_bank_deposit_and_withdraw() -> TestResult {
+    run_bank_case("flavius")
+}
+
+fn run_bank_case(stem: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(move || scenario(stem).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "S10 bank PostgreSQL thread panicked")??;
     eprintln!(
-        "POSTGRES_CASE_COMPLETED S10 eva_bank duration={:?}",
+        "POSTGRES_CASE_COMPLETED {stem}_bank duration={:?}",
         started.elapsed()
     );
     Ok(())
 }
 
-fn scenario() -> TestResult {
-    run(async |admin| {
+fn scenario(stem: &str) -> TestResult {
+    run(async move |admin| {
         reset();
-        let h = Harness::create_with_admission_seed(admin, "s10_eva_bank", true, false).await?;
+        let h =
+            Harness::create_with_admission_seed(admin, &format!("s10_{stem}_bank"), true, false)
+                .await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -88,7 +104,7 @@ fn scenario() -> TestResult {
                 .place_npcs(
                     &NpcPlacementTable {
                         npcs: vec![NpcPlacements {
-                            key: "oteryn:npc.eva".into(),
+                            key: format!("oteryn:npc.{stem}"),
                             placements: vec![NpcPlacement {
                                 x: u16::try_from(at.x + 1)?,
                                 y: u16::try_from(at.y)?,
@@ -106,7 +122,8 @@ fn scenario() -> TestResult {
                 generation: placed.actors[0].actor_local_generation(),
             }
         };
-        super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 100)]).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 100)])
+            .await?;
         for (command, text) in [(1, "hi"), (2, "deposit 20 gold"), (3, "yes")] {
             super::npc_paid_travel_fixtures::talk(&owner, &deps, npc, command, text).await?;
         }

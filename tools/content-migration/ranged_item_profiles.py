@@ -224,7 +224,7 @@ def resolved_profile(profile, authoring):
     return profile
 
 
-def apply_authoring(root, document):
+def apply_authoring(root, document, *, retained_keys=()):
     """Annotate existing admitted policies; never expand native admission."""
     raw = (root / RANGED_PROFILES).read_bytes()
     if raw != outputs(root)[RANGED_PROFILES]:
@@ -242,7 +242,7 @@ def apply_authoring(root, document):
             raise ValueError("RANGED_PROFILE_TARGET")
     for record in document["records"]:
         key = record["production_binding"]["target"]["key"]
-        if key in profiles:
+        if key in profiles and key not in retained_keys:
             row = rows[key]
             owner = row.get("authoring", {})
             record["authoring"]["ranged"] = resolved_profile(
@@ -250,9 +250,9 @@ def apply_authoring(root, document):
             )
 
 
-def apply_native(root, generated):
+def apply_native(root, generated, *, retained_keys=()):
     document = json.loads(generated[PROFILES])
-    apply_authoring(root, document)
+    apply_authoring(root, document, retained_keys=retained_keys)
     # Match the active provider's compact serialization within its existing 8 MiB bound.
     generated[PROFILES] = encode(document)
     manifest = json.loads(generated[MANIFEST])

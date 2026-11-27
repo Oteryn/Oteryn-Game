@@ -14256,6 +14256,124 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_paint.lua:15-28"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/ice-islands/inukaya-sled-east",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32367,
+            "y": 31058,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 7266
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "teleport": {
+        "x": 32407,
+        "y": 31067,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/ice-islands/inukaya-sled/rides",
+          "minimum": -1,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission06",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3582",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "on_step": true
+      },
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "The sled dogs need a ham for the trip.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/movements_nibelor_dog_led.lua:2-44",
+        "The native ride counter records the atomic Ham debit and the successful sled movement."
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ice-islands/inukaya-sled-west",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32409,
+            "y": 31066,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 7266
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "teleport": {
+        "x": 32365,
+        "y": 31059,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/ice-islands/inukaya-sled/rides",
+          "minimum": -1,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission06",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3582",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "on_step": true
+      },
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "The sled dogs need a ham for the trip.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/movements_nibelor_dog_led.lua:2-44",
+        "The native ride counter records the atomic Ham debit and the successful sled movement."
+      ]
     }
   ]
 }

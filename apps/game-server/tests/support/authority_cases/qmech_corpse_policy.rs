@@ -51,5 +51,38 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .await?;
         assert_eq!(actual, (chain, durations), "source corpse {root}");
     }
+    let packet: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../imports/crystalserver/raid-items-201189f.json"
+    )))?;
+    let native: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../content/items/definitions/spell-native-profiles.json"),
+    )?)?;
+    let records = packet["records"].as_array().ok_or("raid source records")?;
+    let native_records = native["records"].as_array().ok_or("native Item profiles")?;
+    for (id, stages) in [(9607, 4), (10337, 4), (31599, 4), (50029, 3)] {
+        let root = format!("oteryn:item.tibia.i{id}");
+        let (chain, durations): (Vec<i32>, Vec<i64>) = sqlx::query_as(
+            "SELECT game_summer_corpse_chain($1), game_source_corpse_durations_v1($1)",
+        )
+        .bind(&root)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(chain.len(), stages, "{root}");
+        assert_eq!(chain.len(), durations.len(), "{root}");
+        let mut key = Some(root.as_str());
+        for (id, duration) in chain.into_iter().zip(durations) {
+            let expected = format!("oteryn:item.tibia.i{id}");
+            assert_eq!(key, Some(expected.as_str()), "{root}");
+            let row = records.iter().chain(native_records).find(|row| {
+                row["production_definition"]["production_key"] == expected
+            }).ok_or("raid Item")?;
+            let decay = &row["semantics"]["temporal"]["value"];
+            assert_eq!(decay["duration"]["value"].as_i64(), Some(duration));
+            key = decay["decay_target"]["value"]["key"].as_str();
+        }
+        assert_eq!(key, None, "{root}");
+    }
     Ok(())
 }
