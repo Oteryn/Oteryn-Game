@@ -645,10 +645,10 @@ if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "
   docker exec -i "$GP_PG_CONTAINER" psql -Xq -v ON_ERROR_STOP=1 \
     -U game_platform_admin -d "$platform_db" \
     -v core_second="$SECOND_ACCOUNT_ID" -v packet_first="$PACKET_ACCOUNT_ID" \
-    -v packet_second="$SECOND_PACKET_ACCOUNT_ID" <<'SQL_PREMIUM_FIXTURE'
+    -v packet_second="$SECOND_PACKET_ACCOUNT_ID" -v w09="$W09_ACCOUNT" <<'SQL_PREMIUM_FIXTURE'
 WITH accounts AS (
     INSERT INTO premium_authority (account_id)
-    VALUES (:'core_second'::uuid), (:'packet_first'::uuid), (:'packet_second'::uuid)
+    VALUES (:'core_second'::uuid), (:'packet_first'::uuid), (:'packet_second'::uuid), (:'w09'::uuid)
     RETURNING account_id
 ), grants AS (
     INSERT INTO premium_ledger (

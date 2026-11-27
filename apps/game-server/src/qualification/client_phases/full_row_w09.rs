@@ -455,8 +455,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if client.join_snapshot().game_session_id == preparation_session {
         return Err("W09 preparation reused its original session".into());
     }
-    evidence("FIXTURE row=W09.full input=premium");
-    character_prep::grant_premium(&client).await?;
+    evidence("FIXTURE row=W09.full input=platform-premium");
     let level = full_e2ef7::player_level(&mut client).await?;
     let vitals = client.actor_vitals().ok_or("W09 seeded vitals missing")?;
     if (level, vitals.max_health, vitals.max_mana) != (50, 395, 1350) {
