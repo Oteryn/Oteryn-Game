@@ -588,7 +588,7 @@ async fn authored_granter(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     core: &SeamClients<'_>,
-) -> TestResult<(Vec<u8>, String)> {
+) -> TestResult<(Vec<u8>, String, &'static BundleWorld)> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -661,7 +661,70 @@ async fn authored_granter(
     }
     let mut key = world.base().digest().to_vec();
     key.extend_from_slice(&placement.bundle_placement_key.to_be_bytes());
-    Ok((key, ACHIEVEMENT.to_owned()))
+    Ok((key, ACHIEVEMENT.to_owned(), world))
+}
+
+async fn leave_reward_room(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    let portal = TilePos {
+        x: 33236,
+        y: 31655,
+        floor: -13,
+    };
+    let arrival = TilePos {
+        x: 33213,
+        y: 31671,
+        floor: -13,
+    };
+    let from = tile(client.world_spatial().actor_position)?;
+    if world.floors().teleport(portal) != Some(arrival)
+        || !world
+            .base()
+            .tile(from.x, from.y, from.floor)
+            .is_some_and(|tile| tile.no_logout())
+        || !world
+            .base()
+            .tile(arrival.x, arrival.y, arrival.floor)
+            .is_some_and(|tile| !tile.no_logout())
+    {
+        return Err(
+            "P11 authored exit must lead from the reward room to the logout-enabled approach"
+                .into(),
+        );
+    }
+
+    // Global Annihilator Quest: use the teleport east of the rewards. The
+    // captured display and statue require the walk below the display.
+    use StepDirection::{East, North, South};
+    corridor_step(client, East, 33228, 31657).await?;
+    corridor_step(client, South, 33228, 31658).await?;
+    for x in 33229..=33233 {
+        corridor_step(client, East, x, 31658).await?;
+    }
+    corridor_step(client, South, 33233, 31659).await?;
+    corridor_step(client, East, 33234, 31659).await?;
+    let door = TilePos {
+        x: 33235,
+        y: 31659,
+        floor: -13,
+    };
+    let key = crate::map::view::placement_key(door, 1).ok_or("P11 exit door placement missing")?;
+    let mut target = world.base().digest().to_vec();
+    target.extend_from_slice(&key.to_be_bytes());
+    let reply = client.session_mut().use_object(&target, 0).await?;
+    if reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
+        return Err(format!("P11 first exit-door USE failed: {reply:?}").into());
+    }
+
+    for x in 33235..=portal.x {
+        corridor_step(client, East, x, 31659).await?;
+    }
+    for y in (31656..=31658).rev() {
+        corridor_step(client, North, portal.x, y).await?;
+    }
+    corridor_step(client, North, arrival.x, arrival.y).await?;
+    verdict::Harness::global().progress("p11-reward-room-exit");
+    evidence("P11_ROUTE exit_teleport_arrival=33213,31671,13 no_logout=false");
+    Ok(())
 }
 
 async fn prepare_knight(clients: &SeamClients<'_>, index: usize, leader: bool) -> TestResult {
@@ -882,7 +945,7 @@ pub(super) async fn earn_and_logout(
     if bag_count(&client, reward) != Some(0) {
         return Err("P11 reward inventory pre-state must be zero".into());
     }
-    let (placement, achievement) = authored_granter(&mut client, clients, core).await?;
+    let (placement, achievement, world) = authored_granter(&mut client, clients, core).await?;
     if achievement != ACHIEVEMENT {
         return Err(
             format!("P11 expected the authored Annihilator claim, got {achievement}").into(),
@@ -951,6 +1014,7 @@ pub(super) async fn earn_and_logout(
             format!("step=duplicate observed_reply={duplicate_reply:?},duplicate-grant").into(),
         );
     }
+    leave_reward_room(&mut client, world).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(65);
     while client
         .session_mut()
