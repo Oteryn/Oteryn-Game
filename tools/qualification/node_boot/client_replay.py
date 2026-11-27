@@ -73,7 +73,7 @@ def read_verdicts(log):
     for line in log.read_text(errors="replace").splitlines():
         if match := SERVER_ROW.match(line):
             kind, scenario, status = match.groups()
-            if kind == "e2e_capture" and (not scenario.endswith(".client") or status != "CAPTURED"):
+            if kind == "e2e_capture" and (not requires_replay(scenario) or status != "CAPTURED"):
                 continue
             if kind == "e2e_all" and status == "CAPTURED":
                 continue
@@ -146,6 +146,7 @@ def replay_cause(row, package, test, names, captures, server, log):
             [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package,
              "--lib", test, "--", *test_args],
             cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+            env={**os.environ, "E2E_ALL_CAPTURE_DIR": str(captures)},
         )
     except OSError:
         return "replay-not-run"
@@ -169,6 +170,10 @@ def replay_cause(row, package, test, names, captures, server, log):
     return None
 
 
+def requires_replay(scenario):
+    return scenario.endswith(".client") or scenario == "C18a.full"
+
+
 def main(log, batch, validate=False):
     try:
         selected, registered = selected_rows(batch)
@@ -180,18 +185,19 @@ def main(log, batch, validate=False):
     if validate:
         return validate_rows(selected, registered, server_rows)
 
-    rows = sorted(scenario for scenario in selected if scenario.endswith(".client"))
+    rows = sorted(scenario for scenario in selected if requires_replay(scenario))
     if not rows:
         return 0
     captures = Path(os.environ["E2E_ALL_CAPTURE_DIR"])
     targets = replay_targets()
     failed = False
     for scenario in rows:
-        row = scenario.removesuffix(".client")
+        row = scenario.rsplit(".", 1)[0]
         module = f"e2e_{row.lower()}"
         matches = targets.get(module, [])
         package, test, names = matches[0] if len(matches) == 1 else (None, module, set())
-        cause = replay_cause(row, package, test, names, captures, server_rows.get(scenario), log)
+        capture_root = captures / scenario if scenario == "C18a.full" else captures
+        cause = replay_cause(row, package, test, names, capture_root, server_rows.get(scenario), log)
         verdict = f"FAIL cause={cause}" if cause else "PASS"
         print(f"SEAM_EVIDENCE e2e_all scenario={scenario} replay={test} status={verdict}")
         failed |= cause is not None

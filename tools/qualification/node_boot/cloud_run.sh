@@ -57,7 +57,7 @@ summarize() {
       printf "%s|%s|%s\n", row, verdict, reason
     }
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=[[:alnum:]_.-]+\.client$/ && $4 ~ /^replay=[[:alnum:]_]+$/ &&
+      $3 ~ /^scenario=([[:alnum:]_.-]+\.client|C18a\.full)$/ && $4 ~ /^replay=[[:alnum:]_]+$/ &&
       $5 ~ /^status=(PASS|FAIL)$/ {
       reason = ($6 ~ /^cause=(capture-missing|replay-not-run|replay-failed|server-failed)$/ ? substr($6, 7) : "")
       printf "%s|%s|%s\n", substr($3, 10), substr($5, 8), reason
@@ -81,7 +81,7 @@ summarize() {
     }' < "$log"; then
     result=NODE_BOOT_FAIL
   fi
-  if [[ "$result" == NODE_BOOT_PASS ]] && grep -qE '^[^|]+\.client\|FAIL\|' <<< "$rows"; then
+  if [[ "$result" == NODE_BOOT_PASS ]] && grep -qE '^([^|]+\.client|C18a\.full)\|FAIL\|' <<< "$rows"; then
     result=NODE_BOOT_FAIL
   fi
   grep -aE '^NODE_BOOT_PORTS ([A-Z_]+=[0-9]+ ?)+$' "$log" | sort -u || true

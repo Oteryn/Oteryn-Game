@@ -1973,7 +1973,14 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(108) {
                 verdict::indexed("C18a.client", async {
-                    client_row_c18a::run_packet(clients).await;
+                    client_row_c18a::run_packet(clients, "C18a.client").await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(306) {
+                verdict::indexed("C18a.full", async {
+                    client_row_c18a::run_packet(clients, "C18a.full").await;
                     release_row_characters(clients).await
                 })
                 .await;

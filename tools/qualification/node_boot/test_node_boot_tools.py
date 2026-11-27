@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Tests for the node boot knobs, stack reuse, PostgreSQL observability, failure summary and timeline."""
 from pathlib import Path
+import contextlib
 import importlib.util
+import io
 import json
 import os
 import re
@@ -325,7 +327,7 @@ WORK=.
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 33)
+        self.assertEqual(len(accounts), 34)
         self.assertEqual(len(set(accounts)), len(accounts))
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 
@@ -703,6 +705,21 @@ class CloudRunSummaryTests(unittest.TestCase):
                 self.assertIsNotNone(replay.SERVER_ROW.match(
                     f'SEAM_EVIDENCE e2e_all scenario={scenario} status=PASS'
                 ))
+
+    def test_c18a_full_requires_its_own_replay_capture(self):
+        replay = load('client_replay')
+        with tempfile.TemporaryDirectory() as tmp:
+            captures = Path(tmp, 'captures')
+            captures.mkdir()
+            log = Path(tmp, 'rows.log')
+            line = 'SEAM_EVIDENCE e2e_capture scenario=C18a.full status=CAPTURED'
+            log.write_text(line + '\n')
+            with patch.dict(os.environ, {'E2E_ALL_CAPTURE_DIR': str(captures)}):
+                self.assertEqual(replay.main(log, '306:1', validate=True), 0)
+                with contextlib.redirect_stdout(io.StringIO()) as out:
+                    self.assertEqual(replay.main(log, '306:1'), 1)
+                self.assertIn('scenario=C18a.full', out.getvalue())
+                self.assertIn('cause=capture-missing', out.getvalue())
 
     def test_legacy_greet_ten_selector_requires_one_verdict(self):
         replay = load('client_replay')

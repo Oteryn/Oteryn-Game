@@ -30,18 +30,18 @@ const RAT_TILE: TilePos = TilePos {
 };
 const WORDS: &str = "exevo infir flam hur";
 
-pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::observe(capture(clients)).await {
-        Ok(()) => evidence(
-            "SEAM_EVIDENCE e2e_capture scenario=C18a.client status=CAPTURED evidence=live-client-directional-cast",
-        ),
+pub(super) async fn run_packet(clients: &SeamClients<'_>, scenario: &str) {
+    match verdict::observe(capture(clients, scenario)).await {
+        Ok(()) => evidence(&format!(
+            "SEAM_EVIDENCE e2e_capture scenario={scenario} status=CAPTURED evidence=live-client-directional-cast",
+        )),
         Err(error) => evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=C18a.client status=FAIL evidence={error}"
+            "SEAM_EVIDENCE e2e_all scenario={scenario} status=FAIL evidence={error}"
         )),
     }
 }
 
-async fn capture(clients: &SeamClients<'_>) -> TestResult {
+async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     let wrapper = oteryn_dev_client::qualification_runner_identity()?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -102,12 +102,16 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             })
         })
         .collect();
-    let dedicated =
-        character_prep::dedicated_character(clients, "NODE_BOOT_Q_C18A_ACCOUNT").await?;
+    let account = if scenario == "C18a.full" {
+        "NODE_BOOT_Q_C18A_FULL_ACCOUNT"
+    } else {
+        "NODE_BOOT_Q_C18A_ACCOUNT"
+    };
+    let dedicated = character_prep::dedicated_character(clients, account).await?;
     let scoped = dedicated.clients(clients);
     let clients = &scoped;
     character_prep::declare_seeded(
-        "C18a.client",
+        scenario,
         "level 15 Sorcerer and one blank rune",
         "A real soul debit makes the fresh-admission check discriminate a reset",
     );
@@ -203,6 +207,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     walk_path(
         &mut client,
         world,
+        &spawn_cells,
         approach,
         approach_goal,
         None,
@@ -253,6 +258,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     walk_path(
         &mut client,
         world,
+        &spawn_cells,
         &[last_step],
         CAST_TILE,
         None,
@@ -297,14 +303,18 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             client.service_liveness(Duration::from_millis(500)).await?;
             continue;
         }
-        let turn = client
-            .session_mut()
-            .gated_command(
+        let turn_id = client.next_command_id();
+        let turn_before = client.last_server_sequence();
+        let (turn, mut turn_capture) = oteryn_dev_client::capture_qualification_exchange(
+            client.session_mut().gated_command(
                 target_move::CAPABILITY_TARGET_MOVE_V1,
                 target_move::COMMAND_TYPE_TARGET_MOVE_INTENT,
                 &intent,
             )
-            .await?;
+        ).await;
+        let turn = turn?;
+        let turn_reply = turn.server_sequence;
+        evidence(&format!("c18a_turn command={turn_id} before={turn_before} reply={turn_reply}"));
         require_mechanic_acceptance(turn.status, "C18a turn away from the selected Rat")?;
         if turn.payload != [8, 1] {
             return Err("C18a turn away from the selected Rat was refused".into());
@@ -346,14 +356,23 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
                             "C18a selected Rat was damaged before Scorch: health={health_percent}"
                         ).into());
                     }
+                    trace_turn_frames(&turn_capture.inbound, own.entity, client.selected_capabilities()).await?;
                     aim = Some((own.entity, selected.position, health_percent));
                 }
                 break;
             }
             if tokio::time::Instant::now() >= deadline {
-                return Err("C18a did not observe the caster facing away from the selected Rat".into());
+                trace_turn_frames(&turn_capture.inbound, own.entity, client.selected_capabilities()).await?;
+                return Err(format!(
+                    "C18a TURN direction unobserved: command={turn_id} reply={turn_reply} last_frame={} expected={facing:?} actual={:?}",
+                    client.last_server_sequence(), actor_state(own.detail)
+                ).into());
             }
-            client.service_liveness(Duration::from_millis(20)).await?;
+            let (result, slice) = oteryn_dev_client::capture_qualification_exchange(
+                client.service_liveness(Duration::from_millis(20))
+            ).await;
+            turn_capture.inbound.extend_from_slice(&slice.inbound);
+            result?;
         }
         if aim.is_some() {
             break;
@@ -561,6 +580,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     walk_path(
         &mut client,
         world,
+        &spawn_cells,
         retreat,
         rest,
         Some(&mut observation),
@@ -697,7 +717,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
 
-    let root = std::path::PathBuf::from(required("E2E_ALL_CAPTURE_DIR")?);
+    let mut root = std::path::PathBuf::from(required("E2E_ALL_CAPTURE_DIR")?);
+    if scenario == "C18a.full" {
+        root.push("C18a.full");
+        std::fs::create_dir(&root)?;
+    }
     std::fs::write(
         root.join("c18a-exchange.bin"),
         &exchange.inbound[..cast_exchange_len],
@@ -741,6 +765,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         serde_json::to_vec(&serde_json::json!({
             "game_session_id": session,
             "capture_device": capture_dir.dev(),
+            "scenario": scenario,
             "capture_inode": capture_dir.ino(),
             "spell": spell.get(),
             "damage": damage_value,
@@ -788,6 +813,41 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     evidence(&format!(
         "SEAM_EVIDENCE c18a_capture_binding directory={capture_name} session={session}"
     ));
+    Ok(())
+}
+
+async fn trace_turn_frames(
+    mut inbound: &[u8],
+    caster: oteryn_dev_client::EntityRef,
+    capabilities: &[u32],
+) -> TestResult {
+    use oteryn_protocol_oteryn::{MessageType, decode_state_delta, decode_wire_envelope};
+    use oteryn_protocol_oteryn::world_spatial_entities as entities;
+    while !inbound.is_empty() {
+        let frame = oteryn_dev_client::native_session::read_frame(&mut inbound).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        let sequence = envelope.server_sequence();
+        let kind = envelope.message_type();
+        if kind != MessageType::StateDelta {
+            evidence(&format!("c18a_turn_frame sequence={sequence} kind={kind:?}"));
+            continue;
+        }
+        let delta = decode_state_delta(envelope.payload())?;
+        evidence(&format!("c18a_turn_frame sequence={sequence} domain={} delta={}", delta.domain_id, delta.delta_type));
+        if (delta.domain_id, delta.delta_type) == (
+            oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            entities::DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+        ) {
+            let (changes, _, _) = entities::decode_world_spatial_entities_delta_with_sidecar(
+                delta.payload, entities::EntityFields::selected(capabilities),
+            ).map_err(|error| format!("C18a TURN entity frame {sequence} cannot decode: {error:?}"))?;
+            let own = changes.enter.iter().chain(&changes.update)
+                .find(|entry| entry.entity == caster);
+            evidence(&format!(
+                "c18a_turn_entity_frame sequence={sequence} caster={caster:?} own={own:?}"
+            ));
+        }
+    }
     Ok(())
 }
 
@@ -918,24 +978,47 @@ async fn walk_once(
     clock: Option<&mut (u64, Vec<u8>)>,
 ) -> TestResult {
     let path = fixed_cast_route(client, world, spawn_cells, goal)?;
-    walk_path(client, world, &path, goal, None, clock).await
+    walk_path(client, world, spawn_cells, &path, goal, None, clock).await
 }
 
 async fn walk_path(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
+    spawn_cells: &std::collections::BTreeSet<TilePos>,
     path: &[StepDirection],
     goal: TilePos,
     mut vitals: Option<&mut CastObservation>,
     mut clock: Option<&mut (u64, Vec<u8>)>,
 ) -> TestResult {
     let started = tokio::time::Instant::now();
-    for (index, &direction) in path.iter().enumerate() {
+    let mut path = VecDeque::from(path.to_vec());
+    let mut detours = 0;
+    let mut index = 0;
+    while let Some(direction) = path.pop_front() {
         let from = tile(client.world_spatial().actor_position)?;
         let expected =
             destination(world, from, direction).ok_or("C18a route lost its planned landing")?;
-        wait_for_walk_tile(client, expected, vitals.as_deref_mut(), clock.as_deref_mut())
-            .await?;
+        let entities = client.world_entities().ok_or("C18a walk tile occupancy unavailable")?;
+        let occupied: BTreeMap<_, _> = entities.iter()
+            .filter(|entity| &entity.entity.identity != entities.own_identity()
+                && actor_state(entity.detail).is_some())
+            .filter_map(|entity| tile(entity.position).ok().map(|at| (at, entity.entity)))
+            .collect();
+        if detours < 8
+            && let Some(blocker) = occupied.get(&expected)
+            && let Some(detour) = route_avoiding(world, from, |at| at == goal, |at| {
+                !occupied.contains_key(&at)
+                    && !spawn_cells.contains(&at)
+                    && (vitals.is_none() || world.base().tile(at.x, at.y, at.floor)
+                        .is_some_and(|tile| !tile.protection_zone()))
+            })
+        {
+            detours += 1;
+            evidence(&format!("c18a_walk_detour attempt={detours} from={from:?} blocked={expected:?} blocker={blocker:?} goal={goal:?} route={detour:?}"));
+            path = detour.into();
+            continue;
+        }
+        wait_for_walk_tile(client, expected, vitals.as_deref_mut(), clock.as_deref_mut()).await?;
         let command = client.next_command_id();
         let frame_before = client.last_server_sequence();
         let trace_boundary = matches!(command, 209 | 210);
@@ -986,6 +1069,7 @@ async fn walk_path(
                 .collect();
             return Err(format!("C18a first step failed: from={from:?} direction={direction:?} expected={expected:?} actual={actual:?} outcome={outcome:?} observed_destination_occupants={occupants:?}").into());
         }
+        index += 1;
         verdict::Harness::global().progress("walk");
         collect_events(client, vitals.as_deref_mut(), clock.as_deref_mut())?;
         if outcome.step_wait_ms != 0 {

@@ -256,6 +256,7 @@ struct Envelope {
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Proof {
+    scenario: String,
     wrapper: String,
     regeneration: Vec<(u64, u32, u32, u64)>,
     capture_device: u64,
@@ -512,20 +513,27 @@ fn verify_capture_directory(root: &std::path::Path, proof: &Proof) -> Result<(),
         "SEAM_EVIDENCE c18a_capture_binding directory={name} session={}",
         proof.game_session_id
     );
-    let log = std::fs::read_to_string(parent.join("stage-seam_stages.log"))?;
-    if !valid_run_log(&log, &binding) {
+    let work = if proof.scenario == "C18a.full" {
+        parent
+            .parent()
+            .ok_or("C18a full replay lacks a node-boot work directory")?
+    } else {
+        parent
+    };
+    let log = std::fs::read_to_string(work.join("stage-seam_stages.log"))?;
+    if !valid_run_log(&log, &binding, &proof.scenario) {
         return Err("C18a node-boot seam log lacks one eligible current capture".into());
     }
     Ok(())
 }
 
-fn valid_run_log(log: &str, binding: &str) -> bool {
-    log.lines().filter(|line| *line == binding).count() == 1
+fn valid_run_log(log: &str, binding: &str, scenario: &str) -> bool {
+    let captured = format!("SEAM_EVIDENCE e2e_capture scenario={scenario} status=CAPTURED ");
+    matches!(scenario, "C18a.client" | "C18a.full")
+        && log.lines().filter(|line| *line == binding).count() == 1
         && log
             .lines()
-            .filter(|line| {
-                line.starts_with("SEAM_EVIDENCE e2e_capture scenario=C18a.client status=CAPTURED ")
-            })
+            .filter(|line| line.starts_with(&captured))
             .count()
             == 1
         && !log.lines().any(|line| line.contains("FIXTURE_RETRY "))
@@ -723,15 +731,32 @@ fn scorch_requires_the_exact_fire_cone_and_cast_decision() -> Result<(), Error> 
 fn rejects_unbound_or_retried_wrapper_log() {
     let binding = "SEAM_EVIDENCE c18a_capture_binding directory=captures.test session=test";
     let pass = "SEAM_EVIDENCE e2e_capture scenario=C18a.client status=CAPTURED evidence=live";
-    assert!(valid_run_log(&format!("{binding}\n{pass}"), binding));
-    assert!(!valid_run_log(pass, binding));
+    assert!(valid_run_log(
+        &format!("{binding}\n{pass}"),
+        binding,
+        "C18a.client"
+    ));
+    assert!(!valid_run_log(pass, binding, "C18a.client"));
+    let full = pass.replace("C18a.client", "C18a.full");
+    assert!(valid_run_log(
+        &format!("{binding}\n{full}"),
+        binding,
+        "C18a.full"
+    ));
+    assert!(!valid_run_log(
+        &format!("{binding}\n{pass}"),
+        binding,
+        "C18a.full"
+    ));
     assert!(!valid_run_log(
         &format!("{binding}\n{binding}\n{pass}"),
-        binding
+        binding,
+        "C18a.client"
     ));
     assert!(!valid_run_log(
         &format!("{binding}\nFIXTURE_RETRY step=logout reason=busy attempt=1\n{pass}"),
-        binding
+        binding,
+        "C18a.client"
     ));
 }
 
