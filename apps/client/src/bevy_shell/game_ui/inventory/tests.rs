@@ -33,12 +33,88 @@ fn inventory(outbox: &crate::play::Outbox, items: Vec<ItemEntry>) {
     })]);
 }
 
+pub(crate) fn corpse_menu_app(link: PlayLink) -> Result<App, Box<dyn std::error::Error>> {
+    use bevy::asset::AssetPlugin;
+    let mut app = App::new();
+    let root = app.world_mut().spawn_empty().id();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .insert_non_send(host(link)?)
+        .init_resource::<InventoryUi>()
+        .init_resource::<UiScale>()
+        .insert_resource(super::super::GameRegions {
+            vitals: root,
+            minimap: root,
+            equipment: root,
+            containers: root,
+            battle: root,
+            skills: root,
+            vip: root,
+            analyzers: root,
+            chat: root,
+            bars: root,
+            world: root,
+        })
+        .add_systems(Startup, crate::bevy_shell::ui::setup)
+        .add_systems(Update, view::project);
+    app.update();
+    Ok(app)
+}
+
+pub(crate) fn rendered_corpse_items(app: &mut App) -> Vec<oteryn_session::ItemHandle> {
+    let mut handles: Vec<_> = app
+        .world_mut()
+        .query::<&Slot>()
+        .iter(app.world())
+        .filter(|slot| matches!(slot.location, Location::Corpse { .. }))
+        .filter_map(|slot| slot.item.map(|item| item.handle))
+        .collect();
+    handles.sort_unstable();
+    handles
+}
+
+pub(crate) fn click_corpse_loot(app: &mut App, handle: oteryn_session::ItemHandle) -> TestResult {
+    use bevy::picking::{backend::HitData, pointer::PointerButton};
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Slot)>()
+        .iter(app.world())
+        .find_map(|(entity, slot)| {
+            (matches!(slot.location, Location::Corpse { .. })
+                && slot.item.is_some_and(|item| item.handle == handle))
+            .then_some(entity)
+        })
+        .ok_or("selected corpse row")?;
+    app.world_mut().trigger(PointerClick {
+        entity,
+        button: PointerButton::Secondary,
+        pointer: pointer(),
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    app.update();
+    let loot = app
+        .world_mut()
+        .query::<(Entity, &Control, &Children)>()
+        .iter(app.world())
+        .find_map(|(entity, control, children)| {
+            (matches!(control, Control::Loot(_))
+                && children.iter().any(|child| {
+                    app.world()
+                        .get::<Text>(child)
+                        .is_some_and(|text| text.0 == "Loot")
+                }))
+            .then_some(entity)
+        })
+        .ok_or("Loot menu entry")?;
+    app.world_mut().trigger(Activate { entity: loot });
+    Ok(())
+}
+
 #[test]
 fn corpse_item_context_loot_sends_selected_item_click() -> TestResult {
-    use bevy::{
-        asset::AssetPlugin,
-        picking::{backend::HitData, pointer::PointerButton},
-    };
     use oteryn_session::{
         ActorPosition, EntityDetail, EntityKind, EntityRef, ItemHandle, OpenContainer,
         WorldSpatialEntity,
@@ -79,66 +155,12 @@ fn corpse_item_context_loot_sends_selected_item_click() -> TestResult {
         },
     })]);
 
-    let mut app = App::new();
-    let root = app.world_mut().spawn_empty().id();
-    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
-        .init_asset::<Font>()
-        .init_asset::<Image>()
-        .insert_non_send(host(link)?)
-        .init_resource::<InventoryUi>()
-        .init_resource::<UiScale>()
-        .insert_resource(super::super::GameRegions {
-            vitals: root,
-            minimap: root,
-            equipment: root,
-            containers: root,
-            battle: root,
-            skills: root,
-            vip: root,
-            analyzers: root,
-            chat: root,
-            bars: root,
-            world: root,
-        })
-        .add_systems(Startup, crate::bevy_shell::ui::setup)
-        .add_systems(Update, view::project);
-    app.update();
-    let slots: Vec<_> = app
-        .world_mut()
-        .query::<(Entity, &Slot)>()
-        .iter(app.world())
-        .filter(|(_, slot)| matches!(slot.location, Location::Corpse { .. }))
-        .collect();
-    assert_eq!(slots.len(), 2);
-    assert!(slots.iter().any(|(_, slot)| slot.item == Some(first)));
-    let entity = slots
-        .iter()
-        .find_map(|(entity, slot)| (slot.item == Some(selected)).then_some(*entity))
-        .ok_or("selected corpse row")?;
-    app.world_mut().trigger(PointerClick {
-        entity,
-        button: PointerButton::Secondary,
-        pointer: pointer(),
-        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
-        duration: std::time::Duration::ZERO,
-        count: 1,
-    });
-    app.update();
-    let loot = app
-        .world_mut()
-        .query::<(Entity, &Control, &Children)>()
-        .iter(app.world())
-        .find_map(|(entity, control, children)| {
-            (matches!(control, Control::Loot(_))
-                && children.iter().any(|child| {
-                    app.world()
-                        .get::<Text>(child)
-                        .is_some_and(|text| text.0 == "Loot")
-                }))
-            .then_some(entity)
-        })
-        .ok_or("Loot menu entry")?;
-    app.world_mut().trigger(Activate { entity: loot });
+    let mut app = corpse_menu_app(link)?;
+    assert_eq!(
+        rendered_corpse_items(&mut app),
+        vec![first.handle, selected.handle]
+    );
+    click_corpse_loot(&mut app, selected.handle)?;
     let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
         return Err("wrong command".into());
     };

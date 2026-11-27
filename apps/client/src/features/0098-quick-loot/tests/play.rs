@@ -449,6 +449,35 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
 
     #[derive(serde::Deserialize)]
     #[serde(deny_unknown_fields)]
+    struct ContainerDelta {
+        server_sequence: u64,
+        base_revision: u64,
+        new_revision: u64,
+        payload: Vec<u8>,
+    }
+
+    impl ContainerDelta {
+        fn decode(
+            self,
+        ) -> Result<
+            oteryn_session::AppliedDelta<oteryn_session::OpenContainer>,
+            Box<dyn std::error::Error>,
+        > {
+            Ok(oteryn_session::AppliedDelta {
+                server_sequence: self.server_sequence,
+                base_revision: self.base_revision,
+                new_revision: self.new_revision,
+                value: oteryn_protocol_oteryn::item_view::decode_open_container_with_appearances(
+                    &self.payload,
+                    true,
+                )
+                .map_err(|error| format!("I07 captured corpse view: {error:?}"))?,
+            })
+        }
+    }
+
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
     struct Expected {
         skip: u32,
         gold: u32,
@@ -458,6 +487,12 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         pouch: [u8; 16],
         fulfilment: [u8; 16],
         selected_handle: u64,
+        corpse: [u8; 16],
+        corpse_generation: u64,
+        corpse_position: [i32; 3],
+        corpse_definition: u32,
+        opened: ContainerDelta,
+        after_click: ContainerDelta,
         coin: [u8; 16],
         armor: [u8; 16],
         filtered: [u8; 16],
@@ -501,10 +536,134 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         )
     };
     let main = route(None, QuickLootRecipient::MainContainer, None, false);
-    let click = Action::CorpseItem(
-        oteryn_protocol_oteryn::item_view::ItemHandle::new(expected.selected_handle)
-            .ok_or("I07 selected handle must be nonzero")?,
+    let selected = oteryn_session::ItemHandle::new(expected.selected_handle)
+        .ok_or("I07 selected handle must be nonzero")?;
+    let click = Action::CorpseItem {
+        corpse: expected.corpse,
+        item: selected,
+    };
+    let read_reply = |key| -> Result<Reply, Box<dyn std::error::Error>> {
+        Ok(serde_json::from_slice(&std::fs::read(
+            directory.join(format!("i07-{key}.json")),
+        )?)?)
+    };
+    let moved = read_reply(13)?;
+    let stale = read_reply(20)?;
+    let first = read_reply(1)?;
+    let relog = read_reply(12)?;
+    assert_ne!(first.game_session_id, relog.game_session_id);
+    assert_eq!(moved.game_session_id, relog.game_session_id);
+    assert_eq!(stale.game_session_id, relog.game_session_id);
+    assert!(moved.command_id > relog.command_id && stale.command_id > moved.command_id);
+    assert_eq!(moved.status, CommandStatus::Accepted as u32);
+    assert_eq!(stale.status, CommandStatus::Rejected as u32);
+    let opened = expected.opened.decode()?;
+    let after_click = expected.after_click.decode()?;
+    assert!(opened.server_sequence > relog.server_sequence);
+    assert!(opened.server_sequence < moved.server_sequence);
+    assert!(moved.server_sequence < after_click.server_sequence);
+    assert!(after_click.server_sequence < stale.server_sequence);
+    assert_eq!(after_click.base_revision, opened.new_revision);
+    let container = opened
+        .value
+        .container_handle
+        .ok_or("I07 open corpse handle missing")?;
+    assert_eq!(after_click.value.container_handle, Some(container));
+    let [taken, sibling] = opened.value.entries.as_slice() else {
+        return Err("I07 captured corpse requires exactly two entries".into());
+    };
+    assert_eq!(taken.handle, selected);
+    assert_eq!(after_click.value.entries, vec![*sibling]);
+    let mut initial = vec![selected, sibling.handle];
+    initial.sort_unstable();
+    let sibling = sibling.handle;
+    let (menu_link, mut menu_commands, menu_outbox) = crate::play::play_channel();
+    menu_outbox.bevy_quick_loot_selected(true);
+    let [x, y, floor] = expected.corpse_position;
+    menu_outbox.bevy_quick_loot_corpse(oteryn_session::WorldSpatialEntity {
+        motion: None,
+        display_name: None,
+        kind: oteryn_session::EntityKind::Corpse,
+        entity: oteryn_session::EntityRef {
+            identity: expected.corpse,
+            generation: expected.corpse_generation,
+        },
+        position: oteryn_session::ActorPosition {
+            x,
+            y,
+            floor: floor.try_into()?,
+        },
+        detail: oteryn_session::EntityDetail::Object {
+            item_definition_ref: expected.corpse_definition,
+            quantity: 1,
+            item_handle: Some(container),
+        },
+    });
+    menu_outbox.push(vec![oteryn_session::SessionEvent::OpenContainer(opened)]);
+    use crate::bevy_shell::corpse_menu_replay as menu;
+    let mut menu_app = menu::corpse_menu_app(menu_link.clone())?;
+    assert_eq!(menu::rendered_corpse_items(&mut menu_app), initial);
+    menu::click_corpse_loot(&mut menu_app, selected)?;
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = menu_commands.try_recv()?
+    else {
+        return Err("I07 corpse menu dispatched a different command".into());
+    };
+    assert_eq!((command.capability, command.command_type), (98, 114));
+    assert_eq!(
+        command.payload,
+        std::fs::read(directory.join("i07-13-request.bin"))?
     );
+    menu_outbox.discovery_result(
+        98,
+        &GatedCommandResult {
+            command_id: moved.command_id,
+            server_sequence: moved.server_sequence,
+            status: CommandStatus::Accepted,
+            payload: moved.payload,
+        },
+    );
+    assert_eq!(menu_link.corpse_loot_view().feedback, Some("Item moved"));
+    menu_outbox.push(vec![oteryn_session::SessionEvent::OpenContainer(
+        after_click,
+    )]);
+    menu_app.update();
+    assert_eq!(menu::rendered_corpse_items(&mut menu_app), vec![sibling]);
+    assert!(!menu_link.quick_loot_corpse_item(container, expected.corpse, selected));
+
+    // Replay the captured stale receipt against the obsolete action. The rendered
+    // menu has already removed that row and correctly refuses to submit it again.
+    assert!(menu_link.quick_loot_action(click.clone()));
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = menu_commands.try_recv()?
+    else {
+        return Err("I07 stale replay dispatched a different command".into());
+    };
+    assert_eq!(
+        command.payload,
+        std::fs::read(directory.join("i07-20-request.bin"))?
+    );
+    menu_outbox.discovery_result(
+        98,
+        &GatedCommandResult {
+            command_id: stale.command_id,
+            server_sequence: stale.server_sequence,
+            status: CommandStatus::Rejected,
+            payload: stale.payload,
+        },
+    );
+    assert_eq!(
+        menu_link.corpse_loot_view().feedback,
+        Some("Item is no longer available")
+    );
+    menu_app.update();
+    assert_eq!(menu::rendered_corpse_items(&mut menu_app), vec![sibling]);
+    assert!(menu_commands.try_recv().is_err());
+    if directory.file_name().is_some_and(|name| name == "i07-full") {
+        println!(
+            "I07_NATIVE_REPLAY session={} relog={}",
+            first.game_session_id, relog.game_session_id
+        );
+        return Ok(());
+    }
     let skip = QuickLootFilterMode::Skip;
     let accept = QuickLootFilterMode::Accept;
     let gold_main = route(
@@ -660,6 +819,9 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             reply.game_session_id, sessions[session_index],
             "I07 probe {key}"
         );
+        if matches!(key, 13 | 20) {
+            continue;
+        }
         let mode = |mode| (mode as u8).to_string();
         let dispatched = if matches!(key, 4 | 5 | 7 | 14) {
             ui::click_action(&mut app, action)?;
@@ -702,7 +864,6 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                         0,
                     )
                 }
-                Action::CorpseItem(_) => link.quick_loot_action(action),
                 _ => return Err("unexpected I07 replay action".into()),
             }
         };
@@ -748,11 +909,6 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             continue;
         }
         assert_eq!(panel.feedback, "Confirmed by the server");
-        if key == 13 {
-            assert_eq!(panel.result, before_panel.result);
-            assert_eq!(notices(), before);
-            continue;
-        }
         let items = &panel
             .result
             .ok_or("I07 client omitted the loot result")?

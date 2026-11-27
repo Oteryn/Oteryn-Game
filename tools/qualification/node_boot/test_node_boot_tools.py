@@ -706,6 +706,15 @@ class CloudRunSummaryTests(unittest.TestCase):
                     f'SEAM_EVIDENCE e2e_all scenario={scenario} status=PASS'
                 ))
 
+    def test_i07_full_success_requires_a_fresh_native_replay(self):
+        replay = load('client_replay')
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {
+            'E2E_ALL_CAPTURE_DIR': tmp,
+        }):
+            log = Path(tmp, 'rows.log')
+            log.write_text('SEAM_EVIDENCE e2e_all scenario=I07.full status=PASS seconds=1.235\n')
+            self.assertEqual(replay.main(log, '307:1'), 1)
+
     def test_i07_full_batch_rejects_empty_phase(self):
         replay = load('client_replay')
         selected, _ = replay.selected_rows('307:1')

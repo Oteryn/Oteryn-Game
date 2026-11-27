@@ -284,7 +284,8 @@ async fn require_routes(
 }
 
 struct Capture<'a> {
-    directory: Option<&'a Path>,
+    directory: &'a Path,
+    full: bool,
     previous: (u64, u64),
 }
 
@@ -358,7 +359,7 @@ impl Capture<'_> {
                 .into());
             }
         }
-        if self.directory.is_none()
+        if self.full
             && matches!(
                 request.action,
                 QuickLootAction::Click | QuickLootAction::LootAll
@@ -371,7 +372,8 @@ impl Capture<'_> {
                 expected.len()
             ));
         }
-        if let Some(directory) = self.directory {
+        {
+            let directory = self.directory;
             write_capture(&directory.join(format!("i07-{key}-request.bin")), &payload)?;
             write_capture(
                 &directory.join(format!("i07-{key}.json")),
@@ -391,16 +393,19 @@ impl Capture<'_> {
 async fn capture_journey(clients: &SeamClients<'_>) -> TestResult {
     let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR")
         .ok_or("I07 requires a fresh E2E_ALL_CAPTURE_DIR")?;
-    journey(clients, Some(Path::new(&directory))).await
+    journey(clients, Path::new(&directory), false).await
 }
 
-pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path>) -> TestResult {
+pub(super) async fn journey(
+    clients: &SeamClients<'_>,
+    capture_dir: &Path,
+    full: bool,
+) -> TestResult {
     use sqlx::Connection as _;
     const FILTERS: [(bool, &str); 2] = [
         (false, "oteryn:item.tibia.i3577"),
         (true, "oteryn:item.tibia.i3357"),
     ];
-    let full = capture_dir.is_none();
     let index = provisioning::item_index()?;
     let skip_reference = provisioning::item_reference(&index, 3577)?.get();
     let gold_reference = provisioning::item_reference(&index, 3031)?.get();
@@ -408,7 +413,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     let dedicated = character_prep::dedicated_named_character(
         clients,
         "NODE_BOOT_I07_ACCOUNT",
-        Some(if capture_dir.is_some() {
+        Some(if !full {
             "Quick Loot Tester"
         } else {
             "Quick Loot Full"
@@ -514,7 +519,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     if primary_cell != &on_tile || adjacent_cell != &adjacent {
         return Err("I07 requires one corpse on the actor tile and one east of it".into());
     }
-    if capture_dir.is_none() {
+    if full {
         evidence("I07_FULL_INPUT corpses=2 adjacent=1 source=qualification_fixture");
     }
     let before = placements(&mut database, Storage::Corpse, character, corpse).await?;
@@ -552,6 +557,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     let session = uuid_text(original_session.as_bytes());
     let mut capture = Capture {
         directory: capture_dir,
+        full,
         previous: (0, 0),
     };
     let route = |category, recipient, recipient_id, fallback_to_main| QuickLootRequest {
@@ -821,16 +827,17 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     );
 
     // Manual click bypasses the active Accept filter and targets only this corpse.
-    let (corpse_handle, selected, sibling) =
+    let (corpse_entity, corpse_handle, selected, sibling, opened) =
         open_primary_corpse(&mut fresh, skip_reference).await?;
     let click = QuickLootRequest {
+        corpse: Some(corpse_entity.entity.identity),
         selected_item: Some(selected),
         ..request(QuickLootAction::Click)
     };
     capture
         .probe(&mut fresh, 13, click, &[(filtered, true)])
         .await?;
-    require_corpse_view(&mut fresh, corpse_handle, &[sibling]).await?;
+    let after_click = require_corpse_view(&mut fresh, corpse_handle, &[sibling]).await?;
     evidence("I07_HANDLE_CLICK status=moved corpse_view_delta=exact_sibling");
     let mut bag_filtered = filtered.clone();
     bag_filtered.slot = expected_backpack
@@ -1002,7 +1009,7 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
     )
     .await?;
     evidence("I07_SELECTED_CLICK sibling=retained stale_handle=rejected");
-    let quiver = if capture_dir.is_none() {
+    let quiver = if full {
         Some(exercise_quiver(&mut fresh, &mut database, character, &backpack).await?)
     } else {
         None
@@ -1105,17 +1112,24 @@ pub(super) async fn journey(clients: &SeamClients<'_>, capture_dir: Option<&Path
         "I07_LOOT_CUSTODY final_relog=true exact_ids_counts_slots=true pouch=inbox backpack=equipped click_sibling=retained skip_listed=retained",
     );
     let fresh_session = uuid_text(fresh_session.as_bytes());
-    if let Some(capture_dir) = capture_dir {
+    {
         write_capture(
             &capture_dir.join("i07-expected.txt"),
             &serde_json::to_vec(&serde_json::json!({
                 "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "fulfilment": fulfilment, "selected_handle": selected.get(),
+                "corpse": corpse_entity.entity.identity, "corpse_generation": corpse_entity.entity.generation,
+                "corpse_position": [corpse_entity.position.x, corpse_entity.position.y, i32::from(corpse_entity.position.floor)],
+                "corpse_definition": provisioning::item_reference(&index, 5973)?.get(),
+                "opened": captured_container(opened)?, "after_click": captured_container(after_click)?,
                 "coin": coin.item, "armor": armor.item, "filtered": filtered.item, "spare": spare.item, "other": other.item,
             }))?,
         )?;
-        evidence(&format!(
-            "I07_LIVE_CAPTURE session={session} relog={fresh_session}"
-        ));
+        let marker = if full {
+            "I07_FULL_LIVE_CAPTURE"
+        } else {
+            "I07_LIVE_CAPTURE"
+        };
+        evidence(&format!("{marker} session={session} relog={fresh_session}"));
     }
     Ok(())
 }
@@ -1273,13 +1287,45 @@ async fn exercise_quiver(
     Ok((quiver, expected))
 }
 
+type CorpseDelta = oteryn_dev_client::AppliedDelta<oteryn_dev_client::OpenContainer>;
+
+fn captured_container(delta: CorpseDelta) -> TestResult<serde_json::Value> {
+    Ok(serde_json::json!({
+        "server_sequence": delta.server_sequence,
+        "base_revision": delta.base_revision,
+        "new_revision": delta.new_revision,
+        "payload": oteryn_protocol_oteryn::item_view::encode_open_container_with_appearances(&delta.value, true)
+            .map_err(|error| format!("I07 open-corpse capture: {error:?}"))?,
+    }))
+}
+
+fn matching_corpse_delta(
+    client: &mut oteryn_dev_client::DevClientSession,
+    corpse: oteryn_dev_client::ItemHandle,
+) -> Option<CorpseDelta> {
+    client
+        .take_events()
+        .into_iter()
+        .rev()
+        .find_map(|event| match event {
+            oteryn_dev_client::SessionEvent::OpenContainer(delta)
+                if delta.value.container_handle == Some(corpse) =>
+            {
+                Some(delta)
+            }
+            _ => None,
+        })
+}
+
 async fn open_primary_corpse(
     client: &mut oteryn_dev_client::DevClientSession,
     item_definition: u32,
 ) -> TestResult<(
+    oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity,
     oteryn_dev_client::ItemHandle,
     oteryn_dev_client::ItemHandle,
     oteryn_dev_client::ItemHandle,
+    CorpseDelta,
 )> {
     use oteryn_protocol_oteryn::world_object::UseDisposition;
     use oteryn_protocol_oteryn::world_spatial_entities::EntityDetail;
@@ -1299,11 +1345,13 @@ async fn open_primary_corpse(
                 item_definition_ref,
                 item_handle,
                 ..
-            } if item_definition_ref == definition && entity.position == position => item_handle,
+            } if item_definition_ref == definition && entity.position == position => {
+                item_handle.map(|handle| (*entity, handle))
+            }
             _ => None,
         })
         .collect();
-    let [corpse] = corpses.as_slice() else {
+    let [(entity, corpse)] = corpses.as_slice() else {
         return Err(
             format!("I07 expected one published corpse at the admitted tile: {corpses:?}").into(),
         );
@@ -1314,11 +1362,8 @@ async fn open_primary_corpse(
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
     loop {
-        if let Some(view) = client
-            .open_container()
-            .filter(|view| view.container_handle == Some(*corpse))
-        {
-            let [selected, sibling] = view.entries.as_slice() else {
+        if let Some(delta) = matching_corpse_delta(client, *corpse) {
+            let [selected, sibling] = delta.value.entries.as_slice() else {
                 return Err("I07 opened corpse must contain the selected item and sibling".into());
             };
             if [selected, sibling].iter().any(|item| {
@@ -1330,7 +1375,7 @@ async fn open_primary_corpse(
                 );
             }
             evidence("I07_CORPSE_OPEN status=committed view_entries=2");
-            return Ok((*corpse, selected.handle, sibling.handle));
+            return Ok((*entity, *corpse, selected.handle, sibling.handle, delta));
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("I07 committed corpse open omitted its container delta".into());
@@ -1343,18 +1388,20 @@ async fn require_corpse_view(
     client: &mut oteryn_dev_client::DevClientSession,
     corpse: oteryn_dev_client::ItemHandle,
     expected: &[oteryn_dev_client::ItemHandle],
-) -> TestResult {
+) -> TestResult<CorpseDelta> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
     loop {
-        if client.open_container().is_some_and(|view| {
-            view.container_handle == Some(corpse)
-                && view
-                    .entries
-                    .iter()
-                    .map(|item| item.handle)
-                    .eq(expected.iter().copied())
-        }) {
-            return Ok(());
+        if let Some(delta) = matching_corpse_delta(client, corpse) {
+            if !delta
+                .value
+                .entries
+                .iter()
+                .map(|item| item.handle)
+                .eq(expected.iter().copied())
+            {
+                return Err("I07 selected Click emitted a wrong corpse view delta".into());
+            }
+            return Ok(delta);
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("I07 selected Click omitted its exact corpse view delta".into());

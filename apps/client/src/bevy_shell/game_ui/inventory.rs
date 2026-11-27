@@ -16,7 +16,7 @@ mod expiry;
 mod manual_sort_tests;
 mod presentation;
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 mod tooltips;
 mod view;
 mod world_drag;

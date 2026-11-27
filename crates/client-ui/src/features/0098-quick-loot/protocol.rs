@@ -10,7 +10,6 @@ pub enum Action {
         corpse: [u8; 16],
         item: oteryn_client_runtime::inventory::ItemHandle,
     },
-    CorpseItem(std::num::NonZeroU64),
     Add {
         mode: QuickLootFilterMode,
         definition: u32,
@@ -54,10 +53,6 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
             wire.action = QuickLootAction::Click;
             wire.corpse = Some(*corpse);
             wire.selected_item = Some(*item);
-        }
-        Action::CorpseItem(handle) => {
-            wire.action = QuickLootAction::Click;
-            wire.selected_item = Some(*handle);
         }
         Action::Add { mode, definition } | Action::Remove { mode, definition } => {
             wire.action = if matches!(action, Action::Add { .. }) {
@@ -127,19 +122,6 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) -> boo
         };
         panel.feedback = message.into();
         panel.item_feedback = Some((corpse, message));
-        return false;
-    }
-    if matches!(action, Action::CorpseItem(_)) {
-        panel.feedback = if matches!(
-            response.status,
-            CommandStatus::Accepted | CommandStatus::DuplicateReplay
-        ) && QuickLootClickOutcome::decode(&response.payload)
-            == Ok(QuickLootClickOutcome::Moved)
-        {
-            tr!("Confirmed by the server").into()
-        } else {
-            tr!("Loot request refused or invalid reply; try again").into()
-        };
         return false;
     }
     if matches!(

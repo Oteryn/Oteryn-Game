@@ -30,7 +30,7 @@ mod imbuement_tracker;
 mod imbuing;
 mod install;
 pub(super) use install::install;
-mod inventory;
+pub(super) mod inventory;
 pub(super) use inventory::ItemPointerCapture;
 #[cfg(test)]
 pub(super) use inventory::initialize_item_pointer_test_state;

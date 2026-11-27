@@ -135,9 +135,10 @@ def replay_targets():
 
 
 def read_i07_live_session(log, captures):
+    marker = "I07_FULL_LIVE_CAPTURE" if captures.name == "i07-full" else "I07_LIVE_CAPTURE"
     uuid = r"[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
     sessions = re.findall(
-        rf"^SEAM_EVIDENCE I07_LIVE_CAPTURE session=({uuid}) relog=({uuid})$",
+        rf"^SEAM_EVIDENCE {marker} session=({uuid}) relog=({uuid})$",
         log.read_text(), re.MULTILINE,
     )
     if len(sessions) != 1 or sessions[0][0] == sessions[0][1]:
@@ -181,10 +182,11 @@ def replay_cause(row, package, test, names, captures, server, log):
                 return "replay-failed"
             cargo_options.extend(("--features", "bevy-shell"))
             test_options.append("--ignored")
+        opts = {"env": {**os.environ, "E2E_ALL_CAPTURE_DIR": str(captures)}} if captures.name == "i07-full" else {}
         result = subprocess.run(
             [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package,
              *cargo_options, "--lib", test, "--", *test_options],
-            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, **opts,
         )
     except OSError:
         return "replay-not-run"
@@ -227,7 +229,7 @@ def main(log, batch, validate=False, *, mode=None):
     if validate:
         return validate_rows(selected, registered, server_rows)
 
-    rows = sorted(scenario for scenario in selected if scenario.endswith(".client"))
+    rows = sorted(scenario for scenario in selected if scenario.endswith(".client") or scenario == "I07.full")
     if mode == "--i07-only":
         rows = [row for row in rows if row == "I07.client"]
     elif mode == "--exclude-i07":
@@ -238,11 +240,12 @@ def main(log, batch, validate=False, *, mode=None):
     targets = replay_targets()
     failed = False
     for scenario in rows:
-        row = scenario.removesuffix(".client")
+        row = scenario.removesuffix(".client").removesuffix(".full")
         module = f"e2e_{row.lower()}"
         matches = targets.get(module, [])
         package, test, names = matches[0] if len(matches) == 1 else (None, module, set())
-        cause = replay_cause(row, package, test, names, captures, server_rows.get(scenario), log)
+        scenario_captures = captures / "i07-full" if scenario == "I07.full" else captures
+        cause = replay_cause(row, package, test, names, scenario_captures, server_rows.get(scenario), log)
         verdict = f"FAIL cause={cause}" if cause else "PASS"
         print(f"SEAM_EVIDENCE e2e_all scenario={scenario} replay={test} status={verdict}")
         failed |= cause is not None
