@@ -898,9 +898,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     ))
 }
 
+// Include the validated Stone travel and Forge walk as well as the capture exchanges.
+const CLIENT_JOURNEY_BUDGET: Duration = Duration::from_secs(360);
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
-        .await
+    evidence(&format!(
+        "P18_CLIENT_BUDGET deadline_s={}",
+        CLIENT_JOURNEY_BUDGET.as_secs()
+    ));
+    match verdict::indexed_timeout(CLIENT_JOURNEY_BUDGET, verdict::observe(journey(clients))).await
     {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_capture scenario=P18.client status=CAPTURED evidence={expected}"
@@ -917,6 +923,28 @@ mod tests {
     use super::*;
     use oteryn_protocol_oteryn::item_view::{CharacterInventory, ItemEntry};
     use std::num::NonZeroU32;
+
+    #[tokio::test(start_paused = true)]
+    async fn p18_client_budget_allows_the_live_walk_and_still_expires() {
+        let live_walk = async {
+            tokio::time::sleep(Duration::from_secs(121)).await;
+            TestResult::<()>::Ok(())
+        };
+        assert!(
+            verdict::indexed_timeout(CLIENT_JOURNEY_BUDGET, live_walk)
+                .await
+                .is_ok(),
+            "the old 120-second deadline interrupted a progressing Forge walk"
+        );
+        assert!(
+            verdict::indexed_timeout(
+                CLIENT_JOURNEY_BUDGET,
+                std::future::pending::<TestResult<()>>()
+            )
+            .await
+            .is_err()
+        );
+    }
 
     #[test]
     fn funded_cap_requires_global_single_point_increase() {
