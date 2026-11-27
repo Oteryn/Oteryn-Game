@@ -730,15 +730,39 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         }
     }).await?;
     row.pass("caster-damages-rat", damage)?;
-    let clear = caster.session_mut().attack_target(None).await?;
-    if clear.disposition != AttackIntentDisposition::Ok
-        || caster
-            .session_mut()
-            .combat_state()
-            .is_none_or(|state| state.target.is_some())
+    if caster
+        .session_mut()
+        .combat_state()
+        .is_none_or(|state| state.target != Some(rat))
     {
-        return Err("C17b Rat target did not clear".into());
+        return Err("C17b exact Rat target absent before clear".into());
     }
+    full_e2ef5::with_observer_liveness(&mut observer, async {
+        let clear = caster.session_mut().attack_target(None).await?;
+        require_mechanic_acceptance(clear.status, "C17b Rat target clear")?;
+        if clear.disposition != AttackIntentDisposition::Ok {
+            return Err(format!("C17b Rat target clear refused: {clear:?}").into());
+        }
+        // Domain 10 follows the command result on the same connection.
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            if caster.take_events().into_iter().any(|event| {
+                matches!(event, SessionEvent::ActorCombatState(delta)
+                    if delta.server_sequence > clear.result_server_sequence && delta.value.target.is_none())
+            }) && caster
+                .session_mut()
+                .combat_state()
+                .is_some_and(|state| state.target.is_none())
+            {
+                return Ok(());
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("C17b Rat target did not clear after {clear:?}").into());
+            }
+            caster.service_liveness(Duration::from_millis(50)).await?;
+        }
+    })
+    .await?;
     observer.take_events();
 
     let session = caster.join_snapshot().game_session_id;
