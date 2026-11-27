@@ -12,7 +12,7 @@
 //! schedule and drops the in-memory view.
 
 use super::client::{PULL_TIMEOUT, PremiumSnapshotClient, fresh_nonce};
-use super::{IngestOutcome, PremiumConsumer, PullTicket};
+use super::{IngestOutcome, PremiumConsumer, PullTicket, diagnostics::SnapshotTrace};
 use crate::durability::DurabilityRoot;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
@@ -199,6 +199,13 @@ impl PremiumRefresher {
         self.inner.consumer.release(account_id);
     }
 
+    /// Whether an account has a live task that can provide a snapshot.
+    pub fn has_schedule(&self, account_id: [u8; 16]) -> bool {
+        self.schedules()
+            .get(&account_id)
+            .is_some_and(|schedule| !schedule.task.is_finished())
+    }
+
     fn schedules(&self) -> std::sync::MutexGuard<'_, HashMap<[u8; 16], Schedule>> {
         self.schedules
             .0
@@ -217,7 +224,9 @@ async fn run(
     let Some(client) = &inner.client else { return };
     // A load failure only delays the restrictive durable facts: the first pull fences against
     // the same durable rows and returns them.
-    let _ = inner.consumer.load(&inner.root, account_id).await;
+    if let Err(error) = inner.consumer.load(&inner.root, account_id).await {
+        SnapshotTrace::new(account_id).result("initial_fence_load_failed", Some(&error));
+    }
     let mut attempt = 0;
     loop {
         heartbeat.beat();
@@ -226,8 +235,14 @@ async fn run(
             Next::Refresh => {
                 outcome.send_replace(Some(Ok(())));
                 attempt = 0;
-                let refresh_after = inner.consumer.refresh_after_us(account_id);
-                refresh_after.map_or(MIN_REFRESH_INTERVAL, |at| after_success(at, now_us()))
+                match (inner.consumer.refresh_after_us(account_id), now_us()) {
+                    (Some(at), Some(now)) => after_success(at, now),
+                    (Some(_), None) => {
+                        SnapshotTrace::new(account_id).result("refresh_clock_unavailable", None);
+                        MIN_REFRESH_INTERVAL
+                    }
+                    (None, _) => MIN_REFRESH_INTERVAL,
+                }
             }
             Next::Retry(retry_after, reason) => {
                 outcome.send_replace(Some(Err(reason)));
@@ -238,7 +253,10 @@ async fn run(
         };
         // Sleep until the next pull is due, or a reconnect wakes it.
         let _idle = heartbeat.expected_idle();
-        let _ = tokio::time::timeout(delay, wake.notified()).await;
+        // Either a wake or normal timer expiry starts the next pull.
+        tokio::time::timeout(delay, wake.notified())
+            .await
+            .unwrap_or(());
     }
 }
 
@@ -251,16 +269,23 @@ async fn pull(
     let consumer = &inner.consumer;
     let Some(nonce) = fresh_nonce() else {
         consumer.pull_failed(account_id, ticket);
+        SnapshotTrace::new(account_id).result("nonce_unavailable", None);
         return Next::Retry(None, SnapshotWaitFailure::AuthorityUnavailable);
     };
     let body = match client.pull(account_id, &nonce).await {
         Ok(body) => body,
         Err(failure) => {
             consumer.pull_failed(account_id, ticket);
-            return Next::Retry(
-                failure.retry_after(),
-                SnapshotWaitFailure::AuthorityUnavailable,
-            );
+            use super::client::PullFailure;
+            let reason = match failure {
+                PullFailure::Status { status, .. } => format!("http_{status}"),
+                PullFailure::Transport => "transport".to_owned(),
+                PullFailure::Timeout => "transport_deadline".to_owned(),
+                PullFailure::ContentType => "content_type".to_owned(),
+                PullFailure::Oversize => "oversize".to_owned(),
+            };
+            SnapshotTrace::new(account_id).result(&reason, None);
+            return Next::Retry(failure.retry_after(), SnapshotWaitFailure::AuthorityUnavailable);
         }
     };
     match consumer
@@ -279,12 +304,11 @@ async fn pull(
     }
 }
 
-fn now_us() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .ok()
-        .and_then(|elapsed| i64::try_from(elapsed.as_micros()).ok())
-        .unwrap_or(0)
+fn now_us() -> Option<i64> {
+    let Ok(elapsed) = SystemTime::now().duration_since(UNIX_EPOCH) else {
+        return None;
+    };
+    i64::try_from(elapsed.as_micros()).ok()
 }
 
 pub(crate) fn jitter() -> f64 {

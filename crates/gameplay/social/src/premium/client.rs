@@ -241,12 +241,13 @@ fn transport(error: reqwest::Error) -> PullFailure {
 
 /// The §3.1 request body, at most [`MAX_REQUEST_BYTES`].
 pub fn request_body(account_id: [u8; 16], nonce: &str) -> Option<Vec<u8>> {
-    let body = serde_json::to_vec(&serde_json::json!({
+    let body = serde_json::json!({
         "schema": REQUEST_SCHEMA,
         "account_id": canonical_uuid(account_id),
         "nonce": nonce,
-    }))
-    .ok()?;
+    })
+    .to_string()
+    .into_bytes();
     (body.len() <= MAX_REQUEST_BYTES).then_some(body)
 }
 
@@ -255,10 +256,13 @@ pub fn request_body(account_id: [u8; 16], nonce: &str) -> Option<Vec<u8>> {
 /// one for every request, retries included.
 pub fn fresh_nonce() -> Option<String> {
     let mut bytes = [0u8; 16];
-    rustls::crypto::aws_lc_rs::default_provider()
+    if rustls::crypto::aws_lc_rs::default_provider()
         .secure_random
         .fill(&mut bytes)
-        .ok()?;
+        .is_err()
+    {
+        return None;
+    }
     Some(bytes.iter().map(|b| format!("{b:02x}")).collect())
 }
 

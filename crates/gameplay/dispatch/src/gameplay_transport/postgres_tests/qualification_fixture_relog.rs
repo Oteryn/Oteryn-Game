@@ -1,19 +1,8 @@
 //! MP's native admission, logout position save and re-admission before provisioning.
+use super::full_world_support::provision;
 use super::*;
 use crate::gameplay_transport::connection::LogoutReply;
 use oteryn_protocol_oteryn::logout::LogoutResult;
-
-// Exercise the exact helper used by the node's root-only qualification socket.
-#[allow(
-    dead_code,
-    reason = "this mount uses the served-policy provisioning entry point"
-)]
-#[allow(
-    unexpected_cfgs,
-    reason = "the shared Game Server module owns the qualification-spawn feature"
-)]
-#[path = "../../../../../../apps/game-server/src/qualification_spell_character.rs"]
-pub(super) mod provision;
 
 #[test]
 fn qualification_fixture_accepts_native_admission_logout_and_relog() -> TestResult {
