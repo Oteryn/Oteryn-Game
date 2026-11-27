@@ -82,7 +82,8 @@
               "quest": "oteryn:quest.authored.top_of_the_city_quest",
               "npc": "oteryn:npc.iriana",
               "keywords": [
-                "quest"
+                "hi",
+                "hello"
               ],
               "topic": 0,
               "next_topic": 0,
@@ -95,7 +96,7 @@
               "outfit": null,
               "achievement": null,
               "reply": [
-                "You lost the thief? Start again from my roof and follow his trail."
+                "What happened?! Did you lose track of him? I'm sure he'll come back, he always does. Try to track him down from here once more."
               ],
               "sources": [
                 "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",

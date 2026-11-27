@@ -214,7 +214,7 @@
     },
     {
       "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
-      "sha256": "041fe6213aa0e92caf650d7cb7a69090f0c217a84e803a5005d6c1d1a5186f8d"
+      "sha256": "480bbcabead39a3485002bf115ca537f090847e9d0c42841cabe5587c36ffa2f"
     },
     {
       "path": "content/quests/world-callbacks/qc-lizard-sanctuary.json",
@@ -242,7 +242,7 @@
   "accepted_inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "a0f1c238393475bfddcba5a8a3341010dcb70fecb218794329481ed45c6d8f4f"
+      "sha256": "70fc376a98184784397fe016b1b22a8db5a8de34e25791eae8f4223dcb4b46d4"
     },
     {
       "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",
@@ -2292,6 +2292,14 @@
         {
           "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
           "pointer": "/callbacks/7/take/0/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/10/give/additional/0/item",
           "sources": [
             "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
             "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"

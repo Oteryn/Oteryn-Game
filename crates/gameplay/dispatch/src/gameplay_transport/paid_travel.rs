@@ -197,6 +197,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> npc_command::NpcTalkOutcome {
         let session = command.game_session_id;
         let text = intent.text.trim().to_ascii_lowercase();
+        let dead = self.states.spell_states.lock().await.is_dead(actor);
         let (context, routes, fence, previous, source_confirmation) = {
             let runtime = self.runtime.lock().await;
             let previous = match self.states.newhaven_travel.paid_prompts.lock() {
@@ -218,10 +219,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
                 ordinary.window = ordinary.window.or(update.window);
             }
-            if ordinary.disposition != NpcIntentDisposition::Ok
-                || ordinary.unknown
-                || self.states.spell_states.lock().await.is_dead(actor)
-            {
+            if ordinary.disposition != NpcIntentDisposition::Ok || ordinary.unknown || dead {
                 return ordinary;
             }
             let Some(context) = conversations.current_npc(chat, &runtime, actor, session, intent)
@@ -308,7 +306,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .as_ref()
             .is_some_and(|prompt| prompt.route.crystal_callback)
             && contains_whole_keyword(&text, "yes");
+        let remembered = if context.2 == "oteryn:npc.captain_tiberius" && text == "passage" {
+            let Some(requirement) = routes.iter().find_map(|route| route.return_origin.as_ref())
+            else {
+                return refusal(intent, TravelRefusal::UnavailableRoute);
+            };
+            let Ok(Some(current)) = self.current_quest_fence(session).await else {
+                return refusal(intent, TravelRefusal::StaleQuote);
+            };
+            if current.item_fence() != fence {
+                return refusal(intent, TravelRefusal::StaleQuote);
+            }
+            match self
+                .root
+                .npc_travel_last_port(self.character, self.holder, current, requirement)
+                .await
+            {
+                Ok(Some(origin)) => Some(origin),
+                Ok(None) => return refusal(intent, TravelRefusal::UnavailableRoute),
+                Err(_) => {
+                    return npc_command::NpcTalkOutcome {
+                        unknown: true,
+                        ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+                    };
+                }
+            }
+        } else {
+            None
+        };
         let route = routes.into_iter().find(|route| {
+            if let Some(origin) = remembered.as_deref() {
+                return route
+                    .return_origin
+                    .as_ref()
+                    .is_some_and(|gate| gate.return_from == origin);
+            }
             let trigger = route.route.key.replace('_', " ");
             if route.crystal_callback {
                 contains_whole_keyword(&text, &trigger)

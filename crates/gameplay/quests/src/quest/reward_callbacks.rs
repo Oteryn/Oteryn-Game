@@ -1827,6 +1827,22 @@ pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue,
     // These changes preserve every track default.
     for (quest, hash) in [
         (
+            "oteryn:quest.authored.top_of_the_city_quest",
+            super::published_quest_pins::hash(b"99c3aa00ad9d7de8643ef8f8097439e138da52df576afe3b46672ca0256a3daf"),
+        ),
+        (
+            "oteryn:quest.sinatuki_quest",
+            super::published_quest_pins::hash(b"d1fabeca86e223f3804fb5809074f7105296aef22d58c79fd8b3b1e87a121423"),
+        ),
+        (
+            "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+            super::published_quest_pins::hash(b"5b12a2ef58a71accdc1b61967669d20138bef65e363fa65c337c89e93a262dee"),
+        ),
+        (
+            "oteryn:quest.travora_ticket",
+            super::published_quest_pins::hash(b"4b02c16e3715b73fe2b18feeace0e01f5762de7440795d819f613002a5f8eaec"),
+        ),
+        (
             "oteryn:quest.citizen_outfits_quest_on_rook",
             ROOK_CITIZEN_BEFORE_NORMA_RESTART,
         ),

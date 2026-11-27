@@ -127,6 +127,24 @@ pub(crate) async fn apply(
         }
         _ => return Ok(false),
     };
+    if callback.key == "oteryn:quest-reward/qc-twenty-miles-guardian-skulls-laid" {
+        use oteryn_gameplay_world_change::counter::{CounterKind, CounterState};
+        let state: Option<sqlx::types::Json<CounterState>> = sqlx::query_scalar(
+            "SELECT c.state FROM game_world_change_counters c
+             JOIN game_world_reset_active a USING (world_id,reset_epoch)
+             WHERE c.world_id=encode($1,'hex')::uuid AND c.change_key=$2 FOR SHARE OF c,a",
+        )
+        .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+        .bind(CounterKind::FireFeathered.key())
+        .fetch_optional(&mut **tx)
+        .await?;
+        if let Some(sqlx::types::Json(counter)) = state {
+            counter.validate(CounterKind::FireFeathered).map_err(|_| DurabilityError::InvalidStoredState)?;
+            if counter.stage == 3 && !counter.condition {
+                return Ok(false);
+            }
+        }
+    }
     if callback.carried_target.is_some()
         != admission
             .carried_use

@@ -130,7 +130,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
             .quote_npc_travel(&authority, &h.node, fence, inbound.clone(), &NoPremium)
             .await
             .map_err(debug)?,
-        Err(TravelRefusal::UnavailableRoute)
+        Ok(1000)
     );
 
     sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now())")
@@ -278,7 +278,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
         .map_err(|()| "fence")?
         .ok_or("fence")?;
     for (route, expected) in [
-        (inbound, Err(TravelRefusal::UnavailableRoute)),
+        (inbound.clone(), Ok(1000)),
         (ankrahmun, Err(TravelRefusal::UnavailableRoute)),
         (darashia, Ok(0)),
     ] {
@@ -290,5 +290,36 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
             expected
         );
     }
+    let [tiberius] = super::classic_quests_fixtures::install(
+        &owner,
+        &deps.admitted,
+        ["oteryn:npc.captain_tiberius"],
+    )
+    .await?;
+    talk(&mut owner, &deps.admitted, tiberius, 48102, "hi").await?;
+    let offer = talk(&mut owner, &deps.admitted, tiberius, 48103, "passage").await?;
+    assert!(
+        offer
+            .iter()
+            .any(|line| line.to_ascii_lowercase().contains("darashia"))
+    );
+    talk(&mut owner, &deps.admitted, tiberius, 48104, "bye").await?;
+    let [petros] =
+        super::classic_quests_fixtures::install(&owner, &deps.admitted, ["oteryn:npc.petros"])
+            .await?;
+    talk(&mut owner, &deps.admitted, petros, 48105, "hi").await?;
+    let offer = talk(&mut owner, &deps.admitted, petros, 48106, "travora").await?;
+    assert!(offer.iter().any(|line| line.contains("1000")));
+    talk(&mut owner, &deps.admitted, petros, 48107, "yes").await?;
+    let (balance, renewed, paid): (i64, i64, i64) = sqlx::query_as(
+        "SELECT (SELECT balance FROM game_account_bank_balances),
+                (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
+                (SELECT fare_gold_units FROM game_newhaven_travel_receipts WHERE command_id=48107)",
+    )
+    .bind(TRACK)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!((balance, paid), (0, 1000));
+    assert!(renewed >= stamp);
     Ok(())
 }

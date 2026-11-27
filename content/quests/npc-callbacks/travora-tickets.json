@@ -265,6 +265,300 @@
         "docs/reference/tibia-manual/products.md:162",
         "crystal:201189f8:data-global/npc/petros.lua"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/travora/captain_bluebear",
+      "quest": "oteryn:quest.travora_ticket",
+      "npc": "oteryn:npc.captain_bluebear",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/travora/ticket_purchased",
+          "effect": {
+            "kind": "set_now"
+          },
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 86400
+          }
+        }
+      ],
+      "requires": [],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "fee": {
+        "gold": 1000,
+        "include_bank": true
+      },
+      "reply": [
+        "Your ticket is valid for 24 hours. Say {Travora} when you are ready to sail."
+      ],
+      "failure_reply": [
+        "You need 1000 gold and can only renew your ticket once it expires."
+      ],
+      "sources": [
+        "docs/reference/tibia-manual/products.md:162",
+        "tibiawiki-fandom:Character World Transfer:2024-11-08"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/travora/captain_fearless",
+      "quest": "oteryn:quest.travora_ticket",
+      "npc": "oteryn:npc.captain_fearless",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/travora/ticket_purchased",
+          "effect": {
+            "kind": "set_now"
+          },
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 86400
+          }
+        }
+      ],
+      "requires": [],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "fee": {
+        "gold": 1000,
+        "include_bank": true
+      },
+      "reply": [
+        "Your ticket is valid for 24 hours. Say {Travora} when you are ready to sail."
+      ],
+      "failure_reply": [
+        "You need 1000 gold and can only renew your ticket once it expires."
+      ],
+      "sources": [
+        "docs/reference/tibia-manual/products.md:162",
+        "tibiawiki-fandom:Character World Transfer:2024-11-08"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/travora/captain_pelagia",
+      "quest": "oteryn:quest.travora_ticket",
+      "npc": "oteryn:npc.captain_pelagia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/travora/ticket_purchased",
+          "effect": {
+            "kind": "set_now"
+          },
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 86400
+          }
+        }
+      ],
+      "requires": [],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "fee": {
+        "gold": 1000,
+        "include_bank": true
+      },
+      "reply": [
+        "Your ticket is valid for 24 hours. Say {Travora} when you are ready to sail."
+      ],
+      "failure_reply": [
+        "You need 1000 gold and can only renew your ticket once it expires."
+      ],
+      "sources": [
+        "docs/reference/tibia-manual/products.md:162",
+        "tibiawiki-fandom:Character World Transfer:2024-11-08"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/travora/captain_seagull",
+      "quest": "oteryn:quest.travora_ticket",
+      "npc": "oteryn:npc.captain_seagull",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/travora/ticket_purchased",
+          "effect": {
+            "kind": "set_now"
+          },
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 86400
+          }
+        }
+      ],
+      "requires": [],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "fee": {
+        "gold": 1000,
+        "include_bank": true
+      },
+      "reply": [
+        "Your ticket is valid for 24 hours. Say {Travora} when you are ready to sail."
+      ],
+      "failure_reply": [
+        "You need 1000 gold and can only renew your ticket once it expires."
+      ],
+      "sources": [
+        "docs/reference/tibia-manual/products.md:162",
+        "tibiawiki-fandom:Character World Transfer:2024-11-08"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/travora/captain_waverider",
+      "quest": "oteryn:quest.travora_ticket",
+      "npc": "oteryn:npc.captain_waverider",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/travora/ticket_purchased",
+          "effect": {
+            "kind": "set_now"
+          },
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 86400
+          }
+        }
+      ],
+      "requires": [],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "fee": {
+        "gold": 1000,
+        "include_bank": true
+      },
+      "reply": [
+        "Your ticket is valid for 24 hours. Say {Travora} when you are ready to sail."
+      ],
+      "failure_reply": [
+        "You need 1000 gold and can only renew your ticket once it expires."
+      ],
+      "sources": [
+        "docs/reference/tibia-manual/products.md:162",
+        "tibiawiki-fandom:Character World Transfer:2024-11-08"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/travora/charles",
+      "quest": "oteryn:quest.travora_ticket",
+      "npc": "oteryn:npc.charles",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/travora/ticket_purchased",
+          "effect": {
+            "kind": "set_now"
+          },
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 86400
+          }
+        }
+      ],
+      "requires": [],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "fee": {
+        "gold": 1000,
+        "include_bank": true
+      },
+      "reply": [
+        "Your ticket is valid for 24 hours. Say {Travora} when you are ready to sail."
+      ],
+      "failure_reply": [
+        "You need 1000 gold and can only renew your ticket once it expires."
+      ],
+      "sources": [
+        "docs/reference/tibia-manual/products.md:162",
+        "tibiawiki-fandom:Character World Transfer:2024-11-08"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/travora/jack_fate",
+      "quest": "oteryn:quest.travora_ticket",
+      "npc": "oteryn:npc.jack_fate",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/travora/ticket_purchased",
+          "effect": {
+            "kind": "set_now"
+          },
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 86400
+          }
+        }
+      ],
+      "requires": [],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "fee": {
+        "gold": 1000,
+        "include_bank": true
+      },
+      "reply": [
+        "Your ticket is valid for 24 hours. Say {Travora} when you are ready to sail."
+      ],
+      "failure_reply": [
+        "You need 1000 gold and can only renew your ticket once it expires."
+      ],
+      "sources": [
+        "docs/reference/tibia-manual/products.md:162",
+        "tibiawiki-fandom:Character World Transfer:2024-11-08"
+      ]
     }
   ]
 }

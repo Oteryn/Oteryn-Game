@@ -18,7 +18,7 @@ pub(super) async fn missing(
         "oteryn:item.tibia.i21746" => &[(NPC, "guardian-skulls-laid")],
         "oteryn:item.tibia.i21745" => &[(WORLD, "ring-chest")],
         "oteryn:item.tibia.i21753" => &[(WORLD, "shipwreck-chest"), (NPC, "guardian-third-slab")],
-        "oteryn:item.tibia.i21861" => &[(WORLD, "shrine-chest"), (NPC, "guardian-second-slab-back")],
+        "oteryn:item.tibia.i21861" => &[(WORLD, "shrine-chest"), (NPC, "guardian-third-slab"), (NPC, "guardian-second-slab-back")],
         "oteryn:item.tibia.i21862" => &[(NPC, "yeo-slab")],
         "oteryn:item.tibia.i21754" => &[(WORLD, "sea-ear-shell")],
         "oteryn:item.tibia.i21795" => &[(WORLD, "sundial")],
@@ -44,10 +44,17 @@ pub(super) async fn missing(
            UNION
            SELECT mint_transaction_id FROM game_quest_reward_sources
            WHERE character_id=encode($1,'hex')::uuid AND transition_key=ANY($3::text[])
-         ), lineage(item_instance_id, arrival_revision) AS (
-           SELECT r.item_instance_id, 1::numeric
-           FROM issues JOIN game_reward_claim_mint_receipts r USING(transaction_id)
+         ), issued_items AS (
+           SELECT r.item_instance_id FROM issues JOIN game_reward_claim_mint_receipts r USING(transaction_id)
            WHERE r.character_id=encode($1,'hex')::uuid
+           UNION
+           SELECT (entry->>'item_instance_id')::uuid
+           FROM issues JOIN game_reward_claim_mint_receipts r USING(transaction_id)
+           CROSS JOIN LATERAL jsonb_array_elements(r.additional_plan) entry
+           WHERE r.character_id=encode($1,'hex')::uuid
+         ), lineage(item_instance_id, arrival_revision) AS (
+           SELECT i.item_instance_id, 1::numeric FROM issued_items JOIN game_item_instances i USING(item_instance_id)
+           WHERE i.definition_production_key=$4
            UNION
            SELECT receiver.item_instance_id, COALESCE(receiver.state_revision_before + 1, 1)
            FROM lineage JOIN game_item_loop_move_lines source USING(item_instance_id)

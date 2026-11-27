@@ -371,7 +371,7 @@
           "track": "oteryn:quest-progress/qc/twenty_miles/stage",
           "minimum": 14,
           "maximum": 14,
-          "set": 15
+          "set": 16
         }
       ],
       "take": [],
@@ -384,12 +384,19 @@
       "give": {
         "item": "oteryn:item.tibia.i21753",
         "count": 1,
-        "contents": []
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i21861",
+            "count": 1
+          }
+        ]
       },
       "outfit": null,
       "achievement": null,
       "reply": [
-        "You found it! Take back the blue slab and ask me about your mission again for the yellow slab. Once you have all three, use them on the altars downstairs: blue on the left, yellow in the centre, red on the right."
+        "You found it! Ah, wonderful. It has suffered somewhat, but I believe if it's back in its proper place, the altar slabs will become as good as new.",
+        "Go down the stairs, to the altar room right underneath. Lay each of the three nacre slabs on an altar - blue on the left, yellow in the centre, red to the right. Then come back to receive your reward."
       ],
       "sources": [
         "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",

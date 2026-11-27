@@ -484,7 +484,9 @@ async fn framed_talk(
             != MessageType::SnapshotCommit
         {}
         let first = before.continuity.next_command_id;
-        for (command_id, words) in [(first, "hi"), (first + 1, text)] {
+        let greeting = (text != "hi").then_some("hi");
+        for (offset, words) in greeting.into_iter().chain([text]).enumerate() {
+            let command_id = first + u64::try_from(offset)?;
             let payload = encode_npc_talk_intent(&NpcTalkIntent {
                 npc_actor,
                 text: words.into(),
@@ -502,7 +504,7 @@ async fn framed_talk(
             write_frame(&mut client, &frame).await?;
             let mut acknowledged = false;
             let mut found_line = false;
-            let is_subject = command_id == first + 1;
+            let is_subject = words == text;
             let expected = expected_line.filter(|_| is_subject);
             let disposition = if is_subject {
                 expected_disposition
@@ -729,9 +731,9 @@ async fn top_of_the_city(
         owner,
         admitted,
         iriana,
-        "quest",
+        "hi",
         NpcIntentDisposition::Ok,
-        Some("You lost the thief? Start again from my roof and follow his trail."),
+        Some("What happened?! Did you lose track of him? I'm sure he'll come back, he always does. Try to track him down from here once more."),
     )
     .await?;
     city_route::roof_to_door(owner, admitted, deadline).await?;
