@@ -536,7 +536,7 @@ mod tests {
 
     #[test]
     fn weekday_schedule_matches_the_bundle_npc_floor() {
-        let sunday = oteryn_gameplay_entities::rashid_schedule::destination_at(3 * 86_400_000);
+        let sunday = oteryn_gameplay_entities::rashid_schedule::destination_at(3 * 86_400_000 + 9 * 3_600_000);
         assert_eq!(rashid_bundle_cell(sunday), (32328, 31782, -6));
     }
 

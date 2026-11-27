@@ -24,19 +24,37 @@ const fn destination(city: &'static str, x: u16, y: u16, z: i8) -> RashidDestina
     }
 }
 
-/// Destination at a UTC Unix timestamp. Canary uses the host calendar day; Oteryn deliberately
-/// fixes that otherwise deployment-dependent clock to UTC.
+/// The authored placements in Monday-through-Sunday order.
+pub const RASHID_DESTINATIONS: [RashidDestination; 7] = [
+    destination("Monday", 32_207, 31_155, 7),
+    destination("Tuesday", 32_300, 32_837, 7),
+    destination("Wednesday", 32_577, 32_753, 7),
+    destination("Thursday", 33_066, 32_879, 6),
+    destination("Friday", 33_235, 32_483, 7),
+    destination("Saturday", 33_166, 31_810, 6),
+    destination("Sunday", 32_328, 31_782, 6),
+];
+
+/// Global uses the weekday of the most recent 10:00 Berlin Server Save.
+/// Embed the named timezone so placement and trade reads need no runtime I/O.
+pub fn server_save_weekday_index(unix_ms: i64) -> usize {
+    static BERLIN: jiff::tz::TimeZone = jiff::tz::get!("Europe/Berlin");
+    let timestamp = jiff::Timestamp::from_millisecond(unix_ms).unwrap_or(if unix_ms < 0 {
+        jiff::Timestamp::MIN
+    } else {
+        jiff::Timestamp::MAX
+    });
+    let local = timestamp.to_zoned(BERLIN.clone());
+    let weekday = if local.hour() < 10 {
+        local.weekday().previous()
+    } else {
+        local.weekday()
+    };
+    weekday.to_monday_zero_offset() as usize
+}
+
 pub fn destination_at(unix_ms: i64) -> RashidDestination {
-    // 1970-01-01 was Thursday. `rem_euclid` also gives a defined answer before the epoch.
-    match (unix_ms.div_euclid(86_400_000) + 3).rem_euclid(7) {
-        0 => destination("Monday", 32_207, 31_155, 7),
-        1 => destination("Tuesday", 32_300, 32_837, 7),
-        2 => destination("Wednesday", 32_577, 32_753, 7),
-        3 => destination("Thursday", 33_066, 32_879, 6),
-        4 => destination("Friday", 33_235, 32_483, 7),
-        5 => destination("Saturday", 33_166, 31_810, 6),
-        _ => destination("Sunday", 32_328, 31_782, 6),
-    }
+    RASHID_DESTINATIONS[server_save_weekday_index(unix_ms)]
 }
 
 /// Retain only today's Canary placement for Rashid. Other NPCs and their ordering are unchanged.
@@ -53,7 +71,7 @@ pub fn rotate_placements(table: &mut NpcPlacementTable, unix_ms: i64) {
         .retain(|npc| npc.key != RASHID_NPC_KEY || !npc.placements.is_empty());
 }
 
-/// Whether a visible Rashid actor is within his destination's wander area this UTC weekday.
+/// Whether a visible Rashid actor is within his destination's wander area on the current Server Save day.
 /// Canary 47dfd51f and Crystal 201189f8 npc/rashid.lua:10-11 set a 2000 ms
 /// interval and radius 3. Canary src/creatures/npcs/npc.cpp:1190-1196 bounds
 /// walking around masterPos; trading must remain available after those steps.
@@ -72,9 +90,12 @@ mod tests {
     use super::*;
     use crate::NpcPlacements;
 
+    // 1970-01-01 was winter time in Berlin.
+    const THURSDAY_SAVE: i64 = 9 * 3_600_000;
+
     #[test]
     fn canary_week_rotates_all_seven_destinations() {
-        let monday = 4 * 86_400_000;
+        let monday = THURSDAY_SAVE + 4 * 86_400_000;
         let expected = [
             ("Monday", 32_207, 31_155, -7),
             ("Tuesday", 32_300, 32_837, -7),
@@ -100,19 +121,26 @@ mod tests {
 
     // Crystal 201189f8 data-global/scripts/globalevents/spawn/rashid.lua:2-8 (Canary 47dfd51f
     // identical) teleports Rashid to the weekday destination, so trading follows his position.
-    // Crystal rotates at host-local 00:01; Oteryn rotates at UTC 00:00.
     #[test]
     fn crystal_trade_follows_the_weekday_destination() {
-        let thursday = 0;
+        let thursday = THURSDAY_SAVE;
         let position = |x: i32, y: i32, floor: i16| MovementLocalPosition { x, y, floor };
         let ankrahmun = position(33_066, 32_879, 6);
         assert!(trade_available(RASHID_NPC_KEY, ankrahmun, thursday));
-        assert!(trade_available(RASHID_NPC_KEY, ankrahmun, 86_400_000 - 1));
-        assert!(!trade_available(RASHID_NPC_KEY, ankrahmun, 86_400_000));
+        assert!(trade_available(
+            RASHID_NPC_KEY,
+            ankrahmun,
+            thursday + 86_400_000 - 1
+        ));
+        assert!(!trade_available(
+            RASHID_NPC_KEY,
+            ankrahmun,
+            thursday + 86_400_000
+        ));
         assert!(trade_available(
             RASHID_NPC_KEY,
             position(33_235, 32_483, 7),
-            86_400_000
+            thursday + 86_400_000
         ));
         assert!(!trade_available(
             RASHID_NPC_KEY,
@@ -130,7 +158,7 @@ mod tests {
     #[test]
     fn weekday_trade_remains_available_after_wandering() {
         for day in 0..7 {
-            let now = day * 86_400_000;
+            let now = THURSDAY_SAVE + day * 86_400_000;
             let spawn = destination_at(now).placement;
             for dx in -3..=3 {
                 for dy in -3..=3 {
@@ -158,9 +186,26 @@ mod tests {
     }
 
     #[test]
+    fn rashid_rotates_at_ten_in_winter_summer_and_both_dst_weeks() -> Result<(), jiff::Error> {
+        for (boundary, before, after) in [
+            ("2026-01-05T09:00:00Z", "Sunday", "Monday"),
+            ("2026-07-06T08:00:00Z", "Sunday", "Monday"),
+            ("2026-03-29T08:00:00Z", "Saturday", "Sunday"),
+            ("2026-03-30T08:00:00Z", "Sunday", "Monday"),
+            ("2026-10-25T09:00:00Z", "Saturday", "Sunday"),
+            ("2026-10-26T09:00:00Z", "Sunday", "Monday"),
+        ] {
+            let instant = boundary.parse::<jiff::Timestamp>()?.as_millisecond();
+            assert_eq!(destination_at(instant - 60_000).city, before, "{boundary}");
+            assert_eq!(destination_at(instant).city, after, "{boundary}");
+        }
+        Ok(())
+    }
+
+    #[test]
     fn rotation_selects_today_and_leaves_other_npcs_untouched() {
         let all = (0..7)
-            .map(|day| destination_at((4 + day) * 86_400_000).placement)
+            .map(|day| destination_at(THURSDAY_SAVE + (4 + day) * 86_400_000).placement)
             .collect();
         let alice = NpcPlacements {
             key: "oteryn:npc.alice".into(),
@@ -175,11 +220,11 @@ mod tests {
                 },
             ],
         };
-        rotate_placements(&mut table, 4 * 86_400_000);
+        rotate_placements(&mut table, THURSDAY_SAVE + 4 * 86_400_000);
         assert_eq!(table.npcs[0], alice);
         assert_eq!(
             table.npcs[1].placements,
-            vec![destination_at(4 * 86_400_000).placement]
+            vec![destination_at(THURSDAY_SAVE + 4 * 86_400_000).placement]
         );
     }
 }
