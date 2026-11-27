@@ -360,7 +360,13 @@ fn valid_reward_transition(
         && after.dust == killed.dust
         && killed.slivers == before.slivers
         && if stacks == 15 {
-            after.slivers > killed.slivers
+            // Global ties slivers to creature difficulty. Pinned Crystal supplies
+            // the 3–7 bounds used by Oteryn's fiendish reward function.
+            // https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/config/configmanager.cpp#L315-L316
+            after
+                .slivers
+                .checked_sub(killed.slivers)
+                .is_some_and(|gain| (3..=7).contains(&gain))
         } else {
             after.slivers == killed.slivers
         }
@@ -374,14 +380,15 @@ fn forge_rewards_reject_wrong_amount_or_phase() {
         slivers: 0,
     };
     let killed = Rewards { dust: 15, ..before };
-    for gain in [0, 2, 3, 7, 8] {
+    for gain in [0, 1, 2, 3, 4, 5, 6, 7, 8] {
         let after = Rewards {
             slivers: gain,
             ..killed
         };
         assert_eq!(
             valid_reward_transition(&before, &killed, &after, 15),
-            gain > 0
+            (3..=7).contains(&gain),
+            "fiendish sliver gain {gain}"
         );
     }
     let good = Rewards {
@@ -398,7 +405,7 @@ fn forge_rewards_reject_wrong_amount_or_phase() {
     ));
     for dust in [14, 15, 45, 46, 101] {
         let killed = Rewards { dust, ..before };
-        let after = Rewards { slivers: 1, ..killed };
+        let after = Rewards { slivers: 3, ..killed };
         assert_eq!(
             valid_reward_transition(&before, &killed, &after, 15),
             (15..=45).contains(&dust)
@@ -409,7 +416,7 @@ fn forge_rewards_reject_wrong_amount_or_phase() {
     assert!(!valid_reward_transition(
         &near_cap,
         &clipped,
-        &Rewards { slivers: 1, ..clipped },
+        &Rewards { slivers: 3, ..clipped },
         15
     ));
     let influenced = Rewards { dust: 3, ..before };
