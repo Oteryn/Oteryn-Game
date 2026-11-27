@@ -24,7 +24,9 @@ from lower_wiki_stack_default_packet import checked, sha
 ROOT = Path(__file__).resolve().parents[3]
 COMPILER = "tools/content-schema/item-authoring/lower_client_market_mint_packet.py"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261031-item-client-market-mint-v1.json"
-RUST_PIN = ROOT / "crates/gameplay/content-promotion/src/content/item_client_market_mint.rs"
+RUST_PIN = (
+    ROOT / "crates/gameplay/content-promotion/src/content/item_client_market_mint.rs"
+)
 CLIENT_SHA = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
 CLIENT = f"content/assets/files/appearances-{CLIENT_SHA}.dat"
 REGISTER = "docs/agents/evidence/OTV2-20260929-item-id-1b-q13d-family-decisions.json"

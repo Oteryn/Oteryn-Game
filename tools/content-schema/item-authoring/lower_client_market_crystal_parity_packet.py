@@ -26,7 +26,9 @@ COMPILER = (
     "tools/content-schema/item-authoring/lower_client_market_crystal_parity_packet.py"
 )
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261031-item-market-crystal-parity-v1.json"
-RUST_PIN = ROOT / "crates/gameplay/content-promotion/src/content/item_market_crystal_parity.rs"
+RUST_PIN = (
+    ROOT / "crates/gameplay/content-promotion/src/content/item_market_crystal_parity.rs"
+)
 V2 = "docs/agents/evidence/OTV2-20261003-item-market-true-promotion-v2.json"
 DONOR_REPOSITORY = "zimbadev/crystalserver"
 DONOR_REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"

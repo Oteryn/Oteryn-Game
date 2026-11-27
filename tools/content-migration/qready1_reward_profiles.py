@@ -4,6 +4,7 @@ import hashlib
 import json
 from copy import deepcopy
 
+import equipment_eligibility
 import forge_item_profiles
 import imbuement_item_profiles
 import quest_callback_profiles as accepted
@@ -35,6 +36,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     document = json.loads(generated[profile_path])
     present = {r['production_definition']['production_key']: r for r in document['records']}
     forge_owners = None
+    eligibility = {}
     for record in records:
         key = record["production_definition"]["production_key"]
         definition = definitions[key]
@@ -61,14 +63,16 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             raise ValueError("QREADY1_NATIVE_REWARD_CANONICAL_DRIFT:" + key)
         accepted.complete_native_stack(root, record, definition, binding)
         if key in present and present[key] != record:
-            # The final provider also contains the independently qualified
-            # Forge owner and Crystal imbuement overlay. Rebuild both before
-            # comparing the full record, including all original reward facts.
+            # Replay the final provider's Forge, Crystal imbuement, and Crystal
+            # equipment eligibility overlays before comparing the full record.
             if forge_owners is None:
                 forge_owners = forge_item_profiles.owners(root)
+                for fact in equipment_eligibility.load_facts(root):
+                    eligibility.setdefault(fact['key'], []).append(fact)
             qualified = {'records': [deepcopy(record)]}
             forge_item_profiles.project(qualified, forge_owners)
             imbuement_item_profiles.apply_crystal_audit(root, qualified, require_all=False)
+            equipment_eligibility.complete(qualified, eligibility.get(key, ()))
             if compact_item_record(deepcopy(present[key])) != compact_item_record(qualified['records'][0]):
                 raise ValueError('QREADY1_NATIVE_REWARD_CONFLICT:' + key)
         else:

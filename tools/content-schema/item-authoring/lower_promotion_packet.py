@@ -30,9 +30,9 @@ committed output make no Rust-side claim.
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
-import gzip
 import math
 from collections import Counter
 from pathlib import Path

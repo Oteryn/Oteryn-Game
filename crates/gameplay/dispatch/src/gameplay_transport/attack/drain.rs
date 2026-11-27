@@ -24,7 +24,7 @@ use oteryn_gameplay_combat_rules::attack::formulas::player_monk_formula;
 use oteryn_gameplay_combat_rules::attack::target::Swing;
 use oteryn_gameplay_combat_rules::resolution::{
     creature_melee_mitigation, creature_physical_resistance, creature_physically_immune,
-    equipped_offence::{CRITICAL_ROLL_MAX, CRITICAL_ROLL_MIN},
+    equipped_offence::{CRITICAL_ROLL_MAX, CRITICAL_ROLL_MIN, EquippedOffence},
     swing_mitigated,
 };
 use oteryn_gameplay_items::equipment_effects::apply_protection;
@@ -610,10 +610,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &runtime,
                     &selected,
                     constants,
-                    &root,
-                    &offence,
-                    pure_elemental_with_attack_points,
-                    true,
+                    SwingDamageContext {
+                        root: &root,
+                        offence: &offence,
+                        pure_elemental_with_attack_points,
+                        area: true,
+                    },
                 )
             } else {
                 None
@@ -701,10 +703,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &runtime,
                         &selected,
                         constants,
-                        &root,
-                        &offence,
-                        pure_elemental_with_attack_points,
-                        false,
+                        SwingDamageContext {
+                            root: &root,
+                            offence: &offence,
+                            pure_elemental_with_attack_points,
+                            area: false,
+                        },
                     )
                 }) else {
                     continue;
@@ -2413,16 +2417,26 @@ fn melee_swing_formula(
     (formula, weapon.attack(constants.fist.attack), revision)
 }
 
+pub(super) struct SwingDamageContext<'a> {
+    pub(super) root: &'a GameplayDecisionRoot,
+    pub(super) offence: &'a EquippedOffence,
+    pub(super) pure_elemental_with_attack_points: bool,
+    pub(super) area: bool,
+}
+
 pub(super) fn draw_swing_damage(
     entry: &mut ActorAttack,
     runtime: &ChannelRuntimeV1,
     selected: &SelectedSwing,
     constants: &AttackConstants,
-    root: &GameplayDecisionRoot,
-    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
-    pure_elemental_with_attack_points: bool,
-    area: bool,
+    context: SwingDamageContext<'_>,
 ) -> Option<(i64, &'static str)> {
+    let SwingDamageContext {
+        root,
+        offence,
+        pure_elemental_with_attack_points,
+        area,
+    } = context;
     let SelectedSwing {
         target,
         character_facts,
