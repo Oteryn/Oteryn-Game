@@ -92,6 +92,24 @@ pub(super) async fn drive(
     entity: EntityRef,
     scenario: i16,
 ) -> TestResult {
+    if scenario == 16 {
+        let state = modes(ExpertMode::RedFist);
+        {
+        let held = owner.root.try_issue_semantic_pass()?;
+        let mut request = std::pin::pin!(set(client, 1, state));
+        tokio::select! {
+            result = &mut request => {
+                result?;
+                return Err("expert modes completed while the sole holder was checked out".into());
+            }
+            () = tokio::time::sleep(Duration::from_millis(250)) => {}
+        }
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        request.await?;
+        }
+        delta(client, state).await?;
+        return Ok(());
+    }
     if scenario == 15 {
         let mut tx = pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")

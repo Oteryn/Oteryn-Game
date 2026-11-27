@@ -53,10 +53,11 @@
       "level": "warn",
       "span": false,
       "fields": [
-        "class"
+        "class",
+        "reason"
       ],
       "codes": [],
-      "note": "PR3106: logical appearance observation refusal; class is content, fence, revision, state, visibility or conditions. Durable failures retain the existing retry diagnostics. No player identifiers, payloads or raw errors."
+      "note": "PR3106: logical appearance observation refusal; class is content, fence, revision, state, visibility or conditions. Advisory storage failures include a fixed reason token. No player identifiers, payloads or raw errors."
     },
     {
       "event": "appearance_observation_skipped",
@@ -470,6 +471,14 @@
       ],
       "codes": [],
       "note": "NBEOF-2: closed-schema stage and failure kind after holder retry exhaustion or a non-retryable durability failure."
+    },
+    {
+      "event": "session_holder_wait",
+      "level": "info",
+      "span": false,
+      "fields": ["purpose", "owner", "held_ms", "waited_ms", "outcome"],
+      "codes": [],
+      "note": "Bounded gameplay wait after a competing durability checkout."
     },
     {
       "event": "source_death_pending",
