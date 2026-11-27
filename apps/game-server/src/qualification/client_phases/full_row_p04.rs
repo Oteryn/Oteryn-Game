@@ -4,7 +4,7 @@
 //!    bounty, shop, points and soulseal projection.
 //! 2. Send START_WEEKLY with an invalid/locked difficulty; expect a refusal and
 //!    no board delta (the negative path).
-//! 3. Admit at seeded level eight, send START_WEEKLY(Beginner),
+//! 3. Admit at seeded level 399, send START_WEEKLY(Beginner),
 //!    and expect an accepted board containing kill and delivery assignments.
 //! 4. Send DELIVER for a real assignment; expect either item consumption plus
 //!    completion/XP deltas, or the explicit insufficient-items refusal.
@@ -158,7 +158,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let clients = &scoped_clients;
     character_prep::declare_seeded(
         "P04.full",
-        "sorcerer-level-8",
+        "sorcerer-level-399",
         "weekly Task Board eligibility",
     );
     let mut client = connect_character(clients, 0x9a, 0).await?;
@@ -175,13 +175,13 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_character(clients, 0x9a, 0).await?;
     let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
         "sorcerer",
-        8,
+        399,
         oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
         oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
     )
     .ok_or("missing level-8 sorcerer maxima")?;
     if client.join_snapshot().game_session_id == original_session
-        || full_e2ef7::player_level(&mut client).await? != 8
+        || full_e2ef7::player_level(&mut client).await? != 399
         || !client
             .actor_vitals()
             .is_some_and(|vitals| vitals.max_health == max_health && vitals.max_mana == max_mana)
@@ -190,6 +190,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
             "fresh Task Board admission did not serve the seeded level and derived vitals".into(),
         );
     }
+    evidence("FIXTURE row=P04.full fixture_level=399 vocation=sorcerer");
     let initial = query(&mut client).await?;
     journey.check(
         1,
@@ -238,11 +239,23 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let required = u32::from(task.required);
     let bag = provisioning::item_reference(&item_index, DELIVERY_BAG)?;
     let inventory_before = u32::from(task.current);
-    let missing = required.saturating_sub(inventory_before);
-    if missing != 0 {
-        client = fund_delivery(clients, client, reference, missing).await?;
-    }
-    let inventory_funded = inventory_before + missing;
+    let (key, _) = item_index.definition_at(reference).ok_or("P04 definition absent")?;
+    let legacy_id: u16 = key.strip_prefix("oteryn:item.tibia.i").ok_or("P04 legacy ID absent")?.parse()?;
+    let maximum = *oteryn_gameplay_quests::quest::task_board::full::DELIVERY_ITEMS
+        .iter()
+        .find(|item| item.item_id == legacy_id)
+        .ok_or("P04 authored range absent")?
+        .quantity.end();
+    client = fund_delivery(clients, client, reference).await?;
+    let inventory_funded = inventory_before + maximum;
+    let containers = delivery_inventory(&client)?
+        .entries
+        .iter()
+        .filter(|entry| entry.item_definition_ref == bag)
+        .count();
+    evidence(&format!(
+        "FIXTURE row=P04.full fixture_containers={containers} item={legacy_id} authored_max={maximum} required={required}"
+    ));
     let funded = query(&mut client).await?;
     if !funded.weekly.deliveries.get(index).is_some_and(|funded| {
         funded.item == task.item
@@ -286,7 +299,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         opened.refusal == 0 && opened.bounty.state == 1 && opened.bounty.offers.len() == 3,
         (&opened.refusal, &opened.bounty),
     );
-    let claimed = full_row_p05::complete_bounty(&mut client, clients, &opened).await?;
+    let claimed = full_row_p05::complete_p04_bounty(&mut client, clients, &opened).await?;
     let rerolled = send(&mut client, 11, 0).await?;
     journey.check(
         5,
@@ -328,7 +341,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
                 .then_some((index, task, race))
         });
     if let Some((index, task, race)) = sample {
-        full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, race).await?;
+        full_row_p05::hunt_p04_fixture(&mut client, world, race).await?;
         let next = query(&mut client).await?;
         journey.check(
             4,
@@ -477,28 +490,14 @@ async fn fund_delivery(
     clients: &SeamClients<'_>,
     mut client: oteryn_dev_client::DevClientSession,
     reference: std::num::NonZeroU32,
-    mut missing: u32,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     let prior = client.join_snapshot().game_session_id;
-    // The fixture pins each filled bag's receipt by item and quantity within
-    // the admission. Distinct quantities therefore represent distinct bags.
-    for limit in (1..=20).rev() {
-        if missing == 0 {
-            break;
-        }
-        let quantity = missing.min(limit);
-        request_fixture_control_at(
-            "NODE_BOOT_CONTROL_SOCKET",
-            uuid_text(prior.as_bytes()),
-            "--profile",
-            format!("p04-item-{reference}-{quantity}"),
-        )
-        .await?;
-        missing -= quantity;
-    }
-    if missing != 0 {
-        return Err("weekly-delivery assignment exceeds fixture grant capacity".into());
-    }
+    request_fixture_control_at(
+        "NODE_BOOT_CONTROL_SOCKET",
+        uuid_text(prior.as_bytes()),
+        "--profile",
+        format!("p04-max-item-{reference}"),
+    ).await?;
     logout_once(&mut client).await?;
     drop(client);
     let fresh = connect_character(clients, 0x9a, 0).await?;

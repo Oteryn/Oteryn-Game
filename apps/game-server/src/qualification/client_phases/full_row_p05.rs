@@ -161,6 +161,23 @@ pub(super) async fn complete_bounty(
     clients: &SeamClients<'_>,
     opened: &full::Reply,
 ) -> TestResult<full::Reply> {
+    complete_bounty_with_placement(client, clients, opened, false).await
+}
+
+pub(super) async fn complete_p04_bounty(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    opened: &full::Reply,
+) -> TestResult<full::Reply> {
+    complete_bounty_with_placement(client, clients, opened, true).await
+}
+
+async fn complete_bounty_with_placement(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    opened: &full::Reply,
+    fixture: bool,
+) -> TestResult<full::Reply> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -195,7 +212,11 @@ pub(super) async fn complete_bounty(
             )
             .into());
         }
-        hunt_for_race(client, world, &metadata.spawns, &offer.race).await?;
+        if fixture {
+            hunt_p04_fixture(client, world, &offer.race).await?;
+        } else {
+            hunt_for_race(client, world, &metadata.spawns, &offer.race).await?;
+        }
         state = accepted(4, command(client, 4, 0).await?)?;
     }
     if state.bounty.current != offer.required || state.bounty.state != 3 {
@@ -409,10 +430,65 @@ pub(super) async fn hunt_for_race(
     spawns: &oteryn_world_bundle::spawn::Table,
     key: &str,
 ) -> TestResult<KillSample> {
+    let target = wait_for_spawn(client, world, spawns, key).await?;
+    hunt_target(client, key, target).await
+}
+
+pub(super) async fn hunt_p04_fixture(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    key: &str,
+) -> TestResult<KillSample> {
+    let outside_protection = |at: TilePos| {
+        world.base().tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+    };
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| {
+        outside_protection(at)
+            && [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
+                .into_iter()
+                .any(|direction| destination(world, at, direction).is_some_and(outside_protection))
+    }).ok_or("P04 hunt fixture needs a nearby open combat tile")?;
+    for direction in path {
+        let before = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, before, direction).ok_or("P04 hunt fixture route lost its landing")?;
+        evidence(&format!("FIXTURE row=P04.full fixture_walk_position={before:?} target={expected:?} race={key}"));
+        let step = client.step(direction).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if step.disposition != StepDisposition::Moved || step.world_spatial_delta.is_none() || actual != expected {
+            return Err(format!("P04 hunt fixture walk refused at {before:?} target={expected:?} actual={actual:?}: {:?}", step.disposition).into());
+        }
+    }
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let position = client.world_spatial().actor_position;
+    evidence(&format!("FIXTURE row=P04.full fixture_hunt_position={position:?} target_race={key}"));
+    let target = parse_spawned_entity(&request_spawn(session, key.to_owned()).await?)?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let target = loop {
+        if let Some(entity) = client.world_entities().and_then(|view| view.get(&target)).copied() {
+            if entity.kind != oteryn_dev_client::EntityKind::Creature {
+                return Err("P04 hunt fixture target is not a creature".into());
+            }
+            break entity;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("P04 hunt fixture target {target:?} not visible from {position:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    };
+    evidence(&format!("FIXTURE row=P04.full fixture_hunt_position={position:?} target={:?} target_position={:?}", target.entity, target.position));
+    hunt_target(client, key, target).await
+}
+
+async fn hunt_target(
+    client: &mut DevClientSession,
+    key: &str,
+    target: oteryn_dev_client::WorldSpatialEntity,
+) -> TestResult<KillSample> {
     use oteryn_dev_client::{EntityKind, SessionEvent};
     use oteryn_protocol_oteryn::analyser::AnalyserFact;
     let race = race_reference(key)?;
-    let target = wait_for_spawn(client, world, spawns, key).await?;
     let old_corpses: Vec<_> = client
         .world_entities()
         .into_iter()

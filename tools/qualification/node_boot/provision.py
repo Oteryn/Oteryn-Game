@@ -36,7 +36,10 @@ def _request(socket_path, line, limit):
 def provision(socket_path, session, profile):
     identifier = uuid.UUID(session)
     item = NAMED_ITEM.fullmatch(profile.removeprefix("p04-"))
-    valid_profile = profile in PROFILES or (item is not None and int(item[1]) <= 0xFFFFFFFF)
+    p04_max_item = re.fullmatch(r"p04-max-item-([1-9][0-9]{0,9})", profile)
+    valid_profile = profile in PROFILES or any(
+        match is not None and int(match[1]) <= 0xFFFFFFFF for match in (item, p04_max_item)
+    )
     if identifier.version != 7 or str(identifier) != session or not valid_profile:
         raise ValueError("invalid qualification request")
     answer = _request(socket_path, f"qualify {session} {profile}\n", 64)
