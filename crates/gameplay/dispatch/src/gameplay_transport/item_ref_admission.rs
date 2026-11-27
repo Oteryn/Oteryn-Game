@@ -123,6 +123,12 @@ pub(super) async fn retry_use_read<T>(
     }
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static USE_INVENTORY_CHECKOUT_PROBE:
+        std::cell::Cell<Option<std::sync::Arc<super::composed_admission::HolderCheckoutProbe>>>;
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn probe_plain_use_receipt(
         &self,
@@ -163,11 +169,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         crate::durability::item_use::ItemUseInventory,
         crate::durability::item_use::ItemUseError,
     > {
+        #[cfg(test)]
+        let probe = USE_INVENTORY_CHECKOUT_PROBE
+            .try_with(std::cell::Cell::take)
+            .ok()
+            .flatten();
+        #[cfg(test)]
+        if let Some(probe) = &probe {
+            probe.pause().await;
+        }
         let budget = super::AdmissionRetryBudget::for_command(self.root);
         retry_use_read(&budget, async || {
-            self.root
+            let result = self
+                .root
                 .read_item_use_inventory(self.character, self.holder, fence)
-                .await
+                .await;
+            #[cfg(test)]
+            if matches!(
+                result,
+                Err(crate::durability::item_use::ItemUseError::Unavailable(
+                    crate::durability::DurabilityError::RootUnavailable
+                ))
+            ) && let Some(probe) = &probe
+            {
+                probe.blocked();
+            }
+            result
         })
         .await
     }

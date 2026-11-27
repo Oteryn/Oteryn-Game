@@ -4,6 +4,31 @@ use super::*;
 use crate::gameplay_transport::hotkey_equip::RejectionStage;
 use oteryn_protocol_oteryn::chat::{COMMAND_TYPE_CHAT_INTENT, ChatDisposition};
 
+pub(super) fn disconnect(
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+    stage: &'static str,
+    kind: impl std::fmt::Debug,
+) -> ServeEnd {
+    operator_event(&format!(
+        "event=command_disconnected command_type={} command_id={} stage={stage} kind={kind:?}",
+        command.command_type, command.command_id,
+    ));
+    ServeEnd::Disconnected
+}
+
+pub(super) fn disconnect_at(
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+    stage: &'static str,
+    kind: &'static str,
+    end: ServeEnd,
+) -> ServeEnd {
+    if matches!(end, ServeEnd::Disconnected) {
+        disconnect(command, stage, kind)
+    } else {
+        end
+    }
+}
+
 pub(super) struct CommandOutcome {
     pub(super) second_logout: bool,
     pub(super) lost_while_logging_out: bool,
@@ -95,8 +120,8 @@ where
         Ok(crate::gameplay_transport::session_ingress::CommandAction::Replay(frame)) => {
             session.sequence += 1; // begin checked the successor before encoding the replay.
             session.admitted.continuity.server_sequence = session.sequence;
-            if write_frame(stream, &frame).await.is_err() {
-                return Err(ServeEnd::Disconnected);
+            if let Err(error) = write_frame(stream, &frame).await {
+                return Err(disconnect(command, "ingress_replay_write", error.kind()));
             }
             return Ok(());
         }
@@ -119,7 +144,7 @@ where
         session.sequence = session
             .sequence
             .checked_add(1)
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| disconnect(command, "throttle_sequence", "sequence_overflow"))?;
         session.admitted.continuity.server_sequence = session.sequence;
         let result = result::encode(session, command, &mut dispatch)?;
         return outbound::finish(
@@ -146,7 +171,8 @@ where
         command,
         tokio::time::Instant::now().saturating_duration_since(received_at),
     )
-    .await?;
+    .await
+    .map_err(|end| disconnect_at(command, "hotkey_preflight", "input_or_refresh", end))?;
     let mut input_permit = authority
         .enter_input(session.admitted.game_session_id)
         .await;
@@ -190,13 +216,18 @@ where
             .command_selected(command.command_type)
     {
         return super::house_transfer::execute(stream, authority, session, command, input_permit)
-            .await;
+            .await
+            .map_err(|end| disconnect_at(command, "house_transfer", "transfer_unavailable", end));
     }
     if input_permit.is_none() && session.reconcile_original_bank {
         // No current input grant: do not run money work, and do not falsely terminate an
         // accepted original command whose retained Bank status has not been classified.
         log_preflight_use_failure(command, "retained_npc_input_unavailable");
-        return Err(ServeEnd::Disconnected);
+        return Err(disconnect(
+            command,
+            "retained_npc_input_unavailable",
+            "input_permit_unavailable",
+        ));
     }
     let retained_bank = if input_permit.is_some() && session.reconcile_original_bank {
         let outcome = authority
@@ -211,7 +242,11 @@ where
             .await;
         if outcome.as_ref().is_some_and(|outcome| outcome.unknown) {
             log_preflight_use_failure(command, "retained_npc_unresolved");
-            return Err(ServeEnd::Disconnected);
+            return Err(disconnect(
+                command,
+                "retained_npc_unresolved",
+                "unknown_receipt",
+            ));
         }
         session.reconcile_original_bank = false;
         outcome
@@ -241,7 +276,11 @@ where
             .await
     {
         log_preflight_use_failure(command, "training_activity_unresolved");
-        return Err(ServeEnd::Disconnected);
+        return Err(disconnect(
+            command,
+            "training_activity_unresolved",
+            "training_checkpoint_unavailable",
+        ));
     }
     let mut outcome = CommandOutcome {
         second_logout,
@@ -337,7 +376,7 @@ where
                 session
                     .commands
                     .buffer_step(command)
-                    .ok_or(ServeEnd::Disconnected)?;
+                    .ok_or_else(|| disconnect(command, "step_buffer", "reservation_missing"))?;
                 // Pacing throttled this input; the buffered original is charged only once.
                 session
                     .integrity
@@ -382,7 +421,9 @@ where
         // Pacing waits must not hold shutdown's player-input permit. The walk takes one
         // permit per actual step, and the original action reacquires one before its retry.
         drop(input_permit.take());
-        let walked = Box::pin(autowalk::walk(stream, authority, session, command, target)).await?;
+        let walked = Box::pin(autowalk::walk(stream, authority, session, command, target))
+            .await
+            .map_err(|end| disconnect_at(command, "approach_walk", "walk_interrupted", end))?;
         input_permit = authority
             .enter_input(session.admitted.game_session_id)
             .await;
@@ -427,18 +468,22 @@ where
             .await
     {
         routing::log_unresolved_use(command, "quest_use_callback");
-        return Err(ServeEnd::Disconnected);
+        return Err(disconnect(command, "quest_use_callback", "unknown_receipt"));
     }
-    dispatch = bank_inventory(authority, session, dispatch).await?;
+    dispatch = bank_inventory(authority, session, command, dispatch).await?;
     drop(input_permit);
     if matches!(dispatch, Dispatch::Appearance(None) | Dispatch::House(None)) {
-        return Err(ServeEnd::Disconnected);
+        return Err(disconnect(
+            command,
+            "appearance_or_house_result",
+            "owner_unavailable",
+        ));
     }
     if matches!(dispatch, Dispatch::Vip(None)) {
-        return Err(ServeEnd::Disconnected);
+        return Err(disconnect(command, "vip_result", "owner_unavailable"));
     }
     let Some(result_sequence) = session.sequence.checked_add(1) else {
-        return Err(ServeEnd::Disconnected);
+        return Err(disconnect(command, "result_sequence", "sequence_overflow"));
     };
     session.sequence = result_sequence;
     session.admitted.continuity.server_sequence = session.sequence;
@@ -479,7 +524,7 @@ where
             &TutorialNotice::StatusText("There is no way.".into()),
         )
         .await
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| disconnect(command, "approach_notice", "projection_or_write_failed"))?;
     }
     Ok(())
 }
@@ -496,6 +541,7 @@ fn log_preflight_use_failure(
 async fn bank_inventory<A>(
     authority: &A,
     session: &mut ServeState,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     dispatch: Dispatch,
 ) -> Result<Dispatch, ServeEnd>
 where
@@ -516,11 +562,15 @@ where
                     )
                     .await
                     else {
-                        return Err(ServeEnd::Disconnected);
+                        return Err(disconnect(
+                            command,
+                            "npc_inventory_read",
+                            "inventory_unavailable",
+                        ));
                     };
-                    let Ok(delta) = view.inventory_committed(inventory) else {
-                        return Err(ServeEnd::Disconnected);
-                    };
+                    let delta = view
+                        .inventory_committed(inventory)
+                        .map_err(|error| disconnect(command, "npc_inventory_delta", error))?;
                     session.admitted.continuity.item_view = view.continuity();
                     deltas.extend(delta);
                 }
@@ -566,7 +616,7 @@ pub(super) async fn guards<A: FreshAdmissionAuthority>(
                 "event=command_guard_failed guard={guard} command_type={} command_id={}",
                 command.command_type, command.command_id,
             ));
-            return Err(ServeEnd::Disconnected);
+            return Err(disconnect(command, guard, error));
         }
     };
     operator_event(&format!(

@@ -260,13 +260,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
-            let now =
-                super::connection::FreshAdmissionAuthority::world_clock_utc_ms(self).ok_or(())?;
-            let minute = crate::world_clock::WorldClockSource::new(
+            let clock = crate::world_clock::WorldClockSource::new(
                 crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
-            )
-            .tibian_minute(now)
-            .ok_or(())?;
+            );
+            let Some(minute) = super::connection::FreshAdmissionAuthority::world_clock_utc_ms(self)
+                .and_then(|now| clock.tibian_minute(now))
+            else {
+                return Ok(Some(super::use_receipt_refused(command, "watch_clock")));
+            };
             self.states.chat.push_quest_feedback(
                 command.game_session_id,
                 &format!("The time is {}:{:02}.", minute / 60, minute % 60),

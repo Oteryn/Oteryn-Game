@@ -1,7 +1,7 @@
 # Quick loot destinations
 
 Capability 607 requires capabilities 4 and 98 and gates commands 6376 and 6377.
-Command 114 retains actions 1–7 and their existing results. Each new action is
+Command 114 retains actions 1–7 and the existing results for requests without a selected item. Each new action is
 valid only on its registered command. Requests use the tagged field layout in
 [quick_loot_v1.proto](quick_loot_v1.proto).
 
@@ -9,7 +9,7 @@ valid only on its registered command. Requests use the tagged field layout in
 
 - Action 8 removes a Loot assignment. Field 3 selects a category. Omission
   resets the Unassigned Loot destination to the main backpack.
-- Action 9 reviews saved destinations. It takes only field 1.
+- Action 9 reviews saved destinations. Optional request field 10 opts in to the saved filter settings.
 - Action 10 assigns an Obtain destination. Field 3 is optional for the default
   Obtain destination, field 4 selects the recipient kind, and field 5 carries
   the item instance UUID for a container or gold pouch.
@@ -33,7 +33,7 @@ The default applies when neither category is assigned. Command 114 accepts
 only categories 1–5 on assignment. Commands 6376 and 6377 accept an item reference as a 16-byte instance UUID
 or an eight-byte little-endian nonzero handle from the current session item
 view. The server resolves a handle at ingress and proves current custody for
-either reference. Command 114 retains its UUID-only grammar.
+either reference. Command 114 uses the session-local handle in field 9 for a selected Click.
 Other fields are forbidden. Premium is required for category-specific
 Loot management, bulk assignment and Obtain changes. The existing carried
 container and gold-pouch checks apply. Writes use the current Character item
@@ -46,6 +46,19 @@ has a category byte (0 means default), a recipient kind byte, and the 16-byte
 item instance UUID for kinds 1 and 2. There is always a Loot default row. An
 absent Obtain row means no saved assignment. The query reveals only the current
 Character's preferences, including saved items that may no longer be carried.
+
+When request field 10 is true, a tagged suffix follows the destination sections.
+Tag 1 is the active filter mode (varint, 1 Skip or 2 Accept). Tags 2 and 3
+are the Skip and Accept lists, respectively, as packed little-endian fixed32
+Item definition references in the admitted index. References are nonzero,
+ascending and unique, with at most 2048 per list. Empty lists omit their tags.
+Entries absent from the admitted index stay persisted for future generations.
+Omitting request field 10 preserves the original reply bytes.
+
+For a Gold Pouch assignment on legacy command 114, field 5 also accepts the
+Store Inbox fulfilment UUID. The server resolves it within the current Character, account and World
+and applies the existing Gold Pouch and Inbox custody checks. A durable item
+instance UUID retains precedence and saved destinations use that identity.
 
 ## Distribute contents (6377)
 

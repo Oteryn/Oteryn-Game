@@ -1,9 +1,16 @@
 //! BOOSTED-1: the committed World/server-save choice shared by queries, kills and home spawns.
-use super::{ComposedFreshAdmission, connection::AdmittedSession, guild_intent::GuildReply};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission, connection::AdmittedSession, guild_intent::GuildReply};
+use crate::durability::DurabilityError;
 use crate::content::ProjectV2AuthoringProfileData;
 use crate::durability::daily_boost::DailyBoostBinding;
 use crate::foundation::RuntimeScopeRefV1;
 use oteryn_protocol_oteryn::daily_boost as wire;
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static DAILY_BOOST_CHECKOUT_PROBE:
+        std::cell::Cell<Option<std::sync::Arc<super::composed_admission::HolderCheckoutProbe>>>;
+}
 
 pub(super) fn offered(
     base: &[super::capabilities::OfferedCapability],
@@ -72,44 +79,64 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) async fn initialize_daily_boost(&self) -> Result<(), ()> {
-        self.load_daily_boost(false).await
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        self.load_daily_boost(&budget, false).await.map_err(|_| ())
     }
 
-    async fn load_daily_boost(&self, refresh: bool) -> Result<(), ()> {
+    async fn load_daily_boost(
+        &self,
+        budget: &AdmissionRetryBudget<'_>,
+        refresh: bool,
+    ) -> Result<(), DurabilityError> {
         let Some(map) = self.bundle_map() else {
             return Ok(());
         };
-        let mut runtime = self.runtime.lock().await;
-        runtime.owner_fence().map_err(|_| ())?;
-        if self
-            .active_generation
-            .and_then(crate::content::ActiveGeneration::native_gameplay)
-            .is_some_and(|native| {
-                native.source_digest() != runtime.content_pin().server_artifact_digest()
-            })
         {
-            return Err(());
+            let runtime = tokio::time::timeout_at(budget.deadline, self.runtime.lock())
+                .await
+                .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
+            runtime.owner_fence().map_err(|_| DurabilityError::Unavailable)?;
+            if self
+                .active_generation
+                .and_then(crate::content::ActiveGeneration::native_gameplay)
+                .is_some_and(|native| {
+                    native.source_digest() != runtime.content_pin().server_artifact_digest()
+                })
+            {
+                return Err(DurabilityError::Unavailable);
+            }
+            if !refresh
+                && runtime.daily_boost().is_some_and(|choice| choice.reset_epoch == self.reset_epoch)
+            {
+                return Ok(());
+            }
         }
-
-        if !refresh
-            && runtime
-                .daily_boost()
-                .is_some_and(|choice| choice.reset_epoch == self.reset_epoch)
-        {
-            return Ok(());
-        }
-        // Small qualification worlds with no eligible pools have no boosted mechanic.
         let pools = self.daily_boost_pools();
         if pools.0.is_empty() || pools.1.is_empty() {
             return Ok(());
         }
-        drop(runtime);
-        let permit = self.spell_lane_permit().await.ok_or(())?;
-        runtime = self.runtime.lock().await;
-        let binding = runtime.binding();
-        let selection = self
-            .root
-            .prepare_daily_boost(
+        // This world-level selection has no player effects to reconcile. Preserve any
+        // parked spell write for its owner and wait only for the lane within our budget.
+        let permit = tokio::time::timeout_at(budget.deadline, self.spell_lane.acquire())
+            .await
+            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let (binding, content_digest) = {
+            let runtime = tokio::time::timeout_at(budget.deadline, self.runtime.lock())
+                .await
+                .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
+            runtime.owner_fence().map_err(|_| DurabilityError::Unavailable)?;
+            (runtime.binding(), runtime.content_pin().server_artifact_digest())
+        };
+        #[cfg(test)]
+        let probe = refresh.then(|| DAILY_BOOST_CHECKOUT_PROBE.try_with(std::cell::Cell::take).ok().flatten()).flatten();
+        #[cfg(test)]
+        if let Some(probe) = &probe {
+            probe.pause().await;
+        }
+        let selection = budget.retry_durability("daily_boost_selection", async || {
+            budget.check_deadline()?;
+            let result = self.root.prepare_daily_boost(
                 self.character,
                 self.holder,
                 &permit,
@@ -119,11 +146,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     bundle: map.overlay.base().digest(),
                     epoch: self.reset_epoch,
                 },
-                pools,
-            )
+                pools.clone(),
+            ).await;
+            #[cfg(test)]
+            if matches!(result, Err(DurabilityError::RootUnavailable)) && let Some(probe) = &probe {
+                probe.blocked();
+            }
+            result
+        }).await?;
+        let mut runtime = tokio::time::timeout_at(budget.deadline, self.runtime.lock())
             .await
-            .map_err(|_| ())?;
-        runtime.install_daily_boost(selection).map_err(|_| ())
+            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
+        if runtime.binding() != binding
+            || runtime.content_pin().server_artifact_digest() != content_digest
+        {
+            return Err(DurabilityError::Unavailable);
+        }
+        runtime.install_daily_boost(selection).map_err(|_| DurabilityError::Unavailable)
     }
 
     pub(super) async fn daily_boost_wire(
@@ -148,22 +187,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GuildReply::Rejected;
         }
-        if self.load_daily_boost(true).await.is_err() {
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        {
+            let Ok(runtime) = tokio::time::timeout_at(budget.deadline, self.runtime.lock()).await
+            else {
+                return GuildReply::Unavailable;
+            };
+            if !Self::daily_boost_session_is_current(&runtime, admitted, fence) {
+                return GuildReply::Rejected;
+            }
+        }
+        if self.load_daily_boost(&budget, true).await.is_err() {
             return GuildReply::Unavailable;
         }
-        let runtime = self.runtime.lock().await;
-        if runtime.owner_fence().is_err()
-            || fence.runtime_scope
-                != RuntimeScopeRefV1::channel(admitted.world_id, admitted.channel_id)
-            || fence.scope_ownership_generation != runtime.binding().scope_generation()
-            || runtime.binding().world_id() != admitted.world_id
-            || runtime.binding().channel_id() != Some(admitted.channel_id)
-            || !admitted.runtime_actor.is_some_and(|actor| {
-                runtime
-                    .player_control_facts(actor, admitted.game_session_id)
-                    .is_ok_and(|f| f.control_loss.is_none())
-            })
-        {
+        let Ok(runtime) = tokio::time::timeout_at(budget.deadline, self.runtime.lock()).await
+        else {
+            return GuildReply::Unavailable;
+        };
+        if !Self::daily_boost_session_is_current(&runtime, admitted, fence) {
             return GuildReply::Rejected;
         }
         let Some(choice) = runtime.daily_boost() else {
@@ -178,6 +219,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(_) => GuildReply::Unavailable,
         }
     }
+
+    fn daily_boost_session_is_current(
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        admitted: AdmittedSession,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> bool {
+        runtime.owner_fence().is_ok()
+            && fence.runtime_scope == RuntimeScopeRefV1::channel(admitted.world_id, admitted.channel_id)
+            && fence.scope_ownership_generation == runtime.binding().scope_generation()
+            && runtime.binding().world_id() == admitted.world_id
+            && runtime.binding().channel_id() == Some(admitted.channel_id)
+            && admitted.runtime_actor.is_some_and(|actor| {
+                runtime
+                    .player_control_facts(actor, admitted.game_session_id)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+            })
+    }
+
 }
 
 macro_rules! authority_methods {
