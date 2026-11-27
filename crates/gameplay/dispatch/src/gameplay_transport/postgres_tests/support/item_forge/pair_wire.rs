@@ -16,6 +16,7 @@ use oteryn_protocol_oteryn::{self as protocol, container_tree, item_view};
 pub(in super::super) struct PairSelection {
     /// Open this displayed backpack entry before selecting its children.
     pub container: Option<usize>,
+    pub nested_path: &'static [usize],
     /// Explicit displayed indices; otherwise select the newest seeded receiver/donor pair.
     pub indices: Option<(usize, usize)>,
     /// For wrong-item cases, select another actually displayed backpack item.
@@ -38,8 +39,10 @@ pub(in super::super) async fn exchange_pair(
     let exercise = async {
         let inventory = inventory(&mut client).await?;
         let mut command = current.continuity.next_command_id;
-        let nested = if let Some(index) = selection.container {
-            let container = inventory.entries.get(index).ok_or("shown nested bag")?;
+        let mut nested: Option<Vec<_>> = None;
+        for index in selection.container.into_iter().chain(selection.nested_path.iter().copied()) {
+            let entries = nested.as_deref().unwrap_or(inventory.entries.as_slice());
+            let container = entries.get(index).ok_or("shown nested bag")?;
             let payload = container_tree::encode_container_view_intent(
                 &container_tree::ContainerViewIntent::Open {
                     handle: container.handle,
@@ -61,10 +64,8 @@ pub(in super::super) async fn exchange_pair(
                 container_tree::ContainerViewOutcome::Opened
             );
             command += 1;
-            Some(open_entries(&mut client, container.handle).await?)
-        } else {
-            None
-        };
+            nested = Some(open_entries(&mut client, container.handle).await?);
+        }
         let entries = nested.as_deref().unwrap_or(inventory.entries.as_slice());
         if entries.len() < 2 {
             return Err("two shown Forge inputs".into());

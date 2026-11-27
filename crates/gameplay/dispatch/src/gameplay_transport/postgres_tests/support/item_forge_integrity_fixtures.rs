@@ -3,6 +3,7 @@ use super::TestResult;
 use super::fixture::{Harness, debug, id};
 
 use super::item_forge_fixtures::support::{request, seed_items};
+use super::item_forge_fusion_fixtures::CHEST;
 
 use crate::durability::item_mint_audit::{
     CausationRefV1, CausationV1, EnvelopeCommandRefV1, EventEnvelopeV1, OneItemOperationV1,
@@ -71,8 +72,64 @@ pub(super) async fn exercise(
     capacity::exercise(h, admitted).await
 }
 
+pub(super) async fn chest_guards(h: &Harness, admitted: &AdmittedSession) -> TestResult {
+    seed_items(
+        h,
+        &[
+            (80, "oteryn:item.tibia.i3264", 1, 0),
+            (81, "oteryn:item.tibia.i3264", 1, 0),
+            (82, "oteryn:item.tibia.i3264", 1, 0),
+        ],
+    ).await?;
+    let before = snapshot(h).await?;
+    for mutation in ["second chest", "non-chest", "identity", "tier"] {
+        let mut operation = ForgedOperation::prepare(h).await?;
+        match mutation {
+            "second chest" => {
+                let mut extra = operation.outputs[0].clone();
+                extra["item"] = json!(sqlx::types::Uuid::from_bytes(id(206)).to_string());
+                operation.outputs = json!([operation.outputs[0], extra]);
+            }
+            "non-chest" => operation.outputs[0]["key"] = json!("oteryn:item.tibia.i3264"),
+            _ => {}
+        }
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+        let error = match operation.write(&mut tx, admitted).await {
+            Err(error) => {
+                tx.rollback().await?;
+                error
+            }
+            Ok(()) => {
+                if mutation == "identity" {
+                    sqlx::query("DELETE FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid")
+                        .bind(id(205).as_slice()).bind(id(80).as_slice()).execute(&mut *tx).await?;
+                    sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+                        .bind(id(82).as_slice()).bind(id(42).as_slice()).bind(id(205).as_slice())
+                        .bind(id(202).as_slice()).execute(&mut *tx).await?;
+                }
+                match tx.commit().await {
+                    Ok(()) => return Err(format!("Forge accepted {mutation}").into()),
+                    Err(error) => Box::new(error),
+                }
+            }
+        };
+        let database = error.downcast_ref::<sqlx::Error>().and_then(sqlx::Error::as_database_error)
+            .ok_or("native SQL guard error")?;
+        assert_eq!(database.code().as_deref(), Some("23514"), "{mutation}: {database}");
+        if mutation == "identity" {
+            assert!(database.message().contains("same surviving ItemInstance"), "{database}");
+        }
+        if mutation == "tier" {
+            assert!(database.message().contains("Forge transition or nominal resources"), "{database}");
+        }
+        assert_eq!(snapshot(h).await?, before, "{mutation} must roll back all effects");
+    }
+    Ok(())
+}
+
 async fn snapshot(h: &Harness) -> TestResult<Value> {
-    Ok(sqlx::query_scalar("SELECT jsonb_build_object('items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY item_instance_id) FROM game_item_instances i),'tiers',(SELECT jsonb_agg(to_jsonb(t) ORDER BY item_instance_id) FROM game_item_tiers t),'custody',(SELECT jsonb_agg(to_jsonb(e) ORDER BY item_instance_id) FROM game_item_container_entries e),'dust',(SELECT jsonb_agg(to_jsonb(d) ORDER BY character_id) FROM game_character_forge_dust d),'operations',(SELECT count(*) FROM game_forge_operations),'reservations',(SELECT count(*) FROM game_forge_reservations),'history',(SELECT count(*) FROM game_forge_history),'tier_audit',(SELECT count(*) FROM game_item_tier_audit),'audit',(SELECT count(*) FROM game_item_audit_outbox),'dust_entries',(SELECT count(*) FROM game_character_forge_dust_entries),'fees',(SELECT count(*) FROM game_item_fee_burns))")
+    Ok(sqlx::query_scalar("SELECT jsonb_build_object('items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY item_instance_id) FROM game_item_instances i),'tiers',(SELECT jsonb_agg(to_jsonb(t) ORDER BY item_instance_id) FROM game_item_tiers t),'custody',(SELECT jsonb_agg(to_jsonb(e) ORDER BY item_instance_id) FROM game_item_container_entries e),'nested',(SELECT jsonb_agg(to_jsonb(e) ORDER BY item_instance_id) FROM game_item_nested_entries e),'dust',(SELECT jsonb_agg(to_jsonb(d) ORDER BY character_id) FROM game_character_forge_dust d),'operations',(SELECT count(*) FROM game_forge_operations),'reservations',(SELECT count(*) FROM game_forge_reservations),'history',(SELECT count(*) FROM game_forge_history),'tier_audit',(SELECT count(*) FROM game_item_tier_audit),'audit',(SELECT count(*) FROM game_item_audit_outbox),'dust_entries',(SELECT count(*) FROM game_character_forge_dust_entries),'fees',(SELECT count(*) FROM game_item_fee_burns))")
         .fetch_one(&h.pool).await?)
 }
 
@@ -139,11 +196,16 @@ impl ForgedOperation {
         let hash = |value: &Value| -> TestResult<Vec<u8>> {
             Ok(Sha256::digest(serde_json::to_vec(value)?).to_vec())
         };
+        let outputs = json!([{
+            "item": sqlx::types::Uuid::from_bytes(id(205)).to_string(),
+            "key": CHEST, "revision": "definition-r1", "count": 1,
+            "location": {"kind":1, "parent":sqlx::types::Uuid::from_bytes(id(70)).to_string(), "ordinal":"1000"}
+        }]);
         let proof = serde_json::to_vec(&json!({
             "occurrence":action.occurrence,"character":id(41),"world":id(42),"operation":1,
             "content":content,"ruleset":"crystal-201189f-forge-v1","simulation_revision":1,
-            "rolls":rolls,"reply":reply,"inputs_hash":hash(&inputs)?,"outputs_hash":hash(&json!([]))?,
-            "stash_hash":hash(&Value::Null)?,"inputs":2,"outputs":0,"retired":0,"tier_changes":1,
+            "rolls":rolls,"reply":reply,"inputs_hash":hash(&inputs)?,"outputs_hash":hash(&outputs)?,
+            "stash_hash":hash(&Value::Null)?,"inputs":2,"outputs":1,"retired":0,"tier_changes":1,
             "dust_spent":0,"gold_spent":0,"stash_spent":false
         }))?;
         // Verify cross-language snapshot hashing against actual database JSON,
@@ -159,7 +221,7 @@ impl ForgedOperation {
             rolls,
             occurred_at,
             inputs,
-            outputs: json!([]),
+            outputs,
             dust_spent: 0,
             audit_item: id(80).to_vec(),
             reply,
@@ -198,6 +260,17 @@ impl ForgedOperation {
             .bind(id(80).as_slice())
             .execute(&mut **tx)
             .await?;
+            sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($4,'hex')::uuid)")
+                .bind(id(205).as_slice()).bind(id(42).as_slice()).bind(CHEST).bind(id(202).as_slice()).execute(&mut **tx).await?;
+            sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1000,encode($5,'hex')::uuid)")
+                .bind(id(205).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(202).as_slice()).execute(&mut **tx).await?;
+            for (slot, item) in [80, 81].into_iter().enumerate() {
+                sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(id(item).as_slice()).execute(&mut **tx).await?;
+                sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid)")
+                    .bind(id(item).as_slice()).bind(id(42).as_slice()).bind(id(205).as_slice())
+                    .bind(i64::try_from(slot + 1)?).bind(id(202).as_slice()).execute(&mut **tx).await?;
+            }
         } else {
             capacity::write_effects(self, tx).await?;
         }

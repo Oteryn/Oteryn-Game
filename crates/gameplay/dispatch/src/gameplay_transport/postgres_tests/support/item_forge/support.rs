@@ -52,6 +52,9 @@ pub(in super::super) enum Case {
     SqlGuards,
     LegacyBudget,
     Integrity,
+    Chest(Operation),
+    ChestFull,
+    ChestGuards,
     CoreRefusal,
     MixedFee,
     Items(Operation),
@@ -130,6 +133,9 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
         let (dust, limit) = match case {
             Case::Preview
             | Case::Items(_)
+            | Case::Chest(_)
+            | Case::ChestFull
+            | Case::ChestGuards
             | Case::Integrity
             | Case::CoreRefusal
             | Case::MixedFee => (1000, 1000),
@@ -295,6 +301,15 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
                     &mut admitted,
                 )
                 .await?
+            }
+            Case::Chest(operation) => {
+                super::super::item_forge_fusion_fixtures::chest_case(operation, &h, &owner, &mut admitted).await?
+            }
+            Case::ChestFull => {
+                super::super::item_forge_fusion_fixtures::full_inventory(&h, &owner, &mut admitted).await?
+            }
+            Case::ChestGuards => {
+                super::super::item_forge_integrity_fixtures::chest_guards(&h, &admitted).await?
             }
             Case::Integrity => {
                 super::super::item_forge_integrity_fixtures::exercise(&h, &owner, &mut admitted)

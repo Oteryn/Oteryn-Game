@@ -24,6 +24,8 @@ pub(super) mod fee;
 
 use fixture::{assets, bank, item_state, nest_pair, occurrence_for, receipt, seed_bank};
 
+pub(super) const CHEST: &str = "oteryn:item.tibia.i37561";
+
 const SWORD: &str = "oteryn:item.tibia.i3264";
 
 const CLASS_FOUR: &str = "oteryn:item.tibia.i34082";
@@ -98,6 +100,65 @@ pub(super) async fn exercise(
         staged, 0,
         "the staged wallet/inventory prototype never owns a live operation"
     );
+    Ok(())
+}
+
+pub(super) async fn chest_case(
+    operation: Operation,
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    if operation == Operation::Transfer {
+        seed_items(h, &[(103, EXALTED_CORE_KEY, 1, 0)]).await?;
+        return transfer(operation, h, owner, admitted).await;
+    }
+    seed_bank(h).await?;
+    seed_items(h, &[(101, SWORD, 1, 0), (102, SWORD, 1, 0)]).await?;
+    let mut action = pair(Operation::Fusion, 120, 101, 102);
+    action.request.occurrence =
+        occurrence_for(h, 120, |rolls| rolls[0] < 50 && rolls[2] < 7400).await?;
+    committed(
+        h, owner, admitted, action,
+        Expected { succeeded: true, bonus: 0, tiers: (1, None), cost: (100, 0, 25_000) },
+    ).await
+}
+
+pub(super) async fn full_inventory(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    seed_bank(h).await?;
+    // Every parent that can hold both a chest and its children has a full
+    // stack of slots. Removing the pair only frees slots at maximum depth.
+    let mut items: Vec<_> = (120..139).map(|seed| (seed, FORGE_SLIVER_KEY, 1, 0)).collect();
+    items.push((140, CHEST, 1, 0));
+    for depth in 0..6 {
+        items.push((141 + depth, CHEST, 1, 0));
+        items.push((150 + depth, FORGE_SLIVER_KEY, 1, 0));
+    }
+    items.extend([(101, SWORD, 1, 0), (102, SWORD, 1, 0)]);
+    seed_items(h, &items).await?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    for depth in 0..=6 {
+        let pair = if depth == 6 { [101, 102] } else { [150 + depth, 141 + depth] };
+        for (index, item) in pair.into_iter().enumerate() {
+            sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(item).as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid)")
+                .bind(id(item).as_slice()).bind(id(42).as_slice()).bind(id(140 + depth).as_slice())
+                .bind(i64::try_from(index + 1)?).bind(id(72).as_slice()).execute(&mut *tx).await?;
+        }
+    }
+    tx.commit().await?;
+    let mut action = pair(Operation::Fusion, 120, 101, 102);
+    action.selection.container = Some(0);
+    action.selection.nested_path = &[0; 6];
+    action.request.occurrence =
+        occurrence_for(h, 120, |rolls| rolls[0] < 50 && rolls[2] < 7400).await?;
+    refused(h, owner, admitted, action, "NO_ROOM").await?;
     Ok(())
 }
 
@@ -192,6 +253,24 @@ async fn committed(
     item_state(h, native.0, Some(expected.tiers.0)).await?;
     item_state(h, native.1, expected.tiers.1).await?;
     receipt(h, action, &reply, Some(expected.cost)).await?;
+
+    if expected.succeeded {
+        let outputs: Value = sqlx::query_scalar("SELECT outputs FROM game_forge_operations WHERE character_id=encode($1,'hex')::uuid AND occurrence_id=encode($2,'hex')::uuid")
+            .bind(id(41).as_slice()).bind(action.occurrence.as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(outputs.as_array().map(Vec::len), Some(1));
+        let chest = outputs[0]["item"].as_str().ok_or("chest identity")?;
+        assert_eq!(outputs[0]["key"], CHEST);
+        let stored: (String, i64, i16) = sqlx::query_as("SELECT definition_production_key,quantity,lifecycle FROM game_item_instances WHERE item_instance_id=$1::uuid")
+            .bind(chest).fetch_one(&h.pool).await?;
+        assert_eq!(stored, (CHEST.into(), 1, 1));
+        let children: Vec<(Vec<u8>, i16)> = sqlx::query_as("SELECT uuid_send(e.item_instance_id),coalesce(t.tier,0)::smallint FROM game_item_nested_entries e LEFT JOIN game_item_tiers t USING(item_instance_id) WHERE e.parent_item_instance_id=$1::uuid ORDER BY e.placement_ordinal")
+            .bind(chest).fetch_all(&h.pool).await?;
+        let mut wanted = vec![(native.0.to_vec(), i16::from(expected.tiers.0))];
+        if let Some(tier) = expected.tiers.1 {
+            wanted.push((native.1.to_vec(), i16::from(tier)));
+        }
+        assert_eq!(children, wanted);
+    }
 
     // A fresh connection issues new view handles; original bytes still replay even
     // though the consumed source is absent and the old receiver handle is stale.
@@ -379,7 +458,7 @@ async fn convergence_fusion(
         .bind(id(70).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(
         slots, 20,
-        "identity-preserving Forge needs no Exaltation Chest slot (Q3)"
+        "the backpack is full before the pair is removed"
     );
     let action = pair(Operation::ConvergenceFusion, 130, 101, 102);
     let (action, refusal) = refused(h, owner, admitted, action, "INSUFFICIENT_GOLD").await?;
