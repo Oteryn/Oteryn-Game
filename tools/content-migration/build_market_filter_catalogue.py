@@ -11,6 +11,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/item-authoring'))
 from client_appearance_census import load_client_appearances, DEFAULT_APPEARANCES
+from lower_client_market_mint_packet import refresh_rust_packet_pin
 
 
 def generate():
@@ -36,6 +37,12 @@ def main():
     args = parser.parse_args()
     target = ROOT / 'crates/gameplay/content/src/content/native_gameplay/market_filter_catalogue.json'
     data = generate()
+    refresh_rust_packet_pin(
+        target.with_name('market_catalogue.rs'),
+        'SOURCE_SHA256',
+        json.loads(data)['admission_sha256'],
+        check=args.check,
+    )
     if args.check:
         if target.read_bytes() != data:
             raise SystemExit('Market filter catalogue is stale')

@@ -2,11 +2,11 @@
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
   "content_revision": "cyclopedia-creatures-crystal-201189f-r1",
-  "content_lock_digest": "16f7dec57b74bc9c1b423ab90c1cbc65c3bdef8860a8abe62d3280d413b04cff",
+  "content_lock_digest": "5d45e7a13c465b59ced6477bcfdfa3bd8b760e31d2cac9af823d849ceefbe437",
   "min_runtime_version": "4",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:cyclopedia-creatures-crystal-201189f-r1/69234e5b696bc10c686bd055add35453a2d36f9567527013ebe882ed7c0e8911"
+  "provenance_summary": "lock:cyclopedia-creatures-crystal-201189f-r1/c6c8f85d6346350734b9fa88cdbbec6c3b70401b6c30b4b9eb1b745fc65c65ae"
 }
