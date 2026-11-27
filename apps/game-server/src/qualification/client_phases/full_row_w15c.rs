@@ -129,7 +129,7 @@ async fn walk_to(
 ) -> TestResult {
     let here = tile(client.world_spatial().actor_position)?;
     let path = find_route(here, goal, |at, direction| {
-        destination(world, at, direction)
+        destination_with_teleports(world, at, direction, false)
     })
     .map_err(|visited| {
         format!("step=reach target={key} from={here:?} observed=no-walk-route visited={visited}")
@@ -140,7 +140,7 @@ async fn walk_to(
     ));
     for direction in path {
         let before = tile(client.world_spatial().actor_position)?;
-        let landing = destination(world, before, direction)
+        let landing = destination_with_teleports(world, before, direction, false)
             .ok_or("step=walk observed=missing-planned-landing")?;
         let outcome = client.step(direction).await?;
         if outcome.status != CommandStatus::Accepted
@@ -478,10 +478,6 @@ async fn sail_to_port_hope(
     npcs: &oteryn_world_bundle::npc::Table,
     coins: &[(std::num::NonZeroU32, u64)],
 ) -> TestResult<u64> {
-    let before = carried_gold(client, coins)?;
-    if before < FARE {
-        return Err(format!("step=fare observed={before} expected=at-least-{FARE}").into());
-    }
     climb_dock_ladder(client, world).await?;
     let captain = reach(client, world, npcs, CAPTAIN).await?;
     say(client, captain, "hi").await?;
@@ -510,12 +506,25 @@ async fn sail_to_port_hope(
         "row=W15c.full step=premium-prestate active=true valid_for_us={}",
         overview.valid_for_us
     ));
+    let departure = tile(client.world_spatial().actor_position)?;
+    let before = carried_gold(client, coins)?;
+    if departure == PORT_HOPE || before < FARE {
+        return Err(format!(
+            "step=travel-prestate observed={departure:?}-gold-{before} expected=departure-with-fare"
+        )
+        .into());
+    }
     let quote = say(client, captain, "port hope").await?;
     let expected = format!("Do you seek a passage to port_hope for {FARE} gold?");
     if quote.as_slice() != [expected] {
         return Err(
             format!("step=travel-quote observed={quote:?} expected=port-hope-{FARE}").into(),
         );
+    }
+    if tile(client.world_spatial().actor_position)? != departure
+        || carried_gold(client, coins)? != before
+    {
+        return Err("step=travel-quote observed=relocation-or-debit-before-confirmation".into());
     }
     if say_with_speaker(
         client,
