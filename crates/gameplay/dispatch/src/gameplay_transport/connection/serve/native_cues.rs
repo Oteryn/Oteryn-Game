@@ -128,74 +128,89 @@ pub(super) async fn refresh_cooldowns<S: AsyncWrite + Unpin, A: FreshAdmissionAu
     let Some(previous) = session.cooldowns.as_mut() else {
         return Ok(());
     };
-    previous.emit(stream, authority, session.actor, &mut session.admitted, &mut session.sequence).await
+    previous
+        .emit(
+            stream,
+            authority,
+            session.actor,
+            &mut session.admitted,
+            &mut session.sequence,
+        )
+        .await
 }
 
 impl CooldownProjection {
-    pub(in crate::gameplay_transport) async fn emit<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
-        &mut self, stream: &mut S, authority: &A, actor: ExactActorRef, admitted: &mut AdmittedSession, server_sequence: &mut u64,
+    pub(in crate::gameplay_transport) async fn emit<
+        S: AsyncWrite + Unpin,
+        A: FreshAdmissionAuthority,
+    >(
+        &mut self,
+        stream: &mut S,
+        authority: &A,
+        actor: ExactActorRef,
+        admitted: &mut AdmittedSession,
+        server_sequence: &mut u64,
     ) -> Result<(), ServeEnd> {
-    use cooldown_wire as wire;
-    let previous = self;
-    let Some(mut current) = authority
-        .observe_actor_cooldowns(actor, admitted.game_session_id)
-        .await
-    else {
-        return Ok(());
-    };
-    let next = deadlines(&current);
-    current.entries.retain(|entry| {
-        previous.deadlines.get(&(entry.kind, entry.id)) != Some(&entry.expires_at_ms)
-    });
-    // Natural expiry is already known to the client. An early reset needs a tombstone.
-    current.entries.extend(
-        previous
-            .deadlines
-            .iter()
-            .filter_map(|(&(kind, id), &expiry)| {
-                (expiry > current.server_now_ms && !next.contains_key(&(kind, id))).then_some(
-                    wire::ActorCooldown {
-                        kind,
-                        id,
-                        expires_at_ms: 0,
-                    },
-                )
-            }),
-    );
-    if current.entries.is_empty() {
-        previous.deadlines = next;
-        return Ok(());
-    }
-    let revision = previous
-        .revision
-        .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
-    let sequence = (*server_sequence)
-        .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
-    let payload = wire::encode_actor_cooldowns(&current).map_err(|_| ServeEnd::Disconnected)?;
-    let frame = encode_state_delta(
-        admitted.continuity.connection_generation,
-        sequence,
-        wire::STATE_DOMAIN_ACTOR_COOLDOWNS,
-        previous.revision,
-        revision,
-        wire::DELTA_TYPE_ACTOR_COOLDOWNS_V1,
-        &payload,
-    )
-    .map_err(|_| ServeEnd::Disconnected)?;
-    write_frame(stream, &frame)
-        .await
+        use cooldown_wire as wire;
+        let previous = self;
+        let Some(mut current) = authority
+            .observe_actor_cooldowns(actor, admitted.game_session_id)
+            .await
+        else {
+            return Ok(());
+        };
+        let next = deadlines(&current);
+        current.entries.retain(|entry| {
+            previous.deadlines.get(&(entry.kind, entry.id)) != Some(&entry.expires_at_ms)
+        });
+        // Natural expiry is already known to the client. An early reset needs a tombstone.
+        current.entries.extend(
+            previous
+                .deadlines
+                .iter()
+                .filter_map(|(&(kind, id), &expiry)| {
+                    (expiry > current.server_now_ms && !next.contains_key(&(kind, id))).then_some(
+                        wire::ActorCooldown {
+                            kind,
+                            id,
+                            expires_at_ms: 0,
+                        },
+                    )
+                }),
+        );
+        if current.entries.is_empty() {
+            previous.deadlines = next;
+            return Ok(());
+        }
+        let revision = previous
+            .revision
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        let sequence = (*server_sequence)
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        let payload = wire::encode_actor_cooldowns(&current).map_err(|_| ServeEnd::Disconnected)?;
+        let frame = encode_state_delta(
+            admitted.continuity.connection_generation,
+            sequence,
+            wire::STATE_DOMAIN_ACTOR_COOLDOWNS,
+            previous.revision,
+            revision,
+            wire::DELTA_TYPE_ACTOR_COOLDOWNS_V1,
+            &payload,
+        )
         .map_err(|_| ServeEnd::Disconnected)?;
-    *server_sequence = sequence;
-    admitted.continuity.server_sequence = sequence;
-    *previous = CooldownProjection {
-        revision,
-        deadlines: next,
-    };
-    Ok(())
-}
-
+        write_frame(stream, &frame)
+            .await
+            .map_err(|_| ServeEnd::Disconnected)?;
+        *server_sequence = sequence;
+        admitted.continuity.server_sequence = sequence;
+        *previous = CooldownProjection {
+            revision,
+            deadlines: next,
+        };
+        Ok(())
+    }
 }
 
 /// House commands retain their own live loop, but consume the same scoped

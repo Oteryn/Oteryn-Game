@@ -586,6 +586,10 @@ where
                     ServeEnd::Closed(error) => format!("{error:?}"),
                     ServeEnd::ControlLost(path) => format!("ControlLost({path})"),
                     ServeEnd::Disconnected => "Disconnected".to_owned(),
+                    ServeEnd::Transport(transport) => {
+                        let (path, reason) = transport.fields();
+                        format!("Transport({path},{reason})")
+                    }
                     ServeEnd::LoggedOut => "LoggedOut".to_owned(),
                     ServeEnd::Transferred(_) => "Transferred".to_owned(),
                 };

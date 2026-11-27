@@ -673,7 +673,9 @@ impl SoundPublisher {
             {
                 entry.kind = JournalCue::Damage { target, amount };
                 entry.private = [actor, target].into_iter().any(|actor| {
-                    runtime.actor_staff_visibility(actor).is_ok_and(|(ghost, _, _)| ghost)
+                    runtime
+                        .actor_staff_visibility(actor)
+                        .is_ok_and(|(ghost, _, _)| ghost)
                 });
             }
         }

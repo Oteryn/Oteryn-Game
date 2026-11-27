@@ -241,7 +241,21 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .ok_or("C18a missing meat handle")?
         .handle;
     let fed_since = tokio::time::Instant::now();
-    let eaten = client.use_item(meat_handle).await?;
+    let food_command = client.next_command_id();
+    evidence(&format!(
+        "c18a_food_send command={food_command} last_frame={}",
+        client.last_server_sequence()
+    ));
+    let (eaten, exchange) =
+        oteryn_dev_client::capture_qualification_exchange(client.use_item(meat_handle)).await;
+    let eaten = match eaten {
+        Ok(eaten) => eaten,
+        Err(error) => {
+            let last_sent = last_sent_command(&exchange.outbound).await;
+            log_client_close(&client, &error, "food", food_command, last_sent, fed_since);
+            return Err(error.into());
+        }
+    };
     if eaten.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
         return Err(format!("C18a first meat use refused: {eaten:?}").into());
     }
@@ -891,14 +905,49 @@ async fn walk_path(
     mut vitals: Option<&mut CastObservation>,
     mut clock: Option<&mut (u64, Vec<u8>)>,
 ) -> TestResult {
-    for &direction in path {
+    let started = tokio::time::Instant::now();
+    for (index, &direction) in path.iter().enumerate() {
         let from = tile(client.world_spatial().actor_position)?;
         let expected =
             destination(world, from, direction).ok_or("C18a route lost its planned landing")?;
         if expected == CAST_TILE {
             wait_for_cast_tile(client, vitals.as_deref_mut(), clock.as_deref_mut()).await?;
         }
-        let outcome = client.step(direction).await?;
+        let command = client.next_command_id();
+        let frame_before = client.last_server_sequence();
+        let trace_boundary = matches!(command, 209 | 210);
+        if trace_boundary {
+            evidence(&format!(
+                "c18a_walk_send command={command} step={} goal={goal:?} from={from:?} to={expected:?} direction={direction:?} last_frame={frame_before} walk_elapsed_ms={}",
+                index + 1,
+                started.elapsed().as_millis()
+            ));
+        }
+        let (result, exchange) = if trace_boundary {
+            let (result, exchange) =
+                oteryn_dev_client::capture_qualification_exchange(client.step(direction)).await;
+            (result, Some(exchange))
+        } else {
+            (client.step(direction).await, None)
+        };
+        let last_sent = match exchange {
+            Some(exchange) => last_sent_command(&exchange.outbound).await,
+            None => result.as_ref().ok().map(|outcome| outcome.command_id),
+        };
+        let outcome = match result {
+            Ok(outcome) => outcome,
+            Err(error) => {
+                log_client_close(client, &error, "step", command, last_sent, started);
+                return Err(error.into());
+            }
+        };
+        if trace_boundary {
+            evidence(&format!(
+                "c18a_walk_reply command={command} sent_command={last_sent:?} result_frame={} last_frame={}",
+                outcome.result_server_sequence,
+                client.last_server_sequence()
+            ));
+        }
         require_mechanic_acceptance(outcome.status, "C18a first step attempt")?;
         let actual = tile(client.world_spatial().actor_position)?;
         if outcome.disposition != StepDisposition::Moved
@@ -917,9 +966,20 @@ async fn walk_path(
         verdict::Harness::global().progress("walk");
         collect_events(client, vitals.as_deref_mut(), clock.as_deref_mut())?;
         if outcome.step_wait_ms != 0 {
-            client
+            if let Err(error) = client
                 .service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms)))
-                .await?;
+                .await
+            {
+                log_client_close(
+                    client,
+                    &error,
+                    "pacing",
+                    command,
+                    Some(outcome.command_id),
+                    started,
+                );
+                return Err(error.into());
+            }
         }
     }
     collect_events(client, vitals, clock)?;
@@ -927,6 +987,62 @@ async fn walk_path(
         return Err("C18a fixed route did not reach its goal".into());
     }
     Ok(())
+}
+
+async fn last_sent_command(mut outbound: &[u8]) -> Option<u64> {
+    use oteryn_protocol_oteryn::{MessageType, decode_wire_envelope};
+    let mut last = None;
+    while !outbound.is_empty() {
+        let Ok(frame) = oteryn_dev_client::native_session::read_frame(&mut outbound).await else {
+            break;
+        };
+        let Ok(envelope) = decode_wire_envelope(&frame) else {
+            break;
+        };
+        if envelope.message_type() == MessageType::ClientCommand {
+            last = Some(
+                envelope
+                    .client_command(envelope.connection_generation())
+                    .ok()?
+                    .command_id,
+            );
+        }
+    }
+    last
+}
+
+fn log_client_close(
+    client: &oteryn_dev_client::DevClientSession,
+    error: &oteryn_dev_client::DevClientError,
+    phase: &str,
+    command: u64,
+    last_sent: Option<u64>,
+    started: tokio::time::Instant,
+) {
+    use oteryn_dev_client::{DevClientError, SessionError};
+    let cause = match error {
+        DevClientError::Context { source, .. } => source.as_ref(),
+        error => error,
+    };
+    let (observed_close, timeout) = match cause {
+        DevClientError::Session(SessionError::Timeout(phase)) | DevClientError::Timeout(phase) => {
+            ("client_deadline", Some(*phase))
+        }
+        DevClientError::Session(SessionError::ServerProtocolError { .. }) => {
+            ("server_protocol_error", None)
+        }
+        DevClientError::Session(SessionError::Io(error)) | DevClientError::Io(error)
+            if error.kind() == std::io::ErrorKind::UnexpectedEof =>
+        {
+            ("peer_eof", None)
+        }
+        _ => ("undetermined", None),
+    };
+    evidence(&format!(
+        "c18a_client_close observed_close={observed_close} phase={phase} attempted_command={command} sent_command={last_sent:?} last_frame={} client_timeout={timeout:?} frame_deadline_ms=20000 phase_elapsed_ms={} error={error}",
+        client.last_server_sequence(),
+        started.elapsed().as_millis()
+    ));
 }
 
 async fn sent_cast_payload(mut outbound: &[u8], command_id: u64) -> TestResult<Vec<u8>> {
