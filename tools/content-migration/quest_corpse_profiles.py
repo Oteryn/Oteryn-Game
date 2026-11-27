@@ -233,10 +233,12 @@ def qualify(number, definition, world, node, appearance, physical, bindings, fre
         source['semantics']['container'] = copy.deepcopy(grizzly.source.NA)
     expected = source['semantics']
     # The Global Dead Rat archive gives the visible stages' weight and
-    # container facts. DAT still supplies pickupability and movement.
+    # container facts. The visible stages can only move between floor tiles.
     if number in RAT_STAGES:
         capacity, _, _, weight = RAT_STAGES[number]
         expected['physical']['value']['weight'] = grizzly.source.K(weight)
+        expected['physical']['value']['pickupable'] = grizzly.source.K(False)
+        source['admission']['legal_destinations'] = ['Ground']
         expected['container'] = (grizzly.source.NA if capacity is None else
                                  grizzly.source.K({'capacity': grizzly.source.K(capacity)}))
     for group in GROUPS:

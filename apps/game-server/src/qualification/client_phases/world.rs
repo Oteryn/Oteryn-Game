@@ -3437,6 +3437,9 @@ async fn profile_journey(
     spells
 }
 
+const C16C_CHARACTER: usize = 4;
+const W10_CHARACTER: usize = 3;
+
 async fn connect_world(
     clients: &SeamClients<'_>,
     tag: u8,

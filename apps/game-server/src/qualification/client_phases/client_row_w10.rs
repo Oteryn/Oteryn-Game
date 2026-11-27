@@ -268,7 +268,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0x05).await?;
+    let mut client = connect_character(clients, 0x05, W10_CHARACTER).await?;
     let staged = client.join_snapshot().game_session_id;
     request_fixture_control(
         uuid_text(staged.as_bytes()),
@@ -280,7 +280,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("W10 fixture logout refused".into());
     }
     drop(client);
-    let mut client = connect_world(clients, 0x06).await?;
+    let mut client = connect_character(clients, 0x06, W10_CHARACTER).await?;
     if client.join_snapshot().game_session_id == staged {
         return Err("W10 fixture readmission reused its staging session".into());
     }
@@ -335,7 +335,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("Hazard logout refused: {observed}").into());
     }
     drop(client);
-    let mut client = connect_world(clients, 0x06).await?;
+    let mut client = connect_character(clients, 0x06, W10_CHARACTER).await?;
     if client.join_snapshot().game_session_id == session {
         return Err("Hazard readmission reused the original session".into());
     }

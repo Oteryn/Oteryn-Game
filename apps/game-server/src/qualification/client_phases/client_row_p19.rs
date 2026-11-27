@@ -94,7 +94,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
 }
 
 async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
-    let capture = required("E2E_ALL_CAPTURE_DIR")?;
+    let capture = std::env::var_os("E2E_ALL_CAPTURE_DIR");
     let mut client = connect_character(clients, 0x19, 0).await?;
     log_census(&client, &census(&client).await?);
     if !client
@@ -213,20 +213,22 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
                 format!("P19 {classification} first wire binding was {:?}", first.0).into(),
             );
         }
-        let files = tokio::time::timeout(Duration::from_secs(5), async {
-            loop {
-                if let Some(files) = client.session_mut().p19_capture_files(exact) {
-                    return TestResult::Ok(files);
+        if let Some(capture) = capture.as_deref() {
+            let files = tokio::time::timeout(Duration::from_secs(5), async {
+                loop {
+                    if let Some(files) = client.session_mut().p19_capture_files(exact) {
+                        return TestResult::Ok(files);
+                    }
+                    client.service_liveness(Duration::from_millis(50)).await?;
                 }
-                client.service_liveness(Duration::from_millis(50)).await?;
+            })
+            .await
+            .map_err(|_| format!("P19 {classification} exact creature replay capture missing"))??;
+            let directory = Path::new(capture).join(folder);
+            std::fs::create_dir_all(&directory)?;
+            for (name, bytes) in files {
+                std::fs::write(directory.join(name), bytes)?;
             }
-        })
-        .await
-        .map_err(|_| format!("P19 {classification} exact creature replay capture missing"))??;
-        let directory = Path::new(&capture).join(folder);
-        std::fs::create_dir_all(&directory)?;
-        for (name, bytes) in files {
-            std::fs::write(directory.join(name), bytes)?;
         }
         observed.push((exact, stacks));
         evidence(&format!(

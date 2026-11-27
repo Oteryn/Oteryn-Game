@@ -220,6 +220,9 @@ async fn retire_count(h: &Harness) -> TestResult<i64> {
 pub(super) async fn qualify_first_transform(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
+    actor: crate::foundation::ExactActorRef,
+    command: crate::gameplay_transport::connection::UseCommand,
+    floor_destination: crate::foundation::MovementLocalPosition,
 ) -> TestResult {
     let corpse = owner
         .runtime
@@ -334,6 +337,74 @@ pub(super) async fn qualify_first_transform(
         proven,
         "the stage receipt and audit committed with the same Ground item"
     );
+    use crate::gameplay_transport::item_move::{ItemMoveStep, item_move};
+    use crate::gameplay_transport::item_view::{ItemKey, ItemViewError, SessionItemView};
+    use oteryn_protocol_oteryn::item_view::{
+        ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection, WorldTilePosition,
+        encode_item_move_intent_for,
+    };
+
+    let key = ItemKey::Instance(item);
+    let mut view = SessionItemView::resume(Default::default()).with_map_view();
+    let source = view
+        .map_view(&[key], |table| table.handle(&key).ok_or(ItemViewError::Encode))
+        .map_err(debug)?;
+    let selection = ItemMoveSelection {
+        world_interaction: true,
+        ..Default::default()
+    };
+    let pickup = encode_item_move_intent_for(
+        &ItemMoveIntent {
+            source,
+            destination: ItemMoveDestination::MainBackpack,
+        },
+        selection,
+    )
+    .map_err(debug)?;
+    let refusal = item_move(owner, actor, command, &pickup, selection, false, &mut view).await;
+    assert!(
+        matches!(refusal, ItemMoveStep::Result(ItemMoveOutcome::NotSupported, _)),
+        "Rat floor-only corpse inventory pickup: {refusal:?}"
+    );
+    let drag = encode_item_move_intent_for(
+        &ItemMoveIntent {
+            source,
+            destination: ItemMoveDestination::Ground(WorldTilePosition {
+                x: floor_destination.x,
+                y: floor_destination.y,
+                floor: floor_destination.floor,
+            }),
+        },
+        selection,
+    )
+    .map_err(debug)?;
+    let drag_command = crate::gameplay_transport::connection::UseCommand {
+        command_id: command.command_id + 1,
+        ..command
+    };
+    let moved = item_move(owner, actor, drag_command, &drag, selection, false, &mut view).await;
+    assert!(
+        matches!(moved, ItemMoveStep::Result(ItemMoveOutcome::Moved, _)),
+        "Rat floor-only corpse drag: {moved:?}"
+    );
+    let mut expected_cell = floor_destination.x.to_be_bytes().to_vec();
+    expected_cell.extend_from_slice(&floor_destination.y.to_be_bytes());
+    expected_cell.extend_from_slice(&(-floor_destination.floor).to_be_bytes());
+    let moved_cell: Vec<u8> = sqlx::query_scalar(
+        "SELECT spatial_position FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(item.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(moved_cell, expected_cell);
+    let handoffs: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_decay_handoffs WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(item.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(handoffs, 1, "floor move retains the absolute decay lineage");
+    eprintln!("RAT_CORPSE_ITEM_MOVE_REACHED inventory=NotSupported floor=Moved handoffs={handoffs}");
     eprintln!(
         "RAT_CORPSE_OWNER_TICK_REACHED first_stage_ms={}",
         schedule.0

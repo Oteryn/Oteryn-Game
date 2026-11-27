@@ -8,15 +8,14 @@ DECLARE
     anchor CONSTANT TEXT := 'WHEN ''oteryn:item.tibia.i54678'' THEN';
     body TEXT;
 BEGIN
-    IF game_summer_corpse_chain(root) IS NOT NULL THEN
-        RAISE EXCEPTION 'Rat corpse root already has a source owner';
+    IF game_summer_corpse_chain(root) IS NULL THEN
+        body := pg_get_functiondef('game_summer_corpse_chain(text)'::regprocedure);
+        IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
+            RAISE EXCEPTION 'Existing corpse registry anchor changed';
+        END IF;
+        EXECUTE replace(body, anchor,
+            format('WHEN %L THEN %L::INTEGER[] ', root, chain) || anchor);
     END IF;
-    body := pg_get_functiondef('game_summer_corpse_chain(text)'::regprocedure);
-    IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
-        RAISE EXCEPTION 'Existing corpse registry anchor changed';
-    END IF;
-    EXECUTE replace(body, anchor,
-        format('WHEN %L THEN %L::INTEGER[] ', root, chain) || anchor);
     IF game_summer_corpse_chain(root) IS DISTINCT FROM chain
         OR game_source_corpse_durations_v1(root) IS DISTINCT FROM ARRAY[10000,300000,300000,60000]::BIGINT[] THEN
         RAISE EXCEPTION 'Rat corpse chain diverges from its source policy';

@@ -139,8 +139,7 @@ def apply_rat_admissions(definitions, root=ROOT):
                 or world_object['movable']['state'] != 'KNOWN'):
             raise ValueError('Rat Item/WorldObject corpse binding differs: ' + key)
         replacement = module.corpse_definition(
-            definition, capacity, duration, target, world_object['movable']['value'], weight,
-            pickupable=True)
+            definition, capacity, duration, target, world_object['movable']['value'], weight)
         definition.update(replacement)
 
 

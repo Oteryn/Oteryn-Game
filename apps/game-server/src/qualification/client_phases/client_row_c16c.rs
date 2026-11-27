@@ -6,7 +6,7 @@ use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 const SELLER: &str = "oteryn:npc.alexander";
 
 async fn place_buyer(clients: &SeamClients<'_>, at: TilePos, purpose: &str) -> TestResult {
-    wait_character_released(clients, 1).await?;
+    wait_character_released(clients, C16C_CHARACTER).await?;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
     let updated = sqlx::query(
         "UPDATE game_character_last_positions
@@ -16,7 +16,7 @@ async fn place_buyer(clients: &SeamClients<'_>, at: TilePos, purpose: &str) -> T
     .bind(i32::from(at.x))
     .bind(i32::from(at.y))
     .bind(-i16::from(at.floor))
-    .bind(clients.characters[1].as_slice())
+    .bind(clients.characters[C16C_CHARACTER].as_slice())
     .bind(clients.world.as_slice())
     .execute(&mut db)
     .await?;
@@ -116,7 +116,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
     let spell = native_spell_book()?
         .rune(3203)
         .ok_or("Animate Dead rune absent")?;
-    let client = connect_world(clients, 0xd5).await?;
+    let client = connect_character(clients, 0xd5, C16C_CHARACTER).await?;
     let mut client =
         provisioning::provision_profile(client, clients, 1, 100, "c16c-sorcerer").await?;
     evidence("FIXTURE_INPUT row=C16c magic_level=4 platinum_coins=4");
@@ -149,7 +149,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
     full_e2ef5::player_logout(&mut client).await?;
     drop(client);
     place_buyer(clients, at, SELLER).await?;
-    let mut client = connect_world(clients, 0xd5).await?;
+    let mut client = connect_character(clients, 0xd5, C16C_CHARACTER).await?;
     if tile(client.world_spatial().actor_position)? != at {
         return Err("C16c admission did not restore the buyer beside Alexander".into());
     }
@@ -157,7 +157,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
     full_e2ef5::player_logout(&mut client).await?;
     drop(client);
     place_buyer(clients, origin, "hunt-start").await?;
-    let mut client = connect_world(clients, 0xd5).await?;
+    let mut client = connect_character(clients, 0xd5, C16C_CHARACTER).await?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world
             .base()

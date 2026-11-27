@@ -12,15 +12,13 @@ use oteryn_protocol_oteryn::house_wrap;
 use sqlx::Row;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
+    let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR");
     let result = verdict::indexed_timeout(
         Duration::from_secs(420),
-        verdict::observe(journey(clients, Path::new(&directory))),
+        verdict::observe(journey(clients, directory.as_deref().map(Path::new))),
     )
     .await;
-    match result.unwrap_or_else(|_| Err("I10 client capture timed out".into())) {
+    match result.unwrap_or_else(|_| Err("I10 client probes timed out".into())) {
         Ok(()) => evidence(
             "SEAM_EVIDENCE e2e_all scenario=I10.client status=PASS evidence=house-wrap-unwrap-and-stale-refusals",
         ),
@@ -32,7 +30,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 
 async fn probe(
     client: &mut DevClientSession,
-    directory: &Path,
+    directory: Option<&Path>,
     name: &str,
     action: house_wrap::Action,
     revision: u64,
@@ -65,12 +63,14 @@ async fn probe(
         )
         .into());
     }
-    std::fs::write(directory.join(format!("i10-{name}-request.bin")), request)?;
-    std::fs::write(
-        directory.join(format!("i10-{name}-status.bin")),
-        (result.status as u32).to_be_bytes(),
-    )?;
-    std::fs::write(directory.join(format!("i10-{name}.bin")), &result.payload)?;
+    if let Some(directory) = directory {
+        std::fs::write(directory.join(format!("i10-{name}-request.bin")), request)?;
+        std::fs::write(
+            directory.join(format!("i10-{name}-status.bin")),
+            (result.status as u32).to_be_bytes(),
+        )?;
+        std::fs::write(directory.join(format!("i10-{name}.bin")), &result.payload)?;
+    }
     let hex: String = result
         .payload
         .iter()
@@ -174,7 +174,7 @@ async fn enter_house(clients: &SeamClients<'_>) -> TestResult<DevClientSession> 
     Ok(client)
 }
 
-async fn journey(clients: &SeamClients<'_>, directory: &Path) -> TestResult {
+async fn journey(clients: &SeamClients<'_>, directory: Option<&Path>) -> TestResult {
     use house_wrap::{Action, Refusal};
 
     let world = full_e2ef7::qualification_world(clients)?;
@@ -221,7 +221,9 @@ async fn journey(clients: &SeamClients<'_>, directory: &Path) -> TestResult {
         )
         .await?,
     );
-    std::fs::write(directory.join("i10-expected.txt"), manifest)?;
+    if let Some(directory) = directory {
+        std::fs::write(directory.join("i10-expected.txt"), manifest)?;
+    }
     transfer(&mut client, HOUSE, true).await?;
     full_e2ef5::player_logout(&mut client).await
 }

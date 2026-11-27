@@ -40,8 +40,11 @@ class CorpseQualification(unittest.TestCase):
         known = corpse.grizzly.source.K
         for number, (capacity, _, _, weight) in corpse.RAT_STAGES.items():
             with self.subTest(item=number):
-                semantics = self.qualify(number, fresh=False)['semantics']
-                self.assertEqual(semantics['physical']['value']['pickupable'], known(True))
+                row = self.qualify(number, fresh=False)
+                semantics = row['semantics']
+                self.assertEqual(semantics['physical']['value']['pickupable'], known(False))
+                self.assertEqual(semantics['physical']['value']['movable'], known(True))
+                self.assertEqual(row['admission']['legal_destinations'], ['Ground'])
                 self.assertEqual(semantics['physical']['value']['weight'], known(weight))
                 expected = (corpse.grizzly.source.NA if capacity is None else
                             known({'capacity': known(capacity)}))
