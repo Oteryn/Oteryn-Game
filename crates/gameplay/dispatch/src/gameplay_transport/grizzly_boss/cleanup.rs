@@ -1,4 +1,5 @@
 use super::*;
+use crate::gameplay_transport::{AdmissionRetryBudget, connection::AdmissionRefusal};
 use crate::monster_owner_cycle::respawn_job::RespawnExit;
 
 impl ComposedFreshAdmission<'_, '_, '_> {

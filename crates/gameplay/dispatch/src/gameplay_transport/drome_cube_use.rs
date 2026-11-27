@@ -2,6 +2,7 @@
 //! Historical receipts precede live handles. Every new/retried write re-proves current
 //! authority; a saved PREPARE request is data, never a replacement for the current fences.
 
+#[cfg(test)]
 use crate::durability::DurabilityError;
 use crate::durability::character_authority::SERVER_BUILD_ID;
 use crate::durability::item_loop_move::ItemLoopContent;
