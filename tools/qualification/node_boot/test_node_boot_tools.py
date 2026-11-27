@@ -1002,6 +1002,38 @@ class CloudRunSummaryTests(unittest.TestCase):
                             'e2e_s18_say_and_whisper_echo_replay -- --nocapture',
                         ])
 
+    def test_p19_native_failure_cannot_summarize_as_pass(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            for name in ('p19-appearance-snapshot.bin', 'p19-appearance-deltas.bin', 'p19-expected.txt'):
+                (work / name).write_bytes(b'fresh')
+            log = work / 'node.log'
+            log.write_text('SEAM_EVIDENCE e2e_all scenario=P19.client status=PASS\n')
+            cargo = work / 'cargo'
+            cargo.write_text(
+                '#!/bin/bash\n'
+                'if [[ "$*" == *oteryn-client* ]]; then exit 1; fi\n'
+                'echo "test tests::e2e_p19::e2e_p19_forge_marker_replay ... ok"\n'
+                'echo "test result: ok. 1 passed; 0 failed; 0 ignored"\n'
+            )
+            cargo.chmod(0o700)
+            result = subprocess.run(
+                [sys.executable, str(HERE / 'client_replay.py'), str(log)],
+                env={**os.environ, 'E2E_ALL_CAPTURE_DIR': str(work),
+                     'CARGO': str(cargo), 'OTERYN_E2E_ROW_BATCH': '175:1'},
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertIn('nameplate=cl6_p19_live_capture_reaches_native_nameplates status=FAIL', result.stdout)
+            with log.open('a') as output:
+                output.write(result.stdout + 'NODE_BOOT_RESULT=NODE_BOOT_PASS\n')
+            summary = subprocess.run(
+                ['bash', str(HERE / 'cloud_run.sh'), '--summarize', str(log), 'rows'],
+                capture_output=True, text=True, check=True,
+            )
+            self.assertIn('P19.client|FAIL|replay-failed', summary.stdout)
+            self.assertNotIn('P19.client|PASS|', summary.stdout)
+
     def test_summary_counts_client_replay_verdict_only(self):
         with tempfile.TemporaryDirectory() as tmp:
             log = Path(tmp) / 'node.log'

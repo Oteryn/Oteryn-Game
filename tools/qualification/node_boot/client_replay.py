@@ -190,18 +190,17 @@ def main(log, batch, validate=False):
         matches = targets.get(module, [])
         package, test, names = matches[0] if len(matches) == 1 else (None, module, set())
         cause = replay_cause(row, package, test, names, captures, server_rows.get(scenario), log)
-        verdict = f"FAIL cause={cause}" if cause else "PASS"
-        print(f"SEAM_EVIDENCE e2e_all scenario={scenario} replay={test} status={verdict}")
-        failed |= cause is not None
         if row == "P19" and cause is None:
-            test = "cl6_p19_live_capture_reaches_native_nameplates"
+            native_test = "cl6_p19_live_capture_reaches_native_nameplates"
             cause = replay_cause(
-                row, "oteryn-client", test, names, captures,
+                row, "oteryn-client", native_test, names, captures,
                 server_rows.get(scenario), log, suffix="-nameplate", capture_only=True,
             )
             verdict = f"FAIL cause={cause}" if cause else "PASS"
-            print(f"SEAM_EVIDENCE e2e_all scenario={scenario} nameplate={test} status={verdict}")
-            failed |= cause is not None
+            print(f"SEAM_EVIDENCE e2e_all scenario={scenario} nameplate={native_test} status={verdict}")
+        verdict = f"FAIL cause={cause}" if cause else "PASS"
+        print(f"SEAM_EVIDENCE e2e_all scenario={scenario} replay={test} status={verdict}")
+        failed |= cause is not None
     return int(failed)
 
 
