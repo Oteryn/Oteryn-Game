@@ -471,6 +471,26 @@ impl ChannelRuntimeV1 {
                 } if *health > 0 && version.context == context => {
                     visible.creatures.push(actor(version));
                 }
+                Slot::CreatureOccupied {
+                    health: 0,
+                    position: Some(version),
+                    committed,
+                    ..
+                } if version.context == context && committed.lethal().is_some() => {
+                    let exact = actor(version);
+                    if !carrier.is_native_summon(exact.actor)
+                        && (carrier
+                            .native_deaths
+                            .iter()
+                            .any(|death| death.actor() == exact.actor)
+                            || !carrier
+                                .corpse_projections
+                                .iter()
+                                .any(|projection| projection.occurrence.actor == exact.actor))
+                    {
+                        visible.settling_creatures.push(exact);
+                    }
+                }
                 Slot::NpcOccupied {
                     position: version,
                     hireling: None,

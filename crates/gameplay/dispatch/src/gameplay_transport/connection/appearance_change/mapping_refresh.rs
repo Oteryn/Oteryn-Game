@@ -57,21 +57,36 @@ impl SessionAppearance {
         candidate.select_hirelings(channel);
         let visible = staged_view.appearance_actors(self.forge);
         let mut player_refs = candidate.players(&visible);
+        // A pending death is a retained wire entity. Its live slot may already
+        // be gone, so keep the previously published Forge appearance with it.
+        let pending: std::collections::BTreeSet<_> = channel
+            .entities
+            .iter()
+            .filter(|entry| entry.kind == VisibleKind::PendingDeath)
+            .map(|entry| WireEntityRef {
+                identity: entry.identity,
+                generation: entry.generation,
+            })
+            .collect();
+        let (retained, read_refs): (Vec<_>, Vec<_>) = player_refs
+            .iter()
+            .copied()
+            .partition(|entity| pending.contains(entity) && self.bindings.contains_key(entity));
         let observation = authority
             .appearance_observation_projected_result(
                 actor,
                 admitted.game_session_id,
                 candidate.empty_outfit,
-                player_refs.clone(),
+                read_refs.clone(),
             )
             .await;
-        let observation = match observation {
+        let mut observation = match observation {
             Err(HolderBusy) if moved => {
                 // The movement already committed. Publish the new position using the
                 // exact incarnations the client knows. A later refresh will bind entrants.
                 let mut bindings = Vec::new();
                 let mut skipped = Vec::new();
-                for entity in &player_refs {
+                for entity in &read_refs {
                     if let Some(binding) = self.bindings.get(entity) {
                         bindings.push(binding.clone());
                     } else {
@@ -86,6 +101,11 @@ impl SessionAppearance {
             }
             other => other?,
         };
+        observation.bindings.extend(
+            retained
+                .iter()
+                .filter_map(|entity| self.bindings.get(entity).cloned()),
+        );
         player_refs.retain(|entity| !observation.skipped.contains(entity));
         if !observation.skipped.is_empty() {
             let mut channel = channel.clone();
