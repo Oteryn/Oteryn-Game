@@ -344,10 +344,6 @@ pub(super) async fn drive(
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
             .await?;
-        if scenario == 15 {
-            sqlx::query("UPDATE game_durability_fresh_admission_receipts SET authorization_decided_at=authorization_decided_at-11 WHERE game_session_id=encode($1,'hex')::uuid")
-                .bind(session.as_bytes().as_slice()).execute(&mut *tx).await?;
-        }
         let ammo = if scenario == 15 { 3448 } else { 3447 };
         for (seed, item, count, slot) in [(70, 3350, 1, 6_i16), (71, ammo, 100, 10)] {
             sqlx::raw_sql(sqlx::AssertSqlSafe(
@@ -391,7 +387,8 @@ pub(super) async fn drive(
         assert!(*delayed);
         assert_eq!(segments.iter().map(|s| (s.count, s.amount, s.interval_ms)).collect::<Vec<_>>(),
             [(4, 3, 4_000), (9, 2, 4_000), (20, 1, 4_000)]);
-        let first_tick = poison.started_at() + 4_000_000;
+        // Periodic evaluation uses millisecond precision.
+        let first_tick = poison.started_at().div_ceil(1_000) * 1_000 + 4_000_000;
         drop(states);
         drop(runtime);
         let due = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(first_tick);

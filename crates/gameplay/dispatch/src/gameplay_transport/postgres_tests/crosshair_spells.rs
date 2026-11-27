@@ -409,12 +409,7 @@ async fn scenario_inner(
             let row = visible.players.iter().find(|entry| entry.actor == victim).ok_or("visible player")?;
             EntityRef { identity: victim.placement_identity(), generation: row.generation }
         };
-        // Age the fixture admission past the protected login interval.
-        let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
-        sqlx::query("UPDATE game_durability_fresh_admission_receipts SET authorization_decided_at=authorization_decided_at-11 WHERE game_session_id=encode($1,'hex')::uuid")
-            .bind(session.as_bytes().as_slice()).execute(&mut *tx).await?;
-        tx.commit().await?;
+        super::pvp_live_fixtures::wait_for_login_protection_to_expire(&h.pool, session).await?;
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7, 17, 21, 87]).ok_or("PvP capabilities")?;
         assert_eq!(owner.expert_fight_modes(actor, session, admitted.continuity.next_command_id,
             ExpertFightModes { modes: attack::FightModes { secure: false, ..attack::FightModes::DEFAULT }, expert: ExpertMode::RedFist }).await.map_err(debug)?,
