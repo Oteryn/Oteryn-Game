@@ -25,6 +25,7 @@ fn corridor() -> WorldSpatialObservation {
 struct CorridorOwner {
     dead: Cell<bool>,
     busy: Cell<bool>,
+    corpse_pending: Cell<bool>,
 }
 
 impl FreshAdmissionAuthority for CorridorOwner {
@@ -60,11 +61,15 @@ impl FreshAdmissionAuthority for CorridorOwner {
             motion: None,
             source_icons: Default::default(),
         }];
-        if !self.dead.get() {
+        if !self.dead.get() || self.corpse_pending.get() {
             entities.push(ChannelEntity {
                 identity: DEMON.identity,
                 generation: DEMON.generation,
-                kind: VisibleKind::Creature,
+                kind: if self.dead.get() {
+                    VisibleKind::PendingDeath
+                } else {
+                    VisibleKind::Creature
+                },
                 position: ActorPosition {
                     x: position.x + 1,
                     ..position
@@ -142,6 +147,18 @@ fn p11_combat_tick_publishes_dead_demon_removal_before_target_clear() -> TestRes
                             MessageType::SnapshotBegin | MessageType::SnapshotChunk
                         ));
                     }
+                    // Seed the object-capable view that was sent before the death.
+                    let live = authority
+                        .observe_projected_entities(actor, session.selected_capabilities)
+                        .await
+                        .map_err(|_| "live entities")?;
+                    let mut view =
+                        crate::gameplay_transport::world_spatial::SessionVisibility::with_objects(
+                            true,
+                        );
+                    view.snapshot(&live, &mut |_| Ok(()))
+                        .map_err(|err| format!("{err:?}"))?;
+                    session.visibility = Some(view);
                     assert!(
                         session
                             .visibility
@@ -165,6 +182,24 @@ fn p11_combat_tick_publishes_dead_demon_removal_before_target_clear() -> TestRes
                     assert_eq!(session.admitted.continuity.combat, retained);
 
                     authority.busy.set(false);
+                    authority.corpse_pending.set(true);
+                    receive(&mut stream, &authority, &mut session, Next::Combat)
+                        .await
+                        .map_err(|_| "pending corpse combat tick")?;
+                    assert!(
+                        session
+                            .visibility
+                            .as_ref()
+                            .ok_or("visibility")?
+                            .shows(DEMON)
+                    );
+                    assert_eq!(
+                        session.sequence, sequence,
+                        "the retained demon must defer the clear"
+                    );
+                    assert_eq!(session.admitted.continuity.combat, retained);
+
+                    authority.corpse_pending.set(false);
                     receive(&mut stream, &authority, &mut session, Next::Combat)
                         .await
                         .map_err(|_| "combat retry")?;
