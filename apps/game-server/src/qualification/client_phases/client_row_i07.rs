@@ -588,16 +588,11 @@ pub(super) async fn journey(
         recipient: Some(recipient),
         recipient_id,
         fallback_to_main,
-        ..request(
-            if matches!(
-                category,
-                Some(QuickLootCategory::Armor | QuickLootCategory::Food)
-            ) {
-                QuickLootAction::AssignLoot
-            } else {
-                QuickLootAction::Assign
-            },
-        )
+        ..request(if full {
+            QuickLootAction::AssignLoot
+        } else {
+            QuickLootAction::Assign
+        })
     };
     let armor_route = |fallback| {
         route(
