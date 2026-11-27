@@ -18,6 +18,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     {
         Outcome::Payload(bytes) => Some(Dispatch::Reply(CommandStatus::Accepted, bytes)),
         Outcome::Rejected => Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new())),
+        Outcome::HolderUnavailable => Some(Dispatch::CommandRefused),
         Outcome::Unavailable => None,
     }
 }

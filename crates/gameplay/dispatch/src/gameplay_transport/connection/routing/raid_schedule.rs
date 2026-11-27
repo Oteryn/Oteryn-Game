@@ -21,7 +21,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         {
             Some(Ok(bytes)) => Dispatch::Reply(crate::foundation::CommandStatus::Accepted, bytes),
             Some(Err(())) => {
-                Dispatch::Reply(crate::foundation::CommandStatus::Rejected, Vec::new())
+                Dispatch::CommandRefused
             }
             None => return None,
         },

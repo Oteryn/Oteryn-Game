@@ -431,9 +431,17 @@ where
                 },
                 None,
             ),
+            oteryn_protocol_oteryn::item_view::COMMAND_TYPE_ITEM_MOVE_INTENT => {
+                Dispatch::CommandRefused
+            }
             _ => Dispatch::Unregistered,
         };
-        result::encode(session, command, &mut refusal)?
+        if matches!(refusal, Dispatch::CommandRefused) {
+            dispatch = refusal;
+            result::encode(session, command, &mut dispatch)?
+        } else {
+            result::encode(session, command, &mut refusal)?
+        }
     } else {
         result::encode(session, command, &mut dispatch)?
     };

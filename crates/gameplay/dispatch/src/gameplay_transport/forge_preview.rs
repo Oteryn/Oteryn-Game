@@ -15,6 +15,7 @@ pub enum Outcome {
     Payload(Vec<u8>),
     Rejected,
     Unavailable,
+    HolderUnavailable,
 }
 fn operation(selection: wire::Selection) -> Option<ForgeOperation> {
     let wire::Selection::Pair {
@@ -104,7 +105,8 @@ pub(super) async fn read(
             })
         }
     };
-    let snapshot = match owner
+    let snapshot = match super::AdmissionRetryBudget::for_command(owner.root)
+        .retry_logged_holder("forge_preview", async || owner
         .root
         .read_forge_preview(
             owner.character,
@@ -114,9 +116,15 @@ pub(super) async fn read(
             native,
             selection,
         )
+        .await,
+            |error| matches!(error, ForgeDustLimitError::Unavailable(error) if super::root_holder_busy(error)),
+        )
         .await
     {
         Ok(value) => value,
+        Err(ForgeDustLimitError::Unavailable(crate::durability::DurabilityError::RootUnavailable)) => {
+            return Outcome::HolderUnavailable;
+        }
         Err(ForgeDustLimitError::Unavailable(_)) => return Outcome::Unavailable,
         Err(_) => return Outcome::Rejected,
     };
@@ -194,7 +202,8 @@ async fn limit_review(
     let (Some(fence), Ok(command)) = (admitted.item_fence, CommandId::new(command)) else {
         return Outcome::Rejected;
     };
-    let value = match owner
+    let value = match super::AdmissionRetryBudget::for_command(owner.root)
+        .retry_logged_holder("forge_dust_preview", async || owner
         .root
         .read_current_forge_dust(
             owner.character,
@@ -202,9 +211,15 @@ async fn limit_review(
             fence,
             CommandRef::new(admitted.game_session_id, command),
         )
+        .await,
+            |error| matches!(error, ForgeDustLimitError::Unavailable(error) if super::root_holder_busy(error)),
+        )
         .await
     {
         Ok(value) => value,
+        Err(ForgeDustLimitError::Unavailable(crate::durability::DurabilityError::RootUnavailable)) => {
+            return Outcome::HolderUnavailable;
+        }
         Err(ForgeDustLimitError::Unavailable(_)) => return Outcome::Unavailable,
         Err(_) => return Outcome::Rejected,
     };

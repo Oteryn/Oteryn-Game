@@ -132,6 +132,9 @@ where
     {
         return Ok(());
     }
+    if matches!(dispatch, Dispatch::CommandRefused) {
+        return Ok(());
+    }
     if matches!(dispatch, Dispatch::Logout(_) | Dispatch::NoLogout) {
         if outcome.second_logout {
             return Err(close(
@@ -558,6 +561,7 @@ where
         | Dispatch::Training(_)
         | Dispatch::Logout(LogoutResult::Accepted | LogoutResult::Busy)
         | Dispatch::House(_)
+        | Dispatch::CommandRefused
         | Dispatch::Unregistered => {}
     }
     refresh::sounds(stream, authority, session).await?;

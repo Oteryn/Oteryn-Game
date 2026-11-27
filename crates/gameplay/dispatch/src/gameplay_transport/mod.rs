@@ -1517,6 +1517,14 @@ fn progression_holder_busy(
     )
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    static COMMAND_HOLDER_PROBE: (
+        &'static str,
+        std::cell::Cell<Option<Arc<composed_admission::HolderCheckoutProbe>>>,
+    );
+}
+
 impl<'r> AdmissionRetryBudget<'r> {
     fn new(game_session_id: &GameSessionId) -> Self {
         Self {
@@ -1693,6 +1701,62 @@ impl<'r> AdmissionRetryBudget<'r> {
                 result => return result,
             }
         }
+    }
+
+    /// Wait for a proven pre-pass checkout refusal. A running pass is never
+    /// cancelled or retried here on an ambiguous result.
+    async fn retry_logged_holder<T, E>(
+        &self,
+        purpose: &'static str,
+        mut step: impl AsyncFnMut() -> Result<T, E>,
+        busy: impl Fn(&E) -> bool,
+    ) -> Result<T, E> {
+        #[cfg(test)]
+        let probe = COMMAND_HOLDER_PROBE
+            .try_with(|(selected, probe)| (*selected == purpose).then(|| probe.take()).flatten())
+            .ok()
+            .flatten();
+        #[cfg(test)]
+        if let Some(probe) = &probe {
+            probe.pause().await;
+        }
+        let mut started = None;
+        let mut observed = None;
+        let result = self
+            .retry_holder(
+                async || {
+                    let result = step().await;
+                    if result.as_ref().is_err_and(&busy) {
+                        started.get_or_insert_with(tokio::time::Instant::now);
+                        if let Some(holder) = self.root.and_then(DurabilityRoot::holder_observation)
+                        {
+                            observed = Some(holder);
+                        }
+                        #[cfg(test)]
+                        if let Some(probe) = &probe {
+                            probe.blocked();
+                        }
+                    }
+                    result
+                },
+                &busy,
+            )
+            .await;
+        if let Some(start) = started {
+            let waited_ms = start.elapsed().as_millis();
+            let (owner, held_ms) = observed.map_or(("none".to_owned(), 0), |(site, held)| {
+                (site.to_string(), held.as_millis())
+            });
+            let outcome = if result.as_ref().is_err_and(&busy) {
+                "holder_busy"
+            } else {
+                "retry_finished"
+            };
+            operator_event(&format!(
+                "event=command_holder_wait purpose={purpose} owner={owner} held_ms={held_ms} waited_ms={waited_ms} outcome={outcome}"
+            ));
+        }
+        result
     }
 
     /// Retry only transient pre-dispatch holder failures, retaining the exact

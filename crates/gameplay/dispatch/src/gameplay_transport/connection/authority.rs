@@ -1011,6 +1011,29 @@ pub trait FreshAdmissionAuthority {
         async { Some(EquipmentMoveReplay::Absent) }
     }
 
+    /// Reconcile the equipment and loop receipts before executing a MOVE.
+    fn move_receipt(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+    ) -> impl Future<Output = item_move::MoveReceipt> {
+        async move {
+            use item_move::MoveReceipt;
+            match self.committed_equipment_move(actor, command).await {
+                Some(EquipmentMoveReplay::Moved) => return MoveReceipt::Moved,
+                Some(EquipmentMoveReplay::Conflicting) => return MoveReceipt::Conflicting,
+                Some(EquipmentMoveReplay::Absent) => {}
+                None => return MoveReceipt::Unknown,
+            }
+            match self.committed_loop_move(actor, command).await {
+                Some(LoopMoveReplay::Moved) => MoveReceipt::Moved,
+                Some(LoopMoveReplay::Conflicting) => MoveReceipt::Conflicting,
+                Some(LoopMoveReplay::Absent) => MoveReceipt::Absent,
+                None => MoveReceipt::Unknown,
+            }
+        }
+    }
+
     /// EQUIP-WIRE-1 (ITEM-MOVE-WIRE-1 §4): one equip or unequip through the equipment owner,
     /// keyed by this command 9's CommandRef. The connection has checked that the source is shown
     /// where the move needs it and that the destination slot is shown free; the owner decides the

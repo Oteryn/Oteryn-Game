@@ -31,18 +31,29 @@ pub(super) async fn query(
     {
         return Some(Err(()));
     }
-    match owner
-        .root
-        .query_world_event(
-            owner.character,
-            owner.holder,
-            fence,
-            command.command_id,
-            owner.reset_epoch,
+    match super::AdmissionRetryBudget::for_command(owner.root)
+        .retry_logged_holder(
+            "world_event_query",
+            async || {
+                owner
+                    .root
+                    .query_world_event(
+                        owner.character,
+                        owner.holder,
+                        fence,
+                        command.command_id,
+                        owner.reset_epoch,
+                    )
+                    .await
+            },
+            super::progression_holder_busy,
         )
         .await
     {
         Ok(bytes) => Some(Ok(bytes)),
+        Err(CharacterProgressionError::Unavailable(
+            crate::durability::DurabilityError::RootUnavailable,
+        )) => Some(Err(())),
         Err(CharacterProgressionError::Unavailable(_)) => None,
         Err(_) => Some(Err(())),
     }

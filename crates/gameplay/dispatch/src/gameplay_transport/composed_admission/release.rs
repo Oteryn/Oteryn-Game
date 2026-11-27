@@ -23,12 +23,22 @@ impl HolderCheckoutProbe {
         &self,
         root: &DurabilityRoot,
     ) -> Result<(), crate::durability::DurabilityError> {
+        self.contend_with(root, async {}).await
+    }
+
+    pub(in crate::gameplay_transport) async fn contend_with<T>(
+        &self,
+        root: &DurabilityRoot,
+        after_refusal: impl Future<Output = T>,
+    ) -> Result<T, crate::durability::DurabilityError> {
         self.before_read.notified().await;
         // Another foreground pass briefly wins the real holder at the selected checkout.
         let holder = root.try_issue_semantic_pass()?;
         self.proceed.notify_one();
         self.read_failed.notified().await;
-        holder.run(|_, _| Box::pin(async { Ok(()) })).await
+        let result = after_refusal.await;
+        holder.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        Ok(result)
     }
 }
 

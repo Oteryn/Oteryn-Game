@@ -1,4 +1,4 @@
-use super::super::fixture::{Harness, debug, id, run};
+use super::super::fixture::{Harness, debug, id};
 use super::super::{Dependencies, item_look_fixtures, prepare_current_session};
 use super::{BAG, COIN, Case, TestResult, wire};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
@@ -9,8 +9,8 @@ use crate::map::facts::ItemDefinition;
 use crate::map::overlay::TilePos;
 use oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1;
 
-pub(super) fn scenario(case: Case) -> TestResult {
-    run(async |admin| {
+pub(super) fn scenario(case: Case, admin: String) -> TestResult {
+    crate::bestiary_postgres_harness::runtime().map_err(debug)?.block_on(async {
         let harness =
             Harness::create_with_admission_seed(admin, "browse_field", true, false).await?;
         super::super::reset();
