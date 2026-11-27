@@ -371,6 +371,12 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>, check_
         return h.cleanup().await;
     }
     if case == LOGOUT_WITH_COOLDOWN {
+        use oteryn_protocol_oteryn::logout::CAPABILITY_LOGOUT_V1;
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[6, 7, CAPABILITY_LOGOUT_V1],
+        )
+        .ok_or("spell logout capabilities")?;
         cast_and_logout(&owner, &h, admitted).await?;
         drop(owner);
         drop(authority);
@@ -739,7 +745,7 @@ async fn cast_and_logout(
     harness: &Harness,
     admitted: AdmittedSession,
 ) -> TestResult {
-    use super::autowalk_fixtures::{read, send};
+    use super::autowalk_fixtures::{command_reply, read, send};
     use crate::durability::fresh_admission::FreshAdmissionStore;
     use crate::foundation::GameSessionState;
     use crate::gameplay_transport::composed_admission::{
@@ -781,7 +787,7 @@ async fn cast_and_logout(
             &cast,
         )
         .await?;
-        let (status, payload) = super::quick_loot::command_reply(&mut client, command_id).await?;
+        let (status, payload) = command_reply(&mut client, command_id).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(
             actor_spell::decode_spell_cast_result(&payload).map_err(debug)?,
@@ -802,8 +808,14 @@ async fn cast_and_logout(
         }
         let command_id = command_id + 1;
         send(&mut client, command_id, COMMAND_TYPE_LOGOUT_INTENT, &[]).await?;
-        probe.contend(&harness.root).await?;
-        let (_, payload) = super::quick_loot::command_reply(&mut client, command_id).await?;
+        let (_, (_, payload)) = tokio::try_join!(
+            async { Ok::<_, Box<dyn std::error::Error>>(probe.contend(&harness.root).await?) },
+            async {
+                let (status, payload) = command_reply(&mut client, command_id).await?;
+                assert_eq!(status, CommandStatus::Accepted);
+                Ok((status, payload))
+            },
+        )?;
         client.shutdown().await?;
         assert_eq!(
             decode_logout_result(&payload).map_err(debug)?,

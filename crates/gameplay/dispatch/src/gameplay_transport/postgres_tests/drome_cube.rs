@@ -38,6 +38,7 @@ enum Case {
     ConcurrentLastUnit,
     KooldownAid,
     Logout,
+    LogoutLiveness,
 }
 
 fn scenario(case: Case) -> TestResult {
@@ -92,6 +93,14 @@ fn drome_cube_first_logout_waits_for_checked_out_pass_postgres() -> TestResult {
         return Ok(());
     };
     routed_scenario(admin, Case::Logout)
+}
+
+#[test]
+fn drome_cube_logout_services_liveness_with_holder_checked_out_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    routed_scenario(admin, Case::LogoutLiveness)
 }
 
 struct WireOwner<'a, 'b, 'f, 's>(&'a ComposedFreshAdmission<'b, 'f, 's>);

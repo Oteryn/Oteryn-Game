@@ -201,6 +201,32 @@ pub(super) async fn read(client: &mut DuplexStream) -> TestResult<Vec<u8>> {
     Ok(frame)
 }
 
+pub(super) async fn ack_probe(client: &mut DuplexStream, frame: &[u8]) -> TestResult {
+    let envelope = decode_wire_envelope(frame)?;
+    let id = oteryn_protocol_oteryn::decode_liveness_probe(envelope.payload())?;
+    let ack = oteryn_protocol_oteryn::encode_liveness_ack(envelope.connection_generation(), id, 0)?;
+    client.write_u32(u32::try_from(ack.len())?).await?;
+    client.write_all(&ack).await?;
+    Ok(())
+}
+
+pub(super) async fn command_reply(
+    client: &mut DuplexStream,
+    id: u64,
+) -> TestResult<(oteryn_protocol_oteryn::CommandStatus, Vec<u8>)> {
+    loop {
+        let frame = read(client).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::LivenessProbe {
+            ack_probe(client, &frame).await?;
+        } else if envelope.message_type() == MessageType::CommandResult {
+            let result = decode_command_result(envelope.payload())?;
+            assert_eq!(result.command_id, id);
+            return Ok((result.status, result.payload.to_vec()));
+        }
+    }
+}
+
 pub(super) async fn result(client: &mut DuplexStream, id: u64) -> TestResult<(Vec<u8>, usize)> {
     let mut steps = 0;
     loop {

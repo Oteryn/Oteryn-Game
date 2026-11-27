@@ -1,6 +1,6 @@
 //! QUICKLOOT: production router, item owner, replay and real PostgreSQL custody.
 use super::fixture::{Harness, debug, id, join_two};
-use super::autowalk_fixtures::{read, send};
+use super::autowalk_fixtures::{command_reply, read, send};
 use super::kill_reward_e2e_fixtures::scenario_thread;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::item_mint::*;
@@ -730,7 +730,7 @@ async fn pouch_relog_logout(
     use crate::gameplay_transport::connection::{ControllerBinding, SessionContinuity};
     use crate::gameplay_transport::logout::LogoutReply;
     use oteryn_protocol_oteryn::logout::{
-        COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
+        CAPABILITY_LOGOUT_V1, COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
     };
     use std::{cell::Cell, sync::Arc, time::Duration};
 
@@ -767,7 +767,11 @@ async fn pouch_relog_logout(
             account_id: id(40),
         }),
         continuity: SessionContinuity {
-            selected_capabilities: previous.continuity.selected_capabilities,
+            selected_capabilities: SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[4, 6, CAPABILITY_LOGOUT_V1, 98],
+            )
+            .ok_or("pouch relog logout capabilities")?,
             ..SessionContinuity::FRESH
         },
         first_entry,
@@ -1001,21 +1005,6 @@ async fn snapshot_corpse_handle(
                 return handle.ok_or_else(|| "missing corpse handle".into());
             }
             _ => {}
-        }
-    }
-}
-
-pub(super) async fn command_reply(
-    client: &mut DuplexStream,
-    id: u64,
-) -> TestResult<(CommandStatus, Vec<u8>)> {
-    loop {
-        let frame = read(client).await?;
-        let envelope = decode_wire_envelope(&frame)?;
-        if envelope.message_type() == MessageType::CommandResult {
-            let result = decode_command_result(envelope.payload())?;
-            assert_eq!(result.command_id, id);
-            return Ok((result.status, result.payload.to_vec()));
         }
     }
 }
