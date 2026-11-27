@@ -31,7 +31,7 @@ impl GroundActionSource {
         &self,
         native_map_digest: &[u8; 32],
     ) -> Result<crate::content::LogicalCell, &'static str> {
-        super::native_world_items::decode_corpse_action_cell(
+        crate::durability::native_world_items::decode_corpse_action_cell(
             &self.target.spatial_position,
             &self.target.map_revision,
             native_map_digest,

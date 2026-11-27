@@ -392,35 +392,56 @@ impl LoopGroundOverlay {
             let Some(reference) = definition_ref(index, &item.definition) else {
                 continue;
             };
-            let (pickupable, native_projectile) =
-                if entry.source_plain_corpse || entry.source_native_ground {
-                    use crate::content::ReferenceItemField as F;
-                    let Some(policy) = native.and_then(|native| {
-                        native.item_policy(
-                            &item.definition.production_key,
-                            &item.definition.revision_ref,
-                        )
-                    }) else {
-                        continue;
-                    };
-                    let F::Known(physical) = &policy.record().semantics.physical else {
-                        continue;
-                    };
-                    let (F::Known(movable), F::Known(pickupable)) =
-                        (&physical.movable, &physical.pickupable)
-                    else {
-                        continue;
-                    };
-                    let Some(projectile) = policy.record().attributes.blocks_projectile else {
-                        continue;
-                    };
-                    (*movable && *pickupable, projectile)
-                } else {
-                    (
-                        entry.field_collision.is_none() && !entry.native_corpse,
-                        false,
+            let (pickupable, native_projectile) = if entry.source_plain_corpse
+                || entry.source_native_ground
+            {
+                use crate::content::ReferenceItemField as F;
+                let Some(policy) = native.and_then(|native| {
+                    native.item_policy(
+                        &item.definition.production_key,
+                        &item.definition.revision_ref,
                     )
+                }) else {
+                    continue;
                 };
+                let F::Known(physical) = &policy.record().semantics.physical else {
+                    continue;
+                };
+                let (F::Known(movable), F::Known(pickupable)) =
+                    (&physical.movable, &physical.pickupable)
+                else {
+                    continue;
+                };
+                let Some(projectile) = policy.record().attributes.blocks_projectile else {
+                    continue;
+                };
+                (*movable && *pickupable, projectile)
+            } else if committed_corpse && !native_axes {
+                use crate::content::ReferenceItemField as F;
+                use crate::content::native_gameplay::NativeItemDestination;
+                native
+                        .and_then(|native| {
+                            native.item_policy(
+                                &item.definition.production_key,
+                                &item.definition.revision_ref,
+                            )
+                        })
+                        .map(|policy| {
+                            let record = policy.record();
+                            let portable = record.admission.materializable
+                                && record.admission.legal_destinations.contains(&NativeItemDestination::Ground)
+                                && record.admission.legal_destinations.contains(&NativeItemDestination::CharacterInventory)
+                                && matches!(&record.semantics.physical, F::Known(physical)
+                                    if physical.movable == F::Known(true) && physical.pickupable == F::Known(true));
+                            (portable, record.attributes.blocks_projectile.unwrap_or(false))
+                        })
+                        .unwrap_or((false, false))
+            } else {
+                (
+                    entry.field_collision.is_none() && !entry.native_corpse,
+                    false,
+                )
+            };
             let entry_facts = EntryFacts {
                 definition: MapDefinition::Item(reference),
                 terrain_kind: None,
