@@ -16,7 +16,7 @@
       "span": false,
       "fields": ["monster", "outcome", "reason"],
       "codes": [],
-      "note": "Outcome of a creature's melee attempt or a visible creature's skipped permit turn."
+      "note": "Outcome of a creature's melee attempt or a visible creature's skipped permit turn. The node-boot qualification log profile emits this at info."
     },
     {
       "event": "target_decision",
@@ -24,7 +24,7 @@
       "span": false,
       "fields": ["monster", "target", "reason"],
       "codes": [],
-      "note": "Creature identity, scope-local target slot and generation or none, and the reason for the think decision."
+      "note": "Creature identity, scope-local target slot and generation or none, and the reason for the think decision. The node-boot qualification log profile emits this at info."
     }
   ]
 }

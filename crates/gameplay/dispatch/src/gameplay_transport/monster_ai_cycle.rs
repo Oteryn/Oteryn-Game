@@ -18,7 +18,7 @@ use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
 };
-use oteryn_gameplay_monster_ai::observability::record_melee_outcome;
+use oteryn_gameplay_monster_ai::observability::{melee_diagnostics_enabled, record_melee_outcome};
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 use sha2::{Digest, Sha256};
 
@@ -116,11 +116,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     fn log_monster_melee_no_permit(&self) {
-        if !oteryn_error_codes::filter().allows(
-            oteryn_error_codes::Level::Debug,
-            "monster_ai",
-            false,
-        ) {
+        if !melee_diagnostics_enabled() {
             return;
         }
         let Ok(runtime) = self.runtime.try_lock() else {
