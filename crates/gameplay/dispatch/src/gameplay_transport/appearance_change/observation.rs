@@ -65,28 +65,22 @@ pub(in crate::gameplay_transport) async fn observe_result(
         operator_event("event=appearance_observation_failed class=fence");
         ObservationError::Unavailable
     })?;
-    {
-        // Monster profiles hold both guards while using the durable holder. Wait
-        // for that existing owner before starting the command's one-second retry
-        // window; the foreground demand prevents a new profile from overtaking us.
-        let _runtime = admission.runtime.lock().await;
-        let _states = admission.states.spell_states.lock().await;
-    }
-    let retry = AdmissionRetryBudget::for_join_read(admission.root, "appearances");
+    let retry = AdmissionRetryBudget::for_command(admission.root);
     retry
-        .retry_durability("appearance_observation", async || {
+        .retry_logged_holder("appearances", async || {
             let mut failure = None;
-            let observation = observe_once(
+            let observation = tokio::time::timeout_at(retry.deadline, observe_once(
                 admission,
                 observer,
                 session,
                 empty_outfit,
                 &entities,
                 &mut failure,
-            )
-            .await;
+            ))
+            .await
+            .map_err(|_| crate::durability::DurabilityError::RootPassDeadlineExceeded)?;
             // All runtime/spell guards belong to observe_once and have dropped
-            // before retry_durability can wait for the holder. Its durable reads
+            // before the retry can wait for the holder. Its durable reads
             // acquire with try_issue_root/try_issue_semantic_pass, never a wait.
             match failure {
                 Some(ReadFailure::Durable(error)) => Err(error),
@@ -94,8 +88,11 @@ pub(in crate::gameplay_transport) async fn observe_result(
                 Some(ReadFailure::RespawnPending) => Ok(Err(ObservationError::RespawnPending)),
                 None => Ok(observation.ok_or(ObservationError::Unavailable)),
             }
-        })
+        }, |error| matches!(error, crate::durability::DurabilityError::RootUnavailable))
         .await
+        .inspect_err(|error| {
+            operator_event(&format!("event=appearance_observation_failed class=storage reason={}", super::super::fresh_evidence::durability_cause(error)));
+        })
         .map_err(|error| match error {
             crate::durability::DurabilityError::RootUnavailable => ObservationError::HolderBusy,
             _ => ObservationError::Unavailable,
