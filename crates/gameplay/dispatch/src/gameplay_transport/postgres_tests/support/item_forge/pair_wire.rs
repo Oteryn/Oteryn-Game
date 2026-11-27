@@ -194,7 +194,9 @@ pub(in super::super) async fn extract_chest_item(
         end
     };
     let exercise = async {
-        use protocol::item_look::{ItemLookIntent, ItemLookResult, ItemLookTarget};
+        use protocol::item_look::{
+            ItemLookIntent, ItemLookResult, ItemLookSelection, ItemLookTarget,
+        };
         let initial = inventory(&mut client).await?;
         let chest = initial
             .entries
@@ -213,9 +215,13 @@ pub(in super::super) async fn extract_chest_item(
                 .iter()
                 .all(|entry| entry.item_definition_ref != receiver.item_definition_ref)
         );
-        let look = protocol::item_look::encode_item_look_intent(ItemLookIntent {
-            target: ItemLookTarget::Item(receiver.handle),
-        })
+        let look_selection = ItemLookSelection { extended: true };
+        let look = protocol::item_look::encode_item_look_intent_for(
+            ItemLookIntent {
+                target: ItemLookTarget::Item(receiver.handle),
+            },
+            look_selection,
+        )
         .map_err(debug)?;
         let (status, reply) = support::send_command(
             &mut client,
@@ -227,7 +233,8 @@ pub(in super::super) async fn extract_chest_item(
         .await?;
         assert_eq!(status, CommandStatus::Accepted);
         let ItemLookResult::Text(description) =
-            protocol::item_look::decode_item_look_result(&reply).map_err(debug)?
+            protocol::item_look::decode_item_look_result_for(&reply, look_selection)
+                .map_err(debug)?
         else {
             return Err("Look did not resolve the sword inside the Exaltation Chest".into());
         };
