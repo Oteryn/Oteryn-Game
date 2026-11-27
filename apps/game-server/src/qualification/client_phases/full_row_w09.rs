@@ -69,6 +69,55 @@ fn cube_reward(
     (expected == *actual).then_some(reward)
 }
 
+async fn expected_cube_draws(
+    scope: &SeamClients<'_>,
+    pool: &[NonZeroU32],
+) -> TestResult<Vec<NonZeroU32>> {
+    use sha2::{Digest, Sha256};
+    use sqlx::Connection;
+
+    // Read only the identity of the fixture input. All outcome checks use the live inventory.
+    let mut connection = sqlx::PgConnection::connect(scope.url).await?;
+    let stacks: Vec<(Vec<u8>, i64)> = sqlx::query_as(
+        "SELECT uuid_send(i.item_instance_id), i.quantity::bigint
+         FROM game_item_container_entries e
+         JOIN game_item_container_slots b USING (character_id, world_id)
+         JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id AND i.world_id=e.world_id
+         WHERE e.character_id=encode($1,'hex')::uuid
+           AND e.parent_item_instance_id=b.item_instance_id
+           AND i.definition_production_key=$2 AND i.lifecycle=1
+         LIMIT 2",
+    )
+    .bind(scope.characters[0].as_slice())
+    .bind(DROME_CUBE_KEY)
+    .fetch_all(&mut connection)
+    .await?;
+    connection.close().await?;
+    let [(source, 4)] = stacks.as_slice() else {
+        return Err(
+            "W09 fixture requires exactly one four-unit Cube stack in the main backpack".into(),
+        );
+    };
+    let draws = (1_u64..=4)
+        .rev()
+        .map(|quantity| {
+            // Independently calculate the source-unit occurrence used by the Cube contract.
+            let mut occurrence = b"oteryn.drome-cube.reward.v1".to_vec();
+            occurrence.extend_from_slice(source);
+            occurrence.extend_from_slice(&quantity.to_be_bytes());
+            let sample = Sha256::digest(&occurrence)
+                .into_iter()
+                .find(|byte| *byte < 240)
+                .ok_or("W09 Cube fixture draw exhausted entropy")?;
+            Ok(pool[usize::from(sample % 20)])
+        })
+        .collect::<TestResult<Vec<_>>>()?;
+    if draws.windows(2).all(|pair| pair[0] == pair[1]) {
+        return Err("W09 Cube fixture draws do not distinguish a fixed reward".into());
+    }
+    Ok(draws)
+}
+
 async fn wait_inventory(
     client: &mut DevClientSession,
     expected: &BTreeMap<NonZeroU32, u64>,
@@ -296,7 +345,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let preparation_session = client.join_snapshot().game_session_id;
     character_prep::declare_seeded(
         "W09.full",
-        "level-41 Premium sorcerer, one Drome Cube and two Kooldown Aids",
+        "level-41 Premium sorcerer, four Drome Cubes and two Kooldown Aids",
         "ordinary leveling exceeds the row budget and the inputs have no authored acquisition route",
     );
     request_fixture_control(
@@ -314,7 +363,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if quantities(&client)? != expected {
         return Err("W09 missing Aid refusal changed inventory".into());
     }
-    character_prep::grant_item(&client, cube_id, 1).await?;
+    character_prep::grant_item(&client, cube_id, 4).await?;
     character_prep::grant_item(&client, aid_id, 2).await?;
     logout(&mut client).await?;
     let mut client = connect_character(&scope, 0xd2, 0).await?;
@@ -331,11 +380,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    expected.extend([(cube, 1), (aid, 2)]);
+    expected.extend([(cube, 4), (aid, 2)]);
     if quantities(&client)? != expected {
         return Err("W09 fresh admission did not serve exactly the seeded items".into());
     }
 
+    let expected_draws = expected_cube_draws(&scope, &pool).await?;
     let committed = (CommandStatus::Accepted, wire::UseDisposition::Committed);
     let missing = (CommandStatus::Accepted, wire::UseDisposition::NothingToUse);
     let book = native_spell_book()?;
@@ -445,24 +495,33 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
-    use_item(&mut client, cube, committed).await?;
-    expected.remove(&cube);
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    let (reward, settled) = loop {
-        let actual = quantities(&client)?;
-        if let Some(reward) = cube_reward(expected.clone(), &actual, &pool) {
-            break (reward, actual);
+    for (offset, reward) in expected_draws.into_iter().enumerate() {
+        use_item(&mut client, cube, committed).await?;
+        let remaining = 3 - u64::try_from(offset)?;
+        if remaining == 0 {
+            expected.remove(&cube);
+        } else {
+            expected.insert(cube, remaining);
         }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(
-                "W09 Cube did not debit exactly one unit and grant exactly one donor reward".into(),
-            );
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            let actual = quantities(&client)?;
+            if cube_reward(expected.clone(), &actual, &[reward]) == Some(reward) {
+                expected = actual;
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!(
+                    "W09 Cube draw {offset} expected one reward ref={reward} with {remaining} Cubes left"
+                ).into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
         }
-        client.service_liveness(Duration::from_millis(50)).await?;
-    };
-    evidence(&format!(
-        "W09_CHECK reset-notice=observed cube-reward-ref={reward}"
-    ));
+        evidence(&format!(
+            "W09_CHECK cube-draw={offset} reward-ref={reward} remaining={remaining}"
+        ));
+    }
+    let settled = expected;
     let used_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     let mut fresh = connect_character(&scope, 0xd2, 0).await?;
