@@ -441,6 +441,14 @@
       "note": "NBEOF-2: closed-schema stage and failure kind after holder retry exhaustion or a non-retryable durability failure."
     },
     {
+      "event": "session_durability_wait",
+      "level": "info",
+      "span": false,
+      "fields": ["purpose", "owner", "waited_ms", "outcome"],
+      "codes": [],
+      "note": "Bounded pre-checkout wait by a session lifecycle owner."
+    },
+    {
       "event": "session_holder_wait",
       "level": "info",
       "span": false,
