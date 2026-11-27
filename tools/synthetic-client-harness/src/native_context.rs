@@ -31,7 +31,7 @@ impl Stepper for ContextSession {
         &mut self,
         command: &oteryn_client_ui::world_interaction::menu::Command,
         _raw_wire: bool,
-    ) -> Result<String, SessionError> {
+    ) -> Result<oteryn_client_runtime::world_interaction::Reply, SessionError> {
         self.receipts
             .send(format!("{:?}", command.action))
             .map_err(|_| SessionError::SessionUnusable)?;
