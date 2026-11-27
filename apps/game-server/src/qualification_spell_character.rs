@@ -500,7 +500,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     Ok(())
 }
 
-#[cfg(feature = "qualification-spawn")]
+#[cfg(any(test, feature = "qualification-spawn"))]
 pub(crate) const W13_SWORD_SKILL: u16 = 110;
 
 /// Seed the W13 Knight through the same fenced build writer that maintains the receipt chain.
