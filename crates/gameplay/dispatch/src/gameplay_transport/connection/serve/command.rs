@@ -533,8 +533,6 @@ pub(super) fn guard_refusal(
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
 ) -> Result<Dispatch, ServeEnd> {
     use oteryn_protocol_oteryn::{
-        COMMAND_BUSY_REFUSAL,
-        account_achievements::COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY,
         actor_spell::{
             COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT, SpellCastDisposition,
             encode_spell_cast_result,
@@ -548,7 +546,6 @@ pub(super) fn guard_refusal(
             AttackIntentDisposition, COMMAND_TYPE_ATTACK_TARGET_INTENT,
             COMMAND_TYPE_FIGHT_MODES_INTENT, encode_attack_intent_result,
         },
-        capability_tables::GATED,
         chat::encode_chat_intent_result,
         item_view::{COMMAND_TYPE_ITEM_MOVE_INTENT, ItemMoveOutcome},
         logout::{COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_intent},
@@ -604,15 +601,6 @@ pub(super) fn guard_refusal(
             let (status, payload) =
                 appearance_change::result(ChangeResult::Rejected).ok_or(ServeEnd::Disconnected)?;
             Dispatch::Reply(status, payload)
-        }
-        COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY => {
-            Dispatch::Reply(rejected, COMMAND_BUSY_REFUSAL.to_vec())
-        }
-        _ if GATED
-            .iter()
-            .any(|(_, commands, _)| commands.contains(&command_type)) =>
-        {
-            Dispatch::Reply(rejected, COMMAND_BUSY_REFUSAL.to_vec())
         }
         _ => Dispatch::Unregistered,
     })
@@ -722,7 +710,7 @@ pub(super) async fn guards<A: FreshAdmissionAuthority>(
                 command.command_type,
                 command.command_id,
             ));
-            return Err(disconnect(command, guard, error));
+            return Err(disconnect(command, guard.name(), error));
         }
     };
     operator_event(&format!(
