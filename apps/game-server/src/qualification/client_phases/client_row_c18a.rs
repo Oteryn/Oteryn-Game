@@ -14,8 +14,9 @@ use oteryn_protocol_oteryn::{
 const SCORCH_MANA: u32 = 8;
 const RAT_MAX_HP: u64 = 20;
 const RETREAT_STEPS: usize = 64;
+// Keep the Rat outside melee reach while its attack target is selected.
 const CAST_TILE: TilePos = TilePos {
-    x: 32490,
+    x: 32489,
     y: 32169,
     floor: -7,
 };
@@ -117,9 +118,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
                             .is_ok_and(|name| name.eq_ignore_ascii_case("rat"))
                     })
             });
-        let rat = *rats.next().ok_or("C18a capture has no adjacent Rat")?;
+        let rat = *rats
+            .next()
+            .ok_or("C18a capture has no Rat at the fixed two-tile distance")?;
         if rats.next().is_some() {
-            return Err("C18a capture has multiple adjacent Rats".into());
+            return Err("C18a capture has multiple Rats at the fixed target tile".into());
         }
         rat
     };
@@ -284,8 +287,8 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
                                     .is_some()
                             {
                                 return Err(
-                                    "C18a expected one red damage value for the caster and Rat"
-                                        .into(),
+                                    format!("C18a damage attribution failed: sequence={} scorch_cue={has_cast_cue} position={position:?} amount={} color={:?} secondary={secondary:?}",
+                                        batch.server_sequence, primary.value, primary.color).into(),
                                 );
                             }
                         }

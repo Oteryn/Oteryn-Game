@@ -513,7 +513,7 @@ fn verify_damage(
         presentation::decode_presentation_batch(payload).map_err(|error| format!("{error:?}"))?;
     use oteryn_protocol_oteryn::world_spatial::ActorPosition;
     let cast_tile = ActorPosition {
-        x: 32490,
+        x: 32489,
         y: 32169,
         floor: 7,
     };
@@ -614,7 +614,7 @@ fn rejects_health_loss_without_the_exact_damage_source() -> Result<(), Error> {
         emission_ordinal: 1,
         kind: PresentationEventKind::Sound {
             position: ActorPosition {
-                x: 32490,
+                x: 32489,
                 y: 32169,
                 floor: 7,
             },
