@@ -5,9 +5,9 @@
 
 use super::DurabilityRoot;
 use super::character_authority::{
-    CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
+    CharacterAuthorityError, ReconciledCharacterAuthority, observe_recovery_fence,
 };
-use super::db::{begin_semantic_transaction, commit_semantic_read};
+use super::db::{begin_observation_transaction, bound_periodic_lock_wait, commit_semantic_read};
 use crate::domain::CharacterId;
 use crate::domain::character_name::CharacterName;
 use sqlx::{Postgres, Row, Transaction};
@@ -25,8 +25,9 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let mut tx = begin_observation_transaction(holder, deadline).await?;
+                    bound_periodic_lock_wait(&mut tx).await?;
+                    observe_recovery_fence(&mut tx, &recovery).await?;
                     let row = sqlx::query(
                         "SELECT name FROM game_character_roots \
                          WHERE character_id = encode($1, 'hex')::uuid AND lifecycle = 1",

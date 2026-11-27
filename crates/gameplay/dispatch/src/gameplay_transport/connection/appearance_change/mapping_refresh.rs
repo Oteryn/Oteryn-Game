@@ -2,7 +2,7 @@
 use super::*;
 use crate::gameplay_transport::appearance_change::observation::Observation;
 use crate::gameplay_transport::appearance_change::observation::ObservationError::{
-    self, HolderBusy, Unavailable,
+    self, Unavailable,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntitiesDelta;
 
@@ -81,9 +81,8 @@ impl SessionAppearance {
             )
             .await;
         let mut observation = match observation {
-            Err(HolderBusy) if moved || view.has_actor_movement(&update) => {
-                // The movement already committed, possibly in another session's turn.
-                // Publish it using the known incarnations and bind entrants later.
+            Err(_) if moved || view.has_actor_movement(&update) => {
+                // Publish committed movement with known bindings and bind entrants later.
                 let mut bindings = Vec::new();
                 let mut skipped = Vec::new();
                 for entity in &read_refs {
@@ -99,7 +98,9 @@ impl SessionAppearance {
                     skipped,
                 }
             }
-            other => other?,
+            // An advisory read failure leaves established dictionary and spatial cursors intact.
+            Err(_) => return Ok((sequence, revision)),
+            Ok(value) => value,
         };
         observation.bindings.extend(
             retained

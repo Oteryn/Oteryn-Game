@@ -165,7 +165,7 @@ impl SessionAppearance {
         if self.selected {
             self.select_hirelings(channel);
             let mut players = self.players(&snapshot.entities);
-            let observation = Box::pin(authority.retry_join_observation(
+            let observed = Box::pin(authority.retry_join_observation(
                 admitted.game_session_id,
                 async || {
                     use crate::gameplay_transport::appearance_change::observation::ObservationError;
@@ -185,7 +185,38 @@ impl SessionAppearance {
                         })
                 },
             ))
-            .await?;
+            .await;
+            let observation = match observed {
+                Ok(observation) => observation,
+                Err(AdmissionRefusal::Unavailable) => {
+                    let catalogue =
+                        note_none(authority.appearance_fallback_catalogue(), "content")?;
+                    // The negotiated client requires its appearance domain and a binding for
+                    // each player. Publish placeholders which the first successful read can
+                    // replace without resetting the dictionary or granting any cosmetics.
+                    let bindings = players
+                        .iter()
+                        .map(|&entity| wire::Binding {
+                            context: catalogue.context,
+                            appearance_ref: 1,
+                            entity,
+                            root_revision: 1,
+                            condition_revision: 0,
+                            owner_time_us: 0,
+                            look: wire::Look::EmptyOutfit,
+                            selection_revision: None,
+                            forge_stacks: None,
+                        })
+                        .collect();
+                    super::super::appearance_change::observation::Observation {
+                        catalogue,
+                        bindings,
+                        skipped: Vec::new(),
+                    }
+                }
+                Err(error) => return Err(error),
+            };
+
             players.retain(|entity| !observation.skipped.contains(entity));
             if !observation.skipped.is_empty() {
                 let mut channel = channel.clone();
