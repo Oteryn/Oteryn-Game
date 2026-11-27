@@ -265,6 +265,7 @@ struct Proof {
     damage_sequence: u64,
     caster_identity: [u8; 16],
     caster_generation: u64,
+    rat_position: (i32, i32, i16),
     mana_before: u32,
     vitals_before: Vec<u8>,
     mana_after: u32,
@@ -450,9 +451,9 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         floor: 7,
     };
     let rat_tile = ActorPosition {
-        x: 32491,
-        y: 32169,
-        floor: 7,
+        x: proof.rat_position.0,
+        y: proof.rat_position.1,
+        floor: proof.rat_position.2,
     };
     assert_eq!(
         crate::qualification_scorch_impact(&events, origin, caster, rat_tile, target, proof.spell)?,
@@ -640,6 +641,38 @@ fn scorch_requires_the_exact_fire_cone_and_cast_decision() -> Result<(), Error> 
         crate::qualification_scorch_impact(events, origin, caster, rat_tile, target, spell)
     };
     assert_eq!(verify(&events)?, Some(7));
+    let mut moved = events.clone();
+    let Kind::ValueText {
+        ref mut position, ..
+    } = moved[1].kind
+    else {
+        return Err("missing test damage event".into());
+    };
+    *position = ActorPosition {
+        x: origin.x + 3,
+        y: origin.y - 1,
+        ..origin
+    };
+    let moved_tile = *position;
+    assert!(verify(&moved).is_err());
+    assert_eq!(
+        crate::qualification_scorch_impact(&moved, origin, caster, moved_tile, target, spell)?,
+        Some(7)
+    );
+    let Kind::ValueText {
+        ref mut position, ..
+    } = moved[1].kind
+    else {
+        return Err("missing test damage event".into());
+    };
+    *position = ActorPosition {
+        x: origin.x + 4,
+        ..origin
+    };
+    let outside = *position;
+    assert!(
+        crate::qualification_scorch_impact(&moved, origin, caster, outside, target, spell).is_err()
+    );
     events.push(damage(PresentationColor::Orange));
     assert!(verify(&events).is_err());
     events.pop();

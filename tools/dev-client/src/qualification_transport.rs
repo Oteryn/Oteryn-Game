@@ -235,6 +235,13 @@ pub fn qualification_scorch_impact(
             "C18a Scorch cone cells {cells:?}; expected {expected:?}"
         ));
     }
+    if !expected.contains(&(
+        rat_position.x - origin.x,
+        rat_position.y - origin.y,
+        rat_position.floor,
+    )) {
+        return Err("C18a Rat impact is outside the verified Scorch cone".into());
+    }
     damage
         .map(Some)
         .ok_or_else(|| "C18a Scorch cone lacks exact Rat fire damage".into())

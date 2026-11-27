@@ -209,24 +209,6 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         clock_before.as_mut(),
     )
     .await?;
-    let target = place_exact_rat(&mut client, clock_before.as_mut()).await?;
-    walk_path(
-        &mut client,
-        world,
-        &[last_step],
-        CAST_TILE,
-        None,
-        clock_before.as_mut(),
-    )
-    .await?;
-    if !world
-        .base()
-        .tile(CAST_TILE.x, CAST_TILE.y, CAST_TILE.floor)
-        .is_some_and(|tile| !tile.protection_zone())
-    {
-        return Err("C18a fixed cast tile is not outdoors".into());
-    }
-    let here = client.world_spatial().actor_position;
     let meat = provisioning::item_reference(&item_index, MEAT)?;
     if item_count(&client, meat)? != 1 {
         return Err("C18a expected one meat before the combat setup".into());
@@ -267,11 +249,24 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(20)).await?;
         collect_events(&mut client, None, clock_before.as_mut())?;
     }
-    let rat = *client
-        .world_entities()
-        .and_then(|view| view.get(&target))
-        .filter(|entity| tile(entity.position).ok() == Some(RAT_TILE))
-        .ok_or("C18a_exact_rat_left_fixed_tile_before_cast")?;
+    let target = place_exact_rat(&mut client, clock_before.as_mut()).await?;
+    walk_path(
+        &mut client,
+        world,
+        &[last_step],
+        CAST_TILE,
+        None,
+        clock_before.as_mut(),
+    )
+    .await?;
+    if !world
+        .base()
+        .tile(CAST_TILE.x, CAST_TILE.y, CAST_TILE.floor)
+        .is_some_and(|tile| !tile.protection_zone())
+    {
+        return Err("C18a fixed cast tile is not outdoors".into());
+    }
+    let here = client.world_spatial().actor_position;
     let initial_combat = *client
         .session_mut()
         .combat_state()
@@ -288,56 +283,84 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let intent =
         target_move::encode_target_move_intent(target_move::TargetMoveIntent::Turn(facing))
             .map_err(|error| format!("C18a turn encoding failed: {error:?}"))?;
-    let turn = client
-        .session_mut()
-        .gated_command(
-            target_move::CAPABILITY_TARGET_MOVE_V1,
-            target_move::COMMAND_TYPE_TARGET_MOVE_INTENT,
-            &intent,
-        )
-        .await?;
-    require_mechanic_acceptance(turn.status, "C18a turn away from the selected Rat")?;
-    if turn.payload != [8, 1] {
-        return Err("C18a turn away from the selected Rat was refused".into());
-    }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
-    let (caster, health_before) = loop {
-        let entities = client
+    let mut aim = None;
+    for attempt in 1..=12 {
+        let rat_before = client
             .world_entities()
-            .ok_or("C18a has no post-turn entity projection")?;
-        let own = entities
-            .iter()
-            .find(|entry| &entry.entity.identity == entities.own_identity())
-            .ok_or("C18a has no own entity projection")?;
-        let selected = entities
-            .iter()
-            .find(|entry| entry.entity == target)
-            .ok_or("C18a selected Rat generation left visibility during the turn")?;
-        if own.position != here || selected.position != rat.position {
-            return Err("C18a caster or selected Rat moved during the turn".into());
+            .and_then(|view| view.get(&target))
+            .ok_or("C18a exact Rat left visibility before re-aim")?
+            .position;
+        evidence(&format!(
+            "c18a_reaim attempt={attempt} caster={here:?} rat={rat_before:?} target={target:?}"
+        ));
+        if !rat_in_scorch_cone(here, rat_before) {
+            client.service_liveness(Duration::from_millis(500)).await?;
+            continue;
         }
-        if matches!(actor_state(own.detail), Some((direction, _)) if direction == facing) {
-            require_unique_rat_tile(
-                entities
-                    .iter()
-                    .map(|entity| (tile(entity.position).ok(), entity.detail)),
-            )?;
-            let Some((_, health_percent)) = actor_state(selected.detail) else {
-                return Err("C18a selected Rat has no creature health".into());
-            };
-            if health_percent != 100 {
+        let turn = client
+            .session_mut()
+            .gated_command(
+                target_move::CAPABILITY_TARGET_MOVE_V1,
+                target_move::COMMAND_TYPE_TARGET_MOVE_INTENT,
+                &intent,
+            )
+            .await?;
+        require_mechanic_acceptance(turn.status, "C18a turn away from the selected Rat")?;
+        if turn.payload != [8, 1] {
+            return Err("C18a turn away from the selected Rat was refused".into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+        loop {
+            let entities = client
+                .world_entities()
+                .ok_or("C18a has no post-turn entity projection")?;
+            let own = entities
+                .iter()
+                .find(|entry| &entry.entity.identity == entities.own_identity())
+                .ok_or("C18a has no own entity projection")?;
+            let selected = entities
+                .get(&target)
+                .ok_or("C18a selected Rat generation left visibility during the turn")?;
+            if own.position != here {
                 return Err(format!(
-                    "C18a selected Rat was damaged before Scorch: health={health_percent}"
-                )
-                .into());
+                    "C18a caster moved during turn: before={here:?} after={:?}", own.position
+                ).into());
             }
-            break (own.entity, health_percent);
+            if selected.position != rat_before {
+                evidence(&format!(
+                    "c18a_rat_moved_during_turn target={target:?} before={rat_before:?} after={:?}",
+                    selected.position
+                ));
+            }
+            if matches!(actor_state(own.detail), Some((direction, _)) if direction == facing) {
+                if rat_in_scorch_cone(here, selected.position) {
+                    require_unique_rat_tile(
+                        entities.iter().map(|entity| (tile(entity.position).ok(), entity.detail)),
+                        tile(selected.position)?,
+                    )?;
+                    let Some((_, health_percent)) = actor_state(selected.detail) else {
+                        return Err("C18a selected Rat has no creature health".into());
+                    };
+                    if health_percent != 100 {
+                        return Err(format!(
+                            "C18a selected Rat was damaged before Scorch: health={health_percent}"
+                        ).into());
+                    }
+                    aim = Some((own.entity, selected.position, health_percent));
+                }
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err("C18a did not observe the caster facing away from the selected Rat".into());
+            }
+            client.service_liveness(Duration::from_millis(20)).await?;
         }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("C18a did not observe the caster facing away from the selected Rat".into());
+        if aim.is_some() {
+            break;
         }
-        client.service_liveness(Duration::from_millis(20)).await?;
-    };
+    }
+    let (caster, rat_position, health_before) =
+        aim.ok_or("C18a exact Rat did not enter the Scorch cone within 12 observations")?;
     let combat_before = *client
         .session_mut()
         .combat_state()
@@ -423,7 +446,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
                         &batch.value,
                         here,
                         caster,
-                        rat.position,
+                        rat_position,
                         target,
                         spell.get(),
                     )? && damage.replace((batch.server_sequence, value)).is_some()
@@ -723,6 +746,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             "damage": damage_value,
             "damage_sequence": damage_sequence,
             "caster_identity": caster.identity,
+            "rat_position": [rat_position.x, rat_position.y, i32::from(rat_position.floor)],
             "caster_generation": caster.generation,
             "mana_before": before.mana,
             "vitals_before": actor_spell::encode_actor_vitals(&before).map_err(|error| format!("{error:?}"))?,
@@ -1233,12 +1257,21 @@ fn item_count(
         .sum())
 }
 
+fn rat_in_scorch_cone(
+    origin: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    rat: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+) -> bool {
+    origin.floor == rat.floor
+        && matches!((rat.x - origin.x, rat.y - origin.y), (1, 0) | (2 | 3, -1..=1))
+}
+
 fn require_unique_rat_tile(
     entities: impl IntoIterator<Item = (Option<TilePos>, EntityDetail)>,
+    rat_tile: TilePos,
 ) -> TestResult {
     let occupants = entities
         .into_iter()
-        .filter(|&(position, detail)| position == Some(RAT_TILE) && actor_state(detail).is_some())
+        .filter(|&(position, detail)| position == Some(rat_tile) && actor_state(detail).is_some())
         .count();
     if occupants != 1 {
         return Err(
@@ -1321,9 +1354,9 @@ mod tests {
             quantity: 1,
             item_handle: None,
         };
-        assert!(require_unique_rat_tile([(Some(RAT_TILE), rat), (Some(RAT_TILE), object)]).is_ok());
-        assert!(require_unique_rat_tile([(Some(RAT_TILE), rat), (Some(RAT_TILE), rat)]).is_err());
-        assert!(require_unique_rat_tile([(Some(RAT_TILE), object)]).is_err());
+        assert!(require_unique_rat_tile([(Some(RAT_TILE), rat), (Some(RAT_TILE), object)], RAT_TILE).is_ok());
+        assert!(require_unique_rat_tile([(Some(RAT_TILE), rat), (Some(RAT_TILE), rat)], RAT_TILE).is_err());
+        assert!(require_unique_rat_tile([(Some(RAT_TILE), object)], RAT_TILE).is_err());
     }
 
     #[test]
