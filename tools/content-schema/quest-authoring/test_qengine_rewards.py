@@ -94,6 +94,78 @@ class QuestRewards(unittest.TestCase):
         ]
         self.assertEqual(missing, [])
 
+    def zalamon_phantom_army_callbacks(self, stage, mission, topic, keyword):
+        prefix = "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/"
+        tracks = {prefix + "questline": stage, prefix + "mission05": mission}
+        generated = json.loads(self.outputs[q.qmech_m39.SHARD])
+        chosen = json.loads(
+            (q.ROOT / "content/quests/chosen-reward-callbacks.json").read_bytes()
+        )
+        return [
+            row["key"]
+            for row in generated["callbacks"] + chosen["callbacks"]
+            if row["key"] not in q.qmech_m39.PHANTOM_SOURCE_ONLY
+            and row["quest"] == "oteryn:quest.children_of_the_revolution_quest"
+            and row["npc"] == "oteryn:npc.zalamon"
+            and row["topic"] == topic
+            and keyword in row["keywords"]
+            and all(
+                gate["minimum"] <= tracks.get(gate["track"], 0) <= gate["maximum"]
+                for gate in row["storage"] + row.get("requires", [])
+            )
+        ]
+
+    def test_phantom_army_saved_report_has_one_reward_owner(self):
+        self.assertEqual(
+            self.zalamon_phantom_army_callbacks(20, 2, 0, "mission"),
+            ["oteryn:quest-reward/chosen/children/phantom-army-report"],
+        )
+
+    def test_phantom_army_partial_refuses_entry_without_battlefield_settlement(self):
+        generated = json.loads(self.outputs[q.qmech_m39.SHARD])
+        held = [
+            row
+            for row in generated["callbacks"]
+            if row["key"] in q.qmech_m39.PHANTOM_SOURCE_ONLY
+        ]
+        self.assertEqual(len(held), 2)
+        self.assertEqual({row["key"] for row in held}, q.qmech_m39.PHANTOM_SOURCE_ONLY)
+        self.assertEqual(self.zalamon_phantom_army_callbacks(18, 0, 13, "yes"), [])
+        self.assertEqual(self.zalamon_phantom_army_callbacks(19, 1, 0, "mission"), [])
+        offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])
+        self.assertFalse(
+            any(
+                offer["npc"] == "oteryn:npc.zalamon"
+                and offer["next_topic"] == 13
+                and "mission" in offer["keywords"]
+                for offer in offers["offers"]
+            )
+        )
+
+    def test_spike_offer_and_confirmation_use_the_same_level_range(self):
+        offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])[
+            "offers"
+        ]
+        for npc, tier, minimum, maximum in [
+            ("gnomilly", "upper", 25, 49),
+            ("gnombold", "middle", 50, 79),
+            ("gnomargery", "lower", 80, None),
+        ]:
+            with self.subTest(tier=tier):
+                offer = next(
+                    row
+                    for row in offers
+                    if row["npc"] == f"oteryn:npc.{npc}" and row["keywords"] == ["kill"]
+                )
+                callback = next(
+                    row
+                    for row in self.classic["callbacks"]
+                    if row["key"] == f"oteryn:quest-reward/l12-spike-{tier}-accept"
+                )
+                for row in (offer, callback):
+                    self.assertEqual(row["minimum_level"], minimum)
+                    self.assertEqual(row.get("maximum_level"), maximum)
+
     def test_royal_costume_completes_only_after_crown_exchange(self):
         rows = {row["key"].split("/")[-1]: row for row in self.callbacks["callbacks"]}
         for name, before, after in [("base", -1, 1), ("shield", 1, 2), ("crown", 2, 3)]:
@@ -339,13 +411,9 @@ class QuestRewards(unittest.TestCase):
             q.validate_callbacks(document)
 
     def test_native_trial_bindings_require_full_goals_and_one_shot_grants(self):
-        document = json.loads(q.build()["content/quests/shared-reward-callbacks.json"])
-        rows = {c["key"].split("/")[-1]: c for c in document["callbacks"]}
-        for label, goals in [
-            ("dragon-slayer", [20, 20]),
-            ("cave-explorer", [20]),
-            ("fire-fighter", [10]),
-        ]:
+        callbacks = self.callbacks["callbacks"] + self.classic["callbacks"]
+        rows = {c["key"].split("/")[-1]: c for c in callbacks}
+        for label, goals in [("dragon-slayer", [20, 20]), ("fire-fighter", [10])]:
             start = rows[f"l12-{label}-start"]
             base = rows[f"l12-{label}-base"]
             self.assertEqual(start["storage"][0]["minimum"], 0)
@@ -354,15 +422,35 @@ class QuestRewards(unittest.TestCase):
             self.assertEqual(base["storage"][0]["set"], 2)
             self.assertTrue(base["requires_premium"])
             self.assertEqual(base["forbids_outfits"], [base["outfit"]["outfit"]])
-        self.assertEqual(
-            [
-                rows[f"l12-cave-explorer-{stage}"]["fee"]["gold"]
-                for stage in ["base", "first", "second"]
-            ],
-            [1000, 2000, 3000],
+        choices = [
+            rows[f"l12-cave-explorer-{stage}"] for stage in ["base", "first", "second"]
+        ]
+        self.assertEqual([row["fee"]["gold"] for row in choices], [1000, 2000, 3000])
+        self.assertEqual([row["minimum_level"] for row in choices], [25, 50, 80])
+        for row in choices:
+            debit = row["participants"][0]["state_ops"][0]
+            self.assertEqual(debit["from"]["minimum"], 100)
+            self.assertEqual(debit["effect"]["value"], -100)
+        for tier, level, experience in [
+            ("upper", 25, 1000),
+            ("middle", 50, 2000),
+            ("lower", 80, 3500),
+        ]:
+            accept = rows[f"l12-spike-{tier}-accept"]
+            report = rows[f"l12-spike-{tier}-report"]
+            self.assertEqual(accept["minimum_level"], level)
+            self.assertEqual(accept["state_ops"][0]["from"]["seconds"], 72001)
+            self.assertEqual(report["experience"], experience)
+            self.assertEqual(report["storage"][1]["minimum"], 7)
+            self.assertEqual(report["state_ops"][1]["effect"]["value"], 1)
+        appearance = json.loads(q.build()["content/cosmetics/outfits/authoring.json"])[
+            "document"
+        ]
+        dragon = next(
+            o
+            for o in appearance["outfits"]
+            if o["key"] == "oteryn:outfit.dragon_slayer"
         )
-        appearance = json.loads(q.build()["content/cosmetics/outfits/authoring.json"])["document"]
-        dragon = next(o for o in appearance["outfits"] if o["key"] == "oteryn:outfit.dragon_slayer")
         self.assertEqual((dragon["female"]["id"], dragon["male"]["id"]), (1289, 1288))
         self.assertTrue(
             any(
@@ -374,7 +462,12 @@ class QuestRewards(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.outputs = q.build()
-        cls.callbacks = json.loads(cls.outputs["content/quests/shared-reward-callbacks.json"])
+        cls.callbacks = json.loads(
+            cls.outputs["content/quests/shared-reward-callbacks.json"]
+        )
+        cls.classic = json.loads(
+            cls.outputs["content/quests/npc-callbacks/classic-quest-rewards.json"]
+        )
         cls.outfit_completions = json.loads(
             cls.outputs["content/quests/npc-callbacks/outfit-completions.json"]
         )["callbacks"]
@@ -469,6 +562,30 @@ class QuestRewards(unittest.TestCase):
                     row["forbids_outfits"] if bit == 0 else row["requires_outfits"],
                     ["oteryn:outfit." + family],
                 )
+        leader = rows["l10-nightmare-leader"]
+        self.assertEqual(
+            leader["give"]["additional"],
+            [{"item": "oteryn:item.tibia.i6390", "count": 1}],
+        )
+        nightmare = "oteryn:quest-progress/quest/u7_9/nightmare_outfits/"
+        for family in ("nightmare", "brotherhood"):
+            (permit,) = rows[f"l10-{family}-join"]["participants"]
+            self.assertEqual(permit["quest"], "oteryn:quest.dreamer_s_challenge_quest")
+            self.assertEqual(
+                {row["track"]: row["set"] for row in permit["storage"]},
+                {nightmare + "knightwatch_tower_door": 1},
+            )
+        protector = rows["l10-nightmare-lord-protector"]
+        self.assertEqual(
+            protector["take"], [{"item": "oteryn:item.tibia.i6499", "count": 1500}]
+        )
+        self.assertEqual(protector["achievement"], "oteryn:achievement/lord_protector")
+        self.assertEqual(
+            {row["track"]: row["set"] for row in protector["storage"]}[
+                nightmare + "door"
+            ],
+            1,
+        )
         for field, value in [
             ("carried_item", "oteryn:item.tibia.i769"),
             ("take", []),
@@ -717,12 +834,17 @@ class QuestRewards(unittest.TestCase):
                 {"item": "oteryn:item.tibia.i5890", "count": 100},
             ],
         )
-        declaration = next(t for t in self.callbacks["tracks"] if t.get("writable"))
+        (declaration,) = (
+            t
+            for t in self.callbacks["tracks"]
+            if t["key"] == "oteryn:quest-progress/outfit_quest/ref"
+        )
+        self.assertTrue(declaration["writable"])
         self.assertEqual(declaration["quest"], "oteryn:quest.outfit_and_addon_quests")
         altered = copy.deepcopy(self.callbacks)
-        next(t for t in altered["tracks"] if t.get("writable"))["quest"] = (
-            "oteryn:quest.citizen_outfits_quest_on_rook"
-        )
+        next(t for t in altered["tracks"] if t["key"] == declaration["key"])[
+            "quest"
+        ] = "oteryn:quest.citizen_outfits_quest_on_rook"
         with self.assertRaises(ValueError):
             q.validate_callbacks(altered)
 
@@ -763,6 +885,7 @@ class QuestRewards(unittest.TestCase):
 
     def test_qengine_rewards_outputs_reproduce_and_validate(self):
         q.validate_callbacks(self.callbacks)
+        q.validate_callbacks(self.classic)
         for path, raw in self.outputs.items():
             self.assertEqual((q.ROOT / path).read_bytes(), raw, path)
 
@@ -1024,7 +1147,11 @@ class QuestRewards(unittest.TestCase):
         )
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
-        merged = self.callbacks["callbacks"] + self.outfit_completions
+        merged = (
+            self.callbacks["callbacks"]
+            + self.classic["callbacks"]
+            + self.outfit_completions
+        )
         full_outfit = [c for c in merged if c["key"].endswith("-full-outfit")]
         self.assertEqual(len(full_outfit), 14)
         self.assertEqual(len(self.outfit_completions), 18)
@@ -1067,6 +1194,11 @@ class QuestRewards(unittest.TestCase):
                 "outfox-helmet",
                 "sam-backpack",
                 "between-the-lines-phillip-accept",
+                "sven-start",
+                "sven-honeycomb",
+                "sven-mead-report",
+                "sven-bear-report",
+                "sven-mammoth-report",
             },
         )
         completion_variants = {
@@ -1077,8 +1209,8 @@ class QuestRewards(unittest.TestCase):
         }
         outfit_keys = {c["key"].rsplit("/", 1)[-1] for c in callbacks if c["outfit"] is not None}
         self.assertLessEqual(completion_variants, outfit_keys)
-        self.assertEqual(sum(c["outfit"] is not None for c in callbacks), 109)
-        self.assertEqual(sum(c["outfit"] is None for c in callbacks), 159)
+        self.assertEqual(sum(c["outfit"] is not None for c in callbacks), 112)
+        self.assertEqual(sum(c["outfit"] is None for c in callbacks), 175)
         self.assertTrue(
             any(len(c["take"]) > 1 and any(i["count"] == 100 for i in c["take"]) for c in callbacks)
         )
@@ -1088,11 +1220,40 @@ class QuestRewards(unittest.TestCase):
             "data-global/npc/the_bone_master.lua:78-80,123-128:sha256:"
             "65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1",
         }
+        source_routes = (
+            "l12-cave-explorer-",
+            "l12-spike-",
+            "sven-",
+            "l2-battle-mage-report-",
+        )
+        library_handins = {
+            "l2-battle-mage-book",
+            "l2-battle-mage-book-complete",
+            "l2-battle-mage-epaulettes",
+            "l2-battle-mage-epaulettes-complete",
+        }
         for callback in callbacks:
             if callback["key"] in additional_sources:
-                self.assertEqual(callback["sources"], [additional_sources[callback["key"]]])
-            else:
-                self.assertIn(q.PIN, callback["sources"][0])
+                self.assertEqual(
+                    callback["sources"], [additional_sources[callback["key"]]]
+                )
+                continue
+            key = callback["key"].rsplit("/", 1)[-1]
+            if key in {
+                "l12-cave-explorer-legacy-report",
+                "l12-cave-explorer-legacy-addon-1",
+                "l12-cave-explorer-legacy-addon-2",
+            }:
+                self.assertEqual(
+                    callback["sources"][0],
+                    "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b",
+                )
+                continue
+            new_source = key.startswith(source_routes) or key in library_handins
+            revision = (
+                "201189f871d23597b82caf88fd611454a2ddefb8" if new_source else q.PIN
+            )
+            self.assertTrue(callback["sources"][0].startswith(f"crystal:{revision}:"))
 
     def test_l1_handins_preserve_source_crest_identity_and_exclusive_sides(self):
         callbacks = {c["key"].split("/")[-1]: c for c in self.callbacks["callbacks"]}

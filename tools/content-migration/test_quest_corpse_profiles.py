@@ -128,8 +128,10 @@ class CorpseQualification(unittest.TestCase):
                 expected = policy["value"]["capacity"]["value"]
             self.assertTrue(facts[key]["materializable"], key)
             self.assertEqual(facts[key]["container_capacity"], expected, key)
-        for number in (5967, 5999, 6031, 18030, 18038, 18110, 18186, 25814):
-            self.assertTrue(facts[f"oteryn:item.tibia.i{number}"]["ordinary_corpse_only"])
+        for number in (5967, 5999, 6031, 16197, 17425, 18030, 18038, 18110, 18186, 25814):
+            self.assertTrue(
+                facts[f"oteryn:item.tibia.i{number}"]["ordinary_corpse_only"]
+            )
         for key in self.plan.projected_source_capacities:
             self.assertTrue(facts[key]["ordinary_corpse_only"], key)
 
@@ -151,6 +153,7 @@ class CorpseQualification(unittest.TestCase):
             6006,
             6007,
             6017,
+            6018,
             6025,
             6030,
             6031,
@@ -163,6 +166,8 @@ class CorpseQualification(unittest.TestCase):
             8109,
             8909,
             11675,
+            16197,
+            17425,
             17445,
             17446,
             17449,
@@ -171,10 +176,12 @@ class CorpseQualification(unittest.TestCase):
             18038,
             18099,
             18110,
+            18114,
             18186,
             18953,
             20972,
             21910,
+            21987,
             22010,
             22066,
             22067,
@@ -183,10 +190,13 @@ class CorpseQualification(unittest.TestCase):
             27714,
             27718,
             30272,
+            31419,
             31453,
             31599,
             31611,
+            31646,
             33821,
+            36982,
             50029,
         }
         packet = json.loads((corpse.ROOT / corpse.REQUIREMENTS).read_bytes())

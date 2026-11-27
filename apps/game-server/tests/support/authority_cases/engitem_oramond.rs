@@ -255,7 +255,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     );
     let report = rewards
         .iter()
-        .find(|c| c.key == "oteryn:quest-reward/oramond/native-roots-report")
+        .find(|c| c.key == "oteryn:quest-reward/oramond/native-roots-report-food")
         .ok_or("root report")?;
     let reported = sequencer
         .acquire(f::fence(7)?.character_id)
@@ -279,6 +279,18 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         matches!(reported, QuestTransitionOutcome::Committed(_)),
         "{reported:?}"
     );
+    let votes: Option<i64> = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points'",
+    )
+    .fetch_optional(&h.pool)
+    .await?;
+    assert_eq!(votes, Some(1), "first five-root report credits one vote");
+    let door: i64 = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/door'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(door, 1, "the first accepted report enables the source door");
     let premature = sequencer
         .acquire(f::fence(8)?.character_id)
         .await
@@ -304,5 +316,63 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     let remaining:i64=sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i21291' AND lifecycle=1").fetch_one(&h.pool).await?;
     assert_eq!(remaining, 0, "exactly five harvested roots handed in once");
 
+    let repeat = rewards
+        .iter()
+        .find(|c| c.key == "oteryn:quest-reward/oramond/native-roots-restart-food")
+        .ok_or("food restart")?;
+    assert_eq!(repeat.keywords, ["food"]);
+    assert!(
+        matches!(
+            sequencer
+                .acquire(f::fence(8)?.character_id)
+                .await
+                .commit_quest_reward(
+                    &h.root, &authority, &h.node, f::fence(8)?,
+                    QuestTransitionRequest {
+                        transition_key: repeat.key.clone(),
+                        cause: QuestCause::Command(command(9803)?),
+                    },
+                    catalogue.clone(), admission, &PremiumGate,
+                )
+                .await
+                .map_err(f::debug)?,
+            QuestTransitionOutcome::Committed(_)
+        ),
+        "the recurring food task opens the next harvest after hand-in"
+    );
+    for (index, callback) in callbacks.iter().enumerate() {
+        let index = u64::try_from(index)?;
+        assert!(matches!(
+            world(9 + index, 9810 + index, callback)?.await.map_err(f::debug)?,
+            QuestTransitionOutcome::Committed(_)
+        ));
+    }
+    assert!(matches!(
+        sequencer
+            .acquire(f::fence(14)?.character_id)
+            .await
+            .commit_quest_reward(
+                &h.root,
+                &authority,
+                &h.node,
+                f::fence(14)?,
+                QuestTransitionRequest {
+                    transition_key: report.key.clone(),
+                    cause: QuestCause::Command(command(9820)?),
+                },
+                catalogue,
+                admission,
+                &PremiumGate,
+            )
+            .await
+            .map_err(f::debug)?,
+        QuestTransitionOutcome::Committed(_)
+    ));
+    let votes: i64 = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(votes, 2, "the next harvest credits one more point");
     Ok(())
 }

@@ -198,6 +198,8 @@ def append_friends(root, callbacks, offers, inputs, pin):
         maximum=None,
         achievement=None,
         wiki=None,
+        topic=0,
+        next_topic=0,
     ):
         source = f"data-global/npc/{npc}.lua"
         source_bytes = inputs[source]
@@ -213,8 +215,8 @@ def append_friends(root, callbacks, offers, inputs, pin):
             "quest": definition["identity"]["key"],
             "npc": "oteryn:npc." + npc,
             "keywords": words,
-            "topic": 0,
-            "next_topic": 0,
+            "topic": topic,
+            "next_topic": next_topic,
             "storage": [state],
             "take": [{"item": f"oteryn:item.tibia.i{i}", "count": n} for i, n in take],
             "present": [{"item": f"oteryn:item.tibia.i{i}", "count": n} for i, n in present],
@@ -262,6 +264,79 @@ def append_friends(root, callbacks, offers, inputs, pin):
         "Now I can forge royal steel for you.",
         take=[(3560, 3)],
     )
+    cyclops = "a_sweaty_cyclops"
+    add(
+        "request-friendship",
+        cyclops,
+        -1,
+        0,
+        ["yes"],
+        "Bring three bast skirts for my partner.",
+        topic=2,
+        next_topic=3,
+    )
+    add(
+        "hand-in-skirts",
+        cyclops,
+        0,
+        1,
+        ["yes"],
+        "My partner will be delighted. I can work with you now.",
+        take=[(3560, 3)],
+        topic=4,
+    )
+    add(
+        "draconian-steel",
+        cyclops,
+        1,
+        1,
+        ["yes"],
+        "Here is your draconian steel.",
+        take=[(3416, 1)],
+        give=(5889, 1),
+        counter="draconian-steel-uses",
+        maximum=15,
+        topic=6,
+    )
+    for words, topic, next_topic, low, high, reply in [
+        (
+            ["uth'lokr"],
+            0,
+            1,
+            -1,
+            -1,
+            "I can forge steel from a dragon shield. Do you want to trade?",
+        ),
+        (["yes"], 1, 2, -1, -1, "First, will you do a favour for me?"),
+        (["uth'lokr"], 0, 4, 0, 0, "Did you bring three bast skirts?"),
+        (
+            ["uth'lokr"],
+            0,
+            6,
+            1,
+            15,
+            "Shall I forge your dragon shield into draconian steel?",
+        ),
+    ]:
+        offers.append(
+            {
+                "npc": "oteryn:npc." + cyclops,
+                "keywords": words,
+                "topic": topic,
+                "any_topic": words == ["uth'lokr"],
+                "next_topic": next_topic,
+                "storage": [
+                    {
+                        "track": track,
+                        "minimum": low,
+                        "maximum": high,
+                        "set": low,
+                        "preserve": True,
+                    }
+                ],
+                "reply": [reply],
+            }
+        )
     add(
         "honey",
         "marina",

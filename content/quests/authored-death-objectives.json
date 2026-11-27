@@ -757,6 +757,198 @@
         "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
         "Conservative source spawn quarter: existing native lizard_magistratus33080,31192,z3 and lizard_noble33066,31147,z3. Present principal only; exact quota, no phantom party credit."
       ]
+    },
+    {
+      "key": "oteryn:quest-death/newhaven-assassin-northwest",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_assassin",
+      "stage": "oteryn:quest-progress/newhaven/defence/phase",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/newhaven/defence/muglex",
+      "required": 20,
+      "minimum": {
+        "x": 32506,
+        "y": 32405,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32569,
+        "y": 32460,
+        "floor": -7
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gustavo_the_guard.lua:74-96",
+        "content/world/spawns/spawns-12000-13999.json: Newhaven surface Muglex spawns",
+        "content/world/areas/islands/islands-00000-00059.json: Newhaven surface bounds partitioned for the existing death objective owner"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/newhaven-assassin-southwest",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_assassin",
+      "stage": "oteryn:quest-progress/newhaven/defence/phase",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/newhaven/defence/muglex",
+      "required": 20,
+      "minimum": {
+        "x": 32506,
+        "y": 32461,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32569,
+        "y": 32522,
+        "floor": -7
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gustavo_the_guard.lua:74-96",
+        "content/world/spawns/spawns-12000-13999.json: Newhaven surface Muglex spawns",
+        "content/world/areas/islands/islands-00000-00059.json: Newhaven surface bounds partitioned for the existing death objective owner"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/newhaven-assassin-northeast",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_assassin",
+      "stage": "oteryn:quest-progress/newhaven/defence/phase",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/newhaven/defence/muglex",
+      "required": 20,
+      "minimum": {
+        "x": 32570,
+        "y": 32405,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32634,
+        "y": 32460,
+        "floor": -7
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gustavo_the_guard.lua:74-96",
+        "content/world/spawns/spawns-12000-13999.json: Newhaven surface Muglex spawns",
+        "content/world/areas/islands/islands-00000-00059.json: Newhaven surface bounds partitioned for the existing death objective owner"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/newhaven-assassin-southeast",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_assassin",
+      "stage": "oteryn:quest-progress/newhaven/defence/phase",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/newhaven/defence/muglex",
+      "required": 20,
+      "minimum": {
+        "x": 32570,
+        "y": 32461,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32634,
+        "y": 32522,
+        "floor": -7
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gustavo_the_guard.lua:74-96",
+        "content/world/spawns/spawns-12000-13999.json: Newhaven surface Muglex spawns",
+        "content/world/areas/islands/islands-00000-00059.json: Newhaven surface bounds partitioned for the existing death objective owner"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/newhaven-footman-northwest",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_footman",
+      "stage": "oteryn:quest-progress/newhaven/defence/phase",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/newhaven/defence/muglex",
+      "required": 20,
+      "minimum": {
+        "x": 32506,
+        "y": 32405,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32569,
+        "y": 32460,
+        "floor": -7
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gustavo_the_guard.lua:74-96",
+        "content/world/spawns/spawns-12000-13999.json: Newhaven surface Muglex spawns",
+        "content/world/areas/islands/islands-00000-00059.json: Newhaven surface bounds partitioned for the existing death objective owner"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/newhaven-footman-southwest",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_footman",
+      "stage": "oteryn:quest-progress/newhaven/defence/phase",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/newhaven/defence/muglex",
+      "required": 20,
+      "minimum": {
+        "x": 32506,
+        "y": 32461,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32569,
+        "y": 32522,
+        "floor": -7
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gustavo_the_guard.lua:74-96",
+        "content/world/spawns/spawns-12000-13999.json: Newhaven surface Muglex spawns",
+        "content/world/areas/islands/islands-00000-00059.json: Newhaven surface bounds partitioned for the existing death objective owner"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/newhaven-footman-northeast",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_footman",
+      "stage": "oteryn:quest-progress/newhaven/defence/phase",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/newhaven/defence/muglex",
+      "required": 20,
+      "minimum": {
+        "x": 32570,
+        "y": 32405,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32634,
+        "y": 32460,
+        "floor": -7
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gustavo_the_guard.lua:74-96",
+        "content/world/spawns/spawns-12000-13999.json: Newhaven surface Muglex spawns",
+        "content/world/areas/islands/islands-00000-00059.json: Newhaven surface bounds partitioned for the existing death objective owner"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/newhaven-footman-southeast",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_footman",
+      "stage": "oteryn:quest-progress/newhaven/defence/phase",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/newhaven/defence/muglex",
+      "required": 20,
+      "minimum": {
+        "x": 32570,
+        "y": 32461,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32634,
+        "y": 32522,
+        "floor": -7
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gustavo_the_guard.lua:74-96",
+        "content/world/spawns/spawns-12000-13999.json: Newhaven surface Muglex spawns",
+        "content/world/areas/islands/islands-00000-00059.json: Newhaven surface bounds partitioned for the existing death objective owner"
+      ]
     }
   ]
 }

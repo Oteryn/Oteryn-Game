@@ -47,6 +47,8 @@ pub(super) struct Offer {
     #[serde(default, alias = "premium")]
     requires_premium: Option<bool>,
     #[serde(default)]
+    maximum_level: Option<u32>,
+    #[serde(default)]
     failure_reply: Vec<String>,
 }
 
@@ -206,8 +208,12 @@ pub(super) fn prepare(
                         .iter()
                         .any(|gate| gate.track == EROTH_LEGACY_TRACK)
             });
-            let meets_level = |minimum: Option<u32>| {
-                minimum.is_none_or(|minimum| inventory.is_some_and(|facts| facts.level >= minimum))
+            let meets_level = |minimum: Option<u32>, maximum: Option<u32>| {
+                (minimum.is_none() && maximum.is_none())
+                    || inventory.is_some_and(|facts| {
+                        (minimum.unwrap_or_default()..=maximum.unwrap_or(u32::MAX))
+                            .contains(&facts.level)
+                    })
             };
             let mut refusal = |lines: &[String]| {
                 refused = !lines.is_empty();
@@ -281,7 +287,7 @@ pub(super) fn prepare(
                     if selected.next().is_some() {
                         return None;
                     }
-                    if !meets_level(callback.minimum_level)
+                    if !meets_level(callback.minimum_level, callback.maximum_level)
                         && let Some(choice) = refusal(&callback.failure_reply)
                     {
                         return Some(choice);
@@ -349,7 +355,7 @@ pub(super) fn prepare(
                     && carried_matches(c)
                     && account_matches(c)
             }) {
-                if !meets_level(offer.minimum_level) {
+                if !meets_level(offer.minimum_level, offer.maximum_level) {
                     return refusal(&offer.failure_reply);
                 }
                 return Some(Choice {
@@ -421,7 +427,7 @@ pub(super) fn prepare(
                 }
                 return None;
             }
-            if (!meets_level(callback.minimum_level)
+            if (!meets_level(callback.minimum_level, callback.maximum_level)
                 || !callback
                     .inventory
                     .iter()

@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/cartography-101/assignment",
+      "quest": "oteryn:quest.authored.cartography_101_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=75152&oldid=926495"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/cartography-101/assign",
+      "quest": "oteryn:quest.authored.cartography_101_quest",
+      "npc": "oteryn:npc.rotem_valos",
+      "keywords": [
+        "map"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/cartography-101/assignment",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i22107",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The guild needs a survey of eighteen landmarks. Take this map and use it at each site."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=75152&oldid=926495"
+      ]
+    }
+  ]
+}

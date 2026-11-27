@@ -15,9 +15,9 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition,WorldObjectTarget};
 
 pub(super) const NAME:&str="m07/realm-trial";
 
-const BEGIN:Position=Position{x:33080,y:32582,floor:-3};
+const BEGIN:Position=Position{x:33080,y:32583,floor:-3};
 
-pub(super) const CONTROL:Position=Position{x:33080,y:32583,floor:-3};
+pub(super) const CONTROL:Position=Position{x:33080,y:32582,floor:-3};
 
 pub(super) fn start()->Position {Position{x:33079,y:32583,floor:-3}}
 
@@ -47,13 +47,13 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     let version:String=sqlx::query_scalar("SELECT current_setting('server_version')").fetch_one(&harness.pool).await?;
     eprintln!("POSTGRES_DATABASE_READY {NAME} version={version}");
     let key=Offering{position:BEGIN,item:"oteryn:item.tibia.i14682".into(),count:1};
-    assert_eq!(Box::pin(use_source(owner,admitted,1,BEGIN,3,0)).await?,UseDisposition::Rejected);
+    assert_eq!(Box::pin(use_source(owner,admitted,1,BEGIN,1,0)).await?,UseDisposition::Rejected);
     assert_eq!(receipts(harness).await?,0);
     super::quest_world_callbacks_fixtures::input_item(owner,fence.item_fence(),&key,81,true).await?;
     assert_eq!(key_count(harness).await?,1);
-    assert_eq!(Box::pin(use_source(owner,admitted,2,CONTROL,1,0)).await?,UseDisposition::Rejected,"a key is not a started trial");
+    assert_eq!(Box::pin(use_source(owner,admitted,2,CONTROL,3,0)).await?,UseDisposition::Rejected,"a key is not a started trial");
     assert_eq!(receipts(harness).await?,0);
-    assert_eq!(Box::pin(use_source(owner,admitted,3,BEGIN,3,0)).await?,UseDisposition::Committed);
+    assert_eq!(Box::pin(use_source(owner,admitted,3,BEGIN,1,0)).await?,UseDisposition::Committed);
     assert_eq!(phase(owner,fence,callback).await?,Some(1));
     let blocker={
         let mut runtime=owner.runtime.lock().await;
@@ -72,32 +72,71 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
         let actor=runtime.admit_encounter_actor(creature,health,MovementLocalPosition{x:33088,y:32583,floor:5}).map_err(debug)?;
         runtime.install_creature_policy(actor,creature).map_err(debug)?;actor
     };
-    assert_eq!(Box::pin(use_source(owner,admitted,4,CONTROL,1,0)).await?,UseDisposition::Rejected,"live guardian on another opted-in floor blocks clearance");
+    assert_eq!(Box::pin(use_source(owner,admitted,4,CONTROL,3,0)).await?,UseDisposition::Rejected,"live guardian on another opted-in floor blocks clearance");
     assert_eq!(phase(owner,fence,callback).await?,Some(1));
     assert_eq!(receipts(harness).await?,1);assert_eq!(key_count(harness).await?,1);
     assert!(owner.runtime.lock().await.kill_creature_for_test(blocker));
-    assert_eq!(Box::pin(use_source(owner,admitted,5,CONTROL,1,0)).await?,UseDisposition::Committed,"cleared trial commits despite >4096 live creatures outside its area");
+    assert_eq!(Box::pin(use_source(owner,admitted,5,CONTROL,3,0)).await?,UseDisposition::Committed,"cleared trial commits despite >4096 live creatures outside its area");
     assert_eq!(phase(owner,fence,callback).await?,Some(2));
     assert_eq!(receipts(harness).await?,2);assert_eq!(key_count(harness).await?,1,"both native uses retain the exact key");
-    assert_eq!(Box::pin(use_source(owner,admitted,5,CONTROL,1,0)).await?,UseDisposition::Committed,"historical command replays without another write");
+    assert_eq!(Box::pin(use_source(owner,admitted,5,CONTROL,3,0)).await?,UseDisposition::Committed,"historical command replays without another write");
     assert_eq!(receipts(harness).await?,2);
-    {
-        let map=owner.bundle_map().ok_or("map")?;
-        let control=placement_key(crate::map::overlay::TilePos{x:CONTROL.x,y:CONTROL.y,floor:CONTROL.floor},1).ok_or("control key")?;
-        let wall=placement_key(crate::map::overlay::TilePos{x:33075,y:32591,floor:-3},1).ok_or("wall key")?;
-        let wall_due=map.facts.next_movement_decay_time().ok_or("wall reset")?;
-        assert_eq!(map.facts.expire_movement_items(wall_due-1),0);
-        assert_eq!(map.facts.expire_movement_items(wall_due),1);
-        assert_eq!(map.facts.object_revision(wall),2);
-        assert_eq!(map.facts.object_revision(control),1,"control retains its longer cooldown");
-        let control_due=map.facts.next_movement_decay_time().ok_or("control reset")?;
-        assert_eq!(control_due-wall_due,240_000_000);
-        assert_eq!(map.facts.expire_movement_items(control_due-1),0);
-        assert_eq!(map.facts.expire_movement_items(control_due),1);
-        assert_eq!(map.facts.object_revision(control),2);
-    }
-    assert_eq!(Box::pin(use_source(owner,admitted,6,CONTROL,1,2)).await?,UseDisposition::Rejected,"completed personal trial cannot reopen on shared reset");
-    assert_eq!(key_count(harness).await?,1);assert_eq!(receipts(harness).await?,2);
+    let control = placement_key(
+        crate::map::overlay::TilePos { x: CONTROL.x, y: CONTROL.y, floor: CONTROL.floor },
+        3,
+    ).ok_or("control key")?;
+    let wall = placement_key(
+        crate::map::overlay::TilePos { x: 33075, y: 32591, floor: -3 },
+        1,
+    ).ok_or("wall key")?;
+    let map = owner.bundle_map().ok_or("map")?;
+    let wall_due = map.facts.next_movement_decay_time().ok_or("wall reset")?;
+    assert_eq!(map.facts.expire_movement_items(wall_due - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(wall_due), 1);
+    assert_eq!(map.facts.object_revision(wall), 2);
+    assert_eq!(map.facts.object_revision(control), 1);
+    let control_due = map.facts.next_movement_decay_time().ok_or("control cooldown")?;
+    assert_eq!(control_due - wall_due, 240_000_000);
+    let remaining = control_due.checked_sub(owner.owner_now().get()).ok_or("live cooldown")?;
+    owner.clock_origin = owner.clock_origin
+        .checked_sub(std::time::Duration::from_micros(remaining))
+        .ok_or("clock")?;
+    let map = owner.bundle_map().ok_or("map")?;
+    assert_eq!(map.facts.expire_movement_items(control_due - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(control_due), 0, "cooldown expiry never moves the switch");
+    assert_eq!(map.facts.object_revision(control), 1);
+    assert_eq!(
+        Box::pin(use_source(owner, admitted, 6, CONTROL, 3, 1)).await?,
+        UseDisposition::Committed,
+        "the first use after expiry returns the switch manually",
+    );
+    assert_eq!(receipts(harness).await?, 2);
+    assert!(!owner.bundle_map().ok_or("map")?.facts.base_hidden(wall));
+    assert_eq!(
+        Box::pin(use_source(owner, admitted, 7, CONTROL, 3, 2)).await?,
+        UseDisposition::Committed,
+        "a separate use opens the passage again with the retained key",
+    );
+    assert_eq!(key_count(harness).await?, 1);
+    assert_eq!(receipts(harness).await?, 3);
+    let map = owner.bundle_map().ok_or("map")?;
+    let due = map.facts.next_movement_decay_time().ok_or("second wall reset")?;
+    assert_eq!(
+        Box::pin(use_source(owner, admitted, 8, CONTROL, 3, 3)).await?,
+        UseDisposition::Committed,
+        "the active lever returns independently of the passage",
+    );
+    let map = owner.bundle_map().ok_or("map")?;
+    assert!(map.facts.base_hidden(wall));
+    assert_eq!(map.facts.next_movement_decay_time(), Some(due));
+    assert_eq!(map.facts.expire_movement_items(due), 1);
+    assert!(!map.facts.base_hidden(wall));
+    assert_eq!(
+        Box::pin(use_source(owner, admitted, 9, CONTROL, 3, 4)).await?,
+        UseDisposition::NothingToUse,
+        "returning the switch leaves the opening cooldown in force",
+    );
+    assert_eq!(receipts(harness).await?, 3);
     Ok(())
 }
 

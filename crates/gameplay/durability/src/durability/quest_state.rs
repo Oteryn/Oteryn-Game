@@ -755,7 +755,7 @@ pub mod source_deaths;
 pub mod soul_war_source;
 mod storage;
 mod task_board_use;
-mod terrain_use;
+pub(super) mod terrain_use;
 pub use terrain_use::TerrainUseObservation;
 mod world_change_journal_rewards;
 #[cfg(test)]

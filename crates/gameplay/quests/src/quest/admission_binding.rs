@@ -48,7 +48,9 @@ fn registry() -> Result<&'static Registry, String> {
                 Ok(())
             };
             for callback in reward_callbacks::load()? {
-                let protect = reward_callbacks::gated_binding(&callback)?.is_some();
+                // Reserve held source keys without assigning them writer authority.
+                let protect = !reward_callbacks::phantom_army_source_only(&callback.key)
+                    && reward_callbacks::gated_binding(&callback)?.is_some();
                 add(
                     reward_callbacks::primary_transition(&callback)?,
                     callback.world_claim.is_some(),
@@ -129,6 +131,9 @@ fn registry() -> Result<&'static Registry, String> {
 /// Bound owners must use their exact canonical operation. Removing the binding
 /// does not release ownership of a protected track to the weaker generic writer.
 pub fn validate(transition: &QuestTransition, world_context: bool) -> Result<(), String> {
+    if reward_callbacks::phantom_army_source_only(&transition.key) {
+        return Err("Phantom Army source callback is held".into());
+    }
     if transition.quest == super::arena_completion::QUEST
         && transition.completes
         && transition != &super::arena_completion::transition()?
@@ -282,16 +287,24 @@ mod tests {
         let lowered = super::super::loader::load_embedded_quest_state("owner-consistency")
             .map_err(|error| format!("{error:?}"))?;
         for callback in reward_callbacks::load()? {
-            let transition = lowered
-                .catalogue()
-                .transition(&callback.key)
-                .ok_or_else(|| format!("missing reward {}", callback.key))?;
-            assert_eq!(
-                *transition,
-                reward_callbacks::primary_transition(&callback)?,
-                "{}",
-                callback.key
-            );
+            let catalogue = lowered.catalogue();
+            let transition = catalogue.transition(&callback.key);
+            let expected = reward_callbacks::primary_transition(&callback)?;
+            if reward_callbacks::phantom_army_source_only(&callback.key) {
+                assert!(
+                    transition.is_none(),
+                    "held source callback {}",
+                    callback.key
+                );
+                assert_eq!(
+                    validate_for_catalogue(catalogue, &expected, false),
+                    Err("Phantom Army source callback is held".into())
+                );
+                continue;
+            }
+            let transition =
+                transition.ok_or_else(|| format!("missing reward {}", callback.key))?;
+            assert_eq!(*transition, expected, "{}", callback.key);
             validate(transition, callback.world_claim.is_some())?;
             if callback.world_claim.is_some() {
                 assert!(

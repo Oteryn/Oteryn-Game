@@ -52,6 +52,7 @@
     "oteryn:npc.an_ancient_priest",
     "oteryn:npc.an_apparition",
     "oteryn:npc.an_idol",
+    "oteryn:npc.an_old_dragonlord",
     "oteryn:npc.an_ominous_bat",
     "oteryn:npc.an_orc_guard",
     "oteryn:npc.anaztassja_moroia_init",
@@ -200,6 +201,7 @@
     "oteryn:npc.corym_worker_5",
     "oteryn:npc.cranky_lizard_crone",
     "oteryn:npc.cruleo",
+    "oteryn:npc.curos",
     "oteryn:npc.dabui",
     "oteryn:npc.dagomir",
     "oteryn:npc.dallheim",
@@ -318,9 +320,12 @@
     "oteryn:npc.giri",
     "oteryn:npc.gladys",
     "oteryn:npc.gnomadness",
+    "oteryn:npc.gnomargery",
+    "oteryn:npc.gnombold",
     "oteryn:npc.gnomally",
     "oteryn:npc.gnomewart",
     "oteryn:npc.gnomfurry",
+    "oteryn:npc.gnomilly",
     "oteryn:npc.gnominer",
     "oteryn:npc.gnomish_operative_catching",
     "oteryn:npc.gnomish_operative_gt_m_01",
@@ -652,6 +657,7 @@
     "oteryn:npc.rose",
     "oteryn:npc.ross",
     "oteryn:npc.roswitha",
+    "oteryn:npc.rotem_valos",
     "oteryn:npc.rottin_wood",
     "oteryn:npc.rowenna",
     "oteryn:npc.rudolph",
@@ -727,6 +733,7 @@
     "oteryn:npc.tarak_inner",
     "oteryn:npc.tarak_sunken",
     "oteryn:npc.tarisu",
+    "oteryn:npc.tarun",
     "oteryn:npc.taya",
     "oteryn:npc.telas",
     "oteryn:npc.telas_golem",
@@ -1004,8 +1011,16 @@
   ],
   "placement_adjustments": {
     "oteryn:npc.captain_jack": {
-      "source": {"x": 32190, "y": 31957, "z": 6},
-      "target": {"x": 32190, "y": 31958, "z": 6},
+      "source": {
+        "x": 32190,
+        "y": 31957,
+        "z": 6
+      },
+      "target": {
+        "x": 32190,
+        "y": 31958,
+        "z": 6
+      },
       "reason": "Use the adjacent dock tile to keep Dalbrect's Isle of the Kings arrival clear."
     },
     "oteryn:npc.alternative_rock": {
@@ -1793,6 +1808,25 @@
           "direction": "NORTH"
         }
       ]
+    },
+    "oteryn:npc.an_old_dragonlord": {
+      "basis": "Crystal world-npc.xml:48-50 anchors An Old Dragonlord at the tower for his existing Dragonfetish exchange. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32796,
+            "y": 31558,
+            "z": 2
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
     },
     "oteryn:npc.an_ominous_bat": {
       "basis": "Edron region. Crystal world-npc.xml line(s) 1607. The source cell is the spawn center plus its child offsets. Explicit XML facing takes precedence over the north default.",
@@ -8651,6 +8685,25 @@
         }
       ]
     },
+    "oteryn:npc.tarun": {
+      "basis": "Crystal world-npc.xml:2254 gives the exact Tarun spawn cells. The XML has no facing, so use the NPC engine default north.",
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32976,
+            "y": 32715,
+            "z": 7
+          }
+        }
+      ]
+    },
     "oteryn:npc.taya": {
       "source": {
         "origin": "crystal",
@@ -8717,7 +8770,7 @@
       ]
     },
     "oteryn:npc.tereban": {
-      "basis": "Edron region. Crystal world-npc.xml line(s) 628. The source cell is the spawn center plus its child offsets. Explicit XML facing takes precedence over the north default.",
+      "basis": "Crystal world-npc.xml:481,628 gives the exact Tereban spawn cells. The XML has no facing, so use the NPC engine default north.",
       "source": {
         "origin": "crystal",
         "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
@@ -8726,12 +8779,20 @@
       },
       "placements": [
         {
+          "direction": "NORTH",
+          "position": {
+            "x": 10191,
+            "y": 10085,
+            "z": 6
+          }
+        },
+        {
+          "direction": "NORTH",
           "position": {
             "x": 33170,
             "y": 31807,
             "z": 6
-          },
-          "direction": "NORTH"
+          }
         }
       ]
     },
@@ -9892,18 +9953,58 @@
     "oteryn:npc.messenger_of_santa": {
       "pageid": 28529,
       "cells": [
-        [32307, 31837, 8],
-        [32357, 32210, 7],
-        [32642, 31892, 9],
-        [32655, 31665, 8],
-        [32915, 32070, 9]
+        [
+          32307,
+          31837,
+          8
+        ],
+        [
+          32357,
+          32210,
+          7
+        ],
+        [
+          32642,
+          31892,
+          9
+        ],
+        [
+          32655,
+          31665,
+          8
+        ],
+        [
+          32915,
+          32070,
+          9
+        ]
       ],
       "adjacent_cells": [
-        [32308, 31837, 8],
-        [32356, 32210, 7],
-        [32641, 31892, 9],
-        [32654, 31665, 8],
-        [32916, 32070, 9]
+        [
+          32308,
+          31837,
+          8
+        ],
+        [
+          32356,
+          32210,
+          7
+        ],
+        [
+          32641,
+          31892,
+          9
+        ],
+        [
+          32654,
+          31665,
+          8
+        ],
+        [
+          32916,
+          32070,
+          9
+        ]
       ],
       "direction": "SOUTH"
     },

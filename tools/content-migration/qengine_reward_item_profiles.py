@@ -126,6 +126,8 @@ IDS |= {24966}
 # QN3 Gnomus measurement report (Crystal 201189f gnomus.lua:88-97) grants this jar.
 IDS |= {27654}
 IDS |= qmech_m39.ITEMS
+# Rotem Valos hands out the carried Adventurer's Map for Cartography 101.
+IDS |= {22107}
 IDS |= {21504, 21505}
 # Lion trials: exact holy-water vessel plus separately qualified one-hour flower duration.
 IDS |= {21466, 21389}
@@ -393,6 +395,7 @@ CLIENT = f"content/assets/files/appearances-{CLIENT_SHA}.dat"
 CANONICAL_WEIGHTS = {
     19361: (150, 850),
     19371: (1700, 170),
+    22107: (200, 240),
     23677: (2700, 200),
     32228: (20, 250),
     34210: (6660, 6659),

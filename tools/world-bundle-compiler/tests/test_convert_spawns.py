@@ -27,12 +27,12 @@ class ConvertSpawnsTest(unittest.TestCase):
         cls.held = json.loads(cs.HELD.read_text())["records"]
 
     def test_counts(self):
-        self.assertEqual(len(self.records), 55075)
+        self.assertEqual(len(self.records), 55076)
         self.assertEqual(
-            sum(len(r["declaration"]["points"]) for r in self.records), 88477
+            sum(len(r["declaration"]["points"]) for r in self.records), 88478
         )
-        self.assertEqual(self.index["record_count"], 55075)
-        self.assertEqual(self.index["point_count"], 88477)
+        self.assertEqual(self.index["record_count"], 55076)
+        self.assertEqual(self.index["point_count"], 88478)
 
     def test_crystal_revision_delta_accounts_for_every_exact_source_point(self):
         capture = cs.crystal_capture()
@@ -124,9 +124,23 @@ class ConvertSpawnsTest(unittest.TestCase):
                 self.assertNotIn("respawn_ms", point)
         self.assertEqual(self.index["additional_sources"][0]["record_count"], 10)
         held = json.loads(self.files["held-bosses.json"])["records"]
-        self.assertEqual(len(held), 34)
-        self.assertEqual(self.index["held_bosses"]["point_count"], 34)
+        self.assertEqual(len(held), 33)
+        self.assertEqual(self.index["held_bosses"]["point_count"], 33)
         self.assertTrue(all("boss_policy" not in row["point"] for row in held))
+
+    def test_renegade_orc_has_the_source_fixed_spawn_and_respawn(self):
+        points = [
+            point
+            for record in self.records
+            for point in record["declaration"]["points"]
+            if point["creature"] == "oteryn:creature.renegade_orc"
+        ]
+        self.assertEqual(len(points), 1)
+        self.assertEqual(points[0]["cell"], {"floor": 7, "x": 33059, "y": 31299})
+        self.assertEqual(
+            points[0]["boss_policy"], {"respawn": {"min_s": 90, "max_s": 90}}
+        )
+        self.assertNotIn("respawn_ms", points[0])
 
     def test_public_pharaohs_retain_their_exact_spawn_and_respawn(self):
         points = [

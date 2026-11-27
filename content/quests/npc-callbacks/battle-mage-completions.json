@@ -36,7 +36,7 @@
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dedoras.lua:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:198-216:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1",
         "https://tibia.fandom.com/?curid=86073&oldid=847545"
       ],
       "requires": [
@@ -50,7 +50,18 @@
           "minimum": 1,
           "maximum": 1
         }
-      ]
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i28792",
+          "minimum": 6,
+          "maximum": 4294967295
+        }
+      ],
+      "failure_reply": [
+        "Bring more of the required materials before we trade."
+      ],
+      "completes": true
     },
     {
       "key": "oteryn:quest-reward/l2-battle-mage-epaulettes-complete",
@@ -85,7 +96,7 @@
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dedoras.lua:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:198-216:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1",
         "https://tibia.fandom.com/?curid=86073&oldid=847545"
       ],
       "requires": [
@@ -99,7 +110,18 @@
           "minimum": 1,
           "maximum": 1
         }
-      ]
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i28793",
+          "minimum": 21,
+          "maximum": 4294967295
+        }
+      ],
+      "failure_reply": [
+        "Bring more of the required materials before we trade."
+      ],
+      "completes": true
     }
   ]
 }

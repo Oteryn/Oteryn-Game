@@ -20,6 +20,8 @@ PROJECTION_IDS = {430, 431, 1772, 1791, 1947, 1948, 2772, 2773,
 ELEMENTAL_CORPSES = {8105, 8106, 8107, 8108, 8136, 8137, 8138, 8139, 8140, 8141}
 # M03: retained Temporal Tides landing, including its walkable machine piece.
 PROJECTION_IDS |= {15534, 15620, 25100}
+# The Bear Cave landing contains the nonblocking ramp half next to stair 1950.
+PROJECTION_IDS |= {1951}
 # The Ape City sample keeps its source 24-hour decay in carried custody.
 APE_CITY_SAMPLE = {4829}
 IDS = set(range(3222, 3231)) | set(range(3235, 3242)) | PROJECTION_IDS | ELEMENTAL_CORPSES | APE_CITY_SAMPLE

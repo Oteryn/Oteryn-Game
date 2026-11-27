@@ -2,16 +2,6 @@
   "schema": 1,
   "tracks": [
     {
-      "key": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
-      "quest": "oteryn:quest.oramond_quest",
-      "initial": -1,
-      "min": -1,
-      "max": 2147483647,
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:93-103:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
-      ]
-    },
-    {
       "key": "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5",
       "quest": "oteryn:quest.the_first_dragon_quest",
       "initial": 0,
@@ -294,28 +284,6 @@
       "writable": true,
       "sources": [
         "owner:chosen-trial:dragon_slayer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
-      ]
-    },
-    {
-      "key": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
-      "quest": "oteryn:quest.cave_explorer_outfits_quest",
-      "initial": 0,
-      "min": 0,
-      "max": 2,
-      "writable": true,
-      "sources": [
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
-      ]
-    },
-    {
-      "key": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
-      "quest": "oteryn:quest.cave_explorer_outfits_quest",
-      "initial": 0,
-      "min": 0,
-      "max": 20,
-      "writable": true,
-      "sources": [
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
       ]
     },
     {
@@ -1752,7 +1720,8 @@
           "maximum": 0
         }
       ],
-      "requires_premium": true
+      "requires_premium": true,
+      "completes": true
     },
     {
       "key": "oteryn:quest-reward/l10-nightmare-officer",
@@ -2420,7 +2389,8 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eshaya.lua:sha256:0b84914661498605630d5e98bfb74579760e035d280e5395862c14b975e749db",
         "https://tibia.fandom.com/?curid=94721&oldid=869754",
-        "owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each"
+        "owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each",
+        "https://tibia.fandom.com/index.php?curid=94999&oldid=875550"
       ],
       "requires": [
         {
@@ -2446,7 +2416,8 @@
           "addons": 1
         }
       ],
-      "carried_item": "oteryn:item.tibia.i37002"
+      "carried_item": "oteryn:item.tibia.i37002",
+      "completes": true
     },
     {
       "key": "oteryn:quest-reward/l11-makeshift-base",
@@ -2547,7 +2518,7 @@
         "outfit": "oteryn:outfit.makeshift_warrior",
         "addons": 2
       },
-      "achievement": "oteryn:achievement/cobbled_and_patched",
+      "achievement": null,
       "reply": [
         "Thank you for your help."
       ],
@@ -2603,179 +2574,6 @@
       ],
       "minimum_level": 100,
       "requires_premium": true
-    },
-    {
-      "key": "oteryn:quest-reward/l12-cave-explorer-base",
-      "quest": "oteryn:quest.cave_explorer_outfits_quest",
-      "npc": "oteryn:npc.gnommander",
-      "keywords": [
-        "cave explorer report"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        },
-        {
-          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
-          "minimum": 20,
-          "maximum": 20,
-          "set": 20,
-          "preserve": true
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.cave_explorer",
-        "addons": 0
-      },
-      "achievement": null,
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
-      ],
-      "fee": {
-        "gold": 1000,
-        "include_bank": false
-      },
-      "requires_premium": true,
-      "forbids_outfits": [
-        "oteryn:outfit.cave_explorer"
-      ],
-      "minimum_level": 80
-    },
-    {
-      "key": "oteryn:quest-reward/l12-cave-explorer-first",
-      "quest": "oteryn:quest.cave_explorer_outfits_quest",
-      "npc": "oteryn:npc.gnommander",
-      "keywords": [
-        "cave explorer addon 1"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [],
-      "take": [],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.cave_explorer",
-        "addons": 1
-      },
-      "achievement": null,
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
-      ],
-      "fee": {
-        "gold": 2000,
-        "include_bank": false
-      },
-      "minimum_level": 80,
-      "requires_premium": true,
-      "requires_outfits": [
-        "oteryn:outfit.cave_explorer"
-      ],
-      "forbids_addons": [
-        {
-          "outfit": "oteryn:outfit.cave_explorer",
-          "addons": 1
-        }
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/l12-cave-explorer-second",
-      "quest": "oteryn:quest.cave_explorer_outfits_quest",
-      "npc": "oteryn:npc.gnommander",
-      "keywords": [
-        "cave explorer addon 2"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [],
-      "take": [],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.cave_explorer",
-        "addons": 2
-      },
-      "achievement": "oteryn:achievement/cave_completionist",
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b",
-        "https://tibia.fandom.com/index.php?curid=65413&oldid=846114"
-      ],
-      "fee": {
-        "gold": 3000,
-        "include_bank": false
-      },
-      "minimum_level": 80,
-      "requires_premium": true,
-      "requires_outfits": [
-        "oteryn:outfit.cave_explorer"
-      ],
-      "forbids_addons": [
-        {
-          "outfit": "oteryn:outfit.cave_explorer",
-          "addons": 2
-        }
-      ],
-      "requires_addons": [
-        {
-          "outfit": "oteryn:outfit.cave_explorer",
-          "addons": 1
-        }
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/l12-cave-explorer-start",
-      "quest": "oteryn:quest.cave_explorer_outfits_quest",
-      "npc": "oteryn:npc.gnommander",
-      "keywords": [
-        "cave explorer trial"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
-        },
-        {
-          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 0,
-          "preserve": true
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
-      ],
-      "requires_premium": true,
-      "minimum_level": 80
     },
     {
       "key": "oteryn:quest-reward/l12-dragon-slayer-base",
@@ -2961,183 +2759,6 @@
       ],
       "requires_premium": true,
       "minimum_level": 250
-    },
-    {
-      "key": "oteryn:quest-reward/l2-battle-mage-base",
-      "quest": "oteryn:quest.the_secret_library_quest",
-      "npc": "oteryn:npc.dedoras",
-      "keywords": [
-        "check"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
-          "minimum": 6,
-          "maximum": 6,
-          "set": 7
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
-          "minimum": -1,
-          "maximum": 1,
-          "set": 1
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/small_islands/questline",
-          "minimum": 4,
-          "maximum": 4,
-          "set": 4,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/liquid_death/questline",
-          "minimum": 8,
-          "maximum": 8,
-          "set": 8,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/asuras/questline",
-          "minimum": 7,
-          "maximum": 7,
-          "set": 7,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/falcon_bastion/questline",
-          "minimum": 3,
-          "maximum": 3,
-          "set": 3,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/darashia/questline",
-          "minimum": 9,
-          "maximum": 9,
-          "set": 9,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/mo_ta/questline",
-          "minimum": 8,
-          "maximum": 8,
-          "set": 8,
-          "preserve": true
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.battle_mage",
-        "addons": 0
-      },
-      "achievement": "oteryn:achievement/battle_mage",
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dedoras.lua:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/l2-battle-mage-book",
-      "quest": "oteryn:quest.battle_mage_outfits_quest",
-      "npc": "oteryn:npc.dedoras",
-      "keywords": [
-        "book",
-        "books",
-        "sturdy books"
-      ],
-      "topic": 3,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon1",
-          "minimum": -1,
-          "maximum": 0,
-          "set": 1
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i28792",
-          "count": 5
-        }
-      ],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.battle_mage",
-        "addons": 1
-      },
-      "achievement": null,
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dedoras.lua:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
-      ],
-      "requires": [
-        {
-          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
-          "minimum": 7,
-          "maximum": 7
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon2",
-          "minimum": -1,
-          "maximum": 0
-        }
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/l2-battle-mage-epaulettes",
-      "quest": "oteryn:quest.battle_mage_outfits_quest",
-      "npc": "oteryn:npc.dedoras",
-      "keywords": [
-        "epaulettes"
-      ],
-      "topic": 3,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon2",
-          "minimum": -1,
-          "maximum": 0,
-          "set": 1
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i28793",
-          "count": 20
-        }
-      ],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.battle_mage",
-        "addons": 2
-      },
-      "achievement": null,
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dedoras.lua:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
-      ],
-      "requires": [
-        {
-          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
-          "minimum": 7,
-          "maximum": 7
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon1",
-          "minimum": -1,
-          "maximum": 0
-        }
-      ]
     },
     {
       "key": "oteryn:quest-reward/l2-elementalist-base",

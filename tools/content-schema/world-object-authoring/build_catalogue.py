@@ -493,6 +493,7 @@ def outputs(
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
         import blood_vestibule_ground
+        import classic_quest_ground
         import spawn_ground
         import spawn_map_ground
         from scoped_spawn_ground import catalogue_outputs
@@ -502,6 +503,12 @@ def outputs(
         files[blood_vestibule_ground.SHARD] = blood_vestibule_ground.outputs()[
             blood_vestibule_ground.SHARD
         ]
+        files.update(
+            (path, value.encode())
+            for path, value in classic_quest_ground.outputs(
+                terrain_index=files[index_path]
+            ).items()
+        )
         files[spawn_map_ground.SHARD] = spawn_map_ground.terrain_output()
         index = json.loads(files[index_path])
         index["notes"] = activity_static.compose_terrain_notes(
@@ -566,6 +573,7 @@ def qualified_shards():
     import alawar_static
     import blood_vestibule_ground
     import crystal_delta_ground
+    import classic_quest_ground
     import feroxa_static
     import spawn_ground
     import spawn_map_ground
@@ -590,6 +598,7 @@ def qualified_shards():
             blood_vestibule_ground.SHARD,
             spawn_ground.SHARD,
             SCOPED_SPAWN_GROUND_SHARD,
+            classic_quest_ground.SHARD,
             spawn_map_ground.SHARD,
         )
         if (path := ROOT / relative).exists()

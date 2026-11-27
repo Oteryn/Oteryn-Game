@@ -725,6 +725,39 @@ pub(super) async fn add_progress(
     Ok(())
 }
 
+/// Project an account-owned count onto the current Character after a purchase.
+/// The account evidence alone decides the grant, even at an inherited cap.
+pub(super) async fn record_owned_progress(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character_id: CharacterId,
+    key: &str,
+    total: u32,
+    source_kind: &str,
+    event_id: &[u8],
+    owned: u32,
+) -> std::result::Result<(), DurabilityError> {
+    if owned == 0 || owned > total {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    sqlx::query(
+        "INSERT INTO game_character_achievement_progress AS p
+                (character_id, achievement_key, progress)
+         VALUES (encode($1,'hex')::uuid, $2, $3)
+         ON CONFLICT (character_id, achievement_key)
+         DO UPDATE SET progress = EXCLUDED.progress
+         WHERE p.progress <> EXCLUDED.progress",
+    )
+    .bind(character_id.as_bytes().as_slice())
+    .bind(key)
+    .bind(i64::from(owned))
+    .execute(&mut **tx)
+    .await?;
+    if owned == total {
+        grant_missing(tx, character_id, &[key], source_kind, event_id).await?;
+    }
+    Ok(())
+}
+
 /// Crystal `data/scripts/movements/snow.lua:18-20`: one committed footprint counts toward
 /// Snowbunny, whose donor threshold is 10,000.
 pub async fn add_snowbunny_progress(

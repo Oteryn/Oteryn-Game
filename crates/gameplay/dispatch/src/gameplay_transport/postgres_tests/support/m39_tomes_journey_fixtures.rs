@@ -42,7 +42,8 @@ pub(super) async fn exercise(
     println!("POSTGRES_PLAYER_JOURNEY m39a-tomes server_version={version}");
     assert_eq!(stage(h, COUNTER).await?, None);
     assert_eq!(carried(h, 10217).await?, 0, "no seeded books");
-    prerequisites::install(owner, admitted).await?;
+    let shared_claim = name.ends_with("-legacy-first") || name.ends_with("-world-first");
+    prerequisites::install(owner, admitted, !shared_claim).await?;
     let mut selected = admitted
         .continuity
         .selected_capabilities
@@ -58,7 +59,7 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("Tomes capabilities")?;
-    if name.ends_with("-legacy-first") || name.ends_with("-world-first") {
+    if shared_claim {
         return once_identity(owner, admitted, h, name.ends_with("-legacy-first")).await;
     }
     let [cael, curos, zalamon] = super::classic_quests_fixtures::install_above(
@@ -67,12 +68,7 @@ pub(super) async fn exercise(
         ["oteryn:npc.cael", "oteryn:npc.curos", "oteryn:npc.zalamon"],
     )
     .await?;
-    for (n, key) in ["frontier-ready", "curos-ready", "zalamon-ready"]
-        .into_iter()
-        .enumerate()
-    {
-        prerequisites::apply(owner, admitted, key, 18_000 + u64::try_from(n)?).await?;
-    }
+    prerequisites::apply(owner, admitted, "frontier-ready", 18_000).await?;
     assert_eq!(
         grant(owner, admitted, cael, "l2-cael-tome-1").await?.0,
         NpcIntentDisposition::Rejected,

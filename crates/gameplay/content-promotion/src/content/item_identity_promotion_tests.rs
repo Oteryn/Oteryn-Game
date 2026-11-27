@@ -71,6 +71,27 @@ fn unmapped_item_preserves_entire_draft() {
     assert_eq!(draft, before);
 }
 #[test]
+fn physical_promotion_loads_the_committed_packet() -> Result<(), String> {
+    use super::super::item_physical_promotion::{
+        ITEM_PHYSICAL_PACKET, apply_item_physical_promotion_v1,
+    };
+
+    let packet: serde_json::Value =
+        serde_json::from_slice(ITEM_PHYSICAL_PACKET).map_err(|error| error.to_string())?;
+    let keys = packet["promotions"]
+        .as_array()
+        .ok_or("missing physical promotions")?
+        .iter()
+        .map(|row| row["item_key"].as_str().ok_or("missing physical item key"))
+        .collect::<Result<std::collections::BTreeSet<_>, _>>()?;
+    let mut draft = draft(&keys.into_iter().collect::<Vec<_>>());
+
+    let applied = apply_item_physical_promotion_v1(&mut draft)?;
+    assert_eq!(applied.changed, applied.fields);
+    Ok(())
+}
+
+#[test]
 fn public_promotions_reject_duplicate_native_keys_before_mutation() {
     let mut failures = Vec::new();
     macro_rules! check {

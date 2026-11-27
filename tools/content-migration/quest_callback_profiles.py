@@ -117,6 +117,7 @@ def admit_map_carriers(root, document):
 
 def admit_route_scenery(root, generated, profile_path, manifest_path, order, canonical):
     import authored_static_item_constructors
+    import key_door_item_profiles
     import qengine_reward_item_profiles as donor
 
     # The Folda corridor carries stones, bloodstains, a bone and patches of ice.
@@ -154,6 +155,12 @@ def admit_route_scenery(root, generated, profile_path, manifest_path, order, can
     # second Alawar door also needs its unlocked and open counterparts.
     doors = {6251: True, 7033: True, 7034: True, 7035: False, 7042: True}
     movement.update(doors)
+    key_doors = {
+        row["production_definition"]["production_key"]: row
+        for row in json.loads((root / key_door_item_profiles.PATH).read_bytes())[
+            "records"
+        ]
+    }
     document = json.loads(generated[profile_path])
     existing = {
         row["production_definition"]["production_key"]: row
@@ -167,16 +174,16 @@ def admit_route_scenery(root, generated, profile_path, manifest_path, order, can
             missing.add(identifier)
             continue
         portable = identifier == 3115
-        # The shared 6251 door already belongs to the key-door provider.
-        key_door = identifier == 6251
+        # M01c already owns the exact ground-only form of the shared Alawar doors.
+        ground_only_door = identifier in doors and prior == key_doors.get(key)
         admission = prior["admission"]
         attributes = prior["attributes"]
         physical = prior["semantics"]["physical"].get("value", {})
         motion = attributes.get("blocks_movement")
         if (
             prior["production_binding"]["disposition"] != "EXACT"
-            or admission["materializable"] != (portable or key_door)
-            or (key_door and admission["legal_destinations"] != ["Ground"])
+            or admission["materializable"] != (portable or ground_only_door)
+            or (ground_only_door and admission["legal_destinations"] != ["Ground"])
             or physical.get("movable") != writing.known(portable)
             or physical.get("pickupable") != writing.known(portable)
             or (motion is not solid and not (portable and motion is None))
@@ -473,6 +480,10 @@ def _requested_inputs(root, extra_keys=()):
         "chosen-reward-callbacks.json",
         "npc-callbacks/quest-contacts.json",
         "world-callbacks/quest-contacts.json",
+        "world-callbacks/children-grease.json",
+        "world-callbacks/crystal-wand.json",
+        "world-callbacks/m07-realm-trial.json",
+        "world-callbacks/qm48-mammoth.json",
     ):
         path = root / "content/quests" / relative
         if not path.is_file():
@@ -486,6 +497,8 @@ def _requested_inputs(root, extra_keys=()):
                 == "oteryn:quest-reward/their-masters-voice-slime-gobbler"
             ):
                 items.discard(callback["give"]["item"])
+            # The Writing provider already qualifies the Tactical Map.
+            items.discard("oteryn:item.tibia.i637")
             authored_keys.update(items)
             keys.update(items)
     classic_pickups = root / "content/quests/world-callbacks/cursed-crystal.json"
@@ -866,12 +879,14 @@ def admit(
     )
     import authored_quest_item_custody
 
+    # Qualify the existing map-only Twinkiller parchment for inventory custody.
+    text_carrier = "oteryn:item.tibia.i2835"
     tracing_ground_only = {
         key
         for key in authored_keys & EXPLORER_TRACING_SHEETS & present.keys()
         if not present[key]["admission"]["materializable"]
     }
-    require_custody = (authored_keys - present.keys()) | tracing_ground_only
+    require_custody = (authored_keys - present.keys()) | tracing_ground_only | {text_carrier}
     missing_authored = [
         definitions[key] for key in sorted(require_custody) if key in definitions
     ]
@@ -953,6 +968,20 @@ def admit(
                 )
                 document["records"].append(profile)
                 continue
+        if (
+            key in authored_keys
+            and key == text_carrier
+            and key in present
+            and not present[key]["admission"]["materializable"]
+        ):
+            profile = authored_quest_item_custody.qualify(
+                root, definition, raw, _inputs=custody_inputs
+            )
+            existing = present[key]
+            existing["admission"] = profile["admission"]
+            for group in ("physical", "stack", "container"):
+                existing["semantics"][group] = profile["semantics"][group]
+            continue
         if (
             key in authored_keys
             and not definition["materializable"]

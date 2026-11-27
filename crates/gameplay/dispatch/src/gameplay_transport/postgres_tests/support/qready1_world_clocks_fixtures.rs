@@ -40,6 +40,11 @@ pub(super) async fn exercise(
         } => i64::from(seconds),
         _ => return Err("production clock predicate".into()),
     };
+    let captain = callback.key == "oteryn:quest-callback/captain-iglues-left-chest";
+    if captain {
+        assert_eq!(wait, 86_400);
+    }
+    let mint_lines = i64::from(callback.effects.item_reward.is_some());
     let position = callback.selector.position.ok_or("source position")?;
     let key = oteryn_world_bundle::bundle::placement_key(position.floor, position.x, position.y, 1)
         .ok_or("source key")?;
@@ -80,11 +85,7 @@ pub(super) async fn exercise(
         (
             epoch,
             1,
-            if callback.effects.item_reward.is_some() {
-                1
-            } else {
-                0
-            },
+            mint_lines,
             if callback.offerings.is_empty() { 0 } else { 6 }
         )
     );
@@ -114,11 +115,7 @@ pub(super) async fn exercise(
         (
             epoch + wait,
             2,
-            if callback.effects.item_reward.is_some() {
-                2
-            } else {
-                0
-            },
+            mint_lines * 2,
             if callback.offerings.is_empty() { 0 } else { 12 }
         )
     );
@@ -137,7 +134,19 @@ pub(super) async fn exercise(
         after,
         "historical wire replay cannot mint or consume twice"
     );
-    if callback.effects.item_reward.is_some() {
+    if captain {
+        let rewards: Vec<(String, i64)> = sqlx::query_as(
+            "SELECT i.definition_production_key,sum(i.quantity)::bigint
+             FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id)
+             WHERE i.lifecycle=1 AND i.definition_production_key IN ('oteryn:item.tibia.i3506','oteryn:item.tibia.i3579')
+             GROUP BY 1 ORDER BY 1",
+        ).fetch_all(&h.pool).await?;
+        assert_eq!(rewards, vec![("oteryn:item.tibia.i3506".into(), 2), ("oteryn:item.tibia.i3579".into(), 24)]);
+        let texts: Vec<String> = sqlx::query_scalar(
+            "SELECT t.text FROM game_item_texts t JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i3506'",
+        ).fetch_all(&h.pool).await?;
+        assert_eq!(texts, ["Treasure of Captain Iglue"; 2]);
+    } else if callback.effects.item_reward.is_some() {
         let reward:(String,i64)=sqlx::query_as("SELECT min(i.definition_production_key),sum(m.quantity)::bigint FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id)").fetch_one(&h.pool).await?;
         assert_eq!(reward, ("oteryn:item.tibia.i5953".into(), 2));
     }

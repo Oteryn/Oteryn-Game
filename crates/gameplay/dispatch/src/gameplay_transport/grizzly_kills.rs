@@ -45,16 +45,41 @@ struct NativeCounterCapture {
     definition_hash: Option<[u8; 32]>,
     death_area: Option<oteryn_gameplay_quests::quest::authored_bindings::kills::DeathArea>,
     encounter_source: Option<String>,
+    creditable: bool,
 }
 
 fn capture_native(
     catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
     tracks: &std::collections::BTreeMap<String, i64>,
 ) -> Vec<NativeCounterCapture> {
-    use oteryn_gameplay_quests::quest::native_kills;
-    native_kills::active_for(catalogue, tracks)
+    use oteryn_gameplay_quests::quest::{authored_bindings::Trigger, native_kills};
+    let active = native_kills::active_for(catalogue, tracks)
         .into_iter()
-        .filter_map(|key| {
+        .map(|key| (key, true));
+    // A cleared, repeatable room still needs a fenced roster for its next visit.
+    // The capped counter is admission evidence only.
+    let value = |key: &str| {
+        catalogue
+            .track(key)
+            .map(|track| tracks.get(key).copied().unwrap_or(track.initial))
+    };
+    let cleared = catalogue
+        .authored_bindings()
+        .into_iter()
+        .flat_map(|bindings| &bindings.quests)
+        .flat_map(|quest| &quest.stages)
+        .filter_map(|stage| {
+            let Trigger::Kill { counter } = &stage.trigger else {
+                return None;
+            };
+            (counter.encounter_source.is_some()
+                && value(&counter.gate) == Some(counter.gate_value)
+                && value(&counter.track) == Some(counter.maximum))
+            .then(|| (counter.key.clone(), false))
+        });
+    active
+        .chain(cleared)
+        .filter_map(|(key, creditable)| {
             let counter = native_kills::counter_for(catalogue, &key)?;
             let definition_hash = if native_kills::counter(&key).is_some() {
                 None
@@ -62,11 +87,12 @@ fn capture_native(
                 Some(catalogue.definition_hash(counter.quest)?)
             };
             Some(NativeCounterCapture {
-                transition: key.clone(),
+                transition: key,
                 creature: counter.creature.into(),
                 definition_hash,
                 death_area: counter.death_area,
                 encounter_source: counter.encounter_source.map(str::to_owned),
+                creditable,
             })
         })
         .collect()
@@ -195,6 +221,22 @@ fn freeze_at(
                     death_position.is_some_and(|position| area.contains(position))
                 })
             {
+                use crate::durability::quest_state::native_kills::NativeDeathSource;
+                let source = if oteryn_gameplay_quests::quest::kill_objectives::party_hunt(
+                    &counter.transition,
+                )
+                .is_some()
+                {
+                    let Some(at) = corpse.and_then(super::quest_callbacks::native) else {
+                        continue;
+                    };
+                    NativeDeathSource::PositionedParty {
+                        source: Arc::clone(&native_source),
+                        position: (at.x, at.y, at.floor),
+                    }
+                } else {
+                    NativeDeathSource::Party(Arc::clone(&native_source))
+                };
                 native.push(super::quest_kills::Recipient {
                     actor: snapshot.actor,
                     session: snapshot.session,
@@ -205,10 +247,7 @@ fn freeze_at(
                         definition_hash: counter.definition_hash,
                         creature: creature.into(),
                         observed_revision: snapshot.observed_revision,
-                        source:
-                            crate::durability::quest_state::native_kills::NativeDeathSource::Party(
-                                Arc::clone(&native_source),
-                            ),
+                        source,
                     },
                 });
             }
@@ -421,11 +460,9 @@ pub(super) fn capture(
                     ))
                 });
             frozen.native.retain_mut(|recipient| {
-                if !recipient
-                    .death
-                    .transition
-                    .starts_with("oteryn:quest-transition/native-kills/m31/")
-                {
+                if !oteryn_gameplay_quests::quest::world_change_journals::requires_death_position(
+                    &recipient.death.transition,
+                ) {
                     return true;
                 }
                 if !oteryn_gameplay_quests::quest::world_change_journals::admits_position(

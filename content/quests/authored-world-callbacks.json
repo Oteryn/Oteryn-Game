@@ -94,12 +94,24 @@
           "count": 1,
           "contents": [
             {
-              "item": "oteryn:item.tibia.i239",
-              "count": 2
-            },
-            {
               "item": "oteryn:item.tibia.i3035",
               "count": 13
+            },
+            {
+              "item": "oteryn:item.tibia.i3003",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3457",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i268",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i239",
+              "count": 2
             }
           ]
         }
@@ -1130,7 +1142,8 @@
         "https://tibia.fandom.com/index.php?curid=2853&oldid=748882",
         "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/tile_pick.lua",
         "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/lib/register_actions.lua",
-        "Native pick ground355 ordinal0 at32437,32239,z10; cache2469 ordinal1 at32443,32238,z11; no fake action101 or UID6131. See CONTRACT-NOTES.md."
+        "Native pick ground355 ordinal0 at32437,32239,z10; cache2469 ordinal1 at32443,32238,z11; no fake action101 or UID6131. See CONTRACT-NOTES.md.",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1591-1599"
       ],
       "key": "oteryn:quest-callback/authored-life-ring-cache",
       "trigger": "use",
@@ -1158,10 +1171,13 @@
       "success_message": "You recovered the Life Ring cache.",
       "effects": {
         "item_reward": {
-          "item": "oteryn:item.tibia.i3052",
+          "item": "oteryn:item.tibia.i2853",
           "count": 1,
-          "contents": [],
-          "backpack_outputs": [
+          "contents": [
+            {
+              "item": "oteryn:item.tibia.i3052",
+              "count": 1
+            },
             {
               "item": "oteryn:item.tibia.i3085",
               "count": 1
@@ -4603,6 +4619,422 @@
         "reusable": true
       },
       "success_message": "You have dispelled imperial influence 4 of 4."
+    },
+    {
+      "key": "oteryn:quest-callback/authored-lions-rock-inscription-hyena",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33127,
+            "y": 32340,
+            "floor": -9
+          },
+          "appearance": 499,
+          "ordinal": 0
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/hyena_sign",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "minimum": 5,
+          "maximum": 8,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:native-counterpart:authored-lions-rock-inscription-hyena",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:21-25",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:109-126"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/hyena_sign": 0
+      },
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i21467",
+          "count": 1
+        }
+      ],
+      "success_message": "You translate the golden statue's inscription with the scroll. The lion defeated the greedy hyaena and turned its red blood into a treasure.",
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-lions-rock-inscription-lizard",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33130,
+            "y": 32300,
+            "floor": -9
+          },
+          "appearance": 518,
+          "ordinal": 0
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/lizard_sign",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "minimum": 5,
+          "maximum": 8,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:native-counterpart:authored-lions-rock-inscription-lizard",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:9-13",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:109-126"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/lizard_sign": 0
+      },
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i21467",
+          "count": 1
+        }
+      ],
+      "success_message": "You translate the floor inscription with the scroll. The lion defeated the lazy lizard and turned its blue egg into a treasure.",
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-lions-rock-inscription-scorpion",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33109,
+            "y": 32329,
+            "floor": -9
+          },
+          "appearance": 499,
+          "ordinal": 0
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/scorpion_sign",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "minimum": 5,
+          "maximum": 8,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:native-counterpart:authored-lions-rock-inscription-scorpion",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:15-19",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:109-126"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/scorpion_sign": 0
+      },
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i21467",
+          "count": 1
+        }
+      ],
+      "success_message": "You translate the golden altar's inscription with the scroll. The lion defeated the treacherous scorpion and turned its violet poison into a treasure.",
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-lions-rock-inscription-snake",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33095,
+            "y": 32244,
+            "floor": -9
+          },
+          "appearance": 499,
+          "ordinal": 0
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/snake_sign",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "minimum": 5,
+          "maximum": 8,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:native-counterpart:authored-lions-rock-inscription-snake",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:3-7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:109-126"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/snake_sign": 0
+      },
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i21467",
+          "count": 1
+        }
+      ],
+      "success_message": "You translate the floor inscription with the scroll. The lion defeated the jealous snake and turned its yellow eye into a treasure.",
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-liquid-black-coordinates",
+      "quest": "oteryn:quest.liquid_black_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33519,
+            "y": 31308,
+            "floor": -8
+          },
+          "appearance": 2472,
+          "ordinal": 2
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_4/liquid_black_quest/visitor",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "Empty.",
+      "sources": [
+        "oteryn-authored:native-counterpart:authored-liquid-black-coordinates",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:3569-3573",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/liquid_black/actions_notescoordinates.lua:3-16"
+      ],
+      "requires_world_admission": true,
+      "success_message": "You have found notes and coordinates.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i14176",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-liquid-black-quick-access",
+      "quest": "oteryn:quest.liquid_black_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33478,
+            "y": 31312,
+            "floor": -7
+          },
+          "appearance": 1949,
+          "ordinal": 2
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33446,
+        "y": 31288,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_4/liquid_black_quest/visitor",
+          "minimum": 4,
+          "maximum": 5,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:native-counterpart:authored-liquid-black-quick-access",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:315-319",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/liquid_black/movements_quick_access.lua:1-22"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-machinery-war-plans-east",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32975,
+            "y": 31773,
+            "floor": -8
+          },
+          "appearance": 8071,
+          "ordinal": 2
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/machinery-of-war/war-plans",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/machinery-of-war/war-plans": 0
+      },
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "You cannot make sense of the drawings.",
+      "success_message": "You study the war plans and should report them to Baxter.",
+      "requires_world_admission": true,
+      "sources": [
+        "oteryn-authored:native-counterpart:machinery-of-war-plans",
+        "https://tibia.fandom.com/index.php?curid=25591&oldid=898558",
+        "content/world/placements/region-z08-x128-y124.b3: northern-wall chalk board at 32974-32975,31773,8"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-machinery-war-plans-west",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32974,
+            "y": 31773,
+            "floor": -8
+          },
+          "appearance": 8070,
+          "ordinal": 2
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/machinery-of-war/war-plans",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/machinery-of-war/war-plans": 0
+      },
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "You cannot make sense of the drawings.",
+      "success_message": "You study the war plans and should report them to Baxter.",
+      "requires_world_admission": true,
+      "sources": [
+        "oteryn-authored:native-counterpart:machinery-of-war-plans",
+        "https://tibia.fandom.com/index.php?curid=25591&oldid=898558",
+        "content/world/placements/region-z08-x128-y124.b3: northern-wall chalk board at 32974-32975,31773,8"
+      ]
     },
     {
       "key": "oteryn:quest-callback/authored-hunter-hymn-piano",

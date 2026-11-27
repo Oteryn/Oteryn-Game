@@ -42,6 +42,8 @@ pub fn voice_experience_occurrence(
 
 #[derive(Debug, Clone)]
 pub struct TerrainMutation {
+    /// The admitted quest catalogue for a tool use with inline quest credit.
+    pub quest_catalogue: Option<std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>>,
     pub tool: [u8; 16],
     pub tool_key: String,
     pub tool_revision: String,
@@ -51,6 +53,19 @@ pub struct TerrainMutation {
     pub after: u32,
     /// Successive states and delays from the preceding durable deadline, milliseconds.
     pub decay: Vec<(u32, i64)>,
+}
+
+impl TerrainMutation {
+    /// Attach the admitted catalogue only to terrain uses whose quest credit
+    /// is part of the physical USE transaction.
+    pub fn bind_quest_credit(
+        &mut self,
+        catalogue: &std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
+    ) {
+        if super::quest_state::terrain_use::dragon_corpse_binding(catalogue, self).is_some() {
+            self.quest_catalogue = Some(std::sync::Arc::clone(catalogue));
+        }
+    }
 }
 
 /// A real map object used without a carried tool. Zero is the existing removed-placement
@@ -311,7 +326,7 @@ pub(super) async fn apply_in_transaction(
     scope: &TerrainScope,
     mutation: &TerrainMutation,
 ) -> Result<bool, DurabilityError> {
-    apply_object_in_transaction(
+    let applied = apply_object_in_transaction(
         tx,
         fence,
         command,
@@ -326,7 +341,14 @@ pub(super) async fn apply_in_transaction(
             decay: mutation.decay.clone(),
         },
     )
-    .await
+    .await?;
+    if applied && let Some(catalogue) = &mutation.quest_catalogue {
+        super::quest_state::terrain_use::credit_dragon_corpse(
+            tx, fence, command, catalogue, mutation,
+        )
+        .await?;
+    }
+    Ok(applied)
 }
 
 /// Shared with source map harvesting and world-event consumption. The caller holds the

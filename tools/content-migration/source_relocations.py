@@ -461,6 +461,52 @@ def read_pinned(root: Path, path: str, expected: str) -> bytes | None:
     data = target.read_bytes()
     if digest(data) == current_digest:
         return data
+    if (
+        current
+        == "tools/content-schema/item-authoring/historical_world_owner_context.py"
+    ):
+        # The earlier receipt pins the helper before its exact Bear Cave witness.
+        start = data.find(b"    import classic_quest_ground\n")
+        end = data.find(b"    for note in (\n", start)
+        if 0 <= start < end:
+            previous = data[:start] + data[end:]
+            if digest(previous) == current_digest:
+                return previous
+    if current == "content/world/terrain/index.json":
+        import sys
+
+        sys.path.insert(
+            0,
+            str(
+                Path(__file__).resolve().parents[1]
+                / "content-schema/world-object-authoring"
+            ),
+        )
+        try:
+            import classic_quest_ground
+        finally:
+            sys.path.pop(0)
+        try:
+            marker = json.loads(data)
+        except ValueError:
+            return None
+        notes = marker.get("notes") if isinstance(marker, dict) else None
+        if not isinstance(notes, str):
+            return None
+        note = classic_quest_ground.NOTE
+        shard = Path(root) / classic_quest_ground.SHARD
+        if notes.count(note) == 1 and shard.is_file():
+            generated = classic_quest_ground.outputs(Path(root), terrain_index=data)
+            if (
+                generated[current].encode() == data
+                and generated[classic_quest_ground.SHARD].encode() == shard.read_bytes()
+            ):
+                marker["notes"] = notes.replace(note, "", 1)
+                previous = (
+                    json.dumps(marker, indent=2, ensure_ascii=False) + "\n"
+                ).encode()
+                if digest(previous) == current_digest:
+                    return previous
     if current == "imports/tibiawiki/facts/items-stats.json":
         historical = historical_wiki_snapshot(data)
         if historical is not None and digest(historical) == current_digest:

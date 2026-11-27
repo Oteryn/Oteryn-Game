@@ -329,7 +329,10 @@ fn scenario_case(
             .filter(|batch| batch.use_classic_regions)
             .and(catalogue)
             .and_then(|case| restored_classic_region(case.unique));
-        let start = if classic_region.is_some() {
+        let grease_shelf = unique == 6290;
+        let start = if grease_shelf {
+            (chest.0, chest.1 + 1)
+        } else if classic_region.is_some() {
             match unique {
                 5009 | 5014 | 6146..=6148 | 6080..=6082 | 6219 => (chest.0, chest.1 + 1),
                 5026 | 6120 | 6121 => (chest.0, chest.1 - 1),
@@ -346,8 +349,12 @@ fn scenario_case(
         } else {
             (chest.0 - u16::from(!matches!(case, Case::ChoiceDoor)), chest.1)
         };
-        let pinned_source = pinned_completion_chest || committed || classic_region.is_some();
-        let world = if committed && classic_region.is_none() {
+        let pinned_source = pinned_completion_chest || committed || classic_region.is_some() || grease_shelf;
+        let world = if grease_shelf {
+            let source = crate::map::overlay::TilePos { x: chest.0, y: chest.1, floor: chest.2 };
+            let south = crate::map::overlay::TilePos { y: start.1, ..source };
+            super::source_world_crop::world(source, south, south, native)?
+        } else if committed && classic_region.is_none() {
             use oteryn_gameplay_quests::quest::world_callbacks::Position;
             let floor = chest.2;
             super::qc_pinned_world::crop(
@@ -520,7 +527,7 @@ fn scenario_case(
             frame_binding,
             world.map_revision_digest(),
             (
-                i32::from(if classic_region.is_some() || committed { start.0 } else { chest.0 - 1 }),
+                i32::from(if classic_region.is_some() || committed || grease_shelf { start.0 } else { chest.0 - 1 }),
                 i32::from(start.1),
                 -i16::from(chest.2),
             ),

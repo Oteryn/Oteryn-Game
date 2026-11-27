@@ -18,27 +18,41 @@ pub(super) const AT: Position = Position {
 
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
+    curos: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene_with_appearances};
-    native_scene_with_appearances(
-        native,
-        vec![NativeCrop {
+    let mut crops = vec![NativeCrop {
+        bytes: include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/world/placements/region-z03-x129-y122.b3"
+        )),
+        region: (3, 129, 122),
+        bounds: (33153, 31295, 33157, 31299),
+        start: (33155, 31298),
+        expected: vec![ExpectedTile {
+            position: (33155, 31297),
+            ids: vec![9929, 10052, 10186, 1897],
+            counted_entry: None,
+        }],
+    }];
+    if curos {
+        crops.push(NativeCrop {
             bytes: include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
-                "/../../../content/world/placements/region-z03-x129-y122.b3"
+                "/../../../content/world/placements/region-z07-x129-y122.b3"
             )),
-            region: (3, 129, 122),
-            bounds: (33153, 31295, 33157, 31299),
+            region: (7, 129, 122),
+            bounds: (33045, 31293, 33061, 31301),
             start: (33155, 31298),
             expected: vec![ExpectedTile {
-                position: (33155, 31297),
-                ids: vec![9929, 10052, 10186, 1897],
+                position: (33047, 31295),
+                ids: vec![7063, 6258],
                 counted_entry: None,
             }],
-        }],
-        &[],
-        &[10187],
-    )
+        });
+    }
+    let appearances: &[u16] = if curos { &[10187, 6259] } else { &[10187] };
+    native_scene_with_appearances(native, crops, &[], appearances)
 }
 
 /// Arrange only the NPC prerequisite; keep the production transition unchanged.
@@ -263,5 +277,179 @@ pub(super) async fn exercise(
     eprintln!(
         "POSTGRES_CASE_COMPLETED M44 native_use commit_barrier replay busy expiry stale_timer"
     );
+    Ok(())
+}
+
+pub(super) async fn exercise_curos(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use super::m39_bone_journey_fixtures::{carried, grant, stage};
+    use super::questpc8_authored_programmes_fixtures::{object_target, use_target};
+    use super::questpc8_mystery_geometry_fixtures::arrive;
+    use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+    use crate::map::overlay::TilePos;
+    use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+    use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+
+    const QUEST: &str = "oteryn:quest.an_uneasy_alliance_quest";
+    const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline";
+    const DOOR: &str = "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door";
+    const FRONTIER: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06";
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([3, 4, 6, 11, 15, 18]);
+    selected.sort_unstable();
+    selected.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("Curos capabilities")?;
+
+    let [curos] =
+        super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.curos"]).await?;
+    assert_eq!(
+        grant(owner, admitted, curos, "l2-alliance-start").await?.0,
+        NpcIntentDisposition::Rejected
+    );
+    assert_eq!(stage(h, QUESTLINE).await?, None);
+    // Curos's donor requires a completed New Frontier Mission 06 before the
+    // alliance begins. Restore that foreign progress in the canonical catalogue.
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[(FRONTIER.into(), 5)],
+        119,
+    )
+    .await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    assert_eq!(
+        grant(owner, admitted, curos, "l2-alliance-start").await?.0,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(stage(h, QUESTLINE).await?, Some(1));
+    assert_eq!(stage(h, DOOR).await?, Some(0));
+    assert_eq!(
+        grant(owner, admitted, curos, "l2-alliance-report-rebel")
+            .await?
+            .0,
+        NpcIntentDisposition::Rejected
+    );
+
+    arrive(
+        owner,
+        admitted,
+        TilePos {
+            x: 33046,
+            y: 31295,
+            floor: -7,
+        },
+    )
+    .await?;
+    let door = object_target(
+        owner,
+        TilePos {
+            x: 33047,
+            y: 31295,
+            floor: -7,
+        },
+        1,
+    )?;
+    let command = admitted.continuity.next_command_id;
+    assert_eq!(
+        use_target(owner, admitted, command, &door).await?,
+        UseDisposition::Committed
+    );
+
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?;
+    native
+        .install_companion_policies(&mut *owner.runtime.lock().await)
+        .map_err(debug)?;
+    arrive(
+        owner,
+        admitted,
+        TilePos {
+            x: 33058,
+            y: 31299,
+            floor: -7,
+        },
+    )
+    .await?;
+    super::grizzly_npc_fixtures::questpc8_campaign::hunt(
+        owner,
+        admitted,
+        "oteryn:creature.renegade_orc",
+        1,
+        9802,
+    )
+    .await?;
+    assert_eq!(stage(h, DOOR).await?, Some(1));
+
+    arrive(
+        owner,
+        admitted,
+        TilePos {
+            x: 33155,
+            y: 31298,
+            floor: -3,
+        },
+    )
+    .await?;
+    assert_eq!(
+        grant(owner, admitted, curos, "l2-alliance-report-rebel")
+            .await?
+            .0,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(stage(h, QUESTLINE).await?, Some(2));
+    assert_eq!(
+        grant(owner, admitted, curos, "l2-alliance-tower").await?.0,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(stage(h, QUESTLINE).await?, Some(3));
+    let ball = object_target(
+        owner,
+        TilePos {
+            x: AT.x,
+            y: AT.y,
+            floor: AT.floor,
+        },
+        2,
+    )?;
+    let command = admitted.continuity.next_command_id;
+    assert_eq!(
+        use_target(owner, admitted, command, &ball).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(stage(h, QUESTLINE).await?, Some(4));
+
+    assert_eq!(
+        grant(owner, admitted, curos, "l2-alliance-finish").await?.0,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(stage(h, QUESTLINE).await?, Some(5));
+    assert_eq!(carried(h, 10217).await?, 1);
+    assert_eq!(
+        grant(owner, admitted, curos, "l2-alliance-finish").await?.0,
+        NpcIntentDisposition::Rejected
+    );
+    assert_eq!(carried(h, 10217).await?, 1);
+    let completed: bool = sqlx::query_scalar(
+        "SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE quest_key=$1",
+    ).bind(QUEST).fetch_one(&h.pool).await?;
+    assert!(completed);
     Ok(())
 }

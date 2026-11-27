@@ -605,6 +605,8 @@ pub(super) async fn exercise(
         boss.actor,
         boss.generation,
         super::annihilator_combat::PALADIN_POTION,
+        // Start healing when the Monk can use the potion's full 580 HP roll.
+        580,
         ChaseMode::Chase,
     )
     .await?;

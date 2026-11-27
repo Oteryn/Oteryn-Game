@@ -707,6 +707,11 @@
           "minimum": 1,
           "maximum": 4294967295
         },
+        "maximum_level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
         "requires_addons": {
           "type": "array",
           "maxItems": 8,

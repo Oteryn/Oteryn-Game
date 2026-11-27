@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = "content/quests/world-callbacks/qready1-clocks.json"
 LANDMARK = "tools/content-schema/world-authoring/samples/qready1-clock-landmarks.json"
+CAPTAIN = "oteryn:quest-callback/captain-iglues-left-chest"
 CAULDRON = (32769, 32026, -8)
 RAVEN = (33497, 32196, -7)
 BEWITCHED = "oteryn:quest-callback/qready1-bewitched-contribution"
@@ -102,6 +103,31 @@ def build(root=ROOT):
         "item_reward": {"item": "oteryn:item.tibia.i5953", "count": 1, "contents": []},
         "item_reward_cycle": herb["state_ops"][0]["track"],
     }
+    captain = callback(
+        CAPTAIN,
+        "oteryn:quest.captain_iglues_treasure_quest",
+        (32038, 32121, -13),
+        2472,
+        86_400,
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_books_3.lua:2937-2951",
+    )
+    captain["sources"].append("tibiawiki:Captain Iglues Treasure Quest/Spoiler:1013321:daily-respawn")
+    captain["selector"]["native"] = {
+        "position": captain["selector"]["position"],
+        "ordinal": 1,
+        "appearance": 2472,
+    }
+    captain["effects"] = {
+        "item_reward": {
+            "item": "oteryn:item.tibia.i3506",
+            "count": 1,
+            "text": "Treasure of Captain Iglue",
+            "additional": [{"item": "oteryn:item.tibia.i3579", "count": 12}],
+        },
+        "item_reward_cycle": captain["state_ops"][0]["track"],
+    }
+    captain["requires_world_admission"] = True
+    captain["failure_message"] = "The chest is empty."
     landmark = {
         "schema": "OTERYN_AUTHORED_QUEST_LANDMARK/v1",
         "basis": "CHOSEN_OTERYN_APPROXIMATION",
@@ -113,7 +139,7 @@ def build(root=ROOT):
         "area": "oteryn:content.area.subregion.green_claw_swamp",
         "note": "Chosen walkable room one floor beneath Green Claw Swamp; source map and Item are retained, placement is Oteryn-authored.",
     }
-    return {OUTPUT: {"schema": 1, "callbacks": [cauldron, herb]}, LANDMARK: landmark}
+    return {OUTPUT: {"schema": 1, "callbacks": [captain, cauldron, herb]}, LANDMARK: landmark}
 
 
 if __name__ == "__main__":

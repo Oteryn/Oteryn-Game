@@ -519,15 +519,49 @@ pub(crate) async fn apply(
         .chain_update(callback.key.as_bytes())
         .finalize();
     for progress in &callback.achievement_progress {
-        super::super::account_achievement::add_progress(
-            tx,
-            fence.character_id,
-            &progress.key,
-            progress.target,
-            "oteryn:quest-reward",
-            &progress_event,
-        )
-        .await?;
+        const CAVE_COMPLETIONIST: &str = "oteryn:achievement/cave_completionist";
+        if progress.key == CAVE_COMPLETIONIST {
+            // Both NPC routes hold the appearance account lock and have already
+            // written this purchase. Bazaar transfers Character progress but
+            // keeps the addon unlocks with the account that bought them.
+            let cosmetics = admission
+                .native
+                .cosmetics()
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            let mut owned = 0;
+            for addon in 1..=2 {
+                if super::super::character_appearance::podium_cosmetic_owned(
+                    tx,
+                    fence.character_id,
+                    cosmetics,
+                    EarnedCosmetic::Addon("oteryn:outfit.cave_explorer", addon),
+                )
+                .await?
+                {
+                    owned += 1;
+                }
+            }
+            super::super::account_achievement::record_owned_progress(
+                tx,
+                fence.character_id,
+                &progress.key,
+                progress.target,
+                "oteryn:quest-reward",
+                &progress_event,
+                owned,
+            )
+            .await?;
+        } else {
+            super::super::account_achievement::add_progress(
+                tx,
+                fence.character_id,
+                &progress.key,
+                progress.target,
+                "oteryn:quest-reward",
+                &progress_event,
+            )
+            .await?;
+        }
     }
     if let Some(achievement) = achievement {
         let mut grant = achievement.clone();

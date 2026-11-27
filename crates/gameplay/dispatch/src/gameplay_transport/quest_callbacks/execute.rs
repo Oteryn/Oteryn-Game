@@ -253,6 +253,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return UseDisposition::NothingToUse;
         }
+        if callback.key == oteryn_gameplay_quests::quest::barbarian_mead::AWAKE_BEAR {
+            let QuestCause::Use(command) = cause else {
+                return UseDisposition::Rejected;
+            };
+            return self.bite_awake_bear(runtime, states, map, actor, command);
+        }
         if callback.effects.reward_door.is_some() {
             return self
                 .execute_reward_door(
@@ -275,6 +281,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || callback
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
+        if callback.chayenne_timed_lever()
+            && let Some([resting, _]) = callback.lever
+        {
+            if close {
+                return if map.facts.apply_quest_callback(
+                    key,
+                    expected_revision,
+                    crate::map::view::EntryFacts {
+                        appearance_id: resting,
+                        ..after
+                    },
+                    &[],
+                    &[],
+                    true,
+                    None,
+                ) {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::StaleState
+                };
+            }
+            if map
+                .facts
+                .quest_callback_cooldown_pending(key, self.owner_now().get())
+            {
+                return UseDisposition::NothingToUse;
+            }
+        }
         if callback.key == super::amphoras::GATE {
             map.facts.expire_movement_items(self.owner_now().get());
         }
@@ -656,6 +690,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::NotPossible;
         }
         let mut destination = callback.teleport;
+        if let Some(target) = destination
+            && callback
+                .key
+                .starts_with("oteryn:quest-callback/engenc/asura/")
+            && (callback.key.ends_with("/door") || callback.key.ends_with("/library-door"))
+            && let Some(at) = native(expected.position())
+        {
+            // The same authorized USE can cross in either direction.
+            if target.x != pos.x && at.x == target.x {
+                let Some(x) = pos
+                    .x
+                    .checked_add_signed(if target.x > pos.x { -1 } else { 1 })
+                else {
+                    return UseDisposition::Rejected;
+                };
+                destination = Some(Position {
+                    x,
+                    y: pos.y,
+                    floor: pos.floor,
+                });
+            } else if target.x == pos.x && at.y == target.y {
+                let Some(y) = pos
+                    .y
+                    .checked_add_signed(if target.y > pos.y { -1 } else { 1 })
+                else {
+                    return UseDisposition::Rejected;
+                };
+                destination = Some(Position {
+                    x: pos.x,
+                    y,
+                    floor: pos.floor,
+                });
+            }
+        }
+        if callback.key == "oteryn:quest-callback/engenc/asura/orchid/library-door"
+            && let Some(landing) = destination
+            && let Ok(arrival) = crate::map::floor::resolve_teleport_arrival(
+                self.movement_cells(),
+                crate::content::LogicalCell {
+                    x: i32::from(landing.x),
+                    y: i32::from(landing.y),
+                    z: -i32::from(landing.floor),
+                },
+            )
+        {
+            let (Ok(x), Ok(y), Ok(floor)) = (
+                u16::try_from(arrival.x),
+                u16::try_from(arrival.y),
+                i8::try_from(-arrival.z),
+            ) else {
+                return UseDisposition::Rejected;
+            };
+            destination = Some(Position { x, y, floor });
+        }
         if let Some(remote) = &callback.remote_teleport {
             let p = tile(remote.position);
             let Some(base) = map.overlay.base().tile(p.x, p.y, p.floor) else {
@@ -1702,7 +1790,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // durable success. Commit latency must not shorten its visible lifetime.
             if let Some(crate::map::facts::QuestCallbackProjection::TimedPassages {
                 due,
-                source_reset,
+                source_timer,
                 ..
             }) = &mut projection
             {
@@ -1714,7 +1802,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return UseDisposition::Exhausted;
                 };
                 *due = deadline;
-                if let Some((source_due, _)) = source_reset {
+                if let Some((source_due, _)) = source_timer {
                     let Some(delay) = callback.effects.reset_after_ms else {
                         return UseDisposition::Rejected;
                     };
@@ -1925,8 +2013,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             map.facts.emit_movement_effect(pos, 46);
         }
         if let Some(magic) = &callback.effects.magic {
-            map.facts
-                .emit_movement_effect(tile(magic.position), magic.effect);
+            let position = tile(magic.position);
+            map.facts.emit_movement_effect(position, magic.effect);
+            // The map publication can follow a recovered durable commit.
+            // A repeat belongs to that publication, just like the immediate cue.
+            if let Some(delay) = callback.effects.magic_repeat_after_ms
+                && let Some(due) = self.owner_now().get().checked_add(u64::from(delay) * 1_000)
+                && map
+                    .facts
+                    .schedule_movement_effect(due, position, magic.effect)
+            {
+                states.owner_wake.notify_one();
+            }
         }
         if let Some(effect) = callback
             .effects

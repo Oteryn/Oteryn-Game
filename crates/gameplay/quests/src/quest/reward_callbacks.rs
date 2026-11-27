@@ -317,6 +317,8 @@ pub struct RewardCallback {
     pub addon_only: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub maximum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires_completed_quests: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -582,12 +584,14 @@ struct Document {
 
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/cartography-101.json"),
     include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/classic-missions.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
     OUTFIT_COMPLETIONS,
     include_str!("../../../../../content/quests/npc-callbacks/ape-city.json"),
     include_str!("../../../../../content/quests/npc-callbacks/beginning.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/classic-quest-rewards.json"),
     include_str!("../../../../../content/quests/npc-callbacks/classic-quests.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
@@ -597,6 +601,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/forbidden-fruit.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/newhaven-defence.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m09-rookie.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-guardcatcher.json"),
@@ -683,9 +688,22 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, 
 pub fn offered_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
     let mut callbacks = load_for(catalogue)?;
     // A replacement can retire a source offer only in a catalogue that admits it.
-    callbacks.retain(|callback| catalogue.transition(&callback.key).is_some());
+    callbacks.retain(|callback| {
+        catalogue.transition(&callback.key).is_some()
+            && !phantom_army_source_only(&callback.key)
+            && super::authored_bindings::personal_event_offered(callback)
+    });
     retain_offered_callbacks(&mut callbacks);
     Ok(callbacks)
+}
+
+// Battlefield settlement is still held. The chosen saved-state report is the
+// sole executable reward owner, including for characters already at stage 20.
+pub(super) fn phantom_army_source_only(key: &str) -> bool {
+    matches!(
+        key,
+        "oteryn:quest-reward/l2-zalamon-phantom-accept" | "oteryn:quest-reward/l2-zalamon-finish"
+    )
 }
 
 /// Select one carried-use programme before evaluating its writable guards.
@@ -1325,6 +1343,8 @@ fn validate_document_with_capacity(
             || c.magic_effects.iter().any(|cue| cue.effect_id().is_none())
             || c.storage.len() > super::QUESTSTATE0_RL_02
             || c.minimum_level == Some(0)
+            || c.maximum_level
+                .is_some_and(|max| c.minimum_level.is_none_or(|min| max < min))
             || tracks.len() != c.storage.len()
             || c.requires_actor_conditions.len() > 8
             || c.requires_actor_conditions
@@ -1728,6 +1748,34 @@ const ROOK_CITIZEN_BEFORE_NORMA_RESTART: [u8; 32] = [
     0x3b, 0x94, 0x9b, 0x19, 0x08, 0x96, 0x3c, 0x93, 0x5a, 0x57, 0xfb, 0x99, 0x24, 0x4d, 0xef, 0x4a,
 ];
 
+// Active definitions on main at 3e0991642318 before the source reward changes.
+const SOURCE_REWARD_PREDECESSORS: [(&str, [u8; 32]); 3] = [
+    (
+        "oteryn:quest.friends_and_traders",
+        [
+            0x0a, 0x66, 0x58, 0x93, 0xaa, 0x6b, 0x60, 0x28, 0x83, 0xc7, 0x1b, 0xfe, 0xe7, 0x86,
+            0xa7, 0x1e, 0x86, 0xb2, 0xb9, 0xd3, 0xfd, 0xbf, 0xfe, 0xdf, 0x0c, 0xe6, 0x19, 0xf1,
+            0x71, 0x56, 0xd2, 0x23,
+        ],
+    ),
+    (
+        "oteryn:quest.nightmare_outfits_quest",
+        [
+            0x34, 0xb3, 0x42, 0x08, 0xae, 0xb0, 0x32, 0x1b, 0xb2, 0xa6, 0x0b, 0xb2, 0x0d, 0xe7,
+            0x52, 0x1a, 0x34, 0x85, 0x15, 0x3d, 0x03, 0x38, 0xc1, 0xe8, 0xb7, 0x12, 0x69, 0xc2,
+            0x2e, 0x83, 0x6d, 0x9d,
+        ],
+    ),
+    (
+        "oteryn:quest.oramond_quest",
+        [
+            0x8f, 0xfb, 0x41, 0x42, 0x09, 0xf6, 0x42, 0xf1, 0xfe, 0x04, 0x6e, 0x24, 0x47, 0x68,
+            0x45, 0x7c, 0x3d, 0x68, 0x22, 0x5e, 0x28, 0x9e, 0xb2, 0x07, 0x20, 0xed, 0xb3, 0x8c,
+            0x25, 0xc1, 0x9e, 0xd6,
+        ],
+    ),
+];
+
 // Active definitions on 3e099164 before adding full-outfit reward branches.
 const BEFORE_FULL_OUTFIT_REWARDS: [(&str, [u8; 32]); 5] = [
     (
@@ -1799,6 +1847,7 @@ pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue,
     ]
     .into_iter()
     .chain(BEFORE_FULL_OUTFIT_REWARDS)
+    .chain(SOURCE_REWARD_PREDECESSORS)
     {
         let predecessors = catalogue.predecessors.entry(quest.into()).or_default();
         if !predecessors.iter().any(|entry| entry.hash == hash) {
@@ -1835,9 +1884,10 @@ fn extend_document(
 }
 fn extend_callbacks(
     catalogue: QuestStateCatalogue,
-    callbacks: Vec<RewardCallback>,
+    mut callbacks: Vec<RewardCallback>,
     declarations: Vec<TrackDeclaration>,
 ) -> Result<QuestStateCatalogue, String> {
+    callbacks.retain(|callback| !phantom_army_source_only(&callback.key));
     let npc_legacy = catalogue.npc_legacy.clone();
     let published = published_markers::keys()?;
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
@@ -2082,121 +2132,168 @@ fn later_outfit_reward(callback: &RewardCallback) -> bool {
         )
 }
 
+type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
+const PUBLISHED_REWARD_PREDECESSORS: &[DefinitionPin] = &[
+    (
+        "oteryn:quest.brotherhood_outfits_quest",
+        super::published_quest_pins::BROTHERHOOD_BEFORE_DREAD_LORD,
+        &[(
+            "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/door",
+            0,
+        )],
+    ),
+    (
+        "oteryn:quest.sam_s_old_backpack_quest",
+        SAMS_BACKPACK_BEFORE_KROOX_ALIAS,
+        &[],
+    ),
+    // Main at 3e09916423, before the Marid source dialogue and purchase.
+    (
+        "oteryn:quest.factions",
+        [
+            0x2b, 0xcb, 0x10, 0x95, 0x3a, 0xe9, 0x88, 0x92, 0x73, 0x76, 0x28, 0x89, 0xd2, 0x24,
+            0xe7, 0xf8, 0xf6, 0xd2, 0xd9, 0x1f, 0xcb, 0x10, 0x0c, 0x6a, 0x74, 0xa0, 0x33, 0x22,
+            0x71, 0x34, 0xc2, 0x10,
+        ],
+        &[],
+    ),
+    (
+        "oteryn:quest.the_djinn_war_marid_faction",
+        [
+            0x78, 0xef, 0x32, 0xdc, 0xb4, 0x25, 0xf4, 0x8e, 0x5d, 0x29, 0xa4, 0x57, 0x3d, 0x01,
+            0xc5, 0xc1, 0xb5, 0xae, 0x7a, 0x1b, 0x82, 0xec, 0x04, 0xf2, 0x9c, 0x0b, 0x7c, 0xf7,
+            0x35, 0x39, 0xdb, 0x3c,
+        ],
+        &[("oteryn:quest-progress/storage/30022", 0)],
+    ),
+    // Main at 492ca0e6ba, before Package C.
+    (
+        "oteryn:quest.treasure_hunt_quest",
+        [
+            0xf5, 0x96, 0x11, 0x56, 0xeb, 0xf0, 0x43, 0x9a, 0x52, 0x2a, 0x95, 0xe0, 0x77, 0x22,
+            0x87, 0x88, 0x67, 0xa3, 0x26, 0x3e, 0x14, 0x0c, 0x11, 0x35, 0x81, 0xdb, 0x8f, 0xa7,
+            0x31, 0x10, 0x9f, 0x22,
+        ],
+        &[
+            ("oteryn:quest-progress/m09/treasure/ingots", -1),
+            ("oteryn:quest-progress/m09/treasure/telescope", -1),
+        ],
+    ),
+    // Main at 3e0991642318, before the donor content update.
+    (
+        "oteryn:quest.fire_fighter_outfits_quest",
+        [
+            0x61, 0x6b, 0x48, 0xd5, 0xb4, 0xc3, 0x99, 0x2f, 0x3a, 0x3d, 0xda, 0x42, 0x71, 0x5b,
+            0xc2, 0x21, 0x98, 0x03, 0x74, 0x66, 0x41, 0x65, 0x0a, 0xcb, 0xbc, 0x88, 0x41, 0xa6,
+            0x3e, 0x4b, 0xe2, 0x97,
+        ],
+        &[],
+    ),
+    (
+        "oteryn:quest.giant_smithhammer_quest",
+        [
+            0x50, 0xbc, 0xf5, 0xc0, 0x2d, 0xbb, 0xbd, 0x3a, 0x4a, 0xc6, 0x32, 0x6d, 0xcd, 0x43,
+            0xea, 0x56, 0x3f, 0xa9, 0x6f, 0xc8, 0xb1, 0xca, 0x5d, 0x92, 0x74, 0xd3, 0xaa, 0x98,
+            0x9a, 0x04, 0xd2, 0x15,
+        ],
+        &[],
+    ),
+    (
+        "oteryn:quest.glooth_engineer_outfits_quest",
+        [
+            0xc2, 0xc9, 0x4f, 0x5e, 0x18, 0xa4, 0xea, 0x58, 0x7c, 0x64, 0xc1, 0xaa, 0x09, 0x8f,
+            0xfa, 0x45, 0x47, 0xcf, 0xe4, 0x62, 0x8e, 0x7b, 0xbe, 0x1f, 0xc4, 0x63, 0xb2, 0xc8,
+            0xc0, 0xb2, 0x54, 0xe9,
+        ],
+        &[],
+    ),
+    (
+        "oteryn:quest.goblin_merchant_quest",
+        [
+            0x6a, 0x7a, 0xbf, 0x58, 0x6d, 0x27, 0x9c, 0xd8, 0x07, 0xc0, 0xeb, 0xd0, 0x39, 0x67,
+            0xca, 0xb2, 0x11, 0x6f, 0xc3, 0xbb, 0x03, 0x6e, 0x72, 0x07, 0x2a, 0x9a, 0xc1, 0xfc,
+            0xcf, 0x81, 0x12, 0x9b,
+        ],
+        &[],
+    ),
+    (
+        "oteryn:quest.golden_outfits_quest",
+        [
+            0x87, 0xb8, 0xf1, 0x83, 0x13, 0x02, 0xeb, 0xe9, 0x8f, 0xf5, 0xa9, 0x92, 0xae, 0x8a,
+            0x55, 0x06, 0x53, 0x05, 0x4b, 0x15, 0xcf, 0x80, 0xa9, 0x39, 0x60, 0x46, 0x66, 0xbc,
+            0x3b, 0x9d, 0x95, 0x4b,
+        ],
+        &[],
+    ),
+    (
+        "oteryn:quest.grave_danger_quest",
+        [
+            0x9f, 0x3e, 0x5b, 0x1c, 0xb5, 0x14, 0xd0, 0xaa, 0x4c, 0x8b, 0x47, 0x5f, 0xd0, 0x41,
+            0xfc, 0x61, 0x91, 0x07, 0x91, 0xa5, 0x3d, 0xa2, 0xce, 0x3e, 0xbd, 0x1c, 0xc8, 0x0c,
+            0x9d, 0x31, 0xd2, 0xab,
+        ],
+        &[],
+    ),
+    (
+        "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+        [
+            0xee, 0x6c, 0x3e, 0x40, 0x6d, 0xa9, 0xbb, 0x80, 0x0d, 0x0f, 0x73, 0xcd, 0x6f, 0xe7,
+            0x1d, 0xa5, 0xfd, 0x80, 0x64, 0xf3, 0xf0, 0xe6, 0x6c, 0x3c, 0x61, 0x33, 0xde, 0x1e,
+            0x04, 0x5e, 0xd5, 0x29,
+        ],
+        &[],
+    ),
+    // Main at 3e0991642318, before these quest content extensions.
+    (
+        "oteryn:quest.life_ring_quest",
+        [
+            0x5b, 0x03, 0x44, 0xac, 0x44, 0x85, 0x04, 0x2b, 0x62, 0x9c, 0x57, 0xef, 0x07, 0xeb,
+            0xf5, 0x81, 0xea, 0xee, 0x00, 0x12, 0xc2, 0x9c, 0xbc, 0xfb, 0x17, 0xda, 0x26, 0xc2,
+            0x25, 0xd5, 0x31, 0x92,
+        ],
+        &[],
+    ),
+    (
+        "oteryn:quest.liquid_black_quest",
+        [
+            0xe4, 0x26, 0xff, 0x3b, 0x44, 0x76, 0x13, 0xba, 0x25, 0x4d, 0xdb, 0x64, 0x3b, 0xd0,
+            0x90, 0xce, 0x6d, 0x79, 0x5f, 0x4f, 0x78, 0x20, 0x4e, 0xbd, 0x4b, 0xe8, 0xac, 0xd6,
+            0x9d, 0x59, 0xb7, 0x90,
+        ],
+        &[],
+    ),
+    (
+        "oteryn:quest.machinery_of_war_quest",
+        [
+            0x4c, 0x71, 0x7c, 0x70, 0x18, 0x8e, 0x8b, 0x7f, 0xf5, 0x01, 0x9e, 0x32, 0x17, 0x49,
+            0xd6, 0x48, 0x1f, 0x60, 0x8c, 0x90, 0x8f, 0x96, 0xf1, 0x8d, 0x14, 0xb6, 0x3b, 0x64,
+            0xec, 0xf9, 0x76, 0xc0,
+        ],
+        &[],
+    ),
+    (
+        "oteryn:quest.newhaven_quest",
+        [
+            0xc4, 0x5b, 0x8e, 0xdf, 0x60, 0x67, 0x53, 0x36, 0xed, 0x78, 0x0b, 0x44, 0xaa, 0x1b,
+            0xe2, 0x27, 0x69, 0xf2, 0x43, 0xf6, 0x42, 0x95, 0xaa, 0xb0, 0xa8, 0x15, 0x08, 0x3a,
+            0x70, 0xa7, 0x9e, 0x0c,
+        ],
+        &[],
+    ),
+    (
+        "oteryn:quest.tibia_tales",
+        [
+            0x8d, 0x75, 0x51, 0x7e, 0x41, 0x35, 0x9a, 0x25, 0xab, 0xea, 0x65, 0x3c, 0x8f, 0xd4,
+            0x4f, 0xa5, 0xb4, 0xd2, 0x76, 0x8c, 0x14, 0x70, 0xd9, 0xac, 0xaa, 0x94, 0x42, 0xb7,
+            0x3f, 0x54, 0x30, 0x65,
+        ],
+        &[],
+    ),
+];
+
 /// Preserve published definition hashes and absent-track values for changed quests.
 pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
-    type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
-    const PREVIOUS: &[DefinitionPin] = &[
-        (
-            "oteryn:quest.brotherhood_outfits_quest",
-            super::published_quest_pins::BROTHERHOOD_BEFORE_DREAD_LORD,
-            &[(
-                "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/door",
-                0,
-            )],
-        ),
-        (
-            "oteryn:quest.sam_s_old_backpack_quest",
-            SAMS_BACKPACK_BEFORE_KROOX_ALIAS,
-            &[],
-        ),
-        // Main at 3e09916423, before the Marid source dialogue and purchase.
-        (
-            "oteryn:quest.factions",
-            [
-                0x2b, 0xcb, 0x10, 0x95, 0x3a, 0xe9, 0x88, 0x92, 0x73, 0x76, 0x28, 0x89, 0xd2, 0x24,
-                0xe7, 0xf8, 0xf6, 0xd2, 0xd9, 0x1f, 0xcb, 0x10, 0x0c, 0x6a, 0x74, 0xa0, 0x33, 0x22,
-                0x71, 0x34, 0xc2, 0x10,
-            ],
-            &[],
-        ),
-        (
-            "oteryn:quest.the_djinn_war_marid_faction",
-            [
-                0x78, 0xef, 0x32, 0xdc, 0xb4, 0x25, 0xf4, 0x8e, 0x5d, 0x29, 0xa4, 0x57, 0x3d, 0x01,
-                0xc5, 0xc1, 0xb5, 0xae, 0x7a, 0x1b, 0x82, 0xec, 0x04, 0xf2, 0x9c, 0x0b, 0x7c, 0xf7,
-                0x35, 0x39, 0xdb, 0x3c,
-            ],
-            &[("oteryn:quest-progress/storage/30022", 0)],
-        ),
-        // Main at 492ca0e6ba, before Package C.
-        (
-            "oteryn:quest.treasure_hunt_quest",
-            [
-                0xf5, 0x96, 0x11, 0x56, 0xeb, 0xf0, 0x43, 0x9a, 0x52, 0x2a, 0x95, 0xe0, 0x77, 0x22,
-                0x87, 0x88, 0x67, 0xa3, 0x26, 0x3e, 0x14, 0x0c, 0x11, 0x35, 0x81, 0xdb, 0x8f, 0xa7,
-                0x31, 0x10, 0x9f, 0x22,
-            ],
-            &[
-                ("oteryn:quest-progress/m09/treasure/ingots", -1),
-                ("oteryn:quest-progress/m09/treasure/telescope", -1),
-            ],
-        ),
-        // Main at 3e0991642318, before the donor content update.
-        (
-            "oteryn:quest.fire_fighter_outfits_quest",
-            [
-                0x61, 0x6b, 0x48, 0xd5, 0xb4, 0xc3, 0x99, 0x2f, 0x3a, 0x3d, 0xda, 0x42, 0x71, 0x5b,
-                0xc2, 0x21, 0x98, 0x03, 0x74, 0x66, 0x41, 0x65, 0x0a, 0xcb, 0xbc, 0x88, 0x41, 0xa6,
-                0x3e, 0x4b, 0xe2, 0x97,
-            ],
-            &[],
-        ),
-        (
-            "oteryn:quest.giant_smithhammer_quest",
-            [
-                0x50, 0xbc, 0xf5, 0xc0, 0x2d, 0xbb, 0xbd, 0x3a, 0x4a, 0xc6, 0x32, 0x6d, 0xcd, 0x43,
-                0xea, 0x56, 0x3f, 0xa9, 0x6f, 0xc8, 0xb1, 0xca, 0x5d, 0x92, 0x74, 0xd3, 0xaa, 0x98,
-                0x9a, 0x04, 0xd2, 0x15,
-            ],
-            &[],
-        ),
-        (
-            "oteryn:quest.glooth_engineer_outfits_quest",
-            [
-                0xc2, 0xc9, 0x4f, 0x5e, 0x18, 0xa4, 0xea, 0x58, 0x7c, 0x64, 0xc1, 0xaa, 0x09, 0x8f,
-                0xfa, 0x45, 0x47, 0xcf, 0xe4, 0x62, 0x8e, 0x7b, 0xbe, 0x1f, 0xc4, 0x63, 0xb2, 0xc8,
-                0xc0, 0xb2, 0x54, 0xe9,
-            ],
-            &[],
-        ),
-        (
-            "oteryn:quest.goblin_merchant_quest",
-            [
-                0x6a, 0x7a, 0xbf, 0x58, 0x6d, 0x27, 0x9c, 0xd8, 0x07, 0xc0, 0xeb, 0xd0, 0x39, 0x67,
-                0xca, 0xb2, 0x11, 0x6f, 0xc3, 0xbb, 0x03, 0x6e, 0x72, 0x07, 0x2a, 0x9a, 0xc1, 0xfc,
-                0xcf, 0x81, 0x12, 0x9b,
-            ],
-            &[],
-        ),
-        (
-            "oteryn:quest.golden_outfits_quest",
-            [
-                0x87, 0xb8, 0xf1, 0x83, 0x13, 0x02, 0xeb, 0xe9, 0x8f, 0xf5, 0xa9, 0x92, 0xae, 0x8a,
-                0x55, 0x06, 0x53, 0x05, 0x4b, 0x15, 0xcf, 0x80, 0xa9, 0x39, 0x60, 0x46, 0x66, 0xbc,
-                0x3b, 0x9d, 0x95, 0x4b,
-            ],
-            &[],
-        ),
-        (
-            "oteryn:quest.grave_danger_quest",
-            [
-                0x9f, 0x3e, 0x5b, 0x1c, 0xb5, 0x14, 0xd0, 0xaa, 0x4c, 0x8b, 0x47, 0x5f, 0xd0, 0x41,
-                0xfc, 0x61, 0x91, 0x07, 0x91, 0xa5, 0x3d, 0xa2, 0xce, 0x3e, 0xbd, 0x1c, 0xc8, 0x0c,
-                0x9d, 0x31, 0xd2, 0xab,
-            ],
-            &[],
-        ),
-        (
-            "oteryn:quest.hand_of_the_inquisition_outfits_quest",
-            [
-                0xee, 0x6c, 0x3e, 0x40, 0x6d, 0xa9, 0xbb, 0x80, 0x0d, 0x0f, 0x73, 0xcd, 0x6f, 0xe7,
-                0x1d, 0xa5, 0xfd, 0x80, 0x64, 0xf3, 0xf0, 0xe6, 0x6c, 0x3c, 0x61, 0x33, 0xde, 0x1e,
-                0x04, 0x5e, 0xd5, 0x29,
-            ],
-            &[],
-        ),
-    ];
-    for &(quest, hash, defaults) in PREVIOUS {
+    for &(quest, hash, defaults) in PUBLISHED_REWARD_PREDECESSORS {
         if active
             .definition_hash(quest)
             .is_some_and(|current| current != hash)
@@ -2464,6 +2561,162 @@ mod tests {
     }
 
     #[test]
+    fn extended_quests_accept_published_character_progress() -> Result<(), String> {
+        let lowered = crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = lowered.catalogue();
+        for &(quest, hash, defaults) in PUBLISHED_REWARD_PREDECESSORS {
+            assert_ne!(catalogue.definition_hash(quest), Some(hash));
+            let legacy = crate::quest::npc_rules::legacy_defaults(catalogue, quest, &hash)
+                .ok_or_else(|| format!("missing published predecessor for {quest}"))?;
+            assert_eq!(legacy.len(), defaults.len());
+            for &(track, value) in defaults {
+                assert_eq!(legacy.get(track), Some(&value));
+            }
+            assert!(crate::quest::npc_rules::legacy_defaults(catalogue, quest, &[0; 32]).is_none());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn machinery_war_plans_mounts_the_board_and_baxters_report() -> Result<(), String> {
+        let callbacks = load()?;
+        let request = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-reward/chosen/machinery-war-plans-request")
+            .ok_or("Baxter's war plans offer")?;
+        let report = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-reward/chosen/machinery-war-plans-report")
+            .ok_or("Baxter's war plans report")?;
+        assert_eq!(request.npc, "oteryn:npc.baxter");
+        assert_eq!(request.npc, report.npc);
+        assert_eq!(report.keywords, ["war plans"]);
+        assert_eq!(report.experience, Some(1000));
+        assert!(
+            report.take.is_empty(),
+            "the source is a briefing, so there is no item to consume"
+        );
+        let phase = &report.storage[0];
+        assert_eq!((phase.minimum, phase.maximum, phase.set), (2, 2, 3));
+        let world = crate::quest::world_callbacks::load()?;
+        for (side, x, appearance) in [("west", 32974, 8070), ("east", 32975, 8071)] {
+            let key = format!("oteryn:quest-callback/authored-machinery-war-plans-{side}");
+            let board = world
+                .iter()
+                .find(|c| c.key == key)
+                .ok_or("exact war plans board")?;
+            assert_eq!(board.trigger, crate::quest::world_callbacks::Trigger::Use);
+            let selector = board.selector.native.as_ref().ok_or("board selector")?;
+            assert_eq!(
+                selector.position,
+                crate::quest::world_callbacks::Position {
+                    x,
+                    y: 31773,
+                    floor: -8
+                }
+            );
+            assert_eq!((selector.appearance, selector.ordinal), (appearance, 2));
+            assert_eq!(board.storage[0].track, phase.track);
+            assert_eq!(
+                (
+                    board.storage[0].minimum,
+                    board.storage[0].maximum,
+                    board.storage[0].set
+                ),
+                (1, 1, 2)
+            );
+        }
+        assert_eq!(request.minimum_level, Some(50));
+        assert_eq!(
+            request.storage.len(),
+            1,
+            "Baxter can issue all tasks before the first trip"
+        );
+        let briefing = &request.storage[0];
+        assert_eq!(briefing.track, phase.track);
+        assert_eq!(
+            (briefing.minimum, briefing.maximum, briefing.set),
+            (0, 0, 1)
+        );
+        let lowered = crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            lowered
+                .catalogue()
+                .transition(&report.key)
+                .ok_or("live report")?
+                .experience,
+            Some(1000)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn newhaven_defence_mounts_gustavos_twenty_kill_report_and_reward() -> Result<(), String> {
+        let callbacks = load()?;
+        let start = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-reward/chosen/newhaven-defence-start")
+            .ok_or("Gustavo's offer")?;
+        let report = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-reward/chosen/newhaven-defence-report")
+            .ok_or("Gustavo's report")?;
+        assert_eq!(start.npc, "oteryn:npc.gustavo_the_guard");
+        assert_eq!(report.npc, start.npc);
+        assert_eq!(report.experience, Some(800));
+        let item = report.give.as_ref().ok_or("defence reward")?;
+        assert_eq!(
+            (item.item.as_str(), item.count),
+            ("oteryn:item.tibia.i52732", 1)
+        );
+        let lowered = crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        let catalogue = lowered.catalogue();
+        let phase = &start.storage[0].track;
+        let counter = &report.storage[1];
+        assert_eq!(
+            (counter.minimum, counter.maximum, counter.preserve),
+            (20, 20, true)
+        );
+        let objectives: Vec<_> = crate::quest::death_objectives::load()?
+            .iter()
+            .filter(|objective| objective.quest == start.quest)
+            .collect();
+        assert_eq!(objectives.len(), 8);
+        for objective in objectives {
+            assert_eq!((&objective.stage, objective.stage_value), (phase, 0));
+            assert_eq!(
+                (&objective.counter, objective.required),
+                (&counter.track, 20)
+            );
+            assert!(
+                objective
+                    .creature
+                    .starts_with("oteryn:creature.muglex_clan_")
+            );
+            assert!(catalogue.transition(&objective.key).is_some());
+        }
+        assert_eq!(
+            catalogue.track(&counter.track).ok_or("Muglex counter")?.max,
+            20
+        );
+        assert!(catalogue.transition(&report.key).is_some());
+        Ok(())
+    }
+
+    #[test]
+    fn makeshift_outfit_has_no_npc_custody_or_achievement_shortcut() -> Result<(), String> {
+        assert!(
+            load()?
+                .iter()
+                .all(|callback| callback.quest != "oteryn:quest.makeshift_warrior_outfits_quest")
+        );
+        Ok(())
+    }
+
+    #[test]
     fn warmaster_crest_callbacks_refuse_an_owned_target_addon() -> Result<(), String> {
         let rows = super::load()?;
         for (name, addon) in [("crest", 1), ("tribal", 2)] {
@@ -2715,8 +2968,8 @@ mod tests {
         let callbacks = load()?;
         let original = callbacks
             .iter()
-            .find(|c| !c.participants.is_empty())
-            .ok_or("participant source")?;
+            .find(|c| c.key == "oteryn:quest-reward/l5-oriental-female-first-start")
+            .ok_or("Oriental participant source")?;
         for edit in 0..5 {
             let mut callback = serde_json::to_value(original).map_err(|e| e.to_string())?;
             match edit {
@@ -3426,6 +3679,9 @@ mod tests {
         let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
         assert_eq!(qb.len(), 31);
         let added_keys = [
+            "oteryn:quest-reward/l12-cave-explorer-legacy-addon-1",
+            "oteryn:quest-reward/l12-cave-explorer-legacy-addon-2",
+            "oteryn:quest-reward/l12-cave-explorer-legacy-report",
             "oteryn:quest-reward/between-the-lines-phillip-accept",
             "oteryn:quest-reward/l10-brotherhood-dread-lord",
             "oteryn:quest-reward/l10-nightmare-lord-protector",
@@ -3500,6 +3756,11 @@ mod tests {
                     "oteryn:quest-reward/l3-glooth-engineer-first-high"
                         | "oteryn:quest-reward/l3-glooth-engineer-second-after-first"
                         | "oteryn:quest-reward/l3-glooth-engineer-complete-owned"
+                        | "oteryn:quest-reward/l2-battle-mage-book-complete"
+                        | "oteryn:quest-reward/l2-battle-mage-epaulettes-complete"
+                        | "oteryn:quest-reward/sven-mammoth-report"
+                        | "oteryn:quest-reward/l10-nightmare-lord-protector"
+                        | "oteryn:quest-reward/l11-issavi-second"
                         | "oteryn:quest-reward/l10-golden-helmet"
                         | "oteryn:quest-reward/l10-golden-complete-owned"
                 );
@@ -3511,7 +3772,7 @@ mod tests {
                     .is_some(),
                 completes
             );
-            if crown {
+            if callback.key == "oteryn:quest-reward/l4-royal-costume-crown" {
                 assert_eq!(callback.quest, "oteryn:quest.royal_costume_outfits_quest");
                 assert_eq!(
                     (callback.storage[0].minimum, callback.storage[0].set),
@@ -3658,6 +3919,22 @@ mod lane_tests {
             !loaded.catalogue().npc_legacy.is_empty(),
             "adding rewards must preserve the native NPC source binding owner"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn source_reward_predecessors_keep_saved_character_progress() -> Result<(), String> {
+        let state = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = state.catalogue();
+        for (quest, predecessor) in SOURCE_REWARD_PREDECESSORS {
+            assert_ne!(catalogue.definition_hash(quest), Some(predecessor));
+            assert_eq!(
+                super::super::npc_rules::legacy_defaults(catalogue, quest, &predecessor),
+                Some(&BTreeMap::new()),
+                "{quest} needs to accept progress persisted on the exact main base"
+            );
+        }
         Ok(())
     }
 
@@ -4574,6 +4851,73 @@ mod outfit_reward_predecessor_tests {
                 "case {case}"
             );
             assert_eq!(invalid, unchanged, "case {case}");
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod battle_mage_source_tests {
+    use super::*;
+
+    #[test]
+    fn dedoras_reports_increment_permission_and_both_addon_orders_award_exalted()
+    -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("battle-mage")
+            .map_err(|error| format!("{error:?}"))?;
+        let callbacks = offered_for(loaded.catalogue())?;
+        for (keyword, from, to) in [
+            ("isle", 3, 4),
+            ("fishmen", 7, 8),
+            ("asuri", 6, 7),
+            ("order", 2, 3),
+            ("desert", 8, 9),
+            ("museum", 7, 8),
+        ] {
+            let callback = callbacks
+                .iter()
+                .find(|c| {
+                    c.npc == "oteryn:npc.dedoras" && c.key.ends_with(&format!("report-{keyword}"))
+                })
+                .ok_or_else(|| format!("missing Dedoras report for {keyword}"))?;
+            assert_eq!(callback.keywords, [keyword]);
+            assert!(
+                callback
+                    .storage
+                    .iter()
+                    .any(|s| s.track.ends_with("/questline")
+                        && (s.minimum, s.maximum, s.set) == (from, from, to))
+            );
+            assert!(
+                callback
+                    .state_ops
+                    .iter()
+                    .any(|s| s.track.ends_with("/library_permission")
+                        && s.effect
+                            == StateMutation::AddAtLeast {
+                                value: 1,
+                                minimum: 1
+                            })
+            );
+        }
+        for (keyword, taken, other) in [("book", 5, "addon2"), ("epaulettes", 20, "addon1")] {
+            let exalted = callbacks
+                .iter()
+                .find(|c| {
+                    c.npc == "oteryn:npc.dedoras"
+                        && c.keywords.iter().any(|key| key == keyword)
+                        && c.achievement.as_deref()
+                            == Some("oteryn:achievement/exalted_battle_mage")
+                })
+                .ok_or_else(|| format!("missing exalted grant for {keyword}"))?;
+            assert!(
+                exalted
+                    .requires
+                    .iter()
+                    .any(|r| r.track.ends_with(other) && (r.minimum, r.maximum) == (1, 1))
+            );
+            assert_eq!(exalted.take[0].count, taken);
+            assert_eq!(exalted.inventory[0].minimum, u32::from(taken) + 1);
         }
         Ok(())
     }

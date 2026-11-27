@@ -1,4 +1,4 @@
-//! Uzgod: one draconian steel and one obsidian lance for a knife, once per20h.
+//! Uzgod trades one draconian steel and one obsidian lance for a knife once per character.
 use super::*;
 
 pub(super) const NPC: &str = "oteryn:npc.uzgod";
@@ -43,11 +43,16 @@ pub(super) async fn ready(
     tx: &mut Type2Transaction<'_>,
     character: CharacterId,
 ) -> std::result::Result<bool, DurabilityError> {
-    // character_item_fence_is_current already holds the Character root. The same
-    // lock serializes every channel; the server's committed_at is the time authority.
-    let cooling: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_npc_trades WHERE character_id=encode($1,'hex')::uuid AND side=3 AND npc_key='oteryn:npc.uzgod' AND committed_at>floor(extract(epoch FROM statement_timestamp())*1000)::bigint-72000000)")
-        .bind(character.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
-    Ok(!cooling)
+    // Crystal's Uzgod checks and sets a permanent character flag. An existing
+    // committed exchange is equivalent evidence under the Character root lock.
+    let exchanged: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_npc_trades WHERE character_id=encode($1,'hex')::uuid AND side=3 AND npc_key=$2)",
+    )
+    .bind(character.as_bytes().as_slice())
+    .bind(NPC)
+    .fetch_one(&mut ***tx)
+    .await?;
+    Ok(!exchanged)
 }
 
 pub(super) fn plan(request: &NpcTradeRequest, capacity: usize, entries: &[Entry]) -> Result<Plan> {
@@ -127,7 +132,7 @@ pub(super) fn input_for(
 }
 
 impl DurabilityRoot {
-    /// Uzgod's fixed recipe and cross-channel cooldown on the existing NPC trade writer.
+    /// Uzgod's fixed recipe and one-time restriction on the existing NPC trade writer.
     pub async fn exchange_obsidian_knife(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,

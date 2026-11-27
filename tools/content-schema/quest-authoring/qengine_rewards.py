@@ -46,6 +46,11 @@ REWARD_GREETING_OWNERS = {
 }
 
 
+# Sven opens through the native Dialogue fallback, which also admits its
+# conditional greeting handling. Do not assign him a shared reward greeting.
+NATIVE_DIALOGUE_GREETING_NPCS = frozenset({"oteryn:npc.sven"})
+
+
 def reward_greetings(callbacks, inputs, *, root=None):
     root = ROOT if root is None else root
     owners = {}
@@ -86,7 +91,7 @@ def reward_greetings(callbacks, inputs, *, root=None):
     npcs = {c["npc"] for c in callbacks} | {
         "oteryn:npc." + npc for npc in ("alesar", "yaman", "haroun", "nah_bob", "arito")
     }
-    for npc in sorted(npcs - owners.keys()):
+    for npc in sorted(npcs - owners.keys() - NATIVE_DIALOGUE_GREETING_NPCS):
         path = "data-global/npc/" + npc.removeprefix("oteryn:npc.") + ".lua"
         messages = {}
         citations = []
@@ -97,8 +102,12 @@ def reward_greetings(callbacks, inputs, *, root=None):
         ]:
             matches = list(
                 re.finditer(
-                    r"npcHandler:setMessage\(MESSAGE_" + constant + r',\s*"([^"\n]*)"\)',
-                    inputs.get(path, inputs["data/npclib/npc_system/npc_handler.lua"]).decode(),
+                    r"npcHandler:setMessage\(MESSAGE_"
+                    + constant
+                    + r',\s*"([^"\n]*)"\)',
+                    inputs.get(
+                        path, inputs["data/npclib/npc_system/npc_handler.lua"]
+                    ).decode(),
                 )
             )
             origin = path
@@ -116,7 +125,9 @@ def reward_greetings(callbacks, inputs, *, root=None):
                 raise ValueError("ambiguous NPC greeting " + npc + field)
             messages[field] = matches[0].group(1)
             line = inputs[origin][: matches[0].start()].count(b"\n") + 1
-            citations.append(f"crystal:{PIN}:{origin}:{line}:sha256:{sha(inputs[origin])}")
+            citations.append(
+                f"crystal:{PIN}:{origin}:{line}:sha256:{sha(inputs[origin])}"
+            )
         greetings.append({"npc": npc, **messages, "sources": citations})
     return greetings
 
@@ -155,6 +166,7 @@ def donor_inputs():
             "palimuth",
             "yalahari",
             "dedoras",
+            "sven",
             "muriel",
             "the_first_dragon",
             "broken_servant_sentry",
@@ -201,6 +213,9 @@ def donor_inputs():
             "gnomadness",
             "a_sweaty_cyclops",
             "gnommander",
+            "gnomilly",
+            "gnombold",
+            "gnomargery",
             "flickering_soul",
             "bloodshade_rotten",
             "cledwyn",
@@ -272,19 +287,25 @@ def donor_inputs():
             row = next(
                 r
                 for r in manifest["files"]
-                if r["source"] == "crystalserver" and r["revision"] == PIN and r["path"] == path
+                if r["source"] == "crystalserver"
+                and r["revision"] == PIN
+                and r["path"] == path
             )
             raw = corpus.extractfile(row.get("blob_path", row.get("cache_path"))).read()
             if sha(raw) != row["sha256"]:
                 raise ValueError("donor blob changed: " + path)
             result[path] = raw
-        result[qengine_mounts.CATALOGUE_INPUT] = qengine_mounts.read_catalogue_xml(corpus, manifest)
+        result[qengine_mounts.CATALOGUE_INPUT] = qengine_mounts.read_catalogue_xml(
+            corpus, manifest
+        )
     return result
 
 
 def golden_source_prices(source):
     # Crystal charges for armour, helmet, then boots.
-    armour, helmet, boots = map(int, re.findall(rb"player:removeMoneyBank\(([0-9]+)\)", source))
+    armour, helmet, boots = map(
+        int, re.findall(rb"player:removeMoneyBank\(([0-9]+)\)", source)
+    )
     return [armour, boots, helmet]
 
 
@@ -299,7 +320,9 @@ def elane_gloves(inputs):
     ):
         block = source.split(f"-- {start}\n", 1)[1].split(f"-- {end}\n", 1)[0]
         lines = re.findall(r'^\s*"([^"\n]+)",?$', block, re.MULTILINE)
-        item, count = map(int, re.search(r"player:removeItem\((\d+), (\d+)\)", block).groups())
+        item, count = map(
+            int, re.search(r"player:removeItem\((\d+), (\d+)\)", block).groups()
+        )
         gold = int(re.search(r"player:addMoney\((\d+)\)", block)[1])
         branches.append((lines, item, count, gold))
     (free, item, count, gold), (owned, owned_item, owned_count, owned_gold) = branches
@@ -335,7 +358,9 @@ def elane_gloves(inputs):
         "failure_reply": [free[1]],
         "sources": [f"crystal:{PIN}:{path}:172-194:sha256:{sha(raw)}"],
     }
-    callbacks["callbacks"] = [row for row in callbacks["callbacks"] if row["key"] != sale["key"]]
+    callbacks["callbacks"] = [
+        row for row in callbacks["callbacks"] if row["key"] != sale["key"]
+    ]
     callbacks["callbacks"].insert(callbacks["callbacks"].index(addon) + 1, sale)
     validate_callbacks({"schema": 1, "callbacks": [sale]})
 
@@ -343,7 +368,9 @@ def elane_gloves(inputs):
         return row["npc"] == addon["npc"] and row["keywords"] == ["sniper gloves"]
 
     offer = next(
-        row for row in offers["offers"] if matches(row) and row["next_topic"] == addon["topic"]
+        row
+        for row in offers["offers"]
+        if matches(row) and row["next_topic"] == addon["topic"]
     )
     offers["offers"] = [row for row in offers["offers"] if not matches(row)]
     offers["offers"].extend(
@@ -360,7 +387,9 @@ def elane_gloves(inputs):
                 "requires_premium": True,
                 "next_topic": sale_topic,
                 "reply": [owned[0]],
-                "storage": [{**offer["storage"][0], "minimum": 1, "maximum": 1, "set": 1}],
+                "storage": [
+                    {**offer["storage"][0], "minimum": 1, "maximum": 1, "set": 1}
+                ],
             },
             {**offer, "requires_premium": True},
         ]
@@ -376,34 +405,124 @@ def load_module(name, path):
     return module
 
 
+def lost_brother_shop():
+    # Crystal 201189f8 tarun.lua:109-114 gates the exact menu at lines 124-149.
+    source_prices = {
+        "BuyFromPlayer": {
+            11514: 110,
+            283: 5,
+            284: 5,
+            285: 5,
+            21974: 270,
+            10304: 475,
+            10321: 100,
+            7786: 700,
+            21975: 350,
+            10311: 400,
+            5879: 100,
+            3044: 100,
+            2874: 5,
+        },
+        "SellToPlayer": {
+            239: 225,
+            238: 158,
+            7642: 254,
+            266: 50,
+            268: 56,
+            236: 115,
+            237: 108,
+            23375: 650,
+            7643: 379,
+            23373: 488,
+            23374: 488,
+        },
+    }
+    expected = {
+        (f"oteryn:item.tibia.i{item}", direction, price)
+        for direction, items in source_prices.items()
+        for item, price in items.items()
+    }
+    service = "oteryn:service.trade.tarun"
+    directory = ROOT / "content/services/trade"
+    index = json.loads((directory / "index.json").read_bytes())
+    declarations = [
+        row["declaration"]
+        for name in index["shards"]
+        for row in json.loads((ROOT / name).read_bytes())["records"]
+    ]
+    (shop,) = [row for row in declarations if row["identity"]["key"] == service]
+
+    def identity(offer):
+        return (offer["item"]["key"], offer["direction"], offer["unit_price"])
+
+    offers = [offer for offer in shop["offers"] if identity(offer) in expected]
+    if (
+        len(offers) != len(expected)
+        or {identity(offer) for offer in offers} != expected
+    ):
+        raise ValueError("Tarun catalogue differs from Crystal 201189f8 shop")
+    requirement = {
+        "quest": "oteryn:quest.adventurers_guild",
+        "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+        "initial": 0,
+        "minimum": 3,
+        "maximum": 3,
+    }
+    return {
+        "npc": "oteryn:npc.tarun",
+        "service": service,
+        "sources": [
+            (
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:109-149:sha256:"
+                "8e032f7015dd3ee2135ba9552a588a3f26083327e23fb7a1619423486c482fde"
+            )
+        ],
+        "offers": [
+            offer
+            | {"requirements": [requirement]}
+            # Crystal's unqualified vial is the empty fluid variant.
+            | (
+                {"sub_type": 0}
+                if offer["item"]["key"] == "oteryn:item.tibia.i2874"
+                else {}
+            )
+            for offer in offers
+        ],
+    }
+
+
 def cover_legacy_addon_slots(outfits, legacy_outfits, mappings):
-    by_key = {outfit['key']: outfit for outfit in outfits}
+    by_key = {outfit["key"]: outfit for outfit in outfits}
     addon_mappings = {}
     covered = set()
     for mapping in mappings:
-        target = mapping['target']
-        if target['kind'] != 'Addon':
+        target = mapping["target"]
+        if target["kind"] != "Addon":
             continue
-        key, addon = target['outfit_key'], target['addon']
+        key, addon = target["outfit_key"], target["addon"]
         addon_mappings.setdefault((key, addon), []).append(mapping)
         covered.add((key, addon))
-        covered.update((alias, addon) for alias in mapping.get('outfit_aliases', []))
+        covered.update((alias, addon) for alias in mapping.get("outfit_aliases", []))
 
     for alias in legacy_outfits:
-        key = alias['key']
-        prefix, suffix = 'oteryn:content.outfit.', '_outfits'
+        key = alias["key"]
+        prefix, suffix = "oteryn:content.outfit.", "_outfits"
         if not key.startswith(prefix) or not key.endswith(suffix):
             continue
-        canonical_key = 'oteryn:outfit.' + key.removeprefix(prefix).removesuffix(suffix)
+        canonical_key = "oteryn:outfit." + key.removeprefix(prefix).removesuffix(suffix)
         canonical = by_key.get(canonical_key)
-        if canonical is None or any(alias[sex] != canonical[sex] for sex in ('female', 'male')):
+        if canonical is None or any(
+            alias[sex] != canonical[sex] for sex in ("female", "male")
+        ):
             continue
-        for addon in range(1, alias['addon_count'] + 1):
+        for addon in range(1, alias["addon_count"] + 1):
             if (key, addon) in covered:
                 continue
             # Reuse the earned receipt and its existing sex and provenance checks.
             for mapping in addon_mappings.get((canonical_key, addon), []):
-                mapping['outfit_aliases'] = sorted([*mapping.get('outfit_aliases', []), key])
+                mapping["outfit_aliases"] = sorted(
+                    [*mapping.get("outfit_aliases", []), key]
+                )
 
 
 def build():
@@ -439,13 +558,20 @@ def build():
         if sha(raw) != shard["sha256"]:
             raise ValueError("appearance source drift")
         looks.update(
-            {r["source_id"]: r["source_record_sha256"] for r in json.loads(raw)["records"]}
+            {
+                r["source_id"]: r["source_record_sha256"]
+                for r in json.loads(raw)["records"]
+            }
         )
         for record in json.loads(raw)["records"]:
             addon_patterns[record["source_id"]] = (
                 min(
                     next(
-                        (f.get("value", 1) for f in group["sprite_info_fields"] if f["field"] == 2),
+                        (
+                            f.get("value", 1)
+                            for f in group["sprite_info_fields"]
+                            if f["field"] == 2
+                        ),
                         1,
                     )
                     for group in record["frame_groups"]
@@ -512,7 +638,9 @@ def build():
         "sha256": sha(inputs[acquisition_path]),
     }
     source_rows, _ = table_parser.table(inputs[acquisition_path].decode(), "outfits")
-    item_admission.extend_catalogue(outfits, source_rows, looks, addon_patterns, acquisition_source)
+    item_admission.extend_catalogue(
+        outfits, source_rows, looks, addon_patterns, acquisition_source
+    )
     item_packet = item_admission.build(
         json.loads(item_capture_raw), outfits, source, sha(item_capture_raw)
     )
@@ -526,7 +654,9 @@ def build():
         inputs[construction_path].decode(),
         inputs["data/XML/mounts.xml"],
         table_parser,
-        json.loads((ROOT / "content/presentations/bindings/client-ids.json").read_bytes()),
+        json.loads(
+            (ROOT / "content/presentations/bindings/client-ids.json").read_bytes()
+        ),
         {
             "reference": "crystal:" + construction_path,
             "revision": PIN,
@@ -568,7 +698,10 @@ def build():
     for outfit in outfits:
         outfit_looks = sorted([outfit["female"]["id"], outfit["male"]["id"]])
         for grant in item_packet["grants"]:
-            if grant["kind"] not in ("outfit", "addon") or grant.get("look_types") != outfit_looks:
+            if (
+                grant["kind"] not in ("outfit", "addon")
+                or grant.get("look_types") != outfit_looks
+            ):
                 continue
             target = (
                 {"kind": "Outfit", "outfit_key": outfit["key"]}
@@ -628,14 +761,18 @@ def build():
         "revision": PIN,
         "sha256": sha(inputs["data/XML/mounts.xml"]),
     }
-    mounts, mount_mappings = qengine_mounts.populate(ROOT, inputs, looks, mount_source, item_packet)
+    mounts, mount_mappings = qengine_mounts.populate(
+        ROOT, inputs, looks, mount_source, item_packet
+    )
     mappings.extend(mount_mappings)
     lane_programmes = load_module(
         "questpc7_costume_sources",
         "tools/content-schema/quest-authoring/questpc7_outfit_programmes.py",
     )
     lane_programmes.consumptive_mappings(ROOT, outfits, mappings)
-    atlas = load_module("qengine_atlas_palette", "tools/game-atlas-appearances/export.py")
+    atlas = load_module(
+        "qengine_atlas_palette", "tools/game-atlas-appearances/export.py"
+    )
     palette_path = "tools/game-atlas-appearances/export.py"
     palette_source = {
         "reference": palette_path + "#outfit_color",
@@ -665,7 +802,8 @@ def build():
                 "source": acquisition_source,
             }
             for r in item_packet["rules"]
-            if r["mode"] == "random_outfit" and r["donor"].startswith(acquisition_path + ":")
+            if r["mode"] == "random_outfit"
+            and r["donor"].startswith(acquisition_path + ":")
         ],
         "fallbacks": {
             sex: {"outfit_key": "oteryn:outfit.citizen", "colours": [0, 0, 0, 0]}
@@ -689,7 +827,9 @@ def build():
     }
     # NX-5's promoted item grants and mounts remain admitted alongside quest rewards.
     nx5 = json.loads(
-        (ROOT / "tools/content-schema/cosmetics-authoring/nx5-authoring.json").read_bytes()
+        (
+            ROOT / "tools/content-schema/cosmetics-authoring/nx5-authoring.json"
+        ).read_bytes()
     )
     cosmetics.validate(nx5)
     nx5_doc = nx5["document"]
@@ -706,13 +846,18 @@ def build():
         for row in ET.fromstring(inputs["data/XML/mounts.xml"])
         if row.get("name") == "Reliable Ram"
     )
-    if ram.get("clientid") != "1934" or ram.get("speed") != "10" or ram.get("premium") != "no":
+    if (
+        ram.get("clientid") != "1934"
+        or ram.get("speed") != "10"
+        or ram.get("premium") != "no"
+    ):
         raise ValueError("Reliable Ram source identity drift")
     ram_key = "oteryn:content.mount.reliable_ram"
     admitted_ram = [row for row in doc["mounts"] if row["key"] == ram_key]
     if (
         len(admitted_ram) != 1
-        or admitted_ram[0]["look"] != {"id": 1934, "source_record_sha256": ram_look_hash}
+        or admitted_ram[0]["look"]
+        != {"id": 1934, "source_record_sha256": ram_look_hash}
         or admitted_ram[0]["speed_bonus"] != 10
         or admitted_ram[0]["premium"] is not False
     ):
@@ -732,7 +877,7 @@ def build():
             existing = next(m for m in mappings if m["grant_key"] == row["grant_key"])
             if existing["target"] != row["target"]:
                 existing["outfit_aliases"] = [row["target"]["outfit_key"]]
-    cover_legacy_addon_slots(outfits, nx5_doc['outfits'], mappings)
+    cover_legacy_addon_slots(outfits, nx5_doc["outfits"], mappings)
     # Taming uses the same production cosmetics owner as quest/item grants.
     taming_cosmetics.append(ROOT, doc, looks)
     nx5_promotions = {row["path"]: row for row in nx5["promotions"]}
@@ -828,7 +973,9 @@ def build():
                 "topic": topic,
                 "next_topic": next_topic,
                 "storage": states,
-                "take": [{"item": f"oteryn:item.tibia.i{i}", "count": n} for i, n in take],
+                "take": [
+                    {"item": f"oteryn:item.tibia.i{i}", "count": n} for i, n in take
+                ],
                 "give": None
                 if give is None
                 else {
@@ -840,9 +987,15 @@ def build():
                 if outfit is None
                 else {"outfit": "oteryn:outfit." + outfit[0], "addons": outfit[1]},
                 "achievement": achievement
-                or ("oteryn:achievement/backpack_tourist" if name == "sam-backpack" else None),
+                or (
+                    "oteryn:achievement/backpack_tourist"
+                    if name == "sam-backpack"
+                    else None
+                ),
                 "reply": ["Thank you for your help."],
-                "sources": [source or f"crystal:{PIN}:{path}:sha256:{sha(inputs[path])}"],
+                "sources": [
+                    source or f"crystal:{PIN}:{path}:sha256:{sha(inputs[path])}"
+                ],
             }
         )
         if fee is not None:
@@ -896,7 +1049,11 @@ def build():
         "tibia_tales",
         "costello",
         ["holy water"],
-        [storage(prefix + "u8_1/rest_in_hallowed_ground/questline", 1, 1, preserve=True)],
+        [
+            storage(
+                prefix + "u8_1/rest_in_hallowed_ground/questline", 1, 1, preserve=True
+            )
+        ],
         next_topic=3,
     )
     # The offer is conversation-only and deliberately excluded from the durable callback list.
@@ -930,7 +1087,9 @@ def build():
             "topic": 0,
             "next_topic": 1,
             "reply": ["What would you like me to forge?"],
-            "storage": [storage(prefix + "u7_8/knight_outfits/addon_sword", 1, 1, preserve=True)],
+            "storage": [
+                storage(prefix + "u7_8/knight_outfits/addon_sword", 1, 1, preserve=True)
+            ],
         },
         {
             "npc": offer["npc"],
@@ -983,7 +1142,9 @@ def build():
                 **trade,
                 "key": trade["key"] + "-complete",
                 "requires": [{"track": other_track, "minimum": 1, "maximum": 1}],
-                "requires_addons": [{"outfit": trade["outfit"]["outfit"], "addons": other_addon}],
+                "requires_addons": [
+                    {"outfit": trade["outfit"]["outfit"], "addons": other_addon}
+                ],
                 "achievement": "oteryn:achievement/" + achievement,
                 "sources": [
                     *trade["sources"],
@@ -1023,11 +1184,19 @@ def build():
                 "topic": 0,
                 "next_topic": 60 + bit - 1,
                 "storage": callbacks[-1]["storage"],
-                "reply": ["Can I have that " + ("serpent" if bit == 1 else "tribal") + " crest?"],
+                "reply": [
+                    "Can I have that "
+                    + ("serpent" if bit == 1 else "tribal")
+                    + " crest?"
+                ],
             }
         )
         finish_outfit(
-            frontier + "warmaster_addon_" + str(3 - bit), 3 - bit, "master_of_war", 42269, 795619
+            frontier + "warmaster_addon_" + str(3 - bit),
+            3 - bit,
+            "master_of_war",
+            42269,
+            795619,
         )
     for name, bit, item, words in [
         ("cape", 1, 11701, ["cape", "first addon"]),
@@ -1044,7 +1213,9 @@ def build():
             outfit=("wayfarer", bit),
             topic=bit,
         )
-        callbacks[-1]["requires_completed_quests"] = ["oteryn:quest.the_spirit_will_get_you_quest"]
+        callbacks[-1]["requires_completed_quests"] = [
+            "oteryn:quest.the_spirit_will_get_you_quest"
+        ]
         callbacks[-1]["requires_premium"] = True
         callbacks[-1]["addon_only"] = True
         offers.append(
@@ -1055,10 +1226,16 @@ def build():
                 "next_topic": bit,
                 "storage": callbacks[-1]["storage"],
                 "requires": [
-                    {"track": "oteryn:quest-progress/l6/spirit/stage", "minimum": 2, "maximum": 2}
+                    {
+                        "track": "oteryn:quest-progress/l6/spirit/stage",
+                        "minimum": 2,
+                        "maximum": 2,
+                    }
                 ],
                 "reply": [
-                    "Do you have the " + ("old cape" if bit == 1 else "sedge hat") + " with you?"
+                    "Do you have the "
+                    + ("old cape" if bit == 1 else "sedge hat")
+                    + " with you?"
                 ],
             }
         )
@@ -1078,7 +1255,9 @@ def build():
         # Palimuth's completion checks questline only; Yalahari also requires
         # his side. The remaining tracks are assignments, not prerequisites.
         if npc == "yalahari":
-            states.insert(1, storage(yalahar + "side_decision", side, side, preserve=True))
+            states.insert(
+                1, storage(yalahar + "side_decision", side, side, preserve=True)
+            )
         add(
             "l1-yalaharian-base-" + npc,
             "in_service_of_yalahar_quest",
@@ -1089,7 +1268,9 @@ def build():
         )
         path = "data-global/npc/" + npc + ".lua"
         lines = "244-259" if npc == "palimuth" else "246-252"
-        callbacks[-1]["sources"] = [f"crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}"]
+        callbacks[-1]["sources"] = [
+            f"crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}"
+        ]
     for name, side, bit in [("sage", 1, 1), ("villain", 2, 2)]:
         add(
             "l1-yalaharian-" + name,
@@ -1102,7 +1283,8 @@ def build():
             ],
             outfit=("yalaharian", bit),
             topic=6,
-            achievement="oteryn:achievement/yalahari_of_" + ("wisdom" if side == 1 else "power"),
+            achievement="oteryn:achievement/yalahari_of_"
+            + ("wisdom" if side == 1 else "power"),
         )
         page, revision = (62819, 753357) if side == 1 else (62818, 753121)
         callbacks[-1]["sources"].append(
@@ -1130,19 +1312,61 @@ def build():
         }
 
     library = prefix + "u11_80/the_secret_library/"
+    permission = library + "library_permission"
+
+    # The retained corpus and Crystal201189f use identical Sven and Dedoras blobs.
+    def barbarian_and_library_source(npc, lines):
+        path = f"data-global/npc/{npc}.lua"
+        revision = "201189f871d23597b82caf88fd611454a2ddefb8"
+        return f"crystal:{revision}:{path}:{lines}:sha256:{sha(inputs[path])}"
+
+    declarations = [
+        {
+            "key": permission,
+            "quest": "oteryn:quest.the_secret_library_quest",
+            "initial": -1,
+            "min": -1,
+            "max": 7,
+            "writable": True,
+            "sources": [barbarian_and_library_source("dedoras", "90-193")],
+        }
+    ]
+    reports = [
+        ("isle", "small_islands", 4, "153-165"),
+        ("fishmen", "liquid_death", 8, "119-131"),
+        ("asuri", "asuras", 7, "142-153"),
+        ("order", "falcon_bastion", 3, "131-142"),
+        ("desert", "darashia", 9, "114-124"),
+        ("museum", "mo_ta", 8, "104-115"),
+    ]
+    for keyword, name, value, lines in reports:
+        add(
+            "l2-battle-mage-report-" + keyword,
+            "the_secret_library_quest",
+            "dedoras",
+            [keyword],
+            [
+                storage(library + name + "/questline", value - 1, value),
+                storage(library + "questlog", -1, 1, 1),
+            ],
+        )
+        callbacks[-1]["state_ops"] = [
+            {
+                "track": permission,
+                "from": {"kind": "between", "minimum": -1, "maximum": 5},
+                "effect": {"kind": "add_at_least", "value": 1, "minimum": 1},
+            }
+        ]
+        callbacks[-1]["reply"] = ["I will add your findings to the library research."]
+        callbacks[-1]["sources"] = [barbarian_and_library_source("dedoras", lines)]
     library_ready = [
         storage(library + "library_permission", 6, 7),
         storage(library + "questlog", -1, 1, 1),
     ]
-    for name, value in [
-        ("small_islands", 4),
-        ("liquid_death", 8),
-        ("asuras", 7),
-        ("falcon_bastion", 3),
-        ("darashia", 9),
-        ("mo_ta", 8),
-    ]:
-        library_ready.append(storage(library + name + "/questline", value, value, preserve=True))
+    for _, name, value, _ in reports:
+        library_ready.append(
+            storage(library + name + "/questline", value, value, preserve=True)
+        )
     add(
         "l2-battle-mage-base",
         "the_secret_library_quest",
@@ -1172,11 +1396,23 @@ def build():
                 topic=3,
                 requires=library_done
                 + [requirement(other, 1) if complete else requirement(other, -1, 0)],
-                achievement="oteryn:achievement/exalted_battle_mage" if complete else None,
+                achievement="oteryn:achievement/exalted_battle_mage"
+                if complete
+                else None,
+            )
+            callbacks[-1].update(
+                inventory=[
+                    {"item": f"oteryn:item.tibia.i{item}", "minimum": count + 1, "maximum": 4294967295}
+                ],
+                failure_reply=["Bring more of the required materials before we trade."],
+                sources=[barbarian_and_library_source("dedoras", "198-216")],
             )
             if complete:
+                callbacks[-1]["completes"] = True
                 completion = callbacks.pop()
-                completion["sources"].append("https://tibia.fandom.com/?curid=86073&oldid=847545")
+                completion["sources"].append(
+                    "https://tibia.fandom.com/?curid=86073&oldid=847545"
+                )
                 battle_mage_completions.append(completion)
     for word, topic, next_topic in [("addon", 0, 1), ("yes", 1, 2), ("yes", 2, 3)]:
         offers.append(
@@ -1192,8 +1428,111 @@ def build():
                 ],
             }
         )
+    barbarian = prefix + "u8_0/barbarian_test/"
+    ice = "the_ice_islands_quest"
+    stage = barbarian + "questline"
+    for words, topic, next_topic, before, reply in [
+        (["barbarian"], 0, 1, -1, "Ask me about the test to become a barbarian."),
+        (["test"], 0, 2, -1, "Are you willing to take the barbarian test?"),
+        (["test"], 1, 2, -1, "Are you willing to take the barbarian test?"),
+        (["yes"], 2, 3, -1, "Can you take ten sips of our mead without passing out?"),
+        (
+            ["mead", "barbarian mead"],
+            0,
+            4,
+            1,
+            "Did you bring a honeycomb for the mead?",
+        ),
+    ]:
+        offers.append(
+            {
+                "npc": "oteryn:npc.sven",
+                "keywords": words,
+                "topic": topic,
+                "next_topic": next_topic,
+                "storage": [storage(stage, before, before, preserve=True)],
+                "reply": [reply],
+            }
+        )
+    add(
+        "sven-start",
+        ice,
+        "sven",
+        ["yes"],
+        [
+            storage(stage, -1, 1),
+            storage(barbarian + "mission01", -1, 1),
+            storage(prefix + "u8_0/the_ice_islands/questline", 0, 1),
+        ],
+        topic=3,
+    )
+    callbacks[-1]["reply"] = ["Bring me a honeycomb and ask about mead."]
+    add(
+        "sven-honeycomb",
+        ice,
+        "sven",
+        ["yes"],
+        [
+            storage(stage, 1, 2),
+            storage(barbarian + "mission01", 1, 2),
+            storage(barbarian + "mead_total_sips", 0, 0, 2147483647),
+        ],
+        take=[(5902, 1)],
+        topic=4,
+    )
+    callbacks[-1]["reply"] = [
+        "That buys twenty attempts at the mead barrel. Report back once you pass."
+    ]
+    add(
+        "sven-mead-report",
+        ice,
+        "sven",
+        ["mead", "barbarian mead"],
+        [storage(stage, 3, 4), storage(barbarian + "mission02", -1, 1, 0)],
+        give=(7140, 1),
+    )
+    callbacks[-1]["reply"] = [
+        "Take this horn, fill it at the barrel, and use it to calm the bear before hugging it."
+    ]
+    add(
+        "sven-bear-report",
+        ice,
+        "sven",
+        ["hug", "bear hugging"],
+        [storage(stage, 5, 6), storage(barbarian + "mission03", -1, 1, 0)],
+    )
+    callbacks[-1]["reply"] = [
+        "Your last test is to push the mammoth northwest of town. Come back when you succeed."
+    ]
+    add(
+        "sven-mammoth-report",
+        "barbarian_test",
+        "sven",
+        ["mammoth", "mammoth pushing"],
+        [storage("oteryn:quest-progress/native/barbarian_test/completed", -1, 1)],
+        achievement="oteryn:achievement/honorary_barbarian",
+    )
+    callbacks[-1].update(
+        completes=True,
+        participants=[
+            {"quest": "oteryn:quest." + ice, "storage": [storage(stage, 7, 8)]}
+        ],
+        reply=["You passed all three tests. Welcome as an honorary barbarian."],
+    )
+    for name, lines in [
+        ("start", "129-143"),
+        ("honeycomb", "144-152"),
+        ("mead-report", "84-94"),
+        ("bear-report", "96-105"),
+        ("mammoth-report", "107-115"),
+    ]:
+        next(c for c in callbacks if c["key"] == "oteryn:quest-reward/sven-" + name)[
+            "sources"
+        ] = [barbarian_and_library_source("sven", lines)]
     feathers = prefix + "u11_02/the_first_dragon/feathers"
-    first_dragon_victory = "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5"
+    first_dragon_victory = (
+        "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5"
+    )
     add(
         "l2-festive-base",
         "the_first_dragon_quest",
@@ -1255,7 +1594,9 @@ def build():
         )
         callbacks[-1].update(
             requires_outfits=["oteryn:outfit.festive"],
-            achievement_progress=[{"key": "oteryn:achievement/reason_to_celebrate", "target": 2}],
+            achievement_progress=[
+                {"key": "oteryn:achievement/reason_to_celebrate", "target": 2}
+            ],
         )
     elementalist = prefix + "u9_1/elementalist_outfits/"
     add(
@@ -1296,7 +1637,9 @@ def build():
             outfit=("elementalist", bit),
         )
     for before, maximum, first, second in [(-1, 0, 1, 2), (1, 1, 3, 4)]:
-        guard = [storage(elementalist + "outfit", before, before, maximum, preserve=True)]
+        guard = [
+            storage(elementalist + "outfit", before, before, maximum, preserve=True)
+        ]
         offers.append(
             {
                 "npc": "oteryn:npc.broken_servant_sentry",
@@ -1410,7 +1753,9 @@ def build():
             [storage(glooth + "addon" + str(bit), -1, 1, 0)],
             outfit=("glooth_engineer", bit),
             requires=required,
-            achievement="oteryn:achievement/glooth_engineer" if finished_second else None,
+            achievement="oteryn:achievement/glooth_engineer"
+            if finished_second
+            else None,
         )
         callbacks[-1]["requires_outfits"] = ["oteryn:outfit.glooth_engineer"]
         if finished_second:
@@ -1428,20 +1773,10 @@ def build():
         requires=[requirement(glooth + "addon1", 1), requirement(glooth + "addon2", 1)],
         achievement="oteryn:achievement/glooth_engineer",
     )
-    callbacks[-1]["requires_addons"] = [{"outfit": "oteryn:outfit.glooth_engineer", "addons": 3}]
-    callbacks[-1]["completes"] = True
-    declarations = [
-        {
-            "key": votes,
-            "quest": "oteryn:quest.oramond_quest",
-            "initial": -1,
-            "min": -1,
-            "max": 2147483647,
-            "sources": [
-                f"crystal:{PIN}:data-global/npc/ezebeth.lua:93-103:sha256:{sha(inputs['data-global/npc/ezebeth.lua'])}"
-            ],
-        }
+    callbacks[-1]["requires_addons"] = [
+        {"outfit": "oteryn:outfit.glooth_engineer", "addons": 3}
     ]
+    callbacks[-1]["completes"] = True
     # Reward guards load before the native kill adapter installs this exact track.
     declarations.append(
         {
@@ -1450,7 +1785,9 @@ def build():
             "initial": 0,
             "min": 0,
             "max": 1,
-            "sources": ["content/encounters/bosses/selected-first-dragon.json#stage-s5"],
+            "sources": [
+                "content/encounters/bosses/selected-first-dragon.json#stage-s5"
+            ],
         }
     )
     noble = prefix + "u7_8/nobleman_outfits/"
@@ -1536,7 +1873,9 @@ def build():
                 "topic": 15,
                 "next_topic": topic,
                 "storage": guard,
-                "reply": [f"The donation is {silver} silver tokens and {gold} gold tokens."],
+                "reply": [
+                    f"The donation is {silver} silver tokens and {gold} gold tokens."
+                ],
             }
         )
     for words, before, after in [
@@ -1555,7 +1894,9 @@ def build():
         )
     pirate = prefix + "u7_8/pirate_outfits/"
     shattered = prefix + "u7_8/the_shattered_isles/"
-    pirate_owner = "outfit_and_addon_quests"  # retain the admitted shared source track owner
+    pirate_owner = (
+        "outfit_and_addon_quests"  # retain the admitted shared source track owner
+    )
     add(
         "l4-pirate-base",
         pirate_owner,
@@ -1582,7 +1923,9 @@ def build():
                 "topic": before,
                 "next_topic": after,
                 "storage": [storage(sabre, -1, 0, 0, preserve=True)],
-                "reply": ["Bring 100 eye patches, 100 peg legs and 100 hooks in that order."],
+                "reply": [
+                    "Bring 100 eye patches, 100 peg legs and 100 hooks in that order."
+                ],
             }
         )
     for name, before, after, item, topic, words in [
@@ -1904,7 +2247,9 @@ def build():
                 "topic": before,
                 "next_topic": after,
                 "storage": states,
-                "reply": ["Would you bring 100 minotaur leathers for a handmade backpack?"],
+                "reply": [
+                    "Would you bring 100 minotaur leathers for a handmade backpack?"
+                ],
             }
         )
     states = [storage(backpack, 1, 2), storage(mission, 0, 2, 4)]
@@ -1988,7 +2333,9 @@ def build():
             "topic": 0,
             "next_topic": 2,
             "storage": states,
-            "reply": ["Have you brought a legion helmet, 50 honeycombs and 100 chicken feathers?"],
+            "reply": [
+                "Have you brought a legion helmet, 50 honeycombs and 100 chicken feathers?"
+            ],
         }
     )
     # Crystal reoffers the recipe when the mission returns to zero after hand-in.
@@ -2114,7 +2461,9 @@ def build():
             "effect": {"kind": "add", "value": 0},
         }
     ]
-    beggar_offer("hugo", ["outfit"], 0, 5, states, "Have you come to collect your new outfit?")
+    beggar_offer(
+        "hugo", ["outfit"], 0, 5, states, "Have you come to collect your new outfit?"
+    )
     states = [storage(beggar_stage, 6, 7)]
     add("l6-beggar-first-start", general, "simon_the_beggar", ["yes"], states, topic=2)
     callbacks[-1]["requires_outfits"] = ["oteryn:outfit.beggar"]
@@ -2224,11 +2573,15 @@ def build():
         achievement="oteryn:achievement/life_on_the_streets",
     )
     callbacks[-1]["requires_premium"] = True
-    beggar_offer("simon_the_beggar", ["staff"], 0, 7, states, "Did you bring my favourite staff?")
+    beggar_offer(
+        "simon_the_beggar", ["staff"], 0, 7, states, "Did you bring my favourite staff?"
+    )
     for callback in callbacks:
         if callback["key"].startswith("oteryn:quest-reward/l6-beggar-"):
             npc = callback["npc"].split(".")[-1]
-            callback["sources"] = [beggar_source(npc, "55-199" if npc == "hugo" else "84-222")]
+            callback["sources"] = [
+                beggar_source(npc, "55-199" if npc == "hugo" else "84-222")
+            ]
             if callback["achievement"]:
                 callback["sources"].append(
                     "https://tibia.fandom.com/index.php?curid=62859&oldid=753124"
@@ -2566,7 +2919,9 @@ def build():
                 "erayo": "57-114",
                 "atrad": "60-105",
             }[npc]
-            callback["sources"] = [f"crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}"]
+            callback["sources"] = [
+                f"crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}"
+            ]
     # L8: source looktypes are explicit sex-qualified grants, including cross-family rewards.
     for key, maximum, npc in [
         (prefix + "u7_8/hunter_outfits/hunter/addon_glove", 1, "legola"),
@@ -2631,7 +2986,9 @@ def build():
         )
         free, resale, addon = [
             re.findall(r'"([^"\n]+)"', block)
-            for block in re.findall(r"addGloveKeyword\(\{(.*?)\}, function", source, re.DOTALL)
+            for block in re.findall(
+                r"addGloveKeyword\(\{(.*?)\}, function", source, re.DOTALL
+            )
         ]
         source_offer(npc, ["sniper gloves"], 0, 0, [])
         offers[-1].update(
@@ -2658,7 +3015,15 @@ def build():
                 free_glove_offers.extend(offers[-2:])
                 del offers[-2:]
 
-        add("l8-hunter-" + name, general, npc, ["yes"], unclaimed, take=[(5875, 1)], topic=topic)
+        add(
+            "l8-hunter-" + name,
+            general,
+            npc,
+            ["yes"],
+            unclaimed,
+            take=[(5875, 1)],
+            topic=topic,
+        )
         callbacks[-1]["requires_premium"] = True
         targets(("hunter", 2, "male"), ("hunter", 1, "female"))
         add(
@@ -2689,7 +3054,10 @@ def build():
             ["wand", "rod"],
             2,
             3,
-            [(i, 1) for i in (3065, 3066, 3067, 3069, 3070, 3071, 3072, 3073, 3074, 3075)],
+            [
+                (i, 1)
+                for i in (3065, 3066, 3067, 3069, 3070, 3071, 3072, 3073, 3074, 3075)
+            ],
         ),
         ("sulphur", ["sulphur"], 3, 4, [(5904, 10)]),
         ("soul", ["soul stone"], 4, 5, [(5809, 1)]),
@@ -2872,13 +3240,17 @@ def build():
     callbacks[-1]["achievement_progress"] = [
         {"key": "oteryn:achievement/doctor_doctor", "target": 100}
     ]
-    source_offer("ottokar", ["medicine", "medicine pouch", "belongings of deceasead"], 0, 1, [])
+    source_offer(
+        "ottokar", ["medicine", "medicine pouch", "belongings of deceasead"], 0, 1, []
+    )
     for callback in callbacks:
         if callback["key"].startswith("oteryn:quest-reward/l9-"):
             npc = callback["npc"].split(".")[-1]
             path = "data-global/npc/" + npc + ".lua"
             lines = "75-169" if npc == "gnomally" else "61-78"
-            callback["sources"] = [f"crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}"]
+            callback["sources"] = [
+                f"crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}"
+            ]
     from questpc7_selected_rewards import (
         GOLDEN_OWNED_PROMPT,
         golden_owned_confirmation,
@@ -2929,7 +3301,8 @@ def build():
                 "next_topic": topic,
                 "storage": [storage(golden, bit, bit, preserve=True)],
                 "reply": [
-                    f"The chosen commission costs {gold} gold. Do you agree?" + GOLDEN_OWNED_PROMPT
+                    f"The chosen commission costs {gold} gold. Do you agree?"
+                    + GOLDEN_OWNED_PROMPT
                 ],
             }
         )
@@ -2976,7 +3349,9 @@ def build():
         requires_premium=True,
         reply=["Follow the ink traces outside Carlin to find the creature."],
     )
-    source_offer("phillip", ["book"], 0, 1, [storage(book_stage, -1, 0, 0, preserve=True)])
+    source_offer(
+        "phillip", ["book"], 0, 1, [storage(book_stage, -1, 0, 0, preserve=True)]
+    )
     offers[-1]["reply"] = ["A creature escaped from my book. Will you track it down?"]
 
     # Distinct order ranks choose the shared three documents' actual USE branch.
@@ -2995,11 +3370,14 @@ def build():
     )
     bindings = json.loads(
         (
-            ROOT / "tools/content-schema/world-authoring/samples/quest-door-bindings.json"
+            ROOT
+            / "tools/content-schema/world-authoring/samples/quest-door-bindings.json"
         ).read_bytes()
     )
     (tower_track,) = {
-        binding["track"] for binding in bindings["bindings"] if binding["action"] == 41014
+        binding["track"]
+        for binding in bindings["bindings"]
+        if binding["action"] == 41014
     }
     # Both orders write the same door permit under their shared prerequisite quest.
     tower_permit = {
@@ -3029,7 +3407,8 @@ def build():
         ),
     ]:
         quest = family + "_outfits_quest"
-        rank = prefix + "u7_9/" + family + "_outfits/outfits"
+        order = prefix + "u7_9/" + family + "_outfits/"
+        rank = order + "outfits"
         other = prefix + "u7_9/" + opposite + "_outfits/outfits"
         requirements = [requirement(parent, 1), requirement(other, 0)]
         path = f"data-global/npc/{npc}.lua"
@@ -3050,7 +3429,9 @@ def build():
                 give=(item, 1),
                 topic=topic,
                 requires=requirements,
-                achievement="oteryn:achievement/" + achievement if achievement else None,
+                achievement="oteryn:achievement/" + achievement
+                if achievement
+                else None,
             )
             callbacks[-1]["requires_premium"] = True
             if stage in ("join", "leader"):
@@ -3062,18 +3443,24 @@ def build():
                 if branch is None:
                     raise ValueError(f"missing {npc} {stage} confirmation")
                 if stage == "join":
-                    permit = re.search(r"NightmareOutfits\.KnightwatchTowerDoor, (1)\)", branch[1])
+                    permit = re.search(
+                        r"NightmareOutfits\.KnightwatchTowerDoor, (1)\)", branch[1]
+                    )
                     if permit is None:
                         raise ValueError(f"missing {npc} Knightwatch permit")
                     callbacks[-1]["participants"] = [
                         {
                             "quest": parent_quest,
-                            "storage": [storage(tower_track, -1, int(permit[1]), maximum=1)],
+                            "storage": [
+                                storage(tower_track, -1, int(permit[1]), maximum=1)
+                            ],
                         }
                     ]
                     tower_permit["sources"].extend(callbacks[-1]["sources"])
                 else:
-                    document, *additional = re.findall(r"player:addItem\((\d+), (\d+)\)", branch[1])
+                    document, *additional = re.findall(
+                        r"player:addItem\((\d+), (\d+)\)", branch[1]
+                    )
                     if tuple(map(int, document)) != (item, 1) or len(additional) != 1:
                         raise ValueError(f"unexpected {npc} leader gifts")
                     callbacks[-1]["give"]["additional"] = [
@@ -3118,7 +3505,9 @@ def build():
                 achievement="oteryn:achievement/dread_lord",
             )
             callbacks[-1].update(
-                requires_premium=True, sources=[source], reply=["You advanced to Dread Lord rank."]
+                requires_premium=True,
+                sources=[source],
+                reply=["You advanced to Dread Lord rank."],
             )
             source_offer(
                 npc,
@@ -3175,7 +3564,7 @@ def build():
                 achievement="oteryn:achievement/" + achievement,
                 source=source,
             )
-            callbacks[-1].update(requires_premium=True, reply=[exchange[4]])
+            callbacks[-1].update(requires_premium=True, completes=True, reply=[exchange[4]])
             source_offer(
                 npc,
                 ["advancement", "demonic", "essence"],
@@ -3225,13 +3614,30 @@ def build():
                 callback["forbids_outfits"] = ["oteryn:outfit." + family]
             else:
                 callback["requires_outfits"] = ["oteryn:outfit." + family]
-                callback["forbids_addons"] = [{"outfit": "oteryn:outfit." + family, "addons": bit}]
-            document_path = (
-                "data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua"
-            )
+                callback["forbids_addons"] = [
+                    {"outfit": "oteryn:outfit." + family, "addons": bit}
+                ]
+            document_path = "data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua"
             callback["sources"].append(
                 f"crystal:{PIN}:{document_path}:1-69:sha256:{sha(inputs[document_path])}"
             )
+    source_offer(
+        "chavis",
+        ["food"],
+        0,
+        1,
+        [
+            storage(
+                "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/count",
+                5,
+                5,
+                preserve=True,
+            )
+        ],
+    )
+    offers[-1]["reply"] = [
+        "Do you have five roots ready to hand in for a Rathleton vote?"
+    ]
     # L11: source task rewards plus explicitly selected Oteryn qualification desks.
     dream_quest = "dream_warrior_outfits_quest"
     dream_outfit = "oteryn:outfit.dream_warrior"
@@ -3296,10 +3702,17 @@ def build():
                 requires_premium=True,
                 requires_outfits=[dream_outfit],
                 forbids_addons=[{"outfit": dream_outfit, "addons": bit}],
-                achievement_progress=[{"key": "oteryn:achievement/dream_warrior", "target": 2}],
+                achievement_progress=[
+                    {"key": "oteryn:achievement/dream_warrior", "target": 2}
+                ],
             )
         for word, before, after, reply in (
-            ("addon", 0, 6, "Would you like to earn an addon for your Dream Warrior outfit?"),
+            (
+                "addon",
+                0,
+                6,
+                "Would you like to earn an addon for your Dream Warrior outfit?",
+            ),
             (
                 "yes",
                 6,
@@ -3318,7 +3731,9 @@ def build():
             "initial": 0,
             "min": 0,
             "max": 1,
-            "sources": ["owner:chosen-Kilmaresh-s21:report-three-Wanted-outlaws:read-only"],
+            "sources": [
+                "owner:chosen-Kilmaresh-s21:report-three-Wanted-outlaws:read-only"
+            ],
         }
     )
     desks = [
@@ -3381,9 +3796,6 @@ def build():
                 take=[(item, count)],
                 outfit=(family, bit),
                 requires=ready,
-                achievement="oteryn:achievement/cobbled_and_patched"
-                if label == "makeshift" and bit == 2
-                else None,
             )
             callback = callbacks[-1]
             callback.update(
@@ -3393,7 +3805,9 @@ def build():
                 forbids_addons=[{"outfit": "oteryn:outfit." + family, "addons": bit}],
             )
             if bit == 2:
-                callback["requires_addons"] = [{"outfit": "oteryn:outfit." + family, "addons": 1}]
+                callback["requires_addons"] = [
+                    {"outfit": "oteryn:outfit." + family, "addons": 1}
+                ]
                 wiki = {
                     "dream-warrior": "https://tibia.fandom.com/?curid=86660&oldid=848561",
                     "issavi": "https://tibia.fandom.com/?curid=94721&oldid=869754",
@@ -3406,6 +3820,13 @@ def build():
                 callback["sources"].append(
                     "owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each"
                 )
+            if label == "issavi" and bit == 2:
+                callback.update(
+                    achievement="oteryn:achievement/citizen_of_issavi", completes=True
+                )
+                callback["sources"].append(
+                    "https://tibia.fandom.com/index.php?curid=94999&oldid=875550"
+                )
     qualification = prefix + "makeshift_warrior/qualification"
     declarations.append(
         {
@@ -3415,7 +3836,9 @@ def build():
             "min": 0,
             "max": 2,
             "writable": True,
-            "sources": ["owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:s1-s2:gnomadness-role"],
+            "sources": [
+                "owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:s1-s2:gnomadness-role"
+            ],
         }
     )
     add(
@@ -3447,7 +3870,9 @@ def build():
     callbacks[-1]["sources"].append(
         "owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:base-qualification"
     )
-    source_offer("gnomadness", ["salvage"], 0, 11, [storage(qualification, 1, 1, preserve=True)])
+    source_offer(
+        "gnomadness", ["salvage"], 0, 11, [storage(qualification, 1, 1, preserve=True)]
+    )
     # L12: owner-selected fixed hunting trials; native deaths are the only counter writer.
     for label, family, quest, npc, level, counts, materials in [
         (
@@ -3458,15 +3883,6 @@ def build():
             0,
             [("dragons", 20), ("dragon_lords", 20)],
             [(5920, 10), (5882, 10)],
-        ),
-        (
-            "cave-explorer",
-            "cave_explorer",
-            "cave_explorer_outfits_quest",
-            "gnommander",
-            80,
-            [("kills", 20)],
-            [],
         ),
         (
             "fire-fighter",
@@ -3514,43 +3930,267 @@ def build():
             npc,
             [family.replace("_", " ") + " report"],
             [storage(root + "phase", 1, 2)]
-            + [storage(root + track, maximum, maximum, preserve=True) for track, maximum in counts],
+            + [
+                storage(root + track, maximum, maximum, preserve=True)
+                for track, maximum in counts
+            ],
             take=materials,
             outfit=(family, 0),
-            fee={"gold": 1000, "include_bank": False} if label == "cave-explorer" else None,
         )
-        callbacks[-1].update(requires_premium=True, forbids_outfits=["oteryn:outfit." + family])
+        callbacks[-1].update(
+            requires_premium=True, forbids_outfits=["oteryn:outfit." + family]
+        )
         if level:
             callbacks[-1]["minimum_level"] = level
         callbacks[-1]["sources"].append(provenance)
-        if label != "cave-explorer":
-            continue
-        for bit in (1, 2):
-            add(
-                "l12-" + label + "-" + ("first" if bit == 1 else "second"),
-                quest,
-                npc,
-                [family.replace("_", " ") + " addon " + str(bit)],
-                [],
-                outfit=(family, bit),
-                fee={"gold": 2000 if bit == 1 else 3000, "include_bank": False},
-                achievement="oteryn:achievement/cave_completionist" if bit == 2 else None,
+    # The Spike task reports share the same character-owned fame balance.
+    spike = "oteryn:quest-progress/spike/"
+    cave = "cave_explorer_outfits_quest"
+    fame = spike + "fame"
+    fame_max = 2_147_483_647
+    gnommander = "oteryn:npc.gnommander"
+    outfit = "oteryn:outfit.cave_explorer"
+    pin = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/"
+
+    # Keep settlement for published trials already assigned before the Spike offers.
+    legacy_trial = "oteryn:quest-progress/chosen-trial/cave_explorer/"
+    legacy_phase = legacy_trial + "phase"
+    legacy_kills = legacy_trial + "kills"
+    legacy_source = "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+    for key, maximum in [(legacy_phase, 2), (legacy_kills, 20)]:
+        declarations.append(
+            {
+                "key": key,
+                "quest": "oteryn:quest." + cave,
+                "initial": 0,
+                "min": 0,
+                "max": maximum,
+                "writable": True,
+                "sources": [legacy_source],
+            }
+        )
+    add(
+        "l12-cave-explorer-legacy-report",
+        cave,
+        "gnommander",
+        ["cave explorer report"],
+        [storage(legacy_phase, 1, 2), storage(legacy_kills, 20, 20, preserve=True)],
+        outfit=("cave_explorer", 0),
+        fee={"gold": 1000, "include_bank": False},
+    )
+    callbacks[-1].update(
+        minimum_level=80,
+        requires_premium=True,
+        forbids_outfits=[outfit],
+        sources=[legacy_source],
+    )
+    for bit, gold in [(1, 2000), (2, 3000)]:
+        add(
+            f"l12-cave-explorer-legacy-addon-{bit}",
+            cave,
+            "gnommander",
+            [f"cave explorer addon {bit}"],
+            [storage(legacy_phase, 2, 2, preserve=True)],
+            outfit=("cave_explorer", bit),
+            fee={"gold": gold, "include_bank": False},
+        )
+        row = callbacks[-1]
+        row.update(
+            minimum_level=80,
+            requires_premium=True,
+            requires_outfits=[outfit],
+            forbids_addons=[{"outfit": outfit, "addons": bit}],
+            achievement_progress=[
+                {"key": "oteryn:achievement/cave_completionist", "target": 2}
+            ],
+            sources=[legacy_source, "tibiawiki:Cave Completionist:846114"],
+        )
+        if bit == 2:
+            row["requires_addons"] = [{"outfit": outfit, "addons": 1}]
+
+    def spike_track(key, maximum, source):
+        declarations.append(
+            {
+                "key": key,
+                "quest": "oteryn:quest.spike_task",
+                "initial": 0,
+                "min": 0,
+                "max": maximum,
+                "writable": True,
+                "sources": [source],
+            }
+        )
+
+    def fame_change(minimum, maximum, delta):
+        return {
+            "track": fame,
+            "from": {"kind": "between", "minimum": minimum, "maximum": maximum},
+            "effect": {"kind": "add", "value": delta},
+        }
+
+    source = pin + "gnommander.lua:75-169"
+    spike_track(fame, fame_max, source)
+    offers.extend(
+        [
+            {
+                "npc": gnommander,
+                "keywords": ["reward"],
+                "topic": 0,
+                "any_topic": True,
+                "next_topic": 0,
+                "storage": [],
+                "reply": [
+                    "Your Spike fame makes you eligible for outfit rewards. Ask if you are worthy."
+                ],
+            },
+            {
+                "npc": gnommander,
+                "keywords": ["worthy"],
+                "topic": 0,
+                "any_topic": True,
+                "next_topic": 20,
+                "storage": [],
+                "requires": [requirement(fame, 100, fame_max)],
+                "reply": [
+                    "The basic outfit costs 1,000 gold. The first addon costs 2,000 and the second costs 3,000."
+                ],
+                "failure_reply": ["You need at least 100 Spike fame."],
+            },
+        ]
+    )
+    for label, level, addon, gold in [
+        ("basic", 25, 0, 1000),
+        ("first", 50, 1, 2000),
+        ("second", 80, 2, 3000),
+    ]:
+        topic = 21 + addon
+        offers.append(
+            {
+                "npc": gnommander,
+                "keywords": [label],
+                "topic": 20,
+                "next_topic": topic,
+                "storage": [],
+                "minimum_level": level,
+                "requires": [requirement(fame, 100, fame_max)],
+                "reply": [
+                    f"Buy the {label} outfit reward for {gold:,} gold and 100 Spike fame?"
+                ],
+                "failure_reply": ["You need more experience or Spike fame."],
+            }
+        )
+        name = "base" if addon == 0 else label
+        add(
+            "l12-cave-explorer-" + name,
+            cave,
+            "gnommander",
+            ["yes"],
+            [],
+            topic=topic,
+            outfit=("cave_explorer", addon),
+            fee={"gold": gold, "include_bank": False},
+        )
+        row = callbacks[-1]
+        row.update(
+            minimum_level=level,
+            requires_premium=True,
+            participants=[
+                {
+                    "quest": "oteryn:quest.spike_task",
+                    "storage": [],
+                    "state_ops": [fame_change(100, fame_max, -100)],
+                }
+            ],
+            sources=[source],
+            reply=["Here is your reward."],
+        )
+        if addon:
+            row.update(
+                requires_outfits=[outfit],
+                forbids_addons=[{"outfit": outfit, "addons": addon}],
+                achievement_progress=[
+                    {"key": "oteryn:achievement/cave_completionist", "target": 2}
+                ],
             )
-            callbacks[-1].update(
-                minimum_level=level,
-                requires_premium=True,
-                requires_outfits=["oteryn:outfit." + family],
-                forbids_addons=[{"outfit": "oteryn:outfit." + family, "addons": bit}],
-            )
-            if bit == 2:
-                callbacks[-1]["requires_addons"] = [
-                    {"outfit": "oteryn:outfit." + family, "addons": 1}
-                ]
-            callbacks[-1]["sources"].append(provenance)
-            if label == "cave-explorer" and bit == 2:
-                callbacks[-1]["sources"].append(
-                    "https://tibia.fandom.com/index.php?curid=65413&oldid=846114"
-                )
+            row["sources"].append("tibiawiki:Cave Completionist:846114")
+        else:
+            row["forbids_outfits"] = [outfit]
+    for tier, npc, level, ceiling, xp, report in [
+        ("upper", "gnomilly", 25, 49, 1000, "killing"),
+        ("middle", "gnombold", 50, 79, 2000, "killing"),
+        ("lower", "gnomargery", 80, None, 3500, "kill"),
+    ]:
+        task = spike + tier + "/"
+        phase, kills, timer = (
+            task + name for name in ("phase", "kills", "reported_at")
+        )
+        source = pin + npc + ".lua"
+        spike_track(timer, 9_223_372_036_854_775_807, source)
+        offers.extend(
+            [
+                {
+                    "npc": "oteryn:npc." + npc,
+                    "keywords": ["kill"],
+                    "topic": 0,
+                    "next_topic": 24,
+                    "minimum_level": level,
+                    "storage": [storage(phase, 0, 0, preserve=True)],
+                    **(
+                        {
+                            # Crystal checks the "kill" request's level even when
+                            # a prior offer is awaiting confirmation.
+                            "any_topic": True,
+                            "maximum_level": ceiling,
+                            "failure_reply": [
+                                f"This hunt is for levels {level} through {ceiling}."
+                            ],
+                        }
+                        if ceiling is not None
+                        else {}
+                    ),
+                    "reply": ["Will you take on the local hunting task?"],
+                },
+                {
+                    "npc": "oteryn:npc." + npc,
+                    "keywords": ["report"],
+                    "topic": 0,
+                    "any_topic": True,
+                    "next_topic": 25,
+                    "storage": [],
+                    "reply": ["Which task are you reporting?"],
+                },
+            ]
+        )
+        add(
+            "l12-spike-" + tier + "-accept",
+            "spike_task",
+            npc,
+            ["yes"],
+            [storage(phase, 0, 1)],
+            topic=24,
+        )
+        callbacks[-1].update(
+            minimum_level=level,
+            state_ops=[elapsed(timer, 72_001)],
+            sources=[source],
+            reply=["Hunt seven of the local targets and then report back."],
+        )
+        if ceiling is not None:
+            callbacks[-1]["maximum_level"] = ceiling
+        add(
+            "l12-spike-" + tier + "-report",
+            "spike_task",
+            npc,
+            [report],
+            [storage(phase, 1, 0), storage(kills, 7, 0)],
+            topic=25,
+        )
+        callbacks[-1].update(
+            experience=xp,
+            state_ops=[stamp(timer), fame_change(0, fame_max - 1, 1)],
+            sources=[source],
+            reply=["Your report earns one point of Spike fame."],
+        )
     engoutfit_m36.append(
         add,
         storage,
@@ -3562,16 +4202,20 @@ def build():
     qmech_m39.append(add, callbacks, offers, declarations, inputs, PIN)
     m39_keys = (
         "l2-cael-tome-",
-        "l2-zalamon-tome",
-        "l2-alliance-finish",
+        "l2-zalamon-",
+        "l2-alliance-",
         "l2-bone-",
         "bone-pit-lost-sample",
     )
     m39_callbacks = [
-        callback for callback in callbacks if callback["key"].split("/")[-1].startswith(m39_keys)
+        callback
+        for callback in callbacks
+        if callback["key"].split("/")[-1].startswith(m39_keys)
     ]
     callbacks = [callback for callback in callbacks if callback not in m39_callbacks]
-    m39_tracks = [track for track in declarations if track["key"].endswith("/corruption_hole")]
+    m39_tracks = [
+        track for track in declarations if track["key"].endswith("/corruption_hole")
+    ]
     declarations = [track for track in declarations if track not in m39_tracks]
     validate_callbacks({"schema": 1, "tracks": m39_tracks, "callbacks": m39_callbacks})
     # L13: original native parent bases remain with their existing reward owners.
@@ -3653,7 +4297,9 @@ def build():
     ready_callbacks = [
         c
         for c in callbacks
-        if c["key"].split("/")[-1].startswith(("l2-white-raven-", "l2-efreet-", "l2-marid-"))
+        if c["key"]
+        .split("/")[-1]
+        .startswith(("l2-white-raven-", "l2-efreet-", "l2-marid-"))
     ]
     callbacks = [c for c in callbacks if c not in ready_callbacks]
     ready_callbacks.sort(key=lambda c: c["key"])
@@ -3664,14 +4310,17 @@ def build():
     lane_data = lane.extend(ROOT, callbacks, offers, inputs, PIN, load_module)
     fibula_callbacks, fibula_tracks = [], []
     fibula = load_module(
-        "fibula_reward_authoring", "tools/content-schema/quest-authoring/fibula_rewards.py"
+        "fibula_reward_authoring",
+        "tools/content-schema/quest-authoring/fibula_rewards.py",
     )
     fibula.append(fibula_callbacks, offers, inputs)
     fibula.append_simon(fibula_callbacks, offers, fibula_tracks, inputs)
     # Keep every registered document within the runtime's 256-record bound.
     l13_callbacks = [c for c in callbacks if c["key"].split("/")[-1].startswith("l13-")]
     callbacks = [c for c in callbacks if c not in l13_callbacks]
-    programme_callbacks = [c for c in callbacks if c["key"].split("/")[-1].startswith("questpc7-")]
+    programme_callbacks = [
+        c for c in callbacks if c["key"].split("/")[-1].startswith("questpc7-")
+    ]
     programme_tracks = lane_data[3]
     callbacks = [c for c in callbacks if c not in programme_callbacks]
     l13_callbacks.sort(key=lambda c: c["key"])
@@ -3703,13 +4352,19 @@ def build():
             "hunting_with_style",
             62855,
             753202,
-            [("l8-hunter-hat", "hunter_hat_addon"), ("l8-hunter-gloves", "addon_glove")],
+            [
+                ("l8-hunter-hat", "hunter_hat_addon"),
+                ("l8-hunter-gloves", "addon_glove"),
+            ],
         ),
         (
             "in_shining_armor",
             62856,
             753037,
-            [("knight-sword", "addon_sword"), ("l7-knight-helmet-reward", "addon_helmet")],
+            [
+                ("knight-sword", "addon_sword"),
+                ("l7-knight-helmet-reward", "addon_helmet"),
+            ],
         ),
         (
             "master_of_war",
@@ -3748,7 +4403,10 @@ def build():
             "peazzekeeper",
             62873,
             753184,
-            [("l1-wayfarer-cape", "wayfarer_outfit"), ("l1-wayfarer-hat", "wayfarer_outfit_1")],
+            [
+                ("l1-wayfarer-cape", "wayfarer_outfit"),
+                ("l1-wayfarer-hat", "wayfarer_outfit_1"),
+            ],
         ),
         (
             "swift_death",
@@ -3763,7 +4421,10 @@ def build():
             "swashbuckler",
             62885,
             753261,
-            [("pirate-sabre", "pirate_sabre_addon"), ("l4-pirate-hat", "pirate_hat_addon")],
+            [
+                ("pirate-sabre", "pirate_sabre_addon"),
+                ("l4-pirate-hat", "pirate_hat_addon"),
+            ],
         ),
         (
             "wild_warrior",
@@ -3788,7 +4449,9 @@ def build():
             original.setdefault("requires", []).append(
                 requirement(earned["track"], -1, earned["set"] - 1)
             )
-            finishing.setdefault("requires", []).append(requirement(earned["track"], earned["set"]))
+            finishing.setdefault("requires", []).append(
+                requirement(earned["track"], earned["set"])
+            )
             finishing["key"] += "-full-outfit"
             finishing["achievement"] = "oteryn:achievement/" + achievement
             if page is not None:
@@ -3807,17 +4470,34 @@ def build():
         "tools/content-schema/quest-authoring/quest_item_disguises.py",
     ).build(ROOT)
     outfit_completions = [
-        row for row in callbacks
+        row
+        for row in callbacks
         if row["key"].endswith(("-full-outfit", "-complete"))
         and row.get("outfit") is not None
     ]
-    shared_callbacks = [row for row in callbacks if row not in outfit_completions]
+    classic_routes = ("sven-", "l12-cave-explorer-", "l12-spike-", "l2-battle-mage-")
+    classic_callbacks = [
+        row for row in callbacks if row["key"].rsplit("/", 1)[-1].startswith(classic_routes)
+    ]
+    classic_track_keys = {
+        state["track"]
+        for callback in classic_callbacks
+        for effects in [callback, *callback.get("participants", [])]
+        for state in [*effects.get("storage", []), *effects.get("state_ops", [])]
+    }
+    classic_tracks = [track for track in declarations if track["key"] in classic_track_keys]
+    shared_tracks = [track for track in declarations if track["key"] not in classic_track_keys]
+    classic_document = {"schema": 1, "tracks": classic_tracks, "callbacks": classic_callbacks}
+    validate_callbacks(classic_document)
+    shared_callbacks = [
+        row for row in callbacks if row not in outfit_completions and row not in classic_callbacks
+    ]
     outfit_document = {"schema": 1, "callbacks": outfit_completions}
     validate_callbacks(outfit_document)
     validate_callbacks(
         {
             "schema": 1,
-            "tracks": declarations,
+            "tracks": shared_tracks,
             "callbacks": shared_callbacks,
             "item_disguises": item_disguises,
         }
@@ -3832,9 +4512,13 @@ def build():
         "callbacks": sorted(warrior_completions, key=lambda c: c["key"]),
     }
     validate_callbacks(warrior_document)
-    validate_callbacks({"schema": 1, "tracks": fibula_tracks, "callbacks": fibula_callbacks})
+    validate_callbacks(
+        {"schema": 1, "tracks": fibula_tracks, "callbacks": fibula_callbacks}
+    )
     validate_callbacks({"schema": 1, "callbacks": l13_callbacks})
-    validate_callbacks({"schema": 1, "tracks": programme_tracks, "callbacks": programme_callbacks})
+    validate_callbacks(
+        {"schema": 1, "tracks": programme_tracks, "callbacks": programme_callbacks}
+    )
     native_cosmetics = cosmetics.provisioning_input(
         ROOT / cosmetics.AUTHORING,
         appearance / "manifest.json",
@@ -3856,17 +4540,24 @@ def build():
         "content/spells.manifest.json": (
             json.dumps(gameplay, indent=2, sort_keys=True) + "\n"
         ).encode(),
-        "content/quests/npc-callbacks/outfit-completions.json": encoded(outfit_document),
+        "content/quests/npc-callbacks/outfit-completions.json": encoded(
+            outfit_document
+        ),
         "content/quests/shared-reward-callbacks.json": encoded(
             {
                 "schema": 1,
-                "tracks": declarations,
+                "tracks": shared_tracks,
                 "callbacks": shared_callbacks,
                 "item_disguises": item_disguises,
             }
         ),
-        "content/quests/npc-callbacks/battle-mage-completions.json": encoded(battle_mage_document),
-        "content/quests/npc-callbacks/warrior-completions.json": encoded(warrior_document),
+        "content/quests/npc-callbacks/classic-quest-rewards.json": encoded(classic_document),
+        "content/quests/npc-callbacks/battle-mage-completions.json": encoded(
+            battle_mage_document
+        ),
+        "content/quests/npc-callbacks/warrior-completions.json": encoded(
+            warrior_document
+        ),
         "content/quests/npc-callbacks/fibula.json": encoded(
             {"schema": 1, "tracks": fibula_tracks, "callbacks": fibula_callbacks}
         ),
@@ -3879,7 +4570,9 @@ def build():
         "content/quests/npc-offers/hunter-glove-sales.json": encoded(
             {"schema": 1, "offers": free_glove_offers}
         ),
-        "content/quests/shared-reward-offers.json": encoded({"schema": 1, "offers": offers}),
+        "content/quests/shared-reward-offers.json": encoded(
+            {"schema": 1, "offers": offers}
+        ),
     }
     generated["content/quests/npc-callbacks/l2-ready-stories.json"] = encoded(
         {"schema": 1, "tracks": [], "callbacks": ready_callbacks}
@@ -3927,7 +4620,9 @@ def build():
         last = row["to"]
     if last != 10001:
         raise ValueError("GNOMISH_SOURCE_ROLL_BOUND")
-    generated["tools/content-schema/native-gameplay/qengine-reward-bag-profiles.json"] = encoded(
+    generated[
+        "tools/content-schema/native-gameplay/qengine-reward-bag-profiles.json"
+    ] = encoded(
         {
             "schema": "OTERYN_QENGINE_REWARD_BAG_PROFILES/v1",
             "sources": [
@@ -3958,9 +4653,7 @@ def build():
     ):
         path = f"content/quests/npc-{kind}/nomads-land.json"
         document = json.loads((ROOT / path).read_bytes())
-        document[kind] = [
-            row for row in document[kind] if row[identity] != disabled
-        ]
+        document[kind] = [row for row in document[kind] if row[identity] != disabled]
         if kind == "callbacks":
             validate_callbacks(document)
         generated[path] = encoded(document)
@@ -3979,38 +4672,71 @@ def build():
     )
     quest_shops = questl2_ready.djinn.shops(inputs, PIN)
     ape_and_rook = json.loads(
-        (ROOT / "content/quests/authoring/ape-city-and-beginning-shops.json").read_bytes()
+        (
+            ROOT / "content/quests/authoring/ape-city-and-beginning-shops.json"
+        ).read_bytes()
     )
     quest_shops.extend(ape_and_rook["shops"])
+    quest_shops.append(lost_brother_shop())
     quest_shops.append(
-        json.loads((ROOT / "tools/content-schema/quest-authoring/cael-shop.json").read_bytes())
+        json.loads(
+            (ROOT / "tools/content-schema/quest-authoring/cael-shop.json").read_bytes()
+        )
     )
-    service = 'oteryn:service.trade.black_bert'
-    trade = json.loads((ROOT / 'content/services/trade/trade-00000-00323.json').read_bytes())
-    stock = next(row['declaration']['offers'] for row in trade['records']
-                 if row['declaration']['identity']['key'] == service)
-    bert_source = inputs['data-global/npc/black_bert.lua']
+    service = "oteryn:service.trade.black_bert"
+    trade = json.loads(
+        (ROOT / "content/services/trade/trade-00000-00323.json").read_bytes()
+    )
+    stock = next(
+        row["declaration"]["offers"]
+        for row in trade["records"]
+        if row["declaration"]["identity"]["key"] == service
+    )
+    bert_source = inputs["data-global/npc/black_bert.lua"]
     # The corpus copy is byte-identical to the chosen 201189f8 shop source.
-    if sha(bert_source) != 'd4e83b34b3f20b62f0e1f06a764c6dadea0010a61f252048300c44eda27e6e0c':
-        raise ValueError('Black Bert shop source changed')
-    bert_shop = lua_tables.as_python(lua_tables.assignments(bert_source.decode(), {'shop'})['shop'])
+    if (
+        sha(bert_source)
+        != "d4e83b34b3f20b62f0e1f06a764c6dadea0010a61f252048300c44eda27e6e0c"
+    ):
+        raise ValueError("Black Bert shop source changed")
+    bert_shop = lua_tables.as_python(
+        lua_tables.assignments(bert_source.decode(), {"shop"})["shop"]
+    )
     # Keep source stock already admitted by the Item catalogue and the two
     # previously reviewed Global variants (special flask and lump of clay).
-    prices = {f"oteryn:item.tibia.i{row['clientid']}": row['buy']
-              for row in bert_shop if 'buy' in row}
-    stock_keys = prices.keys() | {'oteryn:item.tibia.i125', 'oteryn:item.tibia.i11329'}
-    retained = [row | {'unit_price': prices.get(row['item']['key'], row['unit_price'])}
-                for row in stock
-                if row['direction'] == 'SellToPlayer' and row['item']['key'] in stock_keys]
-    requirement = {'quest': 'oteryn:quest.the_thieves_guild_quest',
-                   'track': 'oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline',
-                   'initial': 0, 'minimum': 9, 'maximum': 9}
-    quest_shops.append({'npc': 'oteryn:npc.black_bert', 'service': service,
-                  'offers': [row | {'requirements': [requirement]} for row in retained],
-                  'sources': ['crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:211-219',
-                              f'crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/black_bert.lua:23-154:sha256:{sha(bert_source)}']})
+    prices = {
+        f"oteryn:item.tibia.i{row['clientid']}": row["buy"]
+        for row in bert_shop
+        if "buy" in row
+    }
+    stock_keys = prices.keys() | {"oteryn:item.tibia.i125", "oteryn:item.tibia.i11329"}
+    retained = [
+        row | {"unit_price": prices.get(row["item"]["key"], row["unit_price"])}
+        for row in stock
+        if row["direction"] == "SellToPlayer" and row["item"]["key"] in stock_keys
+    ]
+    requirement = {
+        "quest": "oteryn:quest.the_thieves_guild_quest",
+        "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+        "initial": 0,
+        "minimum": 9,
+        "maximum": 9,
+    }
+    quest_shops.append(
+        {
+            "npc": "oteryn:npc.black_bert",
+            "service": service,
+            "offers": [row | {"requirements": [requirement]} for row in retained],
+            "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:211-219",
+                f"crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/black_bert.lua:23-154:sha256:{sha(bert_source)}",
+            ],
+        }
+    )
     quest_shops.sort(key=lambda shop: shop["npc"])
-    generated["content/quests/shared-quest-shops.json"] = encoded({"schema": 1, "shops": quest_shops})
+    generated["content/quests/shared-quest-shops.json"] = encoded(
+        {"schema": 1, "shops": quest_shops}
+    )
     generated["content/quests/questl2-djinn-world.json"] = encoded(
         questl2_ready.djinn.world_callbacks(inputs, PIN)
     )
@@ -4062,7 +4788,9 @@ def build():
                 inputs[table].decode(),
             ):
                 raise ValueError("Wayfarer source wardrobe binding drift")
-            world["sources"].append(f"crystal:{PIN}:{table}:sha256:{sha(inputs[table])}")
+            world["sources"].append(
+                f"crystal:{PIN}:{table}:sha256:{sha(inputs[table])}"
+            )
         worlds.append(world)
     generated["content/quests/shared-outfit-callbacks.json"] = encoded(
         {"schema": 1, "callbacks": worlds}
@@ -4086,8 +4814,12 @@ def build():
     updates = json.loads((ROOT / srx1_profile_updates.PATH).read_bytes())
     if updates["base_sha256"] != sha(generated[reward_items.PROFILE]):
         srx1_profile_updates.generate(
-            ROOT, generated, reward_items.PROFILE, "content/spells.manifest.json",
-            native.provider_order, cosmetics.canonical,
+            ROOT,
+            generated,
+            reward_items.PROFILE,
+            "content/spells.manifest.json",
+            native.provider_order,
+            cosmetics.canonical,
         )
     generated.update(lane.outputs(ROOT, inputs, PIN, load_module, lane_data))
     # The selected smith port owns these keys and the explicit cache placement.
@@ -4099,7 +4831,9 @@ def build():
         "oteryn:quest-callback/authored-smith-cache",
         "oteryn:quest-callback/authored-smith-cache-reward",
     }
-    authored["callbacks"] = [c for c in authored["callbacks"] if c["key"] not in smith_keys]
+    authored["callbacks"] = [
+        c for c in authored["callbacks"] if c["key"] not in smith_keys
+    ]
     generated[authored_path] = encoded(authored)
     return generated
 
@@ -4107,17 +4841,21 @@ def build():
 def validate_callbacks(document):
     schema = json.loads(
         (
-            ROOT / "tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json"
+            ROOT
+            / "tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json"
         ).read_bytes()
     )
     Draft202012Validator(schema).validate(document)
     declarations = document.get("tracks", [])
     declared = set()
-    readonly = {r["track"] for c in document["callbacks"] for r in c.get("requires", [])}
+    readonly = {
+        r["track"] for c in document["callbacks"] for r in c.get("requires", [])
+    }
     owners = {}
     for c in document["callbacks"]:
         for owner, states in [(c["quest"], c["storage"] + c.get("state_ops", []))] + [
-            (p["quest"], p["storage"] + p.get("state_ops", [])) for p in c.get("participants", [])
+            (p["quest"], p["storage"] + p.get("state_ops", []))
+            for p in c.get("participants", [])
         ]:
             for state in states:
                 owners.setdefault(state["track"], set()).add(owner)
@@ -4128,7 +4866,10 @@ def validate_callbacks(document):
             track["key"] in declared
             or not track["min"] <= track["initial"] <= track["max"]
             or (writable and owners.get(track["key"]) != {track["quest"]})
-            or (not writable and (track["key"] not in readonly or track["key"] in written))
+            or (
+                not writable
+                and (track["key"] not in readonly or track["key"] in written)
+            )
         ):
             raise ValueError("invalid reward track declaration " + track["key"])
         declared.add(track["key"])
@@ -4147,7 +4888,9 @@ def validate_callbacks(document):
             or callback.get("carried_item") is not None
             or callback.get("counter") is not None
             or sum(variant["chance"] for variant in weighted) >= 100
-            or any(variant["reward"].get("key_number") is not None for variant in weighted)
+            or any(
+                variant["reward"].get("key_number") is not None for variant in weighted
+            )
         ):
             raise ValueError("invalid weighted reward " + callback["key"])
         if callback.get("per_occurrence_mint", False) and (
@@ -4158,7 +4901,11 @@ def validate_callbacks(document):
             or callback.get("achievement_progress")
         ):
             raise ValueError("invalid occurrence mint " + callback["key"])
-        if reward and reward.get("text") is not None and len(reward["text"].encode("utf-8")) > 7996:
+        if (
+            reward
+            and reward.get("text") is not None
+            and len(reward["text"].encode("utf-8")) > 7996
+        ):
             raise ValueError("literal reward text exceeds UTF-8 byte bound")
         if callback["quest"] in callback.get("requires_completed_quests", []):
             raise ValueError("self-dependent reward completion " + callback["key"])
@@ -4170,7 +4917,10 @@ def validate_callbacks(document):
             or not callback.get("give")
             or callback.get("peer_requires")
             or callback.get("creature_target")
-            or any({"item": item, "count": 1} not in callback["take"] for item in (source, target))
+            or any(
+                {"item": item, "count": 1} not in callback["take"]
+                for item in (source, target)
+            )
         ):
             raise ValueError("invalid carried quest recipe " + callback["key"])
         if source is not None and (
@@ -4206,7 +4956,9 @@ def validate_callbacks(document):
             and t["outfit"] in callback.get("forbids_outfits", [])
             for t in targets
         )
-        value_guard = value_guard or (bool(callback["take"]) and callback.get("give") is not None)
+        value_guard = value_guard or (
+            bool(callback["take"]) and callback.get("give") is not None
+        )
         value_guard = value_guard or (
             callback.get("per_occurrence_mint", False)
             and any(
@@ -4228,7 +4980,8 @@ def validate_callbacks(document):
         participant_ops = [s for p in participants for s in p.get("state_ops", [])]
         operations = callback.get("state_ops", [])
         all_keys = [
-            s["track"] for s in storage + operations + participant_storage + participant_ops
+            s["track"]
+            for s in storage + operations + participant_storage + participant_ops
         ]
         counter = callback.get("counter")
         if counter is not None and (
@@ -4238,16 +4991,22 @@ def validate_callbacks(document):
             or counter["track"] in {r["track"] for r in callback.get("requires", [])}
         ):
             raise ValueError("invalid owned reward counter " + callback["key"])
-        value_guard = value_guard or (counter is not None and bool(storage or operations))
+        value_guard = value_guard or (
+            counter is not None and bool(storage or operations)
+        )
         if (
             len(all_keys) + int(counter is not None) > 16
             or len(all_keys) != len(set(all_keys))
-            or any(len(p["storage"]) + len(p.get("state_ops", [])) > 8 for p in participants)
+            or any(
+                len(p["storage"]) + len(p.get("state_ops", [])) > 8
+                for p in participants
+            )
             or len({p["quest"] for p in participants}) != len(participants)
             or any(p["quest"] == callback["quest"] for p in participants)
             or any(s["minimum"] > s["maximum"] for s in participant_storage)
             or any(
-                s["from"]["kind"] == "between" and s["from"]["minimum"] > s["from"]["maximum"]
+                s["from"]["kind"] == "between"
+                and s["from"]["minimum"] > s["from"]["maximum"]
                 for s in operations + participant_ops
             )
             or {r["track"] for r in callback.get("requires", [])} & set(all_keys)
@@ -4336,7 +5095,9 @@ def main():
     retired = ROOT / questpc7_smith_programme.RETIRED_PROP_PATH
     if args.check:
         if retired.exists():
-            raise ValueError("retired QENGINE reward output: " + retired.relative_to(ROOT).as_posix())
+            raise ValueError(
+                "retired QENGINE reward output: " + retired.relative_to(ROOT).as_posix()
+            )
     else:
         retired.unlink(missing_ok=True)
 

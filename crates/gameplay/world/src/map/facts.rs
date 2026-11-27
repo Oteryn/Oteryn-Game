@@ -414,6 +414,7 @@ impl BundleFacts {
         }
         // 188: spent Botany spider web (Crystal actions_fire_bug.lua:125-129).
         // 430: occupied Lighthouse pressure plate (Crystal movement-stair.lua:6-16).
+        // 7175/7177: stunned bear and pushed mammoth (Crystal action_horn.lua).
         // 3682, 12187, 12189: Bushwhacking entrance, laid net and captured merchant.
         // 4851, 4996: Ape City spent statue and jar (Crystal actions_mission9_snake_destroyer.lua).
         // 6473, 6474: the timed Rottin wall repairs.
@@ -425,10 +426,10 @@ impl BundleFacts {
         let mut movement_solidities = BTreeMap::new();
         let movement_definitions: BTreeMap<_, _> = [
             188, 430, 435, 1025, 1841, 1949, 3145, 3146, 3682, 4851, 4996, 5022, 5858, 6473, 6474,
-            7181, 7252, 7845, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186,
-            10187, 12187, 12189, 12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064,
-            14074, 14076, 14077, 14163, 14164, 14255, 17678, 17680, 17939, 21804, 21805, 21812,
-            22059, 22074, 26077, 26087, 26100, 49362,
+            7175, 7177, 7181, 7252, 7845, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938,
+            9939, 10186, 10187, 12187, 12189, 12369, 13842, 13843, 13976, 14018, 14020, 14053,
+            14055, 14064, 14074, 14076, 14077, 14163, 14164, 14255, 17678, 17680, 17939, 21804,
+            21805, 21812, 22059, 22074, 26077, 26087, 26100, 49362,
         ]
         .into_iter()
         .chain(6594..=6608)
@@ -1036,7 +1037,8 @@ impl BundleFacts {
             return None;
         }
         let facts = EntryFacts {
-            bound: placement.bound,
+            bound: placement.bound
+                && (entry.facts.appearance_id != 2969 || self.loose_source_key(key).is_none()),
             count: u32::from(placement.count),
             sub_type: u32::from(placement.sub_type),
             ..entry.facts
@@ -1070,6 +1072,27 @@ impl BundleFacts {
             .binary_search_by_key(&key, |(key, _)| *key)
             .ok()?;
         self.placements[found].1.attrs.action
+    }
+
+    /// Exact bound loose keys use the existing immutable map-source mint.
+    pub fn loose_source_key(&self, key: u64) -> Option<u16> {
+        let (pos, _) = view::placement_of(key)?;
+        let found = self
+            .placements
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .ok()?;
+        let placement = &self.placements[found].1;
+        let entry = self.palette.get(placement.palette as usize)?;
+        if entry.facts.appearance_id != 2969
+            || !entry.facts.pickupable
+            || placement.dropped
+            || self.house_tile(pos)
+            || self.map_source_children.contains_key(&key)
+            || self.unsupported_source_containers.contains(&key)
+        {
+            return None;
+        }
+        source_bindings::loose_draconia_key(pos, &placement.attrs)
     }
 
     /// MAP-PICKUP-1: the exact boot-time wrapper decision, before view normalization.

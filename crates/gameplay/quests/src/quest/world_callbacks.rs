@@ -556,6 +556,18 @@ pub struct Callback {
 }
 
 impl Callback {
+    /// Crystal's return use changes only the switch; its opening timers keep running.
+    pub fn chayenne_timed_lever(&self) -> bool {
+        self.key == "oteryn:quest-callback/m07/realm-trial"
+            && self.quest == "oteryn:quest.chayenne_realm"
+            && self.selector.action == Some(55021)
+            && self.trigger == Trigger::Use
+            && self.reversible
+            && self.lever.is_some()
+            && self.effects.reset_after_ms.is_some()
+            && self.effects.passages_reset_after_ms.is_some()
+    }
+
     pub fn operations(&self) -> impl Iterator<Item = &super::reward_callbacks::StateOperation> {
         self.state_ops.iter().chain(&self.state_operations)
     }
@@ -778,6 +790,9 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/children-grease.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/crystal-wand.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/m39-stories.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -794,6 +809,9 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/m09-treasure.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/great-dragon-hunt.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/hot-cuisine-books.json"
@@ -1392,7 +1410,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 (!a.regular_blessings && !a.promotion && !a.premium)
                     || callback.actor_kind != ActorKind::Player
                     || !callback.has_personal_state()
-                    || callback.reversible
+                    || (callback.reversible && !callback.chayenne_timed_lever())
                     || callback.opening_only
             })
             || callback
@@ -1883,6 +1901,109 @@ mod scene_tests;
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn life_ring_cache_mounts_a_completing_container_claim() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let cache = callbacks
+            .iter()
+            .find(|callback| callback.key == "oteryn:quest-callback/authored-life-ring-cache")
+            .ok_or("Life Ring cache")?;
+        let reward = cache.item_reward().as_ref().ok_or("cache reward")?;
+        assert_eq!(reward.item, "oteryn:item.tibia.i2853");
+        assert_eq!(reward.count, 1);
+        assert!(reward.backpack_outputs.is_empty());
+        assert_eq!(reward.contents.len(), 2);
+        assert_eq!(reward.contents[0].item, "oteryn:item.tibia.i3052");
+        assert_eq!(reward.contents[1].item, "oteryn:item.tibia.i3085");
+        assert!(reward.contents.iter().all(|child| child.count == 1));
+        assert!(super::primary_transition(cache)?.completes);
+        Ok(())
+    }
+
+    #[test]
+    fn liquid_black_mounts_coordinates_and_quick_access() -> Result<(), String> {
+        use super::{Position, Trigger, load, primary_transition};
+        let callbacks = load()?;
+        for (name, x, y, floor, ordinal, appearance) in [
+            ("coordinates", 33519, 31308, -8, 2, 2472),
+            ("quick-access", 33478, 31312, -7, 2, 1949),
+        ] {
+            let key = format!("oteryn:quest-callback/authored-liquid-black-{name}");
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or_else(|| format!("missing {key}"))?;
+            let selector = callback.selector.native.as_ref().ok_or("native selector")?;
+            assert_eq!(selector.position, Position { x, y, floor });
+            assert_eq!(
+                (selector.ordinal, selector.appearance),
+                (ordinal, appearance)
+            );
+            let visitor = &callback.storage[0];
+            assert_eq!(visitor.track, crate::quest::liquid_black::VISITOR);
+            if name == "coordinates" {
+                assert_eq!(callback.trigger, Trigger::Use);
+                assert_eq!((visitor.minimum, visitor.maximum, visitor.set), (1, 1, 2));
+                let reward = callback.item_reward().as_ref().ok_or("coordinates")?;
+                assert_eq!(reward.item, "oteryn:item.tibia.i14176");
+                assert_eq!(reward.count, 1);
+                assert_eq!(primary_transition(callback)?.effects.len(), 1);
+            } else {
+                assert_eq!(callback.trigger, Trigger::StepIn);
+                assert!(callback.return_on_failure && callback.is_read_only());
+                assert_eq!(visitor.minimum, 4);
+                let destination = (name == "quick-access").then_some(Position {
+                    x: 33446,
+                    y: 31288,
+                    floor: -14,
+                });
+                assert_eq!(callback.teleport, destination);
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn lion_inscriptions_mount_once_only_scroll_milestones() -> Result<(), String> {
+        use super::{Position, Trigger, load, primary_transition};
+        let callbacks = load()?;
+        for (name, x, y, appearance) in [
+            ("snake", 33095, 32244, 499),
+            ("lizard", 33130, 32300, 518),
+            ("scorpion", 33109, 32329, 499),
+            ("hyena", 33127, 32340, 499),
+        ] {
+            let key = format!("oteryn:quest-callback/authored-lions-rock-inscription-{name}");
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or_else(|| format!("missing {key}"))?;
+            assert_eq!(callback.trigger, Trigger::StepIn);
+            let selector = callback.selector.native.as_ref().ok_or("native selector")?;
+            assert_eq!(selector.position, Position { x, y, floor: -9 });
+            assert_eq!((selector.ordinal, selector.appearance), (0, appearance));
+            assert_eq!(callback.present.len(), 1);
+            assert_eq!(callback.present[0].item, "oteryn:item.tibia.i21467");
+            assert_eq!(callback.present[0].count, 1);
+            assert!(
+                callback
+                    .success_message
+                    .as_deref()
+                    .is_some_and(|text| text.contains(name) || text.contains("hyaena"))
+            );
+            let transition = primary_transition(callback)?;
+            assert_eq!(transition.effects.len(), 2);
+            let flag = &callback.storage[0];
+            assert!(flag.track.ends_with(&format!("/{name}_sign")));
+            assert_eq!((flag.minimum, flag.maximum, flag.set), (0, 0, 1));
+            let questline = &callback.storage[1];
+            assert_eq!(questline.track, crate::quest::lions_rock::QUESTLINE);
+            assert!(questline.increment);
+            assert_eq!(questline.set, 1);
+        }
+        Ok(())
+    }
+
     #[test]
     fn classic_quest_readables_bind_world_use_at_the_written_items() -> Result<(), String> {
         use super::{Position, Trigger, load};
@@ -2893,6 +3014,88 @@ mod tests {
     }
 
     #[test]
+    fn galthen_internal_teleport_selectors_load() -> Result<(), String> {
+        let callbacks = load()?;
+        for (key, from, appearance, to) in [
+            (
+                "galthen-iksupan-internal-1",
+                (34038, 31726, -10),
+                33017,
+                (34000, 31733, -9),
+            ),
+            (
+                "galthen-iksupan-internal-2",
+                (34000, 31732, -9),
+                33017,
+                (34038, 31727, -10),
+            ),
+        ] {
+            let position = |(x, y, floor)| Position { x, y, floor };
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == format!("oteryn:quest-callback/{key}"))
+                .ok_or(key)?;
+            assert_eq!(callback.trigger, Trigger::Use);
+            assert_eq!(callback.selector.position, Some(position(from)));
+            assert_eq!(callback.selector.appearance, Some(appearance));
+            assert_eq!(callback.teleport, Some(position(to)));
+            assert_eq!(callback.effects.teleport_effect, Some(11));
+            assert!(!callback.requires_durable_commit());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn galthen_level_gated_routes_load_with_fenced_travel() -> Result<(), String> {
+        let callbacks = load()?;
+        for (suffix, trigger, from, to, level, appearance) in [
+            (
+                "forest-entry",
+                Trigger::StepIn,
+                (32424, 32500, -10),
+                (32405, 32497, -10),
+                250,
+                None,
+            ),
+            (
+                "forest-return",
+                Trigger::StepIn,
+                (32405, 32498, -10),
+                (32424, 32498, -10),
+                250,
+                None,
+            ),
+        ] {
+            let position = |(x, y, floor)| Position { x, y, floor };
+            let key = format!("oteryn:quest-callback/galthen-{suffix}");
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or(suffix)?;
+            assert_eq!(callback.trigger, trigger);
+            assert_eq!(callback.selector.position, Some(position(from)));
+            assert_eq!(callback.selector.appearance, appearance);
+            assert_eq!(callback.teleport, Some(position(to)));
+            assert_eq!(callback.minimum_level, Some(level));
+            assert!(callback.requires_world_admission);
+            assert_eq!(callback.return_on_failure, trigger == Trigger::StepIn);
+        }
+        let state = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        for suffix in ["forest-entry", "forest-return"] {
+            let key = format!("oteryn:quest-callback/galthen-{suffix}");
+            assert!(
+                !state
+                    .catalogue()
+                    .transition(&key)
+                    .ok_or("fenced route transition")?
+                    .completes
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn quest_world_callbacks_accept_only_pinned_donor_revisions() -> Result<(), String> {
         let mut source: serde_json::Value =
             serde_json::from_str(EMBEDDED).map_err(|e| e.to_string())?;
@@ -3485,6 +3688,10 @@ mod worldchg_grimvale_tests {
 }
 
 #[cfg(test)]
+#[path = "world_callbacks/cq07_source_tests.rs"]
+mod cq07_source_tests;
+
+#[cfg(test)]
 #[path = "world_callbacks/phase_tests.rs"]
 mod phase_tests;
 
@@ -3734,6 +3941,54 @@ mod srvenc_live_requirements_tests {
             value["character_requirements"] = invalid;
             assert!(parse(&packet(&value)).is_err());
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod great_dragon_hunt_tests {
+    #[test]
+    fn explorer_use_lowers_the_donor_start_and_dragon_leather() -> Result<(), String> {
+        let callback = super::load()?
+            .into_iter()
+            .find(|callback| callback.key == "oteryn:quest-callback/great-dragon-hunt-explorer")
+            .ok_or("explorer USE callback")?;
+        assert_eq!(callback.trigger, super::Trigger::Use);
+        assert_eq!(callback.selector.action, Some(50806));
+        assert_eq!(callback.selector.appearance, Some(21412));
+        let reward = callback
+            .item_reward()
+            .as_ref()
+            .ok_or("dragon leather reward")?;
+        assert_eq!(
+            (reward.item.as_str(), reward.count),
+            ("oteryn:item.tibia.i5882", 1)
+        );
+        let loaded = super::super::loader::load_embedded_quest_state("dragon-hunt")
+            .map_err(|error| format!("{error:?}"))?;
+        let transition = loaded
+            .catalogue()
+            .transition(&callback.key)
+            .ok_or("explorer transition")?;
+        assert_eq!(transition.effects.len(), 3);
+        assert!(callback.storage.iter().any(|state| {
+            state.track.ends_with("/warrior_skeleton")
+                && state.minimum == 0
+                && state.maximum == 0
+                && state.set == 1
+        }));
+        assert!(
+            callback
+                .storage
+                .iter()
+                .any(|state| { state.track.ends_with("/dragon_counter") && state.set == 0 })
+        );
+        assert!(
+            callback
+                .storage
+                .iter()
+                .any(|state| { state.track.ends_with("/quest_line") && state.set == 1 })
+        );
         Ok(())
     }
 }

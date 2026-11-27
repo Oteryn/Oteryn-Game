@@ -165,6 +165,7 @@ const DOCUMENTS: &[&[u8]] = &[
     include_bytes!(
         "../../../../../content/quests/native-death-bindings/quest-batch3-c-the_primal_ordeal.json"
     ),
+    include_bytes!("../../../../../content/quests/native-death-bindings/uneasy-alliance.json"),
     include_bytes!("../../../../../content/quests/native-death-bindings/secret-service.json"),
     include_bytes!("../../../../../content/quests/native-death-bindings/thieves-guild.json"),
 ];

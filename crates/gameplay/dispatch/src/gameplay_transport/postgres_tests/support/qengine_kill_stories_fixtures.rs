@@ -287,12 +287,14 @@ pub(super) async fn exercise(
                 ("dragon_lords", "oteryn:creature.dragon_lord", 20),
             ],
         ),
-        "cave-explorer" => (
-            "cave_explorer",
-            "oteryn:npc.gnommander",
-            80,
-            &[("kills", "oteryn:creature.crystal_spider", 20)],
-        ),
+        "cave-explorer" | "cave-explorer-inherited-one" | "cave-explorer-inherited-two" => {
+            let inherited = match label {
+                "cave-explorer-inherited-one" => Some(1_i64),
+                "cave-explorer-inherited-two" => Some(2_i64),
+                _ => None,
+            };
+            return Box::pin(spike(owner, admitted, h, authority, inherited)).await;
+        }
         "fire-fighter" => (
             "fire_fighter",
             "oteryn:npc.gnomadness",
@@ -393,9 +395,6 @@ pub(super) async fn exercise(
         super::qengine_outfit_stories_fixtures::supply(owner, admitted, h, item, &mut bags, &mut ordinal)
             .await?;
     }
-    if label == "cave-explorer" {
-        super::qengine_voucher_stories_fixtures::mint(owner, admitted, 3043, 1, &mut ordinal).await?;
-    }
     claim(owner, admitted, h, npc, base).await?;
     assert_eq!(count(h, &format!("{root}phase")).await?, 2);
     let outfit = format!("oteryn:outfit.{family}");
@@ -450,6 +449,319 @@ pub(super) async fn exercise(
             }
         }
     }
+    Ok(())
+}
+
+async fn spike(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    inherited: Option<i64>,
+) -> TestResult {
+    use super::qengine_rewards_fixtures::talk;
+    use super::{classic_quests_fixtures as npc, qengine_voucher_stories_fixtures as items};
+    use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+    use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+    const FAME: &str = "oteryn:quest-progress/spike/fame";
+    const OUTFIT: &str = "oteryn:outfit.cave_explorer";
+    let mut capabilities = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    capabilities.extend([3, 4, 6, 11, 15, 18, 25]);
+    capabilities.sort_unstable();
+    capabilities.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            &offered,
+            &capabilities,
+        )
+        .ok_or("Spike capabilities")?;
+    owner.admit_premium(super::fixture::id(40), admitted.game_session_id);
+    owner
+        .states
+        .chat
+        .admit(admitted.game_session_id, "Spike Witness", owner.owner_now());
+    let [argery, commander, milly, bold] = npc::install_with_offsets(
+        owner,
+        admitted,
+        [
+            "oteryn:npc.gnomargery",
+            "oteryn:npc.gnommander",
+            "oteryn:npc.gnomilly",
+            "oteryn:npc.gnombold",
+        ],
+        Some([(0, 1), (1, 1), (-1, 1), (0, -1)]),
+    )
+    .await?;
+    if inherited.is_some() {
+        // Drive the purchase route with the transferred Character's level and
+        // fame already in place. The hunting story below has its own coverage.
+        super::qengine_outfit_stories_fixtures::earn_level(owner, admitted, authority, 80).await?;
+        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+            h, owner, admitted, &[(FAME.into(), 300)], 124,
+        )
+        .await?;
+        assert_eq!(
+            talk(owner, admitted, commander, 15, "hi").await?,
+            NpcIntentDisposition::Ok
+        );
+    } else {
+        Box::pin(spike_hunting(
+            owner, admitted, h, authority, [argery, commander, milly, bold],
+        ))
+        .await?;
+        // Bring the balance to the three-purchase boundary after proving how fame is earned.
+        arrange_track(h, FAME, 300).await?;
+    }
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    items::mint(owner, admitted, 3043, 1, &mut 30_000).await?;
+    if let Some(progress) = inherited {
+        // Bazaar transfers the Character's counter, while unlock facts stay with the seller.
+        sqlx::query("INSERT INTO game_character_achievement_progress(character_id,achievement_key,progress)
+            SELECT character_id,'oteryn:achievement/cave_completionist',$1 FROM game_character_roots")
+            .bind(progress).execute(&h.pool).await?;
+    }
+    for (index, (keyword, remaining, mask)) in
+        [("basic", 200, 0), ("second", 100, 2), ("first", 0, 3)]
+            .into_iter()
+            .enumerate()
+    {
+        let first = 17 + u64::try_from(index)? * 3;
+        for (id, text) in [(first, "worthy"), (first + 1, keyword), (first + 2, "yes")] {
+            assert_eq!(
+                talk(owner, admitted, commander, id, text).await?,
+                NpcIntentDisposition::Ok
+            );
+        }
+        assert_eq!(count(h, FAME).await?, remaining);
+        items::mask(owner, admitted, OUTFIT, mask).await?;
+        let achievement: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/cave_completionist'")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(achievement, i64::from(mask == 3));
+        if mask == 3 {
+            let progress: i64 = sqlx::query_scalar("SELECT progress FROM game_character_achievement_progress WHERE achievement_key='oteryn:achievement/cave_completionist'")
+                .fetch_one(&h.pool)
+                .await?;
+            assert_eq!(progress, 2);
+        }
+        if mask == 2 && inherited.is_none() {
+            // Main granted the cosmetic before these purchases tracked achievement progress.
+            let erased = sqlx::query("DELETE FROM game_character_achievement_progress WHERE achievement_key='oteryn:achievement/cave_completionist'")
+                .execute(&h.pool)
+                .await?;
+            assert_eq!(erased.rows_affected(), 1);
+        }
+    }
+    if inherited.is_some() {
+        return Ok(());
+    }
+    let migration = include_str!(
+        "../../../../../../../apps/game-server/migrations/3033_cave_completionist_backfill.sql"
+    );
+    // Bazaar-locked roots still prove the account grant, with no Character
+    // progress row to clear before the next lifecycle case.
+    for (lifecycle, previous_progress) in [(2_i16, 1), (3, 0), (4, 1)] {
+        // Reconstruct a pre-achievement purchase with one retained character.
+        let mut fixture = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *fixture)
+            .await?;
+        for (delete, rows) in [
+            ("DELETE FROM game_account_achievements WHERE achievement_key=$1", 1),
+            ("DELETE FROM game_account_achievement_grant_requests WHERE achievement_key=$1", 1),
+            (
+                "DELETE FROM game_character_achievement_progress WHERE achievement_key=$1",
+                previous_progress,
+            ),
+        ] {
+            let erased = sqlx::query(delete)
+                .bind("oteryn:achievement/cave_completionist")
+                .execute(&mut *fixture)
+                .await?;
+            assert_eq!(erased.rows_affected(), rows, "{lifecycle}: {delete}");
+        }
+        let retained = sqlx::query("UPDATE game_character_roots SET lifecycle=$1")
+            .bind(lifecycle)
+            .execute(&mut *fixture)
+            .await?;
+        assert_eq!(retained.rows_affected(), 1);
+        fixture.commit().await?;
+        for _ in 0..2 {
+            let mut upgrade = h.pool.begin().await?;
+            sqlx::raw_sql(migration).execute(&mut *upgrade).await?;
+            upgrade.commit().await?;
+        }
+        let (facts, progress): (i64, Option<i64>) = sqlx::query_as(
+            "SELECT count(*), max(p.progress) FROM game_account_achievements a
+             JOIN game_account_achievement_grant_requests r
+               USING (source_kind, source_event_id, achievement_key, account_id)
+             LEFT JOIN game_character_achievement_progress p USING (character_id, achievement_key)
+             WHERE a.achievement_key='oteryn:achievement/cave_completionist'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!((facts, progress), (1, (lifecycle != 2).then_some(2)), "lifecycle {lifecycle}");
+    }
+    let mut fixture = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *fixture)
+        .await?;
+    let restored = sqlx::query("UPDATE game_character_roots SET lifecycle=1 WHERE lifecycle=4")
+        .execute(&mut *fixture)
+        .await?;
+    assert_eq!(restored.rows_affected(), 1);
+    fixture.commit().await?;
+    arrange_track(h, FAME, 100).await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    for (id, keyword) in [(26, "worthy"), (27, "first")] {
+        assert_eq!(
+            talk(owner, admitted, commander, id, keyword).await?,
+            NpcIntentDisposition::Ok
+        );
+    }
+    assert_eq!(
+        talk(owner, admitted, commander, 28, "yes").await?,
+        NpcIntentDisposition::Rejected
+    );
+    assert_eq!(count(h, FAME).await?, 100);
+    let achievement: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/cave_completionist'"
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(achievement, 1, "both main-era addons earn the achievement");
+    Ok(())
+}
+
+async fn spike_hunting(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    [argery, commander, milly, bold]: [oteryn_protocol_oteryn::world_spatial_entities::EntityRef; 4],
+) -> TestResult {
+    use super::qengine_rewards_fixtures::talk;
+    use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+    const FAME: &str = "oteryn:quest-progress/spike/fame";
+    const DRILLWORM: &str = "oteryn:creature.drillworm";
+    const REPORTED_AT: &str = "oteryn:quest-progress/spike/lower/reported_at";
+    const PHASE: &str = "oteryn:quest-progress/spike/lower/phase";
+    const KILLS: &str = "oteryn:quest-progress/spike/lower/kills";
+    for (tier, npc, maximum, id) in [("upper", milly, 49, 101), ("middle", bold, 79, 111)] {
+        use super::qengine_outfit_stories_fixtures::earn_level;
+        earn_level(owner, admitted, authority, maximum).await?;
+        assert_eq!(talk(owner, admitted, npc, id, "hi").await?, NpcIntentDisposition::Ok);
+        assert_eq!(talk(owner, admitted, npc, id + 1, "kill").await?, NpcIntentDisposition::Ok);
+        earn_level(owner, admitted, authority, maximum + 1).await?;
+        assert_eq!(talk(owner, admitted, npc, id + 2, "yes").await?, NpcIntentDisposition::Rejected);
+        assert_eq!(count(h, &format!("oteryn:quest-progress/spike/{tier}/phase")).await?, 0);
+        assert_eq!(talk(owner, admitted, npc, id + 3, "kill").await?, NpcIntentDisposition::Rejected);
+        let _ = talk(owner, admitted, npc, id + 4, "bye").await?;
+    }
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native policies")?;
+    for creature in ["oteryn:creature.demon_skeleton", "oteryn:creature.crystalcrusher", DRILLWORM] {
+        native.reward_table().row(creature).map_err(debug)?;
+    }
+    native.install_companion_policies(&mut *owner.runtime.lock().await).map_err(debug)?;
+    death(owner, admitted, DRILLWORM, 20_000).await?;
+    assert_eq!(count(h, KILLS).await?, 0);
+    for (id, text) in [(1, "hi"), (2, "kill"), (3, "yes")] {
+        assert_eq!(
+            talk(owner, admitted, argery, id, text).await?,
+            NpcIntentDisposition::Ok
+        );
+    }
+    assert_eq!(count(h, PHASE).await?, 1);
+    for (id, text) in [(4, "report"), (5, "kill")] {
+        let _ = talk(owner, admitted, argery, id, text).await?;
+    }
+    assert_eq!(
+        count(h, FAME).await?,
+        0,
+        "an incomplete report earns no fame"
+    );
+    for kills in 1..=7 {
+        death(owner, admitted, DRILLWORM, 20_000 + kills).await?;
+        assert_eq!(
+            count(h, KILLS).await?,
+            i64::try_from(kills)?,
+            "one credit per lethal occurrence"
+        );
+    }
+    death(owner, admitted, DRILLWORM, 20_008).await?;
+    assert_eq!(count(h, KILLS).await?, 7);
+    for (id, text) in [(6, "report"), (7, "kill")] {
+        assert_eq!(
+            talk(owner, admitted, argery, id, text).await?,
+            NpcIntentDisposition::Ok
+        );
+    }
+    assert_eq!(count(h, FAME).await?, 1);
+    assert_eq!(count(h, KILLS).await?, 0);
+    assert_eq!(count(h, PHASE).await?, 0);
+    for (id, text) in [(8, "kill"), (9, "yes")] {
+        let _ = talk(owner, admitted, argery, id, text).await?;
+    }
+    assert_eq!(
+        count(h, PHASE).await?,
+        0,
+        "no new task during the source cooldown"
+    );
+    let elapsed_start: i64 = sqlx::query_scalar(
+        "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint - 72001",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(count(h, REPORTED_AT).await? > elapsed_start, "the report stamps the transaction clock");
+    arrange_track(h, REPORTED_AT, elapsed_start).await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    for (id, text) in [(10, "bye"), (11, "hi"), (12, "kill"), (13, "yes")] {
+        assert_eq!(
+            talk(owner, admitted, argery, id, text).await?,
+            NpcIntentDisposition::Ok,
+            "{id}: {text}"
+        );
+    }
+    assert_eq!(count(h, PHASE).await?, 1);
+
+    let _ = talk(owner, admitted, argery, 14, "bye").await?;
+    assert_eq!(
+        talk(owner, admitted, commander, 15, "hi").await?,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(
+        talk(owner, admitted, commander, 16, "worthy").await?,
+        NpcIntentDisposition::Rejected
+    );
+    assert_eq!(count(h, FAME).await?, 1);
+
+    Ok(())
+}
+
+async fn arrange_track(h: &Harness, track: &str, value: i64) -> TestResult {
+    let mut fixture = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *fixture)
+        .await?;
+    let updated = sqlx::query("UPDATE game_character_quest_tracks SET value=$2 WHERE track_key=$1")
+        .bind(track)
+        .bind(value)
+        .execute(&mut *fixture)
+        .await?;
+    assert_eq!(updated.rows_affected(), 1);
+    fixture.commit().await?;
     Ok(())
 }
 

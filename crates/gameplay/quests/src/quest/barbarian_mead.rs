@@ -5,6 +5,7 @@ use super::{
 };
 
 pub const KEY: &str = "oteryn:quest-callback/barbarian-test-mead";
+pub const AWAKE_BEAR: &str = "oteryn:quest-callback/barbarian-test/awake-bear";
 pub const QUEST: &str = "oteryn:quest.the_ice_islands_quest";
 pub const TRACKS: [&str; 4] = [
     "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",

@@ -718,7 +718,7 @@ impl DurabilityRoot {
                 .starts_with(oteryn_gameplay_quests::quest::authored_bindings::door_use::PREFIX)
             || oteryn_gameplay_quests::quest::source_deaths::rule(&request.transition_key)
                 .is_some()
-            || oteryn_gameplay_quests::quest::native_kills::counter(&request.transition_key)
+            || oteryn_gameplay_quests::quest::native_kills::counter_for(&catalogue, &request.transition_key)
                 .is_some();
         if native_key != native.is_some()
             || native
@@ -1436,10 +1436,13 @@ impl DurabilityRoot {
                     };
                     // Reused from PC3 add7faf92: authoritative locked progression,
                     // after historical receipt lookup and before any fresh write.
-                    if let Some(minimum)=reward_callback.as_ref().and_then(|c|c.minimum_level)
-                        && state.try_get::<i64,_>("level")? < i64::from(minimum) {
-                        tx.rollback().await?;
-                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    if let Some(callback) = reward_callback.as_ref()
+                        && let Some(minimum) = callback.minimum_level {
+                        let maximum = callback.maximum_level.unwrap_or(u32::MAX);
+                        if !(i64::from(minimum)..=i64::from(maximum)).contains(&state.try_get::<i64,_>("level")?) {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
                     }
                     if !super::authored_admission::permits_level(&catalogue, &transition.quest, state.try_get("level")?) {
                         tx.rollback().await?;

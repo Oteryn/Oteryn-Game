@@ -83,6 +83,111 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/curos.lua:95-101:sha256:6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e"
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/l2-alliance-report-rebel",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The rebels are returning to camp now that their commander is dead."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/curos.lua#L83-L85"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-alliance-start",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "A rebel commander is hiding in the mountains northwest of here. Kill him and return to me."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/curos.lua#L70-L82"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06",
+          "minimum": 5,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-alliance-tower",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The lizards spy on us from a tower in the Dragonblaze Mountains. Enter through their underground fortress and destroy the scrying device."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/curos.lua#L86-L94"
       ]
     },
     {
@@ -872,6 +977,414 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l2-zalamon-accept",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission00",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Watch the mountain passes."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:244-262"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-zalamon-finish",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i10199",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this serpent crest for your service to the resistance."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:150-162"
+      ],
+      "experience": 10000,
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/l2-zalamon-map",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission00",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i637",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "These troop movements will help us plan a defence."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:262-275"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-zalamon-phantom-accept",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 13,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 18,
+          "maximum": 18,
+          "set": 19
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Go through the portal and approach the gate."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:337-345"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-zalamon-poison-accept",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission03",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Mix it into the water on the uppermost terrace."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:293-310"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-zalamon-poison-report",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission03",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You have weakened the emperor’s forces."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:115-123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-zalamon-spy-accept",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission02",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Look inside all three buildings."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:281-293"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-zalamon-spy-report",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission02",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "A direct attack on an army that size would fail."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:98-107"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building_01",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building_02",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building_03",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-zalamon-symbols",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 11,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/strange_symbols",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Fetch grease from the shelf in the storeroom, then arrange the symbols with the levers."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:322-330"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-zalamon-temple-accept",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission01",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The temple lies northwest of the outpost."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:275-281"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-zalamon-temple-report",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission01",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The corruption has reached the temple."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:80-90"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l2-zalamon-tome",
       "quest": "oteryn:quest.children_of_the_revolution_quest",
       "npc": "oteryn:npc.zalamon",
@@ -907,6 +1420,41 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/zalamon.lua:325-335:sha256:6e4413732e7aee8b72a3263798aa50268139a80d04c5f47e4f3b35e51d645465"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-zalamon-waystones-accept",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 10,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Search the temple for a passage."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:310-322"
       ]
     }
   ]

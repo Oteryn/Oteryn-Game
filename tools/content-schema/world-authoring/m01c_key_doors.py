@@ -13,7 +13,7 @@ from pathlib import Path
 import quest_door_bindings as base
 
 CAPTURE = Path("tools/content-schema/world-authoring/samples/m01c-key-doors.json")
-LOCKED = {5097, 6248}
+LOCKED = {5097, 6248, 7033}
 SUMMARY = "tools/content-schema/world-authoring/samples/world-base-capture-v1.json"
 
 
@@ -39,7 +39,7 @@ def overlay_region(raw, palette, capture):
         raise ValueError("M01C_KEY_DOOR_TARGET: duplicate source position")
     for row in bindings:
         number = row["key_number"]
-        if type(number) is not int or number not in (3012, 3520, 5010):
+        if type(number) is not int or number not in (3012, 3520, 4502, 5010):
             raise ValueError("M01C_KEY_DOOR_NUMBER")
         matches = [
             item

@@ -15,6 +15,7 @@ EXPECTED = (
     ((32035, 31642, 8), 7042, "action", 4503),
     ((32107, 31568, 9), 7033, "action", 4502),
     ((32180, 31633, 8), 2772, "unique", 30008),
+    ((33290, 31715, 12), 2772, "unique", 30009),
     ((32966, 32626, 5), 4634, "action", 50022),
     ((32968, 32630, 7), 1720, "action", 50022),
     ((32968, 32629, 7), 1949, "action", 50022),
@@ -24,6 +25,8 @@ EXPECTED = (
     ((32573, 32121, 7), 2772, "unique", 30034),
     ((33290, 31785, 13), 776, "action", 9715),
     ((33498, 32613, 8), 10840, "unique", 35020),
+    ((33007, 32607, 8), 21412, "action", 50806),
+    ((32991, 32642, 8), 21412, "action", 50806),
     ((32209, 32292, 6), 1949, "action", 4253),
     ((32210, 32292, 6), 1949, "action", 4253),
 )
@@ -108,9 +111,10 @@ class QuestStartupBindingsTests(unittest.TestCase):
                 TeleportUnique = {[35020] = {itemId=10840,itemPos={x=33498,y=32613,z=8}}}
             """,
             "data-global/startup/tables/door_level.lua": "LevelDoorAction = {[1070] = {itemId=false,itemPos={{x=33190,y=31684,z=14},{x=33195,y=31684,z=14}}}}",
-            "data-global/startup/tables/lever.lua": "LeverAction = {[5633] = {itemId=2772,itemPos={{x=33152,y=32866,z=8}}}} LeverUnique = {[30008] = {itemId=2772,itemPos={x=32180,y=31633,z=8}}, [30034] = {itemId=2772,itemPos={x=32573,y=32121,z=7}}}",
-            "data-global/startup/tables/item.lua": "ItemAction = {[4503] = {{itemId=2970,itemPos={{x=32030,y=31688,z=8}}},{itemId=7042,itemPos={{x=32035,y=31642,z=8}}}}, [9715] = {itemId=776,itemPos={{x=33290,y=31785,z=13}}}}",
+            "data-global/startup/tables/lever.lua": "LeverAction = {[5633] = {itemId=2772,itemPos={{x=33152,y=32866,z=8}}}} LeverUnique = {[30008] = {itemId=2772,itemPos={x=32180,y=31633,z=8}}, [30009] = {itemId=2772,itemPos={x=33290,y=31715,z=12}}, [30034] = {itemId=2772,itemPos={x=32573,y=32121,z=7}}}",
+            "data-global/startup/tables/item.lua": "ItemAction = {[4503] = {{itemId=2970,itemPos={{x=32030,y=31688,z=8}}},{itemId=7042,itemPos={{x=32035,y=31642,z=8}}}}, [9715] = {itemId=776,itemPos={{x=33290,y=31785,z=13}}}, [50806] = {itemId=21412,itemPos={{x=33007,y=32607,z=8}}}}",
             "data-global/startup/tables/door_key.lua": "KeyDoorAction = {[Storage.Quest.Key.ID3142] = {itemId=false,itemPos={{x=32450,y=32044,z=8}}}, [Storage.Quest.Key.ID4502] = {itemId=false,itemPos={{x=32107,y=31568,z=9}}}}",
+            "data-global/startup/tables/corpse.lua": "CorpseAction = {[50806] = {itemId=21412,itemPos={{x=32991,y=32642,z=8}}}}",
             "data-global/lib/core/storages.lua": "Storage = {Quest={Key={ID4502=4502,ID3142=3142}}}",
             "data/libs/tables/doors.lua": "LevelDoorTable = {{closedDoor=5102,openDoor=5103}}",
         }
@@ -159,6 +163,21 @@ class QuestStartupBindingsTests(unittest.TestCase):
                 ((32909, 31074, 7), 1680, "action", 1050),
                 ((32910, 31088, 7), 1678, "action", 1050),
                 ((33775, 31699, 8), 9565, "action", 1050),
+            )
+        )
+
+    def test_native_bear_battle_axe_and_beggar_selectors(self):
+        self.assert_native_startup_selectors(
+            (
+                ((32302, 32257, 8), 355, "action", 101),
+                ((32149, 32110, 11), 355, "action", 101),
+                ((32148, 32105, 11), 2772, "action", 30006),
+                ((32145, 32100, 11), 1631, "action", 4601),
+                ((32150, 32112, 12), 2472, "unique", 5013),
+                ((32146, 32097, 11), 2472, "unique", 6114),
+                ((32144, 32096, 11), 2472, "unique", 6115),
+                ((32141, 32097, 11), 2472, "unique", 6116),
+                ((33167, 31600, 15), 2482, "unique", 6189),
             )
         )
 

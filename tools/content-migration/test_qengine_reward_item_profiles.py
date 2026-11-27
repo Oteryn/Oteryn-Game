@@ -35,10 +35,34 @@ class SharedPhysicalAdmission(unittest.TestCase):
         }
         for item, stack in ((8191, "NonStackable"), (8192, "StackCapable")):
             with self.subTest(item=item):
-                self.assertEqual(profiles_by_key.get(f"oteryn:item.tibia.i{item}"), {
-                    "materializable": True, "stack_class": stack,
-                    "legal_destinations": ["CharacterInventory", "Ground"],
-                })
+                self.assertEqual(
+                    profiles_by_key.get(f"oteryn:item.tibia.i{item}"),
+                    {
+                        "materializable": True,
+                        "stack_class": stack,
+                        "legal_destinations": ["CharacterInventory", "Ground"],
+                    },
+                )
+    def test_adventurers_map_uses_its_canonical_carried_admission(self):
+        (row,) = profiles.capture(ids={22107})["records"]
+        self.assertEqual(
+            row["production_definition"]["production_key"], "oteryn:item.tibia.i22107"
+        )
+        self.assertEqual(
+            row["admission"],
+            {
+                "materializable": True,
+                "stack_class": "NonStackable",
+                "legal_destinations": ["CharacterInventory", "Ground"],
+            },
+        )
+        self.assertEqual(
+            row["semantics"]["physical"]["value"]["weight"],
+            {
+                "state": "KNOWN",
+                "value": 200,
+            },
+        )
 
     def test_capture_keeps_the_mining_owned_pick_speed_unknown(self):
         native=json.loads((profiles.ROOT/profiles.PROFILE).read_bytes())

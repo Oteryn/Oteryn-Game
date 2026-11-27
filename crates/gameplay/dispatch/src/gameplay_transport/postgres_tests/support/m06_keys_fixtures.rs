@@ -59,7 +59,10 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
     run(async |admin| {
         let (door_x, door_y, door_floor, door_appearance, key_action) =
             source.unwrap_or((6, 0, -7, 1628, 4321));
-        let level_gate = key_action == 1050;
+        let required_level = (1001..2000)
+            .contains(&key_action)
+            .then(|| u32::from(key_action - 1000));
+        let level_gate = required_level.is_some();
         let door_action = if let Some((x, y, floor, _, action)) = source {
             let authored = authored_door_action(x, y, floor, door_appearance)?;
             assert_eq!(
@@ -316,7 +319,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
             expected_revision: 0,
         };
 
-        if level_gate {
+        if let Some(required_level) = required_level {
             let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
             harness
                 .root
@@ -346,8 +349,8 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
                 .map_err(debug)?;
             owner.admit_progression_session(&mut admitted).await;
             for (level, expected) in [
-                (49, UseDisposition::Locked),
-                (50, UseDisposition::Committed),
+                (required_level - 1, UseDisposition::Locked),
+                (required_level, UseDisposition::Committed),
             ] {
                 super::questpc6_fibula_route_fixtures::level(&owner, &mut admitted, level).await?;
                 let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&station)
@@ -359,9 +362,9 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
                 let command = admitted.continuity.next_command_id;
                 let (next, result, replay) =
                     super::item_craft_fixtures::exchange(&owner, admitted, command, &payload, None).await?;
-                assert_eq!(result, expected, "source level50 gate at level{level}");
+                assert_eq!(result, expected, "source level{required_level} gate at level{level}");
                 admitted = next;
-                assert_eq!(map.enterable(station_pos), level == 50);
+                assert_eq!(map.enterable(station_pos), level == required_level);
                 let position = owner
                     .runtime
                     .lock()
@@ -371,12 +374,12 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
                 assert_eq!(
                     position.position(),
                     MovementLocalPosition {
-                        x: i32::from(if level == 50 { door_x } else { door_x + 1 }),
+                        x: i32::from(if level == required_level { door_x } else { door_x + 1 }),
                         y: i32::from(door_y),
                         floor: -i16::from(door_floor),
                     },
                 );
-                if level == 50 {
+                if level == required_level {
                     assert_eq!(
                         owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
                         MovementLocalPosition {
@@ -429,7 +432,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
                 assert_eq!((cell.x, cell.y, cell.z), (i32::from(door_x + 1), i32::from(door_y), i32::from(door_floor)));
             }
             eprintln!(
-                "POSTGRES_CASE_COMPLETED source_level50_gate_{source:?} duration={:?}",
+                "POSTGRES_CASE_COMPLETED source_level{required_level}_gate duration={:?}",
                 started.elapsed()
             );
             drop(owner);

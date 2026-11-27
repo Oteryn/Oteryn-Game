@@ -530,10 +530,10 @@ class QuestPc7QuestRewards(unittest.TestCase):
             for c in self.callbacks["callbacks"]
             if c["key"].split("/")[-1].startswith("questpc7-friends-")
         ]
-        self.assertEqual(len(selected), 18)
+        self.assertEqual(len(selected), 21)
         services = [c for c in selected if c.get("counter")]
-        self.assertEqual(len(services), 2)
-        self.assertEqual(len({c["counter"]["track"] for c in services}), 2)
+        self.assertEqual(len(services), 3)
+        self.assertEqual(len({c["counter"]["track"] for c in services}), 3)
         self.assertTrue(
             all(
                 c["counter"]["maximum"] == 1000000000000
@@ -542,6 +542,12 @@ class QuestPc7QuestRewards(unittest.TestCase):
             )
         )
         self.assertEqual(sum(c.get("completes", False) for c in selected), 1)
+        draconian = next(c for c in services if c["key"].endswith("-draconian-steel"))
+        self.assertEqual(
+            draconian["take"], [{"item": "oteryn:item.tibia.i3416", "count": 1}]
+        )
+        self.assertEqual(draconian["give"]["item"], "oteryn:item.tibia.i5889")
+        self.assertEqual(draconian["topic"], 6)
         for mutation in ("zero", "collision", "completion"):
             bad = copy.deepcopy(self.callbacks)
             callback = next(c for c in bad["callbacks"] if c["key"] == services[0]["key"])

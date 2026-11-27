@@ -22,6 +22,90 @@
       ]
     },
     {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "uth'lokr"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I can forge steel from a dragon shield. Do you want to trade?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "uth'lokr"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring three bast skirts?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "uth'lokr"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 1,
+          "maximum": 15,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Shall I forge your dragon shield into draconian steel?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "any_topic": false,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "First, will you do a favour for me?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.ajax",
       "keywords": [
         "behemoth fang",
@@ -1746,6 +1830,26 @@
       ]
     },
     {
+      "npc": "oteryn:npc.chavis",
+      "keywords": [
+        "food"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/count",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Do you have five roots ready to hand in for a Rathleton vote?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.cledwyn",
       "keywords": [
         "addon"
@@ -2785,6 +2889,223 @@
       "storage": [],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomargery",
+      "keywords": [
+        "kill"
+      ],
+      "topic": 0,
+      "next_topic": 24,
+      "minimum_level": 80,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you take on the local hunting task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomargery",
+      "keywords": [
+        "report"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 25,
+      "storage": [],
+      "reply": [
+        "Which task are you reporting?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnombold",
+      "keywords": [
+        "kill"
+      ],
+      "topic": 0,
+      "next_topic": 24,
+      "minimum_level": 50,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/middle/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "any_topic": true,
+      "maximum_level": 79,
+      "failure_reply": [
+        "This hunt is for levels 50 through 79."
+      ],
+      "reply": [
+        "Will you take on the local hunting task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnombold",
+      "keywords": [
+        "report"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 25,
+      "storage": [],
+      "reply": [
+        "Which task are you reporting?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "kill"
+      ],
+      "topic": 0,
+      "next_topic": 24,
+      "minimum_level": 25,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/upper/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "any_topic": true,
+      "maximum_level": 49,
+      "failure_reply": [
+        "This hunt is for levels 25 through 49."
+      ],
+      "reply": [
+        "Will you take on the local hunting task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "report"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 25,
+      "storage": [],
+      "reply": [
+        "Which task are you reporting?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "reward"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Your Spike fame makes you eligible for outfit rewards. Ask if you are worthy."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "worthy"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 20,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/spike/fame",
+          "minimum": 100,
+          "maximum": 2147483647
+        }
+      ],
+      "reply": [
+        "The basic outfit costs 1,000 gold. The first addon costs 2,000 and the second costs 3,000."
+      ],
+      "failure_reply": [
+        "You need at least 100 Spike fame."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "basic"
+      ],
+      "topic": 20,
+      "next_topic": 21,
+      "storage": [],
+      "minimum_level": 25,
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/spike/fame",
+          "minimum": 100,
+          "maximum": 2147483647
+        }
+      ],
+      "reply": [
+        "Buy the basic outfit reward for 1,000 gold and 100 Spike fame?"
+      ],
+      "failure_reply": [
+        "You need more experience or Spike fame."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "first"
+      ],
+      "topic": 20,
+      "next_topic": 22,
+      "storage": [],
+      "minimum_level": 50,
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/spike/fame",
+          "minimum": 100,
+          "maximum": 2147483647
+        }
+      ],
+      "reply": [
+        "Buy the first outfit reward for 2,000 gold and 100 Spike fame?"
+      ],
+      "failure_reply": [
+        "You need more experience or Spike fame."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "second"
+      ],
+      "topic": 20,
+      "next_topic": 23,
+      "storage": [],
+      "minimum_level": 80,
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/spike/fame",
+          "minimum": 100,
+          "maximum": 2147483647
+        }
+      ],
+      "reply": [
+        "Buy the second outfit reward for 3,000 gold and 100 Spike fame?"
+      ],
+      "failure_reply": [
+        "You need more experience or Spike fame."
       ]
     },
     {
@@ -6101,6 +6422,107 @@
       ]
     },
     {
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "barbarian"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Ask me about the test to become a barbarian."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "mead",
+        "barbarian mead"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring a honeycomb for the mead?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "test"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Are you willing to take the barbarian test?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "test"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Are you willing to take the barbarian test?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Can you take ten sips of our mead without passing out?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.the_bone_master",
       "keywords": [
         "advancement",
@@ -7234,6 +7656,275 @@
       ],
       "reply": [
         "Have you found the way which will lead us to the great gate?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you work for the resistance?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you find the enemy plans?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you investigate the Temple of Equilibrium?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you scout the enemy camp for food, weapons, and soldiers?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Can you disrupt their food supply?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 10,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 12,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Can you find a route north to the great gate?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "poison",
+        "poizzon"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 9,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The emperor spreads corruption through those bound to him."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "symbols",
+        "strange symbols"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 12,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/strange_symbols",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The symbols form a riddle. Will you try the levers?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "symbols",
+        "strange symbols"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 13,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/strange_symbols",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The symbols form a riddle. Will you try the levers?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "any_topic": false,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Find the enemy plans in the outpost beyond the mountains. Will you go?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "any_topic": false,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you give me the map?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "any_topic": false,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Take a flask from the storeroom. Will you go to the rice fields?"
       ]
     },
     {

@@ -262,6 +262,7 @@ def source_key_claim(definition):
         or panpipe_key_claim(definition)
         or outlaw_key_claim(definition)
         or any(key_claim(definition, number, 2969) for number in (3620, 3667, 4603))
+        or key_claim(definition, 4601, 2970)
     )
 
 

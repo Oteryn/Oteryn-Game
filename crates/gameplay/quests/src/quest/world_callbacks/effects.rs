@@ -98,6 +98,9 @@ pub struct CallbackEffects {
     pub passages_reset_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
+    /// Repeat the committed magic cue independently of any item transform.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub magic_repeat_after_ms: Option<u32>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
@@ -675,18 +678,22 @@ pub(super) fn valid(callback: &Callback) -> bool {
                                 .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
                     })
         })
+        || effects.magic_repeat_after_ms.is_some_and(|delay| {
+            !(1..=3_600_000).contains(&delay) || effects.magic.is_none() || callback.reversible
+        })
         || effects.reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)
                 || callback.actor_kind != ActorKind::Player
                 || (effects.transform.is_none()
                     && callback.lever.is_none()
                     && !callback.item_on_target.as_ref().is_some_and(|tool| {
-                        tool.selected_instance
-                            && tool.target_remove
-                            && (!tool.reusable
-                                || (callback.requires_world_admission
-                                    && callback.trigger == Trigger::Use
-                                    && callback.passages.is_empty()))
+                        tool.target_replacement.is_some()
+                            || (tool.selected_instance
+                                && tool.target_remove
+                                && (!tool.reusable
+                                    || (callback.requires_world_admission
+                                        && callback.trigger == Trigger::Use
+                                        && callback.passages.is_empty())))
                     }))
                 || (callback
                     .item_on_target
@@ -705,7 +712,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             !(1..=3_600_000).contains(&delay)
                 || callback.actor_kind != ActorKind::Player
                 || callback.trigger != Trigger::Use
-                || callback.reversible
+                || (callback.reversible && !callback.chayenne_timed_lever())
                 || callback.passages.is_empty()
                 || callback
                     .passages

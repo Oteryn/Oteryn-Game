@@ -1,4 +1,5 @@
 import copy
+import json
 import unittest
 import questpc3_native_entries as source
 
@@ -16,10 +17,13 @@ class NativeEntries(unittest.TestCase):
         self.assertEqual((counter['gate_value'], counter['minimum'], counter['maximum'],
                           counter['advance_gate_to']), (0, 0, 1, 1))
 
-    def test_draconia_requires_its_two_real_numbered_doors_and_level_25(self):
+    def test_draconia_requires_its_two_real_numbered_doors_with_a_tower_only_level_gate(self):
         quest = source.build_draconia()['quests'][0]
         self.assertEqual(quest['quest'], 'oteryn:quest.draconia_quest')
-        self.assertEqual(quest['admission'], {'minimum_level':25})
+        self.assertNotIn('admission', quest)
+        capture = json.loads((source.ROOT / 'tools/content-schema/world-authoring/samples/classic-quest-placements.json').read_bytes())
+        gate, = [r for r in capture['placements'] if r['position'] == [32804, 31583, 2]]
+        self.assertEqual((gate['appearance'], gate['attributes']), (5102, {'action': 1025}))
         self.assertEqual(len(quest['stages']), 2)
         expected = {(x << 32) | (y << 16) | (246 << 8) | 1
                     for x, y in [(32675, 31649), (32676, 31671)]}

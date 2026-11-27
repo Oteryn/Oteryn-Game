@@ -70,6 +70,52 @@ fn credited(death: &FrozenGrizzlyDeath) -> Vec<[u8; 16]> {
 }
 
 #[test]
+fn spike_native_deaths_credit_each_eligible_shared_party_member() -> Result<(), String> {
+    use oteryn_gameplay_quests::quest::{kill_objectives, loader};
+    let loaded = loader::load_embedded_quest_state("content-1").map_err(|e| format!("{e:?}"))?;
+    for rule in &kill_objectives::SPIKE_HUNTS {
+        let tracks =
+            std::collections::BTreeMap::from([(rule.phase_track.to_owned(), rule.phase_before)]);
+        let mut party_members = [
+            snapshot(1, &[], 10),
+            snapshot(2, &[], 11),
+            snapshot(3, &[], 12),
+        ];
+        for member in &mut party_members[..2] {
+            member.native_counters = capture_native(loaded.catalogue(), &tracks);
+        }
+        let (x, y, floor) = rule.minimum;
+        let corpse = crate::foundation::MovementLocalPosition { x, y, floor };
+        for (shared, at, expected) in [
+            (true, corpse, vec![id(1), id(2)]),
+            (false, corpse, vec![id(1)]),
+            (
+                true,
+                crate::foundation::MovementLocalPosition { x: x - 1, ..corpse },
+                vec![],
+            ),
+        ] {
+            let frozen = freeze_at(
+                Some(party(1, &[1, 2, 3], shared)),
+                id(1),
+                true,
+                rule.creature,
+                Some(at),
+                &party_members,
+            );
+            let recipients: Vec<_> = frozen
+                .native
+                .iter()
+                .filter(|recipient| recipient.death.transition == rule.transition)
+                .map(|recipient| recipient.character)
+                .collect();
+            assert_eq!(recipients, expected, "{}", rule.transition);
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn grizzly_solo_and_inactive_shared_experience_credit_only_most_damage_principal() {
     let snapshots = [snapshot(1, &[1], 10), snapshot(2, &[1], 11)];
     for source in [party(1, &[], false), party(1, &[1, 2], false)] {
@@ -317,11 +363,13 @@ fn qn5_grimvale_area_uses_frozen_victim_position_and_retains_first_capture() -> 
         .map(|counter| counter.transition.as_str())
         .collect();
     active.sort_unstable();
-    // QUESTPC3's two source death routes begin at zero. Neither species may
-    // receive the werewolf credit tested below; keep the complete exact census.
+    // The source death routes start at zero. Keep the exact census and verify
+    // that only the werewolf counter receives the credit tested below.
     assert_eq!(
         active,
         [
+            "oteryn:quest-transition/native-kills/great-dragon-hunt/dragon",
+            "oteryn:quest-transition/native-kills/great-dragon-hunt/dragon_lord",
             "oteryn:quest-transition/native-kills/m01c-ancient-aucar-ahau",
             "oteryn:quest-transition/native-kills/m01c-decaying-defender-bakragore",
             "oteryn:quest-transition/native-kills/qn5-grimvale-werewolves",

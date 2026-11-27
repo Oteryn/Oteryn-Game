@@ -61,6 +61,10 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                             | "oteryn:quest-callback/authored-shattered-isles-s4"
                             | "oteryn:quest-callback/authored-threatened-dreams/book-table-1"
                             | "oteryn:quest-callback/authored-threatened-dreams/book-table-2"
+                            | "oteryn:quest-callback/barbarian-test/fill-horn"
+                            | "oteryn:quest-callback/barbarian-test/stun-bear"
+                            | "oteryn:quest-callback/children-grease"
+                            | "oteryn:quest-callback/children-poison-water"
                             | "oteryn:quest-callback/explorer-society/collect-bells"
                             | "oteryn:quest-callback/explorer-society/cut-ice"
                             | "oteryn:quest-callback/to-blind-the-enemy/mirror"
@@ -214,6 +218,29 @@ mod tests {
                 "unhandled {prefix} tools: {unhandled:?}"
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn children_selected_tools_reach_the_carried_tool_owner() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        let children: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                callback.key.starts_with("oteryn:quest-callback/children-")
+                    && callback
+                        .item_on_target
+                        .as_ref()
+                        .is_some_and(|tool| tool.selected_instance)
+            })
+            .collect();
+        assert_eq!(children.len(), 2);
+        let unrouted: Vec<_> = children
+            .iter()
+            .filter(|callback| !accepts(callback))
+            .map(|callback| callback.key.as_str())
+            .collect();
+        assert!(unrouted.is_empty(), "unrouted selected tools: {unrouted:?}");
         Ok(())
     }
 

@@ -72,6 +72,9 @@ MAX_FLOOR = 15
 UNSET = (0, 0, 0)
 CATALOGUES = ("content/world/objects", "content/world/terrain")
 GENERATOR = "tools/content-schema/world-authoring/convert_world_metadata.py"
+CLASSIC_QUEST_CAPTURE = (
+    "tools/content-schema/world-authoring/samples/classic-quest-placements.json"
+)
 
 FAMILIES = {
     "Area.HuntingPlace": {
@@ -378,6 +381,70 @@ def shard_files(
     return out
 
 
+def classic_quest_teleports(
+    root: Path, records: list[dict], summary: dict
+) -> dict[str, bytes]:
+    """Reconcile the same Crystal startup destinations as the B3 placement overlay."""
+    raw = (root / CLASSIC_QUEST_CAPTURE).read_bytes()
+    capture = json.loads(raw)
+
+    def xyz(value):
+        return value["x"], value["y"], value["floor"]
+
+    positions = {xyz(row["declaration"]["from"]): row for row in records}
+    for row in capture["placements"]:
+        target = row.get("attributes", {}).get("teleport")
+        if target is None:
+            continue
+        x, y, z = row["position"]
+        key = f"oteryn:transition.teleport.x{x}_y{y}_z{z}"
+        item = row["appearance"]
+        declaration = {
+            "from": position(x, y, z),
+            "identity": {"key": key, "revision": REVISION},
+            "kind": "Transition",
+            "object": ref("Item", f"oteryn:item.tibia.i{item}"),
+            "to": position(*target),
+            "transition_kind": "teleport",
+        }
+        previous = positions.get((x, y, z))
+        if previous is not None:
+            if previous["declaration"] != declaration:
+                raise ConvertError(f"classic quest teleport disagrees at {(x, y, z)}")
+            continue
+        exact = binding("Transition", key, MAP_NAMESPACE, f"{x},{y},{z}:{item}")
+        exact["source_revision"] = capture["revision"]
+        record = {"declaration": declaration, "source_bindings": [exact]}
+        records.append(record)
+        positions[(x, y, z)] = record
+    family = "Transition.Teleport"
+    unique(records, family)
+    summary["families"][family] = len(records)
+    summary["classic_quest_teleports"] = {
+        "path": CLASSIC_QUEST_CAPTURE,
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "revision": capture["revision"],
+    }
+    counts = {"Item": 0, "Terrain": 0, "WorldObject": 0}
+    for record in records:
+        counts[record["declaration"]["object"]["family"]] += 1
+    summary["teleport_object_families"] = counts
+    out = shard_files(family, records, summary["source"])
+    out[str(SUMMARY.relative_to(ROOT))] = canonical(summary)
+    return out
+
+
+def retained_classic_quest_teleports(root: Path) -> dict[str, bytes]:
+    metadata = json.loads((root / "content/world/transitions/index.json").read_bytes())
+    records = [
+        record
+        for shard in metadata["shards"]
+        for record in json.loads((root / shard).read_bytes())["records"]
+    ]
+    summary = json.loads((root / SUMMARY.relative_to(ROOT)).read_bytes())
+    return classic_quest_teleports(root, records, summary)
+
+
 def read_source(crystal_root: Path) -> dict[str, bytes]:
     blobs = {}
     for row in SOURCE["files"]:
@@ -427,6 +494,8 @@ def build(
         "teleport_object_families": object_families,
     }
     out[str(SUMMARY.relative_to(ROOT))] = canonical(summary)
+    if (root / CLASSIC_QUEST_CAPTURE).is_file():
+        out.update(classic_quest_teleports(root, tp_records, summary))
     return out
 
 
@@ -484,11 +553,17 @@ def apply(out: dict[str, bytes], check: bool, root: Path = ROOT) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--crystal-root", type=Path, required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--crystal-root", type=Path)
+    source.add_argument("--classic-quest-overlay", action="store_true")
     parser.add_argument("--check", action="store_true", help="fail instead of writing")
     args = parser.parse_args()
     try:
-        out = build(read_source(args.crystal_root))
+        out = (
+            retained_classic_quest_teleports(ROOT)
+            if args.classic_quest_overlay
+            else build(read_source(args.crystal_root))
+        )
     except (ConvertError, otbm_reader.OtbmError, OSError) as error:
         print(f"FAIL {error}", file=sys.stderr)
         return 1
