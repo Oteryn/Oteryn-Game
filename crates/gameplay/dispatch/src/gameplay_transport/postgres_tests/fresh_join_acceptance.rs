@@ -135,7 +135,12 @@ async fn exercise(first_entry: FirstEntryOutcome, playable: bool) -> TestResult 
     };
     let drive = async {
         entry.preparing.notified().await;
-        let first = {
+        let first = if first_entry == FirstEntryOutcome::AwaitingSpellRepair {
+            // This entry starts its liveness and repair protocol after acceptance.
+            let accepted = super::item_look_fixtures::read_frame(&mut client).await?;
+            entry.proceed.notify_one();
+            accepted
+        } else {
             let mut frame = std::pin::pin!(super::item_look_fixtures::read_frame(&mut client));
             use std::future::Future as _;
             let early =
