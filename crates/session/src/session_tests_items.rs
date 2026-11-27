@@ -997,3 +997,77 @@ fn a_pushed_item_delta_with_a_wrong_revision_or_a_duplicate_handle_fails_closed(
 
 #[path = "tests/item_appearance.rs"]
 mod item_appearance;
+
+#[test]
+fn use_refusal_frames_round_trip_without_poisoning_the_session() -> Result<(), BoxError> {
+    use oteryn_protocol_oteryn::encode_command_error_result;
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer_with(
+                        &mut server,
+                        ITEM_SELECTED,
+                        ITEM_SELECTED,
+                        &[],
+                        item_snapshot(vec![])?,
+                        &[
+                            inventory_domain(1, &CharacterInventory::default())?,
+                            container_domain(1, &OpenContainer::default())?,
+                        ],
+                    )
+                    .await?;
+                    for (offset, command_type) in [2, 2, 1, 1].into_iter().enumerate() {
+                        let frame = read_frame(&mut server).await?;
+                        let envelope = decode_wire_envelope(&frame)?;
+                        let command = envelope.client_command(1)?;
+                        let id = 7 + u64::try_from(offset)?;
+                        let sequence = 41 + u64::try_from(offset)?;
+                        assert_eq!((command.command_id, command.command_type), (id, command_type));
+                        let reply = match offset {
+                            0 | 2 => encode_command_error_result(
+                                1, sequence, id, FoundationProtocolError::CommandRefused,
+                            )?,
+                            1 => encode_command_result(
+                                1, sequence, id, CommandStatus::Rejected,
+                                &world_object::encode_use_result(UseDisposition::Rejected)
+                                    .map_err(|error| format!("{error:?}"))?,
+                            )?,
+                            _ => encode_command_result(
+                                1, sequence, id, CommandStatus::Accepted,
+                                &encode_step_result(StepDisposition::Blocked),
+                            )?,
+                        };
+                        write_frame(&mut server, &reply).await?;
+                    }
+                    Ok::<(), BoxError>(())
+                });
+                let mut session = Session::admit(client, admission_with(ITEM_SELECTED)?).await?;
+                for (id, sequence) in [(7, 41), (8, 42)] {
+                    let reply = session.use_item(ItemHandle::new(1).ok_or("item handle")?).await?;
+                    assert_eq!(reply.command_id, id);
+                    assert_eq!(reply.result_server_sequence, sequence);
+                    assert_eq!(reply.status, CommandStatus::Rejected);
+                    assert_eq!(reply.disposition, UseDisposition::Rejected);
+                    assert!(reply.world_object_overlay_delta.is_none());
+                }
+                assert!(matches!(
+                    session.step(StepDirection::North).await,
+                    Err(SessionError::CommandRefused { command_id: 9, server_sequence: 43 })
+                ));
+                assert_eq!(
+                    session.step(StepDirection::North).await?.disposition, StepDisposition::Blocked,
+                );
+                assert!(session.take_events().is_empty());
+                peer.await??;
+                Ok::<(), BoxError>(())
+            })
+            .and_then(|result| result)
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "USE refusal fixture panicked")?
+        .map_err(Into::into)
+}

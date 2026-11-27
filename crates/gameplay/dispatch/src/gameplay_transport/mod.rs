@@ -1507,6 +1507,13 @@ fn root_holder_busy(error: &crate::durability::DurabilityError) -> bool {
     matches!(error, crate::durability::DurabilityError::RootUnavailable)
 }
 
+fn item_use_holder_busy(error: &crate::durability::item_use::ItemUseError) -> bool {
+    matches!(
+        error,
+        crate::durability::item_use::ItemUseError::Unavailable(error) if root_holder_busy(error)
+    )
+}
+
 fn progression_holder_busy(
     error: &crate::durability::character_progression::CharacterProgressionError,
 ) -> bool {
@@ -1516,6 +1523,14 @@ fn progression_holder_busy(
             crate::durability::DurabilityError::RootUnavailable,
         )
     )
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    static USE_HOLDER_CHECKOUT_PROBE: (
+        &'static str,
+        std::cell::Cell<Option<Arc<composed_admission::HolderCheckoutProbe>>>,
+    );
 }
 
 impl<'r> AdmissionRetryBudget<'r> {
@@ -1694,6 +1709,54 @@ impl<'r> AdmissionRetryBudget<'r> {
                 result => return result,
             }
         }
+    }
+
+    /// Wait for a USE checkout without cancelling an in-flight durable pass.
+    async fn retry_use_holder<T, E>(
+        &self,
+        purpose: &'static str,
+        mut step: impl AsyncFnMut() -> Result<T, E>,
+        busy: impl Fn(&E) -> bool,
+    ) -> Result<T, E> {
+        #[cfg(test)]
+        let probe = USE_HOLDER_CHECKOUT_PROBE
+            .try_with(|(selected, probe)| (*selected == purpose).then(|| probe.take()).flatten())
+            .ok()
+            .flatten();
+        #[cfg(test)]
+        if let Some(probe) = &probe {
+            probe.pause().await;
+        }
+
+        let mut wait_start = None;
+        let result = self
+            .retry_holder(
+                async || {
+                    let result = step().await;
+                    if result.as_ref().is_err_and(&busy) {
+                        wait_start.get_or_insert_with(tokio::time::Instant::now);
+                        #[cfg(test)]
+                        if let Some(probe) = &probe {
+                            probe.blocked();
+                        }
+                    }
+                    result
+                },
+                &busy,
+            )
+            .await;
+        if let Some(start) = wait_start {
+            let waited_ms = start.elapsed().as_millis();
+            let outcome = if result.as_ref().is_err_and(&busy) {
+                "holder_busy"
+            } else {
+                "retry_finished"
+            };
+            operator_event(&format!(
+                "event=use_holder_wait purpose={purpose} waited_ms={waited_ms} outcome={outcome}"
+            ));
+        }
+        result
     }
 
     /// Retry only transient pre-dispatch holder failures, retaining the exact

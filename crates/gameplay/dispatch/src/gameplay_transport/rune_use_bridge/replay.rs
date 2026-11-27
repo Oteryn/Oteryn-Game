@@ -7,6 +7,52 @@ use oteryn_protocol_oteryn::actor_spell::SpellCastDisposition;
 use serde_json::Value;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) async fn has_retained_rune_use(
+        &self,
+        actor: ExactActorRef,
+        command: super::super::connection::UseCommand,
+        intent: &oteryn_protocol_oteryn::world_object::UseIntent,
+    ) -> bool {
+        let Some(fence) = command.item_fence else {
+            return false;
+        };
+        let intent = self.normalize_legacy_rune_intent(intent.clone());
+        let (Ok(character), Ok(id), Ok(binding)) = (
+            CharacterId::decode(fence.character_id.as_bytes()),
+            crate::foundation::CommandId::new(command.command_id),
+            oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent),
+        ) else {
+            return false;
+        };
+        let runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        if states.pending_native.iter().any(|pending| {
+            pending.is_for(actor, command.game_session_id)
+                && pending.command.command_id() == id
+                && pending
+                    .intent
+                    .3
+                    .as_ref()
+                    .is_some_and(|legacy| legacy.original == intent)
+        }) {
+            return true;
+        }
+        runtime
+            .retained_spell_batch(
+                actor,
+                character,
+                fence.character_lease_generation,
+                CommandRef::new(command.game_session_id, id),
+            )
+            .ok()
+            .flatten()
+            .and_then(|batch| serde_json::from_slice::<Value>(&batch.binding).ok())
+            .and_then(|saved| {
+                serde_json::from_value::<Vec<u8>>(saved["legacy_rune_use"].clone()).ok()
+            })
+            .is_some_and(|saved| saved == binding)
+    }
+
     /// Use the native retained batch before resolving a new source revision or handle.
     pub(in crate::gameplay_transport) async fn replay_legacy_rune(
         &self,

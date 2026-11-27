@@ -785,6 +785,14 @@ impl SessionItemView {
         self.table.resolve(handle)
     }
 
+    pub(super) fn backpack_entry_definition(&self, key: ItemKey) -> Option<NonZeroU32> {
+        self.inventory
+            .entries
+            .iter()
+            .find(|entry| entry.key == key)
+            .map(|entry| entry.item_definition_ref)
+    }
+
     /// The domain 1 objects of a spatial snapshot or delta: each gets its handle (§4.1).
     pub fn attach_spatial_handles(
         &mut self,

@@ -248,7 +248,7 @@ fn utility_rune(rune_id: u32) -> TestResult {
                 false,
             )
             .await
-            .ok_or("terminal USE")?;
+            .map_err(|error| format!("terminal USE: {error:?}"))?;
         assert_eq!(
             outcome.disposition,
             UseDisposition::Committed,

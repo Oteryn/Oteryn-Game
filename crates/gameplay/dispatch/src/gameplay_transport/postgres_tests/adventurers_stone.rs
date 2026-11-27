@@ -20,7 +20,8 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
     WorldSpatialDeltaView, decode_world_spatial_delta_view,
 };
 use oteryn_protocol_oteryn::{self as wire, MessageType, world_map, world_object};
-use tokio::io::AsyncWriteExt;
+use std::{cell::Cell, future::Future, sync::Arc, time::Duration};
+use tokio::io::{AsyncWrite, AsyncWriteExt};
 
 const BAG: u8 = 170;
 const STONE: u8 = 171;
@@ -47,6 +48,7 @@ const THAIS: TilePos = TilePos {
 enum Case {
     Wire,
     BattleSign,
+    Held(Duration),
     Return,
 }
 
@@ -72,6 +74,92 @@ fn adventurers_stone_persists_landing_and_guild_exit_consumes_origin_postgres() 
         return Ok(());
     };
     on_stack(admin, "guild_stone_return", Case::Return)
+}
+
+#[test]
+fn adventurers_stone_use_retries_busy_holder_on_wire() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    on_stack(admin, "guild_stone_busy", Case::Held(Duration::from_millis(120)))
+}
+
+#[test]
+fn adventurers_stone_use_holder_timeout_refuses_and_keeps_session_open() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    on_stack(admin, "guild_stone_timeout", Case::Held(holder_timeout_delay()))
+}
+
+pub(super) fn holder_timeout_delay() -> Duration {
+    crate::gameplay_transport::COMMAND_HOLDER_WINDOW + Duration::from_millis(200)
+}
+
+pub(super) async fn contend_use<T>(
+    root: &crate::durability::DurabilityRoot,
+    purpose: &'static str,
+    delay: Duration,
+    serve: impl Future<Output = T>,
+) -> TestResult<T> {
+    use crate::gameplay_transport::{
+        USE_HOLDER_CHECKOUT_PROBE, composed_admission::HolderCheckoutProbe,
+    };
+
+    let probe = Arc::new(HolderCheckoutProbe::default());
+    let contention = probe.contend_with(root, async move { tokio::time::sleep(delay).await });
+    let serving = USE_HOLDER_CHECKOUT_PROBE.scope(
+        (purpose, Cell::new(Some(Arc::clone(&probe)))),
+        crate::durability::DurabilityRoot::with_holder_owner(serve),
+    );
+    let (contended, result) = tokio::time::timeout(Duration::from_secs(30), async {
+        tokio::join!(contention, serving)
+    })
+    .await?;
+    contended.map_err(debug)?;
+    Ok(result)
+}
+
+pub(super) async fn send_use(
+    client: &mut (impl AsyncWrite + Unpin),
+    admitted: AdmittedSession,
+    command_id: u64,
+    payload: &[u8],
+) -> TestResult {
+    let frame = wire::encode_client_command(
+        admitted.continuity.connection_generation,
+        &wire::ClientCommandValue {
+            command_id,
+            command_type: world_object::COMMAND_TYPE_USE_INTENT,
+            payload,
+        },
+    )
+    .map_err(debug)?;
+    client.write_u32(u32::try_from(frame.len())?).await?;
+    client.write_all(&frame).await?;
+    Ok(())
+}
+
+pub(super) fn assert_holder_refusal(
+    envelope: &wire::WireEnvelopeView<'_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+) -> TestResult {
+    let result = wire::decode_command_result(envelope.payload()).map_err(debug)?;
+    assert_eq!(result.command_id, command_id);
+    assert_eq!(result.status, wire::CommandStatus::Rejected);
+    let error = wire::FoundationProtocolError::CommandRefused;
+    assert_eq!(result.error_code, error.code());
+    let payloadless = wire::encode_command_error_result(
+        admitted.continuity.connection_generation,
+        envelope.server_sequence(),
+        command_id,
+        error,
+    )
+    .map_err(debug)?;
+    let payloadless = crate::foundation::decode_wire_envelope(&payloadless).map_err(debug)?;
+    assert_eq!(envelope.payload(), payloadless.payload(), "field 5 must be absent");
+    Ok(())
 }
 
 fn on_stack(admin: String, name: &'static str, case: Case) -> TestResult {
@@ -238,7 +326,18 @@ async fn scenario(admin: String, name: &str, case: Case) -> TestResult {
         assert_eq!(owner.home_town(session, None).await, Some(8));
     } else {
         let refused = matches!(case, Case::BattleSign);
-        use_on_wire(&owner, admitted, reference, refused).await?;
+        let hold = match case {
+            Case::Held(delay) => Some(delay),
+            _ => None,
+        };
+        use_on_wire(&owner, admitted, reference, &h, refused, hold).await?;
+        if hold.is_some() {
+            assert_eq!(saved_position(&owner, current).await?, ARRIVAL);
+            assert_eq!(
+                h.root.read_guild_stone_origin(&authority, &h.node, current.item_fence()).await?,
+                Some(6)
+            );
+        }
         if refused {
             let position = owner
                 .runtime
@@ -309,7 +408,9 @@ async fn use_on_wire(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     reference: std::num::NonZeroU32,
+    harness: &Harness,
     refused: bool,
+    hold: Option<Duration>,
 ) -> TestResult {
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let peer = async move {
@@ -352,18 +453,9 @@ async fn use_on_wire(
             use_with_position: None,
         })
         .map_err(debug)?;
-        let command_id = admitted.continuity.next_command_id;
-        let frame = wire::encode_client_command(
-            admitted.continuity.connection_generation,
-            &wire::ClientCommandValue {
-                command_id,
-                command_type: world_object::COMMAND_TYPE_USE_INTENT,
-                payload: &payload,
-            },
-        )
-        .map_err(debug)?;
-        client.write_u32(u32::try_from(frame.len())?).await?;
-        client.write_all(&frame).await?;
+        let mut command_id = admitted.continuity.next_command_id;
+        let mut expect_busy = hold.is_some_and(|delay| delay >= holder_timeout_delay());
+        send_use(&mut client, admitted, command_id, &payload).await?;
         let (mut position_seen, mut map_seen, mut result_seen, mut text_seen) =
             (false, false, false, false);
         let mut guild_map_pending = false;
@@ -413,6 +505,21 @@ async fn use_on_wire(
                     text_seen |= matches!(line, wire::chat::ChatLine::Private { text, .. } if text == REFUSAL);
                 }
             } else if envelope.message_type() == MessageType::CommandResult {
+                if expect_busy {
+                    assert_holder_refusal(&envelope, admitted, command_id)?;
+                    assert!(!position_seen && !map_seen);
+                    let tracks: i64 = sqlx::query_scalar(
+                        "SELECT count(*) FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.adventurers_guild.stone'",
+                    )
+                    .bind(id(41).as_slice())
+                    .fetch_one(&harness.pool)
+                    .await?;
+                    assert_eq!(tracks, 0);
+                    command_id += 1;
+                    expect_busy = false;
+                    send_use(&mut client, admitted, command_id, &payload).await?;
+                    continue;
+                }
                 let result = wire::decode_command_result(envelope.payload()).map_err(debug)?;
                 assert_eq!(result.command_id, command_id);
                 if refused {
@@ -445,8 +552,15 @@ async fn use_on_wire(
         drop(server);
         end
     };
-    let (_, result) = tokio::join!(serving, peer);
-    result
+    let exchange = async {
+        let (_, result) = tokio::join!(serving, peer);
+        result
+    };
+    if let Some(delay) = hold {
+        contend_use(owner.root, "stone_travel", delay, exchange).await?
+    } else {
+        exchange.await
+    }
 }
 
 async fn seed_stone(h: &Harness) -> TestResult {

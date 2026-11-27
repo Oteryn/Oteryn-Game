@@ -4,7 +4,9 @@
 
 pub(super) mod appearance_change;
 mod authority;
-pub use authority::{AchievementNoticeObservation, DepotObservation, FreshAdmissionAuthority};
+pub use authority::{
+    AchievementNoticeObservation, DepotObservation, FreshAdmissionAuthority, ItemUseKind,
+};
 mod gameplay_idle;
 pub use gameplay_idle::{GameplayIdlePolicy, GameplayIdleState};
 mod moved_step;
@@ -29,6 +31,13 @@ pub(super) async fn test_analyser_route(
         }
         _ => None,
     }
+}
+
+/// Distinguishes a checkout failure before any USE write from an unresolved receipt.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UseOwnerError {
+    HolderBusy,
+    OutcomeUnknown,
 }
 
 mod serve;

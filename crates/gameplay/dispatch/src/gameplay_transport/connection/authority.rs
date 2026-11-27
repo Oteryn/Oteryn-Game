@@ -22,6 +22,20 @@ pub struct DepotObservation {
     pub items: Vec<(u64, [u8; 16])>,
 }
 
+/// Routing facts from a generation-local item definition. The selected owner
+/// still validates the current item, custody and command fence.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ItemUseKind {
+    Stone,
+    Food,
+    Container,
+    Cube,
+    Catalyst,
+    Rune,
+    SoulWar,
+    Other,
+}
+
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
@@ -694,6 +708,46 @@ pub trait FreshAdmissionAuthority {
         async { UseOutcome::rejected() }
     }
 
+    /// Classify an issued definition against the pinned content generation.
+    fn item_use_kind(
+        &self,
+        _definition: std::num::NonZeroU32,
+    ) -> impl Future<Output = Option<ItemUseKind>> {
+        async { None }
+    }
+
+    /// Exact carried or definition-selected Adventurer's Stone USE.
+    fn use_stone(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _item: Option<ItemKey>,
+        _definition: std::num::NonZeroU32,
+    ) -> impl Future<Output = Result<UseOutcome, UseOwnerError>> {
+        async { Ok(UseOutcome::rejected()) }
+    }
+
+    /// Recognize the exact original rune USE even if its item handle has retired.
+    fn retained_rune_use(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: &UseIntent,
+    ) -> impl Future<Output = bool> {
+        async { false }
+    }
+
+    /// Resolve a plain carried food use before unrelated item and rune owners.
+    fn use_known_food(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _item: Option<ItemKey>,
+        _definition: std::num::NonZeroU32,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, UseOwnerError>> {
+        async { Ok(None) }
+    }
+
     /// A timed USE keeps an ambiguous commit open for receipt reconciliation.
     fn use_item_completion(
         &self,
@@ -716,7 +770,7 @@ pub trait FreshAdmissionAuthority {
     }
 
     /// A parked native item-use successor must reconcile before ingress can
-    /// terminalize USE. `true` closes the connection without acknowledging it.
+    /// terminalize a known effect. `true` reports an unavailable outcome.
     fn item_use_pending(
         &self,
         _actor: ExactActorRef,
@@ -973,8 +1027,8 @@ pub trait FreshAdmissionAuthority {
         _key: Option<ItemKey>,
         _visible: bool,
         _field_runes: bool,
-    ) -> impl Future<Output = Option<UseOutcome>> {
-        async { Some(UseOutcome::rejected()) }
+    ) -> impl Future<Output = Result<UseOutcome, UseOwnerError>> {
+        async { Ok(UseOutcome::rejected()) }
     }
 
     /// ITEM-VIEW-1b: the admitted Character's main backpack and its direct entries

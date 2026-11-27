@@ -14,6 +14,7 @@ mod source_positions_tests;
 use super::ComposedFreshAdmission;
 use super::actor_spell::NativeCastDispatch;
 use super::capabilities::SelectedCapabilities;
+use super::connection::UseOwnerError;
 use super::connection::{EarnedNotice, FreshAdmissionAuthority, UseCommand, UseOutcome};
 use super::item_view::{ItemKey, SessionItemView};
 use super::world_spatial::SessionVisibility;
@@ -74,7 +75,7 @@ impl LegacyRuneUse {
     }
 }
 
-pub(super) fn routes(intent: &UseIntent, selected: &SelectedCapabilities) -> bool {
+pub(super) fn accepts_intent_shape(intent: &UseIntent, selected: &SelectedCapabilities) -> bool {
     selected.contains(CAPABILITY_RUNE_USE_V1)
         && matches!(intent.target, UseTarget::Item(_))
         && intent.use_with_map_item.is_none()
@@ -88,7 +89,7 @@ pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
     view: Option<&SessionItemView>,
     visibility: Option<&SessionVisibility>,
     selected: &SelectedCapabilities,
-) -> Option<UseOutcome> {
+) -> Result<UseOutcome, UseOwnerError> {
     let key = match intent.target {
         UseTarget::Item(handle) => {
             view.and_then(|v| v.resolve(handle).filter(|key| v.is_backpack_entry(key)))
@@ -270,15 +271,20 @@ pub(super) fn spell_disposition(disposition: SpellCastDisposition) -> UseDisposi
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn use_legacy_rune(
-        &self,
-        actor: ExactActorRef,
-        command: UseCommand,
-        intent: UseIntent,
-        key: Option<ItemKey>,
-        visible: bool,
-        field_runes: bool,
-    ) -> Option<UseOutcome> {
+    pub(super) fn legacy_rune_spell(&self, item: u32) -> Option<&SpellDefinition> {
+        self.spells.rune(item).filter(|spell| {
+            oteryn_gameplay_spell_rules::dispatch_plans::rune_use::direct_rune(spell)
+                || matches!(
+                    spell.carrier,
+                    crate::spell::Carrier::Rune {
+                        item: 3165 | 3177 | 3178,
+                        ..
+                    }
+                )
+        })
+    }
+
+    fn normalize_legacy_rune_intent(&self, intent: UseIntent) -> UseIntent {
         let mut intent = intent;
         // Source targets retain their wire coordinates for replay and enter the
         // physical frame in target(). Other Bundles retain legacy receipt binding.
@@ -290,6 +296,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             position.floor = self.runtime_floor(position.floor);
         }
+        intent
+    }
+
+    pub(super) async fn use_legacy_rune(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: UseIntent,
+        key: Option<ItemKey>,
+        visible: bool,
+        field_runes: bool,
+    ) -> Result<UseOutcome, UseOwnerError> {
+        let original = intent.clone();
+        let intent = self.normalize_legacy_rune_intent(intent);
         let store =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone());
         let read_session = async || {
@@ -299,26 +319,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             store.current_session_at(command.game_session_id).await
         };
-        let budget = super::AdmissionRetryBudget::for_root(&command.game_session_id, self.root);
-        let (current, _) = match budget.retry_command_guard(read_session).await {
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        let (current, _) = match budget
+            .retry_use_holder("rune_session", read_session, super::root_holder_busy)
+            .await
+        {
             Ok(current) => current,
+            Err(crate::durability::DurabilityError::RootUnavailable)
+                if !self.has_retained_rune_use(actor, command, &original).await =>
+            {
+                return Err(UseOwnerError::HolderBusy);
+            }
             Err(error) => {
                 super::operator_event(&format!("event=rune_session_read_failed error={error:?}"));
-                return None;
+                return Err(UseOwnerError::OutcomeUnknown);
             }
         };
         if current.session_state() != crate::foundation::GameSessionState::Active
             || super::item_fence_of(current) != command.item_fence
             || command.item_fence.is_none()
         {
-            return Some(UseOutcome::rejected());
+            return Ok(UseOutcome::rejected());
         }
         match self.replay_legacy_rune(actor, command, &intent).await {
             NativeCastDispatch::Outcome(cast) => {
-                return Some(outcome(spell_disposition(cast.disposition)));
+                return Ok(outcome(spell_disposition(cast.disposition)));
             }
-            NativeCastDispatch::RuneRefused(reason) => return Some(outcome(reason)),
-            NativeCastDispatch::Pending => return None,
+            NativeCastDispatch::RuneRefused(reason) => return Ok(outcome(reason)),
+            NativeCastDispatch::Pending => return Err(UseOwnerError::OutcomeUnknown),
             NativeCastDispatch::NotApplicable => (),
         }
         // A retained original is resolved before current handles, custody or target reads.
@@ -332,58 +360,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let (rune, legacy) = if let Some((id, (_, rune, _, legacy))) = retained {
             let (Some(rune), Some(legacy)) = (rune, legacy) else {
-                return None;
+                return Err(UseOwnerError::OutcomeUnknown);
             };
             if id != command.command_id || legacy.original != intent {
-                return None;
+                return Err(UseOwnerError::OutcomeUnknown);
             }
             (rune, legacy)
         } else {
             let Some(ItemKey::Instance(instance)) = key else {
-                return Some(outcome(UseDisposition::StaleState));
+                return Ok(outcome(UseDisposition::StaleState));
             };
             let Some(fence) = command.item_fence else {
-                return Some(UseOutcome::rejected());
+                return Ok(UseOutcome::rejected());
             };
             let Some(native) = self.active_generation.and_then(|a| a.native_gameplay()) else {
-                return Some(UseOutcome::rejected());
+                return Ok(UseOutcome::rejected());
             };
-            let backpack = self
-                .root
-                .read_character_backpack(self.character, fence.character_id)
-                .await
-                .ok()??;
+            let backpack = match tokio::time::timeout_at(
+                budget.deadline,
+                self.root
+                    .read_character_backpack(self.character, fence.character_id),
+            )
+            .await
+            {
+                Ok(Ok(Some(backpack))) => backpack,
+                Ok(Ok(None)) => return Ok(outcome(UseDisposition::StaleState)),
+                Ok(Err(crate::durability::item_transfer::ItemTransferError::Unavailable(
+                    crate::durability::DurabilityError::RootUnavailable,
+                )))
+                | Err(_) => return Err(UseOwnerError::HolderBusy),
+                Ok(Err(_)) => return Ok(UseOutcome::rejected()),
+            };
             let Some(entry) = backpack
                 .entries
                 .iter()
                 .find(|e| e.item.item_instance_id == instance)
             else {
-                return Some(outcome(UseDisposition::StaleState));
+                return Ok(outcome(UseDisposition::StaleState));
             };
             let policy = native.item_policy(
                 &entry.item.definition.production_key,
                 &entry.item.definition.revision_ref,
             );
-            let spell = policy
+            let Some(spell) = policy
                 .and_then(|p| p.record().production_binding.external_id.parse().ok())
-                .and_then(|id| self.spells.rune(id));
-            let Some(spell) = spell.filter(|s| {
-                oteryn_gameplay_spell_rules::dispatch_plans::rune_use::direct_rune(s)
-                    || matches!(
-                        s.carrier,
-                        crate::spell::Carrier::Rune {
-                            item: 3165 | 3177 | 3178,
-                            ..
-                        }
-                    )
-            }) else {
-                if intent.use_with.is_none() && intent.use_with_position.is_none() {
-                    return Some(
-                        self.use_backpack_item(actor, command, ItemKey::Instance(instance))
-                            .await,
-                    );
-                }
-                return Some(outcome(UseDisposition::NothingToUse));
+                .and_then(|id| self.legacy_rune_spell(id))
+            else {
+                return Ok(outcome(UseDisposition::NothingToUse));
             };
             if !field_runes
                 && !matches!(
@@ -394,7 +417,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                 )
             {
-                return Some(UseOutcome::rejected());
+                return Ok(UseOutcome::rejected());
             }
             let index = self
                 .spells
@@ -402,21 +425,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .position(|s| s.key == spell.key)
                 .and_then(|i| u32::try_from(i).ok()?.checked_add(1))
-                .and_then(NonZeroU32::new)?;
+                .and_then(NonZeroU32::new)
+                .ok_or(UseOwnerError::OutcomeUnknown)?;
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             let Some(state) = states.get(&runtime, actor, command.game_session_id) else {
-                return Some(UseOutcome::rejected());
+                return Ok(UseOutcome::rejected());
             };
             if super::item_ref_admission::pinned_index(&runtime, self.active_generation).is_none() {
-                return Some(UseOutcome::rejected());
+                return Ok(UseOutcome::rejected());
             }
             if let Err(gate) = crate::spell::cast::condition_gate(state, spell, self.owner_now()) {
                 super::operator_event(&format!(
                     "event=rune_use_condition_gated gate={}",
                     gate.key()
                 ));
-                return Some(outcome(UseDisposition::RequirementNotMet));
+                return Ok(outcome(UseDisposition::RequirementNotMet));
             }
             if spell.aggressive
                 && state
@@ -424,17 +448,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .group_ready_at(oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY)
                     .is_some_and(|until| self.owner_now() < until)
             {
-                return Some(outcome(UseDisposition::Exhausted));
+                return Ok(outcome(UseDisposition::Exhausted));
             }
             if !visible {
-                return Some(outcome(UseDisposition::TargetIllegal));
+                return Ok(outcome(UseDisposition::TargetIllegal));
             }
             let Some(frame) = self.wire_position_frame(&runtime) else {
-                return Some(outcome(UseDisposition::Rejected));
+                return Ok(outcome(UseDisposition::Rejected));
             };
             let (mapped, legacy) = match target(&runtime, actor, spell, intent, fence, frame) {
                 Ok(value) => value,
-                Err(reason) => return Some(outcome(reason)),
+                Err(reason) => return Ok(outcome(reason)),
             };
             (
                 ItemSpellCastIntent {
@@ -451,7 +475,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
         };
         if !self.ensure_source_map_initialized().await {
-            return None;
+            return Err(UseOwnerError::OutcomeUnknown);
         }
         let access = self
             .refresh_and_apply_spell_access(actor, command.game_session_id)
@@ -467,15 +491,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         {
-            NativeCastDispatch::Pending => None,
-            NativeCastDispatch::RuneRefused(disposition) => Some(outcome(disposition)),
-            NativeCastDispatch::NotApplicable => Some(outcome(UseDisposition::NothingToUse)),
+            NativeCastDispatch::Pending => Err(UseOwnerError::OutcomeUnknown),
+            NativeCastDispatch::RuneRefused(disposition) => Ok(outcome(disposition)),
+            NativeCastDispatch::NotApplicable => Ok(outcome(UseDisposition::NothingToUse)),
             NativeCastDispatch::Outcome(cast) => {
                 if cast.disposition == SpellCastDisposition::Cast {
                     let _ = self.drain_kill_rewards(command.game_session_id).await;
                 }
                 let disposition = spell_disposition(cast.disposition);
-                Some(outcome(disposition))
+                Ok(outcome(disposition))
             }
         }
     }

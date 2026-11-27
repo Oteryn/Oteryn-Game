@@ -24,6 +24,15 @@ pub(super) fn encode(
     session.integrity.observe(dispatch);
     inventory_capacity::reread_after_command(session, command.command_type, dispatch);
     let (status, mut result_payload) = match dispatch {
+        Dispatch::UseUnavailable => {
+            return encode_command_error_result(
+                session.generation,
+                sequence,
+                command.command_id,
+                FoundationProtocolError::CommandRefused,
+            )
+            .map_err(|_| ServeEnd::server("frame_encode_failed"));
+        }
         Dispatch::ServerModal(
             crate::gameplay_transport::server_modal::ServerModalOutcome::Reply(payload)
             | crate::gameplay_transport::server_modal::ServerModalOutcome::LoggedOut(payload),

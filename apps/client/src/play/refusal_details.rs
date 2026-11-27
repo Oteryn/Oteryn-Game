@@ -4,6 +4,15 @@ use super::{Outbox, mailbox::lock};
 #[cfg(test)]
 use oteryn_session::refusal_detail::RefusalDetail;
 impl Outbox {
+    pub(super) fn show_command_refusal(&self, error: &oteryn_session::SessionError) -> bool {
+        if matches!(error, oteryn_session::SessionError::CommandRefused { .. }) {
+            self.action_feedback(Some("Command refused."));
+            true
+        } else {
+            false
+        }
+    }
+
     pub(super) fn action_feedback(&self, line: Option<&'static str>) {
         lock(&self.0).action_feedback = Some(line);
     }

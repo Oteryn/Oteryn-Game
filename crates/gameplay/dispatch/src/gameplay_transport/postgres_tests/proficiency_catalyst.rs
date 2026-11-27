@@ -1,17 +1,26 @@
 //! P08 Proficiency Catalysts through the production use-with owner: one unit burns with one
 //! `catalyst` receipt, a replay burns nothing, and a non-weapon target spends nothing.
+use super::adventurers_stone::{assert_holder_refusal, contend_use, holder_timeout_delay, send_use};
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_proficiency::ProficiencyDefinitions;
 use crate::foundation::MovementLocalPosition;
-use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+use crate::gameplay_transport::capabilities::SelectedCapabilities;
+use crate::gameplay_transport::connection::{
+    AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, UseCommand,
+    serve_admitted,
+};
+use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::weapon_proficiency::ProductionProficiencyCatalogue;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
-use std::sync::Arc;
+use oteryn_protocol_oteryn::{self as wire, MessageType, world_object};
+use std::{sync::Arc, time::Duration};
+use tokio::io::AsyncWriteExt;
 
 const SWORD: &str = "oteryn:item.tibia.i3264";
 const CATALYST: &str = "oteryn:item.tibia.i51588";
+const GREATER_CATALYST: &str = "oteryn:item.tibia.i51589";
 const GOLD: &str = "oteryn:item.tibia.i3031";
 const BAG: u8 = 160;
 const UNITS: u8 = 162;
@@ -20,19 +29,41 @@ const COIN: u8 = 164;
 
 #[test]
 fn proficiency_catalyst_burns_one_unit_with_one_receipt() -> TestResult {
+    on_stack("proficiency_catalyst", None)
+}
+
+#[test]
+fn proficiency_catalyst_use_retries_busy_holder_on_wire() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    on_stack("catalyst_busy", Some(Duration::from_millis(120)))
+}
+
+#[test]
+fn proficiency_catalyst_use_holder_timeout_refuses_and_keeps_session_open() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    on_stack("catalyst_timeout", Some(holder_timeout_delay()))
+}
+
+fn on_stack(name: &'static str, hold: Option<Duration>) -> TestResult {
     std::thread::Builder::new()
-        .name("proficiency_catalyst".into())
+        .name(name.into())
         .stack_size(64 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(move || scenario(name, hold).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "proficiency catalyst scenario panicked")?
         .map_err(Into::into)
 }
 
-fn scenario() -> TestResult {
+fn scenario(name: &str, hold: Option<Duration>) -> TestResult {
     run(async |admin| {
         let harness =
-            Harness::create_with_admission_seed(admin, "proficiency_catalyst", false, false)
+            Harness::create_with_admission_seed(admin, name, false, false)
                 .await?;
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -87,7 +118,8 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&harness.pool).await?;
-        seed_bag(&harness).await?;
+        let catalyst_key = if hold.is_some() { GREATER_CATALYST } else { CATALYST };
+        seed_bag(&harness, catalyst_key).await?;
         let fence = owner
             .current_quest_fence(session)
             .await
@@ -113,6 +145,26 @@ fn scenario() -> TestResult {
                 .fetch_one(pool)
                 .await
         };
+        if let Some(delay) = hold {
+            admitted.item_fence = Some(fence);
+            admitted.first_entry = FirstEntryOutcome::Positioned;
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[4, 6, 7, world_object::CAPABILITY_ITEM_USE_V1, oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1],
+            ).ok_or("targeted USE capabilities")?;
+            let index = generation.native_gameplay().ok_or("native gameplay")?
+                .item_index().ok_or("item index")?;
+            let catalyst = index.definition_ref("Item", catalyst_key, "definition-r1").ok_or("catalyst definition")?;
+            let weapon = index.definition_ref("Item", SWORD, "definition-r1").ok_or("weapon definition")?;
+            catalyst_on_wire(&owner, admitted, &harness, catalyst, weapon, delay).await?;
+            assert_eq!(quantity(UNITS).await?, 1);
+            assert_eq!(counts().await?, (1, 1));
+            eprintln!("PROFICIENCY_CATALYST_POSTGRES_CASE_COMPLETED {name}");
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let use_with = async |command_id, target| {
             FreshAdmissionAuthority::use_proficiency_catalyst(
                 &owner,
@@ -177,8 +229,95 @@ fn scenario() -> TestResult {
     })
 }
 
+async fn catalyst_on_wire(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    harness: &Harness,
+    catalyst: std::num::NonZeroU32,
+    weapon: std::num::NonZeroU32,
+    delay: Duration,
+) -> TestResult {
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let peer = async {
+        let (mut source, mut target) = (None, None);
+        loop {
+            let frame = super::item_look_fixtures::read_frame(&mut client).await?;
+            let envelope = wire::decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() == MessageType::SnapshotCommit {
+                break;
+            }
+            if envelope.message_type() == MessageType::SnapshotChunk {
+                for domain in wire::decode_snapshot_chunk(envelope.payload()).map_err(debug)?.1 {
+                    if domain.domain_id == wire::item_view::STATE_DOMAIN_CHARACTER_INVENTORY {
+                        let inventory = wire::item_view::decode_character_inventory(domain.payload)
+                            .map_err(debug)?;
+                        for item in inventory.entries {
+                            if item.item_definition_ref == catalyst {
+                                source = Some(item.handle);
+                            }
+                            if item.item_definition_ref == weapon {
+                                target = Some(item.handle);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        let payload = world_object::encode_item_use_intent(&world_object::UseIntent {
+            target: world_object::UseTarget::Item(source.ok_or("catalyst handle")?),
+            use_with: None,
+            use_with_map_item: Some(world_object::MapUseTarget::Item(target.ok_or("weapon handle")?)),
+            use_with_position: None,
+        }).map_err(debug)?;
+        let mut command_id = admitted.continuity.next_command_id;
+        send_use(&mut client, admitted, command_id, &payload).await?;
+        let mut expect_busy = delay >= holder_timeout_delay();
+        loop {
+            let frame = super::item_look_fixtures::read_frame(&mut client).await?;
+            let envelope = wire::decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() != MessageType::CommandResult {
+                continue;
+            }
+            if expect_busy {
+                assert_holder_refusal(&envelope, admitted, command_id)?;
+                let stored: (i64, i64) = sqlx::query_as(
+                    "SELECT (SELECT count(*) FROM game_character_proficiency_receipts WHERE cause='catalyst'),(SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid)",
+                )
+                .bind(id(UNITS).as_slice())
+                .fetch_one(&harness.pool)
+                .await?;
+                assert_eq!(stored, (0, 2));
+                command_id += 1;
+                expect_busy = false;
+                send_use(&mut client, admitted, command_id, &payload).await?;
+                continue;
+            }
+            let result = wire::decode_command_result(envelope.payload()).map_err(debug)?;
+            assert_eq!(result.command_id, command_id);
+            assert_eq!(result.status, wire::CommandStatus::Accepted);
+            assert_eq!(
+                world_object::decode_use_result(result.payload).map_err(debug)?,
+                UseDisposition::Committed
+            );
+            break;
+        }
+        client.shutdown().await?;
+        Ok(())
+    };
+    let serving = async {
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        drop(server);
+        end
+    };
+    contend_use(owner.root, "catalyst_commit", delay, async {
+        let (_, result) = tokio::join!(serving, peer);
+        result
+    })
+    .await?
+}
+
 /// One main backpack holding two catalysts, the sword and a coin.
-async fn seed_bag(h: &Harness) -> TestResult {
+async fn seed_bag(h: &Harness, catalyst: &str) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
@@ -198,7 +337,7 @@ async fn seed_bag(h: &Harness) -> TestResult {
         .execute(&mut *tx)
         .await?;
     sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)").bind(id(41).as_slice()).bind(id(BAG).as_slice()).bind(id(42).as_slice()).bind(id(245).as_slice()).execute(&mut *tx).await?;
-    for (ordinal, (seed, key, count)) in [(UNITS, CATALYST, 2), (WEAPON, SWORD, 1), (COIN, GOLD, 1)]
+    for (ordinal, (seed, key, count)) in [(UNITS, catalyst, 2), (WEAPON, SWORD, 1), (COIN, GOLD, 1)]
         .into_iter()
         .enumerate()
     {
@@ -269,7 +408,7 @@ fn unknown_scenario() -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&harness.pool).await?;
-        seed_bag(&harness).await?;
+        seed_bag(&harness, CATALYST).await?;
         let fence = owner
             .current_quest_fence(session)
             .await
@@ -288,7 +427,10 @@ fn unknown_scenario() -> TestResult {
         let outcome = FreshAdmissionAuthority::use_proficiency_catalyst(
             &owner, actor, command(1), ItemKey::Instance(id(UNITS)), ItemKey::Instance(id(WEAPON)),
         ).await;
-        assert_eq!(format!("{outcome:?}"), "Err(())", "unknown commit must disconnect, not decline ownership");
+        assert!(matches!(
+            outcome,
+            Err(crate::gameplay_transport::connection::UseOwnerError::OutcomeUnknown)
+        ));
         drop(owner);
         drop(authority);
         drop(seal);

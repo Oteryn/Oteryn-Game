@@ -405,6 +405,12 @@ where
     }
     outcome.training_logged_out =
         matches!(&dispatch, Dispatch::Training(result) if result.disposition == 3);
+    if guard_deferred
+        && matches!(dispatch, Dispatch::Unregistered)
+        && command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
+    {
+        dispatch = Dispatch::UseUnavailable;
+    }
     // Encode a typed refusal without running STEP or CHAT post-dispatch effects.
     let result = if guard_deferred
         && matches!(dispatch, Dispatch::Unregistered)
