@@ -196,6 +196,7 @@ impl<S: SessionStream> Session<S> {
             world_object_overlay: snapshot.world_object_overlay.clone(),
             join_snapshot: snapshot,
             unusable: false,
+            command_result_pending: false,
             last_refusal_detail: None,
             duplicates: Vec::new(),
             last_probe_id: 0,

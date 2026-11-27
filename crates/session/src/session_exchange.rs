@@ -10,7 +10,7 @@ impl<S: SessionStream> Session<S> {
     }
 
     pub(super) fn ensure_usable(&self) -> Result<(), SessionError> {
-        if self.unusable {
+        if self.unusable || self.command_result_pending {
             Err(SessionError::SessionUnusable)
         } else {
             Ok(())
@@ -190,6 +190,7 @@ impl<S: SessionStream> Session<S> {
         command_type: u32,
         payload: &[u8],
     ) -> Result<ReceivedResult, SessionError> {
+        self.ensure_usable()?;
         let command_id = self.next_command_id;
         // Consumed before the write: an attempted (possibly half-written) command's id is never
         // reused.
@@ -201,10 +202,23 @@ impl<S: SessionStream> Session<S> {
             command_type,
             payload,
         })?;
+        // A cancelled exchange can leave a partial frame or its reply on the
+        // transport. Keep the pending marker until this command finishes.
+        self.command_result_pending = true;
+        let result = self.exchange_framed_command(command_id, &frame).await;
+        self.command_result_pending = false;
+        result
+    }
+
+    async fn exchange_framed_command(
+        &mut self,
+        command_id: u64,
+        frame: &[u8],
+    ) -> Result<ReceivedResult, SessionError> {
         bounded(
             self.deadline,
             "ClientCommand write",
-            write_frame(&mut self.stream, &frame),
+            write_frame(&mut self.stream, frame),
         )
         .await?;
 
