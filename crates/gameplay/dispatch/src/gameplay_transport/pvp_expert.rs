@@ -24,11 +24,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         command_id: u64,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
-    ) -> Option<(WorldPvpType, bool)> {
-        runtime.player_control_facts(actor, session).ok()?;
-        let fence = self.current_quest_fence(session).await.ok()??;
-        let command = CommandRef::new(session, CommandId::new(command_id).ok()?);
-        let pass = self.root.try_issue_semantic_pass().ok()?;
+    ) -> Result<(WorldPvpType, bool), DurabilityError> {
+        let unavailable = |_| DurabilityError::Unavailable;
+        runtime
+            .player_control_facts(actor, session)
+            .map_err(unavailable)?;
+        let fence = self
+            .current_quest_fence_durable(session)
+            .await?
+            .ok_or(DurabilityError::Unavailable)?;
+        let command = CommandRef::new(
+            session,
+            CommandId::new(command_id).map_err(|_| DurabilityError::Unavailable)?,
+        );
+        let pass = self.root.try_issue_semantic_pass()?;
         let mut context = (self, runtime);
         pass.run_with_context(&mut context, move |holder, deadline, ctx| {
             Box::pin(async move {
@@ -56,7 +65,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
         })
         .await
-        .ok()
     }
 
     pub(super) async fn set_expert_fight_modes(
@@ -64,22 +72,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         command_id: u64,
-        mut modes: ExpertFightModes,
+        modes: ExpertFightModes,
     ) -> AttackIntentDisposition {
-        let Some(permit) = self.spell_lane_permit().await else {
-            return AttackIntentDisposition::Rejected;
-        };
+        super::AdmissionRetryBudget::for_holder_window(
+            self.root,
+            super::AdmissionRetryBudget::holder_wait_window(),
+        )
+        .retry_logged_holder(
+            "expert_fight_modes",
+            async || {
+                self.try_set_expert_fight_modes(actor, session, command_id, modes)
+                    .await
+            },
+            |error| matches!(error, DurabilityError::RootUnavailable),
+        )
+        .await
+        .unwrap_or(AttackIntentDisposition::Rejected)
+    }
+
+    async fn try_set_expert_fight_modes(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        mut modes: ExpertFightModes,
+    ) -> Result<AttackIntentDisposition, DurabilityError> {
+        let permit = self
+            .spell_lane_permit()
+            .await
+            .ok_or(DurabilityError::Unavailable)?;
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         if states.get(&runtime, actor, session).is_none() {
-            return AttackIntentDisposition::Rejected;
+            return Ok(AttackIntentDisposition::Rejected);
         }
-        let Some((world, black)) = self
+        let (world, black) = self
             .expert_context(&runtime, actor, session, command_id, &permit)
-            .await
-        else {
-            return AttackIntentDisposition::Rejected;
-        };
+            .await?;
         // Global fixes Hardcore to Red Fist; ignore the requested expert choice there.
         if world == WorldPvpType::Hardcore {
             modes.expert = ExpertMode::RedFist;
@@ -88,20 +117,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Expert controls are disabled outside Open PvP; ignore the requested choice.
             modes.expert = ExpertMode::Dove;
         } else if black && modes.expert == ExpertMode::RedFist {
-            return AttackIntentDisposition::Rejected;
+            return Ok(AttackIntentDisposition::Rejected);
         }
         // No combat/skull lock on switching to peaceful modes is supported by the references.
-        if self
-            .states
-            .attack
-            .lock()
-            .await
-            .set_expert_modes(&runtime, actor, session, modes)
-        {
-            AttackIntentDisposition::Ok
-        } else {
-            AttackIntentDisposition::Rejected
-        }
+        Ok(
+            if self
+                .states
+                .attack
+                .lock()
+                .await
+                .set_expert_modes(&runtime, actor, session, modes)
+            {
+                AttackIntentDisposition::Ok
+            } else {
+                AttackIntentDisposition::Rejected
+            },
+        )
     }
 
     pub(super) async fn observe_expert_fight_modes(
@@ -117,7 +148,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Read the current World contract and skull together under the existing deadline.
         let (world, black) = self
             .expert_context(&runtime, actor, session, 1, &permit)
-            .await?;
+            .await
+            .ok()?;
         match world {
             WorldPvpType::Hardcore => {
                 modes.expert = ExpertMode::RedFist;
