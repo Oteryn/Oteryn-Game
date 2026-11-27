@@ -1050,48 +1050,68 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
         // Entity visibility also uses this name. Resolve its session from an
         // observation snapshot so a reconnect writer cannot stall that tick.
+        let check_budget = || {
+            retry
+                .check_deadline()
+                .map_err(|_| AdmissionRefusal::Unavailable)
+        };
+        check_budget()?;
         let fence = retry
-            .retry_unavailable(async || {
-                self.root
-                    .observe_current_gameplay_fence(self.character, session, true)
-                    .await
-                    .map_err(|error| match error {
-                        CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable) => {
-                            AdmissionRefusal::Unavailable
-                        }
-                        _ => AdmissionRefusal::Rejected,
-                    })
-            })
+            .retry_logged_holder(
+                "chat_speaker",
+                async || {
+                    self.root
+                        .observe_current_gameplay_fence(self.character, session, true)
+                        .await
+                        .map_err(|error| match error {
+                            CharacterAuthorityError::Unavailable(
+                                DurabilityError::RootUnavailable,
+                            ) => AdmissionRefusal::Unavailable,
+                            _ => AdmissionRefusal::Rejected,
+                        })
+                },
+                |error| *error == AdmissionRefusal::Unavailable,
+            )
             .await?
             .ok_or(AdmissionRefusal::Rejected)?;
         let character_id = fence.character_id;
         let character = *character_id.as_bytes();
+        check_budget()?;
         let name = retry
-            .retry_unavailable(async || {
-                self.root
-                    .read_character_chat_name(self.character, character_id)
-                    .await
-                    .map_err(|error| match error {
-                        CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable) => {
-                            AdmissionRefusal::Unavailable
-                        }
-                        _ => AdmissionRefusal::Rejected,
-                    })
-            })
+            .retry_logged_holder(
+                "chat_speaker",
+                async || {
+                    self.root
+                        .read_character_chat_name(self.character, character_id)
+                        .await
+                        .map_err(|error| match error {
+                            CharacterAuthorityError::Unavailable(
+                                DurabilityError::RootUnavailable,
+                            ) => AdmissionRefusal::Unavailable,
+                            _ => AdmissionRefusal::Rejected,
+                        })
+                },
+                |error| *error == AdmissionRefusal::Unavailable,
+            )
             .await?
             .ok_or(AdmissionRefusal::Rejected)?;
+        check_budget()?;
         let level = retry
-            .retry_unavailable(async || {
-                self.root
-                    .read_character_progression(self.character, character_id)
-                    .await
-                    .map_err(|error| match error {
-                        CharacterProgressionError::Unavailable(
-                            DurabilityError::RootUnavailable,
-                        ) => AdmissionRefusal::Unavailable,
-                        _ => AdmissionRefusal::Rejected,
-                    })
-            })
+            .retry_logged_holder(
+                "chat_speaker",
+                async || {
+                    self.root
+                        .read_character_progression(self.character, character_id)
+                        .await
+                        .map_err(|error| match error {
+                            CharacterProgressionError::Unavailable(
+                                DurabilityError::RootUnavailable,
+                            ) => AdmissionRefusal::Unavailable,
+                            _ => AdmissionRefusal::Rejected,
+                        })
+                },
+                |error| *error == AdmissionRefusal::Unavailable,
+            )
             .await?
             .map_or(1, |progression| progression.level);
         Ok((name.as_str().to_owned(), character, level))
