@@ -23,6 +23,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn note_activity_input(
         &self,
         admitted: AdmittedSession,
+        command_id: u64,
     ) -> Result<(), crate::durability::DurabilityError> {
         if !admitted
             .continuity
@@ -37,13 +38,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Re-prove the same transport/fences on every idempotent attempt, retaining
         // the distinction between a transient holder failure and a lost fence.
         let budget = super::AdmissionRetryBudget::for_foreground_command(self.root)?;
-        budget
-            .retry_command_guard(async || {
-                ActivityHandoffOwner::new(self.root.clone())
-                    .note_transfer_input(self.holder, fence, controller.transport)
-                    .await
-            })
-            .await
+        use crate::durability::DurabilityError;
+        let handoffs = ActivityHandoffOwner::new(self.root.clone());
+        let mut attempt = 0_u32;
+        loop {
+            attempt += 1;
+            let result = handoffs
+                .note_transfer_input(self.holder, fence, controller.transport)
+                .await;
+            let holder = match &result {
+                Ok(()) => "available",
+                Err(DurabilityError::RootUnavailable) => "busy",
+                Err(DurabilityError::RootPassDeadlineExceeded) => "deadline",
+                Err(_) => "failed",
+            };
+            super::operator_event(&format!(
+                "event=activity_input_holder_attempt command_id={command_id} attempt={attempt} holder={holder}"
+            ));
+            match result {
+                Err(DurabilityError::RootUnavailable) if budget.retries_holder_checkout().await => {
+                }
+                Err(DurabilityError::RootPassDeadlineExceeded)
+                    if budget
+                        .retries_unavailable(super::connection::AdmissionRefusal::Unavailable)
+                        .await => {}
+                result => return result,
+            }
+        }
     }
 
     /// After a real ClientResume this is the committed binding projected in the

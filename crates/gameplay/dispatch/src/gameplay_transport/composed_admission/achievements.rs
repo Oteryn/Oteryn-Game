@@ -89,15 +89,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             DurabilityError, account_achievement::AccountAchievementReadError,
         };
 
-        // This query reads committed account facts directly. The holder is
+        let Ok(session) = GameSessionId::decode(&request.game_session_id) else {
+            return AccountAchievementsReply::Rejected;
+        };
+        // This query reads the active Character's committed grant records. The holder is
         // shared with reconnect and with background reads; checkout can fail
         // before any SQL or authority decision has happened.
         let budget = AdmissionRetryBudget::for_command(self.root);
         let limit = self.achievements.len().saturating_add(1);
         loop {
             match self
-                .root
-                .read_account_achievements(self.character, request.account_id, limit)
+                .read_session_achievement_facts(session, request.account_id, limit)
                 .await
             {
                 Ok(facts) => {
@@ -135,6 +137,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
+    }
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    async fn read_session_achievement_facts(
+        &self,
+        session: GameSessionId,
+        account: [u8; 16],
+        limit: usize,
+    ) -> Result<
+        Vec<crate::durability::account_achievement::EarnedAchievement>,
+        crate::durability::account_achievement::AccountAchievementReadError,
+    > {
+        use crate::durability::account_achievement::AccountAchievementReadError;
+        let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
+            .current_session_at(session)
+            .await?;
+        if current.session_state() != GameSessionState::Active
+            || current.current_game_session_id() != session
+            || current.commit().world_id() != self.world_id
+        {
+            return Err(AccountAchievementReadError::AuthorityRejected);
+        }
+        let character = crate::domain::CharacterId::from_bytes(
+            *current.current_character_lease().character_id().as_bytes(),
+        )
+        .map_err(|_| AccountAchievementReadError::AuthorityRejected)?;
+        self.root
+            .read_character_achievements(self.character, account, character, limit)
+            .await
     }
 }
 

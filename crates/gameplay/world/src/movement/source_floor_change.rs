@@ -17,8 +17,10 @@ const MAP: &str = "oteryn:map/canary-thalom-spell-r3";
 const MAX_FLOOR_DESTINATIONS: usize = 16;
 
 /// Qualified source tiles keyed by `(x, y, z)`.
-type SourceTiles =
-    std::collections::BTreeMap<(i32, i32, i16), (Option<QualifiedSpellTile>, bool, u16)>;
+type SourceTiles = std::collections::BTreeMap<
+    (i32, i32, i16),
+    (Option<QualifiedSpellTile>, bool, u16, Option<[u8; 16]>),
+>;
 
 /// Private construction consumes actual qualified cells, not a caller's target.
 pub struct SourceStepProof<'a> {
@@ -208,6 +210,7 @@ struct TileView<'a> {
     tile: &'a QualifiedSpellTile,
     solid: bool,
     height_count: u16,
+    blocking_item: Option<[u8; 16]>,
 }
 impl std::ops::Deref for TileView<'_> {
     type Target = QualifiedSpellTile;
@@ -219,13 +222,14 @@ fn current_tile<'a>(
     tiles: &'a SourceTiles,
     p: MovementLocalPosition,
 ) -> Result<Option<TileView<'a>>, MovementError> {
-    let (tile, solid, height_count) = tiles
+    let (tile, solid, height_count, blocking_item) = tiles
         .get(&(p.x, p.y, p.floor))
         .ok_or(MovementError::NotQualified)?;
     Ok(tile.as_ref().map(|tile| TileView {
         tile,
         solid: *solid,
         height_count: *height_count,
+        blocking_item: *blocking_item,
     }))
 }
 fn destination(
@@ -239,6 +243,7 @@ fn destination(
                 Ok(TileView {
                     tile,
                     solid: tile.flags().block_solid,
+                    blocking_item: None,
                     height_count: tile
                         .source_step()
                         .ok_or(MovementError::NotQualified)?
@@ -253,7 +258,9 @@ fn clear_terminal_destination(
     current: &TileView<'_>,
 ) -> Result<MovementLocalPosition, MovementError> {
     if !current.ground_present() || current.solid {
-        return Err(MovementError::Blocked);
+        return Err(current
+            .blocking_item
+            .map_or(MovementError::Blocked, MovementError::BlockedByItem));
     }
     Ok(position)
 }
@@ -289,7 +296,9 @@ fn destination_with_lookup<'a>(
     }
     let entered = lookup(next)?.ok_or(MovementError::Blocked)?;
     if !entered.ground_present() || entered.solid {
-        return Err(MovementError::Blocked);
+        return Err(entered
+            .blocking_item
+            .map_or(MovementError::Blocked, MovementError::BlockedByItem));
     }
     // internalMoveCreature queries successive source tile destinations, bounded
     // by MAP_MAX_LAYERS. Missing capture facts refuse; genuine absent target
@@ -507,6 +516,7 @@ mod tests {
                     };
                     let present = at == origin || at == p(dx, dy, if climbing { -4 } else { -6 });
                     Ok(present.then_some(TileView {
+                        blocking_item: None,
                         tile: clear,
                         solid: false,
                         height_count: if height { 3 } else { 0 },
@@ -620,6 +630,7 @@ mod tests {
                     };
                     match map.immutable_tile(map.scope(), logical) {
                         Ok(tile) => Ok(Some(TileView {
+                            blocking_item: None,
                             tile,
                             solid: tile.flags().block_solid
                                 || map
@@ -691,6 +702,7 @@ mod tests {
             tile(cells, p)?
                 .map(|tile| {
                     Ok(TileView {
+                        blocking_item: None,
                         tile,
                         solid: tile.flags().block_solid,
                         height_count: tile
@@ -751,6 +763,7 @@ mod tests {
         assert!(changes(clear).unwrap().is_empty());
         assert_eq!(changes(down).unwrap(), &[SourceFloorChange::Down]);
         let view = |tile, height_count| TileView {
+            blocking_item: None,
             tile,
             solid: false,
             height_count,
@@ -832,6 +845,7 @@ mod tests {
         for second in [down, west] {
             for solid in [false, true] {
                 let view = |tile, solid| TileView {
+                    blocking_item: None,
                     tile,
                     solid,
                     height_count: 0,
@@ -861,6 +875,7 @@ mod tests {
             clear_terminal_destination(
                 p(0, 2, -6),
                 &TileView {
+                    blocking_item: None,
                     tile: groundless,
                     solid: false,
                     height_count: 0,
@@ -1049,7 +1064,7 @@ impl PreparedCurrentSourceStep<'_> {
     pub fn tile(&self, position: MovementLocalPosition) -> Option<&QualifiedSpellTile> {
         self.tiles
             .get(&(position.x, position.y, position.floor))
-            .and_then(|(tile, _, _)| tile.as_ref())
+            .and_then(|(tile, ..)| tile.as_ref())
     }
     pub fn validate_current(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
         qualify_origin(
@@ -1172,8 +1187,12 @@ pub async fn collect_current_source_step<'room>(
                 .clone(),
             ),
         };
-        let solid = tile.as_ref().is_some_and(|t| t.flags().block_solid)
-            || read.items().iter().any(|i| i.blocks_movement);
+        let blocking_item = read
+            .items()
+            .iter()
+            .find(|item| item.blocks_movement)
+            .map(|item| item.item_instance_id);
+        let solid = tile.as_ref().is_some_and(|t| t.flags().block_solid) || blocking_item.is_some();
         let mut height_count = if let Some(tile) = &tile {
             tile.source_step()
                 .ok_or(MovementError::NotQualified)?
@@ -1204,7 +1223,7 @@ pub async fn collect_current_source_step<'room>(
         }
         tiles.insert(
             (position.x, position.y, position.floor),
-            (tile, solid, height_count),
+            (tile, solid, height_count, blocking_item),
         );
     }
     Err(MovementError::CapacityExceeded)

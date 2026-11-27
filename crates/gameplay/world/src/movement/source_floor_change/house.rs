@@ -22,6 +22,7 @@ pub fn resolve_house_step(
                     .checked_add(extra_height)
                     .ok_or(MovementError::CapacityExceeded)?;
                 Ok(TileView {
+                    blocking_item: None,
                     tile,
                     solid: tile.flags().block_solid || blocked,
                     height_count,

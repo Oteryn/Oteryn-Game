@@ -662,6 +662,80 @@ async fn insert_fact(
     Ok(())
 }
 
+#[test]
+fn same_account_characters_have_distinct_achievement_pages_and_points() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run("character_pages", async |harness, root| {
+                let seal = harness.recovery.seal_current().map_err(debug)?;
+                let authority = root.open_character_authority(&seal).await.map_err(debug)?;
+                granted(
+                    root.commit_test_achievement_grants(
+                        &authority,
+                        &harness.node,
+                        fence(1)?,
+                        vec![earnable(COOKIES, 60)],
+                    )
+                    .await?,
+                )?;
+                switch_to_second_character(harness).await?;
+                root.commit_test_achievement_grants(
+                    &authority,
+                    &harness.node,
+                    second_fence()?,
+                    vec![earnable(NUT, 61), earnable(MERRIER, 62), earnable(NUT, 63)],
+                )
+                .await?;
+
+                let catalogue = catalogue()?;
+                let first = root
+                    .read_character_achievements(
+                        &authority,
+                        id(ACCOUNT),
+                        fence(1)?.character_id,
+                        catalogue.len() + 1,
+                    )
+                    .await?;
+                let second = root
+                    .read_character_achievements(
+                        &authority,
+                        id(ACCOUNT),
+                        second_fence()?.character_id,
+                        catalogue.len() + 1,
+                    )
+                    .await?;
+                let first = catalogue
+                    .account_achievements_page(&first, 0)
+                    .map_err(debug)?;
+                let second = catalogue
+                    .account_achievements_page(&second, 0)
+                    .map_err(debug)?;
+                assert_eq!(first.fact_count, 1);
+                assert_eq!(first.rows[0].key, COOKIES);
+                assert_eq!(first.total_points, first.rows[0].points);
+                assert_eq!(second.fact_count, 2);
+                let keys: std::collections::BTreeSet<_> =
+                    second.rows.iter().map(|row| row.key.as_str()).collect();
+                assert_eq!(keys, [NUT, MERRIER].into_iter().collect());
+                assert_eq!(
+                    second.total_points,
+                    second.rows.iter().map(|row| row.points).sum::<u32>()
+                );
+                assert_ne!(first.total_points, second.total_points);
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "character achievements scenario panicked")?
+        .map_err(Into::into)
+}
+
 /// A live Character 46 of a second account 45.
 async fn seed_other_account(harness: &Harness) -> TestResult {
     sqlx::query("INSERT INTO game_character_account_guards VALUES (encode($1,'hex')::uuid)")

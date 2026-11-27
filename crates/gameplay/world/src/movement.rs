@@ -116,6 +116,8 @@ pub enum MovementError {
     CoordinateOverflow,
     Cell(StaticCellEngineError),
     Blocked,
+    BlockedByCreature(ExactActorRef),
+    BlockedByItem([u8; 16]),
     CapacityExceeded,
     NotQualified,
     HolderUnavailable,

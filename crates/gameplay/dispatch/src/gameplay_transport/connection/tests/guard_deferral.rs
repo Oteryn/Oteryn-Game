@@ -46,7 +46,11 @@ impl FreshAdmissionAuthority for GuardAuthority {
         if self.activity { Ok(()) } else { self.guard() }
     }
 
-    async fn activity_transfer_input(&self, _: AdmittedSession) -> Result<(), DurabilityError> {
+    async fn activity_transfer_input(
+        &self,
+        _: AdmittedSession,
+        _: u64,
+    ) -> Result<(), DurabilityError> {
         if self.activity { self.guard() } else { Ok(()) }
     }
 

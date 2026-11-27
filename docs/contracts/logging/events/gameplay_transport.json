@@ -13,6 +13,18 @@
       "note": "An account achievements page read ended without data. Kind identifies holder exhaustion, recovery authority rejection, a deadline, an invalid stored state or unavailable storage. No account identifiers or raw errors."
     },
     {
+      "event": "activity_input_holder_attempt",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "attempt",
+        "command_id",
+        "holder"
+      ],
+      "codes": [],
+      "note": "Activity command input guard durability attempt."
+    },
+    {
       "event": "admission_entry_decision",
       "level": "info",
       "span": false,
@@ -476,6 +488,19 @@
       "fields": [],
       "codes": [],
       "note": "Seeded from current server code."
+    },
+    {
+      "event": "step_blocked",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "cause",
+        "creature",
+        "item_id",
+        "item_instance"
+      ],
+      "codes": [],
+      "note": "The movement owner refused a step for collision or a tile rule."
     },
     {
       "event": "step_rejected_dawnport",

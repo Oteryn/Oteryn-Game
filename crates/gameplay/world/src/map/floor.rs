@@ -869,6 +869,19 @@ impl BundleStepProof<'_> {
                 .player_step_occupied(self.actor, self.destination, |_, _| can_walk_through)
                 .map_err(MovementError::Actor)?
             {
+                if let Some(creature) =
+                    runtime
+                        .visible_entities()
+                        .creatures
+                        .into_iter()
+                        .find(|creature| {
+                            runtime
+                                .read_actor_position(creature.actor)
+                                .is_ok_and(|at| at.position() == self.destination)
+                        })
+                {
+                    return Err(MovementError::BlockedByCreature(creature.actor));
+                }
                 return Err(MovementError::Blocked);
             }
         }

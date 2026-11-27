@@ -34,6 +34,7 @@ async fn scenario(admin: String) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, "p11_achievement_page", true, false).await?;
     let recovery = RecoverySource::start(&h).await?;
     prepare_owned_session(&h).await?;
+    seed_sibling_achievement(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -121,7 +122,7 @@ async fn scenario(admin: String) -> TestResult {
     };
     let page = decode_account_achievements_result(&payload).map_err(debug)?;
     assert_eq!(page.page, 0);
-    assert_eq!(page.fact_count, 0);
+    assert_eq!(page.fact_count, 0, "the sibling's grant must stay off the relogged Character's page");
     assert!(page.rows.is_empty());
     eprintln!("P11 answered the first achievements page after relog and holder handoff");
 
@@ -129,6 +130,40 @@ async fn scenario(admin: String) -> TestResult {
     drop(authority);
     drop(seal);
     h.cleanup().await
+}
+
+async fn seed_sibling_achievement(h: &Harness) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query(
+        "INSERT INTO game_character_roots VALUES
+         (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,
+          1,1,'profile-1','ruleset-1','content-1','starter-1','Sibling Hero')",
+    )
+    .bind(id(92).as_slice())
+    .bind(id(40).as_slice())
+    .bind(id(42).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_account_achievement_grant_requests VALUES
+         ('oteryn:test-history', $1, 'oteryn:achievement/allow_cookies', 'r1',
+          encode($2,'hex')::uuid, encode($3,'hex')::uuid, 1)",
+    )
+    .bind(id(93).as_slice())
+    .bind(id(40).as_slice())
+    .bind(id(92).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_account_achievements VALUES
+         (encode($1,'hex')::uuid, 'oteryn:achievement/allow_cookies', 'oteryn:test-history', $2)",
+    )
+    .bind(id(40).as_slice())
+    .bind(id(93).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(())
 }
 
 struct RelogIdentifiers;

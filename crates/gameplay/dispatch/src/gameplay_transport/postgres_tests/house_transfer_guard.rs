@@ -40,8 +40,9 @@ impl<A: FreshAdmissionAuthority> FreshAdmissionAuthority for GuardProbe<'_, A> {
     async fn activity_transfer_input(
         &self,
         _: AdmittedSession,
+        command_id: u64,
     ) -> Result<(), crate::durability::DurabilityError> {
-        self.owner.activity_transfer_input(self.admitted).await
+        self.owner.activity_transfer_input(self.admitted, command_id).await
     }
     async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
         Some(WorldSpatialObservation {
