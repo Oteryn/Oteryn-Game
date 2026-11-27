@@ -51,7 +51,8 @@ fn premium_snapshot_reuses_validated_response_after_busy_holder_postgres() -> Te
         return Ok(());
     };
     super::kill_reward_e2e_fixtures::scenario_thread::run_async(move |_| async move {
-        let h = Harness::create_with_admission_seed(admin, "premium_checkout", false, false).await?;
+        let h =
+            Harness::create_with_admission_seed(admin, "premium_checkout", false, false).await?;
         let result: TestResult = async {
             use crate::premium::{IngestOutcome, PremiumConsumer, client::fresh_nonce};
             let consumer = PremiumConsumer::default();
@@ -73,14 +74,22 @@ fn premium_snapshot_reuses_validated_response_after_busy_holder_postgres() -> Te
                 holder.run(|_, _| Box::pin(async { Ok(()) })).await?;
                 Ok::<_, Box<dyn std::error::Error>>(())
             };
-            tokio::time::timeout(
-                std::time::Duration::from_secs(8),
-                async { tokio::try_join!(ingest, release) },
-            ).await??;
+            tokio::time::timeout(std::time::Duration::from_secs(8), async {
+                tokio::try_join!(ingest, release)
+            })
+            .await??;
             let fence = h.root.load_premium_fence(id(40)).await?;
-            assert_eq!(fence.fence.ok_or("durable Premium fence")?.latest.authority_revision, 7);
+            assert_eq!(
+                fence
+                    .fence
+                    .ok_or("durable Premium fence")?
+                    .latest
+                    .authority_revision,
+                7
+            );
             Ok(())
-        }.await;
+        }
+        .await;
         let cleanup = h.cleanup().await;
         result?;
         cleanup
@@ -103,6 +112,14 @@ fn pouch_logout_returns_holder_to_next_character_read_postgres() -> TestResult {
     run(admin, Case::ReleaseReread)
 }
 
+#[test]
+fn unaccepted_fresh_join_releases_exact_controller_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::UnacceptedJoin)
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     HolderContention,
@@ -110,6 +127,7 @@ enum Case {
     ContendedSnapshot,
     PouchLogout,
     ReleaseReread,
+    UnacceptedJoin,
 }
 
 fn run(admin: String, case: Case) -> TestResult {
@@ -132,7 +150,10 @@ async fn scenario(admin: String, case: Case) -> TestResult {
 
 async fn exercise(h: &Harness, case: Case) -> TestResult {
     let live_premium = matches!(case, Case::PlatformSnapshot | Case::ContendedSnapshot);
-    let pouch_logout = matches!(case, Case::PouchLogout | Case::ReleaseReread);
+    let pouch_logout = matches!(
+        case,
+        Case::PouchLogout | Case::ReleaseReread | Case::UnacceptedJoin
+    );
     let request = prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -350,12 +371,43 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 98, 607])
             .ok_or("Quick Loot destination capability")?;
 
+    if case == Case::UnacceptedJoin {
+        use crate::gameplay_transport::connection::GraceExpiryResult;
+        assert_eq!(
+            owner.release_unaccepted_join(admitted).await,
+            GraceExpiryResult::Released,
+        );
+        assert_eq!(
+            store.current_session(session).await?.session_state(),
+            crate::foundation::GameSessionState::Terminal,
+        );
+        assert!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .player_control_facts(actor, session)
+                .is_err()
+        );
+        return Ok(());
+    }
+
     if pouch_logout {
         logout_once(&owner, h, admitted).await?;
         if case == Case::ReleaseReread {
-            let next_character = h.root.read_current_character(&authority, character).await?;
+            let next_character = h
+                .root
+                .read_current_character(&authority, character)
+                .await
+                .map_err(debug)?;
             assert_eq!(next_character.character_id, character);
-            assert!(h.root.observe_current_gameplay_fence(&authority, session, true).await?.is_none());
+            assert!(
+                h.root
+                    .observe_current_gameplay_fence(&authority, session, true)
+                    .await
+                    .map_err(debug)?
+                    .is_none()
+            );
         }
         return Ok(());
     }
@@ -376,8 +428,13 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
     let command_type = command.action.command_type();
     if let Some(live) = live {
         return live
-            .assign(&owner, &mut admitted, command_type, payload,
-                    (case == Case::ContendedSnapshot).then_some(&h.root))
+            .assign(
+                &owner,
+                &mut admitted,
+                command_type,
+                payload,
+                (case == Case::ContendedSnapshot).then_some(&h.root),
+            )
             .await;
     }
     let reply = {
@@ -556,7 +613,11 @@ impl LivePremium {
             holder.run(|_, _| Box::pin(async { Ok(()) })).await?;
             let (replies, _) = wire.await?;
             assert_eq!(replies, [(CommandStatus::Accepted, Vec::new())]);
-            assert_eq!(self._producer.requests().len(), 2, "the contended snapshot must not be fetched again");
+            assert_eq!(
+                self._producer.requests().len(),
+                2,
+                "the contended snapshot must not be fetched again"
+            );
             return Ok(());
         }
         // A bounded negative assertion: hold the actual response while the old

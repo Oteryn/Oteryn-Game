@@ -391,7 +391,7 @@ where
                 ) if acceptance.is_some() => {
                     // This committed owner never sent its acceptance. Release it
                     // before waiting for normal transport-loss grace.
-                    let released = authority.release_abandoned(session).await;
+                    let released = authority.release_unaccepted_join(session).await;
                     (end, released != GraceExpiryResult::Released)
                 }
                 Some(end) => (end, true),

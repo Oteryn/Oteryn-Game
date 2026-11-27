@@ -231,6 +231,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             (
                 TerminalRelease::Abandoned(_)
+                | TerminalRelease::UnacceptedJoin(_)
                 | TerminalRelease::CapabilityMismatch(_)
                 | TerminalRelease::StaffKick(_)
                 | TerminalRelease::StaffKickLost(_),
@@ -314,7 +315,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .release_staff_lost_session(session, &account_id, epoch)
                         .await
                 }
-                TerminalRelease::Logout(transport) | TerminalRelease::StaffKick(transport) => {
+                TerminalRelease::Logout(transport)
+                | TerminalRelease::StaffKick(transport)
+                | TerminalRelease::UnacceptedJoin(transport) => {
                     releasing
                         .release_logout_session(session, &account_id, transport)
                         .await

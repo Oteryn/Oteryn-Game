@@ -33,6 +33,7 @@ pub(super) struct JoinProjection<'a> {
 /// A join that could not be prepared reports `SESSION_JOIN_UNAVAILABLE` before the same end;
 /// a failed snapshot write has no transport left to report on, and a session that already
 /// joined ends as before (FND-02 §13.3: unresolved pending work only disconnects).
+#[cfg(test)]
 pub(super) async fn prepare<S, A>(
     stream: &mut S,
     admitted: &mut AdmittedSession,

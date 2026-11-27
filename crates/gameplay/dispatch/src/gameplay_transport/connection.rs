@@ -1058,11 +1058,9 @@ where
     } else {
         accepted
     };
-    // Resume and House handoffs have their own acceptance/sidecar ordering. The
-    // pending spell-repair protocol also uses liveness before it can prepare a join.
+    // Resume and House handoffs have their own acceptance/sidecar ordering.
     if defer_fresh_acceptance
         && admitted.runtime_actor.is_some()
-        && admitted.first_entry != FirstEntryOutcome::AwaitingSpellRepair
         && admitted.item_fence.is_none_or(|fence| {
             matches!(
                 fence.runtime_scope,

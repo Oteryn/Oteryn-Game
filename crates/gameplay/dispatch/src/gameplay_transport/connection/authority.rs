@@ -1865,6 +1865,14 @@ pub trait FreshAdmissionAuthority {
         async { ControlLossResult::NotApplicable }
     }
 
+    /// Release a committed fresh Channel entry that could not send acceptance.
+    fn release_unaccepted_join(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = GraceExpiryResult> {
+        async { GraceExpiryResult::NotApplicable }
+    }
+
     /// Terminally release a resumed session whose recovered connection ended again, so it
     /// never stays ACTIVE on a dead transport, and remove its Channel actor.
     fn release_abandoned(

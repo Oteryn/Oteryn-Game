@@ -1040,6 +1040,8 @@ fn ends_session<E>(outcome: &Result<ExpiredLossReleaseV1, E>) -> bool {
 enum TerminalRelease {
     /// A resumed session whose recovered connection ended again, on its exact transport.
     Abandoned(AuthenticatedTransportRefV1),
+    /// The authenticated fresh Channel transport whose acceptance was never sent.
+    UnacceptedJoin(AuthenticatedTransportRefV1),
     /// D449: a lost session whose otherwise valid resume lacked a selected capability, at the
     /// exact loss epoch the resume verified.
     CapabilityMismatch(ControlLossEpochRefV1),
@@ -1060,9 +1062,11 @@ impl TerminalRelease {
     /// session has no loss mark, so its release mints a transition id; so does a logout.
     fn fence(self, runtime: &mut ChannelRuntimeV1) -> Result<TransitionFence, CarrierError> {
         match self {
-            Self::Abandoned(_) | Self::Logout(_) | Self::StaffKick(_) => runtime
-                .mint_transition_fence()
-                .map(TransitionFence::Transition),
+            Self::Abandoned(_) | Self::UnacceptedJoin(_) | Self::Logout(_) | Self::StaffKick(_) => {
+                runtime
+                    .mint_transition_fence()
+                    .map(TransitionFence::Transition)
+            }
             Self::CapabilityMismatch(epoch) | Self::StaffKickLost(epoch) => {
                 Ok(TransitionFence::GraceExpiry(epoch.get()))
             }
