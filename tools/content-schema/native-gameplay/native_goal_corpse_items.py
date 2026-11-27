@@ -234,3 +234,4 @@ def admit_native(root, generated, profile_path, manifest_path, order, canonical)
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()
     generated[manifest_path] = canonical(manifest)
+    return wanted

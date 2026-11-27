@@ -1748,7 +1748,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
     import native_goal_corpse_items
 
-    native_goal_corpse_items.admit_native(
+    native_goal_corpse_keys = native_goal_corpse_items.admit_native(
         root,
         generated,
         spell_import.PROVIDER_DESTINATIONS["item_profiles"],
@@ -1987,9 +1987,16 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     item_detail_source_facts.apply_capture_stats(existing_items, capture)
     ordinary_ids = set(ordinary_corpse_profiles.read(root, 'item-ids'))
     ordinary_ids.update(map(int, ordinary_corpse_cohort.packet(root)['items']))
-    # The native goal admits the staged body as part of Koshei's fresh chain.
-    ordinary_ids.add(7538)
-    ordinary_corpse_slice2.admit_items(root, items, provider_order, ordinary_ids)
+    # Share only native Items admitted by the pinned corpse and source
+    # capture owners. Each ordinary overlay still checks the exact record.
+    ordinary_ids.update(int(key.rsplit(".i", 1)[1]) for key in native_goal_corpse_keys)
+    ordinary_ids.update(int(key.rsplit(".i", 1)[1]) for key in quest_corpse_qualification.records)
+    qengine_packet = json.loads(generated[qengine_reward_item_profiles.PROOF])
+    ordinary_ids.update(int(row["production_binding"]["external_id"])
+                        for row in qengine_packet["records"])
+    ordinary_corpse_slice2.admit_items(
+        root, items, provider_order, ordinary_ids, corpse_capacity_projections, loot_admissions
+    )
     ordinary_ids.update(int(record['production_binding']['external_id'])
                         for record in ordinary_corpse_slice2.capture(root)['records'])
     fourth_quarter_corpses.apply_items(

@@ -92,11 +92,14 @@ def merge_shared_item(existing, record):
             raise ValueError(f'Conflicting corpse {field}: {key}')
 
 
-def admit_items(root, items, order, shared_ids):
+def admit_items(root, items, order, shared_ids, capacity_projections, loot_admissions):
+    from ordinary_corpse_profiles import preserve_projected_capacity
+
     source = capture(root)
     selected = set(source['admissions'].values())
     selected.update(binding['item'] for binding in source['creature_bindings'].values())
-    selected.update(source['required_loot'])
+    required_loot = set(source['required_loot'])
+    selected.update(required_loot)
     records = source['records']
     if [int(record['production_binding']['external_id']) for record in records] != sorted(selected):
         raise ValueError('ordinary corpse Item capture differs from the selected creatures')
@@ -104,9 +107,20 @@ def admit_items(root, items, order, shared_ids):
     existing = {row['production_definition']['production_key']: row for row in items['records']}
     for record in records:
         key = record['production_definition']['production_key']
+        preserve_projected_capacity(record, existing.get(key), capacity_projections)
         if key in existing:
             item = int(record['production_binding']['external_id'])
-            if item not in shared_ids:
+            if item in required_loot and key in loot_admissions:
+                # Preserve the established loot presentation. This capture
+                # qualifies the required Item's custody and source identity.
+                prior_text = existing[key]['semantics']['presentation']
+                observed_text = record['semantics']['presentation']
+                prior_name = prior_text.get('value', {}).get('name', {})
+                observed_name = observed_text.get('value', {}).get('name', {})
+                if prior_name.get('state') != 'KNOWN' or prior_name != observed_name:
+                    raise ValueError(f'Conflicting required corpse loot name: {key}')
+                record['semantics']['presentation'] = prior_text
+            elif item not in shared_ids:
                 raise ValueError(f'ordinary corpse already has native Item custody: {key}')
             if item == 35136:
                 # The shared Tentacle identity also carries the exact slice-2 authorization row.

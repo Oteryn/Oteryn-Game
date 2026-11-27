@@ -165,9 +165,10 @@ def apply_items(root, items, provider_order, shared_ids, capacity_projections):
     for record in movable_stage_profiles(root):
         key = record["production_definition"]["production_key"]
         if key in present:
-            # Koshei's native goal already admits these two exact decay stages.
-            if record["production_binding"]["external_id"] not in {"7539", "7540"}:
+            item = int(record["production_binding"]["external_id"])
+            if item not in shared_ids:
                 raise ValueError(f"Movable corpse stage already has an Item owner: {key}")
+            preserve_projected_capacity(record, present[key], capacity_projections)
             merge_shared_item(present[key], record)
         else:
             items["records"].append(record)
