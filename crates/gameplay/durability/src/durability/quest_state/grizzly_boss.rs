@@ -121,6 +121,28 @@ impl DurabilityRoot {
         })).await?
     }
 
+    /// A bounded absence proof for command preflight. A positive result still goes
+    /// through the existing recovery-fenced read before it can change actor state.
+    pub async fn grizzly_boss_entry_exists_for_session(
+        &self,
+        session: GameSessionId,
+        deadline: tokio::time::Instant,
+    ) -> std::result::Result<bool, DurabilityError> {
+        self.read_gameplay_scalar(
+            sqlx::query_scalar(
+                "SELECT EXISTS(
+                    SELECT 1 FROM game_character_grizzly_boss_entries b
+                    JOIN game_durability_reconnect_sessions s USING (character_id)
+                    WHERE s.game_session_id=encode($1,'hex')::uuid
+                      AND b.state IN ('ACTIVE','RETURN_PENDING')
+                )",
+            )
+            .bind(session.as_bytes().as_slice()),
+            deadline,
+        )
+        .await
+    }
+
     /// Historical obligation lookup only; a session need not have a fresh-admission
     /// journal. Returning a visit still requires the independently current gameplay fence.
     /// Queue for the ready holder during callback recovery before opening the read transaction.

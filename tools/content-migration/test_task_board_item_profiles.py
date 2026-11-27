@@ -75,7 +75,8 @@ class TaskBoardItemProfiles(unittest.TestCase):
                              ['value']['marketable'], tool.source.K(True))
 
     def test_grappling_hook_uses_only_the_approved_portable_source_id(self):
-        delivery = tool.delivery_items()
+        delivery = [(row['item_id'], row['amount']) for row in self.overlay['delivery_items']]
+        self.assertEqual([item for item, _ in delivery], tool.delivery_item_ids())
         self.assertIn((35588, 50), delivery)
         self.assertNotIn(5800, {item for item, _ in delivery})
         self.assertEqual(self.overlay['delivery_corrections'], tool.DELIVERY_CORRECTIONS)
