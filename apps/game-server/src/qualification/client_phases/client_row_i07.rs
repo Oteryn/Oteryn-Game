@@ -570,6 +570,16 @@ pub(super) async fn journey(
     };
     let clients = &scoped;
     let mut client = connect_world(clients, 0x07).await?;
+    for id in [3577, 3031, 3357] {
+        character_prep::grant_item(&client, id, 1).await?;
+    }
+    let picker_seed_session = client.join_snapshot().game_session_id;
+    require_logout(&mut client).await?;
+    drop(client);
+    let mut client = connect_world(clients, 0x07).await?;
+    if client.join_snapshot().game_session_id == picker_seed_session {
+        return Err("I07 picker inventory admission reused its provisioning session".into());
+    }
     let admitted_position = client.world_spatial().actor_position;
     if tile(admitted_position)? != TOWN {
         return Err("I07 fixture requires admission at the seeded corpse tile".into());
@@ -707,30 +717,24 @@ pub(super) async fn journey(
     // The fixture publishes the Skip-listed corpse after the food corpse.
     // The most recently published corpse must be traversed first.
     let east_outcomes = |move_food| [(listed, false), (other, move_food)];
-    for id in [3577, 3031, 3357] {
-        character_prep::grant_item(&client, id, 1).await?;
-    }
-    let picker_refs = [skip_reference, gold_reference, accept_reference];
-    let started = tokio::time::Instant::now();
-    let picker_inventory = loop {
-        if let Some(view) = client.inventory()
-            && picker_refs.iter().all(|definition| {
-                view.entries
-                    .iter()
-                    .any(|entry| entry.item_definition_ref.get() == *definition)
-            })
+    let picker_inventory = client
+        .inventory()
+        .ok_or("I07 admitted picker inventory missing")?;
+    for definition in [skip_reference, gold_reference, accept_reference] {
+        if !picker_inventory
+            .entries
+            .iter()
+            .any(|entry| entry.item_definition_ref.get() == definition)
         {
-            break view.clone();
+            return Err(
+                format!("I07 live backpack lacks filter picker definition {definition}").into(),
+            );
         }
-        if started.elapsed() >= Duration::from_secs(2) {
-            return Err("I07 live backpack lacks a filter picker input".into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-    };
+    }
     write_capture(
         &capture_dir.join("i07-picker-inventory.bin"),
         &oteryn_protocol_oteryn::item_view::encode_character_inventory_with_appearances(
-            &picker_inventory,
+            picker_inventory,
             true,
             true,
         )
