@@ -4,7 +4,7 @@
 //!    bounty, shop, points and soulseal projection.
 //! 2. Send START_WEEKLY with an invalid/locked difficulty; expect a refusal and
 //!    no board delta (the negative path).
-//! 3. Admit at seeded level 399, send START_WEEKLY(Beginner),
+//! 3. Admit the capacity fixture at seeded level 1500, send START_WEEKLY(Beginner),
 //!    and expect an accepted board containing kill and delivery assignments.
 //! 4. Send DELIVER for a real assignment; expect either item consumption plus
 //!    completion/XP deltas, or the explicit insufficient-items refusal.
@@ -153,31 +153,37 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
+    let underlevel =
+        character_prep::dedicated_character(clients, "NODE_BOOT_Q_P04_399_ACCOUNT").await?;
+    let underlevel_clients = underlevel.clients(clients);
+    let client = connect_character(&underlevel_clients, 0x9a, 0).await?;
+    let mut client = seed_build(&underlevel_clients, client, "p04-master-399", 399, "Master refusal").await?;
+    let initial = query(&mut client).await?;
+    journey.check(1, initial.refusal == 0 && !initial.shop.is_empty(), &initial);
+    let refused = send(&mut client, 5, 3).await?;
+    let mut unchanged = refused.clone();
+    unchanged.refusal = 0;
+    let refused_session = client.join_snapshot().game_session_id;
+    logout_once(&mut client).await?;
+    drop(client);
+    let mut client = connect_character(&underlevel_clients, 0x9a, 0).await?;
+    let after_refusal = query(&mut client).await?;
+    journey.check(
+        2,
+        refused.refusal == 3 && unchanged == initial && after_refusal == initial
+            && client.join_snapshot().game_session_id != refused_session,
+        (&refused.refusal, &refused.weekly),
+    );
+    logout_once(&mut client).await?;
+
     let identity = character_prep::dedicated_character(clients, "NODE_BOOT_Q_P04_ACCOUNT").await?;
     let scoped_clients = identity.clients(clients);
     let clients = &scoped_clients;
     let client = connect_character(clients, 0x9a, 0).await?;
-    let mut client = seed_build(clients, client, "p04-task-board", 399, "Master refusal").await?;
-    let initial = query(&mut client).await?;
-    journey.check(
-        1,
-        initial.refusal == 0 && !initial.shop.is_empty(),
-        &initial,
-    );
-
-    let refused = send(&mut client, 5, 3).await?;
-    let mut unchanged = refused.clone();
-    unchanged.refusal = 0;
-    journey.check(
-        2,
-        refused.refusal == 3 && unchanged == initial,
-        (&refused.refusal, &refused.weekly),
-    );
-
-    client = seed_build(clients, client, "p04-delivery-build", 1500, "authored maximum delivery capacity").await?;
-    let after_fixture = query(&mut client).await?;
-    if after_fixture != initial {
-        return Err("P04 board changed during capacity fixture readmission".into());
+    let mut client = seed_build(clients, client, "p04-task-board", 1500, "authored maximum delivery capacity").await?;
+    let capacity_board = query(&mut client).await?;
+    if capacity_board.refusal != 0 || capacity_board.weekly.started || capacity_board.shop.is_empty() {
+        return Err("P04 capacity fixture did not start with a fresh board".into());
     }
 
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
