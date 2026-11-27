@@ -323,15 +323,14 @@ impl<'a> Staging<'a> {
         let path = loop {
             let from = tile(client.world_spatial().actor_position)?;
             let occupied = Self::occupied(client, None)?;
-            // Use the outbound map bounds. During cleanup, vacant spawn tiles
-            // are eligible landings and walk still checks each before STEP.
+            // Cleanup may start outside the outbound map bounds. Keep a
+            // bounded corridor between the live position and town.
             if let Ok(path) = find_route(
                 from,
                 |at| at == TOWN,
                 |at, direction| {
-                    destination(self.world, at, direction).filter(|next| {
-                        map_journey::in_town(*next, TOWN) && !occupied.contains(next)
-                    })
+                    destination(self.world, at, direction)
+                        .filter(|next| in_return_search(*next, from) && !occupied.contains(next))
                 },
             ) {
                 break path;
@@ -505,6 +504,17 @@ impl<'a> Staging<'a> {
         ));
         Ok(())
     }
+}
+
+fn in_return_search(at: TilePos, from: TilePos) -> bool {
+    let nearest = TilePos {
+        x: at.x.clamp(from.x.min(TOWN.x), from.x.max(TOWN.x)),
+        y: at.y.clamp(from.y.min(TOWN.y), from.y.max(TOWN.y)),
+        floor: at
+            .floor
+            .clamp(from.floor.min(TOWN.floor), from.floor.max(TOWN.floor)),
+    };
+    map_journey::in_town(at, nearest)
 }
 
 pub(super) async fn place_rat(
@@ -844,6 +854,29 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn return_search_includes_landings_outside_the_town_window() {
+        let from = TilePos {
+            x: 32536,
+            y: 32514,
+            floor: -7,
+        };
+        let next = TilePos {
+            y: from.y - 1,
+            ..from
+        };
+        assert!(!map_journey::in_town(next, TOWN));
+        assert!(in_return_search(next, from));
+        assert!(in_return_search(TOWN, from));
+        assert!(!in_return_search(
+            TilePos {
+                y: u16::MAX,
+                ..from
+            },
+            from
+        ));
+    }
+
     #[test]
     fn row_requires_every_lifecycle_receipt() -> TestResult {
         let mut row = Row::new();
