@@ -1501,6 +1501,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
             {
                 return Some(SpellCastOutcome {
+                    refresh_inventory: false,
                     disposition,
                     vitals: None,
                 });
