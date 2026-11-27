@@ -245,6 +245,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return ReleaseAttempt::Retry;
         };
         let releasing = self.journal_logout_store(releasing, admitted.world_id);
+        #[cfg(test)]
+        if matches!(release, TerminalRelease::Logout(_))
+            && let Ok(barrier) = LOGOUT_RELEASE_COMMIT_BARRIER.try_with(std::sync::Arc::clone)
+        {
+            barrier.entered.notify_one();
+            barrier.proceed.notified().await;
+        }
         // The terminal release and logout callers already retain foreground demand.
         // Use the lifecycle recovery window for the final write's holder checkout.
         let outcome = AdmissionRetryBudget::for_root(&session, self.root)
