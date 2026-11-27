@@ -263,6 +263,30 @@ impl ChannelRuntimeV1 {
         self.carrier.retains_corpse_projection(actor)
     }
 
+    /// Retained death position for observer publication after the live slot is removed.
+    pub fn projected_death_actor(&self, actor: ExactActorRef) -> Option<VisibleRuntimeActor> {
+        let projection = self
+            .carrier
+            .corpse_projections
+            .iter()
+            .find(|projection| projection.occurrence.actor == actor)?;
+        (projection.position.context == self.pinned_position_context()).then(|| {
+            VisibleRuntimeActor {
+                actor,
+                generation: actor.actor_local_generation(),
+                position: projection.position(),
+                revision: projection.position_revision(),
+            }
+        })
+    }
+
+    pub fn pending_source_corpse_actor(&self) -> Option<ExactActorRef> {
+        self.carrier
+            .source_corpse_projection_pin
+            .as_ref()
+            .map(|seal| seal.actor())
+    }
+
     /// Death evidence for an opaque placement reference, including lethal slots whose
     /// corpses have not been bound to a durable item yet.
     pub fn knows_creature_death(&self, identity: [u8; 16], generation: u64) -> bool {

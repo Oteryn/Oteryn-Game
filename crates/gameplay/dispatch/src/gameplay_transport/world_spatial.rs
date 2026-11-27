@@ -125,6 +125,8 @@ const NPC_HEALTH_PERCENT: u8 = 100;
 pub enum VisibleKind {
     Player,
     Creature,
+    /// Retain the last wire incarnation while its corpse settles.
+    PendingDeath,
     /// NPC-RT-1: a placed NPC actor (NPC-BEHAVIOUR-0 §3.1). It has no health; the wire always
     /// carries 100 for it.
     Npc,
@@ -188,7 +190,7 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
     };
     let (kind, detail) = match entity.kind {
         VisibleKind::Player => (EntityKind::Player, actor),
-        VisibleKind::Creature => (EntityKind::Creature, actor),
+        VisibleKind::Creature | VisibleKind::PendingDeath => (EntityKind::Creature, actor),
         VisibleKind::Npc | VisibleKind::Hireling => (
             EntityKind::Npc,
             EntityDetail::Actor {
@@ -325,7 +327,9 @@ impl SessionVisibility {
         channel.entities.retain_mut(|entity| {
             if matches!(
                 entity.kind,
-                VisibleKind::Corpse { .. } | VisibleKind::GroundItem { .. }
+                VisibleKind::Corpse { .. }
+                    | VisibleKind::GroundItem { .. }
+                    | VisibleKind::PendingDeath
             ) {
                 return true;
             }
@@ -432,6 +436,15 @@ impl SessionVisibility {
         let mut index = InterestIndex::new();
         let mut by_identity = BTreeMap::new();
         for entity in &channel.entities {
+            if entity.kind == VisibleKind::PendingDeath
+                && (!self.objects
+                    || !self.shows_creature(EntityRef {
+                        identity: entity.identity,
+                        generation: entity.generation,
+                    }))
+            {
+                continue;
+            }
             if !self.objects
                 && matches!(
                     entity.kind,
@@ -464,7 +477,13 @@ impl SessionVisibility {
             .map(|entity| {
                 by_identity
                     .get(&entity.identity)
-                    .map(|entity| wire_entity(entity))
+                    .and_then(|entry| {
+                        if entry.kind == VisibleKind::PendingDeath {
+                            self.entities.get(&entry.identity).copied()
+                        } else {
+                            Some(wire_entity(entry))
+                        }
+                    })
                     .ok_or(WorldSpatialError::Malformed)
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -1535,6 +1554,59 @@ mod tests {
         assert_eq!(delta.actor_position, stepped.entities[0].position);
         assert_eq!(identities(&delta.update), [id(0), id(1)]);
         assert!(delta.enter.is_empty() && delta.leave.is_empty());
+    }
+
+    #[test]
+    fn a_pending_death_replaces_only_an_observed_creature_with_its_corpse() {
+        let live = at(1, VisibleKind::Creature, 101, 100, 7);
+        let pending = ChannelEntity {
+            kind: VisibleKind::PendingDeath,
+            ..live
+        };
+        let corpse = ChannelEntity {
+            generation: 0,
+            ..at(
+                2,
+                VisibleKind::Corpse {
+                    native_appearance_id: None,
+                    item_definition_ref: std::num::NonZeroU32::MIN,
+                },
+                101,
+                100,
+                7,
+            )
+        };
+        let mut view = SessionVisibility::with_objects(true);
+        let mut items = super::super::item_view::SessionItemView::resume(Default::default());
+        let mut attach = |entities: &mut [WorldSpatialEntity]| {
+            items
+                .attach_spatial_handles(entities)
+                .map_err(|_| WorldSpatialError::Malformed)
+        };
+        let snapshot = view.snapshot(&channel([live]), &mut attach).expect("live");
+        assert_eq!(
+            view.refresh(&channel([pending]), &mut attach),
+            Ok(VisibilityUpdate::Unchanged)
+        );
+        let late = SessionVisibility::with_objects(true)
+            .snapshot(&channel([pending]), &mut attach)
+            .expect("late observer");
+        assert_eq!(identities(&late.entities), [id(0)]);
+        let VisibilityUpdate::Delta(delta) = view
+            .refresh(&channel([corpse]), &mut attach)
+            .expect("corpse delta")
+        else {
+            panic!("expected one creature leave and one corpse enter");
+        };
+        assert_eq!(delta.leave, [snapshot.entities[1].entity]);
+        assert_eq!(identities(&delta.enter), [id(2)]);
+        assert!(matches!(
+            delta.enter[0].detail,
+            EntityDetail::Object {
+                item_handle: Some(_),
+                ..
+            }
+        ));
     }
 
     /// MAP-ITEM-REF-1 (CP D885): a session without capability 4 is sent no object; with it, the

@@ -425,7 +425,7 @@ async fn observe_corpse(
             let lease = runtime
                 .bound_attacker_lease(actor, command.game_session_id)
                 .map_err(|_| HandleStale)?;
-            if lease.character_id() != fence.character_id
+            if lease.character_id().as_bytes() != fence.character_id.as_bytes()
                 || !lease.accepts_generation(fence.character_lease_generation)
                 || !runtime
                     .player_control_facts(actor, command.game_session_id)
@@ -461,7 +461,7 @@ async fn observe_corpse(
         floor: corpse.position.floor,
     };
     let entries = if let (Some(viewer), Some(command)) = (viewer, command) {
-        if !super::corpse_open::within_reach(actor, position) {
+        if !super::item_view::corpse_open::within_reach(actor, position) {
             return Ok(ItemTargetObservation {
                 actor,
                 target: UseItemTarget::Corpse {

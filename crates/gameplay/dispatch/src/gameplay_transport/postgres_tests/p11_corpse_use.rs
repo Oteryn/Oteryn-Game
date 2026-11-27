@@ -30,9 +30,10 @@ fn demon_corpse_use() -> TestResult {
          actor, session, owner, fence, admitted| {
             let _ = &request;
             admitted.continuity.selected_capabilities =
-                SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 15, 22])
+                SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 15, CAPABILITY_RUNE_USE_V1, zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1])
                     .ok_or("selected capabilities")?;
             assert!(admitted.continuity.selected_capabilities.contains(CAPABILITY_RUNE_USE_V1));
+            assert!(admitted.continuity.selected_capabilities.contains(zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1));
             let target = {
                 let mut runtime = owner.runtime.lock().await;
                 owner.states.spell_states.lock().await
@@ -62,9 +63,20 @@ fn demon_corpse_use() -> TestResult {
                         AttackIntentDisposition::Ok
                     );
                     owner.refresh_attack_weapon(actor, session).await;
-                    let swing = owner.owner_now().checked_add(2_000_000).map_err(debug)?;
-                    owner.drain_auto_attacks_at(swing).await;
+                    let started = owner.owner_now();
+                    for tick in 1..=16 {
+                        let swing = started.checked_add(tick * 3_000_000).map_err(debug)?;
+                        owner.drain_auto_attacks_at(swing).await;
+                        if !owner.runtime.lock().await.contains_live_creature(target) {
+                            break;
+                        }
+                    }
                     assert!(!owner.runtime.lock().await.contains_live_creature(target));
+                    let pending = owner.observe_channel_entities(actor).await.ok_or("pending death view")?;
+                    assert!(pending.entities.iter().any(|entry| {
+                        entry.identity == entity.identity
+                            && entry.kind == crate::gameplay_transport::world_spatial::VisibleKind::PendingDeath
+                    }), "hold the observed creature until its corpse commits");
                     assert!(matches!(owner.drain_kill_rewards(session).await, DrainOutcome::Drained));
 
                     let mut proof = CorpseWireProof::default();
