@@ -211,7 +211,20 @@ where
             effects::step(stream, authority, session, outcome).await?;
         }
         Dispatch::Use(outcome) => {
+            let committed = outcome.disposition == UseDisposition::Committed;
             use_effects::use_effects(stream, authority, session, command, outcome).await?;
+            if committed {
+                session
+                    .cooldowns
+                    .emit(
+                        stream,
+                        authority,
+                        session.actor,
+                        &mut session.admitted,
+                        &mut session.sequence,
+                    )
+                    .await?;
+            }
         }
         Dispatch::Spell(outcome) | Dispatch::ParameterSpell(outcome, _) => {
             effects::spell(stream, authority, session, outcome).await?;

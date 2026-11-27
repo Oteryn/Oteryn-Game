@@ -100,7 +100,16 @@ where
         }
         session.admitted.continuity.vitals_revision = to;
     }
-    Ok(())
+    session
+        .cooldowns
+        .emit(
+            stream,
+            authority,
+            session.actor,
+            &mut session.admitted,
+            &mut session.sequence,
+        )
+        .await
 }
 
 pub(super) async fn item_move<S, A>(

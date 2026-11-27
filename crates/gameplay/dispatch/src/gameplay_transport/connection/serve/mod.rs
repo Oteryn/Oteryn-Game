@@ -36,6 +36,8 @@ mod target_move;
 use command::CommandOutcome;
 mod effects;
 mod native_cues;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use native_cues::CooldownProjection;
 mod outbound;
 use outbound::write_frame;
 mod result;
@@ -76,6 +78,7 @@ async fn observed<T>(phase: &'static str, work: impl std::future::Future<Output 
 // release the pacing claim before dropping the session command stream (which locks ingress).
 struct ServeState {
     cast_chat_revision: u64,
+    cooldowns: native_cues::CooldownProjection,
     spell_catalog: Option<spell_catalog::SessionCatalog>,
     integrity: integrity::Integrity,
     target_walk: Option<target_move::PendingWalk>,

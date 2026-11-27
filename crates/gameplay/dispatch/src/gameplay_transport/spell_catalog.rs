@@ -44,11 +44,6 @@ pub(super) fn catalog_with_visibility(
     now_micros: u64,
     include_other_vocations: bool,
 ) -> Option<Vec<SpellCatalogEntry>> {
-    let groups: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../../tools/content-schema/spell-authoring/cooldown-groups.json"
-    ))
-    .ok()?;
-    let groups = groups.get("groups")?.as_array()?;
     let facts = state.character_facts();
     let mut entries = Vec::new();
     for (index, spell) in book.spells.iter().enumerate() {
@@ -71,10 +66,7 @@ pub(super) fn catalog_with_visibility(
         };
         let mut cooldown_groups = Vec::new();
         for group in &spell.groups {
-            let ordinal = groups.iter().position(|known| {
-                known.get("key").and_then(|key| key.as_str()) == Some(&group.key)
-            })?;
-            cooldown_groups.push(u32::try_from(ordinal + 1).ok()?);
+            cooldown_groups.push(cooldown_group_ordinal(&group.key)?);
         }
         cooldown_groups.sort_unstable();
         cooldown_groups.dedup();
@@ -99,6 +91,24 @@ pub(super) fn catalog_with_visibility(
         });
     }
     Some(entries)
+}
+
+pub(super) fn cooldown_group_ordinal(key: &str) -> Option<u32> {
+    static GROUPS: std::sync::OnceLock<Option<Vec<String>>> = std::sync::OnceLock::new();
+    let groups = GROUPS.get_or_init(|| {
+        let document: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../tools/content-schema/spell-authoring/cooldown-groups.json"
+        ))
+        .ok()?;
+        document
+            .get("groups")?
+            .as_array()?
+            .iter()
+            .map(|group| Some(group.get("key")?.as_str()?.to_owned()))
+            .collect()
+    });
+    let index = groups.as_ref()?.iter().position(|known| known == key)?;
+    u32::try_from(index + 1).ok()
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {

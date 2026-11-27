@@ -8,6 +8,7 @@ use std::task::Poll;
 #[cfg(test)]
 tokio::task_local! {
     pub(super) static SOURCE_OWNER_SWEEP_COMPLETE: std::sync::Arc<tokio::sync::Notify>;
+    pub(super) static SOURCE_OWNER_MAINTENANCE_WAIT: std::sync::Arc<tokio::sync::Notify>;
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -23,6 +24,94 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         }
         let wake = self.states.spell_states.lock().await.owner_wake.clone();
+        let maintenance = tokio::sync::Notify::new();
+        let monsters = tokio::sync::Notify::new();
+        // Fan out the existing coalesced owner wake. A blocked maintenance future
+        // must not delay admission of a due creature turn to the shared spell lane.
+        let relay = async {
+            loop {
+                wake.notified().await;
+                maintenance.notify_one();
+                monsters.notify_one();
+            }
+        };
+        let cycles = async {
+            tokio::join!(
+                Box::pin(self.run_source_maintenance(shutdown, &maintenance)),
+                crate::durability::DurabilityRoot::with_background_holder(Box::pin(
+                    self.run_monster_owner_clock(shutdown, &monsters)
+                ))
+            );
+        };
+        tokio::select! { () = cycles => {}, () = relay => {} }
+    }
+
+    async fn run_monster_owner_clock(
+        &self,
+        shutdown: &oteryn_foundation::CancellationToken,
+        wake: &tokio::sync::Notify,
+    ) {
+        let Some(_room) = self.rooms().gate_monster_ai() else {
+            return;
+        };
+        let retry_us = crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS;
+        loop {
+            let Some(Some(scheduled)) = super::first(
+                async {
+                    let runtime = self.runtime.lock().await;
+                    runtime.owner_fence().ok()?;
+                    let states = self.states.spell_states.lock().await;
+                    Some(states.next_monster_ai_due_us(&runtime))
+                },
+                shutdown.cancelled(),
+            )
+            .await
+            else {
+                return;
+            };
+            let now = self.owner_now().get();
+            let remaining = scheduled.saturating_sub(now);
+            // An unfinished turn leaves its deadline due. Retry in the next
+            // bounded think window, with earlier source work able to wake it.
+            let wait_us = if remaining == 0 { retry_us } else { remaining };
+            tokio::select! {
+                biased;
+                () = shutdown.cancelled() => return,
+                () = wake.notified() => {}
+                () = tokio::time::sleep(std::time::Duration::from_micros(wait_us)) => {}
+            }
+            let work = async {
+                if self.ensure_source_map_initialized().await {
+                    self.drain_monster_melee().await;
+                } else {
+                    self.log_monster_owner_timing(scheduled, "map_or_owner_unavailable");
+                }
+            };
+            let mut work = pin!(work);
+            tokio::select! {
+                () = &mut work => {}
+                () = tokio::time::sleep(std::time::Duration::from_micros(retry_us)) => {
+                    self.log_monster_owner_timing(scheduled, "owner_busy");
+                    // The lane is FIFO. Keep this waiter and any retained work intact.
+                    work.await;
+                }
+            }
+        }
+    }
+
+    async fn run_source_maintenance(
+        &self,
+        shutdown: &oteryn_foundation::CancellationToken,
+        wake: &tokio::sync::Notify,
+    ) {
+        #[cfg(test)]
+        if let Ok(gate) = SOURCE_OWNER_MAINTENANCE_WAIT.try_with(std::sync::Arc::clone)
+            && super::first(gate.notified(), shutdown.cancelled())
+                .await
+                .is_none()
+        {
+            return;
+        }
         let mut npc_voices = {
             let runtime = self.runtime.lock().await;
             self.states
@@ -54,11 +143,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .and_then(|map| map.facts.next_movement_decay_time()),
                     )
                     .chain(self.states.quest_callbacks.next_encounter_due_us())
-                    .chain(
-                        self.rooms()
-                            .gate_monster_ai()
-                            .map(|_| states.next_monster_ai_due_us(&runtime)),
-                    )
                     .chain(
                         npc_voices
                             .as_ref()
@@ -113,12 +197,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     gate.begin_turn();
                 }
             }
-            // Rotate independent units, including empty discoveries. The two
-            // Rotten slots retain cyclic pre/AI/post order across resumed sweeps;
-            // monster melee runs with the AI phase, between them.
+            // Rotate independent units, including empty discoveries. Native AI
+            // and retained source callbacks share the existing spell-lane arbiter.
             // No whole-population grant is introduced.
-            let start = self.background_start("source-cycle", 16);
-            for index in (start..16).chain(0..start) {
+            let start = self.background_start("source-cycle", 15);
+            for index in (start..15).chain(0..start) {
                 self.background_turn("source-cycle", index + 1, async {
                     match index {
                         0 => {
@@ -176,11 +259,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                         9 => {
                             if self.ensure_source_map_initialized().await {
-                                self.drain_monster_melee().await;
-                            }
-                        }
-                        10 => {
-                            if self.ensure_source_map_initialized().await {
                                 self.root
                                     .with_background_operation(
                                         self.drain_rotten_movement_callback_unit(),
@@ -188,14 +266,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     .await;
                             }
                         }
-                        11 => {
+                        10 => {
                             if self.ensure_source_map_initialized().await {
                                 self.root
                                     .with_background_operation(self.drain_bak_first_think_claims())
                                     .await;
                             }
                         }
-                        12 => {
+                        11 => {
                             if self.ensure_source_map_initialized().await {
                                 self.root
                                     .with_background_operation(
@@ -204,14 +282,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     .await;
                             }
                         }
-                        13 => {
+                        12 => {
                             if self.ensure_source_map_initialized().await {
                                 self.root
                                     .with_background_operation(self.drain_primal_pod_expiries())
                                     .await;
                             }
                         }
-                        14 => {
+                        13 => {
                             let _ = self.refresh_cake_regeneration().await;
                         }
                         _ => {

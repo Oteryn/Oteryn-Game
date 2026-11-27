@@ -441,8 +441,19 @@ impl CreatureAiTable {
         facts: &CreatureThinkFacts<'_>,
     ) -> Option<Result<ThinkReport, ThinkError>> {
         let entry = self.entry_mut(actor)?;
+        let scheduled = entry.due_us.unwrap_or(facts.now_us);
         let sequence = entry.sequence.saturating_add(1);
         let report = entry.state.think(sequence, facts);
+        crate::observability::record_think_timing(
+            Some(actor),
+            scheduled,
+            facts.now_us,
+            match &report {
+                Ok(report) if report.over_budget => "evaluation_budget",
+                Ok(_) => "ran",
+                Err(_) => "think_refused",
+            },
+        );
         let next = facts
             .now_us
             .saturating_add(CREATURE_THINK_INTERVAL_MILLIS.saturating_mul(1_000));

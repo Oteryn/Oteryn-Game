@@ -18,7 +18,9 @@ use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
 };
-use oteryn_gameplay_monster_ai::observability::{melee_diagnostics_enabled, record_melee_outcome};
+use oteryn_gameplay_monster_ai::observability::{
+    melee_diagnostics_enabled, record_melee_outcome, record_think_timing,
+};
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 use sha2::{Digest, Sha256};
 
@@ -73,6 +75,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         trace.set("ai_permit");
         let Some(permit) = self.spell_lane_permit().await else {
             self.log_monster_melee_no_permit();
+            self.log_monster_owner_timing(self.owner_now().get(), "spell_lane_refused");
             return;
         };
         #[cfg(test)]
@@ -81,6 +84,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await;
         #[cfg(test)]
         trace.set("ai_complete");
+    }
+
+    pub(super) fn log_monster_owner_timing(&self, scheduled: u64, reason: &'static str) {
+        record_think_timing(None, scheduled, self.owner_now().get(), reason);
     }
 
     #[cfg(test)]
@@ -294,6 +301,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut runtime = self.runtime.lock().await;
         let (retained_work, source_due) = {
             let Ok(states) = self.states.spell_states.try_lock() else {
+                self.log_monster_owner_timing(now.get(), "spell_state_lock");
                 return;
             };
             let Ok(next) = super::source_death::next_source_work(&runtime, &states, content) else {
@@ -342,6 +350,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         #[cfg(test)]
         trace.set("ai_states");
         let Ok(mut states) = self.states.spell_states.try_lock() else {
+            self.log_monster_owner_timing(now.get(), "spell_state_lock");
             return;
         };
         // A lethal producer may have won the runtime lock after the detached
@@ -350,6 +359,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             == Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Primal)
         {
             let Ok(attack) = self.states.attack.try_lock() else {
+                self.log_monster_owner_timing(states.next_monster_ai_pass_us, "attack_lock");
                 return;
             };
             if !matches!(attack.kills().core_head(), Ok(None)) {
@@ -531,6 +541,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         #[cfg(test)]
         trace.set("ai_attack");
         let Ok(mut attack) = self.states.attack.try_lock() else {
+            self.log_monster_owner_timing(states.next_monster_ai_pass_us, "attack_lock");
             return;
         };
         let semantic_now =
