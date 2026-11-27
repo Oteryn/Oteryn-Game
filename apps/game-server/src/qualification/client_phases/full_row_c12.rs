@@ -2042,8 +2042,51 @@ pub(super) async fn prepare_client_capture(
         return Err(format!("C12.client authored target clear refused: {cleared:?}").into());
     }
     wait_combat_target(&mut client, None).await?;
-    let back = route(world, CLIENT_CAST_TILE, |at| at == home)
-        .ok_or("C12.client no return route from the authored cast tile")?;
+    let rope = TilePos {
+        x: 32296,
+        y: 32334,
+        floor: -8,
+    };
+    let upstairs = TilePos {
+        x: 32296,
+        y: 32335,
+        floor: -7,
+    };
+    if !world
+        .base()
+        .tile(rope.x, rope.y, rope.floor)
+        .is_some_and(|tile| tile.appearance(0) == Some(386))
+    {
+        return Err("C12 original Tarantula cave rope spot is missing".into());
+    }
+    if destination(world, CLIENT_CAST_TILE, StepDirection::East) != Some(rope) {
+        return Err("C12 original Tarantula cave rope spot is unreachable".into());
+    }
+    walk_exact_route(&mut client, world, &[StepDirection::East]).await?;
+    let reply = client
+        .chat(&oteryn_dev_client::ChatIntent::Say {
+            mode: oteryn_dev_client::ChatSpeechMode::Say,
+            text: "exani tera".into(),
+        })
+        .await?;
+    require_mechanic_acceptance(reply.status, "C12.client Magic Rope")?;
+    if reply.disposition != oteryn_dev_client::ChatDisposition::Ok {
+        return Err(format!("C12 Magic Rope failed: {reply:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
+    while tile(client.world_spatial().actor_position)? == rope {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C12 Magic Rope did not leave the authored cave".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+    let landing = tile(client.world_spatial().actor_position)?;
+    if landing != upstairs {
+        return Err(format!("C12 Magic Rope landed at {landing:?}, expected {upstairs:?}").into());
+    }
+    evidence("C12_CLIENT_AUTHORED_RETURN rope=32296,32334,-8 landing=32296,32335,-7");
+    let back = route(world, upstairs, |at| at == home)
+        .ok_or("C12.client no surface return route from the authored rope exit")?;
     walk_exact_route(&mut client, world, &back).await?;
     let previous = client.join_snapshot().game_session_id;
     let position = tile(client.world_spatial().actor_position)?;
