@@ -80,6 +80,16 @@ impl ChannelRuntimeV1 {
         Ok(())
     }
 
+    /// Set the classified spawn for an exact combat scenario without advancing the population.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn classify_forge_spawn_for_test(
+        &mut self,
+        actor: ExactActorRef,
+        kind: ForgeCreature,
+    ) -> Result<(), CarrierError> {
+        self.apply_forge_classification(actor, kind)
+    }
+
     pub(super) fn drive_forge_population(&mut self, now: u64) -> Result<(), CarrierError> {
         // Observe only the three retained incarnations on ordinary owner turns. A dead
         // fiend holds its population slot until its own replacement deadline.

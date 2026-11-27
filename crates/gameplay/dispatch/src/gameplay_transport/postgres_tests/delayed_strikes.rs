@@ -1014,7 +1014,9 @@ async fn lethal_wire(
     use super::item_look_fixtures::read_frame;
     use crate::foundation::{MessageType, decode_wire_envelope};
     use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
-    use oteryn_protocol_oteryn::{decode_state_delta, presentation, world_spatial_entities as spatial};
+    use oteryn_protocol_oteryn::{
+        decode_state_delta, presentation, world_spatial_entities as spatial,
+    };
 
     let offers = crate::gameplay_transport::native_cue_offer::offered(
         owner.offered_capabilities(),
@@ -1025,7 +1027,12 @@ async fn lethal_wire(
         &[4, 6, 7, 18, presentation::CAPABILITY_PRESENTATION_V1],
     )
     .ok_or("death observation capabilities")?;
-    assert!(admitted.continuity.selected_capabilities.contains(presentation::CAPABILITY_PRESENTATION_V1));
+    assert!(
+        admitted
+            .continuity
+            .selected_capabilities
+            .contains(presentation::CAPABILITY_PRESENTATION_V1)
+    );
     let corpse_identity = target.corpse_identity();
     let target_ref = spatial::EntityRef {
         identity: target.placement_identity(),
@@ -1033,7 +1040,10 @@ async fn lethal_wire(
     };
     let at = {
         let runtime = owner.runtime.lock().await;
-        owner.wire_position_frame(&runtime).and_then(|frame| frame.project(position)).ok_or("death position")?
+        owner
+            .wire_position_frame(&runtime)
+            .and_then(|frame| frame.project(position))
+            .ok_or("death position")?
     };
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async {
@@ -1043,18 +1053,45 @@ async fn lethal_wire(
     let observer = async {
         loop {
             let bytes = read_frame(&mut client).await?;
-            if decode_wire_envelope(&bytes).map_err(debug)?.message_type() == MessageType::SnapshotCommit {
+            if decode_wire_envelope(&bytes).map_err(debug)?.message_type()
+                == MessageType::SnapshotCommit
+            {
                 break;
             }
         }
-        owner.states.test_owner_time.store(owner.owner_now().get() + 1_100_001, std::sync::atomic::Ordering::Relaxed);
+        owner.states.test_owner_time.store(
+            owner.owner_now().get() + 1_100_001,
+            std::sync::atomic::Ordering::Relaxed,
+        );
         let report = owner.drain_native_ai_timers().await.map_err(debug)?;
         assert_eq!(report.receipts.len(), 1, "pending strike must commit");
-        assert!(report.receipts[0].batch.effects.iter().any(|effect| effect.target == target
-            && effect.health.is_some_and(|health| health.health_before == 1 && health.health_after == 0)));
-        assert_eq!(owner.drain_kill_rewards(admitted.game_session_id).await, crate::gameplay_transport::kill_reward::DrainOutcome::Drained);
+        assert!(report.receipts[0].batch.effects.iter().any(|effect| {
+            effect.target == target
+                && effect
+                    .health
+                    .is_some_and(|health| health.health_before == 1 && health.health_after == 0)
+        }));
+        assert_eq!(
+            owner.drain_kill_rewards(admitted.game_session_id).await,
+            crate::gameplay_transport::kill_reward::DrainOutcome::Drained
+        );
         let selected = admitted.continuity.selected_capabilities;
+        // The production presentation outbox drains in order. A later sound
+        // marks that the reader has passed any duplicate in that outbox.
+        const END_CUE: u16 = 1;
+        {
+            let runtime = owner.runtime.lock().await;
+            owner.states.spell_states.lock().await.sounds.record(
+                &runtime,
+                admitted.runtime_actor.ok_or("caster")?,
+                position,
+                END_CUE,
+                0,
+            );
+        }
         let mut damage_sequence = None;
+        let mut removed = false;
+        let mut passed_outbox = false;
         loop {
             let bytes = read_frame(&mut client).await?;
             let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
@@ -1063,31 +1100,71 @@ async fn lethal_wire(
             }
             let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
             if delta.domain_id == presentation::STATE_DOMAIN_WORLD_PRESENTATION {
-                for event in presentation::decode_presentation_batch(delta.payload).map_err(debug)? {
-                    if let presentation::PresentationEventKind::ValueText { target, position, primary, .. } = event.kind
+                for event in
+                    presentation::decode_presentation_batch(delta.payload).map_err(debug)?
+                {
+                    if matches!(event.kind, presentation::PresentationEventKind::Sound { cue_id, .. } if cue_id == u32::from(END_CUE))
+                    {
+                        passed_outbox = true;
+                    }
+                    if let presentation::PresentationEventKind::ValueText {
+                        target,
+                        position,
+                        primary,
+                        ..
+                    } = event.kind
                         && target == target_ref
                     {
-                        assert!(damage_sequence.is_none(), "the lethal strike must publish once");
-                        assert_eq!((position, primary.value, primary.color), (at, 1, presentation::PresentationColor::DarkRed));
+                        assert!(
+                            damage_sequence.is_none(),
+                            "the lethal strike must publish once"
+                        );
+                        assert_eq!(
+                            (position, primary.value, primary.color),
+                            (at, 1, presentation::PresentationColor::DarkRed)
+                        );
                         damage_sequence = Some(envelope.server_sequence());
                     }
                 }
             }
-            if delta.domain_id == oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
-                let spatial = spatial::decode_world_spatial_delta_view(selected.as_slice(), delta.delta_type, delta.payload).map_err(debug)?;
+            if delta.domain_id
+                == oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
+            {
+                let spatial = spatial::decode_world_spatial_delta_view(
+                    selected.as_slice(),
+                    delta.delta_type,
+                    delta.payload,
+                )
+                .map_err(debug)?;
                 if let spatial::WorldSpatialDeltaView::Entities(change) = spatial
                     && change.leave.contains(&target_ref)
                 {
-                    assert_eq!(damage_sequence.and_then(|sequence| sequence.checked_add(1)), Some(envelope.server_sequence()),
-                        "the exact final damage must immediately precede the removal");
-                    assert!(change.enter.iter().any(|entry| entry.kind == spatial::EntityKind::Corpse && entry.entity.identity == corpse_identity && entry.position == at),
-                        "the corpse must enter in the removal delta");
-                    break;
+                    assert_eq!(
+                        damage_sequence.and_then(|sequence| sequence.checked_add(1)),
+                        Some(envelope.server_sequence()),
+                        "the exact final damage must immediately precede the removal"
+                    );
+                    assert!(
+                        change
+                            .enter
+                            .iter()
+                            .any(|entry| entry.kind == spatial::EntityKind::Corpse
+                                && entry.entity.identity == corpse_identity
+                                && entry.position == at),
+                        "the corpse must enter in the removal delta"
+                    );
+                    removed = true;
                 }
+            }
+            if removed && passed_outbox {
+                break;
             }
         }
         drop(client);
         Ok::<_, Box<dyn std::error::Error>>(())
     };
-    tokio::time::timeout(IDLE_LIVENESS.interval, async { join_two(serving, observer).await.1 }).await?
+    tokio::time::timeout(IDLE_LIVENESS.interval, async {
+        join_two(serving, observer).await.1
+    })
+    .await?
 }

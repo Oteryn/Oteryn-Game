@@ -562,34 +562,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(decided),
             );
         }
-        // A Character without a vocation has no familiar; its absent build row is valid.
-        if facts.vocation != crate::spell::Vocation::None
-            && let Some(native) = self
-                .active_generation
-                .and_then(|active| active.native_gameplay())
-            && let Some(config) = native.familiar_config()
-        {
-            phase.set("familiar_login");
-            // The test seeds its durable Familiar checkpoint with the positioned fence.
-            #[cfg(test)]
-            if let Ok(Some(barrier)) = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
+        // A Character without a vocation has no familiar; Premium still
+        // applies to the positioned actor's hunting state.
+        let familiar = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .filter(|_| facts.vocation != crate::spell::Vocation::None)
+            .and_then(|native| native.familiar_config().map(|config| (native, config)));
+        #[cfg(test)]
+        if familiar.is_some()
+            && let Ok(Some(barrier)) = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
                 (!probe.seed_started.replace(true)).then(|| probe.seed_barrier.clone())
-            }) {
-                barrier.0.notify_one();
-                barrier.1.notified().await;
-            }
-            let login_budget =
-                AdmissionRetryBudget::for_foreground_root(&game_session_id, self.root)
-                    .unwrap_or_else(|_| {
-                        AdmissionRetryBudget::for_root(&game_session_id, self.root)
-                    });
-            let access = self
-                .refresh_and_apply_spell_access_with_budget(
-                    actor,
-                    game_session_id,
-                    Some(&login_budget),
-                )
-                .await;
+            })
+        {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
+        }
+        let login_budget = AdmissionRetryBudget::for_foreground_root(&game_session_id, self.root)
+            .unwrap_or_else(|_| AdmissionRetryBudget::for_root(&game_session_id, self.root));
+        let access = self
+            .refresh_and_apply_spell_access_with_budget(actor, game_session_id, Some(&login_budget))
+            .await;
+        if let Some((native, config)) = familiar {
+            phase.set("familiar_login");
             // #2199: a familiar Login that did not complete restored neither the stored familiar
             // nor its cooldowns, so the entry fails closed like the other post-position owners.
             let (login, login_attempts) = Box::pin(familiar_login::run(

@@ -377,6 +377,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return Ok(admitted);
         }
+        // Start the account's single pull before first entry reads its Premium state.
+        let account = *record.account_id.as_bytes();
+        let premium_entry = premium_entry
+            .unwrap_or_else(|| self.register_premium_entry(account, attempt.game_session_id));
+        let _ = self.premium.wait_for_snapshot(account).await;
         // #935: only after both COMMITs, revalidate current authority and let
         // the Channel owner write the first-entry position. A failure here
         // writes nothing and fabricates no rollback: the committed actor stays
@@ -401,11 +406,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {
             eprintln!("SEAM_EVIDENCE spell_first_entry outcome={first_entry:?}");
         }
-        // PREM-1b: pull Premium before any Premium read; admission does not wait on it.
-        self.admit_premium(*record.account_id.as_bytes(), attempt.game_session_id);
-        if let Some(entry) = premium_entry {
-            entry.retain();
-        }
+        premium_entry.retain();
         self.admit_promotion(attempt.game_session_id).await;
         // PAR-P12a: login is Crystal's title check point (`iologindata_load_player.cpp:1045`).
         self.refresh_session_titles(attempt.game_session_id).await;

@@ -1519,11 +1519,18 @@ impl<'r> AdmissionRetryBudget<'r> {
     /// [`COMMAND_HOLDER_WINDOW`], then the command fails closed as before.
     fn for_command(root: &'r DurabilityRoot) -> Self {
         Self {
+            _foreground: root.foreground_demand().ok(),
+            ..Self::for_background_command(root)
+        }
+    }
+
+    fn for_background_command(root: &'r DurabilityRoot) -> Self {
+        Self {
             deadline: tokio::time::Instant::now() + COMMAND_HOLDER_WINDOW,
             backoff: RECONCILE_BACKOFF,
             stale_rounds: FRESH_ADMISSION_ROUNDS,
             root: Some(root),
-            _foreground: root.foreground_demand().ok(),
+            _foreground: None,
             waiter: std::sync::OnceLock::new(),
         }
     }

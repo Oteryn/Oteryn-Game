@@ -20,6 +20,7 @@ pub(super) async fn qualify(
     h: &Harness,
     children: i64,
     reconcile: bool,
+    hold_across_retry: bool,
 ) -> TestResult {
     let corpse = owner
         .runtime
@@ -163,6 +164,39 @@ pub(super) async fn qualify(
             .await
             .map_err(debug)?;
         assert_eq!(owner.runtime.lock().await.visible_corpses().len(), 1);
+    }
+    if hold_across_retry {
+        let held = owner.root.try_issue_semantic_pass()?;
+        let mut drain = std::pin::pin!(owner.drain_corpse_deadlines());
+        tokio::time::pause();
+        let still_pending = async {
+            for _ in 0..4 {
+                let pending = std::future::poll_fn(|cx| {
+                    use std::future::Future;
+                    std::task::Poll::Ready(drain.as_mut().poll(cx).is_pending())
+                })
+                .await;
+                if !pending {
+                    return false;
+                }
+                tokio::time::advance(Duration::from_millis(50)).await;
+            }
+            true
+        }
+        .await;
+        tokio::time::resume();
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        assert!(
+            still_pending,
+            "decay must wait beyond short checkout retries"
+        );
+        drain.await;
+        assert_eq!(
+            retire_count(h).await?,
+            children + 1,
+            "the same turn retires the corpse"
+        );
+        assert!(owner.runtime.lock().await.visible_corpses().is_empty());
     }
     for _ in 0..MAX_SWEEPS {
         owner_sweep(owner).await?;
@@ -456,10 +490,10 @@ pub(super) async fn qualify_rat_chain(
         tokio::time::advance(Duration::from_millis(duration.try_into()?)).await;
         age += before.elapsed();
         tokio::time::resume();
-        owner.states.test_owner_time.store(
-            u64::try_from(age.as_micros())? + 1,
-            Ordering::Relaxed,
-        );
+        owner
+            .states
+            .test_owner_time
+            .store(u64::try_from(age.as_micros())? + 1, Ordering::Relaxed);
         set_corpse_age(h, item, age.as_millis().try_into()?).await?;
 
         if busy && index == 0 {

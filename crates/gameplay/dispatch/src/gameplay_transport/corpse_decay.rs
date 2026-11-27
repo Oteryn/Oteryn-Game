@@ -18,6 +18,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) async fn reconcile_corpse_schedule(&self, retire_due: bool) {
+        let deadline = tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
         for retry in 0..=DECAY_HOLDER_RETRIES {
             let Err(error) = self.try_reconcile_corpse_schedule(retire_due).await else {
                 return;
@@ -31,7 +32,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return;
             }
-            self.wait_for_decay_holder().await;
+            if !matches!(
+                tokio::time::timeout_at(deadline, self.root.await_ready()).await,
+                Ok(Ok(()))
+            ) {
+                return;
+            }
         }
     }
 
