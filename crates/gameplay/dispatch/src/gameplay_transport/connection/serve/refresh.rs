@@ -34,6 +34,7 @@ where
     let current = authority
         .observe_vitals(session.actor, session.admitted.game_session_id)
         .await;
+    cooldowns::refresh(stream, authority, session).await?;
     let Some((to, value)) = current
         .filter(|(observed_revision, _)| {
             *observed_revision > session.admitted.continuity.vitals_revision

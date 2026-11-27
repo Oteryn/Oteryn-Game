@@ -7,6 +7,7 @@ use crate::content::ReferenceItemField;
 use crate::durability::house_furniture_destroy::{HouseDestroyCommand, HouseDestroyOutcome};
 use crate::durability::house_scope_handoff::HouseId;
 use crate::durability::item_mint::TypedDefinitionRef;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::ExactActorRef;
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
 use oteryn_simulation_determinism::{
@@ -232,6 +233,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         session: crate::foundation::GameSessionId,
+        admitted_fence: Option<CurrentCharacterItemFence>,
     ) -> Option<()> {
         let house = {
             let runtime = self.runtime.lock().await;
@@ -241,12 +243,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.root.observe_due_house_furniture(&house).await.ok()? {
             return Some(());
         }
-        let fence = self
-            .root
-            .observe_current_gameplay_fence(self.character, session, false)
-            .await
-            .ok()??
-            .item_fence();
+        let fence = match admitted_fence {
+            Some(fence) => fence,
+            None => self
+                .root
+                .observe_current_gameplay_fence(self.character, session, false)
+                .await
+                .ok()??
+                .item_fence(),
+        };
         // The expiry transaction locks and rechecks the House property and item
         // custody itself. A periodic pass must not queue behind a gameplay writer.
         self.root

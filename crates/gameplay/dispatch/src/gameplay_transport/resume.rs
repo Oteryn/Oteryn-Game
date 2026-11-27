@@ -822,6 +822,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // SPELL-D8 §8.2: the Serene initialization evaluation runs in this owner step,
             // before the resumed actor's first command. An actor without spell state has none.
             let mut states = self.states.spell_states.lock().await;
+            states.replace_cooldown_transport(actor, session_id, successor);
             if house_resume {
                 let _ = states.resume_house(&runtime, actor, session_id, self.owner_now());
                 false

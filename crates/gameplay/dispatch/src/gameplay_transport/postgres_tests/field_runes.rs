@@ -137,6 +137,30 @@ fn field_runes_postgres_player_contact_recovers_committed_damage() -> TestResult
 }
 
 #[test]
+fn field_runes_postgres_gift_commits_shortened_cooldown() -> TestResult {
+    large_stack(|| run(async |admin| gift_field_case(admin, false).await))
+}
+
+#[test]
+fn field_runes_postgres_gift_restages_shortened_cooldown_after_rollback() -> TestResult {
+    large_stack(|| run(async |admin| gift_field_case(admin, true).await))
+}
+
+async fn gift_field_case(admin: String, rollback: bool) -> TestResult {
+    field_scenario(
+        admin,
+        3188,
+        1,
+        2118,
+        true,
+        false,
+        false,
+        Scenario::GiftOfLife(rollback),
+    )
+    .await
+}
+
+#[test]
 fn field_runes_postgres_safe_wall_unknown_commit_never_repeats_movement() -> TestResult {
     large_stack(|| {
         run(async |admin| {
@@ -324,6 +348,7 @@ enum Scenario {
     PzTick,
     NoPvpTick,
     Death,
+    GiftOfLife(bool),
     RevokedCaster,
     DepartedCaster,
     PeriodicRollback,
@@ -1739,7 +1764,7 @@ async fn field_scenario_inner(
         format!("FIELD-RUNES transport rune={rune} scenario={scenario:?}: {error}")
     })??;
     eprintln!("FIELD-RUNES transport complete rune={rune} scenario={scenario:?}");
-    if destroy_scenario(scenario) {
+    if destroy_scenario(scenario) || matches!(scenario, Scenario::GiftOfLife(_)) {
         drop(owner);
         drop(authority);
         drop(seal);
@@ -2730,6 +2755,145 @@ async fn player_health(
         .health)
 }
 
+async fn drive_gift_field_entry(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    actor: crate::foundation::ExactActorRef,
+    rollback: bool,
+) -> TestResult {
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use crate::gameplay_transport::field_removal::faults;
+    use crate::spell::cast::PlayerSpellState;
+    use oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects;
+    use oteryn_protocol_oteryn::presentation as wire;
+    use oteryn_simulation_determinism::SemanticTimeMicros;
+    use std::num::NonZeroU32;
+
+    let session = admitted.game_session_id;
+    let generation = admitted.continuity.connection_generation;
+    let offered =
+        crate::gameplay_transport::native_cue_offer::offered(owner.offered_capabilities(), true);
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(
+            &offered,
+            &[
+                6,
+                wire::CAPABILITY_PRESENTATION_V1,
+                wire::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1,
+            ],
+        )
+        .ok_or("presentation capability")?;
+    let book = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("native gameplay")?
+        .spell_book();
+    let key = &book.spoken("exura").ok_or("exura")?.spell.key;
+    let spell_id = (1..=u32::try_from(book.source_len())?)
+        .filter_map(NonZeroU32::new)
+        .find(|i| {
+            book.source_indexed(*i)
+                .is_some_and(|(spell, _)| &spell.key == key)
+        })
+        .ok_or("exura index")?
+        .get();
+    let cooldown = (wire::ActorCooldownKind::Spell, spell_id);
+    let _clock = owner.freeze_owner_clock_for_test();
+    let now = owner.owner_now().get();
+    let deadline = now + 90_000_000;
+    let shortened = now + 30_000_000;
+    let mut feed = {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        let state = states.get_mut(&runtime, actor, session).ok_or("victim")?;
+        let facts = CharacterCastFacts {
+            vocation: crate::spell::Vocation::ElderDruid,
+            level: oteryn_gameplay_progression::wheel::WHEEL_LEVEL_OFFSET + 1,
+            ..state.character_facts()
+        };
+        let mut ready = PlayerSpellState::new(facts, 0, 0).ok_or("Wheel-eligible victim")?;
+        ready
+            .apply_owner_promotion_transition(true, true, Some(u64::MAX))
+            .map_err(debug)?;
+        let mut effects = WheelRuntimeEffects::default();
+        effects.revelation_stages.insert("gift_of_life".into(), 1);
+        ready.install_wheel_effects(effects);
+        assert!(ready.restore_wheel_gift(0, now));
+        ready.install_wheel_gift_spellbook(book);
+        // Exercise zero mana on commit and a two-mana shield spend on restaging.
+        ready.restore_saved_vitals(1, if rollback { 2 } else { 0 });
+        ready.install_equipped_mana_shield(rollback);
+        ready
+            .cooldowns
+            .spells
+            .insert(key.clone(), SemanticTimeMicros::from_micros(deadline));
+        *state = ready;
+        states
+            .subscribe_cooldowns(&runtime, actor, admitted, book)
+            .ok_or("victim cooldown subscription")?
+    };
+    let snapshot = feed.take_snapshot().ok_or("current cooldown snapshot")?;
+    assert_eq!(snapshot.get(&cooldown), Some(&deadline));
+
+    owner.root.await_ready().await?;
+    let mut interrupted = rollback.then(|| faults::arm(faults::PLAYER, false));
+    let (step, _) = owner
+        .ordinary_paced_step(actor, session, StepDirection::West, None, None)
+        .await;
+    assert_eq!(step.disposition, StepDisposition::Moved);
+    if let Some(reached) = interrupted.as_mut() {
+        assert_eq!(
+            reached.try_recv(),
+            Ok(()),
+            "field STEP reached its COMMIT fault"
+        );
+        drop(
+            owner
+                .spell_lane_permit()
+                .await
+                .ok_or("field STEP recovery")?,
+        );
+    }
+    let (revision, vitals, attributed_damage) = {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let state = states.get(&runtime, actor, session).ok_or("victim")?;
+        assert_eq!(
+            state.wheel_gift_activation(),
+            Some(1),
+            "field STEP triggers Gift once"
+        );
+        assert!(state.vitals().health > 1, "Gift rescues the field victim");
+        assert_eq!(state.vitals().mana, state.character_facts().max_mana / 5);
+        assert_eq!(
+            state.cooldowns.spells[key].get().checked_sub(now),
+            Some(30_000_000),
+            "Gift leaves 30 seconds on the active instant spell",
+        );
+        let vitals = state.vitals();
+        let health_spent = 1 + vitals.max_health / 5 - vitals.health;
+        (
+            state.revision(),
+            vitals,
+            health_spent + if rollback { 2 } else { 0 },
+        )
+    };
+    let published = feed
+        .take(generation, None)
+        .ok_or("current cooldown subscription")?;
+    assert_eq!(published.deadlines, Some([(cooldown, shortened)].into()));
+    assert_eq!(published.rescued, Some((revision, vitals)));
+    let harm: (i64, i64) = sqlx::query_as(
+        "SELECT count(*), COALESCE(sum(damage), 0)::bigint
+         FROM game_character_pvp_harm WHERE octet_length(field_occurrence)=32",
+    )
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(harm, (1, i64::from(attributed_damage)));
+    Ok(())
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn drive_player_field(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -2763,6 +2927,9 @@ async fn drive_player_field(
     });
     admitted.continuity.connection_generation = current.current_connection_generation().get();
     admitted.item_fence = item_fence_of(current);
+    if let Scenario::GiftOfLife(rollback) = scenario {
+        return drive_gift_field_entry(owner, harness, admitted, target, rollback).await;
+    }
     if scenario == Scenario::Death {
         owner.admit_progression_session(&mut admitted).await;
         assert!(

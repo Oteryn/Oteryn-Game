@@ -389,6 +389,98 @@ fn coalesced_alive_vitals_refreshes_death_receipt_without_query_feedback() -> Re
 }
 
 #[test]
+fn paired_rescue_vitals_schedule_a_death_protection_refresh() {
+    let (_, mut commands, outbox) = play_channel();
+    outbox.death_protection_initialize(true);
+    assert!(outbox.death_command(&mut commands).is_ok());
+    outbox.death_protection_result(&oteryn_session::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: vec![0],
+    });
+    assert!(outbox.death_command(&mut commands).is_err());
+
+    outbox.push(vec![SessionEvent::GiftOfLife {
+        cooldowns: AppliedDelta {
+            server_sequence: 2,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::ActorCooldownUpdate {
+                value: oteryn_protocol_oteryn::presentation::ActorCooldowns {
+                    server_now_ms: 1,
+                    rtt_ms: None,
+                    entries: Vec::new(),
+                },
+                received_at: std::time::Instant::now(),
+                snapshot: false,
+            },
+        },
+        vitals: AppliedDelta {
+            server_sequence: 3,
+            base_revision: 0,
+            new_revision: 1,
+            value: ActorVitals {
+                health: 30,
+                max_health: 1_000,
+                ..Default::default()
+            },
+        },
+    }]);
+    assert!(matches!(
+        outbox.death_command(&mut commands),
+        Ok(crate::combat_input::PlayCommand::Feature(_))
+    ));
+    assert!(outbox.death_command(&mut commands).is_err());
+}
+
+#[test]
+fn paired_gift_of_life_vitals_refresh_death_protection() {
+    use oteryn_session::{ActorCooldownUpdate, ActorCooldowns};
+    let (_link, mut commands, outbox) = play_channel();
+    outbox.death_protection_initialize(true);
+    assert!(outbox.death_command(&mut commands).is_ok());
+    outbox.death_protection_result(&oteryn_session::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: vec![0],
+    });
+    assert!(outbox.death_command(&mut commands).is_err());
+    outbox.push(vec![SessionEvent::GiftOfLife {
+        cooldowns: AppliedDelta {
+            server_sequence: 2,
+            base_revision: 0,
+            new_revision: 1,
+            value: ActorCooldownUpdate {
+                value: ActorCooldowns {
+                    server_now_ms: 0,
+                    rtt_ms: None,
+                    entries: vec![],
+                },
+                received_at: std::time::Instant::now(),
+                snapshot: false,
+            },
+        },
+        vitals: AppliedDelta {
+            server_sequence: 3,
+            base_revision: 0,
+            new_revision: 1,
+            value: ActorVitals {
+                health: 20,
+                max_health: 100,
+                ..Default::default()
+            },
+        },
+    }]);
+    assert!(matches!(
+        outbox.death_command(&mut commands),
+        Ok(crate::combat_input::PlayCommand::Feature(command)) if command.capability == 382 && command.kind == 664
+    ));
+    assert!(outbox.death_command(&mut commands).is_err());
+}
+
+#[test]
 fn coalesced_death_keeps_acknowledgement_notice_after_server_respawn() -> Result<(), String> {
     let (link, mut commands, outbox) = play_channel();
     let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[]).map_err(|e| e.to_string())?;

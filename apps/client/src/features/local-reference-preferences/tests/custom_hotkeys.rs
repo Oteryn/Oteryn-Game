@@ -228,19 +228,44 @@ fn hotkey_use_with_crosshair_arms_mode()
     let passive = CustomAction::Passive { cast_index: 19 };
     assert!(link.custom_hotkey_action(&play, &passive));
     assert_eq!(link.custom_hotkey_status(), "Ability: cooldown unknown");
+    let received_at = std::time::Instant::now() + std::time::Duration::from_secs(1);
     outbox.push(vec![oteryn_session::SessionEvent::ActorCooldowns(
         oteryn_session::AppliedDelta {
             server_sequence: 1,
             base_revision: 0,
             new_revision: 1,
-            value: oteryn_session::ActorCooldowns {
-                server_now_ms: 100,
-                rtt_ms: None,
-                entries: vec![oteryn_session::ActorCooldown {
-                    kind: oteryn_session::ActorCooldownKind::Group,
-                    id: 1,
-                    expires_at_ms: 500,
-                }],
+            value: oteryn_session::ActorCooldownUpdate {
+                value: oteryn_session::ActorCooldowns {
+                    server_now_ms: 100,
+                    rtt_ms: None,
+                    entries: vec![oteryn_session::ActorCooldown {
+                        kind: oteryn_session::ActorCooldownKind::Group,
+                        id: 1,
+                        expires_at_ms: 500,
+                    }],
+                },
+                received_at,
+                snapshot: true,
+            },
+        },
+    )]);
+    outbox.push(vec![oteryn_session::SessionEvent::ActorCooldowns(
+        oteryn_session::AppliedDelta {
+            server_sequence: 2,
+            base_revision: 1,
+            new_revision: 2,
+            value: oteryn_session::ActorCooldownUpdate {
+                value: oteryn_session::ActorCooldowns {
+                    server_now_ms: 0,
+                    rtt_ms: None,
+                    entries: vec![oteryn_session::ActorCooldown {
+                        kind: oteryn_session::ActorCooldownKind::Spell,
+                        id: 99,
+                        expires_at_ms: 1000,
+                    }],
+                },
+                received_at,
+                snapshot: false,
             },
         },
     )]);

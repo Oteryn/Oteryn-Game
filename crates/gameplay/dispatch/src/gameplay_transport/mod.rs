@@ -226,6 +226,7 @@ pub mod spectate_session;
 mod spell_access_facts;
 mod spell_catalog;
 mod spell_character_facts;
+mod spell_cooldowns;
 mod spell_magnitude_facts;
 mod spell_parameter_cast;
 pub mod spell_premium_coordinator;

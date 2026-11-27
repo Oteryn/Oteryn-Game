@@ -130,6 +130,11 @@ pub(super) fn replacement_events(
             },
         )));
         let event = match domain.domain_id {
+            oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ACTOR_COOLDOWNS => {
+                next.actor_cooldown_snapshot.clone().map(|value| {
+                    SessionEvent::ActorCooldowns(applied(expected, base, domain.revision, value))
+                })
+            }
             17 => {
                 let base = old
                     .gated_revisions

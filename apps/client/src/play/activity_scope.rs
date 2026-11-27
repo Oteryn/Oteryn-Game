@@ -148,6 +148,10 @@ fn reset_scope<T: Stepper>(
     let look_receipt = mailbox.look_receipt;
     retire_source_requests(mailbox);
     mailbox.reset_scope_state();
+    // Seed the destination clock before draining events for the destination.
+    if let Some(snapshot) = session.actor_cooldown_snapshot() {
+        mailbox.spell_bar.apply_cooldowns(&snapshot);
+    }
     mailbox.project_world_channels();
     mailbox.shared_frontend = shared_frontend;
     mailbox.traffic = traffic;
