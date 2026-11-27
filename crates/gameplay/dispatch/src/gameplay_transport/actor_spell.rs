@@ -83,6 +83,7 @@ pub(in crate::gameplay_transport) use training_save::TrainingSave;
 mod owner_commit;
 #[path = "stance_cast.rs"]
 mod stance_cast;
+pub(in crate::gameplay_transport) use owner_commit::DamageSplit;
 pub use owner_commit::{
     CheckedOwnerBatch, PlayerBatchPreflight, check_owner_batch, commit_owner_batch,
     install_owner_batch, stage_player_batch, stage_player_batch_with_attack,
@@ -1188,6 +1189,20 @@ impl ChannelSpellStates {
         game_session_id: GameSessionId,
     ) -> Option<&PlayerSpellState> {
         self.get(runtime, actor, game_session_id)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn open_analyser_for_test(&self, actor: ExactActorRef, session: GameSessionId) {
+        assert!(self.analyser.snapshot(actor, session, 1, None).is_some());
+    }
+
+    #[cfg(test)]
+    pub(crate) fn analyser_update_for_test(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<Vec<u8>> {
+        self.analyser.next(actor, session, 1)
     }
 
     /// Test-only numerical fixture replacement through the existing current actor/session

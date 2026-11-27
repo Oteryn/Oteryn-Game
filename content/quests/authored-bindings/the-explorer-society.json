@@ -475,6 +475,12 @@
                   "minimum": 0,
                   "maximum": 0,
                   "set": 6
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 6
                 }
               ],
               "take": [],
@@ -515,6 +521,12 @@
                     "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
                     "minimum": 0,
                     "maximum": 0,
+                    "set": 6
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+                    "minimum": 1,
+                    "maximum": 1,
                     "set": 6
                   }
                 ],
@@ -581,6 +593,13 @@
                   "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
                   "minimum": 6,
                   "maximum": 6,
+                  "set": 7,
+                  "add": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+                  "minimum": 1,
+                  "maximum": 6,
                   "set": 7
                 }
               ],
@@ -590,7 +609,8 @@
                 "count": 1,
                 "replacement": null,
                 "target_replacement": null,
-                "selected_instance": true
+                "selected_instance": true,
+                "reusable": true
               },
               "requires_world_admission": true,
               "world_requirements": [],
@@ -600,17 +620,98 @@
               "sources": [
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_explorer_society/actions_icicle.lua:1-13"
               ],
-              "effects": {
-                "item_reward": {
-                  "item": "oteryn:item.tibia.i4837",
-                  "count": 1,
-                  "additional": [
-                    {
-                      "item": "oteryn:item.tibia.i4872",
-                      "count": 1
-                    }
-                  ]
+              "activation": {
+                "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+                "minimum": 6,
+                "maximum": 6
+              },
+              "item_reward": {
+                "item": "oteryn:item.tibia.i4837",
+                "count": 1,
+                "contents": []
+              }
+            }
+          }
+        },
+        {
+          "key": "cut-ice-second-site",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/explorer-society/cut-ice-second-site",
+              "quest": "oteryn:quest.the_explorer_society_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 34040,
+                  "y": 31756,
+                  "floor": -10
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 4994,
+                "native": {
+                  "position": {
+                    "x": 34040,
+                    "y": 31756,
+                    "floor": -10
+                  },
+                  "ordinal": 3,
+                  "appearance": 4994
                 }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+                  "minimum": 6,
+                  "maximum": 6,
+                  "set": 7
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+                  "minimum": 6,
+                  "maximum": 6,
+                  "set": 7,
+                  "add": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+                  "minimum": 1,
+                  "maximum": 6,
+                  "set": 7
+                }
+              ],
+              "offerings": [],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i4872",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "selected_instance": true,
+                "reusable": true
+              },
+              "requires_world_admission": true,
+              "world_requirements": [],
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "success_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_explorer_society/actions_icicle.lua:1-13"
+              ],
+              "activation": {
+                "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+                "minimum": 6,
+                "maximum": 6
+              },
+              "item_reward": {
+                "item": "oteryn:item.tibia.i4837",
+                "count": 1,
+                "contents": []
               }
             }
           }
@@ -641,6 +742,12 @@
                   "minimum": 7,
                   "maximum": 7,
                   "set": 8
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+                  "minimum": 1,
+                  "maximum": 7,
+                  "set": 8
                 }
               ],
               "take": [
@@ -656,7 +763,7 @@
                 "Your Folda ice sample is accepted."
               ],
               "failure_reply": [
-                "Sorry, not possible."
+                "If your sample melted, say \"ice sample melted\" to try again."
               ],
               "sources": [
                 "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/angus.lua"
@@ -684,6 +791,12 @@
                     "minimum": 7,
                     "maximum": 7,
                     "set": 8
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+                    "minimum": 1,
+                    "maximum": 7,
+                    "set": 8
                   }
                 ],
                 "take": [
@@ -699,7 +812,93 @@
                   "Your Folda ice sample is accepted."
                 ],
                 "failure_reply": [
-                  "Sorry, not possible."
+                  "If your sample melted, say \"ice sample melted\" to try again."
+                ],
+                "sources": [
+                  "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mortimer.lua"
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/explorer-society/retry-ice-angus",
+                "quest": "oteryn:quest.the_explorer_society_quest",
+                "npc": "oteryn:npc.angus",
+                "keywords": [
+                  "ice sample melted"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+                    "minimum": 7,
+                    "maximum": 7,
+                    "set": 6
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+                    "minimum": 7,
+                    "maximum": 7,
+                    "set": 6
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+                    "minimum": 1,
+                    "maximum": 7,
+                    "set": 6
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Try collecting another ice sample."
+                ],
+                "failure_reply": [
+                  "If your sample melted, say \"ice sample melted\" to try again."
+                ],
+                "sources": [
+                  "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/angus.lua"
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/explorer-society/retry-ice-mortimer",
+                "quest": "oteryn:quest.the_explorer_society_quest",
+                "npc": "oteryn:npc.mortimer",
+                "keywords": [
+                  "ice sample melted"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+                    "minimum": 7,
+                    "maximum": 7,
+                    "set": 6
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+                    "minimum": 7,
+                    "maximum": 7,
+                    "set": 6
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+                    "minimum": 1,
+                    "maximum": 7,
+                    "set": 6
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Try collecting another ice sample."
+                ],
+                "failure_reply": [
+                  "If your sample melted, say \"ice sample melted\" to try again."
                 ],
                 "sources": [
                   "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mortimer.lua"

@@ -63,10 +63,8 @@ pub fn derive_equipment_effects(
         }
         item.profile.abilities.sort();
         for ability in item.profile.abilities {
-            // The timed owner admits speed, suppression and skills (I05: the worn dwarven
-            // ring's suppressdrunk, Crystal 201189f8 items.xml:7477-7489; the worn power, sword,
-            // axe and club rings' skillfist/skillsword/skillaxe/skillclub, items.xml:7339-7350,
-            // :7422-7457); other timed abilities retain EQUIP-0's exclusion.
+            // Ordinary resistance stays active for the item's hosted duration.
+            // Charge-based and field protection use the transactional field owner.
             if item.profile.timed
                 && !matches!(
                     ability,
@@ -74,6 +72,14 @@ pub fn derive_equipment_effects(
                         | ItemAbility::Suppress(_)
                         | ItemAbility::SkillBoost { .. }
                 )
+                && !(item.profile.duration_protection
+                    && matches!(
+                        ability,
+                        ItemAbility::Protection {
+                            field_only: false,
+                            ..
+                        }
+                    ))
             {
                 continue;
             }

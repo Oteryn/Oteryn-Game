@@ -3,11 +3,12 @@ use super::super::{
     DurabilityError, DurabilityRoot,
     character_authority::{ReconciledCharacterAuthority, assert_recovery_fence},
     character_progression::CharacterProgressionError as Error,
-    db::{begin_semantic_transaction, commit_semantic_transaction},
+    db::begin_semantic_transaction,
     item_mint::CommittedItemMint,
     item_mint_audit,
 };
 use crate::domain::CharacterId;
+use crate::durability::db::commit_semantic_read;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 use std::collections::BTreeMap;
@@ -69,7 +70,7 @@ impl DurabilityRoot {
                     let definition = item.definition.ok_or(DurabilityError::InvalidStoredState)?;
                     gold = add_value(gold, &definition.production_key, item.quantity, &prices)?;
                 }
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 Ok(Ok(gold))
             })
         }).await?

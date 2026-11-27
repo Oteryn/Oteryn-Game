@@ -104,6 +104,15 @@ fn registry() -> Result<&'static Registry, String> {
             for transition in super::threatened_dreams::animal_transitions()? {
                 add(transition, false, false)?;
             }
+            // Jack's NPC writes share the questline with the bound Zelos passage.
+            let grave_danger = super::grave_danger::source_state("grave-danger")?;
+            for key in [super::grave_danger::START, super::grave_danger::ACCESS] {
+                let transition = grave_danger
+                    .catalogue()
+                    .transition(key)
+                    .ok_or_else(|| format!("missing Grave Danger operation {key}"))?;
+                add(transition.clone(), false, false)?;
+            }
             add(super::arena_completion::transition()?, false, true)?;
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false, true)?;
@@ -214,8 +223,8 @@ pub fn validate_for_catalogue(
 }
 
 fn shares_published_world_track(transition: &str, track: &str) -> bool {
-    // These two authored routes reach the same physical puzzles as their
-    // published counterparts. Both still require the exact callback and World fence.
+    // These authored routes share progress with registered source programmes.
+    // The caller still verifies the exact authored operation and its context.
     match transition {
         "oteryn:quest-callback/alawars-vault-cross-open-magic-wall" => {
             track == "oteryn:quest-progress/alawars-vault/lever"
@@ -226,6 +235,22 @@ fn shares_published_world_track(transition: &str, track: &str) -> bool {
                 | "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo"
                 | "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics"
         ),
+        key if key.starts_with("oteryn:quest-reward/explorer-society/")
+            || key.starts_with("oteryn:quest-callback/explorer-society/") =>
+        {
+            matches!(
+                track.strip_prefix("oteryn:quest-progress/quest/u7_6/explorer_society/"),
+                Some(
+                    "quest_line"
+                        | "joining_the_explorers"
+                        | "the_ice_delivery"
+                        | "the_butterfly_hunt"
+                        | "the_plant_collection"
+                        | "the_lizard_urn"
+                        | "the_elven_poetry"
+                )
+            )
+        }
         _ => false,
     }
 }

@@ -95,9 +95,9 @@
       "trigger": "use",
       "selector": {
         "position": {
-          "x": 33079,
-          "y": 31158,
-          "floor": -8
+          "x": 33177,
+          "y": 31021,
+          "floor": -5
         },
         "unique": null,
         "action": null,
@@ -146,9 +146,9 @@
       "trigger": "use",
       "selector": {
         "position": {
-          "x": 33083,
-          "y": 31158,
-          "floor": -8
+          "x": 33161,
+          "y": 31056,
+          "floor": -4
         },
         "unique": null,
         "action": null,
@@ -197,9 +197,9 @@
       "trigger": "use",
       "selector": {
         "position": {
-          "x": 33083,
-          "y": 31159,
-          "floor": -8
+          "x": 33166,
+          "y": 31056,
+          "floor": -6
         },
         "unique": null,
         "action": null,

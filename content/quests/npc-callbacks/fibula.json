@@ -1,5 +1,18 @@
 {
   "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/fibula/simon-donations",
+      "quest": "oteryn:quest.deeper_fibula_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:237-290:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ]
+    }
+  ],
   "callbacks": [
     {
       "key": "oteryn:quest-reward/fibula-key-first",
@@ -120,8 +133,139 @@
       ],
       "sources": [
         "owner:questpc6:chosen-recipe:tools/content-schema/quest-authoring/samples/completion242/recipes.json:6863-7011:sha256:6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
-        "game:content/quests/definitions/quests-00000-00099.json:1#/records/20/definition/claims:sha256:0760958930f05af042da642fae62c3a5657f559bca041bd4bc27a7b32c661293"
+        "game:content/quests/definitions/quests-00000-00099.json:1#/records/20/definition/claims:sha256:3a91013e45892a6be4f6b074901ed87067a8163464bc00eb81809d6f89312980"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/fibula-simon-restart",
+      "quest": "oteryn:quest.deeper_fibula_quest",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "help"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/simon-donations",
+          "minimum": 1,
+          "maximum": 2,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "outfit": null,
+      "achievement": null,
+      "give": null,
+      "reply": [
+        "Could you spare 100 gold?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:237-290:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/fibula-simon-first-donation",
+      "quest": "oteryn:quest.deeper_fibula_quest",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 10,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/simon-donations",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "outfit": null,
+      "achievement": null,
+      "give": null,
+      "reply": [
+        "Thank you. Could you spare another 500 gold for a tip?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:237-290:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ],
+      "fee": {
+        "gold": 100,
+        "include_bank": true
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/fibula-simon-second-donation",
+      "quest": "oteryn:quest.deeper_fibula_quest",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 10,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/simon-donations",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "outfit": null,
+      "achievement": null,
+      "give": null,
+      "reply": [
+        "I have a key from Dermot. Would you buy it for 200 gold?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:237-290:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ],
+      "fee": {
+        "gold": 500,
+        "include_bank": true
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/fibula-simon-key",
+      "quest": "oteryn:quest.deeper_fibula_quest",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 11,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/simon-donations",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "outfit": null,
+      "achievement": null,
+      "give": {
+        "item": "oteryn:item.tibia.i2968",
+        "count": 1,
+        "contents": [],
+        "key_number": 3940
+      },
+      "reply": [
+        "The dungeon key is yours."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:237-290:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ],
+      "fee": {
+        "gold": 200,
+        "include_bank": true
+      },
+      "repeatable": true
     }
   ]
 }

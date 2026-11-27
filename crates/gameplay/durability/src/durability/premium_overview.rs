@@ -2,9 +2,7 @@
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
-use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
-};
+use super::db::{begin_semantic_transaction, commit_semantic_read, lock_admission_relations};
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
@@ -28,7 +26,7 @@ impl DurabilityRoot {
             let Some(row)=row else {return Ok(Err(CharacterAuthorityError::Rejected));};
             let account:Vec<u8>=row.try_get("account")?;
             let account=account.try_into().map_err(|_|DurabilityError::InvalidStoredState)?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(Ok(account))
+            commit_semantic_read(tx,deadline).await?;Ok(Ok(account))
         })).await?
     }
 }

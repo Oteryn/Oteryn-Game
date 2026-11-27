@@ -29,6 +29,7 @@
 //! catalogue ([`WheelRuleset::from_catalogue`]); its revision and its 36 capacities must be the
 //! ones migration 0070 (or a later W-R migration) registered, or the allocation fails closed.
 
+use crate::durability::db::commit_semantic_read;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
@@ -669,7 +670,7 @@ impl DurabilityRoot {
                         .as_ref()
                         .map(decode_receipt)
                         .transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(record))
                 })
             })
@@ -696,7 +697,7 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let stored = read_wheel_state(&mut tx, character_id, false).await?;
                     let allocation = allocation_from_stored(&mut tx, stored, &ruleset).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(allocation))
                 })
             })

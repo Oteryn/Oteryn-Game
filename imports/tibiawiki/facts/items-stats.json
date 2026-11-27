@@ -18203,25 +18203,6 @@
         }
       ]
     },
-    "8748": {
-      "item_id": 8748,
-      "observations": [
-        {
-          "content_sha256": "dc2b8cdae8710285e218afa95a2b757f7d9b607feba270ea2ccaccbfcfaadd3d",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Documents and Papers",
-            "weight": "2.00"
-          },
-          "page_id": 31765,
-          "revision_id": 1015886,
-          "revision_sha1": "b92a1bf95dd5862baea3ec0a306e3edca4072329",
-          "revision_timestamp": "2023-07-16T02:07:55Z",
-          "url": "https://tibia.fandom.com/wiki/Old_Piece_of_Paper",
-          "wiki_title": "Old Piece of Paper"
-        }
-      ]
-    },
     "oteryn:item.tibia.i100": {
       "item_id": 100,
       "observations": [
@@ -266073,6 +266054,25 @@
         }
       ]
     },
+    "oteryn:item.tibia.i8748": {
+      "item_id": 8748,
+      "observations": [
+        {
+          "content_sha256": "dc2b8cdae8710285e218afa95a2b757f7d9b607feba270ea2ccaccbfcfaadd3d",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Documents and Papers",
+            "weight": "2.00"
+          },
+          "page_id": 31765,
+          "revision_id": 1015886,
+          "revision_sha1": "b92a1bf95dd5862baea3ec0a306e3edca4072329",
+          "revision_timestamp": "2023-07-16T02:07:55Z",
+          "url": "https://tibia.fandom.com/wiki/Old_Piece_of_Paper",
+          "wiki_title": "Old Piece of Paper"
+        }
+      ]
+    },
     "oteryn:item.tibia.i8749": {
       "item_id": 8749,
       "observations": [
@@ -278547,7 +278547,7 @@
     }
   },
   "schema": "OTERYN_ITEM_WIKI_STATS_SNAPSHOT/v1",
-  "snapshot_sha256": "a4cd8038051518678121ea59f8f3b195dd04b4329e77dfbfe217cf998770be49",
+  "snapshot_sha256": "03c5cb1ebfada3881ba7a57f40f7c887f1412fa2f81757ad11aeba5758f136aa",
   "source": {
     "api": "https://tibia.fandom.com/api.php",
     "attribution": {

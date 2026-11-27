@@ -16,7 +16,10 @@ class ParchmentCustody(unittest.TestCase):
         new = m.promote(self.old, self.observed)
         self.assertTrue(new['admission']['materializable'])
         self.assertIn('CharacterInventory', new['admission']['legal_destinations'])
-        self.assertEqual(new['semantics']['readable_writeable']['value']['write_once_target'], {'state': 'UNKNOWN'})
+        # The independent rewrite owner declares that a write-once target is inapplicable.
+        original_target = self.old['semantics']['readable_writeable']['value']['write_once_target']
+        self.assertEqual(original_target, {'state': 'NOT_APPLICABLE'})
+        self.assertEqual(new['semantics']['readable_writeable']['value']['write_once_target'], original_target)
         self.assertFalse(self.old['admission']['materializable'])
         self.assertEqual(m.promote(new, self.observed), new)
 

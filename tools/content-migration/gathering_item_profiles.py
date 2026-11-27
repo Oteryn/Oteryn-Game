@@ -13,7 +13,7 @@ from build_spell_item_identities import binding_index
 PATH = 'tools/content-schema/native-gameplay/gathering-item-profiles.json'
 IDS = {3580, 4012, 4026, 4063, 4098, 4138, 4325, 5876, 5877, 5878, 5905, 5906,
        5908, 5942, 5948, 5969, 5973, 5984, 5995, 6006, 6040, 7158, 7159, 7200,
-       7236, 7237, 7441, 7442, 9306}
+       7236, 7237, 7441, 7442, 7444, 7445, 7446, 9306}
 MECHANICAL_KEY = 'oteryn:item.tibia.i9306'
 MECHANICAL_CANONICAL = 'content/items/definitions/items-33000-33499.json'
 WIKI = 'imports/tibiawiki/facts/items-stats.json'

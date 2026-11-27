@@ -1,5 +1,6 @@
 //! S17 P1: revisioned Character consent, default off. These values describe a
 //! durable preference; they do not prove current visibility or authorize egress.
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence,
@@ -154,7 +155,7 @@ impl DurabilityRoot {
                     .map_or(CastConsent::default(),|(_,allowed,revision)|CastConsent{allowed:*allowed,revision:*revision});
                 (character,value)
             }).collect();
-            commit_semantic_transaction(tx,deadline).await?;
+            commit_semantic_read(tx,deadline).await?;
             Ok(result)
         })).await
     }

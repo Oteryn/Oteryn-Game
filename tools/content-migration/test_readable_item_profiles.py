@@ -30,13 +30,20 @@ class ReadableProfilesTests(unittest.TestCase):
         reading.apply_native(reading.ROOT, generated, "profiles", "manifest", registration.provider_order, reading.encode)
         self.assertEqual(json.loads(generated["profiles"]), before)
         by_key = {r["production_definition"]["production_key"]: r for r in document["records"]}
-        for item_id in reading.IDS:
+        expected_ids = (reading.IDS | set(range(1979, 1983)) | set(range(5331, 5389))
+                        | set(range(17725, 17801)) | set(range(17862, 17868)) | {54133})
+        published = json.loads(reading.outputs()[reading.PATH])
+        self.assertEqual(len(published["records"]), 164)
+        self.assertEqual({int(row["item"]["key"].rsplit("i", 1)[1]) for row in published["records"]},
+                         expected_ids)
+        for item_id in expected_ids:
             key = f"oteryn:item.tibia.i{item_id}"
             self.assertIs(by_key[key]["admission"]["materializable"], False)
             self.assertIs(rows[key]["materializable"], False)
             source = rows[key].get("semantics", {})
             for field, value in source.items():
-                if field != "readable_writeable":
+                if field != "readable_writeable" and not (
+                        item_id not in reading.IDS and field == "presentation" and value["state"] == "UNKNOWN"):
                     self.assertEqual(by_key[key]["semantics"][field], value)
         manifest = json.loads((reading.ROOT / "content/manifest.json").read_bytes())
         self.assertIn({"path": reading.PATH}, manifest["managed_files"])

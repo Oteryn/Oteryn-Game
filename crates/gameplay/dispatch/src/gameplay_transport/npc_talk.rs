@@ -17,6 +17,7 @@ pub fn talk<K: Copy + PartialEq>(
     text: &ChatText,
     npcs: &[TalkNpc<'_, K>],
     engaged: &mut Option<K>,
+    female: bool,
 ) -> Option<NpcReply<K>> {
-    oteryn_gameplay_npc::npc_talk::talk(speaker, text.as_str(), npcs, engaged)
+    oteryn_gameplay_npc::npc_talk::talk_with_speaker(speaker, text.as_str(), npcs, engaged, female)
 }

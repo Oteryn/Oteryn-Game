@@ -23,6 +23,7 @@ pub struct NativeBinding {
     pub appearance: u16,
     pub track: &'static str,
     pub required: i64,
+    pub achievement_progress: &'static [(&'static str, u32)],
 }
 /// Geometry/interaction choice only. Source mechanics retain their original units.
 /// Hive Kollos progress MUST originate in credited Kollos deaths, not marker USE.
@@ -34,6 +35,12 @@ pub const BINDINGS: [NativeBinding; 10] = [
         appearance: 14076,
         track: "oteryn:quest-progress/hive/antennae",
         required: 8,
+        // TibiaWiki 62567@845167, 62454@845031 and 62853@845112.
+        achievement_progress: &[
+            ("oteryn:achievement/minor_disturbance", 10),
+            ("oteryn:achievement/dazzler", 50),
+            ("oteryn:achievement/hive_blinder", 100),
+        ],
     },
     NativeBinding {
         key: "oteryn:quest-transition/hive/digestion-turn-in",
@@ -42,6 +49,7 @@ pub const BINDINGS: [NativeBinding; 10] = [
         appearance: 13976,
         track: "oteryn:quest-progress/hive/blobs",
         required: 7,
+        achievement_progress: &[],
     },
     NativeBinding {
         key: "oteryn:quest-transition/hive/chitin-turn-in",
@@ -50,6 +58,7 @@ pub const BINDINGS: [NativeBinding; 10] = [
         appearance: 14053,
         track: "oteryn:quest-progress/hive/chitin",
         required: 8,
+        achievement_progress: &[],
     },
     NativeBinding {
         key: "oteryn:quest-transition/hive/pores-turn-in",
@@ -58,6 +67,7 @@ pub const BINDINGS: [NativeBinding; 10] = [
         appearance: 14064,
         track: "oteryn:quest-progress/hive/pores",
         required: 7,
+        achievement_progress: &[],
     },
     NativeBinding {
         key: "oteryn:quest-transition/hive/kollos-turn-in",
@@ -66,6 +76,7 @@ pub const BINDINGS: [NativeBinding; 10] = [
         appearance: 14077,
         track: "oteryn:quest-progress/hive/kollos",
         required: 9,
+        achievement_progress: &[],
     },
     NativeBinding {
         key: "oteryn:quest-transition/hive/monolith-turn-in",
@@ -74,6 +85,7 @@ pub const BINDINGS: [NativeBinding; 10] = [
         appearance: 14074,
         track: "oteryn:quest-progress/hive/monoliths",
         required: 5,
+        achievement_progress: &[],
     },
     NativeBinding {
         key: "oteryn:quest-callback/deeplings-native-heart",
@@ -82,6 +94,7 @@ pub const BINDINGS: [NativeBinding; 10] = [
         appearance: 14018,
         track: "oteryn:quest-progress/deeplings-native/heart",
         required: 1,
+        achievement_progress: &[],
     },
     NativeBinding {
         key: "oteryn:quest-callback/deeplings-native-soul-net",
@@ -90,6 +103,7 @@ pub const BINDINGS: [NativeBinding; 10] = [
         appearance: 14020,
         track: "oteryn:quest-progress/deeplings-native/soul-net",
         required: 1,
+        achievement_progress: &[],
     },
     NativeBinding {
         key: "oteryn:quest-callback/deeplings-native-coral",
@@ -98,6 +112,7 @@ pub const BINDINGS: [NativeBinding; 10] = [
         appearance: 14163,
         track: "oteryn:quest-progress/deeplings-native/coral",
         required: 1,
+        achievement_progress: &[],
     },
     NativeBinding {
         key: "oteryn:quest-callback/deeplings-native-stair",
@@ -106,6 +121,7 @@ pub const BINDINGS: [NativeBinding; 10] = [
         appearance: 14164,
         track: "oteryn:quest-progress/deeplings-native/stair",
         required: 1,
+        achievement_progress: &[],
     },
 ];
 
@@ -749,6 +765,21 @@ mod native_cycle_tests {
                 .evaluate(turnin, &stored, 0)
                 .map_err(|e| format!("{e:?}"))?;
             assert_eq!(completed_action(source.key, &result), Some(source.action));
+            let expected: &[(&str, u32)] = if index == 0 {
+                &[
+                    ("oteryn:achievement/minor_disturbance", 10),
+                    ("oteryn:achievement/dazzler", 50),
+                    ("oteryn:achievement/hive_blinder", 100),
+                ]
+            } else {
+                &[]
+            };
+            assert_eq!(
+                binding(turnin.key.as_str())
+                    .ok_or("loaded turn-in binding")?
+                    .achievement_progress,
+                expected
+            );
             for change in &result {
                 stored.insert(change.track.clone(), change.after);
             }

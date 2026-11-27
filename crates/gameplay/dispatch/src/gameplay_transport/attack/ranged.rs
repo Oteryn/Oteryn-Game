@@ -7,6 +7,7 @@ use crate::spell::formula::Formula;
 use oteryn_gameplay_combat_rules::attack::ranged::{
     player_distance_formula, shot_hit_chance, shot_hits, wand_formula,
 };
+use oteryn_gameplay_progression::hit_training::HitBlock;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct RangedLoadout {
@@ -28,7 +29,10 @@ enum Consumption {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum RangedDamage {
     Distance {
+        /// Projectile or throwing-weapon attack, including proficiency.
         attack: u32,
+        /// Launcher attack contributes only to the roll and displayed attack.
+        launcher_attack: u32,
         elemental_attack: u32,
         element: Element,
         chance: i8,
@@ -137,7 +141,8 @@ pub(super) fn loadout(
                     (
                         *range_cells,
                         RangedDamage::Distance {
-                            attack: u32::from(*attack) + u32::from(ammo_attack),
+                            attack: u32::from(ammo_attack),
+                            launcher_attack: u32::from(*attack),
                             elemental_attack: u32::from(elemental_attack),
                             element,
                             chance,
@@ -158,6 +163,7 @@ pub(super) fn loadout(
                     *range_cells,
                     RangedDamage::Distance {
                         attack: u32::from(*attack),
+                        launcher_attack: 0,
                         elemental_attack: u32::from(*elemental_attack),
                         element: *element,
                         chance: *hit_chance,
@@ -239,6 +245,12 @@ fn throwing_consumption(key: &str) -> Option<Consumption> {
 }
 
 impl RangedLoadout {
+    fn uses_launcher_ammunition(&self) -> bool {
+        self.projectile
+            .as_ref()
+            .is_some_and(|projectile| projectile.item_instance_id != self.weapon.item_instance_id)
+    }
+
     fn mana(&self) -> u32 {
         match self.damage {
             RangedDamage::Magic { mana, .. } => u32::from(mana),
@@ -259,13 +271,21 @@ impl RangedLoadout {
         match self.damage {
             RangedDamage::Distance {
                 attack,
+                launcher_attack,
                 elemental_attack,
                 ..
-            } => Some((
-                player_distance_formula(),
-                attack.checked_add(elemental_attack)?,
-                "formula:player-distance",
-            )),
+            } => {
+                // Launcher ammo contributes its elemental attack to the roll.
+                // A throwing weapon uses those points only to split that roll.
+                let ammunition = self.uses_launcher_ammunition();
+                Some((
+                    player_distance_formula(),
+                    attack
+                        .checked_add(launcher_attack)?
+                        .checked_add(if ammunition { elemental_attack } else { 0 })?,
+                    "formula:player-distance",
+                ))
+            }
             RangedDamage::Magic { min, max, .. } => Some((
                 wand_formula(u32::from(min), u32::from(max))?,
                 0,
@@ -273,6 +293,32 @@ impl RangedLoadout {
             )),
         }
     }
+    pub(super) fn roll_bounds(
+        &self,
+        formula: &Formula,
+        inputs: &crate::spell::formula::FormulaInputs,
+        creature: bool,
+    ) -> Option<(i64, i64)> {
+        let (minimum, maximum) = formula.bounds(inputs).ok()?;
+        // Crystal weapons.cpp:1015–1025 scales elemental launcher ammo
+        // before drawing. The player path still halves damage after the roll.
+        if matches!(
+            self.damage,
+            RangedDamage::Distance {
+                elemental_attack: 1..,
+                ..
+            }
+        ) && self.uses_launcher_ammunition()
+        {
+            return Some(if creature {
+                (minimum / 2, maximum / 2)
+            } else {
+                (minimum / 4, maximum)
+            });
+        }
+        Some((minimum, maximum))
+    }
+
     pub(super) fn hit(&self, distance: u32, skill: u32, draw: u64) -> Option<bool> {
         match self.damage {
             RangedDamage::Distance {
@@ -308,13 +354,15 @@ impl RangedDamage {
                 element,
                 ..
             } => {
+                if elemental_attack == 0 {
+                    return Some((damage, 0, element));
+                }
                 let total = i64::from(attack.checked_add(elemental_attack)?);
-                let physical = if total == 0 {
-                    damage
-                } else {
-                    damage.checked_mul(i64::from(attack))? / total
-                };
-                Some((physical, damage - physical, element))
+                Some((
+                    damage.checked_mul(i64::from(attack))? / total,
+                    damage.checked_mul(i64::from(elemental_attack))? / total,
+                    element,
+                ))
             }
         }
     }
@@ -808,7 +856,7 @@ pub(super) fn immune(
                 .any(|key| key == element_key(element)))
 }
 
-fn element_key(element: Element) -> &'static str {
+pub(super) fn element_key(element: Element) -> &'static str {
     match element {
         Element::Physical => "physical",
         Element::Death => "death",
@@ -819,24 +867,15 @@ fn element_key(element: Element) -> &'static str {
     }
 }
 
-fn resolved_damage(
-    damage: RangedDamage,
-    magnitude: i64,
-    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
-) -> Option<(i64, i64, Element)> {
-    let (primary, secondary, element) = damage.split(magnitude)?;
-    offence.convert_physical(primary, secondary, element)
+pub(super) struct CreatureShot {
+    pub(super) parts: [i64; 2],
+    pub(super) blocks: (Option<HitBlock>, HitBlock),
 }
 
-#[allow(
-    clippy::too_many_arguments,
-    reason = "keep independent weapon, target, decision, native health, Cruelty and Wheel inputs explicit"
-)]
 pub(super) fn creature_damage(
     ranged: &RangedLoadout,
     policy: &crate::content::creature_policy::CompiledCreaturePolicy,
-    damage: i64,
-    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
+    (physical, elemental, element): (i64, i64, Element),
     (root, constants, actor, lineage, ordinal): (
         &GameplayDecisionRoot,
         &AttackConstants,
@@ -844,23 +883,25 @@ pub(super) fn creature_damage(
         CommandRef,
         u16,
     ),
-    cruelty_drain: Option<u64>,
-    health_change: Option<&crate::foundation::NativeHealthChangeObservation>,
-    wheel: Option<(&crate::spell::cast::PlayerSpellState, u64, u64, u64, bool)>,
-) -> Option<([i64; 2], Element)> {
+    wheel: Option<(&crate::spell::cast::PlayerSpellState, u64)>,
+) -> Option<CreatureShot> {
     use oteryn_gameplay_combat_rules::resolution::{
-        creature_damage_response_with_reduction, swing_mitigated,
+        creature_damage_response_with_reduction, swing_mitigated_with_block,
     };
-    let bow = wheel.is_some_and(|(state, now, _, _, _)| {
+    let bow = wheel.is_some_and(|(state, now)| {
         state
             .wheel_effects_at(now)
             .is_some_and(|effects| effects.active_unique_perks.contains("ballistic_mastery"))
             && state.wheel_equipment().and_then(|hands| hands.ammunition())
                 == Some(crate::content::ReferenceAmmoType::Arrow)
     });
-    let (physical, elemental, element) = resolved_damage(ranged.damage, damage, offence)?;
-    let physical = if physical > 0 {
-        let physical = swing_mitigated(
+    let is_immune = |element| policy.damage_immunities.iter().any(|key| key == element);
+    let (physical, primary_block) = if matches!(ranged.damage, RangedDamage::Magic { .. }) {
+        (0, HitBlock::Unblocked)
+    } else if is_immune("physical") {
+        (0, HitBlock::Immunity)
+    } else {
+        let (physical, block) = swing_mitigated_with_block(
             root,
             constants,
             actor.placement_identity(),
@@ -873,59 +914,44 @@ pub(super) fn creature_damage(
             None,
             policy.armor?,
         )?;
-        creature_damage_response_with_reduction(
-            policy,
-            physical,
-            "physical",
-            if bow { 2 } else { 0 },
-        )?
-    } else {
-        0
+        (
+            creature_damage_response_with_reduction(
+                policy,
+                physical,
+                "physical",
+                if bow { 2 } else { 0 },
+            )?,
+            block,
+        )
     };
-    let element_key = match element {
-        Element::Physical => "physical",
-        Element::Death => "death",
-        Element::Earth => "earth",
-        Element::Energy => "energy",
-        Element::Fire => "fire",
-        Element::Ice => "ice",
-    };
+    let key = element_key(element);
     let elemental = creature_damage_response_with_reduction(
         policy,
         elemental,
-        element_key,
-        if bow && element_key == "physical" {
-            2
-        } else {
-            0
-        },
+        key,
+        if bow && key == "physical" { 2 } else { 0 },
     )?;
-    let [physical, elemental] =
-        native_health_primary_components(ranged.damage, [physical, elemental], health_change)?;
-    let physical = super::cruelty_health_component(physical, cruelty_drain)?;
-    let elemental = super::cruelty_health_component(elemental, cruelty_drain)?;
-    if cruelty_drain.is_some() && physical == 0 && elemental == 0 {
-        return Some(([0, 0], element));
-    }
-    let (physical, elemental) = if let Some((state, now, health, maximum, adjacent)) = wheel {
-        if matches!(ranged.damage, RangedDamage::Magic { .. }) {
-            let (primary, _) = state
-                .finish_wheel_attack_components(elemental, 0, health, maximum, now, adjacent)?;
-            (0, primary)
-        } else {
-            state.finish_wheel_attack_components(
-                physical, elemental, health, maximum, now, adjacent,
-            )?
-        }
+    let training = if element == Element::Physical {
+        (None, primary_block)
     } else {
-        (physical, elemental)
+        (
+            Some(primary_block),
+            if is_immune(key) {
+                HitBlock::Immunity
+            } else {
+                HitBlock::Unblocked
+            },
+        )
     };
-    Some(([physical, elemental], element))
+    Some(CreatureShot {
+        parts: [physical, elemental],
+        blocks: training,
+    })
 }
 
 // Distance weapons keep their elemental contribution in the secondary slot;
 // wands/rods store their ONLY primary in the elemental slot instead.
-fn native_health_primary_components(
+pub(super) fn native_health_primary_components(
     damage: RangedDamage,
     [physical, elemental]: [i64; 2],
     observation: Option<&crate::foundation::NativeHealthChangeObservation>,
@@ -1028,6 +1054,21 @@ pub(super) fn analyser_element(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn crystal_equipment_ranged_proficiency_split_truncates_each_part() {
+        let arrow = RangedDamage::Distance {
+            attack: 41,
+            launcher_attack: 0,
+            elemental_attack: 40,
+            element: Element::Fire,
+            chance: 0,
+            cap: 100,
+            launcher_bonus: 0,
+        };
+        assert_eq!(arrow.split(107), Some((54, 52, Element::Fire)));
+    }
+
     #[test]
     fn t174_converted_arrow_analyser_keeps_resolved_fire_element() -> Result<(), &'static str> {
         let offence = oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence {
@@ -1036,19 +1077,108 @@ mod tests {
         };
         let arrow = RangedDamage::Distance {
             attack: 40,
+            launcher_attack: 0,
             elemental_attack: 0,
             element: Element::Physical,
             chance: 0,
             cap: 100,
             launcher_bonus: 0,
         };
-        let (physical, elemental, element) =
-            resolved_damage(arrow, 100, &offence).ok_or("damage")?;
+        let (physical, elemental, element) = arrow.split(100).ok_or("arrow damage")?;
+        let (physical, elemental, element) = offence
+            .convert_physical(physical, elemental, element)
+            .ok_or("conversion")?;
         assert_eq!((physical, elemental), (50, 50));
         assert_eq!(
             analyser_element(element),
             oteryn_protocol_oteryn::damage_element::DamageElement::Fire
         );
+        Ok(())
+    }
+
+    #[test]
+    fn t174_elemental_distance_split_uses_projectile_attack() -> Result<(), String> {
+        use oteryn_gameplay_content::content::native_gameplay::{
+            NativeGameplayInput, compile_native_gameplay, decode,
+        };
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/spells.manifest.json");
+        let mut source =
+            NativeGameplayInput::from_manifest(&manifest).map_err(|e| format!("{e:?}"))?;
+        source.source_world = None;
+        let mut id = [5; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        let world = crate::foundation::WorldId::decode(&id).map_err(|e| format!("{e:?}"))?;
+        let room =
+            crate::content::qualify_native_entry_room(world).map_err(|e| format!("{e:?}"))?;
+        let artefact =
+            compile_native_gameplay(room.compiled(), &source).map_err(|e| format!("{e:?}"))?;
+        let native = decode(&artefact.server_artifact)
+            .map_err(|e| format!("{e:?}"))?
+            .state;
+        let item = |slot, production_key: &str| EquippedItem {
+            tier: 0,
+            slot,
+            item_instance_id: [slot; 16],
+            definition: crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: production_key.into(),
+                revision_ref: "definition-r1".into(),
+            },
+            quantity: 1,
+            state_revision: 1,
+        };
+        let mut equipment = EquipmentSnapshot {
+            character: id,
+            content_digest: native.source_digest(),
+            character_revision: 1,
+            revision: 1,
+            combat_mode: None,
+            items: vec![
+                item(5, "oteryn:item.tibia.i52332"),
+                item(10, "oteryn:item.tibia.i763"),
+            ],
+        };
+        let mut shot = loadout(&native, &equipment, &[])
+            .flatten()
+            .ok_or("Crypt Spine and flaming arrow loadout")?;
+        let RangedDamage::Distance { attack, .. } = &mut Arc::make_mut(&mut shot).damage else {
+            return Err("distance loadout".into());
+        };
+        *attack += 2;
+        assert_eq!(shot.formula().map(|(_, attack, _)| attack), Some(38));
+        assert_eq!(shot.split(100), Some((53, 46, Element::Fire)));
+        let (formula, attack_value, _) = shot.formula().ok_or("distance formula")?;
+        let inputs = crate::spell::formula::FormulaInputs {
+            level: 200,
+            magic_level: 0,
+            base_power: None,
+            attack_skill: 100,
+            attack_value,
+            attack_factor: 1.0,
+            shielding_skill: 0,
+            shield_defense: None,
+        };
+        let (minimum, maximum) = formula.bounds(&inputs).map_err(|err| format!("{err:?}"))?;
+        assert_eq!(
+            shot.roll_bounds(&formula, &inputs, true),
+            Some((minimum / 2, maximum / 2))
+        );
+        assert_eq!(
+            shot.roll_bounds(&formula, &inputs, false),
+            Some((minimum / 4, maximum))
+        );
+
+        equipment.items = vec![item(5, "oteryn:item.tibia.i25735")];
+        let throwing = loadout(&native, &equipment, &[])
+            .flatten()
+            .ok_or("leaf star loadout")?;
+        let RangedDamage::Distance { attack, .. } = throwing.damage else {
+            return Err("throwing loadout".into());
+        };
+        assert_eq!(throwing.formula().map(|(_, value, _)| value), Some(attack));
+        assert_eq!(throwing.split(99), Some((95, 3, Element::Earth)));
         Ok(())
     }
 
@@ -1150,6 +1280,7 @@ mod tests {
                     .map_err(|error| format!("{error:?}"))?;
                 let distance = RangedDamage::Distance {
                     attack: 31,
+                    launcher_attack: 0,
                     elemental_attack: 11,
                     element: Element::Fire,
                     chance: 100,

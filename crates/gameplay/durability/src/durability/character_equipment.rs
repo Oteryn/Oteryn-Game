@@ -123,24 +123,65 @@ impl DurabilityRoot {
             let content=*content;
             let mut tx=super::db::begin_semantic_transaction(holder,deadline).await?;
             let actual=read_current_equipment_snapshot_in_transaction(&mut tx,&record,&node,&fence,content.loop_content_digest()).await.map_err(|_| DurabilityError::Unavailable)?;
-            let world=*fence.runtime_scope.world_id().as_bytes();
             if actual != expected { return Err(DurabilityError::Unavailable); }
-            let mut entries=Vec::new();
-            for slot in [10,6] {
-                let Some(quiver)=actual.items.iter().find(|i|i.slot==slot && content.is_quiver(&i.definition)) else { continue; };
-                let rows=sqlx::query("SELECT COALESCE((SELECT t.tier FROM game_item_tiers t WHERE t.item_instance_id=i.item_instance_id),0)::smallint AS tier,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 ORDER BY e.placement_ordinal DESC LIMIT 21 FOR UPDATE OF i")
-                    .bind(quiver.item_instance_id.as_slice()).bind(world.as_slice()).fetch_all(&mut *tx).await?;
-                if rows.len()>20 { return Err(DurabilityError::InvalidStoredState); }
-                for row in rows {
-                    let definition=super::item_mint::TypedDefinitionRef {family:row.try_get("definition_family")?,production_key:row.try_get("definition_production_key")?,revision_ref:row.try_get("definition_revision_ref")?};
-                    if !content.is_ammunition(&definition) { return Err(DurabilityError::InvalidStoredState); }
-                    entries.push(EquippedItem {slot,tier:u8::try_from(row.try_get::<i16,_>("tier")?).ok().filter(|tier| *tier <= crate::domain::forge::ItemTier::MAX).ok_or(DurabilityError::InvalidStoredState)?,item_instance_id:uuid(row.try_get("item_instance_id")?).map_err(|_| DurabilityError::InvalidStoredState)?,definition,quantity:u32::try_from(row.try_get::<i64,_>("quantity")?).map_err(|_| DurabilityError::InvalidStoredState)?,state_revision:number(row.try_get("state_revision")?).map_err(|_| DurabilityError::InvalidStoredState)?});
-                }
-            }
-            super::db::commit_semantic_transaction(tx,deadline).await?;Ok(entries)
+            let world = *fence.runtime_scope.world_id().as_bytes();
+            let entries = read_quiver_entries(&mut tx, &world, &actual, content).await?;
+            super::db::commit_semantic_read(tx,deadline).await?;Ok(entries)
         })).await.map_err(EquipmentError::from)
     }
 }
+
+async fn read_quiver_entries<C: super::item_loop_move::ItemLoopContent>(
+    tx: &mut Transaction<'_, Postgres>,
+    world: &[u8; 16],
+    equipment: &EquipmentSnapshot,
+    content: &C,
+) -> std::result::Result<Vec<EquippedItem>, DurabilityError> {
+    let mut entries = Vec::new();
+    for slot in [10, 6] {
+        let Some(quiver) = equipment
+            .items
+            .iter()
+            .find(|item| item.slot == slot && content.is_quiver(&item.definition))
+        else {
+            continue;
+        };
+        let rows = sqlx::query("SELECT COALESCE((SELECT t.tier FROM game_item_tiers t WHERE t.item_instance_id=i.item_instance_id),0)::smallint AS tier,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 ORDER BY e.placement_ordinal DESC LIMIT 21 FOR UPDATE OF i")
+            .bind(quiver.item_instance_id.as_slice())
+            .bind(world.as_slice())
+            .fetch_all(&mut **tx)
+            .await?;
+        if rows.len() > 20 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        for row in rows {
+            let definition = super::item_mint::TypedDefinitionRef {
+                family: row.try_get("definition_family")?,
+                production_key: row.try_get("definition_production_key")?,
+                revision_ref: row.try_get("definition_revision_ref")?,
+            };
+            if !content.is_ammunition(&definition) {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            entries.push(EquippedItem {
+                slot,
+                tier: u8::try_from(row.try_get::<i16, _>("tier")?)
+                    .ok()
+                    .filter(|tier| *tier <= crate::domain::forge::ItemTier::MAX)
+                    .ok_or(DurabilityError::InvalidStoredState)?,
+                item_instance_id: uuid(row.try_get("item_instance_id")?)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                definition,
+                quantity: u32::try_from(row.try_get::<i64, _>("quantity")?)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                state_revision: number(row.try_get("state_revision")?)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+            });
+        }
+    }
+    Ok(entries)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum EquipmentIntent {
     Move {
@@ -1186,7 +1227,7 @@ impl DurabilityRoot {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(facts)
                 })
             })
@@ -1308,7 +1349,7 @@ impl DurabilityRoot {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(MovementEquipmentSnapshot { fence, equipment })
                 })
             })
@@ -1362,7 +1403,7 @@ impl DurabilityRoot {
                     let facts = read_lifecycle_facts_in_transaction(&mut tx, &authority)
                         .await
                         .map_err(|_| DurabilityError::Unavailable)?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(facts)
                 })
             })
@@ -1955,7 +1996,7 @@ impl DurabilityRoot {
                             }
                         }
                     };
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(replay)
                 })
             })

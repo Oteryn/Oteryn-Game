@@ -18,7 +18,7 @@ pub struct Request {
     pub object_revision: u64,
     pub context: QuestWorldContext,
     /// Prepared by the existing movement owner while holding the actor lane.
-    pub success_prepared: bool,
+    pub success: Option<paid_projection::PaidArrival>,
     pub missing_prepared: bool,
 }
 
@@ -83,7 +83,12 @@ impl DurabilityRoot {
                 .bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice()).bind(recipe.item)
                 .bind(i64::from(recipe.count)).fetch_optional(&mut **tx).await?;
             let input=if let Some(row)=row {
-                if !request.success_prepared { return Ok(None); }
+                let Some(arrival) = &request.success else { return Ok(None); };
+                if !arrival.matches(*fence.character_id.as_bytes(), fence.character_lease_generation,
+                    world_id, &request.context.placement_context, recipe.success)
+                {
+                    return Ok(None);
+                }
                 let Some(policy)=native.item_policy(recipe.item,"definition-r1") else { return Ok(None); };
                 let qualified=crate::durability::spell_items_abi::QualifiedItemDefinition::from_native_policy(policy)
                     .map_err(|_|DurabilityError::InvalidStoredState)?;
@@ -117,6 +122,10 @@ impl DurabilityRoot {
                 .bind(&intent).bind(input.as_ref().map(|i|&i.before)).bind(input.as_ref().map(|i|&i.location))
                 .bind(input.as_ref().map(|i|&i.kind)).bind(occurred).bind(envelope.as_deref()).execute(&mut **tx).await?;
             if let Some(input)=&input {
+                let Some(arrival) = &request.success else { return Err(DurabilityError::InvalidStoredState); };
+                if !arrival.write(&mut tx).await? {
+                    return Ok(None);
+                }
                 super::apply_input(&mut tx,permit,fence,input,&transaction).await?;
                 let envelope=envelope.as_ref().ok_or(DurabilityError::InvalidStoredState)?;
                 sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,$5::uuid,$6,$6+$7,$8,sha256($8),1)")

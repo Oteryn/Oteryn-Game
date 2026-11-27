@@ -15,8 +15,9 @@ pub(super) async fn move_map_item(
     command: UseCommand,
     request: LoopMove,
     permit: &SpellLanePermit,
-    door_origin: Option<TilePos>,
+    source_origin: Option<SourceItemOrigin>,
 ) -> LoopMoveResult {
+    let door_origin = source_origin.map(SourceItemOrigin::tile);
     let ground_cache = &admission.states.loop_ground;
     let refused = LoopMoveResult::Refused;
     let stale = refused(LoopMoveRefusal::Stale);
@@ -52,13 +53,10 @@ pub(super) async fn move_map_item(
         LoopTarget::MainBackpack => LoopDestination::MainBackpack,
         LoopTarget::Container(ItemKey::Instance(id)) => LoopDestination::Container(id),
         LoopTarget::Ground(to) => {
-            let reach = door_origin.map_or((at.at.x, at.at.y, at.at.floor), |from| {
-                (i32::from(from.x), i32::from(from.y), i16::from(from.floor))
-            });
-            let cell = if door_origin.is_some() {
-                source_drop_cell(at.map.overlay.base(), reach, to)
-            } else {
-                drop_cell(at.map.overlay.base(), reach, to)
+            let base = at.map.overlay.base();
+            let cell = match source_origin {
+                Some(origin) => origin.drop_cell(base, to),
+                None => drop_cell(base, (at.at.x, at.at.y, at.at.floor), to),
             };
             let spatial_position = match cell {
                 Ok(cell) => cell,

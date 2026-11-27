@@ -296,7 +296,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn observe_party_icons(
         &self,
         admitted: connection::AdmittedSession,
-    ) -> Option<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>> {
+    ) -> Result<
+        Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
+        crate::durability::DurabilityError,
+    > {
         self.observe_party_skull(admitted).await
     }
 
@@ -317,7 +320,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn observe_pvp_status(
         &self,
         admitted: connection::AdmittedSession,
-    ) -> Option<oteryn_protocol_oteryn::party_skull::PvpStatus> {
+    ) -> Result<oteryn_protocol_oteryn::party_skull::PvpStatus, crate::durability::DurabilityError>
+    {
         self.observe_own_pvp(admitted).await
     }
 
@@ -1254,17 +1258,32 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         source: Option<item_view::ItemKey>,
         target: Option<item_view::ItemKey>,
     ) -> Option<UseOutcome> {
+        // A durable item may cover the rope spot. Let its terrain owner
+        // claim the tile before the ground-item handlers claim the handle.
+        if matches!(target, Some(item_view::ItemKey::Instance(_))) {
+            match self
+                .use_rope_tool(actor, command, &intent, source, target)
+                .await
+            {
+                Ok(Some(outcome)) => return Some(outcome),
+                Ok(None) => {}
+                Err(()) => return None,
+            }
+        }
         if let Some(outcome) = self
             .use_machete_impl(actor, command, &intent, source, target)
             .await
         {
             return outcome;
         }
-        // Item-definition USE can select a carried rabbit knife. Delegate exact
-        // ground custody and replay to skinning before trying carried-stone refining.
+        // Ground skinning owns its replay even when a jam changed the carried tool.
+        use oteryn_protocol_oteryn::world_object::UseTarget;
         if matches!(
             intent.target,
-            oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(_)
+            UseTarget::ItemByDefinition(_) | UseTarget::Item(_)
+        ) && matches!(
+            target,
+            Some(item_view::ItemKey::Instance(_) | item_view::ItemKey::Entity(_))
         ) {
             match self
                 .use_skinning(actor, command, &intent, source, target)
@@ -1861,7 +1880,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         command_id: u64,
         modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
-    ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
+    ) -> Result<
+        oteryn_protocol_oteryn::attack::AttackIntentDisposition,
+        crate::durability::DurabilityError,
+    > {
         self.set_expert_fight_modes(actor, session, command_id, modes)
             .await
     }

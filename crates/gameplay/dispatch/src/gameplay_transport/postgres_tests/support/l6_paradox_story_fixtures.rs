@@ -92,26 +92,40 @@ const CONTACTS: &[Contact] = &[
         ground: 408,
         approach_ground: 408,
     },
+    Contact {
+        key: "oteryn:npc.riddler",
+        at: Position {
+            x: 32479,
+            y: 31901,
+            floor: -2,
+        },
+        ground: 409,
+        approach_ground: 409,
+    },
 ];
 
 fn approach(c: Contact) -> Position {
     Position {
-        x: c.at.x - 1,
+        x: if c.key.ends_with(".riddler") { c.at.x + 2 } else { c.at.x - 1 },
         ..c.at
     }
+}
+
+fn contacts(riddler: bool) -> &'static [Contact] {
+    if riddler { CONTACTS } else { &CONTACTS[..5] }
 }
 
 pub(super) fn start() -> Position {
     approach(CONTACTS[0])
 }
 
-pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot::BundleWorld> {
-    super::l6_world_pickups_fixtures::native_scene(native, crops()?, &[])
+pub(super) fn world(native: &NativeGameplayState, riddler: bool) -> TestResult<crate::map::boot::BundleWorld> {
+    super::l6_world_pickups_fixtures::native_scene(native, crops(riddler)?, &[])
 }
 
-pub(super) fn crops() -> TestResult<Vec<super::l6_world_pickups_fixtures::NativeCrop>> {
+pub(super) fn crops(riddler: bool) -> TestResult<Vec<super::l6_world_pickups_fixtures::NativeCrop>> {
     use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop};
-    let bytes: [&'static [u8]; 5] = [
+    let bytes: [&'static [u8]; 6] = [
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../../content/world/placements/region-z06-x128-y126.b3"
@@ -132,10 +146,14 @@ pub(super) fn crops() -> TestResult<Vec<super::l6_world_pickups_fixtures::Native
             env!("CARGO_MANIFEST_DIR"),
             "/../../../content/world/placements/region-z13-x126-y125.b3"
         )),
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/world/placements/region-z02-x126-y124.b3"
+        )),
     ];
     let mut crops = Vec::new();
     let first = start();
-    for (i, c) in CONTACTS.iter().copied().enumerate() {
+    for (i, c) in contacts(riddler).iter().copied().enumerate() {
         for (p, id) in [(approach(c), c.approach_ground), (c.at, c.ground)] {
             crops.push(NativeCrop {
                 bytes: bytes[i],
@@ -144,12 +162,33 @@ pub(super) fn crops() -> TestResult<Vec<super::l6_world_pickups_fixtures::Native
                 start: (first.x, first.y),
                 expected: vec![ExpectedTile {
                     position: (p.x, p.y),
-                    ids: vec![id],
+                    ids: if c.key.ends_with(".riddler") && p == c.at {
+                        vec![id, 2576]
+                    } else {
+                        vec![id]
+                    },
                     counted_entry: None,
                 }],
             });
         }
     }
+    if !riddler {
+        return Ok(crops);
+    }
+    crops.push(NativeCrop {
+        bytes: include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/world/placements/region-z01-x126-y124.b3"
+        )),
+        region: (1, 126, 124),
+        bounds: (32478, 31905, 32479, 31906),
+        start: (first.x, first.y),
+        expected: vec![ExpectedTile {
+            position: (32478, 31905),
+            ids: vec![409],
+            counted_entry: None,
+        }],
+    });
     Ok(crops)
 }
 
@@ -157,6 +196,7 @@ async fn install(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     production: bool,
+    contacts: &[Contact],
 ) -> TestResult<Vec<EntityRef>> {
     let catalogue = NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
@@ -167,13 +207,13 @@ async fn install(
     let model = catalogue.service_model_for_project().map_err(debug)?;
     let allowed: std::collections::BTreeSet<_> =
         model.npcs().keys().map(|r| r.key.clone()).collect();
-    let native_npcs = if production {
-        &["oteryn:npc.riddler"][..]
+    let native_npcs: Vec<_> = if production {
+        vec!["oteryn:npc.riddler"]
     } else {
-        &[]
+        contacts.iter().map(|contact| contact.key).collect()
     };
     owner.states.chat.install_npc_talk(Arc::new(
-        NpcTalkBook::from_model_with_native_quests(&model, native_npcs),
+        NpcTalkBook::from_model_with_native_quests(&model, &native_npcs),
     ));
     owner.states.chat.admit(
         admitted.game_session_id,
@@ -200,7 +240,7 @@ async fn install(
             .map_err(debug)?,
         )
         .map_err(debug)?;
-    let mut npcs: Vec<_> = CONTACTS
+    let mut npcs: Vec<_> = contacts
         .iter()
         .map(|c| NpcPlacements {
             key: c.key.into(),
@@ -225,7 +265,7 @@ async fn install(
             true,
         )
         .map_err(debug)?;
-    CONTACTS
+    contacts
         .iter()
         .map(|c| {
             runtime
@@ -421,7 +461,8 @@ pub(super) async fn exercise(
         .await?;
     eprintln!("POSTGRES_DATABASE_READY l6_paradox_story version={version}");
     let journey = name == super::paradox_tower_journey_fixtures::NAME;
-    let npcs = install(owner, admitted, journey).await?;
+    let riddler = name.ends_with("-riddler");
+    let npcs = install(owner, admitted, journey, contacts(riddler)).await?;
     let mut selected = admitted
         .continuity
         .selected_capabilities
@@ -589,5 +630,27 @@ pub(super) async fn exercise(
         committed,
         "a fresh repeated lesson cannot grant another achievement source"
     );
+    if riddler {
+        relocate(owner, admitted, 5).await?;
+        let replies = conversation(
+            owner, admitted, npcs[5],
+            &["hi", "test", "yes", "goshnar", "demonbunny", "tha'kull", "yes",
+              "breath", "silence", "old", "yes", "green", "none", "1"],
+        ).await?;
+        assert!(replies.iter().all(|r| r.disposition == NpcIntentDisposition::Ok));
+        assert_eq!(
+            owner.runtime.lock().await
+                .read_actor_position(admitted.runtime_actor.ok_or("actor")?)
+                .map_err(debug)?.position(),
+            super::quest_world_callbacks_fixtures::local(Position { x: 32478, y: 31905, floor: -1 }),
+        );
+        let values: Vec<i64> = sqlx::query_scalar(
+            "SELECT value FROM game_character_quest_tracks WHERE track_key IN ($1,$2) ORDER BY track_key",
+        )
+        .bind("oteryn:quest-progress/quest/u7_24/the_paradox_tower/favorite_colour")
+        .bind("oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics")
+        .fetch_all(&h.pool).await?;
+        assert_eq!(values, [2, 2]);
+    }
     Ok(())
 }

@@ -32,7 +32,7 @@
         {
           "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
           "minimum": 5,
-          "maximum": 5,
+          "maximum": 6,
           "set": 5,
           "preserve": true
         }
@@ -80,6 +80,290 @@
       "reply": [
         "I can make the crimson sword for three iron ores and 250 gold. Agreed?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "job",
+        "jobs"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "I have maintenance, pathfinder and sabotage work. Finish all three within twenty hours for an extra reward."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "maintenance"
+      ],
+      "topic": 0,
+      "next_topic": 121,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you oil the nine machines at the three construction sites?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "maintenance"
+      ],
+      "topic": 0,
+      "next_topic": 121,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+          "minimum": 2,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you oil the nine machines at the three construction sites?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "pathfinder"
+      ],
+      "topic": 0,
+      "next_topic": 122,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/pathfinder/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you carry supplies to Scott and Frank?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "pathfinder"
+      ],
+      "topic": 0,
+      "next_topic": 122,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/pathfinder/stage",
+          "minimum": 2,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you carry supplies to Scott and Frank?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "sabotage"
+      ],
+      "topic": 0,
+      "next_topic": 123,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/sabotage/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you clear five Little Corym Charlatans out of the southern hideout?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "sabotage"
+      ],
+      "topic": 0,
+      "next_topic": 123,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/sabotage/stage",
+          "minimum": 2,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you clear five Little Corym Charlatans out of the southern hideout?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.scott_the_scout",
+      "keywords": [
+        "grind stone"
+      ],
+      "topic": 0,
+      "next_topic": 125,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/pathfinder/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/scott",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Have you brought the supplies Norman sent?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.frank_the_plank",
+      "keywords": [
+        "pathfinder kit"
+      ],
+      "topic": 0,
+      "next_topic": 126,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/pathfinder/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/frank",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Have you brought the supplies Norman sent?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "bonus"
+      ],
+      "topic": 0,
+      "next_topic": 124,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/pathfinder/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/sabotage/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Shall I check your eligibility for the bonus?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ashari",
+      "keywords": [
+        "task",
+        "tasks"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "I need help watering the gardens and treating diseased mushrooms."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [],
+      "reply": [
+        "You found sniper gloves?! Incredible! I would love to grant you the sniper gloves accessory, but I can only do that for premium warriors. However, I would pay you 2000 gold pieces for them. How about it?"
+      ],
+      "requires_premium": false
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you find sniper gloves AGAIN?! Incredible! I cannot grant you other accessories, but would you like to sell them to me for 2000 gold pieces?"
+      ],
+      "requires_premium": true
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "If you give me a pair of sniper gloves, I can let you wear the accessory. Would you like to?"
+      ],
+      "requires_premium": true
     }
   ]
 }

@@ -27,10 +27,12 @@ const QUEST: &str = "oteryn:quest.the_explorer_society_quest";
 const TRACK: &str = "oteryn:quest-progress/quest/u7_6/explorer_society/";
 const ANGUS: Position = position(32670, 32730, -7);
 const UZGOD: Position = position(32664, 31894, -9);
+// The ferry returns one cell south of Captain Max's source position.
 const MAX: Position = position(32298, 32895, -6);
 const CALASSA: Position = position(31911, 32710, -6);
 const BROOCH: Position = position(32598, 31934, -15);
 const ICE: Position = position(32133, 31688, -9);
+const SECOND_ICE: Position = position(34040, 31756, -10);
 const BUTTERFLY: Position = position(32580, 32731, -7);
 const BELLS: Position = position(32548, 32836, -7);
 const URN: Position = position(32957, 32834, -8);
@@ -46,7 +48,7 @@ pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     let patches = [
-        ANGUS, UZGOD, MAX, CALASSA, BROOCH, ICE, BUTTERFLY, BELLS, URN, POETRY,
+        ANGUS, UZGOD, MAX, CALASSA, BROOCH, ICE, SECOND_ICE, BUTTERFLY, BELLS, URN, POETRY,
     ]
     .map(|p| (p.x - 3, p.y - 3, p.x + 3, p.y + 3, p.floor));
     super::questpc8_native_slice::world(
@@ -222,6 +224,14 @@ async fn step(
         encode_step_intent(dir),
     )
     .await?;
+    assert_position(owner, session, at).await
+}
+
+async fn assert_position(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: &AdmittedSession,
+    at: Position,
+) -> TestResult {
     let actor = session.runtime_actor.ok_or("player")?;
     assert_eq!(
         owner
@@ -247,7 +257,7 @@ fn map_object(
             y: at.y,
             floor: at.floor,
         },
-        1,
+        if at == SECOND_ICE { 3 } else { 1 },
     )
     .ok_or("source object ordinal")?;
     let mut placement = map.overlay.base().digest().to_vec();
@@ -453,7 +463,6 @@ async fn door(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     session: &mut AdmittedSession,
     at: Position,
-    direction: StepDirection,
 ) -> TestResult {
     owner
         .refresh_quest_session(session.game_session_id, false)
@@ -462,7 +471,8 @@ async fn door(
         map_use(owner, session, at).await?,
         UseDisposition::Committed
     );
-    step(owner, session, direction, at).await
+    // The source quest door moves onto the doorway as part of USE.
+    assert_position(owner, session, at).await
 }
 
 async fn assert_journal(
@@ -589,13 +599,7 @@ pub(super) async fn exercise(
     );
     state(h, 2, Some((joining, 2)), &[]).await?;
     relocate(owner, session, position(32598, 31932, -15)).await?;
-    door(
-        owner,
-        session,
-        position(32598, 31933, -15),
-        StepDirection::South,
-    )
-    .await?;
+    door(owner, session, position(32598, 31933, -15)).await?;
     assert_eq!(
         map_use(owner, session, BROOCH).await?,
         UseDisposition::Committed
@@ -629,6 +633,70 @@ pub(super) async fn exercise(
     state(h, 7, Some((ice, 7)), &[4837, 4872]).await?;
     let timed: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_timed_states t JOIN game_item_instances i USING (item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i4837'").fetch_one(&h.pool).await?;
     assert_eq!(timed, 0, "selected course icicle must have no decay clock");
+    let lifetime: (i64, i64) = sqlx::query_as(
+        "SELECT p.duration_millis, p.expires_at_unix_ms-r.occurred_at
+         FROM game_spell_item_temporal_schedules p
+         JOIN game_reward_claim_mint_receipts r ON r.transaction_id=p.source_transaction_id
+         WHERE p.definition_production_key='oteryn:item.tibia.i4837'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(lifetime, (600_000, 600_000));
+    let original_deadline: i64 = sqlx::query_scalar(
+        "SELECT expires_at_unix_ms FROM game_spell_item_temporal_schedules
+         WHERE definition_production_key='oteryn:item.tibia.i4837'",
+    ).fetch_one(&h.pool).await?;
+    let mut predecessor = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *predecessor).await?;
+    let removed = sqlx::query("DELETE FROM game_spell_item_temporal_schedules
+                                WHERE definition_production_key='oteryn:item.tibia.i4837'")
+        .execute(&mut *predecessor).await?;
+    assert_eq!(removed.rows_affected(), 1, "the predecessor only retained the original mint");
+    predecessor.commit().await?;
+    let migration = include_str!(concat!(env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/3131_explorer_ice_sample_deadline.sql"));
+    let backfill = migration.split_once("-- Carry forward live samples").ok_or("legacy backfill")?.1
+        .split_once("-- Retire due icicles").ok_or("backfill boundary")?.0;
+    let start = backfill.find("INSERT INTO game_spell_item_temporal_schedules")
+        .ok_or("backfill statement")?;
+    assert_eq!(sqlx::raw_sql(&backfill[start..])
+        .execute(&h.pool).await?.rows_affected(), 1);
+    let restored: i64 = sqlx::query_scalar(
+        "SELECT expires_at_unix_ms FROM game_spell_item_temporal_schedules
+         WHERE definition_production_key='oteryn:item.tibia.i4837'",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(restored, original_deadline, "the upgrade keeps the original mint clock");
+
+    // Advance the test sample beyond its absolute deadline, keeping it carried.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let due = sqlx::query(
+        "UPDATE game_spell_item_temporal_schedules
+         SET expires_at_unix_ms=floor(extract(epoch FROM statement_timestamp())*1000)::bigint-1
+         WHERE definition_production_key='oteryn:item.tibia.i4837'",
+    )
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(due.rows_affected(), 1);
+    tx.commit().await?;
+    relocate(owner, session, angus_side).await?;
+    assert_eq!(
+        talk(owner, session, angus, "ice delivery").await?,
+        NpcIntentDisposition::Rejected
+    );
+    owner.states.spell_states.lock().await.next_item_deadline_pass_us = 0;
+    owner.drain_source_item_deadlines().await;
+    state(h, 7, Some((ice, 7)), &[4872]).await?;
+    assert_eq!(
+        talk(owner, session, angus, "ice sample melted").await?,
+        NpcIntentDisposition::Ok
+    );
+    state(h, 6, Some((ice, 6)), &[4872]).await?;
+    relocate(owner, session, position(SECOND_ICE.x - 1, SECOND_ICE.y, SECOND_ICE.floor)).await?;
+    tool_use(owner, session, 4872, Some(SECOND_ICE)).await?;
+    state(h, 7, Some((ice, 7)), &[4837, 4872]).await?;
     relocate(owner, session, angus_side).await?;
     assert_eq!(
         talk(owner, session, angus, "ice delivery").await?,
@@ -656,6 +724,13 @@ pub(super) async fn exercise(
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(samples, 1);
+    let consumed_corpse: (i16, i64, bool) = sqlx::query_as(
+        "SELECT i.lifecycle,i.quantity::bigint,
+                EXISTS (SELECT 1 FROM game_item_ground_locations g WHERE g.item_instance_id=i.item_instance_id)
+         FROM game_quest_corpse_samples s JOIN game_item_instances i ON i.item_instance_id=s.corpse_item
+         WHERE s.transition_key='oteryn:quest-reward/explorer-society/prepare-butterfly'",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(consumed_corpse, (2, 0, false), "another field-course player cannot reuse that corpse");
     relocate(owner, session, angus_side).await?;
     assert_eq!(
         talk(owner, session, angus, "butterfly hunt").await?,
@@ -682,13 +757,7 @@ pub(super) async fn exercise(
     );
     state(h, 15, Some((urn, 27)), &[4872]).await?;
     relocate(owner, session, position(32957, 32836, -8)).await?;
-    door(
-        owner,
-        session,
-        position(32957, 32835, -8),
-        StepDirection::North,
-    )
-    .await?;
+    door(owner, session, position(32957, 32835, -8)).await?;
     assert_eq!(
         map_use(owner, session, URN).await?,
         UseDisposition::Committed
@@ -706,13 +775,7 @@ pub(super) async fn exercise(
     );
     state(h, 18, Some((poetry, 36)), &[4872]).await?;
     relocate(owner, session, position(32702, 31605, -14)).await?;
-    door(
-        owner,
-        session,
-        position(32703, 31605, -14),
-        StepDirection::East,
-    )
-    .await?;
+    door(owner, session, position(32703, 31605, -14)).await?;
     assert_eq!(
         map_use(owner, session, POETRY).await?,
         UseDisposition::Committed

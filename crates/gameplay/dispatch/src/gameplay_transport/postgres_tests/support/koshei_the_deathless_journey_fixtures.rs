@@ -559,7 +559,8 @@ pub(super) async fn exercise(
         .await
         .map_err(debug)?
         .ok_or("Koshei potion fence")?;
-    // The full encounter can consume more than a partial stack of spirit potions.
+    // Seed full stacks so the fixture covers the native fight's healing demand
+    // when unrelated content changes combat rolls.
     for occurrence in [175, 176] {
         input_item(
             owner,

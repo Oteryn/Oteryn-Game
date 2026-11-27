@@ -182,6 +182,16 @@ struct Book {
     index: HashMap<GameSessionId, GameSessionId>,
     records: HashMap<GameSessionId, Record>,
 }
+impl Record {
+    fn reserves(&self, item: [u8; 16]) -> bool {
+        self.items.contains(&Some(item)) || self.offers.iter().flatten().any(|leaf| {
+            (0..=leaf.contents().len()).any(|index| {
+                u8::try_from(index).ok()
+                    .and_then(|index| leaf.instance_at(index).ok().flatten()) == Some(item)
+            })
+        })
+    }
+}
 impl Book {
     fn record_ref(&self, session: GameSessionId) -> Option<&Record> {
         self.records.get(self.index.get(&session)?)
@@ -339,9 +349,134 @@ impl TradeBook {
     pub(in crate::gameplay_transport) fn completed_request(&self) -> Option<PlayerTradeRequest> {
         self.0.lock().ok()?.completed.clone()
     }
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) fn retain_test_request(
+        &self,
+        binding: ChannelRuntimeAssignmentBinding,
+        fence: CurrentCharacterItemFence,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        use crate::durability::DurabilityError::Unavailable;
+
+        let mut peer = fence;
+        let mut character = *fence.character_id.as_bytes();
+        character[15] ^= 1;
+        peer.character_id =
+            crate::domain::CharacterId::from_bytes(character).map_err(|_| Unavailable)?;
+        let mut session = *fence.game_session_id.as_bytes();
+        session[15] ^= 1;
+        peer.game_session_id = GameSessionId::decode(&session).map_err(|_| Unavailable)?;
+        let pair = CommandRef::new(
+            fence.game_session_id,
+            CommandId::new(1).map_err(|_| Unavailable)?,
+        );
+        let accept_id = CommandId::new(2).map_err(|_| Unavailable)?;
+        // The test stops at holder checkout before the frozen leaves are read.
+        let leaf: TradeLeaf = serde_json::from_value(serde_json::json!({"item": {}, "entry": {}}))
+            .map_err(|_| Unavailable)?;
+        let participants = [fence, peer].map(|accepted| TradeParticipant {
+            accepted,
+            command: CommandRef::new(accepted.game_session_id, accept_id),
+            leaf: leaf.clone(),
+        });
+        let digest = [1; 32];
+        let request = PlayerTradeRequest {
+            pair,
+            occurrence_id: identity(pair, b"occurrence"),
+            transaction_id: identity(pair, b"transaction"),
+            event_id: identity(pair, b"event"),
+            occurred_at_unix_ms: 1,
+            participants: participants.clone(),
+            content_digest: digest,
+            weight_digest: digest,
+            node_id: [1; 16],
+            node_registration_revision: 1,
+            content_revision: "content-1".into(),
+            ruleset_revision: "rules-1".into(),
+            sim_revision: "sim-1".into(),
+        };
+        let record = Record {
+            sessions: [fence.game_session_id, peer.game_session_id],
+            binding,
+            digest,
+            lifecycle: Trade::offered(pair, 0),
+            offers: [None, None],
+            items: [None, None],
+            backpacks: [None, None],
+            projections: [None, None],
+            contents: [Vec::new(), Vec::new()],
+            commands: participants.each_ref().map(|p| p.command),
+            pair: Some(pair),
+            id: Some(identity(pair, b"pair")),
+            accepts: participants.map(Some),
+            staged: None,
+            request: Some(request),
+        };
+        self.0
+            .lock()
+            .map_err(|_| Unavailable)?
+            .records
+            .insert(fence.game_session_id, record);
+        Ok(())
+    }
+
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) fn remove_test_request(
+        &self,
+        session: GameSessionId,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        self.0
+            .lock()
+            .map_err(|_| crate::durability::DurabilityError::Unavailable)?
+            .records
+            .remove(&session);
+        Ok(())
+    }
+
+    #[cfg(test)]
+    pub(super) fn seed_offered_for_test(
+        &self,
+        binding: ChannelRuntimeAssignmentBinding,
+        session: GameSessionId,
+        partner: GameSessionId,
+        item: [u8; 16],
+    ) -> Option<()> {
+        let id = CommandId::new(1).ok()?;
+        let command = CommandRef::new(session, id);
+        let record = Record {
+            sessions: [session, partner],
+            binding,
+            digest: [0; 32],
+            lifecycle: Trade::offered(command, 0),
+            offers: [None, None],
+            items: [Some(item), None],
+            backpacks: [None, None],
+            projections: [None, None],
+            contents: [Vec::new(), Vec::new()],
+            commands: [command, CommandRef::new(partner, id)],
+            pair: None,
+            id: None,
+            accepts: [None, None],
+            staged: None,
+            request: None,
+        };
+        let mut book = self.0.lock().ok()?;
+        book.index.insert(session, session);
+        book.index.insert(partner, session);
+        book.records.insert(session, record);
+        Some(())
+    }
+
     /// Called under the mutation's spell lane. An attempt on an offered leaf is refused
     /// and invalidates the dialog; other backpack mutations invalidate before issuance.
     pub(super) fn physical(&self, session: GameSessionId, item: Option<[u8; 16]>) -> bool {
+        self.physical_items(session, [item])
+    }
+
+    pub(super) fn physical_items<const N: usize>(
+        &self,
+        session: GameSessionId,
+        items: [Option<[u8; 16]>; N],
+    ) -> bool {
         let Ok(mut book) = self.0.lock() else {
             return false;
         };
@@ -351,7 +486,7 @@ impl TradeBook {
         if record.request.is_some() {
             return false;
         }
-        let offered = item.is_some_and(|item| record.items.contains(&Some(item)));
+        let offered = items.into_iter().flatten().any(|item| record.reserves(item));
         book.close(&record, ResultCode::Stale).is_some() && !offered
     }
     /// Services that choose inventory inputs internally cannot spend an offered leaf.

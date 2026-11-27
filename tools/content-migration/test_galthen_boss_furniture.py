@@ -4,6 +4,7 @@ import copy
 from pathlib import Path
 import unittest
 import galthen_boss_furniture as producer
+from srx1_profile_updates import compact_item_record
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -40,7 +41,7 @@ class GalthenFurnitureTests(unittest.TestCase):
         row = rows[0]
         expected = next(record for record in json.loads((ROOT / producer.PATH).read_bytes())['records']
                         if record['production_definition']['production_key'] == 'oteryn:item.tibia.i31483')
-        self.assertEqual(row, expected,
+        self.assertEqual(compact_item_record(row), compact_item_record(expected),
                          'later publishers must preserve the complete source record')
         self.assertIs(row['attributes']['blocks_movement'], False)
         self.assertIs(row['attributes']['blocks_projectile'], False)

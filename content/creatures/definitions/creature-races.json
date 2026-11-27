@@ -4,7 +4,7 @@
     "race": "blood",
     "source": "opentibiabr/canary src/creatures/monsters/monsters.hpp MonsterInfo::race = RACE_BLOOD"
   },
-  "record_count": 1865,
+  "record_count": 1893,
   "records": [
     {
       "creature": {
@@ -1096,6 +1096,20 @@
         "path": "data-otservbr-global/monster/quests/svargrond_arena/greenhorn/axeitus_headbanger.lua",
         "repository": "opentibiabr/canary",
         "sha256": "02aae1a56490654ff665074510a72db92fd0febfe8df63bb55cfc42ccaf2bbe0"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.ayana_the_crimson_curse",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "undead",
+      "source": {
+        "path": "data-global/monster/bosses/ayana_the_crimson_curse.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "9648712217cc1f3c1c47005314c135f969136d60b7e90cd4a1d05c9a64f85ec3"
       }
     },
     {
@@ -3048,6 +3062,20 @@
     {
       "creature": {
         "family": "Creature",
+        "key": "oteryn:creature.channeling_earl_osam",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "venom",
+      "source": {
+        "path": "data-global/monster/quests/grave_danger/bosses/channeling_earl_osam.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "6972e1c195f30f4ccff3915499b3fc04b3b2453d5177a1bb4b0969939426b5f5"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
         "key": "oteryn:creature.charged_anomaly",
         "revision": "definition-r1"
       },
@@ -3435,6 +3463,20 @@
         "path": "data-otservbr-global/monster/quests/svargrond_arena/greenhorn/colerian_the_barbarian.lua",
         "repository": "opentibiabr/canary",
         "sha256": "192389b484a0e15faf72fc6e65d887cf9494b0d0765e67abfec4ed5c5df9a545"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.common_beetle",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "venom",
+      "source": {
+        "path": "data-global/monster/vermins/common_beetle.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "ab7c5fb1ecf12e80d5f9bfab3d5929c64f2e631d8cb38d42c2cceb8d30921115"
       }
     },
     {
@@ -3860,6 +3902,20 @@
     {
       "creature": {
         "family": "Creature",
+        "key": "oteryn:creature.crate",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "undead",
+      "source": {
+        "path": "data-global/monster/quests/bloody_tusks/crate.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "a7a83ad2bb46f1de398d62be27de217b054c06d46a88b94fa4ba08695bcf08cd"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
         "key": "oteryn:creature.crawler",
         "revision": "definition-r1"
       },
@@ -4191,6 +4247,20 @@
         "path": "data-otservbr-global/monster/magicals/crystalcrusher.lua",
         "repository": "opentibiabr/canary",
         "sha256": "ec76ab3a776789d280610d12ae1bdd52c7918d08eee29a7fb7572cbf6049ea06"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.cublarc_the_plunderer",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "blood",
+      "source": {
+        "path": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "3425a5c95ccd6b91ba4ac0592cfc8308ebcf7772b16ba688d3aee2d7de305e76"
       }
     },
     {
@@ -6768,6 +6838,20 @@
     {
       "creature": {
         "family": "Creature",
+        "key": "oteryn:creature.elderbloodjaw",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "undead",
+      "source": {
+        "path": "data-global/monster/quests/rotten_blood_quest/elderbloodjaw.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "f7643849aeb963ba25eba6977b17721e373fce197c06fada86d716dbaa7d9f93"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
         "key": "oteryn:creature.eldritch_dragon_lord",
         "revision": "definition-r1"
       },
@@ -7020,6 +7104,34 @@
     {
       "creature": {
         "family": "Creature",
+        "key": "oteryn:creature.empowered_energised_raubritter",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "undead",
+      "source": {
+        "path": "data-global/monster/undeads/empowered_energised_raubritter.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "f69b9bc3a90a6644b15b2d7eb0dd0b0c64587b2507a50c7f85dc61062ca27490"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.empowered_frozen_raubritter",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "undead",
+      "source": {
+        "path": "data-global/monster/undeads/empowered_frozen_raubritter.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "5ebc56c35728f9c61f6a45557ae5d511205718ad19eff01bfa021afaed76c467"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
         "key": "oteryn:creature.empowered_glooth_horror",
         "revision": "definition-r1"
       },
@@ -7029,6 +7141,34 @@
         "path": "data-otservbr-global/monster/quests/hero_of_rathleton/empowered_glooth_horror.lua",
         "repository": "opentibiabr/canary",
         "sha256": "61faf04c4ca2795c20ba0b41c8c85f914944fc8716437e8a39bf7073b289487c"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.empowered_poisoned_raubritter",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "undead",
+      "source": {
+        "path": "data-global/monster/undeads/empowered_poisoned_raubritter.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "1288886f9a01eff917258ec4b18df18bb339ac7bb2e841f24875131d5848ea2f"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.empowered_raging_raubritter",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "undead",
+      "source": {
+        "path": "data-global/monster/undeads/empowered_raging_raubritter.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "40c2c9c96209d4cb50ed802fd4b4243ea4354f360c0e461134ae728a2293b11c"
       }
     },
     {
@@ -7202,6 +7342,20 @@
     {
       "creature": {
         "family": "Creature",
+        "key": "oteryn:creature.enraged_arbaziloth",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "undead",
+      "source": {
+        "path": "data-global/monster/quests/no_rest_for_the_wicked/enraged_arbaziloth.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "353ce5df5ac1dab1ea8f08c1ccba9740e6bb70421b6c9256c088698ac83c3296"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
         "key": "oteryn:creature.enraged_bookworm",
         "revision": "definition-r1"
       },
@@ -7323,6 +7477,20 @@
         "path": "data-global/monster/winter_update_2025/quests/enthralled_dragon.lua",
         "repository": "zimbadev/crystalserver",
         "sha256": "2c227b60e3d064ce33147a00df843d149f3d37f86ae09c9022faa2dd6b7dd21a"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.enusat_the_onyx_wing",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "blood",
+      "source": {
+        "path": "data-global/monster/quests/kilmaresh/enusat_the_onyx_wing.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "de48270e477994412c746899dade4ffb5c3c0f3297fb938ebaaf91248d163f44"
       }
     },
     {
@@ -8387,6 +8555,20 @@
         "path": "data-otservbr-global/monster/mammals/fox.lua",
         "repository": "opentibiabr/canary",
         "sha256": "b7ef9c383e1e9b958575c4586cdefd750ed6d6956b04ff261fa893a2d4f89e62"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.foxmouse",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "blood",
+      "source": {
+        "path": "data-global/monster/quests/rotten_blood_quest/foxmouse.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "623d5a807ff90c4f9663f2c142e9e57d9775f8e82f4c556dfcc6281be5d53c5e"
       }
     },
     {
@@ -9582,6 +9764,20 @@
     {
       "creature": {
         "family": "Creature",
+        "key": "oteryn:creature.gorga",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "blood",
+      "source": {
+        "path": "data-global/monster/bosses/gorga.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "739dfc13e98ec5450705952db0a58b79fdf6dd14cd926631deaadf98d06ed06a"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
         "key": "oteryn:creature.gorger_inferniarch",
         "revision": "definition-r1"
       },
@@ -9745,6 +9941,20 @@
         "path": "data-otservbr-global/monster/demons/gozzler.lua",
         "repository": "opentibiabr/canary",
         "sha256": "f8cd47e9fcec3d448b1678b64af2cf864b358c34ee360ca7775478052f34a438"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.gralvalon",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "undead",
+      "source": {
+        "path": "data-global/monster/quests/no_rest_for_the_wicked/gralvalon.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "55a1ff66757795ba7af811c63f416ff298ccbab38353bac5a7d99b4d48260897"
       }
     },
     {
@@ -10081,6 +10291,20 @@
         "path": "data-otservbr-global/monster/raids/grorlam.lua",
         "repository": "opentibiabr/canary",
         "sha256": "e2846dc1c7e2cd21c25f3188bbdc88c5f72f22ed86dc83365f5a220fff9bf317"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.grove_guardian",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "venom",
+      "source": {
+        "path": "data-global/monster/plants/grove_guardian.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "b240c449e5c94e59fbd3a3434960fa2d9be3cbedb70f2d3e8aa25b46e57fce3d"
       }
     },
     {
@@ -10557,6 +10781,20 @@
         "path": "data-otservbr-global/monster/demons/herald_of_gloom.lua",
         "repository": "opentibiabr/canary",
         "sha256": "13b79ec8b6ff9b7a19e0ea142aff282379554c054668ce6d217c87c3257106bf"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.herd_weevil",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "venom",
+      "source": {
+        "path": "data-global/monster/vermins/herd_weevil.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "6194b881a2a6418d146e641a3c74cc0e2d0042265a4f24a5e9f093d56bf93c46"
       }
     },
     {
@@ -11159,6 +11397,20 @@
         "path": "data-otservbr-global/monster/quests/the_secret_library/imp_intruder.lua",
         "repository": "opentibiabr/canary",
         "sha256": "74336737a59e6984ef3d1adcba476aa778693e72bebf03b88a75cb7c3f8f25df"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.imp_minion",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "undead",
+      "source": {
+        "path": "data-global/monster/quests/no_rest_for_the_wicked/imp_minion.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "7bf24ceb7fbaff4e5cd4c43bda667acb0e0cc79fbd3b951a59854112d84db2c4"
       }
     },
     {
@@ -13376,6 +13628,20 @@
     {
       "creature": {
         "family": "Creature",
+        "key": "oteryn:creature.malvaroth",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "undead",
+      "source": {
+        "path": "data-global/monster/quests/no_rest_for_the_wicked/malvaroth.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "bf6b22cddceed5ea91943808110bf99aa4ce5b68202ed401da936fd8a0d3844b"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
         "key": "oteryn:creature.mammoth",
         "revision": "definition-r1"
       },
@@ -15079,6 +15345,20 @@
         "path": "data-global/monster/summer_update_2026/moonstone_overseer.lua",
         "repository": "zimbadev/crystalserver",
         "sha256": "2d7f4827ec26a3bc6f45993f543dc0f5b1c5119fd3063a8fe345dd2cd4157c15"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.morbol",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "blood",
+      "source": {
+        "path": "data-global/monster/bosses/morbol.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "43f9697ed22067ff6a04a7bca6f432aae38e64b864e72b60d7539eea84fbfc65"
       }
     },
     {
@@ -17856,6 +18136,20 @@
     {
       "creature": {
         "family": "Creature",
+        "key": "oteryn:creature.quara_kindler",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "blood",
+      "source": {
+        "path": "data-global/monster/aquatics/quara_kindler.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "9925c3dbb701a664c885517a21522f3064e01c74904b7e2337d1ff2401ada8bf"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
         "key": "oteryn:creature.quara_looter",
         "revision": "definition-r1"
       },
@@ -18929,6 +19223,34 @@
         "path": "data-otservbr-global/monster/plants/rootthing_bug_tracker.lua",
         "repository": "opentibiabr/canary",
         "sha256": "98bd712893600f7eba2332546935cff444986ca1fe8f134c75784a32862f58e0"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.rootthing_cocoon",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "venom",
+      "source": {
+        "path": "data-global/monster/plants/rootthing_cocoon.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "6fe81010c5e45cb1d5fab33530d9caed5fca94626dbf5979edaa505c3a29e9b3"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.rootthing_conservator",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "venom",
+      "source": {
+        "path": "data-global/monster/plants/rootthing_conservator.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "be65ec22b1bf21e02956d28eb10beb2122fd5b00a48d8e35fe6cc54b4e235951"
       }
     },
     {
@@ -21664,6 +21986,20 @@
     {
       "creature": {
         "family": "Creature",
+        "key": "oteryn:creature.target_dummy",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "undead",
+      "source": {
+        "path": "data-global/monster/trainers/target_dummy.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "767db825c0bf3da450c85a81672c4955970b7989f49cf87cc62d69bfecbfd5c3"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
         "key": "oteryn:creature.tarnished_spirit",
         "revision": "definition-r1"
       },
@@ -22495,6 +22831,20 @@
         "path": "data-otservbr-global/monster/bosses/the_flaming_orchid.lua",
         "repository": "opentibiabr/canary",
         "sha256": "fdebb686984096c817c86ebabbb6e248d189fdcfd37ece37e8db39407ca4b269"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_forgemaster",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "venom",
+      "source": {
+        "path": "data-global/monster/quests/no_rest_for_the_wicked/the_forgemaster.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "2a66fbafc1b4f63ef76d0dac4074c9636cd0e4d1706096710bc720761f5e61b5"
       }
     },
     {
@@ -23858,6 +24208,20 @@
     {
       "creature": {
         "family": "Creature",
+        "key": "oteryn:creature.twisterror",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "undead",
+      "source": {
+        "path": "data-global/monster/quests/no_rest_for_the_wicked/twisterror.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "786d20bd2e069748a9e08b42c80907f8bd7b8c5028058724df6c0debdf240595"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
         "key": "oteryn:creature.two_headed_turtle",
         "revision": "definition-r1"
       },
@@ -24119,6 +24483,20 @@
         "path": "data-otservbr-global/monster/quests/the_inquisition/ungreez.lua",
         "repository": "opentibiabr/canary",
         "sha256": "5badfae69449342b8b19c752ef557ba8f1cca096c32df084305c9b8ccd3aa7c0"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.unleashed_hex",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "undead",
+      "source": {
+        "path": "data-global/monster/quests/grave_danger/bosses/unleashed_hex.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "208a01b571217d2a30bf9f347e69c8f1842455f357af3a53e2890e7a2fd1fab8"
       }
     },
     {
@@ -24917,6 +25295,20 @@
         "path": "data-global/monster/quests/a_pirates_tail_quest/weak_spot.lua",
         "repository": "zimbadev/crystalserver",
         "sha256": "255bd044184eb94824d552d5cbe5abb6f3e44fc0d8e51167b60ef2aa5f2c4445"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.weakened_arbaziloth",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "undead",
+      "source": {
+        "path": "data-crystal/monster/no_rest_for_the_wicked/weakened_arbaziloth.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "83e1a8ac16834081b503063331949f95a5993f54597065d6a70057e0444eb2b6"
       }
     },
     {

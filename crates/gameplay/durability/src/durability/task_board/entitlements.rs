@@ -164,14 +164,13 @@ pub(super) async fn apply(
     if owned(cosmetics, &facts, &grant) {
         return Ok(Some(TaskBoardRefusal::Rule(RuleRefusal::AlreadyPurchased)));
     }
+    let earned = EarnedCosmetics {
+        content: cosmetics,
+        facts: &facts,
+    };
     if grant.kind == TaskBoardShopKind::Outfit
         && grant.addon > 0
-        && (EarnedCosmetics {
-            content: cosmetics,
-            facts: &facts,
-        })
-        .outfit(&grant.target)
-            != UnlockFact::Compatible
+        && earned.outfit(&grant.target) != UnlockFact::Compatible
     {
         return Ok(Some(TaskBoardRefusal::Rule(RuleRefusal::RequiresOutfit)));
     }
@@ -188,6 +187,27 @@ pub(super) async fn apply(
         .bind(fence.character_id.as_bytes().as_slice()).execute(&mut ***tx).await?;
     sqlx::query("INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id) VALUES($1,$2,$3)")
         .bind(owner).bind(&grant.key).bind(occurrence).execute(&mut ***tx).await?;
+    // TibiaWiki's Task Board cosmetics require the mount or the complete outfit.
+    let achievement = match grant.target.as_str() {
+        "oteryn:content.mount.antelope" => Some("oteryn:achievement/steppe_elegance"),
+        "oteryn:outfit.feral_trapper" => Some("oteryn:achievement/feral_trapper"),
+        "oteryn:outfit.falconer" => Some("oteryn:achievement/falconer"),
+        _ => None,
+    };
+    if let Some(key) = achievement
+        && (grant.kind == TaskBoardShopKind::Mount
+            || (matches!(grant.addon, 1 | 2)
+                && earned.addon(&grant.target, 3 - grant.addon) == UnlockFact::Compatible))
+    {
+        super::super::account_achievement::grant_missing(
+            tx,
+            fence.character_id,
+            &[key],
+            "oteryn:task-board-shop",
+            occurrence.as_bytes(),
+        )
+        .await?;
+    }
     Ok(None)
 }
 

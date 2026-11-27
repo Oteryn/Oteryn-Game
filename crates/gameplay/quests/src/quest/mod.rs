@@ -92,6 +92,7 @@ pub mod task_board;
 pub mod threatened_dreams;
 pub mod timers;
 pub mod unnatural_selection;
+pub mod venore_predecessor;
 pub mod world_callbacks;
 pub mod world_change_journals;
 mod world_requirement_key;
@@ -797,13 +798,25 @@ impl QuestStateCatalogue {
         {
             return Err(QuestRefusal::NotSupported);
         }
+        if let Some(nightmare) = world_callbacks::tower_nightmare_rank(&transition.key) {
+            let qualifies = [world_callbacks::TOWER_BROTHERHOOD_RANK, nightmare]
+                .into_iter()
+                .any(|rank| stored.get(rank).is_some_and(|value| *value >= 4));
+            if !qualifies {
+                return Err(QuestRefusal::StageMismatch);
+            }
+        }
         let mut current = Vec::with_capacity(transition.effects.len());
         for effect in &transition.effects {
             let track = self
                 .tracks
                 .get(&effect.track)
                 .ok_or(QuestRefusal::NotSupported)?;
-            let value = stored.get(&effect.track).copied().unwrap_or(track.initial);
+            let value = stored
+                .get(&effect.track)
+                .copied()
+                .or_else(|| venore_predecessor::inherited_value(&effect.track, stored))
+                .unwrap_or(track.initial);
             if !effect.from.holds(value, now) {
                 return Err(QuestRefusal::StageMismatch);
             }

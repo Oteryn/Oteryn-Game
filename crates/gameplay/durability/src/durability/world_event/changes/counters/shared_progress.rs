@@ -165,17 +165,27 @@ pub(crate) async fn credit_completed(
             .fetch_one(&mut **tx)
             .await?;
     let occurred_at_ms = u64::try_from(now).map_err(|_| DurabilityError::InvalidStoredState)?;
-    super::credit(
-        tx,
-        authority,
-        &CreditEvent {
-            source_kind: 2,
-            occurrence,
-            credits: vec![(kind, credit)],
-            counter_generations: day.counter_generations,
-            occurred_at_ms,
-            character: Some(character),
-        },
-    )
-    .await
+    let event = CreditEvent {
+        source_kind: 2,
+        occurrence,
+        credits: vec![(kind, credit)],
+        counter_generations: day.counter_generations,
+        occurred_at_ms,
+        character: Some(character),
+    };
+    let outcome = super::credit(tx, authority, &event).await?;
+    if matches!(outcome, CreditOutcome::Applied { .. })
+        && let Some(binding) = shared_world_progress::binding(key)
+        && !binding.achievement_progress.is_empty()
+    {
+        let character = crate::domain::CharacterId::from_bytes(*character.as_bytes())
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        for &(key, target) in binding.achievement_progress {
+            crate::durability::account_achievement::add_progress(
+                tx, character, key, target, "oteryn:hive-task", &event.occurrence,
+            )
+            .await?;
+        }
+    }
+    Ok(outcome)
 }

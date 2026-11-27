@@ -94,32 +94,32 @@ async fn check_source_quotes(h: &Harness) -> TestResult {
             .quote_npc_travel(&authority, &h.node, fence, route, &Premium)
     };
     let postman_routes = [
-        ("captain_bluebear", "carlin"),
-        ("uzon", "edron"),
-        ("captain_seahorse", "venore"),
+        ("captain_bluebear", "carlin", (1, 2)),
+        ("uzon", "edron", (2, 3)),
+        ("captain_seahorse", "venore", (3, 4)),
+        ("brodrosch", "cormaya", (4, 5)),
     ];
-    for (npc, destination) in postman_routes {
+    for (npc, destination, passage) in postman_routes {
         let passenger_route = route(npc, destination)?;
+        assert_eq!(passenger_route.postman_tour_passage(), Some(passage));
         assert_eq!(
-            premium_quote(passenger_route.clone()).await.map_err(debug)?,
+            quote(passenger_route.clone()).await.map_err(debug)?,
             Ok(passenger_route.route.price),
             "{npc}/{destination} with no Postman stage"
         );
     }
-    for (npc, destination) in postman_routes {
+    for (npc, destination, (before, after)) in postman_routes {
         let passenger_route = route(npc, destination)?;
-        let callback = passenger_route
-            .partial_quest_callback
-            .as_ref()
-            .ok_or("Postman callback")?;
-        for (value, expected) in [
-            (callback.stage, Err(TravelRefusal::UnavailableRoute)),
-            (callback.next_stage, Ok(passenger_route.route.price)),
-        ] {
-            seed_track("oteryn:quest.the_postman_missions_quest", &callback.track, value).await?;
+        for value in [before, after] {
+            seed_track(
+                "oteryn:quest.the_postman_missions_quest",
+                oteryn_gameplay_content::content::npc_catalogue::travel::POSTMAN_TOUR_TRACK,
+                value,
+            )
+            .await?;
             assert_eq!(
-                premium_quote(passenger_route.clone()).await.map_err(debug)?,
-                expected,
+                quote(passenger_route.clone()).await.map_err(debug)?,
+                Ok(passenger_route.route.price),
                 "{npc}/{destination} at Postman stage {value}"
             );
         }
@@ -159,7 +159,6 @@ async fn check_source_quotes(h: &Harness) -> TestResult {
         ("melian", "marapur"),
         ("pino", "marapur"),
         ("tanyt", "marapur"),
-        ("tonar", "passage"),
         ("kendra_thais", "nostalgia"),
     ] {
         let actual = premium_quote(route(npc, destination)?).await.map_err(debug)?;
@@ -216,7 +215,6 @@ async fn check_source_quotes(h: &Harness) -> TestResult {
         ("melian", "marapur", 70),
         ("pino", "marapur", 70),
         ("tanyt", "marapur", 70),
-        ("tonar", "passage", 0),
     ] {
         let mut candidate = route(npc, destination)?;
         candidate.held = false;
@@ -227,8 +225,38 @@ async fn check_source_quotes(h: &Harness) -> TestResult {
             ));
         }
     }
+    // The Crystal helpers use StdModule.travel without an extra route-specific predicate.
+    for (npc, destination, fare) in [
+        ("captain_jack", "tibia", 0),
+        ("ferryman_kamil", "meluna", 0),
+        ("ferryman_kamil_meluna", "fibula", 0),
+        ("harlow_vengoth", "yalahar", 0),
+        ("hawkhurst", "passage", 400),
+        ("hawkhurst_ingol", "passage", 400),
+        ("tonar", "passage", 0),
+    ] {
+        let actual = quote(route(npc, destination)?).await.map_err(debug)?;
+        if actual != Ok(fare) {
+            mismatches.push(format!(
+                "{npc}/{destination}: {actual:?}, expected fare {fare}"
+            ));
+        }
+    }
+    let kendra = route("kendra", "thais")?;
+    assert_eq!(
+        quote(kendra.clone()).await.map_err(debug)?,
+        Err(TravelRefusal::PremiumRequired)
+    );
+    // The shared fixture has already earned the Grand Postman discount.
+    let actual = premium_quote(kendra).await.map_err(debug)?;
+    if actual != Ok(170) {
+        mismatches.push(format!(
+            "kendra/thais: {actual:?}, expected Grand Postman fare 170"
+        ));
+    }
     if !mismatches.is_empty() {
         return Err(mismatches.join("\n").into());
     }
+    eprintln!("POSTGRES_EXECUTED Crystal ferry quotes and Kendra Premium refusal");
     Ok(())
 }

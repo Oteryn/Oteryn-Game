@@ -444,6 +444,16 @@ where
                 },
                 None,
             ),
+            oteryn_protocol_oteryn::pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT => {
+                Dispatch::Attack(oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected)
+            }
+            oteryn_protocol_oteryn::daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY
+            | oteryn_protocol_oteryn::party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY => {
+                Dispatch::Reply(
+                    crate::foundation::CommandStatus::Rejected,
+                    oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL.to_vec(),
+                )
+            }
             _ => Dispatch::Unregistered,
         };
         result::encode(session, command, &mut refusal)?

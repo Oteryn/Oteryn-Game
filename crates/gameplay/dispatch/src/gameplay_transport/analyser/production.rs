@@ -145,7 +145,7 @@ impl crate::gameplay_transport::actor_spell::ChannelSpellStates {
         batch: &crate::spell::combat_batch::OwnerCombatBatch,
         receipt: &crate::spell::combat_batch::CombatBatchReceipt,
         element: DamageElement,
-        split: Option<(u32, DamageElement, DamageElement)>,
+        splits: &[crate::gameplay_transport::actor_spell::DamageSplit],
     ) {
         use crate::spell::combat_batch::OwnerCombatChange as C;
         for effect in &batch.effects {
@@ -160,8 +160,7 @@ impl crate::gameplay_transport::actor_spell::ChannelSpellStates {
             if !health.applied {
                 continue;
             }
-            let mut parts = [(0u64, element); 2];
-            match effect.change {
+            let value = match effect.change {
                 C::Heal { .. } => {
                     self.analyser.impact_amount(
                         batch.caster,
@@ -173,15 +172,8 @@ impl crate::gameplay_transport::actor_spell::ChannelSpellStates {
                     continue;
                 }
                 C::Damage { .. } => {
-                    let value =
-                        u64::try_from(health.health_before.saturating_sub(health.health_after))
-                            .unwrap_or(0);
-                    if let Some((primary, a, b)) = split {
-                        let primary = u64::from(primary).min(value);
-                        parts = [(primary, a), (value - primary, b)];
-                    } else {
-                        parts[0].0 = value;
-                    }
+                    u64::try_from(health.health_before.saturating_sub(health.health_after))
+                        .unwrap_or(0)
                 }
                 C::DamageWithHealing { healing, .. } => {
                     let maximum = runtime
@@ -191,16 +183,39 @@ impl crate::gameplay_transport::actor_spell::ChannelSpellStates {
                     let healing = healing
                         .min(maximum.saturating_sub(health.health_before))
                         .max(0);
-                    parts[0].0 = u64::try_from(
+                    u64::try_from(
                         health
                             .health_before
                             .saturating_add(healing)
                             .saturating_sub(health.health_after),
                     )
-                    .unwrap_or(0);
+                    .unwrap_or(0)
                 }
                 _ => continue,
-            }
+            };
+            let parts = if let Some((_, primary, first, second)) = splits
+                .iter()
+                .copied()
+                .find(|split| split.0 == effect.sub_ordinal)
+            {
+                let healing = match effect.change {
+                    C::DamageWithHealing { healing, .. } => healing,
+                    _ => 0,
+                };
+                let primary =
+                    super::super::item_spell_augments::leech_projection::owner_damage_amount(
+                        runtime,
+                        effect.target,
+                        primary,
+                        health.health_before,
+                        healing,
+                    )
+                    .unwrap_or(primary);
+                let primary = u64::try_from(primary).unwrap_or(0).min(value);
+                [(primary, first), (value - primary, second)]
+            } else {
+                [(value, element), (0, element)]
+            };
             for (value, element) in parts {
                 self.analyser.impact_amount(
                     batch.caster,

@@ -2,6 +2,42 @@
 use super::*;
 
 pub fn world(world: WorldId, channel: ChannelId) -> BundleWorld {
+    world_with_rope_spot(world, channel, 386, false, false, false)
+}
+
+pub fn world_with_rope_spot(
+    world: WorldId,
+    channel: ChannelId,
+    appearance: u32,
+    distant_target: bool,
+    covered_spot: bool,
+    gate: bool,
+) -> BundleWorld {
+    vertical_world(
+        world,
+        channel,
+        appearance,
+        distant_target,
+        covered_spot,
+        gate,
+        false,
+    )
+}
+
+/// A Crystal i385 open hole above regular ground, with a south landing.
+pub fn world_with_rope_hole(world: WorldId, channel: ChannelId) -> BundleWorld {
+    vertical_world(world, channel, 385, false, false, false, true)
+}
+
+fn vertical_world(
+    world: WorldId,
+    channel: ChannelId,
+    appearance: u32,
+    distant_target: bool,
+    covered_spot: bool,
+    gate: bool,
+    hole: bool,
+) -> BundleWorld {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{Extent, Sector};
     let sector = |floor, positions: &[(u16, u16, u32)]| Sector {
@@ -24,10 +60,48 @@ pub fn world(world: WorldId, channel: ChannelId) -> BundleWorld {
             })
             .collect(),
     };
-    let (bytes, bundle) = super::bundle_with_ground(
+    let mut lower = if hole {
+        sector(-8, &[(11, 10, 0)])
+    } else {
+        sector(-8, &[(10, 10, 4)])
+    };
+    let upstairs = if hole {
+        sector(-7, &[(10, 10, 0), (11, 10, 4), (11, 11, 0)])
+    } else {
+        sector(-7, &[(10, 9, 0), (10, 11, 0)])
+    };
+    if gate {
+        lower.tiles[0].items.push(Item {
+            palette: 8,
+            depth: 0,
+            attrs: Attrs {
+                action: Some(1001),
+                ..Attrs::default()
+            },
+        });
+        lower.tiles.append(&mut sector(-8, &[(11, 10, 0)]).tiles);
+    }
+    if covered_spot {
+        lower.tiles[0].items.push(Item {
+            palette: 5,
+            depth: 0,
+            attrs: Attrs::default(),
+        });
+    }
+    if distant_target {
+        let mut distant = sector(-8, &[(12, 10, 0)]);
+        distant.tiles[0].items.push(Item {
+            palette: 5,
+            depth: 0,
+            attrs: Attrs::default(),
+        });
+        lower.tiles.append(&mut distant.tiles);
+    }
+    let spot = format!("oteryn:item.tibia.i{appearance}");
+    let (mut bytes, mut bundle) = super::bundle_with_projectiles(
         Some(vec![
-            sector(-8, &[(10, 10, 4)]),
-            sector(-7, &[(10, 9, 0), (10, 11, 0)]),
+            lower,
+            upstairs,
             sector(-6, &[(10, 10, 0)]),
             sector(-5, &[(10, 9, 0)]),
         ]),
@@ -39,7 +113,18 @@ pub fn world(world: WorldId, channel: ChannelId) -> BundleWorld {
             floors: vec![-8, -7, -6, -5],
         }),
         "oteryn:item.tibia.i103",
+        &spot,
+        None,
     );
+    if gate {
+        let mut data = oteryn_world_bundle::bundle::read(&bytes).expect("fixture bundle");
+        data.manifest.palette[8].key = "oteryn:item.tibia.i1648".into();
+        bytes = oteryn_world_bundle::writer::write(&data.manifest, &data.sectors, &data.spawns)
+            .expect("gated fixture bundle");
+        bundle.digest = oteryn_world_bundle::bundle::read(&bytes)
+            .expect("gated bundle")
+            .digest;
+    }
     let revision = format!(
         "sha256:{}",
         bundle
@@ -62,10 +147,20 @@ pub fn world(world: WorldId, channel: ChannelId) -> BundleWorld {
         world,
         channel,
         |key| {
-            super::items(if key == "oteryn:item.tibia.i103" {
-                super::KEYS[0]
-            } else {
-                key
+            if gate && matches!(key, "oteryn:item.tibia.i1648" | "oteryn:item.tibia.i1649") {
+                let closed = key.ends_with("1648");
+                return Some(crate::map::facts::ItemDefinition {
+                    reference: std::num::NonZeroU32::new(if closed { 9 } else { 1649 })?,
+                    solid: Some(closed),
+                    blocks_projectile: closed,
+                    pickupable: false,
+                    door: true,
+                });
+            }
+            super::items(match key {
+                "oteryn:item.tibia.i103" => super::KEYS[0],
+                key if key == spot => super::KEYS[4],
+                key => key,
             })
         },
     )

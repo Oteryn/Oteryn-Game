@@ -105,6 +105,17 @@ pub(in crate::gameplay_transport) fn owner_damage_basis(
     health_before: i64,
     healing: i64,
 ) -> Result<u32, Error> {
+    let damage = owner_damage_amount(runtime, target, i64::from(damage), health_before, healing)?;
+    u32::try_from(damage).map_err(|_| Error::InvalidMagnitude)
+}
+
+pub(in crate::gameplay_transport) fn owner_damage_amount(
+    runtime: &ChannelRuntimeV1,
+    target: ExactActorRef,
+    damage: i64,
+    health_before: i64,
+    healing: i64,
+) -> Result<i64, Error> {
     if healing < 0 {
         return Err(Error::InvalidMagnitude);
     }
@@ -115,6 +126,5 @@ pub(in crate::gameplay_transport) fn owner_damage_basis(
         .companion_snapshot_including_dead(target)?
         .maximum_health;
     let at_damage = health_before.saturating_add(healing).min(maximum);
-    let damage = tag.incoming_health_change(i64::from(damage), at_damage, maximum)?;
-    u32::try_from(damage).map_err(|_| Error::InvalidMagnitude)
+    Ok(tag.incoming_health_change(damage, at_damage, maximum)?)
 }

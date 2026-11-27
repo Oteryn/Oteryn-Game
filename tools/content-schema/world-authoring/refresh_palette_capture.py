@@ -41,6 +41,7 @@ def outputs(
     totals: Counter[str] = Counter()
     floors: Counter[int] = Counter()
     attributes: Counter[str] = Counter()
+    index_changed = False
     if refresh_summary:
         if index["source"]["files"] != summary["source"]["files"]:
             raise ValueError("summary capture donor input pins differ from the index")
@@ -51,9 +52,13 @@ def outputs(
         )
     for region in index["regions"]:
         if refresh_summary:
-            result = validate.check_region(region)
+            result = validate.check_region(region, compare_counts=False)
             if result["errors"]:
                 raise ValueError("summary capture: " + "; ".join(result["errors"]))
+            for key in ("tiles", "items"):
+                if region[key] != result[key]:
+                    region[key] = result[key]
+                    index_changed = True
             used.update(result["palette"])
             attributes.update(result["attributes"])
             floors[result["z"]] += result["tiles"]
@@ -71,9 +76,16 @@ def outputs(
         for _, tiles in codec.decode_region(raw)[3]:
             for _, _, _, _, _, items in tiles:
                 used.update(slot for slot, _, _ in items)
+    if refresh_summary:
+        counted = {key: totals[key] for key in sorted(validate.TOTAL_KEYS)}
+        if index["totals"] != counted:
+            index["totals"] = counted
+            index_changed = True
     if sum(used.values()) != index["totals"]["items"]:
         raise ValueError("palette capture occurrence count differs from the map")
     generated = {}
+    defined = base.defined_item_keys(root)
+    doors = base.placed_door_keys(root, defined)
     if refresh_palette:
         bindings_path = root / "imports/crystalserver/bindings/items.json"
         bindings = bindings_path.read_bytes()
@@ -87,17 +99,22 @@ def outputs(
             }
         )
         index["palette"] = base.build_palette(
-            base.bound_keys(bindings, base.defined_item_keys(root)),
+            base.bound_keys(bindings, defined) | doors,
             occurrences,
             previous=index["palette"],
             terrain=base.terrain_keys(root),
             world_object=base.world_object_keys(root),
         )
+        index_changed = True
+    elif doors:
+        for row in index["palette"]:
+            key = doors.get(row["source_item_id"])
+            if key is not None:
+                row.update(key=key, provisional=False)
+        index_changed = True
+    if index_changed:
         generated["content/world/placements/index.json"] = base.canonical(index)
     if refresh_summary:
-        counted = {key: totals[key] for key in sorted(validate.TOTAL_KEYS)}
-        if counted != index["totals"]:
-            raise ValueError("summary capture totals differ from the index")
         summary["source"] = index["source"]
         summary["totals"] = counted
         summary["bytes_on_disk"] = totals["bytes"]

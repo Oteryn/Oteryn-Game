@@ -1,6 +1,6 @@
 //! Compile the exact private production read path, with no public test API.
 use oteryn_gameplay_durability::durability::DurabilityError;
-use oteryn_gameplay_quests::quest::QuestStateCatalogue;
+use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTransition};
 type StoredResult<T> = Result<T, DurabilityError>;
 #[allow(dead_code)]
 #[path = "../../src/durability/quest_state/authored_admission.rs"]
@@ -24,6 +24,6 @@ pub fn permits_level(catalogue: &QuestStateCatalogue, quest: &str, level: i64) -
 }
 
 /// Inspect the production binding's premium requirement.
-pub fn requires_premium(catalogue: &QuestStateCatalogue, quest: &str) -> bool {
-    authored_admission::requires_premium(catalogue, quest)
+pub fn requires_premium(catalogue: &QuestStateCatalogue, transition: &QuestTransition) -> bool {
+    authored_admission::requires_premium(catalogue, transition, false)
 }

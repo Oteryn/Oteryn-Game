@@ -1,3 +1,4 @@
+use crate::durability::db::commit_semantic_read;
 use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::super::{DurabilityError, DurabilityRoot};
 use super::codec::{DeliveryReceipt, StoreValidationError, uuid_v7};
@@ -33,7 +34,7 @@ impl DurabilityRoot {
                                 .map_err(|_| DurabilityError::InvalidStoredState)?,
                         );
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(receipts))
                 })
             })
@@ -51,7 +52,7 @@ impl DurabilityRoot {
                 "SELECT CASE WHEN reconciled_at IS NOT NULL THEN recovery_generation::text END
                  FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1",
             ).fetch_optional(&mut *tx).await?.flatten();
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(generation))
                 })
             })
@@ -135,7 +136,7 @@ impl DurabilityRoot {
                     .bind(operation.as_slice())
                     .fetch_one(&mut *tx)
                     .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(marked))
                 })
             })
@@ -154,7 +155,7 @@ impl DurabilityRoot {
             ).bind(operation.as_slice()).fetch_optional(&mut *tx).await?;
             let receipt = bytes.map(|bytes| serde_json::from_slice(&bytes)
                 .map_err(|_| DurabilityError::InvalidStoredState)).transpose()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(receipt))
         })).await?
     }
@@ -167,7 +168,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             let source = claim_source_in_transaction(&mut tx, delivery_id).await?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(source))
         })).await?
     }
@@ -227,7 +228,7 @@ impl DurabilityRoot {
                         .bind(entitlement)
                         .fetch_optional(&mut *tx)
                         .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(source.map(|(delivery, claim, item)| {
                         (*delivery.as_bytes(), *claim.as_bytes(), *item.as_bytes())
                     })))

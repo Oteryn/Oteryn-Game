@@ -14,6 +14,7 @@ from pathlib import Path
 
 from engine_items import load_appearance_objects
 from key_ring5801_source_selection import load_context, select
+from packet_rust_pin import sync_rust_digest
 
 ROOT = Path(__file__).resolve().parents[3]
 COMPILER = "tools/content-schema/item-authoring/lower_wiki_capacity_packet.py"
@@ -22,6 +23,9 @@ CLIENT_DIGEST = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e
 CLIENT = f"content/assets/files/appearances-{CLIENT_DIGEST}.dat"
 CORRECTIONS = {53074: (20, 22)}
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261001-item-capacity-promotion-v1.json"
+RUST_CONSUMER = ROOT / (
+    "crates/gameplay/content-promotion/src/content/item_capacity_promotion.rs"
+)
 # Explicit audited repair scope; regeneration must not expand native admission.
 SCOPE = frozenset(
     [12644, 12763, 12764, 31935, 31936]
@@ -210,10 +214,12 @@ def main():
         json.dumps(packet, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
         + "\n"
     ).encode()
-    if args.check:
-        if OUTPUT.read_bytes() != data:
-            raise SystemExit("capacity packet drift")
-    else:
+    if args.check and OUTPUT.read_bytes() != data:
+        raise SystemExit("capacity packet drift")
+    sync_rust_digest(
+        RUST_CONSUMER, "ITEM_CAPACITY_PACKET_SHA256", data, check=args.check
+    )
+    if not args.check:
         OUTPUT.write_bytes(data)
     print(json.dumps(packet["counts"]))
 
