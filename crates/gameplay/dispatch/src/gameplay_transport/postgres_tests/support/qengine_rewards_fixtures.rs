@@ -52,7 +52,11 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                 }
             } else if name == cq29_quest_contacts::THIEVES {
                 cq29_quest_contacts::VASE
-            } else if name == super::newhaven_gustavo_fixtures::NAME {
+            } else if matches!(
+                name,
+                super::newhaven_gustavo_fixtures::NAME
+                    | super::newhaven_gustavo_fixtures::PUBLISHED_SAVE
+            ) {
                 super::newhaven_gustavo_fixtures::START
             } else if matches!(name, "qengine-rewards-eroth-start" | "qengine-rewards-eroth-legacy") {
                 EROTH_CRYSTAL
@@ -91,12 +95,6 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                 super::m56_cursed_crystal_wax_fixtures::trigger(name)
             } else if name.starts_with("qengine-rewards-questpc4-admission-") {
                 super::l6_world_admission_fixtures::trigger(name)
-            } else if name == "qengine-rewards-l11-newhaven-defence" {
-                Position {
-                    x: 32560,
-                    y: 32488,
-                    floor: -7,
-                }
             } else {
                 Position {
                     x: 33294,
@@ -1106,8 +1104,17 @@ pub(super) async fn exercise(
     if name == cq29_quest_contacts::THIEVES || name == cq29_quest_contacts::SENTRY {
         return Box::pin(cq29_quest_contacts::exercise(owner, admitted, h, name)).await;
     }
-    if name == super::newhaven_gustavo_fixtures::NAME {
-        return Box::pin(super::newhaven_gustavo_fixtures::exercise(owner, admitted, h)).await;
+    if matches!(
+        name,
+        super::newhaven_gustavo_fixtures::NAME | super::newhaven_gustavo_fixtures::PUBLISHED_SAVE
+    ) {
+        return Box::pin(super::newhaven_gustavo_fixtures::exercise(
+            owner,
+            admitted,
+            h,
+            name == super::newhaven_gustavo_fixtures::PUBLISHED_SAVE,
+        ))
+        .await;
     }
     if name == "qengine-rewards-l2-white-raven" {
         return Box::pin(questl2_passages::white_raven(owner, admitted, h)).await;

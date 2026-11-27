@@ -86,18 +86,20 @@
       ],
       "take": [],
       "give": {
-        "item": "oteryn:item.tibia.i3052",
+        "item": "oteryn:item.tibia.i52732",
         "count": 1,
         "contents": []
       },
       "outfit": null,
       "achievement": null,
       "reply": [
-        "You have made Newhaven safer. Take this ring as thanks, and ask Viola about her missing book."
+        "You have made Newhaven safer. Take this Guardian Ring as thanks, and ask Viola about her missing book."
       ],
       "sources": [
-        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gustavo_the_guard.lua#L74-L99"
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gustavo_the_guard.lua#L74-L99",
+        "https://tibia.fandom.com/index.php?curid=111294&oldid=1205117"
       ],
+      "experience": 800,
       "requires": [
         {
           "track": "oteryn:quest-progress/newhaven/protect-the-village/kills",

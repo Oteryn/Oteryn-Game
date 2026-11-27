@@ -95,9 +95,6 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-l11-makeshift-story" {
         return makeshift(owner, admitted, h).await;
     }
-    if name == "qengine-rewards-l11-newhaven-defence" {
-        return newhaven_defence(owner, admitted, h, authority).await;
-    }
     let winter = name == "qengine-rewards-l11-dream-warrior-winter-story";
     let (family, prefix, npc_key, level, items, stages): (
         &str,
@@ -517,72 +514,6 @@ pub(super) async fn exercise(
     }
     Ok(())
 }
-
-async fn newhaven_defence(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut AdmittedSession,
-    h: &Harness,
-    authority: &ReconciledCharacterAuthority<'_, '_>,
-) -> TestResult {
-    use super::classic_quests_fixtures::{install_positions, progress, talk};
-    use super::grizzly_npc_fixtures::questpc8_campaign::hunt;
-    use super::questpc7_outfit_items_fixtures::quantity;
-    use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
-    use oteryn_gameplay_quests::quest::world_callbacks::Position;
-
-    const PHASE: &str = "oteryn:quest-progress/newhaven/defence/phase";
-    const COUNT: &str = "oteryn:quest-progress/newhaven/defence/muglex";
-    const ASSASSIN: &str = "oteryn:creature.muglex_clan_assassin";
-    const FOOTMAN: &str = "oteryn:creature.muglex_clan_footman";
-    const RING: u32 = 52732;
-
-    owner.active_generation
-        .and_then(|g| g.native_gameplay())
-        .ok_or("native generation")?
-        .install_companion_policies(&mut *owner.runtime.lock().await)
-        .map_err(debug)?;
-    let [gustavo] = install_positions(
-        owner,
-        admitted,
-        ["oteryn:npc.gustavo_the_guard"],
-        [Position { x: 32560, y: 32488, floor: -7 }],
-    ).await?;
-    let initial_rings = quantity(h, RING).await?;
-    hunt(owner, admitted, ASSASSIN, 1, 8400).await?;
-    assert_eq!(progress(owner, admitted, authority, COUNT).await?, 0);
-    talk(owner, admitted, gustavo, 8401, "hi").await?;
-    talk(owner, admitted, gustavo, 8402, "muglex").await?;
-    assert_eq!(progress(owner, admitted, authority, PHASE).await?, 0);
-
-    hunt(owner, admitted, FOOTMAN, 10, 8403).await?;
-    hunt(owner, admitted, ASSASSIN, 9, 8404).await?;
-    assert_eq!(progress(owner, admitted, authority, COUNT).await?, 19);
-    talk(owner, admitted, gustavo, 8405, "hi").await?;
-    super::qengine_rewards_fixtures::talk(owner, admitted, gustavo, 8406, "mission").await?;
-    assert_eq!(progress(owner, admitted, authority, PHASE).await?, 0);
-    assert_eq!(quantity(h, RING).await?, initial_rings);
-
-    hunt(owner, admitted, ASSASSIN, 2, 8407).await?;
-    assert_eq!(progress(owner, admitted, authority, COUNT).await?, 20);
-    let experience = || async {
-        sqlx::query_scalar::<_, i64>(
-            "SELECT total_experience FROM game_character_progression_state
-             WHERE character_id=encode($1,'hex')::uuid",
-        ).bind(super::fixture::id(41).as_slice()).fetch_one(&h.pool).await
-    };
-    let before = experience().await?;
-    talk(owner, admitted, gustavo, 8408, "hi").await?;
-    talk(owner, admitted, gustavo, 8409, "mission").await?;
-    assert_eq!(progress(owner, admitted, authority, PHASE).await?, 1);
-    assert_eq!(quantity(h, RING).await?, initial_rings + 1);
-    assert_eq!(experience().await?, before + 800);
-
-    super::qengine_rewards_fixtures::talk(owner, admitted, gustavo, 8410, "mission").await?;
-    assert_eq!(quantity(h, RING).await?, initial_rings + 1);
-    assert_eq!(experience().await?, before + 800);
-    Ok(())
-}
-
 
 async fn makeshift(
     owner: &ComposedFreshAdmission<'_, '_, '_>,

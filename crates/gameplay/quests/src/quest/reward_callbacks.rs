@@ -601,7 +601,6 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/forbidden-fruit.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/newhaven-defence.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m09-rookie.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-guardcatcher.json"),
@@ -2133,6 +2132,16 @@ fn later_outfit_reward(callback: &RewardCallback) -> bool {
 }
 
 type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
+// Captured by quest_definition_hashes on main e2750951e, before the Guardian Ring and XP.
+const NEWHAVEN_GUSTAVO_BEFORE_REWARD_CORRECTION: [u8; 32] = super::published_quest_pins::hash(
+    b"22c3bcf4eb4d7485e3e220484a4c2bae736dc40e76bf7e301493e972213b8ba0",
+);
+
+#[cfg(feature = "test-support")]
+pub fn fixture_newhaven_gustavo_predecessor() -> [u8; 32] {
+    NEWHAVEN_GUSTAVO_BEFORE_REWARD_CORRECTION
+}
+
 const PUBLISHED_REWARD_PREDECESSORS: &[DefinitionPin] = &[
     (
         "oteryn:quest.brotherhood_outfits_quest",
@@ -2278,6 +2287,11 @@ const PUBLISHED_REWARD_PREDECESSORS: &[DefinitionPin] = &[
             0xe2, 0x27, 0x69, 0xf2, 0x43, 0xf6, 0x42, 0x95, 0xaa, 0xb0, 0xa8, 0x15, 0x08, 0x3a,
             0x70, 0xa7, 0x9e, 0x0c,
         ],
+        &[],
+    ),
+    (
+        "oteryn:quest.newhaven_quest",
+        NEWHAVEN_GUSTAVO_BEFORE_REWARD_CORRECTION,
         &[],
     ),
     (
@@ -2653,56 +2667,119 @@ mod tests {
     }
 
     #[test]
-    fn newhaven_defence_mounts_gustavos_twenty_kill_report_and_reward() -> Result<(), String> {
-        let callbacks = load()?;
-        let start = callbacks
-            .iter()
-            .find(|c| c.key == "oteryn:quest-reward/chosen/newhaven-defence-start")
-            .ok_or("Gustavo's offer")?;
-        let report = callbacks
-            .iter()
-            .find(|c| c.key == "oteryn:quest-reward/chosen/newhaven-defence-report")
-            .ok_or("Gustavo's report")?;
-        assert_eq!(start.npc, "oteryn:npc.gustavo_the_guard");
-        assert_eq!(report.npc, start.npc);
-        assert_eq!(report.experience, Some(800));
+    fn gustavo_dialogue_and_muglex_deaths_share_the_published_owner() -> Result<(), String> {
+        use super::super::{death_objectives, loader, npc_rules};
+        use super::{BTreeMap, NEWHAVEN_GUSTAVO_BEFORE_REWARD_CORRECTION};
+
+        const QUEST: &str = "oteryn:quest.newhaven_quest";
+        const NPC: &str = "oteryn:npc.gustavo_the_guard";
+        const STAGE: &str = "oteryn:quest-progress/newhaven/protect-the-village";
+        const KILLS: &str = "oteryn:quest-progress/newhaven/protect-the-village/kills";
+        const ASSIGN: &str = "oteryn:quest-reward/newhaven-gustavo-assign";
+        const REPORT: &str = "oteryn:quest-reward/newhaven-gustavo-turn-in";
+
+        let lowered =
+            loader::load_embedded_quest_state("content-1").map_err(|e| format!("{e:?}"))?;
+        let catalogue = lowered.catalogue();
+        let callbacks = super::offered_for(catalogue)?;
+        let required = catalogue.track(KILLS).ok_or("Muglex counter")?.max;
+        let start = callbacks.iter().find(|c| c.key == ASSIGN).ok_or(ASSIGN)?;
+        for (progress, expected) in [
+            (BTreeMap::new(), Some(ASSIGN)),
+            (
+                BTreeMap::from([(STAGE.into(), 1), (KILLS.into(), required - 1)]),
+                None,
+            ),
+            (
+                BTreeMap::from([(STAGE.into(), 1), (KILLS.into(), required)]),
+                Some(REPORT),
+            ),
+            (
+                BTreeMap::from([(STAGE.into(), 2), (KILLS.into(), required)]),
+                None,
+            ),
+        ] {
+            for keyword in &start.keywords {
+                let eligible: Vec<_> = callbacks
+                    .iter()
+                    .filter(|callback| {
+                        callback.npc == NPC
+                            && callback.topic == 0
+                            && callback.keywords.contains(keyword)
+                            && callback
+                                .requires
+                                .iter()
+                                .all(|gate| gate.holds(catalogue, &progress))
+                            && catalogue
+                                .transition(&callback.key)
+                                .is_some_and(|transition| {
+                                    catalogue.evaluate(transition, &progress, 0).is_ok()
+                                })
+                    })
+                    .map(|callback| callback.key.as_str())
+                    .collect();
+                assert_eq!(
+                    eligible,
+                    expected.into_iter().collect::<Vec<_>>(),
+                    "{keyword}"
+                );
+            }
+        }
+
+        let report = callbacks.iter().find(|c| c.key == REPORT).ok_or(REPORT)?;
         let item = report.give.as_ref().ok_or("defence reward")?;
         assert_eq!(
             (item.item.as_str(), item.count),
             ("oteryn:item.tibia.i52732", 1)
         );
-        let lowered = crate::quest::loader::load_embedded_quest_state("content-1")
-            .map_err(|e| format!("{e:?}"))?;
-        let catalogue = lowered.catalogue();
-        let phase = &start.storage[0].track;
-        let counter = &report.storage[1];
         assert_eq!(
-            (counter.minimum, counter.maximum, counter.preserve),
-            (20, 20, true)
+            catalogue.transition(REPORT).ok_or(REPORT)?.experience,
+            Some(800)
         );
-        let objectives: Vec<_> = crate::quest::death_objectives::load()?
+        assert_ne!(
+            catalogue.definition_hash(QUEST),
+            Some(NEWHAVEN_GUSTAVO_BEFORE_REWARD_CORRECTION)
+        );
+        assert!(
+            npc_rules::legacy_defaults(
+                catalogue,
+                QUEST,
+                &NEWHAVEN_GUSTAVO_BEFORE_REWARD_CORRECTION
+            )
+            .is_some_and(BTreeMap::is_empty)
+        );
+
+        let objectives: Vec<_> = death_objectives::load()?
             .iter()
-            .filter(|objective| objective.quest == start.quest)
+            .filter(|objective| objective.quest == QUEST)
             .collect();
         assert_eq!(objectives.len(), 8);
-        for objective in objectives {
-            assert_eq!((&objective.stage, objective.stage_value), (phase, 0));
+        for (index, objective) in objectives.iter().enumerate() {
             assert_eq!(
-                (&objective.counter, objective.required),
-                (&counter.track, 20)
+                (objective.stage.as_str(), objective.stage_value),
+                (STAGE, 1)
             );
-            assert!(
-                objective
-                    .creature
-                    .starts_with("oteryn:creature.muglex_clan_")
+            assert_eq!(
+                (objective.counter.as_str(), i64::from(objective.required)),
+                (KILLS, required)
             );
             assert!(catalogue.transition(&objective.key).is_some());
+            for other in &objectives[index + 1..] {
+                if objective.creature == other.creature
+                    && objective.minimum.floor == other.minimum.floor
+                {
+                    assert!(
+                        objective.maximum.x < other.minimum.x
+                            || other.maximum.x < objective.minimum.x
+                            || objective.maximum.y < other.minimum.y
+                            || other.maximum.y < objective.minimum.y,
+                        "{} overlaps {}",
+                        objective.key,
+                        other.key
+                    );
+                }
+            }
         }
-        assert_eq!(
-            catalogue.track(&counter.track).ok_or("Muglex counter")?.max,
-            20
-        );
-        assert!(catalogue.transition(&report.key).is_some());
         Ok(())
     }
 

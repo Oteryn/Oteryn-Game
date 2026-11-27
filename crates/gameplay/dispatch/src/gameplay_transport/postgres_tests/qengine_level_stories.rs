@@ -28,6 +28,6 @@ fn qengine_l11_makeshift_uses_boss_tokens_and_earns_achievement_with_both_addons
 }
 
 #[test]
-fn newhaven_gustavo_twenty_muglex_deaths_earn_ring_and_xp_once() -> TestResult {
-    super::qengine_rewards_fixtures::scenario("qengine-rewards-l11-newhaven-defence")
+fn newhaven_gustavo_published_save_earns_ring_and_xp_once() -> TestResult {
+    super::qengine_rewards_fixtures::scenario(super::newhaven_gustavo_fixtures::PUBLISHED_SAVE)
 }
