@@ -9,6 +9,7 @@ pub(super) async fn scenario(admin: String, case: Case) -> TestResult {
         Case::ExistingStack => "drome_cube_stack",
         Case::ConcurrentLastUnit => "drome_cube_concurrent",
         Case::KooldownAid => "kooldown_aid",
+        Case::KooldownAidDelayed => "kooldown_aid_publish",
         Case::Logout => "drome_cube_logout",
         Case::LogoutLiveness => "drome_cube_logout_liveness",
     };
@@ -49,7 +50,7 @@ pub(super) async fn scenario(admin: String, case: Case) -> TestResult {
         .execute(&mut *tx)
         .await?;
     let source_key = match case {
-        Case::KooldownAid => {
+        Case::KooldownAid | Case::KooldownAidDelayed => {
             crate::durability::item_use::concoction::kooldown_aid::KOOLDOWN_AID_KEY
         }
         _ => DROME_CUBE_KEY,
@@ -166,6 +167,9 @@ pub(super) async fn scenario(admin: String, case: Case) -> TestResult {
     let result = match case {
         Case::KooldownAid => {
             super::kooldown_aid::run(&owner, &harness, actor, session, index).await
+        }
+        Case::KooldownAidDelayed => {
+            super::kooldown_aid::delayed_publication(&owner, actor, session, index).await
         }
         Case::FullRetry => super::run(&owner, &harness, actor, session, index).await,
         Case::Logout | Case::LogoutLiveness => {

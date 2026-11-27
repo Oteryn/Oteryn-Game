@@ -49,6 +49,47 @@ pub(super) fn cooldown_group_keys() -> Option<&'static [String]> {
         .as_deref()
 }
 
+pub(super) fn active_cooldowns(
+    book: &SpellBook,
+    cooldowns: &crate::spell::Cooldowns,
+    now: u64,
+) -> Vec<oteryn_protocol_oteryn::presentation::ActorCooldown> {
+    use oteryn_protocol_oteryn::presentation::{ActorCooldown, ActorCooldownKind};
+
+    let mut entries = Vec::new();
+    let mut collect =
+        |kind, index, deadline: Option<oteryn_simulation_determinism::SemanticTimeMicros>| {
+            if let Some(deadline) = deadline.filter(|time| time.get() > now)
+                && let Ok(id) = u32::try_from(index + 1)
+            {
+                entries.push(ActorCooldown {
+                    kind,
+                    id,
+                    expires_at_ms: deadline.get().div_ceil(1_000),
+                });
+            }
+        };
+    for (index, spell) in book.spells.iter().enumerate() {
+        if !book.inactive_aliases.contains(&index) {
+            collect(
+                ActorCooldownKind::Spell,
+                index,
+                cooldowns.spell_ready_at(&spell.key),
+            );
+        }
+    }
+    if let Some(groups) = cooldown_group_keys() {
+        for (index, group) in groups.iter().enumerate() {
+            collect(
+                ActorCooldownKind::Group,
+                index,
+                cooldowns.group_ready_at(group),
+            );
+        }
+    }
+    entries
+}
+
 pub(super) fn catalog(
     book: &SpellBook,
     state: &PlayerSpellState,

@@ -38,6 +38,7 @@ enum Case {
     ExistingStack,
     ConcurrentLastUnit,
     KooldownAid,
+    KooldownAidDelayed,
     Logout,
     LogoutLiveness,
 }
@@ -97,6 +98,14 @@ fn kooldown_aid_lost_ack_replays_once_and_keeps_its_durable_cooldown() -> TestRe
 }
 
 #[test]
+fn kooldown_aid_publishes_groups_active_at_commit_after_their_deadline() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    routed_scenario(admin, Case::KooldownAidDelayed)
+}
+
+#[test]
 fn drome_cube_first_logout_waits_for_checked_out_pass_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -112,7 +121,10 @@ fn drome_cube_logout_services_liveness_with_holder_checked_out_postgres() -> Tes
     routed_scenario(admin, Case::LogoutLiveness)
 }
 
-struct WireOwner<'a, 'b, 'f, 's>(&'a ComposedFreshAdmission<'b, 'f, 's>);
+struct WireOwner<'a, 'b, 'f, 's>(
+    &'a ComposedFreshAdmission<'b, 'f, 's>,
+    Option<(u64, u64)>,
+);
 impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
     async fn logout(
         &self,
@@ -182,7 +194,17 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         intent: UseIntent,
         source: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
-        self.0.use_drome_cube(actor, command, intent, source).await
+        use std::sync::atomic::Ordering;
+        if let Some((commit_at, _)) = self.1 {
+            self.0.states.test_owner_time.store(commit_at + 1, Ordering::Relaxed);
+        }
+        let result = self.0.use_drome_cube(actor, command, intent, source).await;
+        if let Some((_, publish_at)) = self.1
+            && matches!(&result, Ok(Some(outcome)) if outcome.disposition == UseDisposition::Committed)
+        {
+            self.0.states.test_owner_time.store(publish_at + 1, Ordering::Relaxed);
+        }
+        result
     }
 
     async fn drome_use_unresolved(&self, actor: ExactActorRef, command: UseCommand) -> bool {

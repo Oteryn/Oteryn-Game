@@ -90,7 +90,7 @@ pub(super) async fn run(
     };
     let probe = Arc::new(HolderCheckoutProbe::default());
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let wire_owner = WireOwner(owner);
+    let wire_owner = WireOwner(owner, None);
     let serve = CONDITION_RELEASE_PROBE.scope(
         Cell::new(Some(Arc::clone(&probe))),
         serve_admitted(&mut server, admitted, &wire_owner, policy),

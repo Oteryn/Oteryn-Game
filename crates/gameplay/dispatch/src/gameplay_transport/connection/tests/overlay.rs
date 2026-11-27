@@ -29,6 +29,7 @@ fn admitted_use_commits_and_the_join_snapshot_carries_the_door_overlay()
                 earned: EarnedNotice::NoneEarned,
                 reward_granted: None,
                 gate_message_id: None, potion_utterance: None, refusal_detail: None,
+                cooldown_clearance: None,
             },
         };
         let use_type = u64::from(COMMAND_TYPE_USE_INTENT);

@@ -1660,10 +1660,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Option<oteryn_protocol_oteryn::presentation::ActorCooldowns> {
-        use oteryn_protocol_oteryn::presentation::{
-            ActorCooldown, ActorCooldownKind, ActorCooldowns,
-        };
-        let groups = spell_catalog::cooldown_group_keys()?;
+        use oteryn_protocol_oteryn::presentation::ActorCooldowns;
         let house_fence = if matches!(
             actor.runtime_scope(),
             crate::foundation::RuntimeScopeRefV1::Instance { .. }
@@ -1691,35 +1688,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             None => states.get(&runtime, actor, session),
         }?;
         let now = self.owner_now().get();
-        let mut entries = Vec::new();
-        let mut collect =
-            |kind, index, deadline: Option<oteryn_simulation_determinism::SemanticTimeMicros>| {
-                if let Some(deadline) = deadline.filter(|time| time.get() > now)
-                    && let Ok(id) = u32::try_from(index + 1)
-                {
-                    entries.push(ActorCooldown {
-                        kind,
-                        id,
-                        expires_at_ms: deadline.get().div_ceil(1000),
-                    });
-                }
-            };
-        for (index, spell) in self.spells.spells.iter().enumerate() {
-            if !self.spells.inactive_aliases.contains(&index) {
-                collect(
-                    ActorCooldownKind::Spell,
-                    index,
-                    state.cooldowns.spell_ready_at(&spell.key),
-                );
-            }
-        }
-        for (index, group) in groups.iter().enumerate() {
-            collect(
-                ActorCooldownKind::Group,
-                index,
-                state.cooldowns.group_ready_at(group),
-            );
-        }
+        let entries = spell_catalog::active_cooldowns(self.spells, &state.cooldowns, now);
         Some(ActorCooldowns {
             server_now_ms: now / 1000,
             rtt_ms: None,

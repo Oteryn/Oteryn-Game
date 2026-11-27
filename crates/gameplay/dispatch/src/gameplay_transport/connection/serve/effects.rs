@@ -110,7 +110,7 @@ where
         session.admitted.continuity.vitals_revision = to;
     }
     if outcome.disposition == SpellCastDisposition::Cast {
-        native_cues::refresh_cooldowns(stream, authority, session).await?;
+        native_cues::refresh_cooldowns(stream, authority, session, None).await?;
     }
     if outcome.refresh_inventory
         && let Some(view) = session.item_view.as_mut()

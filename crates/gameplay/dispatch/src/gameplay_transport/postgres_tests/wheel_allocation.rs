@@ -1052,16 +1052,36 @@ async fn gift_battle_relogin(
     let next_fence = item_fence.ok_or("fresh relog fence")?;
     assert!(next_fence.character_lease_generation
         > admitted.item_fence.ok_or("original lease")?.character_lease_generation);
-    let readmitted = AdmittedSession {
+    let mut readmitted = AdmittedSession {
         game_session_id: session,
         runtime_actor: Some(next_actor),
         controller: Some(ControllerBinding { transport, account_id: id(40) }),
         item_fence,
         first_entry,
+        continuity: crate::gameplay_transport::connection::SessionContinuity {
+            selected_capabilities: admitted.continuity.selected_capabilities,
+            ..crate::gameplay_transport::connection::SessionContinuity::FRESH
+        },
         ..admitted
     };
-    owner.admit_wheel_session(session).await;
-    assert!(owner.refresh_wheel_vitals(next_actor, session).await);
+    // Reproduce a fresh join whose best-effort Wheel load found the holder busy.
+    owner.refresh_quest_session(session, true).await;
+    h.root.maintain_ready_once().await?;
+    let held = h.root.try_issue_semantic_pass()?;
+    owner.admit_quest_session(&readmitted).await;
+    assert!(owner.states.wheel_sessions.lock().map_err(debug)?
+        .get(&session).is_some_and(Option::is_none));
+    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    // The first Gift command is the first frame to report its stage. Do not
+    // prime the vitals observer or ask the Wheel owner to refresh it first.
+    let (result, payload) = send_kind(
+        owner, &mut readmitted,
+        oteryn_protocol_oteryn::wheel_presentation::COMMAND_TYPE_WHEEL_GIFT_OF_LIFE_STATUS,
+        &[],
+    ).await?;
+    assert_eq!(result, CommandStatus::Accepted);
+    assert_eq!(payload[0], 3, "first Gift frame after admission must use the persisted stage");
+    assert_eq!(u64::from_le_bytes(payload[1..].try_into()?), expected.div_ceil(1_000));
     assert_eq!(status(readmitted).await?, (3, expected.div_ceil(1_000)));
     let runtime = owner.runtime.lock().await;
     let states = owner.states.spell_states.lock().await;

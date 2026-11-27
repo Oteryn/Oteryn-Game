@@ -518,6 +518,7 @@ fn a_committed_bundle_door_use_is_a_domain_17_change_and_no_domain_2_delta_for_a
             earned: EarnedNotice::NoneEarned,
             reward_granted: None,
             gate_message_id: None,
+            cooldown_clearance: None,
             potion_utterance: None,
             refusal_detail: None,
         };
@@ -584,6 +585,7 @@ fn domain_2_state_offered_to_a_session_with_18_fails_closed_instead_of_being_sen
             earned: EarnedNotice::NoneEarned,
             reward_granted: None,
             gate_message_id: None,
+            cooldown_clearance: None,
             potion_utterance: None,
             refusal_detail: None,
         };
@@ -614,6 +616,7 @@ fn a_fixture_world_session_keeps_domain_2_on_join_resume_and_delta_and_never_get
             earned: EarnedNotice::NoneEarned,
             reward_granted: None,
             gate_message_id: None,
+            cooldown_clearance: None,
             potion_utterance: None,
             refusal_detail: None,
         };

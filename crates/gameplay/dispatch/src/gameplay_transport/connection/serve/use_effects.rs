@@ -74,7 +74,13 @@ where
         session.admitted.continuity.vitals_revision = to;
     }
     if outcome.disposition == UseDisposition::Committed {
-        native_cues::refresh_cooldowns(stream, authority, session).await?;
+        native_cues::refresh_cooldowns(
+            stream,
+            authority,
+            session,
+            outcome.cooldown_clearance.as_deref(),
+        )
+        .await?;
     }
     // WORLD_OBJECT_OVERLAY (domain 2, delta type 1) is Channel-global, not
     // per-connection: its "from" revision is always the committed entry's own
