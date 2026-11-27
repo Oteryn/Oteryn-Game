@@ -344,6 +344,8 @@ pub(super) async fn assert_kill_reward(
         let death_at = pending.activity_observed_at.ok_or("death clock")?;
         assert!(attack.in_fight_until(actor, session, death_at).is_none());
     }
+    let generation = fence.connection_generation.get();
+    assert!(owner.states.server_messages.join(session, generation));
     let initial = starting_dust(case);
     let before = owner
         .item_forge_balance(admitted, 100)
@@ -361,6 +363,14 @@ pub(super) async fn assert_kill_reward(
     );
     let award = forge.kind.dust(forge.roll);
     let capped = (initial + award).min(limit);
+    assert_eq!(
+        owner.states.server_messages.take(session, generation),
+        Some(
+            oteryn_protocol_oteryn::zones_nologout::ServerMessage::StatusText(format!(
+                "Forge dust: {capped}/{limit}"
+            ))
+        )
+    );
     let entries = ledger(h).await?;
     assert_eq!(
         entries.len(),
