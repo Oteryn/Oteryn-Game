@@ -352,7 +352,7 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
             "boundary-whisper-two-y" => (-1, 0),
             "adjacent-other-floor" => (7, 3),
             "boundary-north" => (1, -1),
-            "boundary-south" => (-1, 1),
+            "boundary-south" => (1, 1),
             "boundary-west" => (0, 1),
             "boundary-east" => (0, 2),
             "boundary-diagonal" => (0, -1),

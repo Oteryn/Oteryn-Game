@@ -309,7 +309,7 @@ async fn move_listener(
     let path = route_avoiding(world, from, &|at| at == target, |at| {
         at != speaker && at != QUENTIN && at != TilePos { y: QUENTIN.y - 1, ..QUENTIN }
     })
-    .ok_or("S18 listener geometry has no authored route")?;
+    .ok_or_else(|| format!("S18 speech geometry has no authored route: from={from:?} target={target:?} occupied={speaker:?}"))?;
     for direction in path {
         let from = tile(listener.world_spatial().actor_position)?;
         let expected = destination(world, from, direction).ok_or("S18 route landing absent")?;
@@ -446,7 +446,7 @@ async fn journey(
             "boundary-whisper-two-y" => (-1, 0),
             "adjacent-other-floor" => (7, 3),
             "boundary-north" => (1, -1),
-            "boundary-south" => (-1, 1),
+            "boundary-south" => (1, 1),
             "boundary-west" => (0, 1),
             "boundary-east" => (0, 2),
             "boundary-diagonal" => (0, -1),
