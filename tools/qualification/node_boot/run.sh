@@ -904,7 +904,11 @@ if (( ${#NODE_CLOCK_FEATURES[@]} )); then
   chmod 0644 "$OTERYN_QUALIFICATION_CLOCK_FILE"
   NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_CLOCK_FILE=$OTERYN_QUALIFICATION_CLOCK_FILE")
 fi
-if [[ "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
+# The pinned Platform issues one Premium client identity. I07 needs the
+# snapshot transport, while other batches retain the Profile B transport.
+if [[ "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_WORLD" == 1 &&
+      "$NODE_BOOT_D150_LEGACY" == 0 &&
+      ( "${OTERYN_E2E_ROW_BATCH:-}" == 118:1 || "${OTERYN_E2E_ROW_BATCH:-}" == 307:1 ) ]]; then
   cat "$PORTAL_E2E_OUT/certs/clients/premium.pem" "$PORTAL_E2E_OUT/certs/clients/premium.key" \
     | install_owned "$SERVICE_UID" -m 0600 /dev/stdin "$BASE/node/secrets/premium.pem"
   NODE_GAMEPLAY_ENV+=(
@@ -912,8 +916,7 @@ if [[ "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_WORLD" == 1 && "
     "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/premium.pem"
     "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem"
   )
-fi
-if [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
+elif [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
   # Use the Platform's disposable Premium-purpose client and trust root.
   local_premium_dir="$WORK/portal/certs"
   cat "$local_premium_dir/clients/premium.pem" "$local_premium_dir/clients/premium.key" > "$WORK/profile-b-client.pem"
