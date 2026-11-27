@@ -991,13 +991,23 @@ async fn leave_reward_room(
     // captured display and statue require the walk below the display.
     use StepDirection::{East, North, South};
     corridor_step(client, East, 33228, 31657).await?;
-    for (index, target) in alternates.iter().enumerate() {
-        let x = [33228, 33230, 33232][index];
-        if index != 0 {
-            corridor_step(client, East, x - 1, 31658).await?;
-            corridor_step(client, East, x, 31658).await?;
+    let mut previous_x = 33228;
+    for (index, (chest_x, target)) in [33229_u16, 33231, 33233].into_iter().zip(alternates).enumerate() {
+        let x = if index == 0 {
+            previous_x
+        } else {
+            let candidates = [chest_x - 1, chest_x, chest_x + 1];
+            let approach = TilePos { x: previous_x, y: 31657, floor: -13 };
+            let x = candidates.into_iter().find(|x| {
+                *x >= previous_x && *x <= 33233
+                    && world.enterable(TilePos { x: *x, ..approach })
+            }).ok_or_else(|| format!("P11 no authored approach to chest x={chest_x}, candidates={candidates:?}"))?;
+            for path_x in previous_x + 1..=x {
+                corridor_step(client, East, path_x, 31658).await?;
+            }
             corridor_step(client, North, x, 31657).await?;
-        }
+            x
+        };
         let before_inventory = client.inventory().ok_or("P11 missing carried inventory")?.clone();
         let reply = client.session_mut().use_object(target, 0).await?;
         if reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse
@@ -1010,8 +1020,11 @@ async fn leave_reward_room(
         reject_earned_notices(client)?;
         evidence(&format!("P11_CHECK alternative_chest_adjacent_x={x} disposition=NothingToUse inventory=unchanged page=unchanged"));
         corridor_step(client, South, x, 31658).await?;
+        previous_x = x;
     }
-    corridor_step(client, East, 33233, 31658).await?;
+    for x in previous_x + 1..=33233 {
+        corridor_step(client, East, x, 31658).await?;
+    }
     corridor_step(client, South, 33233, 31659).await?;
     corridor_step(client, East, 33234, 31659).await?;
     let door = TilePos {
