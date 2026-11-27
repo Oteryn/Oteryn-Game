@@ -23,6 +23,8 @@ use oteryn_protocol_oteryn::world_spatial::{self, StepDirection, WorldSpatialObs
 use oteryn_protocol_oteryn::{CharacterId, FoundationProtocolError};
 /// Default support sent by this harness, shared with the native session.
 pub use oteryn_session::CLIENT_SUPPORTED_CAPABILITIES;
+// Qualification drives the native context dispatch on the live session.
+pub use oteryn_client_runtime::world_interaction;
 use oteryn_session::{Admission, Session};
 pub use oteryn_session::{
     AppliedDelta, CastOutcome, CharacterInventory, ChatDisposition, ChatIntent, ChatLine, ChatLog,

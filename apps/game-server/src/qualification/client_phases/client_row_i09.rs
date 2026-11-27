@@ -3,7 +3,10 @@
 //! `crates/session/src/map_transport.rs::apply` decodes and validates the delta and queues the
 //! client-visible `SessionEvent::WorldMap`; `Session::take_events` exposes it to the native client.
 use super::*;
-use oteryn_dev_client::SessionEvent;
+use oteryn_dev_client::{
+    SessionEvent,
+    world_interaction::{self, Action, Command, Selection, Target},
+};
 use oteryn_protocol_oteryn::world_map::{self, MapDefinition, MapOrigin};
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
@@ -78,12 +81,14 @@ fn capture_envelopes(root: &Path, name: &str, mut transcript: &[u8], session: &s
     capture(root, name, &serde_json::to_vec(&envelopes)?)
 }
 
-async fn rotate_menu_payload(
+type MenuSelection = ((i32, i32, i16), Option<([u8; 32], [u8; 32], u64)>);
+
+async fn rotate_menu_command(
     capture_root: &Path,
     map: &[u8],
     actor: oteryn_protocol_oteryn::world_spatial::ActorPosition,
     target: oteryn_protocol_oteryn::world_spatial::ActorPosition,
-) -> TestResult<Vec<u8>> {
+) -> TestResult<Command> {
     let binary = required("OTERYN_I09_MENU_TEST")?;
     let map_path = capture_root.join("i09-rotate-menu-map.bin");
     capture(capture_root, "i09-rotate-menu-map.bin", map)?;
@@ -105,7 +110,16 @@ async fn rotate_menu_payload(
     if payloads.next().is_some() {
         return Err("I09 Rotate context menu emitted multiple commands".into());
     }
-    Ok(serde_json::from_str(payload)?)
+    let (placement, expected_revision, selection): (Vec<u8>, u64, Option<MenuSelection>) =
+        serde_json::from_str(payload)?;
+    Ok(Command {
+        target: Target::Object(WorldObjectTarget { placement, expected_revision }),
+        action: Action::Use,
+        selection: selection.map(|((x, y, floor), binding)| Selection {
+            position: oteryn_protocol_oteryn::world_spatial::ActorPosition { x, y, floor },
+            binding,
+        }),
+    })
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -203,9 +217,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .ok_or("I09 predecessor omitted original chair at revision 0")?;
     require_unique_chair(&before_map.tiles, target, before_item)?;
     client.take_events();
-    let menu_payload = rotate_menu_payload(capture_root, &before.payload, client.world_spatial().actor_position, target).await?;
-    if menu_payload != intent(0)? {
-        return Err("I09 Rotate menu did not name the exact public chair placement and revision".into());
+    let command = rotate_menu_command(capture_root, &before.payload, client.world_spatial().actor_position, target).await?;
+    let Target::Object(object) = &command.target else {
+        return Err("I09 Rotate menu did not emit an object target".into());
+    };
+    let stale_payload = oteryn_protocol_oteryn::world_object::encode_use_intent(object)
+        .map_err(|error| format!("I09 Rotate target encode: {error:?}"))?;
+    let header = before_map.header;
+    if stale_payload != intent(0)? || command.selection != Some(Selection {
+        position: target,
+        binding: Some((header.content_generation, header.bundle_digest, header.reset_epoch)),
+    }) {
+        return Err("I09 Rotate menu did not carry the exact public chair selection".into());
     }
     // Match the production world-context dispatch: service pending frames while
     // the menu owns input, then validate the live selection before submitting.
@@ -219,17 +242,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let before = client.session_mut().gated_snapshot(before.domain_id)
         .ok_or("I09 map snapshot absent before Rotate dispatch")?.clone();
-    let before_use_sequence = client.session_mut().last_server_sequence();
-    evidence("I09_MENU_ASSERTION rotate=clicked-public-chair command=USE_INTENT");
-    let reply = client.session_mut().world_context_use(&menu_payload).await?;
-    require_mechanic_acceptance(reply.status, "I09 chair rotation")?;
-    let (result, detail) = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&reply.payload)
-        .map_err(|error| format!("I09 result detail decode: {error:?}"))?;
-    let disposition = decode_use_result(result)
-        .map_err(|error| format!("I09 result decode: {error:?}; payload={result:?}"))?;
-    if disposition != UseDisposition::Committed || detail.is_some() {
-        return Err(format!("I09 first Rotate refused: {disposition:?} detail={detail:?}").into());
+    let session = client.session_mut();
+    let use_command_id = session.next_command_id();
+    let mut unselected = command.clone();
+    unselected.selection = None;
+    let refused = world_interaction::send_framed(session, &unselected, true).await?;
+    if refused != "Target changed" || session.next_command_id() != use_command_id {
+        return Err("I09 missing Rotate selection crossed the production send guard".into());
     }
+    evidence("I09_MENU_ASSERTION missing-selection=Target-changed no-command-sent");
+    let before_use_sequence = session.last_server_sequence();
+    let outcome = world_interaction::send_framed(session, &command, true).await?;
+    if outcome != "Use: completed" || use_command_id.checked_add(1) != Some(session.next_command_id()) {
+        return Err(format!("I09 first native Rotate outcome: {outcome}").into());
+    }
+    let use_reply_sequence = session.last_server_sequence();
+    evidence("I09_MENU_ASSERTION rotate=clicked-public-chair dispatch=production");
     let rotated = MapOrigin::BaseOrdinal {
         ordinal,
         object_revision: 1,
@@ -264,7 +292,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     };
-    if delta.server_sequence <= reply.server_sequence {
+    if delta.server_sequence <= use_reply_sequence {
         return Err("I09 chair update did not follow the USE reply".into());
     }
     if delta.base_revision != before.revision {
@@ -320,7 +348,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     require_unique_chair(&delta.value.tiles, target, item)?;
-    let stale = client.session_mut().world_context_use(&menu_payload).await?;
+    let stale = client.session_mut().world_context_use(&stale_payload).await?;
     if stale.status != CommandStatus::Accepted
         || decode_use_result(&stale.payload)
             .map_err(|error| format!("I09 stale decode: {error:?}"))?
@@ -395,8 +423,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }).await?;
     let binding = format!(
         "{initial_id} {before_use_sequence} {} {} {} {} {} {relog_id} {observer_id}",
-        reply.command_id,
-        reply.server_sequence,
+        use_command_id,
+        use_reply_sequence,
         delta.server_sequence,
         logout.command_id,
         logout.result_server_sequence

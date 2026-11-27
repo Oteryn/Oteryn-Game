@@ -28,7 +28,7 @@ fn qualification_i09_rotate_menu() -> Result {
     let PlayCommand::WorldContext(Command {
         target: Target::Object(object),
         action: Action::Use,
-        ..
+        selection,
     }) = commands.try_recv()?
     else {
         return Err("I09 Rotate did not emit a world-object USE".into());
@@ -37,8 +37,11 @@ fn qualification_i09_rotate_menu() -> Result {
         commands.try_recv().is_err(),
         "Rotate emitted extra commands"
     );
-    let payload = world_object::encode_use_intent(&object)
-        .map_err(|error| format!("I09 menu command: {error:?}"))?;
-    println!("I09_MENU_USE={}", serde_json::to_string(&payload)?);
+    let selection = selection.map(|value| {
+        let pos = value.position;
+        ((pos.x, pos.y, pos.floor), value.binding)
+    });
+    let command = (object.placement, object.expected_revision, selection);
+    println!("I09_MENU_USE={}", serde_json::to_string(&command)?);
     Ok(())
 }
